@@ -16,4 +16,26 @@ describe("Greeter", function () {
 
     expect(await greeter.greet()).to.equal("Hola, mundo!");
   });
+
+
+  it("Initialise the vAMM", async function() {
+
+    
+
+
+  });
+
+  it("Should deposit liquidity", async function() {
+
+    const AMM = await ethers.getContractFactory("AMM");
+    const amm = await AMM.deploy();
+    await amm.deployed();
+
+    const depositLiquidityTx = await amm.depositLiquidity();
+
+    // check positions array
+
+
+  });
+
 });

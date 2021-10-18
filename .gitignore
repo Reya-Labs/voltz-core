@@ -4,6 +4,10 @@ coverage
 coverage.json
 typechain
 
+.DS_Store
+contracts/.DS_Store
+
+
 #Hardhat files
 cache
 artifacts
