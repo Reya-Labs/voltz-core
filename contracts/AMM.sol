@@ -8,6 +8,7 @@ import "./core_libraries/Position.sol";
 import "./utils/SafeCast.sol";
 import "./utils/LowGasSafeMath.sol";
 
+import "hardhat/console.sol";
 
 contract AMM is NoDelegateCall{
 
@@ -28,7 +29,7 @@ contract AMM is NoDelegateCall{
     
     uint256 public immutable termInDays;
 
-    uint32 public immutable termStartTimestamp;
+    uint256 public immutable termStartTimestamp;
 
     uint24 public immutable fee;
 
@@ -122,6 +123,8 @@ contract AMM is NoDelegateCall{
     ) private returns (Position.Info storage position) {
         position = positions.get(owner, tickLower, tickUpper);
 
+        uint256 _feeGrowthGlobalX128 = feeGrowthGlobalX128; // SLOAD for gas optimization
+
         // if we need to update the ticks, do it
         bool flippedLower;
         bool flippedUpper;
@@ -201,24 +204,20 @@ contract AMM is NoDelegateCall{
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external override lock returns (uint256 amount0, uint256 amount1) {
+    ) external lock {
         require(amount > 0);
         
-        (, int256 amount0Int, int256 amount1Int) =
-            _modifyPosition(
-                ModifyPositionParams({
-                    owner: recipient,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: int256(amount).toInt128()
-                })
-            );
+        
+        _modifyPosition(
+            ModifyPositionParams({
+                owner: recipient,
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                liquidityDelta: int256(uint256(amount)).toInt128()
+            })
+        );
 
     }
-
-
-
-
 
 
 } 

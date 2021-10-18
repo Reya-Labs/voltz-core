@@ -9,14 +9,16 @@ import "./utils/NoDelegateCall.sol";
 
 /// @title Canonical Voltz factory
 /// @notice Deploys Voltz AMMs and manages ownership and control over pool protocol fees
-contract UniswapV3Factory is IAMMFactory, AMMDeployer, NoDelegateCall {
+contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
     /// @inheritdoc IAMMFactory
     address public override owner;
 
     /// @inheritdoc IAMMFactory
     mapping(uint24 => int24) public override feeAmountTickSpacing;
-    /// @inheritdoc IAMMFactory
-    mapping(address => mapping(uint256 => mapping(uint256 => uint24))) public override getPool;
+    
+
+
+    mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint24 => address)))) public getAMMMAp;
     // [underlyingPool][termInDays][termStartTimestamp][fee]
 
     constructor() {
@@ -32,19 +34,21 @@ contract UniswapV3Factory is IAMMFactory, AMMDeployer, NoDelegateCall {
     }
 
     /// @inheritdoc IAMMFactory
-    function createPool(
+    function createAMM(
+        address underlyingToken,
         address underlyingPool,
         uint256 termInDays,
-        uint32 termStartTimestamp,
+        uint256 termStartTimestamp,
         uint24 fee
     ) external override noDelegateCall returns (address amm) {
         require(underlyingPool != address(0)); // todo: why do we need this check?
         int24 tickSpacing = feeAmountTickSpacing[fee];
         require(tickSpacing != 0);
-        require(getAMM[underlyingPool][termInDays][termStartTimestamp][fee] == address(0));
-        amm = deploy(address(this), underlyingPool, termInDays, termStartTimestamp, fee, tickSpacing);
-        getAMM[underlyingPool][termInDays][termStartTimestamp][fee] = pool;
-        emit AMMCreated(underlyingPool, termInDays, termStartTimestamp, fee, tickSpacing, pool);
+        require(getAMMMAp[underlyingPool][termInDays][termStartTimestamp][fee] == address(0));
+        amm = deploy(address(this), underlyingToken, underlyingPool, termInDays, fee, tickSpacing);
+        getAMMMAp[underlyingPool][termInDays][termStartTimestamp][fee] = amm;
+        emit AMMCreated(underlyingPool, termInDays, termStartTimestamp, fee, tickSpacing, amm);
+        return amm;
     }
 
     /// @inheritdoc IAMMFactory

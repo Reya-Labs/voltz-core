@@ -4,12 +4,13 @@ import "./interfaces/IAMMDeployer.sol";
 import "./AMM.sol";
 
 contract AMMDeployer is IAMMDeployer {
+    
     struct Parameters {
         address factory;
         address underlyingToken;
         address underlyingPool;
         uint256 termInDays;
-        uint32 termStartTimestamp;
+        uint256 termStartTimestamp;
         uint24 fee;
         int24 tickSpacing;
     }

@@ -23,7 +23,7 @@ interface IAMMDeployer {
             address underlyingToken,
             address underlyingPool,
             uint256 termInDays,
-            uint32 termStartTimestamp, 
+            uint256 termStartTimestamp, 
             uint24 fee,
             int24 tickSpacing
         );
