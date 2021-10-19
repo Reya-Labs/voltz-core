@@ -105,3 +105,6 @@ export function encodeSqrtRatioX96(amount1: BigintIsh, amount0: BigintIsh): JSBI
   const ratioX192 = JSBI.divide(numerator, denominator)
 return sqrt(ratioX192)
 }
+
+export const MIN_SQRT_RATIO = BigNumber.from('4295128739')
+export const MAX_SQRT_RATIO = BigNumber.from('1461446703485210103287273052203988822378723970342')

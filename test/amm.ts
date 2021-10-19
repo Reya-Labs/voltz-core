@@ -4,7 +4,8 @@ import { AMMFactory } from '../typechain/AMMFactory'
 import { expect } from "chai";
 
 import { MintFunction, createAMMFunctions, getMinTick, getMaxTick, FeeAmount, TICK_SPACINGS,
-        getMaxLiquidityPerTick, encodeSqrtRatioX96} from './shared/utilities';
+        getMaxLiquidityPerTick, encodeSqrtRatioX96,
+        MIN_SQRT_RATIO, MAX_SQRT_RATIO} from './shared/utilities';
 
 import { AMMFixture, TEST_AMM_START_TIME } from './shared/fixtures'
 
@@ -99,6 +100,45 @@ describe("AMM", () => {
             await amm.initialize(encodeSqrtRatioX96(1, 1).toString())
             await expect(amm.initialize(encodeSqrtRatioX96(1, 1).toString())).to.be.reverted
         })
+
+        it('fails if starting price is too low', async () => {
+            await expect(amm.initialize(1)).to.be.revertedWith('R')
+            await expect(amm.initialize(MIN_SQRT_RATIO.sub(1))).to.be.revertedWith('R')
+        })
+
+        it('fails if starting price is too high', async () => {
+            await expect(amm.initialize(MAX_SQRT_RATIO)).to.be.revertedWith('R')
+            await expect(amm.initialize(BigNumber.from(2).pow(160).sub(1))).to.be.revertedWith('R')
+        })
+
+        it('can be initialized at MIN_SQRT_RATIO', async () => {
+            await amm.initialize(MIN_SQRT_RATIO)
+            expect((await amm.slot0()).tick).to.eq(getMinTick(1))
+        })
+
+        it('can be initialized at MAX_SQRT_RATIO - 1', async () => {
+            await amm.initialize(MAX_SQRT_RATIO.sub(1))
+            expect((await amm.slot0()).tick).to.eq(getMaxTick(1) - 1)
+        })
+
+
+        it('sets initial variables', async () => {
+            const price = encodeSqrtRatioX96(1, 2).toString()
+            await amm.initialize(price)
+      
+            const { sqrtPriceX96 } = await amm.slot0()
+            expect(sqrtPriceX96).to.eq(price)
+            expect((await amm.slot0()).tick).to.eq(-6932)
+        })
+
+
+        it('emits a Initialized event with the input tick', async () => {
+            const sqrtPriceX96 = encodeSqrtRatioX96(1, 2).toString()
+            await expect(amm.initialize(sqrtPriceX96)).to.emit(amm, 'Initialize').withArgs(sqrtPriceX96, -6932)
+        })
+
+
+
 
       })
 

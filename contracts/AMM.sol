@@ -95,6 +95,8 @@ contract AMM is IAMM, NoDelegateCall{
             unlocked: true
         });
 
+        emit Initialize(sqrtPriceX96, tick);
+
     }
 
 
