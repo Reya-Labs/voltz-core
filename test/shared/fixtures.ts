@@ -1,54 +1,64 @@
+import { AMMFactory } from "../../typechain"
+import { Fixture } from 'ethereum-waffle'
+import { ethers } from "hardhat";
+import { TestAMMCallee } from '../../typechain/TestAMMCallee'
+import { MockTimeAMM } from '../../typechain/MockTimeAMM'
+import { MockTimeAMMDeployer } from '../../typechain/MockTimeAMMDeployer'
 
-// todo: get back to this once done with TestUniswapV3Calee... 
 
-interface PoolFixture extends TokensAndFactoryFixture {
-    swapTargetCallee: TestUniswapV3Callee
-    swapTargetRouter: TestUniswapV3Router
-    createPool(
-      fee: number,
-      tickSpacing: number,
-      firstToken?: TestERC20,
-      secondToken?: TestERC20
-    ): Promise<MockTimeUniswapV3Pool>
+interface FactoryFixture {
+  factory: AMMFactory
+}
+
+async function factoryFixture(): Promise<FactoryFixture> {
+  const factoryFactory = await ethers.getContractFactory('AMMFactory')
+  const factory = (await factoryFactory.deploy()) as AMMFactory
+  return { factory }
+}
+
+interface AMMFixture extends FactoryFixture {
+    swapTargetCallee: TestAMMCallee
+    createAMM(
+       underlyingToken: string,
+       underlyingPool: string,
+       termInDays: number,
+       termStartTimestamp: number,
+       fee: number,
+       tickSpacing: number,
+    ): Promise<MockTimeAMM>
   }
   
-  // Monday, October 5, 2020 9:00:00 AM GMT-05:00
-  export const TEST_POOL_START_TIME = 1601906400
+// Monday, October 5, 2020 9:00:00 AM GMT-05:00
+export const TEST_AMM_START_TIME = 1601906400
 
 
-export const poolFixture: Fixture<PoolFixture> = async function (): Promise<PoolFixture> {
+export const AMMFixture: Fixture<AMMFixture> = async function (): Promise<AMMFixture> {
     const { factory } = await factoryFixture()
-    const { token0, token1, token2 } = await tokensFixture()
+    
+    const MockTimeAMMDeployerFactory = await ethers.getContractFactory('MockTimeAMMDeployer')
+    const MockTimeAMMFactory = await ethers.getContractFactory('MockTimeAMM')
   
-    const MockTimeUniswapV3PoolDeployerFactory = await ethers.getContractFactory('MockTimeUniswapV3PoolDeployer')
-    const MockTimeUniswapV3PoolFactory = await ethers.getContractFactory('MockTimeUniswapV3Pool')
+    const calleeContractFactory = await ethers.getContractFactory('TestAMMCallee')
   
-    const calleeContractFactory = await ethers.getContractFactory('TestUniswapV3Callee')
-    const routerContractFactory = await ethers.getContractFactory('TestUniswapV3Router')
-  
-    const swapTargetCallee = (await calleeContractFactory.deploy()) as TestUniswapV3Callee
-    const swapTargetRouter = (await routerContractFactory.deploy()) as TestUniswapV3Router
+    const swapTargetCallee = (await calleeContractFactory.deploy()) as TestAMMCallee
   
     return {
-      token0,
-      token1,
-      token2,
       factory,
       swapTargetCallee,
-      swapTargetRouter,
-      createPool: async (fee, tickSpacing, firstToken = token0, secondToken = token1) => {
-        const mockTimePoolDeployer = (await MockTimeUniswapV3PoolDeployerFactory.deploy()) as MockTimeUniswapV3PoolDeployer
-        const tx = await mockTimePoolDeployer.deploy(
+      createAMM: async (underlyingToken, underlyingPool, termInDays, termStartTimestamp, fee, tickSpacing) => {
+        const mockTimeAMMDeployer = (await MockTimeAMMDeployerFactory.deploy()) as MockTimeAMMDeployer
+        const tx = await mockTimeAMMDeployer.deploy(
           factory.address,
-          firstToken.address,
-          secondToken.address,
+          underlyingToken,
+          underlyingPool,
+          termInDays,
           fee,
           tickSpacing
         )
-  
+
         const receipt = await tx.wait()
-        const poolAddress = receipt.events?.[0].args?.pool as string
-        return MockTimeUniswapV3PoolFactory.attach(poolAddress) as MockTimeUniswapV3Pool
+        const ammAddress = receipt.events?.[0].args?.amm as string
+        return MockTimeAMMFactory.attach(ammAddress) as MockTimeAMM
       },
     }
   }
