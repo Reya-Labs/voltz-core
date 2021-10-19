@@ -1,5 +1,5 @@
 
-import {utils} from 'ethers'
+import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
 
 
 export enum FeeAmount {
@@ -41,3 +41,11 @@ export function getCreate2Address(
     const sanitizedInputs = `0x${create2Inputs.map((i) => i.slice(2)).join('')}`
     return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`)
   }
+
+
+  export type MintFunction = (
+    recipient: string,
+    tickLower: BigNumberish,
+    tickUpper: BigNumberish,
+    liquidity: BigNumberish
+  ) => Promise<ContractTransaction>

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.5.0;
-
+pragma solidity ^0.8.0;
 
 import "../utils/LowGasSafeMath.sol";
 import "../utils/SafeCast.sol";
@@ -22,18 +21,6 @@ library Tick {
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint256 feeGrowthOutsideX128;
-        // uint256 feeGrowthOutside1X128;
-        // the cumulative tick value on the other side of the tick
-        // int56 tickCumulativeOutside;
-        // // the seconds per unit of liquidity on the _other_ side of this tick (relative to the current tick)
-        // // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        // uint160 secondsPerLiquidityOutsideX128;
-        // // the seconds spent on the other side of the tick (relative to the current tick)
-        // // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        // uint32 secondsOutside;
-        // true iff the tick is initialized, i.e. the value is exactly equivalent to the expression liquidityGross != 0
-        // these 8 bits are set to prevent fresh sstores when crossing newly initialized ticks
-        bool initialized;
     }
 
     /// @notice Derives max liquidity per tick from given tick spacing
@@ -107,7 +94,7 @@ library Tick {
         uint128 liquidityGrossBefore = info.liquidityGross;
         uint128 liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta);
 
-        require(liquidityGrossAfter <= maxLiquidity, 'LO');
+        require(liquidityGrossAfter <= maxLiquidity, "LO");
 
         flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0);
 
@@ -116,7 +103,7 @@ library Tick {
             if (tick <= tickCurrent) {
                 info.feeGrowthOutsideX128 = feeGrowthGlobalX128;
             }
-            info.initialized = true;
+            // info.initialized = true todo: where does this come from?
         }
 
         info.liquidityGross = liquidityGrossAfter;

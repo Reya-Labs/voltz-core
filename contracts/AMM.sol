@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 import "./utils/NoDelegateCall.sol";
 import "./core_libraries/Tick.sol";
 import "./interfaces/IAMMDeployer.sol";
+import "./interfaces/IAMM.sol";
 import "./core_libraries/TickBitmap.sol";
 import "./core_libraries/Position.sol";
 
@@ -10,7 +11,7 @@ import "./utils/LowGasSafeMath.sol";
 
 import "hardhat/console.sol";
 
-contract AMM is NoDelegateCall{
+contract AMM is IAMM, NoDelegateCall{
 
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
@@ -21,23 +22,23 @@ contract AMM is NoDelegateCall{
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
 
-    address public immutable factory;
+    address public immutable override factory;
     
-    address public immutable underlyingToken;
+    address public immutable override underlyingToken;
     
-    address public immutable underlyingPool;
+    address public immutable override underlyingPool;
     
-    uint256 public immutable termInDays;
+    uint256 public immutable override termInDays;
 
-    uint256 public immutable termStartTimestamp;
+    uint256 public immutable override termStartTimestamp;
 
-    uint24 public immutable fee;
+    uint24 public immutable override fee;
 
-    int24 public immutable tickSpacing;
+    int24 public immutable override tickSpacing;
 
-    uint128 public immutable maxLiquidityPerTick;
+    uint128 public immutable override maxLiquidityPerTick;
 
-    uint256 public feeGrowthGlobalX128;
+    uint256 public override feeGrowthGlobalX128;
 
 
     constructor() {
@@ -56,15 +57,13 @@ contract AMM is NoDelegateCall{
         bool unlocked;
     }
     
-    Slot0 public slot0;
+    Slot0 public override slot0;
 
-    uint128 public liquidity;
+    uint128 public override liquidity;
 
-    
-    mapping(int24 => Tick.Info) public ticks;
-    mapping(int16 => uint256) public tickBitmap;
-    mapping(bytes32 => Position.Info) public positions;
-
+    mapping(int24 => Tick.Info) public override ticks;
+    mapping(int16 => uint256) public override tickBitmap;
+    mapping(bytes32 => Position.Info) public override positions;
     
     /// @dev Mutually exclusive reentrancy protection into the pool to/from a method. This method also prevents entrance
     /// to a function before the pool is initialized. The reentrancy guard is required throughout the contract because
@@ -85,7 +84,7 @@ contract AMM is NoDelegateCall{
 
 
     /// @dev not locked because it initializes unlocked
-    function initialize(uint160 sqrtPriceX96) external {
+    function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, "AI"); // todo: what does AI mean?
 
         int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
@@ -204,9 +203,8 @@ contract AMM is NoDelegateCall{
         int24 tickUpper,
         uint128 amount,
         bytes calldata data
-    ) external lock {
+    ) external override lock {
         require(amount > 0);
-        
         
         _modifyPosition(
             ModifyPositionParams({
