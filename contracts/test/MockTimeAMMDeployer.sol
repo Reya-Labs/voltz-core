@@ -18,7 +18,7 @@ contract MockTimeAMMDeployer is IAMMDeployer {
 
     Parameters public override parameters;
 
-    // event PoolDeployed(address pool); todo AMMDeployed
+    event AMMDeployed(address amm);
 
     function deploy(
         address factory,
@@ -33,7 +33,7 @@ contract MockTimeAMMDeployer is IAMMDeployer {
         amm = address(
             new MockTimeAMM{salt: keccak256(abi.encodePacked(underlyingPool, termInDays, _termStartTimestamp, fee))}()
         );
-        // emit PoolDeployed(pool); todo AMMDeployed
+        emit AMMDeployed(amm);
         delete parameters;
     }
 }

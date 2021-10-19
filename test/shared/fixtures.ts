@@ -22,7 +22,6 @@ interface AMMFixture extends FactoryFixture {
        underlyingToken: string,
        underlyingPool: string,
        termInDays: number,
-       termStartTimestamp: number,
        fee: number,
        tickSpacing: number,
     ): Promise<MockTimeAMM>
@@ -45,7 +44,7 @@ export const AMMFixture: Fixture<AMMFixture> = async function (): Promise<AMMFix
     return {
       factory,
       swapTargetCallee,
-      createAMM: async (underlyingToken, underlyingPool, termInDays, termStartTimestamp, fee, tickSpacing) => {
+      createAMM: async (underlyingToken, underlyingPool, termInDays, fee, tickSpacing) => {
         const mockTimeAMMDeployer = (await MockTimeAMMDeployerFactory.deploy()) as MockTimeAMMDeployer
         const tx = await mockTimeAMMDeployer.deploy(
           factory.address,

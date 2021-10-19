@@ -1,5 +1,12 @@
 
+import bn from 'bignumber.js'
 import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
+import { TestAMMCallee } from '../../typechain/TestAMMCallee'
+import { MockTimeAMM } from '../../typechain/MockTimeAMM'
+import JSBI from 'jsbi'
+import { BigintIsh } from './constants'
+import { sqrt } from './sqrt'
+
 
 
 export enum FeeAmount {
@@ -49,3 +56,52 @@ export function getCreate2Address(
     tickUpper: BigNumberish,
     liquidity: BigNumberish
   ) => Promise<ContractTransaction>
+
+
+  export interface AMMFunctions {
+    mint: MintFunction
+  }
+
+
+  export function createAMMFunctions({
+    swapTarget,
+    amm,
+  }: {
+    swapTarget: TestAMMCallee
+    amm: MockTimeAMM
+  }): AMMFunctions {
+    
+    const mint: MintFunction = async (recipient, tickLower, tickUpper, liquidity) => {
+      return swapTarget.mint(amm.address, recipient, tickLower, tickUpper, liquidity)
+    }
+
+    return {
+      mint
+    }
+
+  }
+
+export const getMinTick = (tickSpacing: number) => Math.ceil(-887272 / tickSpacing) * tickSpacing
+export const getMaxTick = (tickSpacing: number) => Math.floor(887272 / tickSpacing) * tickSpacing
+
+
+export const getMaxLiquidityPerTick = (tickSpacing: number) =>
+  BigNumber.from(2)
+    .pow(128)
+    .sub(1)
+    .div((getMaxTick(tickSpacing) - getMinTick(tickSpacing)) / tickSpacing + 1)
+
+
+/**
+ * Returns the sqrt ratio as a Q64.96 corresponding to a given ratio of amount1 and amount0
+ * @param amount1 The numerator amount i.e., the amount of token1
+ * @param amount0 The denominator amount i.e., the amount of token0
+ * @returns The sqrt ratio
+ */
+
+export function encodeSqrtRatioX96(amount1: BigintIsh, amount0: BigintIsh): JSBI {
+  const numerator = JSBI.leftShift(JSBI.BigInt(amount1), JSBI.BigInt(192))
+  const denominator = JSBI.BigInt(amount0)
+  const ratioX192 = JSBI.divide(numerator, denominator)
+return sqrt(ratioX192)
+}

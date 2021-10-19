@@ -42,7 +42,7 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
         uint24 fee
     ) external override noDelegateCall returns (address amm) {
         require(underlyingPool != address(0)); // todo: why do we need this check?
-        int24 tickSpacing = feeAmountTickSpacing[fee];
+        int24 tickSpacing = feeAmountTickSpacing[fee];  // todo: shouldn't termStartTimestamp be block.tickstamp?
         require(tickSpacing != 0);
         require(getAMMMAp[underlyingPool][termInDays][termStartTimestamp][fee] == address(0));
         amm = deploy(address(this), underlyingToken, underlyingPool, termInDays, fee, tickSpacing);
