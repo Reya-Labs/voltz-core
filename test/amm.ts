@@ -137,10 +137,75 @@ describe("AMM", () => {
             await expect(amm.initialize(sqrtPriceX96)).to.emit(amm, 'Initialize').withArgs(sqrtPriceX96, -6932)
         })
 
+      })
 
+      describe("#mint", () => {
+        
+        it('fails if not initialized', async () => {
+            await expect(mint(wallet.address, -tickSpacing, tickSpacing, 1)).to.be.revertedWith('LOK')
+        })
+
+        describe('after initialization', () => {
+
+            beforeEach("initialize the amm at price of 10:1", async () => {
+                await amm.initialize(encodeSqrtRatioX96(1, 10).toString())
+                await mint(wallet.address, minTick, maxTick, 3161)
+            })
+
+            describe('failure cases', () => {
+                
+                it('fails if tickLower greater than tickUpper', async () => {
+                    await expect(mint(wallet.address, 1, 0, 1)).to.be.reverted
+                })
+
+                it('fails if tickLower less than min tick', async () => {
+                    await expect(mint(wallet.address, -887273, 0, 1)).to.be.reverted
+                })
+
+                it('fails if tickUpper greater than max tick', async () => {
+                    await expect(mint(wallet.address, 0, 887273, 1)).to.be.reverted
+                })
+                
+                it('fails if amount exceeds the max', async () => {
+                    const maxLiquidityGross = await amm.maxLiquidityPerTick()
+                    await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.add(1))).to
+                      .be.reverted
+                    await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross)).to.not.be
+                      .reverted
+                })
+
+
+                it('fails if total amount at tick exceeds the max', async () => {
+                    await mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 1000)
+          
+                    const maxLiquidityGross = await amm.maxLiquidityPerTick()
+                    await expect(
+                      mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
+                    ).to.be.reverted
+                    await expect(
+                      mint(wallet.address, minTick + tickSpacing * 2, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
+                    ).to.be.reverted
+                    await expect(
+                      mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing * 2, maxLiquidityGross.sub(1000).add(1))
+                    ).to.be.reverted
+                    await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000)))
+                      .to.not.be.reverted
+                })
+
+                it('fails if amount is 0', async () => {
+                    await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.reverted
+                    // todo: stopped here
+                    // Error: VM Exception while processing transaction: reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)
+                })
+            })
+
+
+        })
 
 
       })
+
+
 
     
 })

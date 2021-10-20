@@ -8,6 +8,7 @@ import "./core_libraries/Position.sol";
 
 import "./utils/SafeCast.sol";
 import "./utils/LowGasSafeMath.sol";
+import "./utils/SqrtPriceMath.sol";
 
 import "hardhat/console.sol";
 
@@ -39,6 +40,10 @@ contract AMM is IAMM, NoDelegateCall{
     uint128 public immutable override maxLiquidityPerTick;
 
     uint256 public override feeGrowthGlobalX128;
+
+
+    uint256 public override balance0;
+    uint256 public override balance1;
 
 
     constructor() {
@@ -173,14 +178,16 @@ contract AMM is IAMM, NoDelegateCall{
     }
 
     
-
+    
     /// @param params the position details and the change to the position's liquidity to effect
     /// @return position a storage pointer referencing the position with the given owner and tick range
     function _modifyPosition(ModifyPositionParams memory params)
         private
         noDelegateCall
         returns (
-            Position.Info storage position
+            Position.Info storage position,
+            int256 amount0,
+            int256 amount1
         )
     {
         checkTicks(params.tickLower, params.tickUpper);
@@ -195,6 +202,44 @@ contract AMM is IAMM, NoDelegateCall{
             _slot0.tick
         );
 
+        if (params.liquidityDelta != 0) {
+            if (_slot0.tick < params.tickLower) {
+                // current tick is below the passed range; liquidity can only become in range by crossing from left to
+                // right, when we'll need _more_ token0 (it's becoming more valuable) so user must provide it
+                // TODO: dig into these functions
+                amount0 = SqrtPriceMath.getAmount0Delta(
+                    TickMath.getSqrtRatioAtTick(params.tickLower),
+                    TickMath.getSqrtRatioAtTick(params.tickUpper),
+                    params.liquidityDelta
+                );
+            } else if (_slot0.tick < params.tickUpper) {
+                // current tick is inside the passed range
+                uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
+
+                amount0 = SqrtPriceMath.getAmount0Delta(
+                        _slot0.sqrtPriceX96,
+                        TickMath.getSqrtRatioAtTick(params.tickUpper),
+                        params.liquidityDelta
+                    );  
+                
+                amount1 = SqrtPriceMath.getAmount1Delta(
+                    TickMath.getSqrtRatioAtTick(params.tickLower),
+                    _slot0.sqrtPriceX96,
+                    params.liquidityDelta
+                );
+
+                liquidity = LiquidityMath.addDelta(liquidityBefore, params.liquidityDelta);
+            } else {
+                // current tick is above the passed range; liquidity can only become in range by crossing from right to
+                // left, when we'll need _more_ token1 (it's becoming more valuable) so user must provide it
+                amount1 = SqrtPriceMath.getAmount1Delta(
+                    TickMath.getSqrtRatioAtTick(params.tickLower),
+                    TickMath.getSqrtRatioAtTick(params.tickUpper),
+                    params.liquidityDelta
+                );
+            }
+        }
+
     }
 
 
@@ -208,6 +253,7 @@ contract AMM is IAMM, NoDelegateCall{
     ) external override lock {
         require(amount > 0);
         
+        (, int256 amount0Int, int256 amount1Int) =
         _modifyPosition(
             ModifyPositionParams({
                 owner: recipient,
@@ -216,6 +262,16 @@ contract AMM is IAMM, NoDelegateCall{
                 liquidityDelta: int256(uint256(amount)).toInt128()
             })
         );
+
+        uint256 amount0 = uint256(amount0Int);
+        uint256 amount1 = uint256(amount1Int);
+
+        // todo: deposit margin in here or in modifyPosition (at the end)?
+        
+        if (amount0 > 0) balance0 = balance0.add(amount0);
+        if (amount1 > 0) balance1 = balance1.add(amount1);
+
+        emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
 
     }
 

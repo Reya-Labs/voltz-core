@@ -27,6 +27,13 @@ interface IAMMState {
     /// @dev This value has no relationship to the total liquidity across all ticks
     function liquidity() external view returns (uint128);
 
+    /// @notice balance of virtual fixed 1% tokens in the amm
+    function balance0() external view returns (uint256);
+
+    /// @notice balance of virtual variable tokens in the amm
+    function balance1() external view returns (uint256);
+
+    
     /// @notice Look up information about a specific tick in the amm
     /// @param tick The tick to look up
     /// @return liquidityGross the total amount of position liquidity that uses the amm either as tick lower or

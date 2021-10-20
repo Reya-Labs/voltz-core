@@ -162,14 +162,17 @@ library SqrtPriceMath {
         uint256 numerator2 = sqrtRatioBX96 - sqrtRatioAX96;
 
         require(sqrtRatioAX96 > 0);
-
-        return
-            roundUp
+        
+        // todo: test the effect of he unchecked blocks
+        unchecked {
+            return roundUp
                 ? UnsafeMath.divRoundingUp(
                     FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96),
                     sqrtRatioAX96
                 )
                 : FullMath.mulDiv(numerator1, numerator2, sqrtRatioBX96) / sqrtRatioAX96;
+        }
+            
     }
 
     /// @notice Gets the amount1 delta between two prices
@@ -187,10 +190,12 @@ library SqrtPriceMath {
     ) internal pure returns (uint256 amount1) {
         if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
 
-        return
-            roundUp
+        unchecked {
+            return roundUp
                 ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96)
-                : FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);
+                : FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);        
+        }
+    
     }
 
     /// @notice Helper that gets signed token0 delta
