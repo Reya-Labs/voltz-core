@@ -11,3 +11,15 @@ export function div(x: EthersBigNumber, y: EthersBigNumber): EthersBigNumber {
     const result: MathjsBigNumber = toMbn(x).div(toMbn(y));
     return toEbn(result);
   }
+
+
+export function sub(x: EthersBigNumber, y: EthersBigNumber) {
+  const result: MathjsBigNumber = toMbn(x).sub(toMbn(y))
+  return toEbn(result)
+}
+
+
+export function mul(x: EthersBigNumber, y: EthersBigNumber) {
+  const result: MathjsBigNumber = toMbn(x).mul(toMbn(y))
+  return toEbn(result)
+}

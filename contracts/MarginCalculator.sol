@@ -1,87 +1,66 @@
 pragma solidity ^0.8.0;
 
-import "prb-math/contracts/PRBMathUD60x18.sol";
+import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 
 
 contract MarginCalculator {
 
-    using PRBMathUD60x18 for uint256;
+    // using PRBMathUD60x18 for uint256;
     
-    uint256 public apyUpper;
-    uint256 public apyLower;
+    uint256 public apyUpper = 9 * 10**16; // 0.09, 9%
+    uint256 public apyLower = 1 * 10**16; // 0.01, 1%;
 
-    uint256 public apyUpperMultiplier;
-    uint256 public apyLowerMultiplier; 
+    uint256 public apyUpperMultiplier = 2 * 10**18; // 2.0
+    uint256 public apyLowerMultiplier = 5 * 10**17; // 0.5
 
-    uint256 public minDeltaLM;
-    uint256 public minDeltaIM;
+    uint256 public minDeltaLM = 125 * 10**14; // 0.00125
+    uint256 public minDeltaIM = 500 * 10**14; // 0.05
 
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
-    // todo: remove (used for testing purposes only)
-    function doDiv(uint256 x, uint256 y) external pure returns (uint256 result) {
-        result = PRBMathUD60x18.div(x, y);
-    }
 
     // todo: make the function internal
-    function accrualFact(uint256 timePeriodInSeconds) external pure returns (uint256 timePeriodInYears) {
-        timePeriodInYears = PRBMathUD60x18.div(timePeriodInSeconds, SECONDS_IN_YEAR);
+    function accrualFact(uint256 timePeriodInSeconds) public pure returns (uint256 timePeriodInYears) {
+        PRBMath.UD60x18 memory xUD = PRBMath.UD60x18({ value: timePeriodInSeconds });
+        PRBMath.UD60x18 memory yUD = PRBMath.UD60x18({ value: SECONDS_IN_YEAR });
+
+        timePeriodInYears = PRBMathUD60x18Typed.div(xUD, yUD).value;
     }
 
 
+    function getFTMarginRequirement(uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds, bool isLM) external view returns(uint256 margin) {
+        
+
+        // todo: only load vars in the if statements for optimisation
+        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({ value: notional });
+        PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({ value: fixedRate });
+        
+        PRBMath.UD60x18 memory apyUpperUD = PRBMath.UD60x18({ value: apyUpper });
+        
+        PRBMath.UD60x18 memory apyUpperMultiplierUD = PRBMath.UD60x18({ value: apyUpperMultiplier });
+        
+        PRBMath.UD60x18 memory minDeltaLMUD = PRBMath.UD60x18({ value: minDeltaLM });
+        PRBMath.UD60x18 memory minDeltaIMUD = PRBMath.UD60x18({ value: minDeltaIM });
+
+        PRBMath.UD60x18 memory rateDeltaUD;
+
+        if (isLM) {
+            rateDeltaUD = PRBMathUD60x18Typed.sub(apyUpperUD, fixedRateUD);
+            rateDeltaUD = rateDeltaUD.value > minDeltaLMUD.value ? rateDeltaUD : minDeltaLMUD;
+        } else {
+            rateDeltaUD = PRBMathUD60x18Typed.sub(PRBMathUD60x18Typed.mul(apyUpperUD, apyUpperMultiplierUD), fixedRateUD);
+            rateDeltaUD = rateDeltaUD.value > minDeltaIMUD.value ? rateDeltaUD : minDeltaIMUD;
+        }
+
+        PRBMath.UD60x18 memory accrualFactorUD = PRBMath.UD60x18({ value: accrualFact(timePeriodInSeconds) });
+
+        PRBMath.UD60x18 memory marginUD =  PRBMathUD60x18Typed.mul(PRBMathUD60x18Typed.mul(notionalUD, rateDeltaUD), accrualFactorUD);
+
+        margin = marginUD.value;
+    
+    }
 
 
 }
 
 
-
-
-
-
-
-// contract MarginCalculator {
-    
-//     uint256 public apyUpperX128;
-//     uint256 public apyLowerX128;
-
-//     uint256 public apyUpperMultiplier;
-//     uint256 public apyLowerMultiplier; 
-
-//     uint256 public minDeltaLMX128;
-//     uint256 public minDeltaIMX128;
-
-//     uint256 public constant SECONDS_IN_YEAR = 31536000;
-
-//     using SafeMath for uint256; // todo: is this the best approach? Maybe need a separate function in FullMath
-
-//     function accrual_fact(uint256 timePeriod)
-//         internal
-//         pure
-//         returns (uint256)
-//     {
-
-//         uint256 timePeriodInYearsX128 = FullMath.mulDiv(timePeriod, FixedPoint128.Q128, SECONDS_IN_YEAR);
-
-//         return timePeriodInYearsX128;
-//     }
-
-
-//     function getFTMarginRequirement(
-//         uint256 notionalX128,
-//         uint256 fixedRateX128,
-//         uint256 timePeriodInYearsX128,
-//         bool isLM
-//     )  internal returns(uint256 margin) {
-        
-//         uint256 rateDeltaX128
-        
-//         if (isLM) {
-//             rateDeltaX128 = apyUpperX128 - fixedRateX128;
-//             rateDeltaX128 = rateDeltaX128 > minDeltaIMX128 ? rateDeltaX128 : minDeltaIMX128;
-//         } else {
-//             rateDeltaX128 = apyUpperX128.mul(apyUpperMultiplier)
-//         }
-
-//     }
-
-// }
