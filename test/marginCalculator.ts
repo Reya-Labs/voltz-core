@@ -94,10 +94,54 @@ describe("Margin Calculator", () => {
 
                 expect(await calculator.getFTMarginRequirement(notional, fixedRate, timePeriodInSeconds, true)).to.eq(margin)
             })
+            
+        })
 
 
 
+    })
 
+
+    describe("#vt margin computation works correclty", async () => {
+
+        // uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds
+
+        // is liquidation margin
+
+        // uint256 public apyUpper = 9 * 10**16; // 0.09, 9%
+        // uint256 public apyLower = 1 * 10**16; // 0.01, 1%;
+    
+        // uint256 public apyUpperMultiplier = 2 * 10**18; // 2.0
+        // uint256 public apyLowerMultiplier = 5 * 10**17; // 0.5
+    
+        // uint256 public minDeltaLM = 125 * 10**14; // 0.0125
+        // uint256 public minDeltaIM = 500 * 10**14; // 0.05
+
+        // Error: VM Exception while processing transaction: reverted with custom error 'PRBMathUD60x18__SubUnderflow(40000000000000000, 500000000000000000)'
+
+        const testSets = [
+            [toBn("4000"), toBn("0.04"), toBn("50000")],
+        ];
+        
+        
+        testSets.forEach(testSet => {
+            
+            const notional: BigNumber = testSet[0]
+            const fixedRate: BigNumber = testSet[1]
+            const timePeriodInSeconds: BigNumber = testSet[2]
+            
+            it(`takes notional of ${notional}, fixedRate of ${fixedRate} and timePeriodInSeconds of ${timePeriodInSeconds}`, async () => {
+                const apyLower = toBn("0.01")
+                const minDeltaLM = toBn("0.0125")
+                let rateDelta: BigNumber = sub(fixedRate, apyLower)
+                rateDelta = rateDelta > minDeltaLM ? rateDelta : minDeltaLM
+
+                const accrualFactor = div(timePeriodInSeconds, toBn("31536000"))
+
+                const margin = mul(mul(notional, rateDelta), accrualFactor) 
+
+                expect(await calculator.getVTMarginRequirement(notional, fixedRate, timePeriodInSeconds, true)).to.eq(margin)
+            })
             
         })
 

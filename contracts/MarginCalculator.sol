@@ -61,6 +61,38 @@ contract MarginCalculator {
     }
 
 
+    function getVTMarginRequirement(uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds, bool isLM) external view returns(uint256 margin) {
+        
+        // todo: only load vars in the if statements for optimisation
+        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({ value: notional });
+        PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({ value: fixedRate });
+        
+        PRBMath.UD60x18 memory apyLowerUD = PRBMath.UD60x18({ value: apyLower });
+        
+        PRBMath.UD60x18 memory apyLowerMultiplierUD = PRBMath.UD60x18({ value: apyLowerMultiplier });
+        
+        PRBMath.UD60x18 memory minDeltaLMUD = PRBMath.UD60x18({ value: minDeltaLM });
+        PRBMath.UD60x18 memory minDeltaIMUD = PRBMath.UD60x18({ value: minDeltaIM });
+
+        PRBMath.UD60x18 memory rateDeltaUD;
+
+        if (isLM) {
+            rateDeltaUD = PRBMathUD60x18Typed.sub(fixedRateUD, apyLowerUD);
+            rateDeltaUD = rateDeltaUD.value > minDeltaLMUD.value ? rateDeltaUD : minDeltaLMUD;
+        } else {
+            rateDeltaUD = PRBMathUD60x18Typed.sub(fixedRateUD, PRBMathUD60x18Typed.mul(apyLowerUD, apyLowerMultiplierUD));
+            rateDeltaUD = rateDeltaUD.value > minDeltaIMUD.value ? rateDeltaUD : minDeltaIMUD;
+        }
+
+        PRBMath.UD60x18 memory accrualFactorUD = PRBMath.UD60x18({ value: accrualFact(timePeriodInSeconds) });
+
+        PRBMath.UD60x18 memory marginUD =  PRBMathUD60x18Typed.mul(PRBMathUD60x18Typed.mul(notionalUD, rateDeltaUD), accrualFactorUD);
+
+        margin = marginUD.value;
+    
+    }
+
+
 }
 
 
