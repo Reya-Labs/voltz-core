@@ -151,7 +151,46 @@ describe("AMM", () => {
                 await amm.initialize(encodeSqrtRatioX96(1, 10).toString())
                 await mint(wallet.address, minTick, maxTick, 3161)
             })
+            
+            describe("success cases", () => {
+              
+              it('initial balances', async () => {
+                expect(await amm.balance0()).to.eq(9996)
+                expect(await amm.balance1()).to.eq(1000)
+              })
 
+              it('initial tick', async () => {
+                expect((await amm.slot0()).tick).to.eq(-23028)
+              })
+
+              describe('above current price', () => {
+                
+                it('transfers token0 only', async () => {                  
+                  await mint(wallet.address, -22980, 0, 10000)
+
+                  expect(await amm.balance0()).to.eq(9996 + 21549)
+                  expect(await amm.balance1()).to.eq(1000)
+                })
+
+                it('max tick with max leverage', async () => {
+                  await mint(wallet.address, maxTick - tickSpacing, maxTick, BigNumber.from(2).pow(102))
+                  expect(await amm.balance0()).to.eq(9996 + 828011525)
+                  expect(await amm.balance1()).to.eq(1000)
+                })
+
+                it('works for max tick', async () => {
+                  
+                  await mint(wallet.address, -22980, maxTick, 10000)
+                  expect(await amm.balance0()).to.eq(9996 + 31549)
+                  expect(await amm.balance1()).to.eq(1000)
+                
+                })
+
+
+              })
+            })
+            
+            
             describe('failure cases', () => {
                 
                 it('fails if tickLower greater than tickUpper', async () => {
@@ -194,18 +233,13 @@ describe("AMM", () => {
 
                 it('fails if amount is 0', async () => {
                     await expect(mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, 0)).to.be.reverted
-                    // todo: stopped here
-                    // Error: VM Exception while processing transaction: reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)
                 })
             })
+            
 
 
         })
 
 
-      })
-
-
-
-    
+      })    
 })

@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "jsbi": "^4.0.0",
+    "prb-math": "^2.4.0",
     "tiny-invariant": "^1.1.0"
   }
 }

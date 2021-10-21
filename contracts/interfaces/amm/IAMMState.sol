@@ -63,6 +63,7 @@ interface IAMMState {
         view
         returns (
             uint128 liquidity,
-            uint256 feeGrowthInsideLastX128
+            uint256 feeGrowthInsideLastX128,
+            uint256 margin
         );
 }

@@ -126,6 +126,8 @@ contract AMM is IAMM, NoDelegateCall{
         int24 tickUpper,
         int128 liquidityDelta,
         int24 tick
+        // int256 amount0,
+        // int256 amount1
     ) private returns (Position.Info storage position) {
         position = positions.get(owner, tickLower, tickUpper);
 
@@ -163,7 +165,8 @@ contract AMM is IAMM, NoDelegateCall{
 
         (uint256 feeGrowthInsideX128) =
             ticks.getFeeGrowthInside(tickLower, tickUpper, tick, _feeGrowthGlobalX128);
-
+        
+        // uint256 margin = 
         position.update(liquidityDelta, feeGrowthInsideX128);
 
         // clear any tick data that is no longer needed
@@ -194,6 +197,8 @@ contract AMM is IAMM, NoDelegateCall{
 
         Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
 
+        // todo: TypeError: This variable is of storage pointer type and can be returned without prior assignment, which would lead to undefined behaviour.
+        // when move the assignment to the bottom of the function
         position = _updatePosition(
             params.owner,
             params.tickLower,
