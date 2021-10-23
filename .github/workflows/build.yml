@@ -21,8 +21,11 @@ jobs:
       - name: Install NPM dependencies
         run: npm install
 
+      - name: Lint code
+        run: npm run format-check
+
       - name: Compile contracts
-        run: npx hardhat compile
+        run: npm run compile
 
       - name: Run tests
-        run: npx hardhat test
+        run: npm run test
