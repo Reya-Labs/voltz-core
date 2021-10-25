@@ -4,7 +4,12 @@ import { ethers, waffle } from "hardhat";
 import { MarginCalculator } from "../typechain/MarginCalculator";
 import { toBn } from "evm-bn";
 import { div, sub, mul } from "./shared/functions";
-import { max } from "mathjs";
+import {
+  encodeSqrtRatioX96,
+} from "./shared/utilities";
+
+
+
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -49,6 +54,23 @@ describe("Margin Calculator", () => {
       });
     });
   });
+
+  // describe("#lp margin computation works correclty", async () => {
+
+
+  //   it("correctly computes maxiumum notional and fixed rate within a tick range", async () => {
+    
+  //     // uint160 sqrtRatioLower, uint160 sqrtRatioUpper, uint128 liquidity
+  //     const sqrtRatioLower = encodeSqrtRatioX96(1, 1)
+  //     const sqrtRatioUpper = encodeSqrtRatioX96(2, 1)
+  //     const liquidity = 1000;
+
+  //     // todo: finish sqrt price math tests      
+    
+  //   })
+
+
+  // });
 
   describe("#ft margin computation works correclty", async () => {
     // uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds
