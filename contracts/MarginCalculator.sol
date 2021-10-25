@@ -1,6 +1,8 @@
 pragma solidity ^0.8.0;
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "./utils/TickMath.sol"; 
+import "./utils/SqrtPriceMath.sol";
 
 
 contract MarginCalculator {
@@ -28,7 +30,74 @@ contract MarginCalculator {
     }
 
 
-    function getFTMarginRequirement(uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds, bool isLM) external view returns(uint256 margin) {
+    function tickRangeNotionalFixedRate(uint160 sqrtRatioLower, uint160 sqrtRatioUpper, uint128 liquidity) public pure returns (PRBMath.UD60x18 memory notionalUD, PRBMath.UD60x18 memory fixedRateUD) {
+
+        uint256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtRatioLower, sqrtRatioUpper, liquidity, true); // roundup is set to true
+        uint256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtRatioLower, sqrtRatioUpper, liquidity, true); // roundup is set to true
+
+        PRBMath.UD60x18 memory amount0UD = PRBMath.UD60x18({ value: amount0 });
+        PRBMath.UD60x18 memory amount1UD = PRBMath.UD60x18({ value: amount1 });
+
+        notionalUD = amount1UD;
+
+        PRBMath.UD60x18 memory onePercent = PRBMath.UD60x18({ value: 10**16 });
+
+        fixedRateUD =  PRBMathUD60x18Typed.mul(PRBMathUD60x18Typed.div(amount0UD, amount1UD), onePercent);
+
+    }
+
+
+    function getLPMarginReqWithinTickRangeDeposit(PRBMath.UD60x18 memory notionalVTUD, PRBMath.UD60x18 memory fixedRateVTUD, 
+    PRBMath.UD60x18 memory notionalFTUD, PRBMath.UD60x18 memory fixedRateFTUD, uint256 timePeriodInSeconds, bool isLM) public view returns (PRBMath.UD60x18 memory marginUD) {
+        
+        uint256 marginReqFTLM = getFTMarginRequirement(notionalFTUD.value, fixedRateFTUD.value, timePeriodInSeconds, isLM);
+        uint256 marginReqVTLM = getVTMarginRequirement(notionalVTUD.value, fixedRateVTUD.value, timePeriodInSeconds, isLM);
+
+        if (marginReqFTLM > marginReqVTLM) {
+            marginUD = PRBMath.UD60x18({ value: marginReqFTLM });
+        } else {
+            marginUD = PRBMath.UD60x18({ value: marginReqVTLM });
+        }
+
+    }
+
+
+    
+    function getLPMarginRequirement(uint160 sqrtRatioLower, uint160 sqrtRatioUpper, uint128 liquidity, 
+    uint128 grossLiquidity, uint160 sqrtRatioCurr, uint256 timePeriodInSeconds, bool isLM) external view returns(uint256 margin) {
+
+        PRBMath.UD60x18 memory notionalUD;
+        PRBMath.UD60x18 memory fixedRateUD;
+        PRBMath.UD60x18 memory grossMarginUD;
+        
+        if (sqrtRatioCurr < sqrtRatioLower) {
+            // LP is a variable taker            
+            (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(sqrtRatioLower, sqrtRatioUpper, grossLiquidity);
+            grossMarginUD = PRBMath.UD60x18({ value: getVTMarginRequirement(notionalUD.value, fixedRateUD.value, timePeriodInSeconds, isLM) });
+        } else if (sqrtRatioCurr < sqrtRatioUpper) {
+            (PRBMath.UD60x18 memory notionalVTUD, PRBMath.UD60x18 memory fixedRateVTUD) = tickRangeNotionalFixedRate(sqrtRatioCurr, sqrtRatioUpper, grossLiquidity);
+            (PRBMath.UD60x18 memory notionalFTUD, PRBMath.UD60x18 memory fixedRateFTUD) = tickRangeNotionalFixedRate(sqrtRatioLower, sqrtRatioCurr, grossLiquidity);
+            grossMarginUD = getLPMarginReqWithinTickRangeDeposit(
+                notionalVTUD, 
+                fixedRateVTUD, 
+                notionalFTUD, 
+                fixedRateFTUD, 
+                timePeriodInSeconds, 
+                isLM
+                );
+        } else {
+            (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(sqrtRatioLower, sqrtRatioUpper, grossLiquidity);
+            grossMarginUD = PRBMath.UD60x18({ value: getFTMarginRequirement(notionalUD.value, fixedRateUD.value, timePeriodInSeconds, isLM) });
+        }
+
+        PRBMath.UD60x18 memory marginUD;
+        PRBMath.UD60x18 memory liquidityUD = PRBMath.UD60x18({ value: uint256(liquidity) }); // todo: make sure this is done correctly
+        marginUD = PRBMathUD60x18Typed.div(grossMarginUD, liquidityUD);
+        margin = marginUD.value;
+    }
+    
+    
+    function getFTMarginRequirement(uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds, bool isLM) public view returns(uint256 margin) {
         
 
         // todo: only load vars in the if statements for optimisation
@@ -61,7 +130,7 @@ contract MarginCalculator {
     }
 
 
-    function getVTMarginRequirement(uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds, bool isLM) external view returns(uint256 margin) {
+    function getVTMarginRequirement(uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds, bool isLM) public view returns(uint256 margin) {
         
         // todo: only load vars in the if statements for optimisation
         PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({ value: notional });

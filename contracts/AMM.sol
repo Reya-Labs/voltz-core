@@ -272,6 +272,9 @@ contract AMM is IAMM, NoDelegateCall{
         uint256 amount1 = uint256(amount1Int);
 
         // todo: deposit margin in here or in modifyPosition (at the end)?
+
+        // uint256 margin = calculator.getLPMargin...
+
         
         if (amount0 > 0) balance0 = balance0.add(amount0);
         if (amount1 > 0) balance1 = balance1.add(amount1);
