@@ -36,5 +36,13 @@
     "jsbi": "^4.0.0",
     "prb-math": "^2.4.0",
     "tiny-invariant": "^1.1.0"
+  },
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "format-check": "npx prettier '**/*.{json,js,ts,md}' --check",
+    "format-fix": "npx prettier '**/*.{json,js,ts,md}' --write",
+    "lint-check": "npx solhint 'contracts/**/*.sol'",
+    "lint-fix": "npx solhint 'contracts/**/*.sol' --fix"
   }
 }

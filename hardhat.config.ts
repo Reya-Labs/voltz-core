@@ -3,7 +3,7 @@ import * as dotenv from "dotenv";
 import { HardhatUserConfig, task } from "hardhat/config";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
-import '@nomiclabs/hardhat-ethers';
+import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
@@ -20,25 +20,23 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
-
 const config: HardhatUserConfig = {
   solidity: "0.8.4",
   networks: {
     hardhat: {
       forking: {
         url: "https://eth-mainnet.alchemyapi.io/v2/pNmKK8pTXHVggw2X4XPAOOuL9SllmxdZ",
-        blockNumber: 13270796
-      }
-    }
+        blockNumber: 13270796,
+      },
+    },
   },
 
   paths: {
     sources: "./contracts",
     tests: "./test",
     cache: "./cache",
-    artifacts: "./artifacts"
+    artifacts: "./artifacts",
   },
-  
 };
 
 export default config;
