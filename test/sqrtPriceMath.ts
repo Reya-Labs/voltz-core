@@ -3,14 +3,10 @@ import { ethers } from 'hardhat';
 import { expect } from "chai";
 import { SqrtPriceMathTest } from '../typechain/SqrtPriceMathTest'
 import {
-    encodeSqrtRatioX96,
+    encodeSqrtRatioX96, expandTo18Decimals,
   } from "./shared/utilities";
 
 
-
-export function expandTo18Decimals(n: number): BigNumber {
-    return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
-}
 
 
 
@@ -88,7 +84,7 @@ describe('SqrtPriceMath', () => {
           expect(amount1).to.eq(0)
         })
         it('returns 0 if prices are equal', async () => {
-          const amount1 = await sqrtPriceMath.getAmount0Delta(encodeSqrtRatioX96(1, 1).toString(), encodeSqrtRatioX96(1, 1).toString(), 0, true)
+          const amount1 = await sqrtPriceMath.getAmount1Delta(encodeSqrtRatioX96(1, 1).toString(), encodeSqrtRatioX96(1, 1).toString(), 0, true)
     
           expect(amount1).to.eq(0)
         })
