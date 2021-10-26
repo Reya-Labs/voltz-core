@@ -28,7 +28,11 @@ library Tick {
     /// @param tickSpacing The amount of required tick separation, realized in multiples of `tickSpacing`
     ///     e.g., a tickSpacing of 3 requires ticks to be initialized every 3rd tick i.e., ..., -6, -3, 0, 3, 6, ...
     /// @return The max liquidity per tick
-    function tickSpacingToMaxLiquidityPerTick(int24 tickSpacing) internal pure returns (uint128) {
+    function tickSpacingToMaxLiquidityPerTick(int24 tickSpacing)
+        internal
+        pure
+        returns (uint128)
+    {
         int24 minTick = (TickMath.MIN_TICK / tickSpacing) * tickSpacing;
         int24 maxTick = (TickMath.MAX_TICK / tickSpacing) * tickSpacing;
         uint24 numTicks = uint24((maxTick - minTick) / tickSpacing) + 1;
@@ -57,7 +61,9 @@ library Tick {
         if (tickCurrent >= tickLower) {
             feeGrowthBelowX128 = lower.feeGrowthOutsideX128;
         } else {
-            feeGrowthBelowX128 = feeGrowthGlobalX128 - lower.feeGrowthOutsideX128;
+            feeGrowthBelowX128 =
+                feeGrowthGlobalX128 -
+                lower.feeGrowthOutsideX128;
         }
 
         // calculate fee growth above
@@ -65,10 +71,15 @@ library Tick {
         if (tickCurrent < tickUpper) {
             feeGrowthAboveX128 = upper.feeGrowthOutsideX128;
         } else {
-            feeGrowthAboveX128 = feeGrowthGlobalX128 - upper.feeGrowthOutsideX128;
+            feeGrowthAboveX128 =
+                feeGrowthGlobalX128 -
+                upper.feeGrowthOutsideX128;
         }
 
-        feeGrowthInsideX128 = feeGrowthGlobalX128 - feeGrowthBelowX128 - feeGrowthAboveX128;
+        feeGrowthInsideX128 =
+            feeGrowthGlobalX128 -
+            feeGrowthBelowX128 -
+            feeGrowthAboveX128;
     }
 
     /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
@@ -92,7 +103,10 @@ library Tick {
         Tick.Info storage info = self[tick];
 
         uint128 liquidityGrossBefore = info.liquidityGross;
-        uint128 liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta);
+        uint128 liquidityGrossAfter = LiquidityMath.addDelta(
+            liquidityGrossBefore,
+            liquidityDelta
+        );
 
         require(liquidityGrossAfter <= maxLiquidity, "LO");
 
@@ -117,7 +131,9 @@ library Tick {
     /// @notice Clears tick data
     /// @param self The mapping containing all initialized tick information for initialized ticks
     /// @param tick The tick that will be cleared
-    function clear(mapping(int24 => Tick.Info) storage self, int24 tick) internal {
+    function clear(mapping(int24 => Tick.Info) storage self, int24 tick)
+        internal
+    {
         delete self[tick];
     }
 
@@ -132,7 +148,9 @@ library Tick {
         uint256 feeGrowthGlobalX128
     ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
-        info.feeGrowthOutsideX128 = feeGrowthGlobalX128 - info.feeGrowthOutsideX128;
+        info.feeGrowthOutsideX128 =
+            feeGrowthGlobalX128 -
+            info.feeGrowthOutsideX128;
 
         // todo: add notional logic
 

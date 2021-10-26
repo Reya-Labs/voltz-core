@@ -6,7 +6,6 @@ import "./AMMDeployer.sol";
 import "./AMM.sol";
 import "./utils/NoDelegateCall.sol";
 
-
 /// @title Canonical Voltz factory
 /// @notice Deploys Voltz AMMs and manages ownership and control over pool protocol fees
 contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
@@ -15,10 +14,10 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
 
     /// @inheritdoc IAMMFactory
     mapping(uint24 => int24) public override feeAmountTickSpacing;
-    
 
+    mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint24 => address))))
+        public getAMMMAp;
 
-    mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint24 => address)))) public getAMMMAp;
     // [underlyingPool][termInDays][termStartTimestamp][fee]
 
     constructor() {
@@ -42,12 +41,29 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
         uint24 fee
     ) external override noDelegateCall returns (address amm) {
         require(underlyingPool != address(0)); // todo: why do we need this check?
-        int24 tickSpacing = feeAmountTickSpacing[fee];  // todo: shouldn't termStartTimestamp be block.tickstamp?
+        int24 tickSpacing = feeAmountTickSpacing[fee]; // todo: shouldn't termStartTimestamp be block.tickstamp?
         require(tickSpacing != 0);
-        require(getAMMMAp[underlyingPool][termInDays][termStartTimestamp][fee] == address(0));
-        amm = deploy(address(this), underlyingToken, underlyingPool, termInDays, fee, tickSpacing);
+        require(
+            getAMMMAp[underlyingPool][termInDays][termStartTimestamp][fee] ==
+                address(0)
+        );
+        amm = deploy(
+            address(this),
+            underlyingToken,
+            underlyingPool,
+            termInDays,
+            fee,
+            tickSpacing
+        );
         getAMMMAp[underlyingPool][termInDays][termStartTimestamp][fee] = amm;
-        emit AMMCreated(underlyingPool, termInDays, termStartTimestamp, fee, tickSpacing, amm);
+        emit AMMCreated(
+            underlyingPool,
+            termInDays,
+            termStartTimestamp,
+            fee,
+            tickSpacing,
+            amm
+        );
         return amm;
     }
 

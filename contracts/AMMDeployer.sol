@@ -4,7 +4,6 @@ import "./interfaces/IAMMDeployer.sol";
 import "./AMM.sol";
 
 contract AMMDeployer is IAMMDeployer {
-    
     struct Parameters {
         address factory;
         address underlyingToken;
@@ -35,8 +34,27 @@ contract AMMDeployer is IAMMDeployer {
         int24 tickSpacing
     ) internal returns (address amm) {
         uint256 _termStartTimestamp = block.timestamp;
-        parameters = Parameters({factory: factory, underlyingToken: underlyingToken, underlyingPool: underlyingPool, termInDays: termInDays, termStartTimestamp: _termStartTimestamp, fee: fee, tickSpacing: tickSpacing});
-        amm = address(new AMM{salt: keccak256(abi.encode(underlyingPool, termInDays, _termStartTimestamp, fee))}());
+        parameters = Parameters({
+            factory: factory,
+            underlyingToken: underlyingToken,
+            underlyingPool: underlyingPool,
+            termInDays: termInDays,
+            termStartTimestamp: _termStartTimestamp,
+            fee: fee,
+            tickSpacing: tickSpacing
+        });
+        amm = address(
+            new AMM{
+                salt: keccak256(
+                    abi.encode(
+                        underlyingPool,
+                        termInDays,
+                        _termStartTimestamp,
+                        fee
+                    )
+                )
+            }()
+        );
         delete parameters;
     }
 }

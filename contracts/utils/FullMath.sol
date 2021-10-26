@@ -23,7 +23,7 @@ library FullMath {
         // variables such that product = prod1 * 2**256 + prod0
         uint256 prod0; // Least significant 256 bits of the product
         uint256 prod1; // Most significant 256 bits of the product
-        
+
         unchecked {
             assembly {
                 let mm := mulmod(a, b, not(0))
@@ -64,7 +64,7 @@ library FullMath {
             // Compute largest power of two divisor of denominator.
             // Always >= 1.
             // uint256 twos = -denominator & denominator;
-            // https://ethereum.stackexchange.com/questions/96642/unary-operator-cannot-be-applied-to-type-uint256 
+            // https://ethereum.stackexchange.com/questions/96642/unary-operator-cannot-be-applied-to-type-uint256
             uint256 twos = (type(uint256).max - denominator + 1) & denominator;
             // Divide denominator by power of two
             assembly {
@@ -106,9 +106,8 @@ library FullMath {
             // We don't need to compute the high bits of the result and prod1
             // is no longer required.
             result = prod0 * inv;
-            return result;    
+            return result;
         }
-        
     }
 
     /// @notice Calculates ceil(a×b÷denominator) with full precision. Throws if result overflows a uint256 or denominator == 0

@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 /// @title Pool state that never changes
 /// @notice These parameters are fixed for a amm forever, i.e., the methods will always return the same values
 interface IAMMImmutables {
-    
     /// @notice The contract that deployed the amm, which must adhere to the AMMFactory interface
     /// @return The contract address
     function factory() external view returns (address);
@@ -40,5 +39,4 @@ interface IAMMImmutables {
     /// also prevents out-of-range liquidity from being used to prevent adding in-range liquidity to an amm
     /// @return The max amount of liquidity per tick
     function maxLiquidityPerTick() external view returns (uint128);
-
 }

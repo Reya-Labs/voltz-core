@@ -6,16 +6,9 @@ import "./amm/IAMMActions.sol";
 // import "./amm/IAMMOwnerActions.sol";
 import "./amm/IAMMEvents.sol";
 
-
-
 /// @title The interface for a AMM
 /// @notice A Voltz amm
 /// @dev The pool interface is broken up into many smaller pieces
-interface IAMM is
-    IAMMImmutables,
-    IAMMState,
-    IAmmActions,
-    IAMMEvents
-{
+interface IAMM is IAMMImmutables, IAMMState, IAmmActions, IAMMEvents {
 
 }

@@ -1,14 +1,12 @@
 pragma solidity ^0.8.0;
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
-import "./utils/TickMath.sol"; 
+import "./utils/TickMath.sol";
 import "./utils/SqrtPriceMath.sol";
 
-
 contract MarginCalculator {
-
     // using PRBMathUD60x18 for uint256;
-    
+
     uint256 public apyUpper = 9 * 10**16; // 0.09, 9%
     uint256 public apyLower = 1 * 10**16; // 0.01, 1%;
 
@@ -20,148 +18,268 @@ contract MarginCalculator {
 
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
-
     // todo: make the function internal
-    function accrualFact(uint256 timePeriodInSeconds) public pure returns (uint256 timePeriodInYears) {
-        PRBMath.UD60x18 memory xUD = PRBMath.UD60x18({ value: timePeriodInSeconds });
-        PRBMath.UD60x18 memory yUD = PRBMath.UD60x18({ value: SECONDS_IN_YEAR });
+    function accrualFact(uint256 timePeriodInSeconds)
+        public
+        pure
+        returns (uint256 timePeriodInYears)
+    {
+        PRBMath.UD60x18 memory xUD = PRBMath.UD60x18({
+            value: timePeriodInSeconds
+        });
+        PRBMath.UD60x18 memory yUD = PRBMath.UD60x18({value: SECONDS_IN_YEAR});
 
         timePeriodInYears = PRBMathUD60x18Typed.div(xUD, yUD).value;
     }
 
+    function tickRangeNotionalFixedRate(
+        uint160 sqrtRatioLower,
+        uint160 sqrtRatioUpper,
+        uint128 liquidity
+    )
+        public
+        pure
+        returns (
+            PRBMath.UD60x18 memory notionalUD,
+            PRBMath.UD60x18 memory fixedRateUD
+        )
+    {
+        uint256 amount0 = SqrtPriceMath.getAmount0Delta(
+            sqrtRatioLower,
+            sqrtRatioUpper,
+            liquidity,
+            true
+        ); // roundup is set to true
+        uint256 amount1 = SqrtPriceMath.getAmount1Delta(
+            sqrtRatioLower,
+            sqrtRatioUpper,
+            liquidity,
+            true
+        ); // roundup is set to true
 
-    function tickRangeNotionalFixedRate(uint160 sqrtRatioLower, uint160 sqrtRatioUpper, uint128 liquidity) public pure returns (PRBMath.UD60x18 memory notionalUD, PRBMath.UD60x18 memory fixedRateUD) {
-
-        uint256 amount0 = SqrtPriceMath.getAmount0Delta(sqrtRatioLower, sqrtRatioUpper, liquidity, true); // roundup is set to true
-        uint256 amount1 = SqrtPriceMath.getAmount1Delta(sqrtRatioLower, sqrtRatioUpper, liquidity, true); // roundup is set to true
-
-        PRBMath.UD60x18 memory amount0UD = PRBMath.UD60x18({ value: amount0 });
-        PRBMath.UD60x18 memory amount1UD = PRBMath.UD60x18({ value: amount1 });
+        PRBMath.UD60x18 memory amount0UD = PRBMath.UD60x18({value: amount0});
+        PRBMath.UD60x18 memory amount1UD = PRBMath.UD60x18({value: amount1});
 
         notionalUD = amount1UD;
 
-        PRBMath.UD60x18 memory onePercent = PRBMath.UD60x18({ value: 10**16 });
+        PRBMath.UD60x18 memory onePercent = PRBMath.UD60x18({value: 10**16});
 
-        fixedRateUD =  PRBMathUD60x18Typed.mul(PRBMathUD60x18Typed.div(amount0UD, amount1UD), onePercent);
-
+        fixedRateUD = PRBMathUD60x18Typed.mul(
+            PRBMathUD60x18Typed.div(amount0UD, amount1UD),
+            onePercent
+        );
     }
 
-
-    function getLPMarginReqWithinTickRangeDeposit(PRBMath.UD60x18 memory notionalVTUD, PRBMath.UD60x18 memory fixedRateVTUD, 
-    PRBMath.UD60x18 memory notionalFTUD, PRBMath.UD60x18 memory fixedRateFTUD, uint256 timePeriodInSeconds, bool isLM) public view returns (PRBMath.UD60x18 memory marginUD) {
-        
-        uint256 marginReqFTLM = getFTMarginRequirement(notionalFTUD.value, fixedRateFTUD.value, timePeriodInSeconds, isLM);
-        uint256 marginReqVTLM = getVTMarginRequirement(notionalVTUD.value, fixedRateVTUD.value, timePeriodInSeconds, isLM);
+    function getLPMarginReqWithinTickRangeDeposit(
+        PRBMath.UD60x18 memory notionalVTUD,
+        PRBMath.UD60x18 memory fixedRateVTUD,
+        PRBMath.UD60x18 memory notionalFTUD,
+        PRBMath.UD60x18 memory fixedRateFTUD,
+        uint256 timePeriodInSeconds,
+        bool isLM
+    ) public view returns (PRBMath.UD60x18 memory marginUD) {
+        uint256 marginReqFTLM = getFTMarginRequirement(
+            notionalFTUD.value,
+            fixedRateFTUD.value,
+            timePeriodInSeconds,
+            isLM
+        );
+        uint256 marginReqVTLM = getVTMarginRequirement(
+            notionalVTUD.value,
+            fixedRateVTUD.value,
+            timePeriodInSeconds,
+            isLM
+        );
 
         if (marginReqFTLM > marginReqVTLM) {
-            marginUD = PRBMath.UD60x18({ value: marginReqFTLM });
+            marginUD = PRBMath.UD60x18({value: marginReqFTLM});
         } else {
-            marginUD = PRBMath.UD60x18({ value: marginReqVTLM });
+            marginUD = PRBMath.UD60x18({value: marginReqVTLM});
         }
-
     }
 
-
-    
-    function getLPMarginRequirement(uint160 sqrtRatioLower, uint160 sqrtRatioUpper, uint128 liquidity, 
-    uint128 grossLiquidity, uint160 sqrtRatioCurr, uint256 timePeriodInSeconds, bool isLM) external view returns(uint256 margin) {
-
+    function getLPMarginRequirement(
+        uint160 sqrtRatioLower,
+        uint160 sqrtRatioUpper,
+        uint128 liquidity,
+        uint128 grossLiquidity,
+        uint160 sqrtRatioCurr,
+        uint256 timePeriodInSeconds,
+        bool isLM
+    ) external view returns (uint256 margin) {
         PRBMath.UD60x18 memory notionalUD;
         PRBMath.UD60x18 memory fixedRateUD;
         PRBMath.UD60x18 memory grossMarginUD;
-        
+
         if (sqrtRatioCurr < sqrtRatioLower) {
-            // LP is a variable taker            
-            (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(sqrtRatioLower, sqrtRatioUpper, grossLiquidity);
-            grossMarginUD = PRBMath.UD60x18({ value: getVTMarginRequirement(notionalUD.value, fixedRateUD.value, timePeriodInSeconds, isLM) });
+            // LP is a variable taker
+            (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(
+                sqrtRatioLower,
+                sqrtRatioUpper,
+                grossLiquidity
+            );
+            grossMarginUD = PRBMath.UD60x18({
+                value: getVTMarginRequirement(
+                    notionalUD.value,
+                    fixedRateUD.value,
+                    timePeriodInSeconds,
+                    isLM
+                )
+            });
         } else if (sqrtRatioCurr < sqrtRatioUpper) {
-            (PRBMath.UD60x18 memory notionalVTUD, PRBMath.UD60x18 memory fixedRateVTUD) = tickRangeNotionalFixedRate(sqrtRatioCurr, sqrtRatioUpper, grossLiquidity);
-            (PRBMath.UD60x18 memory notionalFTUD, PRBMath.UD60x18 memory fixedRateFTUD) = tickRangeNotionalFixedRate(sqrtRatioLower, sqrtRatioCurr, grossLiquidity);
-            grossMarginUD = getLPMarginReqWithinTickRangeDeposit(
-                notionalVTUD, 
-                fixedRateVTUD, 
-                notionalFTUD, 
-                fixedRateFTUD, 
-                timePeriodInSeconds, 
-                isLM
+            (
+                PRBMath.UD60x18 memory notionalVTUD,
+                PRBMath.UD60x18 memory fixedRateVTUD
+            ) = tickRangeNotionalFixedRate(
+                    sqrtRatioCurr,
+                    sqrtRatioUpper,
+                    grossLiquidity
                 );
+            (
+                PRBMath.UD60x18 memory notionalFTUD,
+                PRBMath.UD60x18 memory fixedRateFTUD
+            ) = tickRangeNotionalFixedRate(
+                    sqrtRatioLower,
+                    sqrtRatioCurr,
+                    grossLiquidity
+                );
+            grossMarginUD = getLPMarginReqWithinTickRangeDeposit(
+                notionalVTUD,
+                fixedRateVTUD,
+                notionalFTUD,
+                fixedRateFTUD,
+                timePeriodInSeconds,
+                isLM
+            );
         } else {
-            (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(sqrtRatioLower, sqrtRatioUpper, grossLiquidity);
-            grossMarginUD = PRBMath.UD60x18({ value: getFTMarginRequirement(notionalUD.value, fixedRateUD.value, timePeriodInSeconds, isLM) });
+            (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(
+                sqrtRatioLower,
+                sqrtRatioUpper,
+                grossLiquidity
+            );
+            grossMarginUD = PRBMath.UD60x18({
+                value: getFTMarginRequirement(
+                    notionalUD.value,
+                    fixedRateUD.value,
+                    timePeriodInSeconds,
+                    isLM
+                )
+            });
         }
 
         PRBMath.UD60x18 memory marginUD;
-        PRBMath.UD60x18 memory liquidityUD = PRBMath.UD60x18({ value: uint256(liquidity) }); // todo: make sure this is done correctly
+        PRBMath.UD60x18 memory liquidityUD = PRBMath.UD60x18({
+            value: uint256(liquidity)
+        }); // todo: make sure this is done correctly
         marginUD = PRBMathUD60x18Typed.div(grossMarginUD, liquidityUD);
         margin = marginUD.value;
     }
-    
-    
-    function getFTMarginRequirement(uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds, bool isLM) public view returns(uint256 margin) {
-        
 
+    function getFTMarginRequirement(
+        uint256 notional,
+        uint256 fixedRate,
+        uint256 timePeriodInSeconds,
+        bool isLM
+    ) public view returns (uint256 margin) {
         // todo: only load vars in the if statements for optimisation
-        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({ value: notional });
-        PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({ value: fixedRate });
-        
-        PRBMath.UD60x18 memory apyUpperUD = PRBMath.UD60x18({ value: apyUpper });
-        
-        PRBMath.UD60x18 memory apyUpperMultiplierUD = PRBMath.UD60x18({ value: apyUpperMultiplier });
-        
-        PRBMath.UD60x18 memory minDeltaLMUD = PRBMath.UD60x18({ value: minDeltaLM });
-        PRBMath.UD60x18 memory minDeltaIMUD = PRBMath.UD60x18({ value: minDeltaIM });
+        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: notional});
+        PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({
+            value: fixedRate
+        });
+
+        PRBMath.UD60x18 memory apyUpperUD = PRBMath.UD60x18({value: apyUpper});
+
+        PRBMath.UD60x18 memory apyUpperMultiplierUD = PRBMath.UD60x18({
+            value: apyUpperMultiplier
+        });
+
+        PRBMath.UD60x18 memory minDeltaLMUD = PRBMath.UD60x18({
+            value: minDeltaLM
+        });
+        PRBMath.UD60x18 memory minDeltaIMUD = PRBMath.UD60x18({
+            value: minDeltaIM
+        });
 
         PRBMath.UD60x18 memory rateDeltaUD;
 
         if (isLM) {
             rateDeltaUD = PRBMathUD60x18Typed.sub(apyUpperUD, fixedRateUD);
-            rateDeltaUD = rateDeltaUD.value > minDeltaLMUD.value ? rateDeltaUD : minDeltaLMUD;
+            rateDeltaUD = rateDeltaUD.value > minDeltaLMUD.value
+                ? rateDeltaUD
+                : minDeltaLMUD;
         } else {
-            rateDeltaUD = PRBMathUD60x18Typed.sub(PRBMathUD60x18Typed.mul(apyUpperUD, apyUpperMultiplierUD), fixedRateUD);
-            rateDeltaUD = rateDeltaUD.value > minDeltaIMUD.value ? rateDeltaUD : minDeltaIMUD;
+            rateDeltaUD = PRBMathUD60x18Typed.sub(
+                PRBMathUD60x18Typed.mul(apyUpperUD, apyUpperMultiplierUD),
+                fixedRateUD
+            );
+            rateDeltaUD = rateDeltaUD.value > minDeltaIMUD.value
+                ? rateDeltaUD
+                : minDeltaIMUD;
         }
 
-        PRBMath.UD60x18 memory accrualFactorUD = PRBMath.UD60x18({ value: accrualFact(timePeriodInSeconds) });
+        PRBMath.UD60x18 memory accrualFactorUD = PRBMath.UD60x18({
+            value: accrualFact(timePeriodInSeconds)
+        });
 
-        PRBMath.UD60x18 memory marginUD =  PRBMathUD60x18Typed.mul(PRBMathUD60x18Typed.mul(notionalUD, rateDeltaUD), accrualFactorUD);
+        PRBMath.UD60x18 memory marginUD = PRBMathUD60x18Typed.mul(
+            PRBMathUD60x18Typed.mul(notionalUD, rateDeltaUD),
+            accrualFactorUD
+        );
 
         margin = marginUD.value;
-    
     }
 
-
-    function getVTMarginRequirement(uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds, bool isLM) public view returns(uint256 margin) {
-        
+    function getVTMarginRequirement(
+        uint256 notional,
+        uint256 fixedRate,
+        uint256 timePeriodInSeconds,
+        bool isLM
+    ) public view returns (uint256 margin) {
         // todo: only load vars in the if statements for optimisation
-        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({ value: notional });
-        PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({ value: fixedRate });
-        
-        PRBMath.UD60x18 memory apyLowerUD = PRBMath.UD60x18({ value: apyLower });
-        
-        PRBMath.UD60x18 memory apyLowerMultiplierUD = PRBMath.UD60x18({ value: apyLowerMultiplier });
-        
-        PRBMath.UD60x18 memory minDeltaLMUD = PRBMath.UD60x18({ value: minDeltaLM });
-        PRBMath.UD60x18 memory minDeltaIMUD = PRBMath.UD60x18({ value: minDeltaIM });
+        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: notional});
+        PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({
+            value: fixedRate
+        });
+
+        PRBMath.UD60x18 memory apyLowerUD = PRBMath.UD60x18({value: apyLower});
+
+        PRBMath.UD60x18 memory apyLowerMultiplierUD = PRBMath.UD60x18({
+            value: apyLowerMultiplier
+        });
+
+        PRBMath.UD60x18 memory minDeltaLMUD = PRBMath.UD60x18({
+            value: minDeltaLM
+        });
+        PRBMath.UD60x18 memory minDeltaIMUD = PRBMath.UD60x18({
+            value: minDeltaIM
+        });
 
         PRBMath.UD60x18 memory rateDeltaUD;
 
         if (isLM) {
             rateDeltaUD = PRBMathUD60x18Typed.sub(fixedRateUD, apyLowerUD);
-            rateDeltaUD = rateDeltaUD.value > minDeltaLMUD.value ? rateDeltaUD : minDeltaLMUD;
+            rateDeltaUD = rateDeltaUD.value > minDeltaLMUD.value
+                ? rateDeltaUD
+                : minDeltaLMUD;
         } else {
-            rateDeltaUD = PRBMathUD60x18Typed.sub(fixedRateUD, PRBMathUD60x18Typed.mul(apyLowerUD, apyLowerMultiplierUD));
-            rateDeltaUD = rateDeltaUD.value > minDeltaIMUD.value ? rateDeltaUD : minDeltaIMUD;
+            rateDeltaUD = PRBMathUD60x18Typed.sub(
+                fixedRateUD,
+                PRBMathUD60x18Typed.mul(apyLowerUD, apyLowerMultiplierUD)
+            );
+            rateDeltaUD = rateDeltaUD.value > minDeltaIMUD.value
+                ? rateDeltaUD
+                : minDeltaIMUD;
         }
 
-        PRBMath.UD60x18 memory accrualFactorUD = PRBMath.UD60x18({ value: accrualFact(timePeriodInSeconds) });
+        PRBMath.UD60x18 memory accrualFactorUD = PRBMath.UD60x18({
+            value: accrualFact(timePeriodInSeconds)
+        });
 
-        PRBMath.UD60x18 memory marginUD =  PRBMathUD60x18Typed.mul(PRBMathUD60x18Typed.mul(notionalUD, rateDeltaUD), accrualFactorUD);
+        PRBMath.UD60x18 memory marginUD = PRBMathUD60x18Typed.mul(
+            PRBMathUD60x18Typed.mul(notionalUD, rateDeltaUD),
+            accrualFactorUD
+        );
 
         margin = marginUD.value;
-    
     }
-
-
 }
-
-

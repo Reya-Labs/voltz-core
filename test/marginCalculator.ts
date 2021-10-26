@@ -93,6 +93,15 @@ describe("Margin Calculator", () => {
     })
 
 
+    it("correctly computes LP margin requirement when price insude the current tick range", async () => {
+    
+      // todo:
+    
+    })
+
+
+
+
 
 
 

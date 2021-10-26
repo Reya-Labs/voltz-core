@@ -1,7 +1,5 @@
 pragma solidity ^0.8.0;
 
-
-
 /// @title AMM actions
 /// @notice Contains amm methods that can be called by anyone
 interface IAmmActions {
@@ -27,4 +25,18 @@ interface IAmmActions {
         bytes calldata data
     ) external;
 
+    /// @notice Initiate an Interest Rate Swap Contract
+    /// @param recipient The address to receive the output of the swap
+    /// @param isFT The direction of the swap, true for token0 to token1, false for token1 to token0
+    /// @param amountSpecified The amount of the swap, which implicitly configures the swap as exact input (positive), or exact output (negative)
+    /// @param sqrtPriceLimitX96 The Q64.96 sqrt price limit. If zero for one, the price cannot be less than this
+    /// value after the swap. If one for zero, the price cannot be greater than this value after the swap
+    /// @param data Any data to be passed through to the callback
+    function swap(
+        address recipient,
+        bool isFT, // equivalent to zeroForOne
+        int256 amountSpecified,
+        uint160 sqrtPriceLimitX96,
+        bytes calldata data
+    ) external;
 }

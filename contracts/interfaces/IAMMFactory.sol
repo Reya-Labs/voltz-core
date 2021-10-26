@@ -9,7 +9,6 @@ interface IAMMFactory {
     /// @param newOwner The owner after the owner was changed
     event OwnerChanged(address indexed oldOwner, address indexed newOwner);
 
-    
     /// @notice Emitted when a amm is created
     event AMMCreated(
         address indexed underlyingPool,
@@ -19,7 +18,6 @@ interface IAMMFactory {
         int24 tickSpacing,
         address amm
     );
-
 
     /// @notice Emitted when a new fee amount is enabled for pool creation via the factory
     /// @param fee The enabled fee, denominated in hundredths of a bip

@@ -33,13 +33,12 @@ interface IAMMState {
     /// @notice balance of virtual variable tokens in the amm
     function balance1() external view returns (uint256);
 
-    
     /// @notice Look up information about a specific tick in the amm
     /// @param tick The tick to look up
     /// @return liquidityGross the total amount of position liquidity that uses the amm either as tick lower or
     /// tick upper,
     /// liquidityNet how much liquidity changes when the amm price crosses the tick,
-    /// feeGrowthOutsideX128 the fee growth on the other side of the tick from the current tick in underlying Token 
+    /// feeGrowthOutsideX128 the fee growth on the other side of the tick from the current tick in underlying Token
     /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
     /// compute snapshots.
     function ticks(int24 tick)
