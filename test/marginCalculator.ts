@@ -4,13 +4,9 @@ import { ethers, waffle } from "hardhat";
 import { MarginCalculator } from "../typechain/MarginCalculator";
 import { toBn } from "evm-bn";
 import { div, sub, mul } from "./shared/functions";
-import {
-  encodeSqrtRatioX96, expandTo18Decimals,
-} from "./shared/utilities";
+import { encodeSqrtRatioX96, expandTo18Decimals } from "./shared/utilities";
 
-import { MarginCalculatorTest } from '../typechain/MarginCalculatorTest'
-
-
+import { MarginCalculatorTest } from "../typechain/MarginCalculatorTest";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -34,9 +30,11 @@ describe("Margin Calculator", () => {
 
     loadFixture = createFixtureLoader([wallet, other]);
 
-
-    const calculatorTestFactory = await ethers.getContractFactory('MarginCalculatorTest')
-    calculatorTest = (await calculatorTestFactory.deploy()) as MarginCalculatorTest
+    const calculatorTestFactory = await ethers.getContractFactory(
+      "MarginCalculatorTest"
+    );
+    calculatorTest =
+      (await calculatorTestFactory.deploy()) as MarginCalculatorTest;
   });
 
   beforeEach("deploy calculator", async () => {
@@ -63,50 +61,39 @@ describe("Margin Calculator", () => {
   });
 
   describe("#lp margin computation works correclty", async () => {
-
-
     it("correctly computes maxiumum notional within a tick range", async () => {
-    
       // const amount0 = "0.09090909090909091"
       // const amount1 = "0.1"
 
-      const {0: notional, 1:fixedRate} = await calculatorTest.tickRangeNotionalFixedRate(encodeSqrtRatioX96(1, 1).toString(),
-      encodeSqrtRatioX96(121, 100).toString(), expandTo18Decimals(1))
+      const { 0: notional, 1: fixedRate } =
+        await calculatorTest.tickRangeNotionalFixedRate(
+          encodeSqrtRatioX96(1, 1).toString(),
+          encodeSqrtRatioX96(121, 100).toString(),
+          expandTo18Decimals(1)
+        );
 
-      expect(notional).to.eq(BigNumber.from('100000000000000000'))
-    
-    })
-
+      expect(notional).to.eq(BigNumber.from("100000000000000000"));
+    });
 
     it("correctly computes fixed rate within a tick range", async () => {
-    
-      const amount0 = toBn("0.09090909090909091")
-      const amount1 = toBn("0.1")
+      const amount0 = toBn("0.09090909090909091");
+      const amount1 = toBn("0.1");
 
-      const {0: notional, 1:fixedRate} = await calculatorTest.tickRangeNotionalFixedRate(encodeSqrtRatioX96(1, 1).toString(),
-      encodeSqrtRatioX96(121, 100).toString(), expandTo18Decimals(1))
+      const { 0: notional, 1: fixedRate } =
+        await calculatorTest.tickRangeNotionalFixedRate(
+          encodeSqrtRatioX96(1, 1).toString(),
+          encodeSqrtRatioX96(121, 100).toString(),
+          expandTo18Decimals(1)
+        );
 
-      const expectedFixedRate = mul(div(amount0, amount1), toBn("0.01"))
+      const expectedFixedRate = mul(div(amount0, amount1), toBn("0.01"));
 
-      expect(fixedRate).to.eq(expectedFixedRate)
-    
-    })
-
+      expect(fixedRate).to.eq(expectedFixedRate);
+    });
 
     it("correctly computes LP margin requirement when price insude the current tick range", async () => {
-    
       // todo:
-    
-    })
-
-
-
-
-
-
-
-
-
+    });
   });
 
   describe("#ft margin computation works correclty", async () => {

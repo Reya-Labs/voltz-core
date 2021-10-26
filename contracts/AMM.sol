@@ -5,6 +5,7 @@ import "./interfaces/IAMMDeployer.sol";
 import "./interfaces/IAMM.sol";
 import "./core_libraries/TickBitmap.sol";
 import "./core_libraries/Position.sol";
+import "./core_libraries/Trader.sol";
 
 import "./utils/SafeCast.sol";
 import "./utils/LowGasSafeMath.sol";
@@ -12,6 +13,10 @@ import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
 
 import "hardhat/console.sol";
+import "./MarginCalculator.sol";
+
+import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+
 
 contract AMM is IAMM, NoDelegateCall {
     using LowGasSafeMath for uint256;
@@ -20,8 +25,12 @@ contract AMM is IAMM, NoDelegateCall {
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
     using TickBitmap for mapping(int16 => uint256); // todo: resolve the issue with tick bitmap
+    
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
+
+    using Trader for mapping(bytes32 => Trader.Info);
+    using Trader for Trader.Info;
 
     address public immutable override factory;
 
@@ -43,6 +52,8 @@ contract AMM is IAMM, NoDelegateCall {
 
     uint256 public override balance0;
     uint256 public override balance1;
+
+    MarginCalculator public calculator;
 
     constructor() {
         int24 _tickSpacing;
@@ -77,6 +88,7 @@ contract AMM is IAMM, NoDelegateCall {
     mapping(int24 => Tick.Info) public override ticks;
     mapping(int16 => uint256) public override tickBitmap;
     mapping(bytes32 => Position.Info) public override positions;
+    mapping(bytes32 => Trader.Info) public override traders;
 
     /// @dev Mutually exclusive reentrancy protection into the pool to/from a method. This method also prevents entrance
     /// to a function before the pool is initialized. The reentrancy guard is required throughout the contract because
@@ -334,18 +346,85 @@ contract AMM is IAMM, NoDelegateCall {
         uint256 amountOut;
     }
 
+    
+
+
     /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32. This method is overridden in tests.
     function _blockTimestamp() internal view virtual returns (uint32) {
         return uint32(block.timestamp); // truncation is desired
     }
 
+    struct InitiateIRSParams {
+        // trader's address
+        address traderAddress;
+        // the lower and upper tick of the position
+        int256 notional;
+        uint256 fixedRate;            
+        uint256 margin;
+        bool settled;
+    }
+
+
+    function _initiateIRS(InitiateIRSParams memory params) private noDelegateCall returns(Trader.Info storage trader) {
+        
+        trader = traders.get(params.traderAddress, params.notional, params.fixedRate);
+
+        trader.update(params.notional, params.fixedRate, params.margin, params.settled);
+
+    }
+    
+    // todo: add to interface and override
+    function getNotionalFixedRateAndMargin(uint256 amount0, uint256 amount1, bool isFT) public 
+                noDelegateCall returns(int256 notional, uint256 fixedRate, uint256 margin) {
+
+        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: uint256(amount1)});
+        PRBMath.UD60x18 memory fixedRateUD = PRBMathUD60x18Typed.mul(
+                                                    PRBMathUD60x18Typed.div(PRBMath.UD60x18({value: uint256(amount0)}), PRBMath.UD60x18({value: uint256(amount1)})),
+                                                    PRBMath.UD60x18({value: 10**16})
+                                                );
+                                        
+
+        // todo: include require checks in here (check how other protocols do date checks and tests)
+
+        uint256 termEndTimeStamp = termStartTimestamp + (termInDays * 24 * 60 * 60);
+        
+        // compute margin, initiate the swap
+        if (isFT) {
+
+            uint256 balance0Before = balance0;
+
+            if (amount0 > 0) balance0 = balance0.add(amount0);
+            if (amount1 > 0) balance1 = balance1.sub(amount1);
+
+            require(balance0Before.add(amount0) <= balance0, "IIA");
+        
+            margin = calculator.getFTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false);
+
+            notional = int256(notionalUD.value);
+
+        } else {
+            uint256 balance1Before = balance1;
+
+            if (amount0 > 0) balance0 = balance0.sub(amount0);
+            if (amount1 > 0) balance1 = balance1.add(amount1);
+
+            require(balance1Before.add(amount1) <= balance1, "IIA");
+
+            margin = calculator.getVTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false);
+
+            notional = -int256(notionalUD.value);
+
+            fixedRate = fixedRateUD.value;
+        }
+    }
+    
     function swap(
         address recipient,
         bool isFT, // equivalent to zeroForOne
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96,
         bytes calldata data
-    ) external override noDelegateCall {
+    ) external override noDelegateCall{
         require(amountSpecified != 0, "AS");
 
         Slot0 memory slot0Start = slot0;
@@ -479,24 +558,21 @@ contract AMM is IAMM, NoDelegateCall {
                 amountSpecified - state.amountSpecifiedRemaining
             );
 
-        // compute margin, initiate the swap
-        if (isFT) {
-            // if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));
 
-            uint256 balance0Before = balance0;
 
-            if (amount0 > 0) balance0 = balance0.add(uint256(amount0));
-            if (amount1 > 0) balance1 = balance1.sub(uint256(amount1));
+        InitiateIRSParams memory initiateIRSParams = InitiateIRSParams({
+            traderAddress: msg.sender,
+            notional: 0,
+            fixedRate: 0,            
+            margin: 0,
+            settled: false // redundunt
+        }); 
 
-            require(balance0Before.add(uint256(amount0)) <= balance0, "IIA");
-        } else {
-            uint256 balance1Before = balance1;
+        (initiateIRSParams.notional, initiateIRSParams.fixedRate, initiateIRSParams.margin) = getNotionalFixedRateAndMargin(uint256(amount0), uint256(amount1), isFT);
 
-            if (amount0 > 0) balance0 = balance0.sub(uint256(amount0));
-            if (amount1 > 0) balance1 = balance1.add(uint256(amount1));
-
-            require(balance1Before.add(uint256(amount1)) <= balance1, "IIA");
-        }
+        _initiateIRS(
+            initiateIRSParams
+        );
 
         emit Swap(
             msg.sender,

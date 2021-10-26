@@ -62,11 +62,11 @@ contract MarginCalculator {
 
         notionalUD = amount1UD;
 
-        PRBMath.UD60x18 memory onePercent = PRBMath.UD60x18({value: 10**16});
+        PRBMath.UD60x18 memory onePercentUD = PRBMath.UD60x18({value: 10**16});
 
         fixedRateUD = PRBMathUD60x18Typed.mul(
             PRBMathUD60x18Typed.div(amount0UD, amount1UD),
-            onePercent
+            onePercentUD
         );
     }
 

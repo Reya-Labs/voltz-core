@@ -55,8 +55,6 @@ interface IAMMState {
 
     /// @notice Returns the information about a position by the position's key
     /// @param key The position's key is a hash of a preimage composed by the owner, tickLower and tickUpper
-    /// @return liquidity The amount of liquidity in the position,
-    /// Returns feeGrowthInsideLastX128 fee growth of underlying Token inside the tick range as of the last mint/burn/poke,
     function positions(bytes32 key)
         external
         view
@@ -65,4 +63,19 @@ interface IAMMState {
             uint256 feeGrowthInsideLastX128,
             uint256 margin
         );
+
+    /// @notice Returns the information about a trader by the trader key
+    /// @param key The trader's key is a hash of a preimage composed by the owner, notional, fixedRate
+    function traders(bytes32 key)
+        external
+        view
+        returns (
+            int256 notional,
+            uint256 fixedRate,            
+            uint256 margin,
+            bool settled
+        );
+
+
+    
 }
