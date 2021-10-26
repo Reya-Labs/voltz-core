@@ -70,6 +70,25 @@ export function createAMMFunctions({
   swapTarget: TestAMMCallee;
   amm: MockTimeAMM;
 }): AMMFunctions {
+
+
+
+  // todo: fix
+  async function swapToSqrtPrice(
+    isFT: boolean,
+    targetPrice: BigNumberish,
+    to: Wallet | string
+  ): Promise<ContractTransaction> {
+    const method = isFT ? swapTarget.swapToHigherSqrtPrice : swapTarget.swapToLowerSqrtPrice
+
+    await inputToken.approve(swapTarget.address, constants.MaxUint256)
+
+    const toAddress = typeof to === 'string' ? to : to.address
+
+    return method(pool.address, targetPrice, toAddress)
+  }
+
+
   const mint: MintFunction = async (
     recipient,
     tickLower,
@@ -84,6 +103,10 @@ export function createAMMFunctions({
       liquidity
     );
   };
+
+
+
+
 
   return {
     mint,

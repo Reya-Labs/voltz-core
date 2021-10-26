@@ -164,6 +164,22 @@ describe("AMM", () => {
     });
   });
 
+  
+  
+  // describe("#swap", () => {
+
+  //   beforeEach("initialize the amm and mint liquidity", async () => {
+    
+  //     await amm.initialize(encodeSqrtRatioX96(1, 10).toString()); // set this ratio according to the sqrtPriceMath numbers
+  //     await mint(wallet.address, minTick, maxTick, 3161);
+    
+  //   })
+
+    
+
+
+  // })
+  
   describe("#mint", () => {
     it("fails if not initialized", async () => {
       await expect(
