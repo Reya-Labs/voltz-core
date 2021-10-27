@@ -13,7 +13,8 @@ import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
 
 import "hardhat/console.sol";
-import "./MarginCalculator.sol";
+// import "./MarginCalculator.sol";
+import "./interfaces/IMarginCalculator.sol";
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 
@@ -53,7 +54,7 @@ contract AMM is IAMM, NoDelegateCall {
     uint256 public override balance0;
     uint256 public override balance1;
 
-    MarginCalculator public calculator;
+    IMarginCalculator public override calculator; // todo: add override
 
     constructor() {
         int24 _tickSpacing;
@@ -391,26 +392,26 @@ contract AMM is IAMM, NoDelegateCall {
         // compute margin, initiate the swap
         if (isFT) {
 
-            uint256 balance0Before = balance0;
+            // uint256 balance0Before = balance0;
 
-            if (amount0 > 0) balance0 = balance0.add(amount0);
-            if (amount1 > 0) balance1 = balance1.sub(amount1);
+            // if (amount0 > 0) balance0 = balance0.add(amount0);
+            // if (amount1 > 0) balance1 = balance1.sub(amount1);
 
-            require(balance0Before.add(amount0) <= balance0, "IIA");
+            // require(balance0Before.add(amount0) <= balance0, "IIA");
         
-            margin = calculator.getFTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false);
+            // margin = MarginCalculator.getFTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false);
 
             notional = int256(notionalUD.value);
 
         } else {
-            uint256 balance1Before = balance1;
+            // uint256 balance1Before = balance1;
 
-            if (amount0 > 0) balance0 = balance0.sub(amount0);
-            if (amount1 > 0) balance1 = balance1.add(amount1);
+            // if (amount0 > 0) balance0 = balance0.sub(amount0);
+            // if (amount1 > 0) balance1 = balance1.add(amount1); todo: Error: Transaction reverted without a reason string (overflow?)
 
-            require(balance1Before.add(amount1) <= balance1, "IIA");
+            // require(balance1Before.add(amount1) <= balance1, "IIA");
 
-            margin = calculator.getVTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false);
+            // margin = MarginCalculator.getVTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false);
 
             notional = -int256(notionalUD.value);
 
@@ -420,7 +421,7 @@ contract AMM is IAMM, NoDelegateCall {
     
     function swap(
         address recipient,
-        bool isFT, // equivalent to zeroForOne
+        bool isFT, // equivalent to !zeroForOne
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96,
         bytes calldata data
@@ -433,10 +434,10 @@ contract AMM is IAMM, NoDelegateCall {
 
         require(
             isFT
-                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 &&
-                    sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
-                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 &&
-                    sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,
+                ? sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 &&
+                    sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
+                : sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 &&
+                    sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO,
             "SPL"
         );
 

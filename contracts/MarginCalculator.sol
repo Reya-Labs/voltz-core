@@ -3,24 +3,26 @@ pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 import "./utils/TickMath.sol";
 import "./utils/SqrtPriceMath.sol";
+import "./interfaces/IMarginCalculator.sol";
 
-contract MarginCalculator {
-    // using PRBMathUD60x18 for uint256;
 
-    uint256 public apyUpper = 9 * 10**16; // 0.09, 9%
-    uint256 public apyLower = 1 * 10**16; // 0.01, 1%;
+contract MarginCalculator is IMarginCalculator{
 
-    uint256 public apyUpperMultiplier = 2 * 10**18; // 2.0
-    uint256 public apyLowerMultiplier = 5 * 10**17; // 0.5
+    uint256 public override apyUpper = 9 * 10**16; // 0.09, 9%
+    uint256 public override apyLower = 1 * 10**16; // 0.01, 1%;
 
-    uint256 public minDeltaLM = 125 * 10**14; // 0.00125
-    uint256 public minDeltaIM = 500 * 10**14; // 0.05
+    uint256 public override apyUpperMultiplier = 2 * 10**18; // 2.0
+    uint256 public override apyLowerMultiplier = 5 * 10**17; // 0.5
 
-    uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
+    uint256 public override minDeltaLM = 125 * 10**14; // 0.00125
+    uint256 public override minDeltaIM = 500 * 10**14; // 0.05
+
+    uint256 public override constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
     // todo: make the function internal
     function accrualFact(uint256 timePeriodInSeconds)
         public
+        override
         pure
         returns (uint256 timePeriodInYears)
     {
@@ -106,7 +108,7 @@ contract MarginCalculator {
         uint160 sqrtRatioCurr,
         uint256 timePeriodInSeconds,
         bool isLM
-    ) external view returns (uint256 margin) {
+    ) external override view returns (uint256 margin) {
         PRBMath.UD60x18 memory notionalUD;
         PRBMath.UD60x18 memory fixedRateUD;
         PRBMath.UD60x18 memory grossMarginUD;
@@ -180,7 +182,7 @@ contract MarginCalculator {
         uint256 fixedRate,
         uint256 timePeriodInSeconds,
         bool isLM
-    ) public view returns (uint256 margin) {
+    ) public override view returns (uint256 margin) {
         // todo: only load vars in the if statements for optimisation
         PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: notional});
         PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({
@@ -234,7 +236,7 @@ contract MarginCalculator {
         uint256 fixedRate,
         uint256 timePeriodInSeconds,
         bool isLM
-    ) public view returns (uint256 margin) {
+    ) public override view returns (uint256 margin) {
         // todo: only load vars in the if statements for optimisation
         PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: notional});
         PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({

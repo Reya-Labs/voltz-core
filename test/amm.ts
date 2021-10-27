@@ -21,12 +21,9 @@ import { AMMFixture, TEST_AMM_START_TIME } from "./shared/fixtures";
 import { TestAMMCallee } from "../typechain/TestAMMCallee";
 
 import { MockTimeAMM } from "../typechain/MockTimeAMM";
+import { aave_lending_pool_addr, term_in_days, usdc_mainnet_addr } from "./shared/constants";
 
 const createFixtureLoader = waffle.createFixtureLoader;
-
-const usdc_mainnet_addr = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-const aave_lending_pool_addr = "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9";
-const term_in_days = 30;
 
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
 
