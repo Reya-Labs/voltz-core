@@ -17,6 +17,7 @@ import "hardhat/console.sol";
 import "./interfaces/IMarginCalculator.sol";
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 
 
 contract AMM is IAMM, NoDelegateCall {
@@ -50,6 +51,12 @@ contract AMM is IAMM, NoDelegateCall {
     uint128 public immutable override maxLiquidityPerTick;
 
     uint256 public override feeGrowthGlobalX128;
+
+    int256 public override notionalGrowthGlobal;
+
+    int256 public override notionalGlobal;
+
+    int256 public override fixedRateGlobal;
 
     uint256 public override balance0;
     uint256 public override balance1;
@@ -119,6 +126,77 @@ contract AMM is IAMM, NoDelegateCall {
         emit Initialize(sqrtPriceX96, tick);
     }
 
+
+
+    function burn(
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external lock {
+
+        Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
+
+        (Position.Info storage position, int256 amount0Int, int256 amount1Int) =
+            _modifyPosition(
+                ModifyPositionParams({
+                    owner: msg.sender,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: -int256(uint256(amount)).toInt128()
+                })
+            );
+        
+        uint256 amount0 = uint256(-amount0Int);
+        uint256 amount1 = uint256(-amount1Int);
+
+        
+        int256 notionalGrowthInside = ticks.getNotionalGrowthInside(tickLower, tickUpper, _slot0.tick, notionalGrowthGlobal);
+        
+        int256 notionalAmount = PRBMathSD59x18Typed.mul(
+            PRBMath.SD59x18({
+                value: notionalGrowthInside
+            }),
+            PRBMath.SD59x18({
+                value: int256(int128(amount))
+            })
+        ).value;
+
+
+        
+        int256 fixedRateInside = ticks.getFixedRateInside(
+            Tick.FixedRateInsideParams({
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                tickCurrent: _slot0.tick,
+                fixedRateGlobal: fixedRateGlobal,
+                notionalGlobal: notionalGlobal,
+                fixedRateBelowUD: PRBMath.SD59x18({value: 0}),
+                fixedRateAboveUD: PRBMath.SD59x18({value: 0}),
+
+                exp1UD: PRBMath.SD59x18({value: 0}),
+                exp2UD: PRBMath.SD59x18({value: 0}),
+                exp3UD: PRBMath.SD59x18({value: 0}),
+                numerator: PRBMath.SD59x18({value: 0}),
+                denominator: PRBMath.SD59x18({value: 0})
+            }) 
+        );
+
+        
+
+        // unwinds an active position
+        
+        // need an unwind function in here, not a simple swap
+
+        
+        // swap(msg.sender, )
+
+
+    }
+    
+    
+    
+    
+    
     struct ModifyPositionParams {
         // the address that owns the position
         address owner;
@@ -151,6 +229,10 @@ contract AMM is IAMM, NoDelegateCall {
         position = positions.get(owner, tickLower, tickUpper);
 
         uint256 _feeGrowthGlobalX128 = feeGrowthGlobalX128; // SLOAD for gas optimization
+        int256 _notionalGrowthGlobal = notionalGrowthGlobal; // SLOAD for gas optimization
+        int256 _notionalGlobal = notionalGlobal; // SLOAD for gas optimization
+        int256 _fixedRateGlobal = fixedRateGlobal; // SLOAD for gas optimization
+
 
         // if we need to update the ticks, do it
         bool flippedLower;
@@ -161,6 +243,9 @@ contract AMM is IAMM, NoDelegateCall {
                 tick,
                 liquidityDelta,
                 _feeGrowthGlobalX128,
+                notionalGrowthGlobal,
+                notionalGlobal,
+                fixedRateGlobal,
                 false,
                 maxLiquidityPerTick
             );
@@ -169,6 +254,9 @@ contract AMM is IAMM, NoDelegateCall {
                 tick,
                 liquidityDelta,
                 _feeGrowthGlobalX128,
+                notionalGrowthGlobal,
+                notionalGlobal,
+                fixedRateGlobal,
                 true,
                 maxLiquidityPerTick
             );
@@ -328,6 +416,11 @@ contract AMM is IAMM, NoDelegateCall {
         int24 tick;
         // the global fee growth of the input token
         uint256 feeGrowthGlobalX128;
+
+        int256 notionalGrowthGlobal;
+        int256 notionalGlobal;
+        int256 fixedRateGlobal;
+
         // the current liquidity in range
         uint128 liquidity;
     }
@@ -345,10 +438,12 @@ contract AMM is IAMM, NoDelegateCall {
         uint256 amountIn;
         // how much is being swapped out
         uint256 amountOut;
+
+        int256 notionalAmount;
+        int256 fixedRate;
     }
 
     
-
 
     /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32. This method is overridden in tests.
     function _blockTimestamp() internal view virtual returns (uint32) {
@@ -456,7 +551,10 @@ contract AMM is IAMM, NoDelegateCall {
             sqrtPriceX96: slot0Start.sqrtPriceX96,
             tick: slot0Start.tick,
             feeGrowthGlobalX128: feeGrowthGlobalX128,
-            liquidity: cache.liquidityStart
+            liquidity: cache.liquidityStart,
+            notionalGrowthGlobal: notionalGrowthGlobal,
+            notionalGlobal: notionalGlobal,
+            fixedRateGlobal: fixedRateGlobal
         });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
@@ -486,7 +584,7 @@ contract AMM is IAMM, NoDelegateCall {
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
 
             // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
-            (state.sqrtPriceX96, step.amountIn, step.amountOut) = SwapMath
+            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.notionalAmount, step.fixedRate) = SwapMath
                 .computeSwapStep(
                     state.sqrtPriceX96,
                     (
@@ -512,13 +610,102 @@ contract AMM is IAMM, NoDelegateCall {
                 );
             }
 
+            // update global fee tracker
+            if (state.liquidity > 0) {
+                // state.feeGrowthGlobalX128 += FullMath.mulDiv(0, FixedPoint128.Q128, state.liquidity); // todo: set to zero for now
+                
+                int256 _notionalGlobalBefore = state.notionalGlobal;
+                
+                state.notionalGlobal = PRBMathSD59x18Typed.add(
+
+                    PRBMath.SD59x18({
+                            value: state.notionalGlobal
+                        }),
+
+                    PRBMath.SD59x18({
+                        value: step.notionalAmount
+                    })
+
+                ).value;
+
+                state.notionalGrowthGlobal = PRBMathSD59x18Typed.add(
+
+                    PRBMath.SD59x18({
+                            value: state.notionalGrowthGlobal
+                    }),
+
+                    PRBMathSD59x18Typed.div(
+                        
+                        PRBMath.SD59x18({
+                            value: step.notionalAmount
+                        }),
+
+                        PRBMath.SD59x18({
+                            value: int256(uint256(state.liquidity))
+                        })
+                    
+                    )
+
+                ).value;
+
+
+                PRBMath.SD59x18 memory exp1UD = PRBMathSD59x18Typed.mul(
+
+                    PRBMath.SD59x18({
+                            value: step.fixedRate
+                        }),
+
+                    PRBMath.SD59x18({
+                        value: state.notionalGlobal
+                    })
+
+                );
+
+                PRBMath.SD59x18 memory exp2UD = PRBMathSD59x18Typed.mul(
+
+                    PRBMathSD59x18Typed.sub(
+                        
+                        PRBMath.SD59x18({
+                            value: step.fixedRate
+                        }),
+
+                        PRBMath.SD59x18({
+                            value: state.fixedRateGlobal
+                        })
+
+                    ),
+
+                    PRBMath.SD59x18({
+                        value: _notionalGlobalBefore
+                    })
+
+                );
+
+                PRBMath.SD59x18 memory numerator = PRBMathSD59x18Typed.sub(exp1UD, exp2UD);
+            
+                state.fixedRateGlobal = PRBMathSD59x18Typed.div(
+
+                    numerator,
+
+                    PRBMath.SD59x18({
+                        value: state.notionalGlobal
+                    })
+
+                ).value;
+
+            }
+
+
             // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
                     int128 liquidityNet = ticks.cross(
                         step.tickNext,
-                        state.feeGrowthGlobalX128
+                        state.feeGrowthGlobalX128,
+                        state.notionalGrowthGlobal,
+                        state.notionalGlobal,
+                        state.fixedRateGlobal
                     );
 
                     // if we're moving leftward, we interpret liquidityNet as the opposite sign
@@ -549,6 +736,12 @@ contract AMM is IAMM, NoDelegateCall {
         if (cache.liquidityStart != state.liquidity)
             liquidity = state.liquidity;
 
+
+        feeGrowthGlobalX128 = state.feeGrowthGlobalX128;
+        notionalGrowthGlobal = state.notionalGrowthGlobal;
+        notionalGlobal = state.notionalGlobal;
+        fixedRateGlobal = state.fixedRateGlobal;
+
         (int256 amount0, int256 amount1) = isFT == exactInput
             ? (
                 amountSpecified - state.amountSpecifiedRemaining,
@@ -558,8 +751,6 @@ contract AMM is IAMM, NoDelegateCall {
                 state.amountCalculated,
                 amountSpecified - state.amountSpecifiedRemaining
             );
-
-
 
         InitiateIRSParams memory initiateIRSParams = InitiateIRSParams({
             traderAddress: msg.sender,

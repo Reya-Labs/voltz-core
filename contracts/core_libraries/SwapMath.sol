@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 import "../utils/FullMath.sol";
 import "../utils/SqrtPriceMath.sol";
+import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 
 /// @title Computes the result of a swap within ticks
 /// @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
@@ -26,7 +27,10 @@ library SwapMath {
         returns (
             uint160 sqrtRatioNextX96,
             uint256 amountIn,
-            uint256 amountOut
+            uint256 amountOut,
+
+            int256 notionalAmount,
+            int256 fixedRate
         )
     {
         bool zeroForOne = sqrtRatioCurrentX96 >= sqrtRatioTargetX96;
@@ -123,5 +127,35 @@ library SwapMath {
         if (!exactIn && amountOut > uint256(-amountRemaining)) {
             amountOut = uint256(-amountRemaining);
         }
+
+        PRBMath.SD59x18 memory amount0UD = PRBMath.SD59x18({value: int256(amountIn)});
+        PRBMath.SD59x18 memory amount1UD = PRBMath.SD59x18({value: int256(amountOut)});
+        
+        if (zeroForOne) {
+
+            amount0UD = PRBMath.SD59x18({value: int256(amountIn)});
+            amount1UD = PRBMath.SD59x18({value: int256(amountOut)});
+
+            notionalAmount = -amount1UD.value;
+
+        } else {
+
+            // isFT
+            
+            amount0UD = PRBMath.SD59x18({value: int256(amountOut)});
+            amount1UD = PRBMath.SD59x18({value: int256(amountIn)});
+
+            notionalAmount = amount1UD.value;
+            
+        }
+
+        PRBMath.SD59x18 memory fixedRateUD = PRBMathSD59x18Typed.mul(
+            PRBMathSD59x18Typed.div(amount0UD, amount1UD),
+            PRBMath.SD59x18({value: 10**16})
+        );
+        
+        
+        fixedRate = fixedRateUD.value;
+        
     }
 }

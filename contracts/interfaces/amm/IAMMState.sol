@@ -23,6 +23,12 @@ interface IAMMState {
     /// @dev This value can overflow the uint256
     function feeGrowthGlobalX128() external view returns (uint256);
 
+    function notionalGrowthGlobal() external view returns (int256);
+
+    function notionalGlobal() external view returns (int256);
+
+    function fixedRateGlobal() external view returns (int256);
+
     /// @notice The currently in range liquidity available to the amm
     /// @dev This value has no relationship to the total liquidity across all ticks
     function liquidity() external view returns (uint128);
@@ -47,7 +53,11 @@ interface IAMMState {
         returns (
             uint128 liquidityGross,
             int128 liquidityNet,
-            uint256 feeGrowthOutsideX128
+            uint256 feeGrowthOutsideX128,
+            int256 notionalGrowthOutside,
+            int256 notionalOutside,
+            int256 fixedRateOutside,
+            bool initialized
         );
 
     /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information

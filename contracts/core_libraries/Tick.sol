@@ -6,6 +6,8 @@ import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
 
+import "prb-math/contracts/PRBMathSD59x18Typed.sol";
+
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
@@ -21,6 +23,15 @@ library Tick {
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
         uint256 feeGrowthOutsideX128;
+
+        int256 notionalGrowthOutside;
+
+        int256 notionalOutside;
+
+        int256 fixedRateOutside;
+
+        bool initialized;
+
     }
 
     /// @notice Derives max liquidity per tick from given tick spacing
@@ -39,6 +50,293 @@ library Tick {
         return type(uint128).max / numTicks;
     }
 
+    function getFixedRateOtherSide(int256 notionalGlobal, int256 fixedRateGlobal, int256 fixedRateOutside, int256 notionalOutside) 
+            internal pure returns (PRBMath.SD59x18 memory fixedRateOtherSideUD) {
+
+        PRBMath.SD59x18 memory exp1UD = PRBMathSD59x18Typed.mul(
+
+            PRBMath.SD59x18({
+                    value: fixedRateGlobal
+                }),
+
+            PRBMath.SD59x18({
+                value: notionalGlobal
+            })
+
+        );
+
+        PRBMath.SD59x18 memory exp2UD = PRBMathSD59x18Typed.mul(
+
+            PRBMath.SD59x18({
+                    value: fixedRateOutside
+                }),
+
+            PRBMath.SD59x18({
+                value: notionalOutside
+            })
+
+        );
+
+        PRBMath.SD59x18 memory numeratorUD = PRBMathSD59x18Typed.sub(exp1UD, exp2UD);
+        
+        PRBMath.SD59x18 memory denominatorUD = PRBMathSD59x18Typed.sub(
+            PRBMath.SD59x18({
+                    value: notionalGlobal
+                }),
+
+            PRBMath.SD59x18({
+                value: notionalOutside
+            })
+        );
+
+        fixedRateOtherSideUD = PRBMathSD59x18Typed.div(numeratorUD, denominatorUD);
+
+    }
+    
+    
+    // todo: better name
+    struct FixedRateInsideParams {
+
+        int24 tickLower;
+        int24 tickUpper;
+        int24 tickCurrent;
+        int256 fixedRateGlobal;
+        int256 notionalGlobal;
+
+        PRBMath.SD59x18 fixedRateBelowUD;
+        PRBMath.SD59x18 fixedRateAboveUD;
+
+
+        PRBMath.SD59x18 exp1UD;
+        PRBMath.SD59x18 exp2UD;
+        PRBMath.SD59x18 exp3UD;
+        PRBMath.SD59x18 numerator;
+        PRBMath.SD59x18 denominator;
+    
+    }
+
+    
+    function getFixedRateInside(
+        mapping(int24 => Tick.Info) storage self,
+        FixedRateInsideParams memory params
+    ) internal view returns (int256 fixedRateInside) {
+
+        Info storage lower = self[params.tickLower];
+        Info storage upper = self[params.tickUpper];
+
+        if (params.tickCurrent >= params.tickLower) {
+
+            params.fixedRateBelowUD = PRBMath.SD59x18({
+                value: lower.fixedRateOutside
+            });
+            
+        } else {
+
+            params.fixedRateBelowUD = getFixedRateOtherSide(params.notionalGlobal, params.fixedRateGlobal, lower.fixedRateOutside, lower.notionalOutside);
+
+        }
+        
+        if (params.tickCurrent < params.tickUpper) {
+
+            params.fixedRateAboveUD = getFixedRateOtherSide(params.notionalGlobal, params.fixedRateGlobal, upper.fixedRateOutside, upper.notionalOutside);
+
+        } else {
+
+            params.fixedRateAboveUD = PRBMath.SD59x18({
+                value: lower.fixedRateOutside
+            });
+
+        }
+
+
+        params.exp1UD = PRBMathSD59x18Typed.mul(
+
+            PRBMath.SD59x18({
+                    value: params.fixedRateGlobal
+                }),
+
+            PRBMath.SD59x18({
+                value: params.notionalGlobal
+            })
+
+        ); 
+
+        params.exp2UD = PRBMathSD59x18Typed.mul(
+
+            params.fixedRateBelowUD,
+
+            PRBMath.SD59x18({
+                value: getNotionalBelow(self, params.tickLower, params.tickCurrent, params.notionalGlobal)
+            })
+
+        );
+
+        params.exp3UD = PRBMathSD59x18Typed.mul(
+
+            params.fixedRateAboveUD,
+
+            PRBMath.SD59x18({
+                value: getNotionalAbove(self, params.tickUpper, params.tickCurrent, params.notionalGlobal)
+            })
+
+        ); 
+
+        params.numerator = PRBMathSD59x18Typed.sub(PRBMathSD59x18Typed.sub(params.exp1UD, params.exp2UD), params.exp3UD);
+
+        params.denominator = PRBMathSD59x18Typed.sub(
+            PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: params.notionalGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: getNotionalBelow(self, params.tickLower, params.tickCurrent, params.notionalGlobal)
+                })
+             ),
+             
+            PRBMath.SD59x18({
+                value: getNotionalAbove(self, params.tickUpper, params.tickCurrent, params.notionalGlobal)
+            })
+        );
+
+
+        PRBMath.SD59x18 memory fixedRateInsideUD = PRBMathSD59x18Typed.div(params.numerator, params.denominator);
+
+        fixedRateInside = fixedRateInsideUD.value;
+        
+    }
+    
+    
+    function getNotionalBelow(
+        mapping(int24 => Tick.Info) storage self,
+        int24 tickLower,
+        int24 tickCurrent,
+        int256 notionalGlobal
+        ) internal view returns (int256 notionalBelow) {
+
+        Info storage lower = self[tickLower]; // todo: can directly pass lower
+        
+        PRBMath.SD59x18 memory notionalBelowUD;
+        
+        if (tickCurrent >= tickLower) {
+        
+            notionalBelowUD = PRBMath.SD59x18({
+                value: lower.notionalOutside
+            });
+        } else {
+
+            notionalBelowUD = PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: notionalGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: lower.notionalOutside
+                })
+            );
+        }
+
+        notionalBelow = notionalBelowUD.value;
+
+    }
+    
+    function getNotionalAbove(
+        mapping(int24 => Tick.Info) storage self,
+        int24 tickUpper,
+        int24 tickCurrent,
+        int256 notionalGlobal
+        ) internal view returns (int256 notionalAbove) {
+
+        Info storage upper = self[tickUpper]; 
+
+        PRBMath.SD59x18 memory notionalAboveUD;
+        
+        if (tickCurrent < tickUpper) {
+        
+            notionalAboveUD = PRBMath.SD59x18({
+                value: upper.notionalOutside
+            });
+
+        } else {
+
+            notionalAboveUD = PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: notionalGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: upper.notionalOutside
+                })
+            );
+        }
+
+        notionalAbove = notionalAboveUD.value;
+    
+    }
+    
+    function getNotionalGrowthInside(
+        mapping(int24 => Tick.Info) storage self,
+        int24 tickLower,
+        int24 tickUpper,
+        int24 tickCurrent,
+        int256 notionalGrowthGlobal
+    ) internal view returns (int256 notionalGrowthInside) {
+
+        Info storage lower = self[tickLower];
+        Info storage upper = self[tickUpper];
+
+        PRBMath.SD59x18 memory notionalGrowthBelowUD;
+        
+        if (tickCurrent >= tickLower) {
+        
+            notionalGrowthBelowUD = PRBMath.SD59x18({
+                value: lower.notionalGrowthOutside
+            });
+        } else {
+
+            notionalGrowthBelowUD = PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: notionalGrowthGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: lower.notionalGrowthOutside
+                })
+            );
+        }
+
+        PRBMath.SD59x18 memory notionalGrowthAboveUD;
+        
+        if (tickCurrent < tickUpper) {
+        
+            notionalGrowthAboveUD = PRBMath.SD59x18({
+                value: upper.notionalGrowthOutside
+            });
+        } else {
+
+            notionalGrowthAboveUD = PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: notionalGrowthGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: upper.notionalGrowthOutside
+                })
+            );
+        }
+
+        PRBMath.SD59x18 memory notionalGrowthInsideUD = PRBMathSD59x18Typed.sub(PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: notionalGrowthGlobal
+                }),
+                notionalGrowthBelowUD
+            ), notionalGrowthAboveUD);
+
+        notionalGrowthInside = notionalGrowthInsideUD.value;
+
+    }
+    
+    
     /// @notice Retrieves fee growth data
     /// @param self The mapping containing all tick information for initialized ticks
     /// @param tickLower The lower tick boundary of the position
@@ -97,6 +395,11 @@ library Tick {
         int24 tickCurrent,
         int128 liquidityDelta,
         uint256 feeGrowthGlobalX128,
+
+        int256 notionalGrowthGlobal,
+        int256 notionalGlobal,
+        int256 fixedRateGlobal,
+
         bool upper,
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
@@ -116,8 +419,15 @@ library Tick {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tick <= tickCurrent) {
                 info.feeGrowthOutsideX128 = feeGrowthGlobalX128;
+                
+                info.notionalGrowthOutside = notionalGrowthGlobal;
+
+                info.notionalOutside = notionalGlobal;
+
+                info.fixedRateOutside = fixedRateGlobal;
             }
-            // info.initialized = true todo: where does this come from?
+
+            info.initialized = true;
         }
 
         info.liquidityGross = liquidityGrossAfter;
@@ -145,14 +455,37 @@ library Tick {
     function cross(
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
-        uint256 feeGrowthGlobalX128
+        uint256 feeGrowthGlobalX128,
+        int256 notionalGrowthGlobal,
+        int256 notionalGlobal,
+        int256 fixedRateGlobal
     ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
         info.feeGrowthOutsideX128 =
             feeGrowthGlobalX128 -
             info.feeGrowthOutsideX128;
 
-        // todo: add notional logic
+        info.notionalGrowthOutside = PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: notionalGrowthGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: info.notionalGrowthOutside
+                })
+        ).value;
+
+        info.notionalOutside = PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: notionalGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: info.notionalOutside
+                })
+        ).value;
+
+        info.fixedRateOutside = getFixedRateOtherSide(notionalGlobal, fixedRateGlobal, info.fixedRateOutside, info.notionalOutside).value;
 
         liquidityNet = info.liquidityNet;
     }
