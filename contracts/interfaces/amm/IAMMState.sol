@@ -71,7 +71,7 @@ interface IAMMState {
         returns (
             uint128 liquidity,
             uint256 feeGrowthInsideLastX128,
-            uint256 margin
+            int256 margin
         );
 
     /// @notice Returns the information about a trader by the trader key
@@ -81,8 +81,8 @@ interface IAMMState {
         view
         returns (
             int256 notional,
-            uint256 fixedRate,            
-            uint256 margin,
+            uint256 fixedRate, // todo: should be int?
+            int256 margin,
             bool settled
         );
 

@@ -6,8 +6,8 @@ library Trader {
     // info stored for each user's position
     struct Info {
         int256 notional;
-        uint256 fixedRate;            
-        uint256 margin;
+        uint256 fixedRate; // todo: should be int?
+        int256 margin;
         bool settled;
     }
 
@@ -30,7 +30,7 @@ library Trader {
         Info storage self,
         int256 notional,
         uint256 fixedRate,
-        uint256 margin,
+        int256 margin,
         bool settled
     ) internal {
         self.notional = notional;

@@ -15,7 +15,7 @@ library Position {
         uint128 liquidity;
         // fee growth per unit of liquidity as of the last update to liquidity or fees owed
         uint256 feeGrowthInsideLastX128;
-        uint256 margin;
+        int256 margin;
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
@@ -42,7 +42,8 @@ library Position {
     function update(
         Info storage self,
         int128 liquidityDelta,
-        uint256 feeGrowthInsideX128
+        uint256 feeGrowthInsideX128,
+        int256 updatedMargin
     ) internal {
         Info memory _self = self;
 
@@ -60,5 +61,6 @@ library Position {
         // update the position
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
         self.feeGrowthInsideLastX128 = feeGrowthInsideX128;
+        self.margin = updatedMargin;
     }
 }

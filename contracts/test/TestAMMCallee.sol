@@ -3,16 +3,10 @@ pragma solidity ^0.8.0;
 import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../interfaces/IAMM.sol";
+import "../AMM.sol";
 
-contract TestAMMCallee {
+contract TestAMMCallee is AMM {
     using SafeCast for uint256;
-
-
-        // address recipient,
-        // bool isFT, // equivalent to zeroForOne
-        // int256 amountSpecified,
-        // uint160 sqrtPriceLimitX96,
-
 
   function swapExact0For1(
         address amm,
@@ -20,7 +14,16 @@ contract TestAMMCallee {
         address recipient,
         uint160 sqrtPriceLimitX96
     ) external {
-        IAMM(amm).swap(recipient, true, amount0In.toInt256(), sqrtPriceLimitX96, abi.encode(msg.sender));
+
+        SwapParams memory params = SwapParams({
+               recipient: recipient,
+               isFT: true,
+               amountSpecified: amount0In.toInt256(),
+               sqrtPriceLimitX96: sqrtPriceLimitX96,
+               isUnwind: false
+        });
+
+        IAMM(amm).swap(params, abi.encode(msg.sender));
   }
 
   function swap0ForExact1(
@@ -29,7 +32,16 @@ contract TestAMMCallee {
         address recipient,
         uint160 sqrtPriceLimitX96
     ) external {
-        IAMM(amm).swap(recipient, true, -amount1Out.toInt256(), sqrtPriceLimitX96, abi.encode(msg.sender));
+
+        SwapParams memory params = SwapParams({
+               recipient: recipient,
+               isFT: true,
+               amountSpecified: -amount1Out.toInt256(),
+               sqrtPriceLimitX96: sqrtPriceLimitX96,
+               isUnwind: false
+        });
+
+        IAMM(amm).swap(params, abi.encode(msg.sender));
   }
 
 
@@ -39,7 +51,16 @@ contract TestAMMCallee {
         address recipient,
         uint160 sqrtPriceLimitX96
     ) external {
-        IAMM(amm).swap(recipient, false, amount1In.toInt256(), sqrtPriceLimitX96, abi.encode(msg.sender));
+
+        SwapParams memory params = SwapParams({
+               recipient: recipient,
+               isFT: false,
+               amountSpecified: amount1In.toInt256(),
+               sqrtPriceLimitX96: sqrtPriceLimitX96,
+               isUnwind: false
+        });
+
+        IAMM(amm).swap(params, abi.encode(msg.sender));
   }
 
   
@@ -49,7 +70,16 @@ contract TestAMMCallee {
         address recipient,
         uint160 sqrtPriceLimitX96
     ) external {
-        IAMM(amm).swap(recipient, false, -amount0Out.toInt256(), sqrtPriceLimitX96, abi.encode(msg.sender));
+
+        SwapParams memory params = SwapParams({
+               recipient: recipient,
+               isFT: false,
+               amountSpecified: -amount0Out.toInt256(),
+               sqrtPriceLimitX96: sqrtPriceLimitX96,
+               isUnwind: false
+        });
+
+        IAMM(amm).swap(params, abi.encode(msg.sender));
   }
 
 
@@ -58,7 +88,16 @@ contract TestAMMCallee {
         uint160 sqrtPriceX96,
         address recipient
     ) external {
-        IAMM(amm).swap(recipient, true, type(int256).max, sqrtPriceX96, abi.encode(msg.sender));
+
+        SwapParams memory params = SwapParams({
+               recipient: recipient,
+               isFT: true,
+               amountSpecified: type(int256).max,
+               sqrtPriceLimitX96: sqrtPriceX96,
+               isUnwind: false
+        });
+
+        IAMM(amm).swap(params, abi.encode(msg.sender));
   }
 
   
@@ -67,7 +106,16 @@ contract TestAMMCallee {
         uint160 sqrtPriceX96,
         address recipient
     ) external {
-        IAMM(amm).swap(recipient, false, type(int256).max, sqrtPriceX96, abi.encode(msg.sender));
+
+        SwapParams memory params = SwapParams({
+               recipient: recipient,
+               isFT: false,
+               amountSpecified: type(int256).max,
+               sqrtPriceLimitX96: sqrtPriceX96,
+               isUnwind: false
+        });
+
+        IAMM(amm).swap(params, abi.encode(msg.sender));
   }
 
     function mint(

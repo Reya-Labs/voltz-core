@@ -13,7 +13,6 @@ import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
 
 import "hardhat/console.sol";
-// import "./MarginCalculator.sol";
 import "./interfaces/IMarginCalculator.sol";
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
@@ -127,7 +126,128 @@ contract AMM is IAMM, NoDelegateCall {
     }
 
 
+    function unwindPosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        address recipient,
+        int256 fixedRate,
+        int256 notional,
+        bytes calldata data
+    ) public {
+        
+        // todo: returns position
+        // traderU is unnecessary
+        (int256 cashflow, Trader.Info memory traderU) = unwind(recipient, fixedRate, notional, data);
 
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+
+        int256 updatedMargin = PRBMathSD59x18Typed.sub(
+
+            PRBMath.SD59x18({
+                value: position.margin
+            }),
+
+            PRBMath.SD59x18({
+                value: cashflow
+            })
+    
+        ).value;
+
+        position.update(0, position.feeGrowthInsideLastX128, updatedMargin);
+
+    }
+
+    function unwindTrader(
+        address recipient,
+        int256 fixedRate,
+        int256 notional,
+        bytes calldata data
+    ) public {
+
+        // traderU is unnecessary
+        (int256 cashflow, Trader.Info memory traderU) = unwind(recipient, fixedRate, notional, data);
+
+        Trader.Info storage trader = traders.get(recipient, notional, uint256(fixedRate));
+
+        int256 updatedMargin = PRBMathSD59x18Typed.sub(
+
+            PRBMath.SD59x18({
+                value: trader.margin
+            }),
+
+            PRBMath.SD59x18({
+                value: cashflow
+            })
+    
+        ).value;
+
+        trader.update(trader.notional, trader.fixedRate, updatedMargin, true);
+    
+    }
+    
+    function unwind(
+        address recipient,
+        int256 fixedRate,
+        int256 notional,
+        bytes calldata data
+    ) public noDelegateCall returns(int256 cashflow, Trader.Info memory traderU){
+
+        // todo: require statement for notional to not be 0
+
+        bool isFT = notional > 0;
+        uint256 termEndTimeStamp = termStartTimestamp + (termInDays * 24 * 60 * 60);
+        
+        if (isFT) {
+            // get into a VT swap
+            // notional is positive
+            // -traderU.notional is negative
+            // todo: this swap doesn't require margin calculation
+            
+            // struct SwapParams {
+            //         address recipient;
+            //         bool isFT; // equivalent to !zeroForOne
+            //         int256 amountSpecified;
+            //         uint160 sqrtPriceLimitX96;
+            //         bool isUnwind;
+            //     }
+
+            SwapParams memory params = SwapParams({
+               recipient: recipient,
+               isFT: !isFT,
+               amountSpecified: -notional,
+               sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
+               isUnwind: true
+            });
+
+            traderU = swap(params, data); // min price            
+            
+            cashflow = calculator.getUnwindSettlementCashflow(notional, int256(fixedRate), traderU.notional, 
+                int256(traderU.fixedRate), termEndTimeStamp - _blockTimestamp());
+
+        } else {
+            // get into an FT swap
+            // notional is negative
+            
+            SwapParams memory params = SwapParams({
+               recipient: recipient,
+               isFT: isFT,
+               amountSpecified: notional,
+               sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
+               isUnwind: true
+            });
+
+            traderU = swap(params, data); // max price
+
+            cashflow = calculator.getUnwindSettlementCashflow(notional, int256(fixedRate), traderU.notional, 
+                int256(traderU.fixedRate), termEndTimeStamp - _blockTimestamp());
+        }
+
+        // todo: require if isUnwind in swap for amountSpecified to be negative
+
+    }
+    
+    
     function burn(
         int24 tickLower,
         int24 tickUpper,
@@ -161,8 +281,6 @@ contract AMM is IAMM, NoDelegateCall {
             })
         ).value;
 
-
-        
         int256 fixedRateInside = ticks.getFixedRateInside(
             Tick.FixedRateInsideParams({
                 tickLower: tickLower,
@@ -186,15 +304,11 @@ contract AMM is IAMM, NoDelegateCall {
         // unwinds an active position
         
         // need an unwind function in here, not a simple swap
-
         
         // swap(msg.sender, )
 
 
     }
-    
-    
-    
     
     
     struct ModifyPositionParams {
@@ -276,8 +390,7 @@ contract AMM is IAMM, NoDelegateCall {
             _feeGrowthGlobalX128
         );
 
-        // uint256 margin =
-        position.update(liquidityDelta, feeGrowthInsideX128);
+        position.update(liquidityDelta, feeGrowthInsideX128, position.margin); // todo: make sure position margin works
 
         // clear any tick data that is no longer needed
         if (liquidityDelta < 0) {
@@ -381,9 +494,21 @@ contract AMM is IAMM, NoDelegateCall {
 
         // todo: deposit margin in here or in modifyPosition (at the end)?
 
-        // uint256 margin = calculator.getLPMargin...
+        Slot0 memory _slot0 = slot0;
+        uint256 termEndTimeStamp = termStartTimestamp + (termInDays * 24 * 60 * 60);
 
-        if (amount0 > 0) balance0 = balance0.add(amount0);
+        int256 margin = int256(calculator.getLPMarginRequirement(
+            TickMath.getSqrtRatioAtTick(tickLower),
+            TickMath.getSqrtRatioAtTick(tickUpper),
+            amount0,
+            amount1,
+            TickMath.getSqrtRatioAtTick(_slot0.tick),
+            termEndTimeStamp - _blockTimestamp(),
+            false
+        ));
+
+        
+        if (amount0 > 0) balance0 = balance0.add(amount0); // todo: this seems redundunt
         if (amount1 > 0) balance1 = balance1.add(amount1);
 
         emit Mint(
@@ -456,7 +581,7 @@ contract AMM is IAMM, NoDelegateCall {
         // the lower and upper tick of the position
         int256 notional;
         uint256 fixedRate;            
-        uint256 margin;
+        int256 margin;
         bool settled;
     }
 
@@ -469,9 +594,10 @@ contract AMM is IAMM, NoDelegateCall {
 
     }
     
+
     // todo: add to interface and override
-    function getNotionalFixedRateAndMargin(uint256 amount0, uint256 amount1, bool isFT) public 
-                noDelegateCall returns(int256 notional, uint256 fixedRate, uint256 margin) {
+    function getNotionalFixedRateAndMargin(uint256 amount0, uint256 amount1, bool isFT, bool isUnwind) public 
+                noDelegateCall returns(int256 notional, uint256 fixedRate, int256 margin) {
 
         PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: uint256(amount1)});
         PRBMath.UD60x18 memory fixedRateUD = PRBMathUD60x18Typed.mul(
@@ -493,7 +619,8 @@ contract AMM is IAMM, NoDelegateCall {
             // if (amount1 > 0) balance1 = balance1.sub(amount1);
 
             // require(balance0Before.add(amount0) <= balance0, "IIA");
-        
+
+            // todo: only compute margin if it is not an unwind
             // margin = MarginCalculator.getFTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false);
 
             notional = int256(notionalUD.value);
@@ -513,26 +640,23 @@ contract AMM is IAMM, NoDelegateCall {
             fixedRate = fixedRateUD.value;
         }
     }
-    
+
     function swap(
-        address recipient,
-        bool isFT, // equivalent to !zeroForOne
-        int256 amountSpecified,
-        uint160 sqrtPriceLimitX96,
+        SwapParams memory params,
         bytes calldata data
-    ) external override noDelegateCall{
-        require(amountSpecified != 0, "AS");
+    ) public override noDelegateCall returns (Trader.Info memory trader){
+        require(params.amountSpecified != 0, "AS");
 
         Slot0 memory slot0Start = slot0;
 
         require(slot0Start.unlocked, "LOK");
 
         require(
-            isFT
-                ? sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 &&
-                    sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
-                : sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 &&
-                    sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO,
+            params.isFT
+                ? params.sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 &&
+                    params.sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
+                : params.sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 &&
+                    params.sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO,
             "SPL"
         );
 
@@ -543,10 +667,10 @@ contract AMM is IAMM, NoDelegateCall {
             blockTimestamp: _blockTimestamp()
         });
 
-        bool exactInput = amountSpecified > 0;
+        bool exactInput = params.amountSpecified > 0;
 
         SwapState memory state = SwapState({
-            amountSpecifiedRemaining: amountSpecified,
+            amountSpecifiedRemaining: params.amountSpecified,
             amountCalculated: 0,
             sqrtPriceX96: slot0Start.sqrtPriceX96,
             tick: slot0Start.tick,
@@ -560,7 +684,7 @@ contract AMM is IAMM, NoDelegateCall {
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
         while (
             state.amountSpecifiedRemaining != 0 &&
-            state.sqrtPriceX96 != sqrtPriceLimitX96
+            state.sqrtPriceX96 != params.sqrtPriceLimitX96
         ) {
             StepComputations memory step;
 
@@ -570,7 +694,7 @@ contract AMM is IAMM, NoDelegateCall {
                 .nextInitializedTickWithinOneWord(
                     state.tick,
                     tickSpacing,
-                    isFT
+                    params.isFT
                 );
 
             // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
@@ -588,11 +712,11 @@ contract AMM is IAMM, NoDelegateCall {
                 .computeSwapStep(
                     state.sqrtPriceX96,
                     (
-                        isFT
-                            ? step.sqrtPriceNextX96 < sqrtPriceLimitX96
-                            : step.sqrtPriceNextX96 > sqrtPriceLimitX96
+                        params.isFT
+                            ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+                            : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
                     )
-                        ? sqrtPriceLimitX96
+                        ? params.sqrtPriceLimitX96
                         : step.sqrtPriceNextX96,
                     state.liquidity,
                     state.amountSpecifiedRemaining
@@ -710,7 +834,7 @@ contract AMM is IAMM, NoDelegateCall {
 
                     // if we're moving leftward, we interpret liquidityNet as the opposite sign
                     // safe because liquidityNet cannot be type(int128).min
-                    if (isFT) liquidityNet = -liquidityNet;
+                    if (params.isFT) liquidityNet = -liquidityNet;
 
                     state.liquidity = LiquidityMath.addDelta(
                         state.liquidity,
@@ -718,7 +842,7 @@ contract AMM is IAMM, NoDelegateCall {
                     );
                 }
 
-                state.tick = isFT ? step.tickNext - 1 : step.tickNext;
+                state.tick = params.isFT ? step.tickNext - 1 : step.tickNext;
             } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
                 // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
                 state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
@@ -742,14 +866,14 @@ contract AMM is IAMM, NoDelegateCall {
         notionalGlobal = state.notionalGlobal;
         fixedRateGlobal = state.fixedRateGlobal;
 
-        (int256 amount0, int256 amount1) = isFT == exactInput
+        (int256 amount0, int256 amount1) = params.isFT == exactInput
             ? (
-                amountSpecified - state.amountSpecifiedRemaining,
+                params.amountSpecified - state.amountSpecifiedRemaining,
                 state.amountCalculated
             )
             : (
                 state.amountCalculated,
-                amountSpecified - state.amountSpecifiedRemaining
+                params.amountSpecified - state.amountSpecifiedRemaining
             );
 
         InitiateIRSParams memory initiateIRSParams = InitiateIRSParams({
@@ -760,15 +884,21 @@ contract AMM is IAMM, NoDelegateCall {
             settled: false // redundunt
         }); 
 
-        (initiateIRSParams.notional, initiateIRSParams.fixedRate, initiateIRSParams.margin) = getNotionalFixedRateAndMargin(uint256(amount0), uint256(amount1), isFT);
+ 
+        (initiateIRSParams.notional, initiateIRSParams.fixedRate, initiateIRSParams.margin) = getNotionalFixedRateAndMargin(uint256(amount0), uint256(amount1), params.isFT, params.isUnwind);
 
-        _initiateIRS(
+        if (params.isUnwind) {
+            initiateIRSParams.settled = true;
+        }
+
+        trader = _initiateIRS(
             initiateIRSParams
         );
 
+        
         emit Swap(
             msg.sender,
-            recipient,
+            params.recipient,
             amount0,
             amount1,
             state.sqrtPriceX96,

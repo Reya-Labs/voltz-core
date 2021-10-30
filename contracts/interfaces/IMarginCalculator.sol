@@ -20,8 +20,8 @@ interface IMarginCalculator {
     function getLPMarginRequirement(
         uint160 sqrtRatioLower,
         uint160 sqrtRatioUpper,
-        uint128 liquidity,
-        uint128 grossLiquidity,
+        uint256 amount0,
+        uint256 amount1,
         uint160 sqrtRatioCurr,
         uint256 timePeriodInSeconds,
         bool isLM
@@ -42,6 +42,15 @@ interface IMarginCalculator {
         uint256 timePeriodInSeconds,
         bool isLM
     ) external view returns (uint256 margin);
+
+
+    function getUnwindSettlementCashflow(
+        int256 notionalS,
+        int256 fixedRateS,
+        int256 notionalU,
+        int256 fixedRateU,
+        uint256 timePeriodInSeconds
+    ) external view returns (int256 cashflow);
 
 
 }

@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 import "./utils/TickMath.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./interfaces/IMarginCalculator.sol";
@@ -35,9 +36,9 @@ contract MarginCalculator is IMarginCalculator{
     }
 
     function tickRangeNotionalFixedRate(
-        uint160 sqrtRatioLower,
-        uint160 sqrtRatioUpper,
-        uint128 liquidity
+        uint160 sqrtRatio,
+        uint256 amountInp,
+        bool isFT
     )
         public
         pure
@@ -46,32 +47,79 @@ contract MarginCalculator is IMarginCalculator{
             PRBMath.UD60x18 memory fixedRateUD
         )
     {
-        uint256 amount0 = SqrtPriceMath.getAmount0Delta(
-            sqrtRatioLower,
-            sqrtRatioUpper,
-            liquidity,
-            true
-        ); // roundup is set to true
-        uint256 amount1 = SqrtPriceMath.getAmount1Delta(
-            sqrtRatioLower,
-            sqrtRatioUpper,
-            liquidity,
-            true
-        ); // roundup is set to true
 
-        PRBMath.UD60x18 memory amount0UD = PRBMath.UD60x18({value: amount0});
-        PRBMath.UD60x18 memory amount1UD = PRBMath.UD60x18({value: amount1});
+        fixedRateUD = PRBMathUD60x18Typed.div(
+                
+                PRBMath.UD60x18({
+                    value: 10**16 // one percent
+                }),
+                
+                PRBMath.UD60x18({
+                    value: sqrtRatio
+                })
+        );        
+        
+        if (isFT) {
+            // then amount1 is positive
+            notionalUD = PRBMath.UD60x18({
+                value: amountInp
+            });
 
-        notionalUD = amount1UD;
+        } else {
+            notionalUD = PRBMathUD60x18Typed.mul(
+                
+                PRBMath.UD60x18({
+                    value: amountInp
+                }),
+                
+                PRBMath.UD60x18({
+                    value: sqrtRatio
+                })
+        );        
 
-        PRBMath.UD60x18 memory onePercentUD = PRBMath.UD60x18({value: 10**16});
-
-        fixedRateUD = PRBMathUD60x18Typed.mul(
-            PRBMathUD60x18Typed.div(amount0UD, amount1UD),
-            onePercentUD
-        );
+        } 
+        
     }
 
+    function getUnwindSettlementCashflow(
+        int256 notionalS,
+        int256 fixedRateS,
+        int256 notionalU,
+        int256 fixedRateU,
+        uint256 timePeriodInSeconds
+    ) public override view returns (int256 cashflow) {
+
+        // todo: require notionalS to be equal to notionalU --> otherwise DUST... 
+
+        PRBMath.SD59x18 memory fixedRateDelta = PRBMathSD59x18Typed.sub(
+
+            PRBMath.SD59x18({
+                value: fixedRateS
+            }),
+
+            PRBMath.SD59x18({
+                value: fixedRateU
+            })
+        );
+
+        uint256 timePeriodInYears = accrualFact(timePeriodInSeconds);
+
+
+        cashflow = PRBMathSD59x18Typed.mul(
+            PRBMath.SD59x18({
+                value: notionalS // todo: make sure this value is correctly set
+            }),
+            PRBMathSD59x18Typed.mul(
+                fixedRateDelta,
+                PRBMath.SD59x18({
+                    value: int256(timePeriodInYears)
+                })
+            )
+        ).value;
+
+    }
+    
+    
     function getLPMarginReqWithinTickRangeDeposit(
         PRBMath.UD60x18 memory notionalVTUD,
         PRBMath.UD60x18 memory fixedRateVTUD,
@@ -100,27 +148,28 @@ contract MarginCalculator is IMarginCalculator{
         }
     }
 
+
     function getLPMarginRequirement(
         uint160 sqrtRatioLower,
         uint160 sqrtRatioUpper,
-        uint128 liquidity,
-        uint128 grossLiquidity,
+        uint256 amount0,
+        uint256 amount1,
         uint160 sqrtRatioCurr,
         uint256 timePeriodInSeconds,
         bool isLM
     ) external override view returns (uint256 margin) {
         PRBMath.UD60x18 memory notionalUD;
         PRBMath.UD60x18 memory fixedRateUD;
-        PRBMath.UD60x18 memory grossMarginUD;
+        PRBMath.UD60x18 memory marginUD;
 
         if (sqrtRatioCurr < sqrtRatioLower) {
             // LP is a variable taker
             (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(
                 sqrtRatioLower,
-                sqrtRatioUpper,
-                grossLiquidity
+                amount0,
+                false
             );
-            grossMarginUD = PRBMath.UD60x18({
+            marginUD = PRBMath.UD60x18({
                 value: getVTMarginRequirement(
                     notionalUD.value,
                     fixedRateUD.value,
@@ -134,32 +183,35 @@ contract MarginCalculator is IMarginCalculator{
                 PRBMath.UD60x18 memory fixedRateVTUD
             ) = tickRangeNotionalFixedRate(
                     sqrtRatioCurr,
-                    sqrtRatioUpper,
-                    grossLiquidity
+                    // sqrtRatioUpper,
+                    amount0,
+                    // amount1
+                    false
                 );
             (
                 PRBMath.UD60x18 memory notionalFTUD,
                 PRBMath.UD60x18 memory fixedRateFTUD
             ) = tickRangeNotionalFixedRate(
-                    sqrtRatioLower,
+                    // sqrtRatioLower,
                     sqrtRatioCurr,
-                    grossLiquidity
+                    amount1,
+                    true
                 );
-            grossMarginUD = getLPMarginReqWithinTickRangeDeposit(
-                notionalVTUD,
-                fixedRateVTUD,
-                notionalFTUD,
-                fixedRateFTUD,
-                timePeriodInSeconds,
-                isLM
-            );
+
+            marginUD = getLPMarginReqWithinTickRangeDeposit(notionalVTUD, 
+                                                            fixedRateVTUD, 
+                                                            notionalFTUD, 
+                                                            fixedRateFTUD, 
+                                                            timePeriodInSeconds, 
+                                                            isLM);
         } else {
             (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(
-                sqrtRatioLower,
+                // sqrtRatioLower,
                 sqrtRatioUpper,
-                grossLiquidity
+                amount1,
+                true
             );
-            grossMarginUD = PRBMath.UD60x18({
+            marginUD = PRBMath.UD60x18({
                 value: getFTMarginRequirement(
                     notionalUD.value,
                     fixedRateUD.value,
@@ -169,11 +221,6 @@ contract MarginCalculator is IMarginCalculator{
             });
         }
 
-        PRBMath.UD60x18 memory marginUD;
-        PRBMath.UD60x18 memory liquidityUD = PRBMath.UD60x18({
-            value: uint256(liquidity)
-        }); // todo: make sure this is done correctly
-        marginUD = PRBMathUD60x18Typed.div(grossMarginUD, liquidityUD);
         margin = marginUD.value;
     }
 
