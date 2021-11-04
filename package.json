@@ -33,6 +33,8 @@
     "typescript": "^4.4.4"
   },
   "dependencies": {
+    "@aave/protocol-v2": "^1.0.1",
+    "@openzeppelin/contracts": "^4.3.2",
     "hardhat-prettier": "0.0.1",
     "jsbi": "^4.0.0",
     "mocha-chai-jest-snapshot": "^1.1.3",

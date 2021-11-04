@@ -1,5 +1,6 @@
 pragma solidity ^0.8.0;
 import "../IMarginCalculator.sol";
+import "../IAaveRateOracle.sol";
 
 /// @title Pool state that never changes
 /// @notice These parameters are fixed for a amm forever, i.e., the methods will always return the same values
@@ -8,6 +9,10 @@ interface IAMMImmutables {
     /// @notice Margin calculator interface
     /// @return The margin calculator interface
     function calculator() external view returns (IMarginCalculator);
+
+    /// @notice Aave Rate Oracle Interface
+    /// @return The Aave Rate Oracle Interface
+    function rateOracle() external view returns (IAaveRateOracle);
 
     /// @notice The contract that deployed the amm, which must adhere to the AMMFactory interface
     /// @return The contract address

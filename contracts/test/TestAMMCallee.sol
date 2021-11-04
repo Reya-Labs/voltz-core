@@ -23,7 +23,7 @@ contract TestAMMCallee is AMM {
                isUnwind: false
         });
 
-        IAMM(amm).swap(params, abi.encode(msg.sender));
+        IAMM(amm).swap(params);
   }
 
   function swap0ForExact1(
@@ -41,7 +41,7 @@ contract TestAMMCallee is AMM {
                isUnwind: false
         });
 
-        IAMM(amm).swap(params, abi.encode(msg.sender));
+        IAMM(amm).swap(params);
   }
 
 
@@ -60,7 +60,7 @@ contract TestAMMCallee is AMM {
                isUnwind: false
         });
 
-        IAMM(amm).swap(params, abi.encode(msg.sender));
+        IAMM(amm).swap(params);
   }
 
   
@@ -79,7 +79,7 @@ contract TestAMMCallee is AMM {
                isUnwind: false
         });
 
-        IAMM(amm).swap(params, abi.encode(msg.sender));
+        IAMM(amm).swap(params);
   }
 
 
@@ -97,7 +97,7 @@ contract TestAMMCallee is AMM {
                isUnwind: false
         });
 
-        IAMM(amm).swap(params, abi.encode(msg.sender));
+        IAMM(amm).swap(params);
   }
 
   
@@ -115,7 +115,7 @@ contract TestAMMCallee is AMM {
                isUnwind: false
         });
 
-        IAMM(amm).swap(params, abi.encode(msg.sender));
+        IAMM(amm).swap(params);
   }
 
     function mint(

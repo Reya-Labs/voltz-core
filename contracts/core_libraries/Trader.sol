@@ -8,6 +8,8 @@ library Trader {
         int256 notional;
         uint256 fixedRate; // todo: should be int?
         int256 margin;
+        int256 fixedTokenBalance;
+        int256 variableTokenBalance;
         bool settled;
     }
 
@@ -30,11 +32,15 @@ library Trader {
         Info storage self,
         int256 notional,
         uint256 fixedRate,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
         int256 margin,
         bool settled
     ) internal {
         self.notional = notional;
         self.fixedRate = fixedRate;
+        self.fixedTokenBalance = fixedTokenBalance;
+        self.variableTokenBalance = variableTokenBalance;
         self.margin = margin;
         self.settled = settled;
     }

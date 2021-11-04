@@ -83,9 +83,10 @@ interface IAMMState {
             int256 notional,
             uint256 fixedRate, // todo: should be int?
             int256 margin,
+            int256 fixedTokenBalance,
+            int256 variableTokenBalance,
             bool settled
         );
 
 
-    
 }

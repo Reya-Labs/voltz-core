@@ -38,9 +38,8 @@ interface IAmmActions {
     ) external;
 
     /// @notice Initiate an Interest Rate Swap Contract
-    /// @param data Any data to be passed through to the callback
     function swap(
-        SwapParams memory params,
-        bytes calldata data
+        SwapParams memory params
+        // bytes calldata data
     ) external returns (Trader.Info memory trader);
 }

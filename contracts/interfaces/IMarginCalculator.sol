@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 
-/// @title The interface for the Voltz AMM Factory
 interface IMarginCalculator {
 
     function apyUpper() external view returns (uint256);

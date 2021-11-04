@@ -14,6 +14,7 @@ import "./core_libraries/SwapMath.sol";
 
 import "hardhat/console.sol";
 import "./interfaces/IMarginCalculator.sol";
+import "./interfaces/IAaveRateOracle.sol";
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
@@ -60,7 +61,9 @@ contract AMM is IAMM, NoDelegateCall {
     uint256 public override balance0;
     uint256 public override balance1;
 
-    IMarginCalculator public override calculator; // todo: add override
+    IMarginCalculator public override calculator;
+    
+    IAaveRateOracle public override rateOracle; 
 
     constructor() {
         int24 _tickSpacing;
@@ -126,20 +129,24 @@ contract AMM is IAMM, NoDelegateCall {
     }
 
 
+    // function settlePositionAccruedCashflows() internal {
+
+    // }
+
     function unwindPosition(
         address owner,
         int24 tickLower,
         int24 tickUpper,
-        address recipient,
         int256 fixedRate,
-        int256 notional,
-        bytes calldata data
-    ) public {
+        int256 notional
+        // bytes calldata data
+    ) internal {
         
         // todo: returns position
         // traderU is unnecessary
-        (int256 cashflow, Trader.Info memory traderU) = unwind(recipient, fixedRate, notional, data);
-
+        (int256 cashflow, Trader.Info memory traderU) = unwind(owner, fixedRate, notional);
+        
+        // todo: redundunt: getting position twice
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
 
         int256 updatedMargin = PRBMathSD59x18Typed.sub(
@@ -158,39 +165,39 @@ contract AMM is IAMM, NoDelegateCall {
 
     }
 
-    function unwindTrader(
-        address recipient,
-        int256 fixedRate,
-        int256 notional,
-        bytes calldata data
-    ) public {
+    // function unwindTrader(
+    //     address recipient,
+    //     int256 fixedRate,
+    //     int256 notional
+    //     // bytes calldata data
+    // ) public {
 
-        // traderU is unnecessary
-        (int256 cashflow, Trader.Info memory traderU) = unwind(recipient, fixedRate, notional, data);
+    //     // traderU is unnecessary
+    //     (int256 cashflow, Trader.Info memory traderU) = unwind(recipient, fixedRate, notional);
 
-        Trader.Info storage trader = traders.get(recipient, notional, uint256(fixedRate));
+    //     Trader.Info storage trader = traders.get(recipient, notional, uint256(fixedRate));
 
-        int256 updatedMargin = PRBMathSD59x18Typed.sub(
+    //     int256 updatedMargin = PRBMathSD59x18Typed.sub(
 
-            PRBMath.SD59x18({
-                value: trader.margin
-            }),
+    //         PRBMath.SD59x18({
+    //             value: trader.margin
+    //         }),
 
-            PRBMath.SD59x18({
-                value: cashflow
-            })
+    //         PRBMath.SD59x18({
+    //             value: cashflow
+    //         })
     
-        ).value;
+    //     ).value;
 
-        trader.update(trader.notional, trader.fixedRate, updatedMargin, true);
+    //     trader.update(trader.notional, trader.fixedRate, updatedMargin, true);
     
-    }
+    // }
     
     function unwind(
         address recipient,
         int256 fixedRate,
-        int256 notional,
-        bytes calldata data
+        int256 notional
+        // bytes calldata data
     ) public noDelegateCall returns(int256 cashflow, Trader.Info memory traderU){
 
         // todo: require statement for notional to not be 0
@@ -203,14 +210,6 @@ contract AMM is IAMM, NoDelegateCall {
             // notional is positive
             // -traderU.notional is negative
             // todo: this swap doesn't require margin calculation
-            
-            // struct SwapParams {
-            //         address recipient;
-            //         bool isFT; // equivalent to !zeroForOne
-            //         int256 amountSpecified;
-            //         uint160 sqrtPriceLimitX96;
-            //         bool isUnwind;
-            //     }
 
             SwapParams memory params = SwapParams({
                recipient: recipient,
@@ -220,7 +219,7 @@ contract AMM is IAMM, NoDelegateCall {
                isUnwind: true
             });
 
-            traderU = swap(params, data); // min price            
+            traderU = swap(params); // min price            
             
             cashflow = calculator.getUnwindSettlementCashflow(notional, int256(fixedRate), traderU.notional, 
                 int256(traderU.fixedRate), termEndTimeStamp - _blockTimestamp());
@@ -237,11 +236,12 @@ contract AMM is IAMM, NoDelegateCall {
                isUnwind: true
             });
 
-            traderU = swap(params, data); // max price
+            traderU = swap(params); // max price
 
             cashflow = calculator.getUnwindSettlementCashflow(notional, int256(fixedRate), traderU.notional, 
                 int256(traderU.fixedRate), termEndTimeStamp - _blockTimestamp());
         }
+
 
         // todo: require if isUnwind in swap for amountSpecified to be negative
 
@@ -281,6 +281,7 @@ contract AMM is IAMM, NoDelegateCall {
             })
         ).value;
 
+        
         int256 fixedRateInside = ticks.getFixedRateInside(
             Tick.FixedRateInsideParams({
                 tickLower: tickLower,
@@ -299,14 +300,9 @@ contract AMM is IAMM, NoDelegateCall {
             }) 
         );
 
-        
+        unwindPosition(msg.sender, tickLower, tickUpper,  fixedRateInside, notionalAmount);
 
-        // unwinds an active position
-        
-        // need an unwind function in here, not a simple swap
-        
-        // swap(msg.sender, )
-
+        // collectCashflows()
 
     }
     
@@ -581,6 +577,10 @@ contract AMM is IAMM, NoDelegateCall {
         // the lower and upper tick of the position
         int256 notional;
         uint256 fixedRate;            
+
+        int256 fixedTokenBalance;
+        int256 variableTokenBalance;
+
         int256 margin;
         bool settled;
     }
@@ -590,14 +590,239 @@ contract AMM is IAMM, NoDelegateCall {
         
         trader = traders.get(params.traderAddress, params.notional, params.fixedRate);
 
-        trader.update(params.notional, params.fixedRate, params.margin, params.settled);
+        trader.update(params.notional, params.fixedRate, params.fixedTokenBalance, params.variableTokenBalance, params.margin, params.settled);
+
+    }
+
+    struct SettleTraderParams {
+        address traderAddress;
+        int256 notional;
+        uint256 fixedRate;            
+    }
+
+
+    function settleTrader(InitiateIRSParams memory params) private noDelegateCall returns(Trader.Info storage trader) {
+
+        // check if the current block is more or equal to maturity
+
+        trader = traders.get(params.traderAddress, params.notional, params.fixedRate);
+
+        // update the margin to essentially be equal to tokens owned
+        PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
+
+            PRBMath.SD59x18({
+                value: trader.fixedTokenBalance
+            }),
+
+            PRBMath.SD59x18({
+                value: int256(fixedFactor(true))
+            })
+        );
+
+        PRBMath.SD59x18 memory exp2 = PRBMathSD59x18Typed.mul(
+
+            PRBMath.SD59x18({
+                value: trader.variableTokenBalance
+            }),
+
+            PRBMath.SD59x18({
+                value: int256(variableFactor(true))
+            })
+        );
+
+        int256 irsCashflow = PRBMathSD59x18Typed.add(exp1, exp2).value;
+
+        int256 updatedMargin = PRBMathSD59x18Typed.add(
+
+            PRBMath.SD59x18({
+                value: trader.margin
+            }),
+
+            PRBMath.SD59x18({
+                value: irsCashflow
+            })
+        ).value;
+
+        trader.update(trader.notional, trader.fixedRate, 0, 0, updatedMargin, true);
+
+    }   
+    
+
+    function fixedFactor(bool atMaturity) public returns(uint256) {
+
+        
+        uint256 timePeriodInSeconds;
+
+        if (atMaturity) {
+            uint256 termEndTimestamp = termStartTimestamp + (termInDays * 24 * 60 * 60);
+            timePeriodInSeconds = termEndTimestamp - termStartTimestamp;
+        } else {
+            timePeriodInSeconds = _blockTimestamp() - termStartTimestamp;
+        }    
+        
+        uint256 timePeriodInYears = calculator.accrualFact(timePeriodInSeconds);
+        
+        uint256 fixedFactorValue = PRBMathUD60x18Typed.mul(
+                
+                PRBMath.UD60x18({
+                    value: timePeriodInYears
+                }),
+                
+                PRBMath.UD60x18({
+                    value: 10 ** 16
+                })
+        ).value;
+
+        return fixedFactorValue;    
+
+    }
+    
+    function variableFactor(bool atMaturity) public returns(uint256) {
+        
+        if (atMaturity) {
+            
+            // todo: require check that current timestamp is after or equal to the maturity date
+
+            uint256 termEndTimestamp = termStartTimestamp + (termInDays * 24 * 60 * 60);
+            (bool isSet,,) = rateOracle.rates(underlyingToken, termEndTimestamp);
+
+            if(!isSet) {
+                if (termEndTimestamp == _blockTimestamp()) {
+                    rateOracle.updateRate(underlyingToken);
+                } // else  raise an error        
+            }
+
+            uint256 rateFromPoolStartToMaturity = rateOracle.getRateFromTo(underlyingToken, termStartTimestamp, _blockTimestamp());
+            
+            rateFromPoolStartToMaturity = rateFromPoolStartToMaturity / 10 ** (27 - 18); // 18 decimals 
+
+            return rateFromPoolStartToMaturity;
+        
+        } else {
+            (bool isSet,,) = rateOracle.rates(underlyingToken, _blockTimestamp());
+
+            if(!isSet) {
+                rateOracle.updateRate(underlyingToken);
+            }
+
+            uint256 rateFromPoolStartToNow = rateOracle.getRateFromTo(underlyingToken, termStartTimestamp, _blockTimestamp());
+
+            rateFromPoolStartToNow = rateFromPoolStartToNow / 10 ** (27 - 18); // 18 decimals 
+            
+            return rateFromPoolStartToNow;
+        }        
 
     }
     
 
-    // todo: add to interface and override
-    function getNotionalFixedRateAndMargin(uint256 amount0, uint256 amount1, bool isFT, bool isUnwind) public 
-                noDelegateCall returns(int256 notional, uint256 fixedRate, int256 margin) {
+    function calculateFixedTokenBalance(int256 amount0, int256 excessBalance) public returns(int256 fixedTokenBalance) {
+
+        PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
+
+            PRBMath.SD59x18({
+                value: amount0
+            }),
+
+            PRBMath.SD59x18({
+                value: int256(fixedFactor(true))
+            })
+        );
+
+        PRBMath.SD59x18 memory numerator = PRBMathSD59x18Typed.sub(
+            exp1,
+            PRBMath.SD59x18({
+                value: excessBalance
+            })
+        );
+
+        
+        fixedTokenBalance = PRBMathSD59x18Typed.div(
+            exp1,
+            PRBMath.SD59x18({
+                value: int256(fixedFactor(true))
+            })
+        ).value;
+        
+    }
+    
+    
+    function getFixedTokenBalance(uint256 amount0, uint256 amount1, bool isFT) public returns(int256 fixedTokenBalance) {
+        
+        int256 excessFixedAccruedBalance;
+        int256 excessVariableAccruedBalance;
+        int256 excessBalance;
+
+        if (isFT) {
+
+            PRBMath.SD59x18 memory excessFixedAccruedBalance = PRBMathSD59x18Typed.mul(
+
+                PRBMath.SD59x18({
+                    value: int256(amount0)
+                }),
+
+                PRBMath.SD59x18({
+                    value: int256(fixedFactor(false))
+                })
+            );
+
+            PRBMath.SD59x18 memory excessVariableAccruedBalance = PRBMathSD59x18Typed.mul(
+
+                PRBMath.SD59x18({
+                    value: -int256(amount1)
+                }),
+
+                PRBMath.SD59x18({
+                    value: int256(variableFactor(false))
+                })
+            );
+
+
+            excessBalance = PRBMathSD59x18Typed.add(
+                excessFixedAccruedBalance,
+                excessVariableAccruedBalance
+            ).value;
+
+            fixedTokenBalance = calculateFixedTokenBalance(int256(amount0), excessBalance);
+        } else {
+    
+            PRBMath.SD59x18 memory excessFixedAccruedBalance = PRBMathSD59x18Typed.mul(
+
+                PRBMath.SD59x18({
+                    value: -int256(amount0)
+                }),
+
+                PRBMath.SD59x18({
+                    value: int256(fixedFactor(false))
+                })
+            );
+
+            PRBMath.SD59x18 memory excessVariableAccruedBalance = PRBMathSD59x18Typed.mul(
+
+                PRBMath.SD59x18({
+                    value: int256(amount1)
+                }),
+
+                PRBMath.SD59x18({
+                    value: int256(variableFactor(false))
+                })
+            );
+
+            
+            excessBalance = PRBMathSD59x18Typed.add(
+                excessFixedAccruedBalance,
+                excessVariableAccruedBalance
+            ).value;
+
+            fixedTokenBalance = calculateFixedTokenBalance(-int256(amount0), excessBalance);
+
+        }
+  
+
+    }
+
+
+    function calculateIRSParams(uint256 amount0, uint256 amount1, bool isFT, bool isUnwind) public 
+                noDelegateCall returns(int256 notional, uint256 fixedRate, int256 margin, int256 fixedTokenBalance, int256 variableTokenBalance) {
 
         PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: uint256(amount1)});
         PRBMath.UD60x18 memory fixedRateUD = PRBMathUD60x18Typed.mul(
@@ -613,37 +838,31 @@ contract AMM is IAMM, NoDelegateCall {
         // compute margin, initiate the swap
         if (isFT) {
 
-            // uint256 balance0Before = balance0;
-
-            // if (amount0 > 0) balance0 = balance0.add(amount0);
-            // if (amount1 > 0) balance1 = balance1.sub(amount1);
-
-            // require(balance0Before.add(amount0) <= balance0, "IIA");
-
             // todo: only compute margin if it is not an unwind
-            // margin = MarginCalculator.getFTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false);
-
+            margin = int256(calculator.getFTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false));
             notional = int256(notionalUD.value);
 
+            variableTokenBalance = -int256(amount1);
+
         } else {
-            // uint256 balance1Before = balance1;
 
-            // if (amount0 > 0) balance0 = balance0.sub(amount0);
-            // if (amount1 > 0) balance1 = balance1.add(amount1); todo: Error: Transaction reverted without a reason string (overflow?)
-
-            // require(balance1Before.add(amount1) <= balance1, "IIA");
-
-            // margin = MarginCalculator.getVTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false);
+            margin = int256(calculator.getVTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false));
 
             notional = -int256(notionalUD.value);
 
-            fixedRate = fixedRateUD.value;
+            variableTokenBalance = int256(amount1);
+            
         }
+
+        fixedTokenBalance = getFixedTokenBalance(amount0, amount1, isFT);
+    
+        fixedRate = fixedRateUD.value;
+
     }
 
     function swap(
-        SwapParams memory params,
-        bytes calldata data
+        SwapParams memory params
+        // bytes calldata data
     ) public override noDelegateCall returns (Trader.Info memory trader){
         require(params.amountSpecified != 0, "AS");
 
@@ -876,17 +1095,11 @@ contract AMM is IAMM, NoDelegateCall {
                 params.amountSpecified - state.amountSpecifiedRemaining
             );
 
-        InitiateIRSParams memory initiateIRSParams = InitiateIRSParams({
-            traderAddress: msg.sender,
-            notional: 0,
-            fixedRate: 0,            
-            margin: 0,
-            settled: false // redundunt
-        }); 
+        InitiateIRSParams memory initiateIRSParams;
 
- 
-        (initiateIRSParams.notional, initiateIRSParams.fixedRate, initiateIRSParams.margin) = getNotionalFixedRateAndMargin(uint256(amount0), uint256(amount1), params.isFT, params.isUnwind);
-
+        (initiateIRSParams.notional, initiateIRSParams.fixedRate,
+        initiateIRSParams.margin, initiateIRSParams.fixedTokenBalance, initiateIRSParams.variableTokenBalance) = calculateIRSParams(uint256(amount0), uint256(amount1), params.isFT, params.isUnwind);
+        
         if (params.isUnwind) {
             initiateIRSParams.settled = true;
         }
