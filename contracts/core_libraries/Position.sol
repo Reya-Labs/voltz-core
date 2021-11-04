@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../utils/FullMath.sol";
 import "../utils/FixedPoint128.sol";
 import "../utils/LiquidityMath.sol";
+import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
@@ -16,6 +17,12 @@ library Position {
         // fee growth per unit of liquidity as of the last update to liquidity or fees owed
         uint256 feeGrowthInsideLastX128;
         int256 margin;
+
+        int256 fixedTokenGrowthInsideLast;
+        int256 variableTokenGrowthInsideLast;
+        
+        int256 fixedTokenBalance;
+        int256 variableTokenBalance;
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
@@ -43,7 +50,10 @@ library Position {
         Info storage self,
         int128 liquidityDelta,
         uint256 feeGrowthInsideX128,
-        int256 updatedMargin
+        int256 updatedMargin,
+        int256 fixedTokenGrowthInside,
+        int256 variableTokenGrowthInside
+
     ) internal {
         Info memory _self = self;
 
@@ -58,9 +68,80 @@ library Position {
             );
         }
 
+        // calculate accumuldated fixed and variable tokens
+        int256 fixedTokenBalance = PRBMathSD59x18Typed.mul(
+            
+            PRBMathSD59x18Typed.sub(
+
+                PRBMath.SD59x18({
+                    value: fixedTokenGrowthInside
+                }),
+
+                PRBMath.SD59x18({
+                    value: _self.fixedTokenGrowthInsideLast
+                })
+            ),
+
+            PRBMath.SD59x18({
+                value: int256(uint256(_self.liquidity))
+            })
+
+        ).value;
+
+
+        int256 variableTokenBalance = PRBMathSD59x18Typed.mul(
+            
+            PRBMathSD59x18Typed.sub(
+
+                PRBMath.SD59x18({
+                    value: variableTokenGrowthInside
+                }),
+
+                PRBMath.SD59x18({
+                    value: _self.variableTokenGrowthInsideLast
+                })
+            ),
+
+            PRBMath.SD59x18({
+                value: int256(uint256(_self.liquidity))
+            })
+
+        ).value;
+
         // update the position
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
         self.feeGrowthInsideLastX128 = feeGrowthInsideX128;
+        self.fixedTokenGrowthInsideLast = fixedTokenGrowthInside;
+        self.variableTokenGrowthInsideLast = variableTokenGrowthInside;
         self.margin = updatedMargin;
+
+        if (fixedTokenBalance > 0 || variableTokenBalance > 0) {
+            
+            self.fixedTokenBalance = PRBMathSD59x18Typed.add(
+
+                PRBMath.SD59x18({
+                    value: self.fixedTokenBalance
+                }),
+
+                PRBMath.SD59x18({
+                    value: fixedTokenBalance
+                })
+            ).value;
+
+
+            self.variableTokenBalance = PRBMathSD59x18Typed.add(
+
+                PRBMath.SD59x18({
+                    value: self.variableTokenBalance
+                }),
+
+                PRBMath.SD59x18({
+                    value: variableTokenBalance
+                })
+            ).value;
+
+        }
+
+
     }
 }

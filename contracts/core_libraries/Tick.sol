@@ -30,6 +30,9 @@ library Tick {
 
         int256 fixedRateOutside;
 
+        int256 fixedTokenGrowthOutside;
+        int256 variableTokenGrowthOutside;
+
         bool initialized;
 
     }
@@ -115,6 +118,168 @@ library Tick {
     
     }
 
+
+     struct VariableTokenGrowthInsideParams {
+
+        int24 tickLower;
+        int24 tickUpper;
+        int24 tickCurrent;
+        int256 variableTokenGrowthGlobal;
+        
+    }
+
+    
+    function getVariableTokenGrowthInside(
+        mapping(int24 => Tick.Info) storage self,
+        VariableTokenGrowthInsideParams memory params
+    ) public view returns (int256 variableTokenGrowthInside) {
+        
+        Info storage lower = self[params.tickLower];
+        Info storage upper = self[params.tickUpper];
+
+        // calculate the VariableTokenGrowth below
+        int256 variableTokenGrowthBelow;
+
+        if (params.tickCurrent >= params.tickLower) {
+            variableTokenGrowthBelow = lower.variableTokenGrowthOutside;
+        } else {
+
+            variableTokenGrowthBelow = PRBMathSD59x18Typed.sub(
+
+                PRBMath.SD59x18({
+                    value: params.variableTokenGrowthGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: lower.variableTokenGrowthOutside
+                })
+            ).value;
+
+        }
+
+
+        // calculate the VariableTokenGrowth above
+        int256 variableTokenGrowthAbove;
+
+        if (params.tickCurrent < params.tickUpper) {
+            variableTokenGrowthAbove = upper.variableTokenGrowthOutside;
+        } else {
+
+            variableTokenGrowthAbove = PRBMathSD59x18Typed.sub(
+
+                PRBMath.SD59x18({
+                    value: params.variableTokenGrowthGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: upper.variableTokenGrowthOutside
+                })
+            ).value;
+        }
+
+
+        variableTokenGrowthInside = PRBMathSD59x18Typed.sub(
+
+            PRBMath.SD59x18({
+                value: params.variableTokenGrowthGlobal
+            }),
+
+            PRBMathSD59x18Typed.add(
+
+                PRBMath.SD59x18({
+                    value: variableTokenGrowthBelow
+                }),
+
+                PRBMath.SD59x18({
+                    value: variableTokenGrowthAbove
+                })
+            )
+                
+        ).value;
+
+    }
+
+
+    struct FixedTokenGrowthInsideParams {
+
+        int24 tickLower;
+        int24 tickUpper;
+        int24 tickCurrent;
+        int256 fixedTokenGrowthGlobal;
+        
+    }
+
+    
+    function getFixedTokenGrowthInside(
+        mapping(int24 => Tick.Info) storage self,
+        FixedTokenGrowthInsideParams memory params
+    ) public view returns (int256 fixedTokenGrowthInside) {
+        
+        Info storage lower = self[params.tickLower];
+        Info storage upper = self[params.tickUpper];
+
+        // calculate the FixedTokenGrowth below
+        int256 fixedTokenGrowthBelow;
+
+        if (params.tickCurrent >= params.tickLower) {
+            fixedTokenGrowthBelow = lower.fixedTokenGrowthOutside;
+        } else {
+
+            fixedTokenGrowthBelow = PRBMathSD59x18Typed.sub(
+
+                PRBMath.SD59x18({
+                    value: params.fixedTokenGrowthGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: lower.fixedTokenGrowthOutside
+                })
+            ).value;
+
+        }
+
+
+        // calculate the FixedTokenGrowth above
+        int256 fixedTokenGrowthAbove;
+
+        if (params.tickCurrent < params.tickUpper) {
+            fixedTokenGrowthAbove = upper.fixedTokenGrowthOutside;
+        } else {
+
+            fixedTokenGrowthAbove = PRBMathSD59x18Typed.sub(
+
+                PRBMath.SD59x18({
+                    value: params.fixedTokenGrowthGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: upper.fixedTokenGrowthOutside
+                })
+            ).value;
+        }
+
+
+        fixedTokenGrowthInside = PRBMathSD59x18Typed.sub(
+
+            PRBMath.SD59x18({
+                value: params.fixedTokenGrowthGlobal
+            }),
+
+            PRBMathSD59x18Typed.add(
+
+                PRBMath.SD59x18({
+                    value: fixedTokenGrowthBelow
+                }),
+
+                PRBMath.SD59x18({
+                    value: fixedTokenGrowthAbove
+                })
+            )
+                
+        ).value;
+
+    }
+    
     
     function getFixedRateInside(
         mapping(int24 => Tick.Info) storage self,
@@ -400,6 +565,9 @@ library Tick {
         int256 notionalGlobal,
         int256 fixedRateGlobal,
 
+        int256 fixedTokenGrowthGlobal,
+        int256 variableTokenGrowthGlobal,
+
         bool upper,
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
@@ -425,6 +593,11 @@ library Tick {
                 info.notionalOutside = notionalGlobal;
 
                 info.fixedRateOutside = fixedRateGlobal;
+
+                info.fixedTokenGrowthOutside = fixedTokenGrowthGlobal;
+                
+                info.variableTokenGrowthOutside = variableTokenGrowthGlobal;
+
             }
 
             info.initialized = true;
@@ -458,13 +631,37 @@ library Tick {
         uint256 feeGrowthGlobalX128,
         int256 notionalGrowthGlobal,
         int256 notionalGlobal,
-        int256 fixedRateGlobal
+        int256 fixedRateGlobal,
+
+        int256 fixedTokenGrowthGlobal,
+        int256 variableTokenGrowthGlobal
+        
     ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
         info.feeGrowthOutsideX128 =
             feeGrowthGlobalX128 -
             info.feeGrowthOutsideX128;
 
+        info.fixedTokenGrowthOutside = PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: fixedTokenGrowthGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: info.fixedTokenGrowthOutside
+                })
+        ).value;
+
+        info.variableTokenGrowthOutside = PRBMathSD59x18Typed.sub(
+                PRBMath.SD59x18({
+                    value: variableTokenGrowthGlobal
+                }),
+
+                PRBMath.SD59x18({
+                    value: info.variableTokenGrowthOutside
+                })
+        ).value;
+        
         info.notionalGrowthOutside = PRBMathSD59x18Typed.sub(
                 PRBMath.SD59x18({
                     value: notionalGrowthGlobal

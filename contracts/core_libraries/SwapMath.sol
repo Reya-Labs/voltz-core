@@ -30,7 +30,10 @@ library SwapMath {
             uint256 amountOut,
 
             int256 notionalAmount,
-            int256 fixedRate
+            int256 fixedRate,
+
+            uint256 amount0,
+            uint256 amount1
         )
     {
         bool zeroForOne = sqrtRatioCurrentX96 >= sqrtRatioTargetX96;
@@ -156,6 +159,9 @@ library SwapMath {
         
         
         fixedRate = fixedRateUD.value;
+
+        amount0 = uint256(amount0UD.value);
+        amount1 = uint256(amount1UD.value);
         
     }
 }
