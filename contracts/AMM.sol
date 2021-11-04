@@ -133,9 +133,6 @@ contract AMM is IAMM, NoDelegateCall {
     }
 
 
-    // function settlePositionAccruedCashflows() internal {
-
-    // }
 
     // function unwindPosition(
     //     address owner,
@@ -322,9 +319,66 @@ contract AMM is IAMM, NoDelegateCall {
     }
 
     
-    function settlePosition(ModifyPositionParams memory params) public returns(Position.Info memory position) {
+    // todo: can be migrated into the Position.sol contract
+    function settlePosition(ModifyPositionParams memory params) public {
         
-        position = positions.get(params.owner, params.tickLower, params.tickUpper);
+        // check if the current block is more or equal to maturity
+
+        checkTicks(params.tickLower, params.tickUpper);
+
+        Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
+
+        UpdatePositionParams memory updatePositionParams;
+
+        updatePositionParams.owner = params.owner;
+        updatePositionParams.tickLower = params.tickLower;
+        updatePositionParams.tickUpper = params.tickUpper;
+        updatePositionParams.liquidityDelta = params.liquidityDelta;
+        updatePositionParams.tick = _slot0.tick;
+
+        // update the position
+        _updatePosition(updatePositionParams);
+        
+        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
+
+        // todo: code repetition below
+        PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
+
+            PRBMath.SD59x18({
+                value: position.fixedTokenBalance
+            }),
+
+            PRBMath.SD59x18({
+                value: int256(fixedFactor(true))
+            })
+        );
+
+        
+        PRBMath.SD59x18 memory exp2 = PRBMathSD59x18Typed.mul(
+
+            PRBMath.SD59x18({
+                value: position.variableTokenBalance
+            }),
+
+            PRBMath.SD59x18({
+                value: int256(variableFactor(true))
+            })
+        );
+
+        int256 irsCashflow = PRBMathSD59x18Typed.add(exp1, exp2).value;
+
+        int256 updatedMargin = PRBMathSD59x18Typed.add(
+
+            PRBMath.SD59x18({
+                value: position.margin
+            }),
+
+            PRBMath.SD59x18({
+                value: irsCashflow
+            })
+        ).value;
+
+        position.update(0, position.feeGrowthInsideLastX128, updatedMargin, 0, 0);
 
     }
 

@@ -53,7 +53,6 @@ library Position {
         int256 updatedMargin,
         int256 fixedTokenGrowthInside,
         int256 variableTokenGrowthInside
-
     ) internal {
         Info memory _self = self;
 
