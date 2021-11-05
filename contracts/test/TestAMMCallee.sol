@@ -20,7 +20,8 @@ contract TestAMMCallee is AMM {
                isFT: true,
                amountSpecified: amount0In.toInt256(),
                sqrtPriceLimitX96: sqrtPriceLimitX96,
-               isUnwind: false
+               isUnwind: false,
+               isTrader: true
         });
 
         IAMM(amm).swap(params);
@@ -38,7 +39,8 @@ contract TestAMMCallee is AMM {
                isFT: true,
                amountSpecified: -amount1Out.toInt256(),
                sqrtPriceLimitX96: sqrtPriceLimitX96,
-               isUnwind: false
+               isUnwind: false,
+               isTrader: true
         });
 
         IAMM(amm).swap(params);
@@ -57,7 +59,8 @@ contract TestAMMCallee is AMM {
                isFT: false,
                amountSpecified: amount1In.toInt256(),
                sqrtPriceLimitX96: sqrtPriceLimitX96,
-               isUnwind: false
+               isUnwind: false,
+               isTrader: true
         });
 
         IAMM(amm).swap(params);
@@ -76,7 +79,8 @@ contract TestAMMCallee is AMM {
                isFT: false,
                amountSpecified: -amount0Out.toInt256(),
                sqrtPriceLimitX96: sqrtPriceLimitX96,
-               isUnwind: false
+               isUnwind: false,
+               isTrader: true
         });
 
         IAMM(amm).swap(params);
@@ -94,7 +98,8 @@ contract TestAMMCallee is AMM {
                isFT: true,
                amountSpecified: type(int256).max,
                sqrtPriceLimitX96: sqrtPriceX96,
-               isUnwind: false
+               isUnwind: false,
+               isTrader: true
         });
 
         IAMM(amm).swap(params);
@@ -112,7 +117,8 @@ contract TestAMMCallee is AMM {
                isFT: false,
                amountSpecified: type(int256).max,
                sqrtPriceLimitX96: sqrtPriceX96,
-               isUnwind: false
+               isUnwind: false,
+               isTrader: true
         });
 
         IAMM(amm).swap(params);

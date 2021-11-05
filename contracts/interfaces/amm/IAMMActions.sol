@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import "../../core_libraries/Trader.sol";
+// import "../../core_libraries/Trader.sol";
 
 
 /// @title AMM actions
@@ -13,6 +13,7 @@ interface IAmmActions {
         int256 amountSpecified;
         uint160 sqrtPriceLimitX96;
         bool isUnwind;
+        bool isTrader;        
     }
 
     /// @notice Sets the initial price for the pool
@@ -37,9 +38,7 @@ interface IAmmActions {
         bytes calldata data
     ) external;
 
-    /// @notice Initiate an Interest Rate Swap Contract
     function swap(
         SwapParams memory params
-        // bytes calldata data
-    ) external returns (Trader.Info memory trader);
+    ) external returns (int256 _fixedTokenBalance, int256 _variableTokenBalance);
 }

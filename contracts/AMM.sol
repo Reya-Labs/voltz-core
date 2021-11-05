@@ -134,7 +134,6 @@ contract AMM is IAMM, NoDelegateCall {
 
 
 
-
     function unwindTrader(
         address traderAddress,
         int256 notional,
@@ -154,7 +153,8 @@ contract AMM is IAMM, NoDelegateCall {
                isFT: !isFT,
                amountSpecified: -notional,
                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
-               isUnwind: true
+               isUnwind: true,
+               isTrader: true
             });
 
             swap(params); // min price --> modifyTrader then updates the trader
@@ -168,7 +168,8 @@ contract AMM is IAMM, NoDelegateCall {
                isFT: isFT,
                amountSpecified: notional,
                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
-               isUnwind: true
+               isUnwind: true,
+               isTrader: true
             });
 
             swap(params); // max price --> modifyTrader then updates the trader
@@ -178,8 +179,72 @@ contract AMM is IAMM, NoDelegateCall {
 
     }
     
-    
+    function unwindPosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) public {
+        
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
 
+        // check if the position needs to be unwound in the first place (check if the variable token balance is nonzero)
+
+        checkTicks(tickLower, tickUpper);
+
+        Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
+
+        UpdatePositionParams memory updatePositionParams;
+
+        updatePositionParams.owner = owner;
+        updatePositionParams.tickLower = tickLower;
+        updatePositionParams.tickUpper = tickUpper;
+        updatePositionParams.liquidityDelta = 0;
+        updatePositionParams.tick = _slot0.tick;
+
+        // update the position
+        _updatePosition(updatePositionParams);
+
+        // initiate a swap
+        bool isFT = position.fixedTokenBalance > 0;
+        int256 _fixedTokenBalance;
+        int256 _variableTokenBalance;
+
+        if (isFT) {
+            // get into a VT swap
+            // variableTokenBalance is negative
+
+            SwapParams memory params = SwapParams({
+               recipient: owner,
+               isFT: !isFT,
+               amountSpecified: position.variableTokenBalance,
+               sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
+               isUnwind: true,
+               isTrader: false
+            });
+
+            (_fixedTokenBalance, _variableTokenBalance) = swap(params); // min price --> modifyTrader then updates the trader
+
+        } else {
+            // get into an FT swap
+            // variableTokenBalance is positive
+            
+            SwapParams memory params = SwapParams({
+               recipient: owner,
+               isFT: isFT,
+               amountSpecified: position.variableTokenBalance,
+               sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
+               isUnwind: true,
+               isTrader: false
+            });
+
+            (_fixedTokenBalance, _variableTokenBalance) = swap(params); // max price --> modifyTrader then updates the trader
+
+        }
+
+        position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
+
+    }
+    
     function burn(
         int24 tickLower,
         int24 tickUpper,
@@ -198,46 +263,15 @@ contract AMM is IAMM, NoDelegateCall {
                 })
             );
         
+        // important --> the unwind is done after the liquidity has been updated
+
         uint256 amount0 = uint256(-amount0Int);
         uint256 amount1 = uint256(-amount1Int);
 
-        
-        int256 notionalGrowthInside = ticks.getNotionalGrowthInside(tickLower, tickUpper, _slot0.tick, notionalGrowthGlobal);
-        
-        int256 notionalAmount = PRBMathSD59x18Typed.mul(
-            PRBMath.SD59x18({
-                value: notionalGrowthInside
-            }),
-            PRBMath.SD59x18({
-                value: int256(int128(amount))
-            })
-        ).value;
-
-        int256 fixedRateInside = ticks.getFixedRateInside(
-            Tick.FixedRateInsideParams({
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                tickCurrent: _slot0.tick,
-                fixedRateGlobal: fixedRateGlobal,
-                notionalGlobal: notionalGlobal,
-                fixedRateBelowUD: PRBMath.SD59x18({value: 0}),
-                fixedRateAboveUD: PRBMath.SD59x18({value: 0}),
-
-                exp1UD: PRBMath.SD59x18({value: 0}),
-                exp2UD: PRBMath.SD59x18({value: 0}),
-                exp3UD: PRBMath.SD59x18({value: 0}),
-                numerator: PRBMath.SD59x18({value: 0}),
-                denominator: PRBMath.SD59x18({value: 0})
-            }) 
-        );
-
-        // unwindPosition(msg.sender, tickLower, tickUpper,  fixedRateInside, notionalAmount);
-
-        // collectCashflows()
-
+        // unwind and then settle
+        // if settlement is attempted, the settlement can only be done if the variable balance is 0
     }
-    
-    
+
     struct ModifyPositionParams {
         // the address that owns the position
         address owner;
@@ -845,7 +879,7 @@ contract AMM is IAMM, NoDelegateCall {
                 PRBMath.SD59x18({
                     value: int256(fixedFactor(false))
                 })
-            );
+            ); 
 
             PRBMath.SD59x18 memory excessVariableAccruedBalance = PRBMathSD59x18Typed.mul(
 
@@ -913,8 +947,7 @@ contract AMM is IAMM, NoDelegateCall {
 
     function swap(
         SwapParams memory params
-        // bytes calldata data
-    ) public override noDelegateCall returns (Trader.Info memory trader){
+    ) public override noDelegateCall returns (int256 _fixedTokenBalance, int256 _variableTokenBalance){
         require(params.amountSpecified != 0, "AS");
 
         Slot0 memory slot0Start = slot0;
@@ -1202,20 +1235,40 @@ contract AMM is IAMM, NoDelegateCall {
         variableTokenGrowthGlobal = state.variableTokenGrowthGlobal;
         fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;
         
-        InitiateIRSParams memory initiateIRSParams;
+        if (params.isTrader) {
 
-        (initiateIRSParams.notional, initiateIRSParams.fixedRate,
-        initiateIRSParams.margin, initiateIRSParams.fixedTokenBalance, initiateIRSParams.variableTokenBalance) = calculateIRSParams(uint256(amount0), uint256(amount1), params.isFT, params.isUnwind);
-        
-        if (params.isUnwind) {
-            initiateIRSParams.settled = true;
+            InitiateIRSParams memory initiateIRSParams;
+
+            (initiateIRSParams.notional, initiateIRSParams.fixedRate,
+            initiateIRSParams.margin, initiateIRSParams.fixedTokenBalance, initiateIRSParams.variableTokenBalance) = calculateIRSParams(uint256(amount0), uint256(amount1), params.isFT, params.isUnwind);
+            
+            if (params.isUnwind) {
+                initiateIRSParams.settled = true;
+            }
+
+            // trader = _modifyTrader(
+            //     initiateIRSParams
+            // );
+
+            _modifyTrader(
+                initiateIRSParams
+            );
+
+            _fixedTokenBalance = initiateIRSParams.fixedTokenBalance;
+            _variableTokenBalance = initiateIRSParams.variableTokenBalance;
+
+        } else {
+            
+            _fixedTokenBalance = getFixedTokenBalance(uint256(amount0), uint256(amount1), params.isFT);
+
+            if (params.isFT) {
+                _variableTokenBalance = -int256(uint256(amount1));
+            } else {
+                _variableTokenBalance = int256(uint256(amount1));
+            }
+
         }
 
-        trader = _modifyTrader(
-            initiateIRSParams
-        );
-
-        
         emit Swap(
             msg.sender,
             params.recipient,
@@ -1225,6 +1278,7 @@ contract AMM is IAMM, NoDelegateCall {
             state.liquidity,
             state.tick
         );
+
         slot0.unlocked = true;
     }
 }

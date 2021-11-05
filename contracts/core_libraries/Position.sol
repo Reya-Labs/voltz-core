@@ -42,6 +42,41 @@ library Position {
         ];
     }
 
+    function updateBalances(
+        Info storage self,
+        int256 fixedTokenBalanceDelta,
+        int256 variableTokenBalanceDelta
+    ) internal {
+        Info memory _self = self;
+
+        int256 fixedTokenBalance = PRBMathSD59x18Typed.add(
+            
+            PRBMath.SD59x18({
+                value: _self.fixedTokenBalance
+            }),
+
+            PRBMath.SD59x18({
+                value: fixedTokenBalanceDelta
+            })
+
+        ).value;
+
+        int256 variableTokenBalance = PRBMathSD59x18Typed.add(
+            
+            PRBMath.SD59x18({
+                value: _self.variableTokenBalance
+            }),
+
+            PRBMath.SD59x18({
+                value: variableTokenBalanceDelta
+            })
+
+        ).value;
+
+        self.fixedTokenBalance = fixedTokenBalance;
+        self.variableTokenBalance = variableTokenBalance;
+    }
+    
     /// @notice Credits accumulated fees to a user's position
     /// @param self The individual position to update
     /// @param liquidityDelta The change in pool liquidity as a result of the position update
