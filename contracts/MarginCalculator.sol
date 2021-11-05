@@ -81,43 +81,43 @@ contract MarginCalculator is IMarginCalculator{
         
     }
 
-    function getUnwindSettlementCashflow(
-        int256 notionalS,
-        int256 fixedRateS,
-        int256 notionalU,
-        int256 fixedRateU,
-        uint256 timePeriodInSeconds
-    ) public override view returns (int256 cashflow) {
+    // function getUnwindSettlementCashflow(
+    //     int256 notionalS,
+    //     int256 fixedRateS,
+    //     int256 notionalU,
+    //     int256 fixedRateU,
+    //     uint256 timePeriodInSeconds
+    // ) public override view returns (int256 cashflow) {
 
-        // todo: require notionalS to be equal to notionalU --> otherwise DUST... 
+    //     // todo: require notionalS to be equal to notionalU --> otherwise DUST... 
 
-        PRBMath.SD59x18 memory fixedRateDelta = PRBMathSD59x18Typed.sub(
+    //     PRBMath.SD59x18 memory fixedRateDelta = PRBMathSD59x18Typed.sub(
 
-            PRBMath.SD59x18({
-                value: fixedRateS
-            }),
+    //         PRBMath.SD59x18({
+    //             value: fixedRateS
+    //         }),
 
-            PRBMath.SD59x18({
-                value: fixedRateU
-            })
-        );
+    //         PRBMath.SD59x18({
+    //             value: fixedRateU
+    //         })
+    //     );
 
-        uint256 timePeriodInYears = accrualFact(timePeriodInSeconds);
+    //     uint256 timePeriodInYears = accrualFact(timePeriodInSeconds);
 
 
-        cashflow = PRBMathSD59x18Typed.mul(
-            PRBMath.SD59x18({
-                value: notionalS // todo: make sure this value is correctly set
-            }),
-            PRBMathSD59x18Typed.mul(
-                fixedRateDelta,
-                PRBMath.SD59x18({
-                    value: int256(timePeriodInYears)
-                })
-            )
-        ).value;
+    //     cashflow = PRBMathSD59x18Typed.mul(
+    //         PRBMath.SD59x18({
+    //             value: notionalS // todo: make sure this value is correctly set
+    //         }),
+    //         PRBMathSD59x18Typed.mul(
+    //             fixedRateDelta,
+    //             PRBMath.SD59x18({
+    //                 value: int256(timePeriodInYears)
+    //             })
+    //         )
+    //     ).value;
 
-    }
+    // }
     
     
     function getLPMarginReqWithinTickRangeDeposit(

@@ -19,12 +19,10 @@ library Trader {
     /// @return trader The position info struct of the given owners' position
     function get(
         mapping(bytes32 => Info) storage self,
-        address owner,
-        int256 notional,
-        uint256 fixedRate
+        address owner
     ) internal view returns (Trader.Info storage trader) {
         trader = self[
-            keccak256(abi.encodePacked(owner, notional, fixedRate))
+            keccak256(abi.encodePacked(owner))
         ];
     }
 

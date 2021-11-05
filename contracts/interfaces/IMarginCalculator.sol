@@ -43,13 +43,13 @@ interface IMarginCalculator {
     ) external view returns (uint256 margin);
 
 
-    function getUnwindSettlementCashflow(
-        int256 notionalS,
-        int256 fixedRateS,
-        int256 notionalU,
-        int256 fixedRateU,
-        uint256 timePeriodInSeconds
-    ) external view returns (int256 cashflow);
+    // function getUnwindSettlementCashflow(
+    //     int256 notionalS,
+    //     int256 fixedRateS,
+    //     int256 notionalU,
+    //     int256 fixedRateU,
+    //     uint256 timePeriodInSeconds
+    // ) external view returns (int256 cashflow);
 
 
 }
