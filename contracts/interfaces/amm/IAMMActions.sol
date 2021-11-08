@@ -13,7 +13,8 @@ interface IAmmActions {
         int256 amountSpecified;
         uint160 sqrtPriceLimitX96;
         bool isUnwind;
-        bool isTrader;        
+        bool isTrader;
+        int256 proposedMargin;        
     }
 
     /// @notice Sets the initial price for the pool

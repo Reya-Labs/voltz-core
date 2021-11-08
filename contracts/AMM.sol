@@ -18,6 +18,8 @@ import "./interfaces/IAaveRateOracle.sol";
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
+import "./utils/TransferHelper.sol";
+import "./core_libraries/FixedAndVariableMath.sol";
 
 
 contract AMM is IAMM, NoDelegateCall {
@@ -40,7 +42,7 @@ contract AMM is IAMM, NoDelegateCall {
 
     address public immutable override underlyingPool;
 
-    uint256 public immutable override termInDays;
+    uint256 public immutable override termEndTimestamp;
 
     uint256 public immutable override termStartTimestamp;
 
@@ -75,7 +77,7 @@ contract AMM is IAMM, NoDelegateCall {
             factory,
             underlyingToken,
             underlyingPool,
-            termInDays,
+            termEndTimestamp,
             termStartTimestamp,
             fee,
             _tickSpacing
@@ -154,7 +156,8 @@ contract AMM is IAMM, NoDelegateCall {
                amountSpecified: -notional,
                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
                isUnwind: true,
-               isTrader: true
+               isTrader: true,
+               proposedMargin: 0 
             });
 
             swap(params); // min price --> modifyTrader then updates the trader
@@ -169,7 +172,8 @@ contract AMM is IAMM, NoDelegateCall {
                amountSpecified: notional,
                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
                isUnwind: true,
-               isTrader: true
+               isTrader: true,
+               proposedMargin: 0 
             });
 
             swap(params); // max price --> modifyTrader then updates the trader
@@ -219,7 +223,8 @@ contract AMM is IAMM, NoDelegateCall {
                amountSpecified: position.variableTokenBalance,
                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
                isUnwind: true,
-               isTrader: false
+               isTrader: false,
+               proposedMargin: 0
             });
 
             (_fixedTokenBalance, _variableTokenBalance) = swap(params); // min price --> modifyTrader then updates the trader
@@ -234,7 +239,8 @@ contract AMM is IAMM, NoDelegateCall {
                amountSpecified: position.variableTokenBalance,
                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
                isUnwind: true,
-               isTrader: false
+               isTrader: false,
+               proposedMargin: 0 // todo: is this the best choice?
             });
 
             (_fixedTokenBalance, _variableTokenBalance) = swap(params); // max price --> modifyTrader then updates the trader
@@ -313,7 +319,7 @@ contract AMM is IAMM, NoDelegateCall {
             }),
 
             PRBMath.SD59x18({
-                value: int256(fixedFactor(true))
+                value: int256(FixedAndVariableMath.fixedFactor(true, termStartTimestamp, termEndTimestamp))
             })
         );
 
@@ -542,6 +548,22 @@ contract AMM is IAMM, NoDelegateCall {
         }
     }
 
+    function getRatioFromSqrt(
+     uint160 sqrtRatio
+    ) internal returns(uint160 ratio){
+
+        ratio = uint160(PRBMathUD60x18Typed.mul(
+
+            PRBMath.UD60x18({
+                value: sqrtRatio
+            }),
+
+            PRBMath.UD60x18({
+                value: sqrtRatio
+            })
+        ).value);
+    }
+    
     /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function mint(
         address recipient,
@@ -567,19 +589,33 @@ contract AMM is IAMM, NoDelegateCall {
         // todo: deposit margin in here or in modifyPosition (at the end)?
 
         Slot0 memory _slot0 = slot0;
-        uint256 termEndTimeStamp = termStartTimestamp + (termInDays * 24 * 60 * 60);
-
-        int256 margin = int256(calculator.getLPMarginRequirement(
-            TickMath.getSqrtRatioAtTick(tickLower),
-            TickMath.getSqrtRatioAtTick(tickUpper),
-            amount0,
-            amount1,
-            TickMath.getSqrtRatioAtTick(_slot0.tick),
-            termEndTimeStamp - _blockTimestamp(),
-            false
-        ));
-
         
+        IMarginCalculator.LPMarginParams memory marginParams = IMarginCalculator.LPMarginParams(
+            {
+                ratioLower: getRatioFromSqrt(TickMath.getSqrtRatioAtTick(tickLower)),
+                ratioUpper: getRatioFromSqrt(TickMath.getSqrtRatioAtTick(tickUpper)),
+                amount0: amount0,
+                amount1: amount1,
+                ratioCurr: getRatioFromSqrt(TickMath.getSqrtRatioAtTick(_slot0.tick)),
+                timePeriodInSeconds: termEndTimestamp - block.timestamp,
+                isLM: false,
+                accruedVariableFactor: int256(variableFactor(false)),
+                termStartTimestamp:termStartTimestamp,
+                termEndTimestamp: termEndTimestamp
+            }
+        );
+        
+        
+        int256 margin = int256(calculator.getLPMarginRequirement(marginParams));
+
+        // todo: need approvals?
+
+        IERC20Minimal(underlyingToken).transferFrom(recipient, address(this), uint256(margin));
+
+        Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
+
+        position.updateMargin(margin);
+
         if (amount0 > 0) balance0 = balance0.add(amount0); // todo: this seems redundunt
         if (amount1 > 0) balance1 = balance1.add(amount1);
 
@@ -598,7 +634,7 @@ contract AMM is IAMM, NoDelegateCall {
         // liquidity at the beginning of the swap
         uint128 liquidityStart;
         // the timestamp of the current block
-        uint32 blockTimestamp;
+        uint256 blockTimestamp;
     }
 
     // the top level state of the swap, the results of which are recorded in storage at the end
@@ -648,35 +684,16 @@ contract AMM is IAMM, NoDelegateCall {
 
     }
 
-    
-
-    /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32. This method is overridden in tests.
-    function _blockTimestamp() internal view virtual returns (uint32) {
-        return uint32(block.timestamp); // truncation is desired
-    }
-
     struct InitiateIRSParams {
         // trader's address
         address traderAddress;
         // the lower and upper tick of the position
-        int256 notional;
-        uint256 fixedRate;            
 
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
 
         int256 margin;
         bool settled;
-    }
-
-
-
-    function _modifyTrader(InitiateIRSParams memory params) private noDelegateCall returns(Trader.Info storage trader) {
-        
-        trader = traders.get(params.traderAddress);
-
-        trader.update(params.notional, params.fixedRate, params.fixedTokenBalance, params.variableTokenBalance, params.margin, params.settled);
-
     }
 
     struct SettleTraderParams {
@@ -686,81 +703,59 @@ contract AMM is IAMM, NoDelegateCall {
     }
     
     
-    function settleTrader(InitiateIRSParams memory params) public noDelegateCall {
+    // function settleTrader(InitiateIRSParams memory params) public noDelegateCall {
 
-        // check if the current block is more or equal to maturity
+    //     // todo: check if the current block is more or equal to maturity
+    //     // todo: if condition is not met, but variable balance is 0, early settlements are possible
 
-        Trader.Info storage trader = traders.get(params.traderAddress);
+    //     Trader.Info storage trader = traders.get(params.traderAddress);
 
-        // update the margin to essentially be equal to tokens owned
-        PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
+    //     // update the margin to essentially be equal to tokens owned
+    //     PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
 
-            PRBMath.SD59x18({
-                value: trader.fixedTokenBalance
-            }),
+    //         PRBMath.SD59x18({
+    //             value: trader.fixedTokenBalance
+    //         }),
 
-            PRBMath.SD59x18({
-                value: int256(fixedFactor(true))
-            })
-        );
+    //         PRBMath.SD59x18({
+    //             value: int256(FixedAndVariableMath.fixedFactor(true, termStartTimestamp, termEndTimestamp))
+    //         })
+    //     );
 
-        PRBMath.SD59x18 memory exp2 = PRBMathSD59x18Typed.mul(
+    //     PRBMath.SD59x18 memory exp2 = PRBMathSD59x18Typed.mul(
 
-            PRBMath.SD59x18({
-                value: trader.variableTokenBalance
-            }),
+    //         PRBMath.SD59x18({
+    //             value: trader.variableTokenBalance
+    //         }),
 
-            PRBMath.SD59x18({
-                value: int256(variableFactor(true))
-            })
-        );
+    //         PRBMath.SD59x18({
+    //             value: int256(variableFactor(true))
+    //         })
+    //     );
 
-        int256 irsCashflow = PRBMathSD59x18Typed.add(exp1, exp2).value;
+    //     int256 irsCashflow = PRBMathSD59x18Typed.add(exp1, exp2).value;
 
-        int256 updatedMargin = PRBMathSD59x18Typed.add(
+    //     int256 updatedMargin = PRBMathSD59x18Typed.add(
 
-            PRBMath.SD59x18({
-                value: trader.margin
-            }),
+    //         PRBMath.SD59x18({
+    //             value: trader.margin
+    //         }),
 
-            PRBMath.SD59x18({
-                value: irsCashflow
-            })
-        ).value;
+    //         PRBMath.SD59x18({
+    //             value: irsCashflow
+    //         })
+    //     ).value;
 
-        trader.update(trader.notional, trader.fixedRate, 0, 0, updatedMargin, true);
+    //     // todo: check if the margin is negative
 
-    }   
-    
+    //     trader.update(trader.notional, trader.fixedRate, 0, 0, 0, true); // set margin to zero
 
-    function fixedFactor(bool atMaturity) public returns(uint256) {
+    //     // todo: update the margin for the trader
+    //     // settle the margin in here
+    //     TransferHelper.safeTransfer(underlyingToken, params.traderAddress, uint256(updatedMargin));
 
-        
-        uint256 timePeriodInSeconds;
+    // }   
 
-        if (atMaturity) {
-            uint256 termEndTimestamp = termStartTimestamp + (termInDays * 24 * 60 * 60);
-            timePeriodInSeconds = termEndTimestamp - termStartTimestamp;
-        } else {
-            timePeriodInSeconds = _blockTimestamp() - termStartTimestamp;
-        }    
-        
-        uint256 timePeriodInYears = calculator.accrualFact(timePeriodInSeconds);
-        
-        uint256 fixedFactorValue = PRBMathUD60x18Typed.mul(
-                
-                PRBMath.UD60x18({
-                    value: timePeriodInYears
-                }),
-                
-                PRBMath.UD60x18({
-                    value: 10 ** 16
-                })
-        ).value;
-
-        return fixedFactorValue;    
-
-    }
     
     function variableFactor(bool atMaturity) public returns(uint256) {
         
@@ -768,29 +763,28 @@ contract AMM is IAMM, NoDelegateCall {
             
             // todo: require check that current timestamp is after or equal to the maturity date
 
-            uint256 termEndTimestamp = termStartTimestamp + (termInDays * 24 * 60 * 60);
             (bool isSet,,) = rateOracle.rates(underlyingToken, termEndTimestamp);
 
             if(!isSet) {
-                if (termEndTimestamp == _blockTimestamp()) {
+                if (termEndTimestamp == block.timestamp) {
                     rateOracle.updateRate(underlyingToken);
                 } // else  raise an error        
             }
 
-            uint256 rateFromPoolStartToMaturity = rateOracle.getRateFromTo(underlyingToken, termStartTimestamp, _blockTimestamp());
+            uint256 rateFromPoolStartToMaturity = rateOracle.getRateFromTo(underlyingToken, termStartTimestamp, block.timestamp);
             
             rateFromPoolStartToMaturity = rateFromPoolStartToMaturity / 10 ** (27 - 18); // 18 decimals 
 
             return rateFromPoolStartToMaturity;
         
         } else {
-            (bool isSet,,) = rateOracle.rates(underlyingToken, _blockTimestamp());
+            (bool isSet,,) = rateOracle.rates(underlyingToken, block.timestamp);
 
             if(!isSet) {
                 rateOracle.updateRate(underlyingToken);
             }
 
-            uint256 rateFromPoolStartToNow = rateOracle.getRateFromTo(underlyingToken, termStartTimestamp, _blockTimestamp());
+            uint256 rateFromPoolStartToNow = rateOracle.getRateFromTo(underlyingToken, termStartTimestamp, block.timestamp);
 
             rateFromPoolStartToNow = rateFromPoolStartToNow / 10 ** (27 - 18); // 18 decimals 
             
@@ -800,151 +794,46 @@ contract AMM is IAMM, NoDelegateCall {
     }
     
 
-    function calculateFixedTokenBalance(int256 amount0, int256 excessBalance) public returns(int256 fixedTokenBalance) {
+    function updateTrader(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, int256 proposedMargin) public {
 
-        PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
-
-            PRBMath.SD59x18({
-                value: amount0
-            }),
-
-            PRBMath.SD59x18({
-                value: int256(fixedFactor(true))
-            })
-        );
-
-        PRBMath.SD59x18 memory numerator = PRBMathSD59x18Typed.sub(
-            exp1,
-            PRBMath.SD59x18({
-                value: excessBalance
-            })
-        );
-
+        Trader.Info storage trader = traders.get(recipient);
+        trader.updateBalances(fixedTokenBalance, variableTokenBalance);
         
-        fixedTokenBalance = PRBMathSD59x18Typed.div(
-            exp1,
-            PRBMath.SD59x18({
-                value: int256(fixedFactor(true))
-            })
-        ).value;
-        
-    }
-    
-    
-    function getFixedTokenBalance(uint256 amount0, uint256 amount1, bool isFT) public returns(int256 fixedTokenBalance) {
-        
-        int256 excessFixedAccruedBalance;
-        int256 excessVariableAccruedBalance;
-        int256 excessBalance;
+        uint256 timePeriodInSeconds = termEndTimestamp - termStartTimestamp;
 
-        if (isFT) {
+        int256 margin = int256(calculator.getTraderMarginRequirement(
+            trader.fixedTokenBalance,
+            trader.variableTokenBalance, 
+            int256(FixedAndVariableMath.fixedFactor(true, termStartTimestamp, termEndTimestamp)),
+            FixedAndVariableMath.fixedFactor(false, termStartTimestamp, termEndTimestamp),
+            timePeriodInSeconds,
+            false
+        ));
 
-            PRBMath.SD59x18 memory excessFixedAccruedBalance = PRBMathSD59x18Typed.mul(
-
-                PRBMath.SD59x18({
-                    value: int256(amount0)
-                }),
-
-                PRBMath.SD59x18({
-                    value: int256(fixedFactor(false))
-                })
-            );
-
-            PRBMath.SD59x18 memory excessVariableAccruedBalance = PRBMathSD59x18Typed.mul(
-
-                PRBMath.SD59x18({
-                    value: -int256(amount1)
-                }),
-
-                PRBMath.SD59x18({
-                    value: int256(variableFactor(false))
-                })
-            );
-
-
-            excessBalance = PRBMathSD59x18Typed.add(
-                excessFixedAccruedBalance,
-                excessVariableAccruedBalance
-            ).value;
-
-            fixedTokenBalance = calculateFixedTokenBalance(int256(amount0), excessBalance);
-        } else {
-    
-            PRBMath.SD59x18 memory excessFixedAccruedBalance = PRBMathSD59x18Typed.mul(
-
-                PRBMath.SD59x18({
-                    value: -int256(amount0)
-                }),
-
-                PRBMath.SD59x18({
-                    value: int256(fixedFactor(false))
-                })
-            ); 
-
-            PRBMath.SD59x18 memory excessVariableAccruedBalance = PRBMathSD59x18Typed.mul(
-
-                PRBMath.SD59x18({
-                    value: int256(amount1)
-                }),
-
-                PRBMath.SD59x18({
-                    value: int256(variableFactor(false))
-                })
-            );
-
-            
-            excessBalance = PRBMathSD59x18Typed.add(
-                excessFixedAccruedBalance,
-                excessVariableAccruedBalance
-            ).value;
-
-            fixedTokenBalance = calculateFixedTokenBalance(-int256(amount0), excessBalance);
-
-        }
-  
-
-    }
-
-
-    function calculateIRSParams(uint256 amount0, uint256 amount1, bool isFT, bool isUnwind) public 
-                noDelegateCall returns(int256 notional, uint256 fixedRate, int256 margin, int256 fixedTokenBalance, int256 variableTokenBalance) {
-
-        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: uint256(amount1)});
-        PRBMath.UD60x18 memory fixedRateUD = PRBMathUD60x18Typed.mul(
-                                                    PRBMathUD60x18Typed.div(PRBMath.UD60x18({value: uint256(amount0)}), PRBMath.UD60x18({value: uint256(amount1)})),
-                                                    PRBMath.UD60x18({value: 10**16})
-                                                );
-                                        
-
-        // todo: include require checks in here (check how other protocols do date checks and tests)
-
-        uint256 termEndTimeStamp = termStartTimestamp + (termInDays * 24 * 60 * 60);
-        
-        // compute margin, initiate the swap
-        if (isFT) {
-
-            // todo: only compute margin if it is not an unwind
-            margin = int256(calculator.getFTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false));
-            notional = int256(notionalUD.value);
-
-            variableTokenBalance = -int256(amount1);
-
-        } else {
-
-            margin = int256(calculator.getVTMarginRequirement(notionalUD.value, fixedRateUD.value, termEndTimeStamp - _blockTimestamp(), false));
-
-            notional = -int256(notionalUD.value);
-
-            variableTokenBalance = int256(amount1);
-            
+        if (proposedMargin > margin) {
+            margin = proposedMargin;
         }
 
-        fixedTokenBalance = getFixedTokenBalance(amount0, amount1, isFT);
-    
-        fixedRate = fixedRateUD.value;
+        if (margin > trader.margin) {
+            int256 marginDelta = PRBMathSD59x18Typed.mul(
+
+                PRBMath.SD59x18({
+                    value: margin
+                }),
+
+                PRBMath.SD59x18({
+                    value: trader.margin
+                })
+            ).value;
+
+            IERC20Minimal(underlyingToken).transferFrom(recipient, address(this), uint256(marginDelta));
+
+            trader.updateMargin(margin);
+        
+        }
 
     }
-
+    
     function swap(
         SwapParams memory params
     ) public override noDelegateCall returns (int256 _fixedTokenBalance, int256 _variableTokenBalance){
@@ -967,10 +856,10 @@ contract AMM is IAMM, NoDelegateCall {
 
         SwapCache memory cache = SwapCache({
             liquidityStart: liquidity,
-            blockTimestamp: _blockTimestamp()
+            blockTimestamp: block.timestamp
         });
 
-        bool exactInput = params.amountSpecified > 0;
+        // bool exactInput = params.amountSpecified > 0;
 
         SwapState memory state = SwapState({
             amountSpecifiedRemaining: params.amountSpecified,
@@ -1028,7 +917,7 @@ contract AMM is IAMM, NoDelegateCall {
                     state.amountSpecifiedRemaining
                 );
 
-            if (exactInput) {
+            if (params.amountSpecified > 0) {
                 state.amountSpecifiedRemaining -= (step.amountIn).toInt256();
                 state.amountCalculated = state.amountCalculated.sub(
                     (step.amountOut).toInt256()
@@ -1058,7 +947,7 @@ contract AMM is IAMM, NoDelegateCall {
                         PRBMathSD59x18Typed.div(
 
                             PRBMath.SD59x18({
-                                value: getFixedTokenBalance(step.amount0, step.amount1, !params.isFT)
+                                value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), !params.isFT, termStartTimestamp, termEndTimestamp)
                             }),
 
                             PRBMath.SD59x18({
@@ -1078,10 +967,11 @@ contract AMM is IAMM, NoDelegateCall {
                             value: state.fixedTokenGrowthGlobal
                         }),
 
+
                         PRBMathSD59x18Typed.div(
 
                             PRBMath.SD59x18({
-                                value: getFixedTokenBalance(step.amount0, step.amount1, params.isFT)
+                                value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), params.isFT, termStartTimestamp, termEndTimestamp)
                             }),
 
                             PRBMath.SD59x18({
@@ -1090,89 +980,8 @@ contract AMM is IAMM, NoDelegateCall {
                         )
                     ).value;
 
-                } 
-                
-                int256 _notionalGlobalBefore = state.notionalGlobal;
-                
-                state.notionalGlobal = PRBMathSD59x18Typed.add(
-
-                    PRBMath.SD59x18({
-                            value: state.notionalGlobal
-                        }),
-
-                    PRBMath.SD59x18({
-                        value: step.notionalAmount
-                    })
-
-                ).value;
-
-                state.notionalGrowthGlobal = PRBMathSD59x18Typed.add(
-
-                    PRBMath.SD59x18({
-                            value: state.notionalGrowthGlobal
-                    }),
-
-                    PRBMathSD59x18Typed.div(
-                        
-                        PRBMath.SD59x18({
-                            value: step.notionalAmount
-                        }),
-
-                        PRBMath.SD59x18({
-                            value: int256(uint256(state.liquidity))
-                        })
-                    
-                    )
-
-                ).value;
-
-
-                PRBMath.SD59x18 memory exp1UD = PRBMathSD59x18Typed.mul(
-
-                    PRBMath.SD59x18({
-                            value: step.fixedRate
-                        }),
-
-                    PRBMath.SD59x18({
-                        value: state.notionalGlobal
-                    })
-
-                );
-
-                PRBMath.SD59x18 memory exp2UD = PRBMathSD59x18Typed.mul(
-
-                    PRBMathSD59x18Typed.sub(
-                        
-                        PRBMath.SD59x18({
-                            value: step.fixedRate
-                        }),
-
-                        PRBMath.SD59x18({
-                            value: state.fixedRateGlobal
-                        })
-
-                    ),
-
-                    PRBMath.SD59x18({
-                        value: _notionalGlobalBefore
-                    })
-
-                );
-
-                PRBMath.SD59x18 memory numerator = PRBMathSD59x18Typed.sub(exp1UD, exp2UD);
-            
-                state.fixedRateGlobal = PRBMathSD59x18Typed.div(
-
-                    numerator,
-
-                    PRBMath.SD59x18({
-                        value: state.notionalGlobal
-                    })
-
-                ).value;
-
+                }
             }
-
 
             // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
@@ -1217,7 +1026,7 @@ contract AMM is IAMM, NoDelegateCall {
         if (cache.liquidityStart != state.liquidity)
             liquidity = state.liquidity;
 
-        (int256 amount0, int256 amount1) = params.isFT == exactInput
+        (int256 amount0, int256 amount1) = params.isFT == params.amountSpecified > 0
             ? (
                 params.amountSpecified - state.amountSpecifiedRemaining,
                 state.amountCalculated
@@ -1235,39 +1044,18 @@ contract AMM is IAMM, NoDelegateCall {
         variableTokenGrowthGlobal = state.variableTokenGrowthGlobal;
         fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;
         
-        if (params.isTrader) {
+        _fixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(uint256(amount0), uint256(amount1), int256(variableFactor(false)), params.isFT, termStartTimestamp, termEndTimestamp);
 
-            InitiateIRSParams memory initiateIRSParams;
-
-            (initiateIRSParams.notional, initiateIRSParams.fixedRate,
-            initiateIRSParams.margin, initiateIRSParams.fixedTokenBalance, initiateIRSParams.variableTokenBalance) = calculateIRSParams(uint256(amount0), uint256(amount1), params.isFT, params.isUnwind);
-            
-            if (params.isUnwind) {
-                initiateIRSParams.settled = true;
-            }
-
-            // trader = _modifyTrader(
-            //     initiateIRSParams
-            // );
-
-            _modifyTrader(
-                initiateIRSParams
-            );
-
-            _fixedTokenBalance = initiateIRSParams.fixedTokenBalance;
-            _variableTokenBalance = initiateIRSParams.variableTokenBalance;
-
+        if (params.isFT) {
+            _variableTokenBalance = -int256(uint256(amount1));
         } else {
-            
-            _fixedTokenBalance = getFixedTokenBalance(uint256(amount0), uint256(amount1), params.isFT);
-
-            if (params.isFT) {
-                _variableTokenBalance = -int256(uint256(amount1));
-            } else {
-                _variableTokenBalance = int256(uint256(amount1));
-            }
-
+            _variableTokenBalance = int256(uint256(amount1));
         }
+
+        if (params.isTrader) {
+                updateTrader(params.recipient, _fixedTokenBalance, _variableTokenBalance, params.proposedMargin);
+        }
+        
 
         emit Swap(
             msg.sender,

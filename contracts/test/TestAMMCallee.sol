@@ -12,7 +12,8 @@ contract TestAMMCallee is AMM {
         address amm,
         uint256 amount0In,
         address recipient,
-        uint160 sqrtPriceLimitX96
+        uint160 sqrtPriceLimitX96,
+        int256 proposedMargin
     ) external {
 
         SwapParams memory params = SwapParams({
@@ -21,7 +22,8 @@ contract TestAMMCallee is AMM {
                amountSpecified: amount0In.toInt256(),
                sqrtPriceLimitX96: sqrtPriceLimitX96,
                isUnwind: false,
-               isTrader: true
+               isTrader: true,
+               proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
@@ -31,7 +33,8 @@ contract TestAMMCallee is AMM {
         address amm,
         uint256 amount1Out,
         address recipient,
-        uint160 sqrtPriceLimitX96
+        uint160 sqrtPriceLimitX96,
+        int256 proposedMargin
     ) external {
 
         SwapParams memory params = SwapParams({
@@ -40,7 +43,8 @@ contract TestAMMCallee is AMM {
                amountSpecified: -amount1Out.toInt256(),
                sqrtPriceLimitX96: sqrtPriceLimitX96,
                isUnwind: false,
-               isTrader: true
+               isTrader: true,
+               proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
@@ -51,7 +55,8 @@ contract TestAMMCallee is AMM {
         address amm,
         uint256 amount1In,
         address recipient,
-        uint160 sqrtPriceLimitX96
+        uint160 sqrtPriceLimitX96,
+        int256 proposedMargin
     ) external {
 
         SwapParams memory params = SwapParams({
@@ -60,7 +65,8 @@ contract TestAMMCallee is AMM {
                amountSpecified: amount1In.toInt256(),
                sqrtPriceLimitX96: sqrtPriceLimitX96,
                isUnwind: false,
-               isTrader: true
+               isTrader: true,
+               proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
@@ -71,7 +77,8 @@ contract TestAMMCallee is AMM {
         address amm,
         uint256 amount0Out,
         address recipient,
-        uint160 sqrtPriceLimitX96
+        uint160 sqrtPriceLimitX96,
+        int256 proposedMargin
     ) external {
 
         SwapParams memory params = SwapParams({
@@ -80,7 +87,8 @@ contract TestAMMCallee is AMM {
                amountSpecified: -amount0Out.toInt256(),
                sqrtPriceLimitX96: sqrtPriceLimitX96,
                isUnwind: false,
-               isTrader: true
+               isTrader: true,
+               proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
@@ -90,7 +98,8 @@ contract TestAMMCallee is AMM {
   function swapToLowerSqrtPrice(
         address amm,
         uint160 sqrtPriceX96,
-        address recipient
+        address recipient,
+        int256 proposedMargin
     ) external {
 
         SwapParams memory params = SwapParams({
@@ -99,7 +108,8 @@ contract TestAMMCallee is AMM {
                amountSpecified: type(int256).max,
                sqrtPriceLimitX96: sqrtPriceX96,
                isUnwind: false,
-               isTrader: true
+               isTrader: true,
+               proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
@@ -109,7 +119,8 @@ contract TestAMMCallee is AMM {
   function swapToHigherSqrtPrice(
         address amm,
         uint160 sqrtPriceX96,
-        address recipient
+        address recipient,
+        int256 proposedMargin
     ) external {
 
         SwapParams memory params = SwapParams({
@@ -118,7 +129,8 @@ contract TestAMMCallee is AMM {
                amountSpecified: type(int256).max,
                sqrtPriceLimitX96: sqrtPriceX96,
                isUnwind: false,
-               isTrader: true
+               isTrader: true,
+               proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);

@@ -1,18 +1,17 @@
 pragma solidity ^0.8.0;
+import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 
 /// @title Trader
 /// @notice Trader represents a holder of an active leg of an IRS position
 library Trader {
     // info stored for each user's position
     struct Info {
-        int256 notional;
-        uint256 fixedRate; // todo: should be int?
         int256 margin;
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
-        bool settled;
+        bool settled; // todo: feels redundunt
     }
-
+    
     /// @notice Returns the Info struct of a trader, given an owner
     /// @param self The mapping containing all user positions
     /// @param owner The address of the position owner
@@ -26,20 +25,47 @@ library Trader {
         ];
     }
 
-    function update(
+    function updateMargin(
         Info storage self,
-        int256 notional,
-        uint256 fixedRate,
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        int256 margin,
-        bool settled
+        int256 updatedMargin
     ) internal {
-        self.notional = notional;
-        self.fixedRate = fixedRate;
+        self.margin = updatedMargin;
+    }
+    
+    function updateBalances(
+        Info storage self,
+        int256 fixedTokenBalanceDelta,
+        int256 variableTokenBalanceDelta
+    ) internal {
+
+        Info memory _self = self;
+
+        
+        int256 fixedTokenBalance = PRBMathSD59x18Typed.add(
+            
+            PRBMath.SD59x18({
+                value: _self.fixedTokenBalance
+            }),
+
+            PRBMath.SD59x18({
+                value: fixedTokenBalanceDelta
+            })
+
+        ).value;
+
+        int256 variableTokenBalance = PRBMathSD59x18Typed.add(
+            
+            PRBMath.SD59x18({
+                value: _self.variableTokenBalance
+            }),
+
+            PRBMath.SD59x18({
+                value: variableTokenBalanceDelta
+            })
+
+        ).value;
+
         self.fixedTokenBalance = fixedTokenBalance;
         self.variableTokenBalance = variableTokenBalance;
-        self.margin = margin;
-        self.settled = settled;
     }
 }

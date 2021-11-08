@@ -26,9 +26,7 @@ interface IAMMImmutables {
     /// @return The underlying pool address
     function underlyingPool() external view returns (address);
 
-    /// @notice Number of days between amm initiatiation and its maturity
-    /// @return Term in Days
-    function termInDays() external view returns (uint256);
+    function termEndTimestamp() external view returns (uint256);
 
     /// @notice Timestamp of amm creation
     /// @return Timestamp

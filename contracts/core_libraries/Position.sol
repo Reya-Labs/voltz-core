@@ -42,6 +42,28 @@ library Position {
         ];
     }
 
+    function updateMargin(
+        Info storage self,
+        int256 marginDelta
+    ) internal {
+        
+        Info memory _self = self;
+        int256 updatedMargin = PRBMathSD59x18Typed.add(
+            
+            PRBMath.SD59x18({
+                value: _self.margin
+            }),
+
+            PRBMath.SD59x18({
+                value: marginDelta
+            })
+
+        ).value;
+
+        self.margin = updatedMargin;
+
+    }
+    
     function updateBalances(
         Info storage self,
         int256 fixedTokenBalanceDelta,

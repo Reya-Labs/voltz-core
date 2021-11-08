@@ -5,6 +5,7 @@ import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 import "./utils/TickMath.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./interfaces/IMarginCalculator.sol";
+import "./core_libraries/FixedAndVariableMath.sol";
 
 
 contract MarginCalculator is IMarginCalculator{
@@ -18,317 +19,395 @@ contract MarginCalculator is IMarginCalculator{
     uint256 public override minDeltaLM = 125 * 10**14; // 0.00125
     uint256 public override minDeltaIM = 500 * 10**14; // 0.05
 
-    uint256 public override constant SECONDS_IN_YEAR = 31536000 * 10**18;
+    uint256 public override constant SECONDS_IN_YEAR = 31536000 * 10**18; // todo: push into library
 
-    // todo: make the function internal
-    function accrualFact(uint256 timePeriodInSeconds)
-        public
-        override
-        pure
-        returns (uint256 timePeriodInYears)
-    {
-        PRBMath.UD60x18 memory xUD = PRBMath.UD60x18({
-            value: timePeriodInSeconds
-        });
-        PRBMath.UD60x18 memory yUD = PRBMath.UD60x18({value: SECONDS_IN_YEAR});
+    uint256 public override maxLeverage = 10 * 10**18; // 10x
 
-        timePeriodInYears = PRBMathUD60x18Typed.div(xUD, yUD).value;
+    function worstCaseVariableFactorAtMaturity(uint256 timePeriodInSeconds, bool isFT, bool isLM) internal view returns(uint256 variableFactor) {
+        
+        uint256 timePeriodInYears = FixedAndVariableMath.accrualFact(timePeriodInSeconds);
+
+        if (isFT) {
+
+            if (isLM) {
+                variableFactor = PRBMathUD60x18Typed.mul(
+
+                    PRBMath.UD60x18({
+                        value: apyUpper
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: timePeriodInYears
+                    })
+                ).value;
+            } else {
+                variableFactor = PRBMathUD60x18Typed.mul(
+
+                    PRBMathUD60x18Typed.mul(
+
+                        PRBMath.UD60x18({
+                            value: apyUpper
+                        }),
+
+                        PRBMath.UD60x18({
+                            value: apyUpperMultiplier
+                        })
+                    ),
+
+                    PRBMath.UD60x18({
+                        value: timePeriodInYears
+                    })
+                ).value;
+            }
+
+
+        } else {
+            if (isLM) {
+                variableFactor = PRBMathUD60x18Typed.mul(
+
+                    PRBMath.UD60x18({
+                        value: apyLower
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: timePeriodInYears
+                    })
+                ).value;
+            } else {
+                variableFactor = PRBMathUD60x18Typed.mul(
+
+                    PRBMathUD60x18Typed.mul(
+
+                        PRBMath.UD60x18({
+                            value: apyLower
+                        }),
+
+                        PRBMath.UD60x18({
+                            value: apyLowerMultiplier
+                        })
+                    ),
+
+                    PRBMath.UD60x18({
+                        value: timePeriodInYears
+                    })
+                ).value;
+            }
+        }
     }
 
-    function tickRangeNotionalFixedRate(
-        uint160 sqrtRatio,
+
+    function getMinimumMarginRequirement(
+        int256 variableTokenBalance,
+        int256 fixedTokenBalance,
+        uint256 fixedFactorFromNowToMaturity,
+        uint256 timePeriodInSeconds,
+        bool isFT,
+        bool isLM
+    ) public view returns(uint256 margin) {
+        // todo: for vts there needs to be a zero lower bound --> so need to have an idea of the underlying fixed rate
+        uint256 timePeriodInYears = FixedAndVariableMath.accrualFact(timePeriodInSeconds);
+        uint256 minDelta;
+        uint256 notional;
+        
+        if (isLM) {
+            minDelta = minDeltaLM;
+        } else {
+            minDelta = minDeltaIM;
+        }
+
+        if (isFT) {
+            // variable token balance must be negative
+            notional = uint256(-variableTokenBalance);
+            
+            margin = PRBMathUD60x18Typed.mul(
+
+                PRBMath.UD60x18({
+                    value: notional
+                }),
+
+                PRBMathUD60x18Typed.mul(
+
+                    PRBMath.UD60x18({
+                        value: minDelta
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: timePeriodInYears
+                    })
+                )
+            ).value;
+
+        } else {
+            // variable token balance must be positive
+            // fixed token balance must be negative
+            notional = uint256(variableTokenBalance);
+
+            uint256 zeroLowerBoundMargin = PRBMathUD60x18Typed.mul(
+
+                PRBMath.UD60x18({
+                    value: uint256(-fixedTokenBalance)
+                }),
+
+                PRBMathUD60x18Typed.mul(
+
+                    PRBMath.UD60x18({
+                        value: fixedFactorFromNowToMaturity
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: timePeriodInYears
+                    })
+                )
+            ).value;
+
+            margin = PRBMathUD60x18Typed.mul(
+
+                PRBMath.UD60x18({
+                    value: uint256(variableTokenBalance)
+                }),
+
+                PRBMathUD60x18Typed.mul(
+
+                    PRBMath.UD60x18({
+                        value: minDelta
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: timePeriodInYears
+                    })
+                )
+            ).value;
+
+            if (margin > zeroLowerBoundMargin) {
+                margin = zeroLowerBoundMargin;
+            }
+
+        }
+    }
+
+    function tickRangeFixedAndVariableBalance(
+        uint160 ratio,
         uint256 amountInp,
         bool isFT
-    )
-        public
-        pure
-        returns (
-            PRBMath.UD60x18 memory notionalUD,
-            PRBMath.UD60x18 memory fixedRateUD
-        )
-    {
-
-        fixedRateUD = PRBMathUD60x18Typed.div(
-                
-                PRBMath.UD60x18({
-                    value: 10**16 // one percent
-                }),
-                
-                PRBMath.UD60x18({
-                    value: sqrtRatio
-                })
-        );        
+    ) internal pure returns(uint256 fixedTokenBalance, uint256 variableTokenBalance) {
+        // both positive
+        // variableTokenBalance / fixedTokenBalance = sqrtRatio^2  (ratio)
         
         if (isFT) {
-            // then amount1 is positive
-            notionalUD = PRBMath.UD60x18({
-                value: amountInp
-            });
-
-        } else {
-            notionalUD = PRBMathUD60x18Typed.mul(
+            variableTokenBalance = amountInp;
+            fixedTokenBalance = PRBMathUD60x18Typed.div(
                 
                 PRBMath.UD60x18({
-                    value: amountInp
+                    value: variableTokenBalance
                 }),
                 
                 PRBMath.UD60x18({
-                    value: sqrtRatio
+                    value: ratio
                 })
-        );        
+            ).value;        
 
-        } 
-        
-    }
-
-    // function getUnwindSettlementCashflow(
-    //     int256 notionalS,
-    //     int256 fixedRateS,
-    //     int256 notionalU,
-    //     int256 fixedRateU,
-    //     uint256 timePeriodInSeconds
-    // ) public override view returns (int256 cashflow) {
-
-    //     // todo: require notionalS to be equal to notionalU --> otherwise DUST... 
-
-    //     PRBMath.SD59x18 memory fixedRateDelta = PRBMathSD59x18Typed.sub(
-
-    //         PRBMath.SD59x18({
-    //             value: fixedRateS
-    //         }),
-
-    //         PRBMath.SD59x18({
-    //             value: fixedRateU
-    //         })
-    //     );
-
-    //     uint256 timePeriodInYears = accrualFact(timePeriodInSeconds);
-
-
-    //     cashflow = PRBMathSD59x18Typed.mul(
-    //         PRBMath.SD59x18({
-    //             value: notionalS // todo: make sure this value is correctly set
-    //         }),
-    //         PRBMathSD59x18Typed.mul(
-    //             fixedRateDelta,
-    //             PRBMath.SD59x18({
-    //                 value: int256(timePeriodInYears)
-    //             })
-    //         )
-    //     ).value;
-
-    // }
-    
-    
-    function getLPMarginReqWithinTickRangeDeposit(
-        PRBMath.UD60x18 memory notionalVTUD,
-        PRBMath.UD60x18 memory fixedRateVTUD,
-        PRBMath.UD60x18 memory notionalFTUD,
-        PRBMath.UD60x18 memory fixedRateFTUD,
-        uint256 timePeriodInSeconds,
-        bool isLM
-    ) public view returns (PRBMath.UD60x18 memory marginUD) {
-        uint256 marginReqFTLM = getFTMarginRequirement(
-            notionalFTUD.value,
-            fixedRateFTUD.value,
-            timePeriodInSeconds,
-            isLM
-        );
-        uint256 marginReqVTLM = getVTMarginRequirement(
-            notionalVTUD.value,
-            fixedRateVTUD.value,
-            timePeriodInSeconds,
-            isLM
-        );
-
-        if (marginReqFTLM > marginReqVTLM) {
-            marginUD = PRBMath.UD60x18({value: marginReqFTLM});
         } else {
-            marginUD = PRBMath.UD60x18({value: marginReqVTLM});
+            fixedTokenBalance = amountInp;
+            variableTokenBalance = PRBMathUD60x18Typed.mul(
+                
+                PRBMath.UD60x18({
+                    value: fixedTokenBalance
+                }),
+                
+                PRBMath.UD60x18({
+                    value: ratio
+                })
+            ).value;        
         }
+
+    }
+    
+    
+    struct LPMarginBetweenTicksParams {
+        uint256 fixedTokenBalanceVT;
+        uint256 variableTokenBalanceVT;
+        uint256 fixedTokenBalanceFT;
+        uint256 variableTokenBalanceFT;
+        uint256 marginReqFT;
+        uint256 marginReqVT;
+    }
+    
+    
+    function getLPMarginRequirementBetweenTicks(
+        uint256 timePeriodInSeconds,
+        bool isLM,
+        int256 fixedFactorAtMaturity,
+        uint256 fixedFactorFromNowToMaturity,
+        LPMarginParams memory params
+    ) internal returns(uint256 margin) {
+        
+        LPMarginBetweenTicksParams memory betweenTickParams;
+
+        (betweenTickParams.fixedTokenBalanceVT, betweenTickParams.variableTokenBalanceVT) = tickRangeFixedAndVariableBalance(
+                params.ratioCurr,
+                params.amount0,
+                false
+            );
+
+        (betweenTickParams.fixedTokenBalanceFT, betweenTickParams.variableTokenBalanceFT) = tickRangeFixedAndVariableBalance(
+            params.ratioCurr,
+            params.amount1,
+            true
+        );
+
+        betweenTickParams.marginReqFT = uint256(getTraderMarginRequirement(
+              int256(betweenTickParams.fixedTokenBalanceFT),
+              -int256(betweenTickParams.variableTokenBalanceFT),
+              fixedFactorAtMaturity, 
+              fixedFactorFromNowToMaturity, 
+              timePeriodInSeconds, 
+              isLM)
+        );
+
+
+        betweenTickParams.marginReqVT = uint256(getTraderMarginRequirement(
+              -int256(betweenTickParams.fixedTokenBalanceVT),
+              int256(betweenTickParams.variableTokenBalanceVT),
+              fixedFactorAtMaturity, 
+              fixedFactorFromNowToMaturity, 
+              timePeriodInSeconds, 
+              isLM)
+        );
+
+
+        if (betweenTickParams.marginReqFT > betweenTickParams.marginReqVT) {
+            margin = betweenTickParams.marginReqFT;
+        } else {
+            margin = betweenTickParams.marginReqVT;
+        }
+
     }
 
 
     function getLPMarginRequirement(
-        uint160 sqrtRatioLower,
-        uint160 sqrtRatioUpper,
-        uint256 amount0,
-        uint256 amount1,
-        uint160 sqrtRatioCurr,
-        uint256 timePeriodInSeconds,
-        bool isLM
-    ) external override view returns (uint256 margin) {
-        PRBMath.UD60x18 memory notionalUD;
-        PRBMath.UD60x18 memory fixedRateUD;
-        PRBMath.UD60x18 memory marginUD;
-
-        if (sqrtRatioCurr < sqrtRatioLower) {
+        LPMarginParams memory params
+    ) public override returns(uint256 margin) {
+          
+        if (params.ratioCurr < params.ratioLower) {
             // LP is a variable taker
-            (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(
-                sqrtRatioLower,
-                amount0,
+                
+            (uint256 fixedTokenBalance, uint256 variableTokenBalance) = tickRangeFixedAndVariableBalance(
+                params.ratioLower,
+                params.amount0,
                 false
             );
-            marginUD = PRBMath.UD60x18({
-                value: getVTMarginRequirement(
-                    notionalUD.value,
-                    fixedRateUD.value,
-                    timePeriodInSeconds,
-                    isLM
-                )
-            });
-        } else if (sqrtRatioCurr < sqrtRatioUpper) {
-            (
-                PRBMath.UD60x18 memory notionalVTUD,
-                PRBMath.UD60x18 memory fixedRateVTUD
-            ) = tickRangeNotionalFixedRate(
-                    sqrtRatioCurr,
-                    // sqrtRatioUpper,
-                    amount0,
-                    // amount1
-                    false
-                );
-            (
-                PRBMath.UD60x18 memory notionalFTUD,
-                PRBMath.UD60x18 memory fixedRateFTUD
-            ) = tickRangeNotionalFixedRate(
-                    // sqrtRatioLower,
-                    sqrtRatioCurr,
-                    amount1,
-                    true
-                );
-
-            marginUD = getLPMarginReqWithinTickRangeDeposit(notionalVTUD, 
-                                                            fixedRateVTUD, 
-                                                            notionalFTUD, 
-                                                            fixedRateFTUD, 
-                                                            timePeriodInSeconds, 
-                                                            isLM);
+            
+            // calculate the correct amounts (like in the swap function --> shared function --> put into library)
+            int256 fixedTokenBalanceAdjusted = FixedAndVariableMath.getFixedTokenBalance(
+                fixedTokenBalance,
+                variableTokenBalance,
+                params.accruedVariableFactor,
+                false,
+                params.termStartTimestamp,
+                params.termEndTimestamp
+            );
+            
+            // change signs in here
+            margin = getTraderMarginRequirement(
+                        -fixedTokenBalanceAdjusted, 
+                        int256(variableTokenBalance), 
+                        int256(FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp)),
+                        FixedAndVariableMath.fixedFactor(false, params.termStartTimestamp, params.termEndTimestamp),
+                        params.timePeriodInSeconds, 
+                        params.isLM
+                    );
+           
+        } else if (params.ratioCurr < params.ratioUpper) {
+            
+            margin = getLPMarginRequirementBetweenTicks(
+                // fixedTokenBalanceVT,
+                // variableTokenBalanceVT,
+                // fixedTokenBalanceFT,
+                // variableTokenBalanceFT,
+                params.timePeriodInSeconds,
+                params.isLM,
+                int256(FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp)),
+                FixedAndVariableMath.fixedFactor(false, params.termStartTimestamp, params.termEndTimestamp),
+                params
+            );
+        
         } else {
-            (notionalUD, fixedRateUD) = tickRangeNotionalFixedRate(
-                // sqrtRatioLower,
-                sqrtRatioUpper,
-                amount1,
+            
+            // LP is a fixed taker
+
+            (uint256 fixedTokenBalance, uint256 variableTokenBalance) = tickRangeFixedAndVariableBalance(
+                params.ratioUpper,
+                params.amount1,
                 true
             );
-            marginUD = PRBMath.UD60x18({
-                value: getFTMarginRequirement(
-                    notionalUD.value,
-                    fixedRateUD.value,
-                    timePeriodInSeconds,
-                    isLM
-                )
-            });
-        }
+            
+            // calculate the correct amounts (like in the swap function --> shared function --> put into library)
+            int256 fixedTokenBalanceAdjusted = FixedAndVariableMath.getFixedTokenBalance(fixedTokenBalance, variableTokenBalance, params.accruedVariableFactor, false, params.termStartTimestamp, params.termEndTimestamp);
+            
+            // change signs in here
+            margin = getTraderMarginRequirement(
+                        fixedTokenBalanceAdjusted, 
+                        -int256(variableTokenBalance), 
+                        int256(FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp)),
+                        FixedAndVariableMath.fixedFactor(false, params.termStartTimestamp, params.termEndTimestamp),
+                        params.timePeriodInSeconds, 
+                        params.isLM
+            );
 
-        margin = marginUD.value;
+        }   
+         
     }
-
-    function getFTMarginRequirement(
-        uint256 notional,
-        uint256 fixedRate,
+    
+    function getTraderMarginRequirement(
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance, 
+        int256 fixedFactorAtMaturity,
+        uint256 fixedFactorFromNowToMaturity,
         uint256 timePeriodInSeconds,
         bool isLM
-    ) public override view returns (uint256 margin) {
-        // todo: only load vars in the if statements for optimisation
-        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: notional});
-        PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({
-            value: fixedRate
-        });
+    ) public override returns(uint256 margin) {
+        
+        // todo: only matters if there is a negative balance in either token
+        // return 0 in these cases, isLM doesn't matter
 
-        PRBMath.UD60x18 memory apyUpperUD = PRBMath.UD60x18({value: apyUpper});
+        bool isFT = variableTokenBalance < 0;
 
-        PRBMath.UD60x18 memory apyUpperMultiplierUD = PRBMath.UD60x18({
-            value: apyUpperMultiplier
-        });
+        PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
 
-        PRBMath.UD60x18 memory minDeltaLMUD = PRBMath.UD60x18({
-            value: minDeltaLM
-        });
-        PRBMath.UD60x18 memory minDeltaIMUD = PRBMath.UD60x18({
-            value: minDeltaIM
-        });
+            PRBMath.SD59x18({
+                value: fixedTokenBalance
+            }),
 
-        PRBMath.UD60x18 memory rateDeltaUD;
-
-        if (isLM) {
-            rateDeltaUD = PRBMathUD60x18Typed.sub(apyUpperUD, fixedRateUD);
-            rateDeltaUD = rateDeltaUD.value > minDeltaLMUD.value
-                ? rateDeltaUD
-                : minDeltaLMUD;
-        } else {
-            rateDeltaUD = PRBMathUD60x18Typed.sub(
-                PRBMathUD60x18Typed.mul(apyUpperUD, apyUpperMultiplierUD),
-                fixedRateUD
-            );
-            rateDeltaUD = rateDeltaUD.value > minDeltaIMUD.value
-                ? rateDeltaUD
-                : minDeltaIMUD;
-        }
-
-        PRBMath.UD60x18 memory accrualFactorUD = PRBMath.UD60x18({
-            value: accrualFact(timePeriodInSeconds)
-        });
-
-        PRBMath.UD60x18 memory marginUD = PRBMathUD60x18Typed.mul(
-            PRBMathUD60x18Typed.mul(notionalUD, rateDeltaUD),
-            accrualFactorUD
+            PRBMath.SD59x18({
+                value: int256(fixedFactorAtMaturity)
+            })
         );
 
-        margin = marginUD.value;
-    }
+        PRBMath.SD59x18 memory exp2 = PRBMathSD59x18Typed.mul(
 
-    function getVTMarginRequirement(
-        uint256 notional,
-        uint256 fixedRate,
-        uint256 timePeriodInSeconds,
-        bool isLM
-    ) public override view returns (uint256 margin) {
-        // todo: only load vars in the if statements for optimisation
-        PRBMath.UD60x18 memory notionalUD = PRBMath.UD60x18({value: notional});
-        PRBMath.UD60x18 memory fixedRateUD = PRBMath.UD60x18({
-            value: fixedRate
-        });
+            PRBMath.SD59x18({
+                value: variableTokenBalance
+            }),
 
-        PRBMath.UD60x18 memory apyLowerUD = PRBMath.UD60x18({value: apyLower});
-
-        PRBMath.UD60x18 memory apyLowerMultiplierUD = PRBMath.UD60x18({
-            value: apyLowerMultiplier
-        });
-
-        PRBMath.UD60x18 memory minDeltaLMUD = PRBMath.UD60x18({
-            value: minDeltaLM
-        });
-        PRBMath.UD60x18 memory minDeltaIMUD = PRBMath.UD60x18({
-            value: minDeltaIM
-        });
-
-        PRBMath.UD60x18 memory rateDeltaUD;
-
-        if (isLM) {
-            rateDeltaUD = PRBMathUD60x18Typed.sub(fixedRateUD, apyLowerUD);
-            rateDeltaUD = rateDeltaUD.value > minDeltaLMUD.value
-                ? rateDeltaUD
-                : minDeltaLMUD;
-        } else {
-            rateDeltaUD = PRBMathUD60x18Typed.sub(
-                fixedRateUD,
-                PRBMathUD60x18Typed.mul(apyLowerUD, apyLowerMultiplierUD)
-            );
-            rateDeltaUD = rateDeltaUD.value > minDeltaIMUD.value
-                ? rateDeltaUD
-                : minDeltaIMUD;
-        }
-
-        PRBMath.UD60x18 memory accrualFactorUD = PRBMath.UD60x18({
-            value: accrualFact(timePeriodInSeconds)
-        });
-
-        PRBMath.UD60x18 memory marginUD = PRBMathUD60x18Typed.mul(
-            PRBMathUD60x18Typed.mul(notionalUD, rateDeltaUD),
-            accrualFactorUD
+            PRBMath.SD59x18({
+                value: int256(worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, isLM))
+            })
         );
 
-        margin = marginUD.value;
+        margin = uint256(PRBMathSD59x18Typed.add(exp1, exp2).value);
+
+        uint256 minimumMargin = getMinimumMarginRequirement(
+                                    variableTokenBalance,
+                                    fixedTokenBalance,
+                                    fixedFactorFromNowToMaturity,
+                                    timePeriodInSeconds,
+                                    isFT,
+                                    isLM
+                                );
+        if (margin < minimumMargin) {
+            margin = minimumMargin;
+        }
+
     }
+
 }
