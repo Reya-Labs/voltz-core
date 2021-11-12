@@ -21,13 +21,13 @@ interface IAMMState {
 
     /// @notice The fee growth as a Q128.128 fees of underlying Token collected per unit of liquidity for the entire life of the amm
     /// @dev This value can overflow the uint256
-    function feeGrowthGlobalX128() external view returns (uint256);
+    // function feeGrowthGlobalX128() external view returns (uint256);
 
-    function notionalGrowthGlobal() external view returns (int256);
+    // function notionalGrowthGlobal() external view returns (int256);
 
-    function notionalGlobal() external view returns (int256);
+    // function notionalGlobal() external view returns (int256);
 
-    function fixedRateGlobal() external view returns (int256);
+    // function fixedRateGlobal() external view returns (int256);
 
     function fixedTokenGrowthGlobal() external view returns (int256);
 
@@ -36,12 +36,6 @@ interface IAMMState {
     /// @notice The currently in range liquidity available to the amm
     /// @dev This value has no relationship to the total liquidity across all ticks
     function liquidity() external view returns (uint128);
-
-    /// @notice balance of virtual fixed 1% tokens in the amm
-    function balance0() external view returns (uint256);
-
-    /// @notice balance of virtual variable tokens in the amm
-    function balance1() external view returns (uint256);
 
     /// @notice Look up information about a specific tick in the amm
     /// @param tick The tick to look up
@@ -57,10 +51,6 @@ interface IAMMState {
         returns (
             uint128 liquidityGross,
             int128 liquidityNet,
-            uint256 feeGrowthOutsideX128,
-            int256 notionalGrowthOutside,
-            int256 notionalOutside,
-            int256 fixedRateOutside,
             int256 fixedTokenGrowthOutside,
             int256 variableTokenGrowthOutside,
             bool initialized
@@ -76,7 +66,6 @@ interface IAMMState {
         view
         returns (
             uint128 liquidity,
-            uint256 feeGrowthInsideLastX128,
             int256 margin,
             int256 fixedTokenGrowthInsideLast,
             int256 variableTokenGrowthInsideLast,        

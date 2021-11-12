@@ -7,9 +7,9 @@ contract MockTimeAMM is AMM {
     // Monday, October 5, 2020 9:00:00 AM GMT-05:00
     uint256 public time = 1601906400;
 
-    function setFeeGrowthGlobalX128(uint256 _feeGrowthGlobalX128) external {
-        feeGrowthGlobalX128 = _feeGrowthGlobalX128;
-    }
+    // function setFeeGrowthGlobalX128(uint256 _feeGrowthGlobalX128) external {
+    //     feeGrowthGlobalX128 = _feeGrowthGlobalX128;
+    // }
 
     function advanceTime(uint256 by) external {
         time += by;

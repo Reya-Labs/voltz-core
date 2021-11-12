@@ -21,7 +21,8 @@ library FixedAndVariableMath {
     }
 
     function fixedFactor(bool atMaturity, uint256 termStartTimestamp, uint256 termEndTimestamp) public view returns(uint256) {
-
+        
+        // todo: always at maturity
         uint256 timePeriodInSeconds;
 
         if (atMaturity) {
@@ -48,7 +49,7 @@ library FixedAndVariableMath {
     }
     
     
-    function calculateFixedTokenBalance(int256 amount0, int256 excessBalance, uint256 termStartTimestamp, uint256 termEndTimestamp) public returns(int256 fixedTokenBalance) {
+    function calculateFixedTokenBalance(int256 amount0, int256 excessBalance, uint256 termStartTimestamp, uint256 termEndTimestamp) public view returns(int256 fixedTokenBalance) {
 
         PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
 
@@ -78,7 +79,7 @@ library FixedAndVariableMath {
         
     }
     
-    function getFixedTokenBalance(uint256 amount0, uint256 amount1, int256 accruedVariableFactor, bool isFT, uint256 termStartTimestamp, uint256 termEndTimestamp) internal returns(int256 fixedTokenBalance) {
+    function getFixedTokenBalance(uint256 amount0, uint256 amount1, int256 accruedVariableFactor, bool isFT, uint256 termStartTimestamp, uint256 termEndTimestamp) internal view returns(int256 fixedTokenBalance) {
         
         int256 excessFixedAccruedBalance;
         int256 excessVariableAccruedBalance;

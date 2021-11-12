@@ -1,5 +1,7 @@
 pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
+import "../MarginCalculator.sol";
+import "./FixedAndVariableMath.sol";
 
 /// @title Trader
 /// @notice Trader represents a holder of an active leg of an IRS position
@@ -24,7 +26,7 @@ library Trader {
             keccak256(abi.encodePacked(owner))
         ];
     }
-
+    
     function updateMargin(
         Info storage self,
         int256 updatedMargin

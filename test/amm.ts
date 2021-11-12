@@ -21,7 +21,11 @@ import { AMMFixture, TEST_AMM_START_TIME } from "./shared/fixtures";
 import { TestAMMCallee } from "../typechain/TestAMMCallee";
 
 import { MockTimeAMM } from "../typechain/MockTimeAMM";
-import { aave_lending_pool_addr, term_in_days, usdc_mainnet_addr } from "./shared/constants";
+import {
+  aave_lending_pool_addr,
+  term_in_days,
+  usdc_mainnet_addr,
+} from "./shared/constants";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -161,22 +165,17 @@ describe("AMM", () => {
     });
   });
 
-  
-  
   // describe("#swap", () => {
 
   //   beforeEach("initialize the amm and mint liquidity", async () => {
-    
+
   //     await amm.initialize(encodeSqrtRatioX96(1, 10).toString()); // set this ratio according to the sqrtPriceMath numbers
   //     await mint(wallet.address, minTick, maxTick, 3161);
-    
+
   //   })
 
-    
-
-
   // })
-  
+
   describe("#mint", () => {
     it("fails if not initialized", async () => {
       await expect(

@@ -4,18 +4,20 @@ import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 interface IMarginCalculator {
 
     struct LPMarginParams {
-
-        uint160 ratioLower;
-        uint160 ratioUpper;
-        uint256 amount0;
-        uint256 amount1;
-        uint160 ratioCurr;
-        uint256 timePeriodInSeconds;
+        uint160 sqrtRatioLower;
+        uint160 sqrtRatioUpper;
         bool isLM;
-        int256 accruedVariableFactor;
+        uint128 liquidity;
         uint256 termStartTimestamp;
         uint256 termEndTimestamp;
+    }
 
+    struct TraderMarginRequirementParams {
+        int256 fixedTokenBalance;
+        int256 variableTokenBalance;
+        uint256 termStartTimestamp;
+        uint256 termEndTimestamp;
+        bool isLM;
     }
     
     function apyUpper() external view returns (uint256);
@@ -28,18 +30,8 @@ interface IMarginCalculator {
     function maxLeverage() external view returns (uint256);
     
     function getTraderMarginRequirement(
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance, 
-        int256 fixedFactorAtMaturity,
-        uint256 fixedFactorFromNowToMaturity,
-        uint256 timePeriodInSeconds,
-        bool isLM
-    ) external returns(uint256 margin);
-
-
-    function getLPMarginRequirement(
-        LPMarginParams memory params
-    ) external returns(uint256 margin);
+        TraderMarginRequirementParams memory params
+    ) external view returns(uint256 margin);
 
 
 }

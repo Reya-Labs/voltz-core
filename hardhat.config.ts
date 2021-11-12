@@ -29,7 +29,7 @@ const config: HardhatUserConfig = {
         url: "https://eth-mainnet.alchemyapi.io/v2/pNmKK8pTXHVggw2X4XPAOOuL9SllmxdZ",
         blockNumber: 13270796,
       },
-      allowUnlimitedContractSize: true
+      allowUnlimitedContractSize: true,
     },
   },
 

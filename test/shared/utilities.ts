@@ -59,25 +59,26 @@ export type MintFunction = (
   liquidity: BigNumberish
 ) => Promise<ContractTransaction>;
 
-export type SwapToPriceFunction = (sqrtPriceX96: BigNumberish, to: Wallet | string) => Promise<ContractTransaction>
+export type SwapToPriceFunction = (
+  sqrtPriceX96: BigNumberish,
+  to: Wallet | string
+) => Promise<ContractTransaction>;
 
 export type SwapFunction = (
   amount: BigNumberish,
   to: Wallet | string,
   sqrtPriceLimitX96?: BigNumberish
-) => Promise<ContractTransaction>
-
+) => Promise<ContractTransaction>;
 
 export interface AMMFunctions {
   mint: MintFunction;
 
-  swapToLowerPrice: SwapToPriceFunction
-  swapToHigherPrice: SwapToPriceFunction
-  swapExact0For1: SwapFunction
-  swap0ForExact1: SwapFunction
-  swapExact1For0: SwapFunction
-  swap1ForExact0: SwapFunction
-
+  swapToLowerPrice: SwapToPriceFunction;
+  swapToHigherPrice: SwapToPriceFunction;
+  swapExact0For1: SwapFunction;
+  swap0ForExact1: SwapFunction;
+  swapExact1For0: SwapFunction;
+  swap1ForExact0: SwapFunction;
 }
 
 export function createAMMFunctions({
@@ -87,18 +88,18 @@ export function createAMMFunctions({
   swapTarget: TestAMMCallee;
   amm: MockTimeAMM;
 }): AMMFunctions {
-
-
   async function swapToSqrtPrice(
     isFT: boolean,
     targetPrice: BigNumberish,
     to: Wallet | string
   ): Promise<ContractTransaction> {
-    const method = isFT ? swapTarget.swapToHigherSqrtPrice : swapTarget.swapToLowerSqrtPrice
+    const method = isFT
+      ? swapTarget.swapToHigherSqrtPrice
+      : swapTarget.swapToLowerSqrtPrice;
 
-    const toAddress = typeof to === 'string' ? to : to.address
+    const toAddress = typeof to === "string" ? to : to.address;
 
-    return method(amm.address, targetPrice, toAddress)
+    return method(amm.address, targetPrice, toAddress);
   }
 
   async function swap(
@@ -107,59 +108,61 @@ export function createAMMFunctions({
     to: Wallet | string,
     sqrtPriceLimitX96?: BigNumberish
   ): Promise<ContractTransaction> {
-    const exactInput = amountOut === 0
+    const exactInput = amountOut === 0;
 
     // todo: make sure this is correct
-    const method =
-      isFT
-        ? exactInput
-          ? swapTarget.swapExact1For0
-          : swapTarget.swap1ForExact0 
-        : exactInput
-          ? swapTarget.swapExact0For1
-          : swapTarget.swap0ForExact1
+    const method = isFT
+      ? exactInput
+        ? swapTarget.swapExact1For0
+        : swapTarget.swap1ForExact0
+      : exactInput
+      ? swapTarget.swapExact0For1
+      : swapTarget.swap0ForExact1;
 
-    if (typeof sqrtPriceLimitX96 === 'undefined') {
+    if (typeof sqrtPriceLimitX96 === "undefined") {
       if (isFT) {
-        sqrtPriceLimitX96 = MAX_SQRT_RATIO.sub(1)
+        sqrtPriceLimitX96 = MAX_SQRT_RATIO.sub(1);
       } else {
-        sqrtPriceLimitX96 = MIN_SQRT_RATIO.add(1)
+        sqrtPriceLimitX96 = MIN_SQRT_RATIO.add(1);
       }
     }
 
-  
-    const toAddress = typeof to === 'string' ? to : to.address
+    const toAddress = typeof to === "string" ? to : to.address;
 
-    return method(amm.address, exactInput ? amountIn : amountOut, toAddress, sqrtPriceLimitX96)
+    return method(
+      amm.address,
+      exactInput ? amountIn : amountOut,
+      toAddress,
+      sqrtPriceLimitX96
+    );
   }
-  
-  
+
   // isFT: boolean,
   // targetPrice: BigNumberish,
   // to: Wallet | string
   const swapToLowerPrice: SwapToPriceFunction = (sqrtPriceX96, to) => {
-    return swapToSqrtPrice(true, sqrtPriceX96, to)
-  }
+    return swapToSqrtPrice(true, sqrtPriceX96, to);
+  };
 
   const swapToHigherPrice: SwapToPriceFunction = (sqrtPriceX96, to) => {
-    return swapToSqrtPrice(false, sqrtPriceX96, to)
-  }
+    return swapToSqrtPrice(false, sqrtPriceX96, to);
+  };
 
   const swapExact0For1: SwapFunction = (amount, to, sqrtPriceLimitX96) => {
-    return swap(true, [amount, 0], to, sqrtPriceLimitX96)
-  }
+    return swap(true, [amount, 0], to, sqrtPriceLimitX96);
+  };
 
   const swap0ForExact1: SwapFunction = (amount, to, sqrtPriceLimitX96) => {
-    return swap(true, [0, amount], to, sqrtPriceLimitX96)
-  }
+    return swap(true, [0, amount], to, sqrtPriceLimitX96);
+  };
 
   const swapExact1For0: SwapFunction = (amount, to, sqrtPriceLimitX96) => {
-    return swap(false, [amount, 0], to, sqrtPriceLimitX96)
-  }
+    return swap(false, [amount, 0], to, sqrtPriceLimitX96);
+  };
 
   const swap1ForExact0: SwapFunction = (amount, to, sqrtPriceLimitX96) => {
-    return swap(false, [0, amount], to, sqrtPriceLimitX96)
-  }
+    return swap(false, [0, amount], to, sqrtPriceLimitX96);
+  };
 
   const mint: MintFunction = async (
     recipient,
