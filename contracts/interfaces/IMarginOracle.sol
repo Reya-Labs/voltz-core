@@ -1,10 +1,16 @@
 pragma solidity ^0.8.0;
 
 interface IMarginOracle {
-    
-    function setUnderlyingPoolConfidenceBound(address _underlyingPool, address _pricer, bool isLower) external;
+    function setUnderlyingPoolConfidenceBound(
+        address _underlyingPool,
+        address _pricer,
+        bool isLower
+    ) external;
 
-    function getConfidenceBound(address _underlyingPool, bool isLower) external view returns (uint256 result);
+    function getConfidenceBound(address _underlyingPool, bool isLower)
+        external
+        view
+        returns (uint256 result);
 
     function setConfidenceBound(
         address _underlyingPool,
@@ -12,4 +18,3 @@ interface IMarginOracle {
         bool isLower
     ) external;
 }
-

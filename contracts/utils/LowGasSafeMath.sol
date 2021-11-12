@@ -8,16 +8,18 @@ library LowGasSafeMath {
     /// @param x The augend
     /// @param y The addend
     /// @return z The sum of x and y
-    
+
     // todo: better function name
-    function check(uint256 x, uint256 y, uint256 z) internal pure returns (bool) {
-        
+    function check(
+        uint256 x,
+        uint256 y,
+        uint256 z
+    ) internal pure returns (bool) {
         unchecked {
-            return (z = x - y) <= x;    
+            return (z = x - y) <= x;
         }
-        
     }
-    
+
     function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require((z = x + y) >= x);
 

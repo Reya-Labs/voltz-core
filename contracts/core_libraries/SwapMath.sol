@@ -28,10 +28,8 @@ library SwapMath {
             uint160 sqrtRatioNextX96,
             uint256 amountIn,
             uint256 amountOut,
-
             int256 notionalAmount,
             int256 fixedRate,
-
             uint256 amount0,
             uint256 amount1
         )
@@ -131,37 +129,35 @@ library SwapMath {
             amountOut = uint256(-amountRemaining);
         }
 
-        PRBMath.SD59x18 memory amount0UD = PRBMath.SD59x18({value: int256(amountIn)});
-        PRBMath.SD59x18 memory amount1UD = PRBMath.SD59x18({value: int256(amountOut)});
-        
-        if (zeroForOne) {
+        PRBMath.SD59x18 memory amount0UD = PRBMath.SD59x18({
+            value: int256(amountIn)
+        });
+        PRBMath.SD59x18 memory amount1UD = PRBMath.SD59x18({
+            value: int256(amountOut)
+        });
 
+        if (zeroForOne) {
             amount0UD = PRBMath.SD59x18({value: int256(amountIn)});
             amount1UD = PRBMath.SD59x18({value: int256(amountOut)});
 
             notionalAmount = -amount1UD.value;
-
         } else {
-
             // isFT
-            
+
             amount0UD = PRBMath.SD59x18({value: int256(amountOut)});
             amount1UD = PRBMath.SD59x18({value: int256(amountIn)});
 
             notionalAmount = amount1UD.value;
-            
         }
 
         PRBMath.SD59x18 memory fixedRateUD = PRBMathSD59x18Typed.mul(
             PRBMathSD59x18Typed.div(amount0UD, amount1UD),
             PRBMath.SD59x18({value: 10**16})
         );
-        
-        
+
         fixedRate = fixedRateUD.value;
 
         amount0 = uint256(amount0UD.value);
         amount1 = uint256(amount1UD.value);
-        
     }
 }

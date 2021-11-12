@@ -1,11 +1,9 @@
 pragma solidity ^0.8.0;
 
-
 /**
  * @dev Interface of the Chainlink aggregator
-*/
+ */
 interface IAggregator {
-
     // todo: not sure we need all of the below functions
     function decimals() external view returns (uint8);
 
@@ -26,7 +24,6 @@ interface IAggregator {
             uint256 updatedAt,
             uint80 answeredInRound
         );
-    
 
     function latestRoundData()
         external
@@ -38,6 +35,4 @@ interface IAggregator {
             uint256 updatedAt,
             uint80 answeredInRound
         );
-        
 }
-

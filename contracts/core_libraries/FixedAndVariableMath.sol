@@ -3,7 +3,6 @@ import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 
 library FixedAndVariableMath {
-        
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
     // todo: make the function internal
@@ -20,8 +19,11 @@ library FixedAndVariableMath {
         timePeriodInYears = PRBMathUD60x18Typed.div(xUD, yUD).value;
     }
 
-    function fixedFactor(bool atMaturity, uint256 termStartTimestamp, uint256 termEndTimestamp) public view returns(uint256) {
-        
+    function fixedFactor(
+        bool atMaturity,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp
+    ) public view returns (uint256) {
         // todo: always at maturity
         uint256 timePeriodInSeconds;
 
@@ -29,127 +31,126 @@ library FixedAndVariableMath {
             timePeriodInSeconds = termEndTimestamp - termStartTimestamp;
         } else {
             timePeriodInSeconds = block.timestamp - termStartTimestamp;
-        }    
-        
+        }
+
         uint256 timePeriodInYears = accrualFact(timePeriodInSeconds);
-        
-        uint256 fixedFactorValue = PRBMathUD60x18Typed.mul(
-                
-                PRBMath.UD60x18({
-                    value: timePeriodInYears
-                }),
-                
-                PRBMath.UD60x18({
-                    value: 10 ** 16
-                })
-        ).value;
 
-        return fixedFactorValue;    
+        uint256 fixedFactorValue = PRBMathUD60x18Typed
+            .mul(
+                PRBMath.UD60x18({value: timePeriodInYears}),
+                PRBMath.UD60x18({value: 10**16})
+            )
+            .value;
 
+        return fixedFactorValue;
     }
-    
-    
-    function calculateFixedTokenBalance(int256 amount0, int256 excessBalance, uint256 termStartTimestamp, uint256 termEndTimestamp) public view returns(int256 fixedTokenBalance) {
 
+    function calculateFixedTokenBalance(
+        int256 amount0,
+        int256 excessBalance,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp
+    ) public view returns (int256 fixedTokenBalance) {
         PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
-
+            PRBMath.SD59x18({value: amount0}),
             PRBMath.SD59x18({
-                value: amount0
-            }),
-
-            PRBMath.SD59x18({
-                value: int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
+                value: int256(
+                    fixedFactor(true, termStartTimestamp, termEndTimestamp)
+                )
             })
         );
 
         PRBMath.SD59x18 memory numerator = PRBMathSD59x18Typed.sub(
             exp1,
-            PRBMath.SD59x18({
-                value: excessBalance
-            })
+            PRBMath.SD59x18({value: excessBalance})
         );
 
-        fixedTokenBalance = PRBMathSD59x18Typed.div(
-            exp1,
-            PRBMath.SD59x18({
-                value: int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
-                
-            })
-        ).value;
-        
+        fixedTokenBalance = PRBMathSD59x18Typed
+            .div(
+                exp1,
+                PRBMath.SD59x18({
+                    value: int256(
+                        fixedFactor(true, termStartTimestamp, termEndTimestamp)
+                    )
+                })
+            )
+            .value;
     }
-    
-    function getFixedTokenBalance(uint256 amount0, uint256 amount1, int256 accruedVariableFactor, bool isFT, uint256 termStartTimestamp, uint256 termEndTimestamp) internal view returns(int256 fixedTokenBalance) {
-        
+
+    function getFixedTokenBalance(
+        uint256 amount0,
+        uint256 amount1,
+        int256 accruedVariableFactor,
+        bool isFT,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp
+    ) internal view returns (int256 fixedTokenBalance) {
         int256 excessFixedAccruedBalance;
         int256 excessVariableAccruedBalance;
         int256 excessBalance;
 
         if (isFT) {
+            PRBMath.SD59x18
+                memory excessFixedAccruedBalance = PRBMathSD59x18Typed.mul(
+                    PRBMath.SD59x18({value: int256(amount0)}),
+                    PRBMath.SD59x18({
+                        value: int256(
+                            fixedFactor(
+                                false,
+                                termStartTimestamp,
+                                termEndTimestamp
+                            )
+                        )
+                    })
+                );
 
-            PRBMath.SD59x18 memory excessFixedAccruedBalance = PRBMathSD59x18Typed.mul(
+            PRBMath.SD59x18
+                memory excessVariableAccruedBalance = PRBMathSD59x18Typed.mul(
+                    PRBMath.SD59x18({value: -int256(amount1)}),
+                    PRBMath.SD59x18({value: accruedVariableFactor})
+                );
 
-                PRBMath.SD59x18({
-                    value: int256(amount0)
-                }),
+            excessBalance = PRBMathSD59x18Typed
+                .add(excessFixedAccruedBalance, excessVariableAccruedBalance)
+                .value;
 
-                PRBMath.SD59x18({
-                    value: int256(fixedFactor(false, termStartTimestamp, termEndTimestamp))
-                })
+            fixedTokenBalance = calculateFixedTokenBalance(
+                int256(amount0),
+                excessBalance,
+                termStartTimestamp,
+                termEndTimestamp
             );
-
-            PRBMath.SD59x18 memory excessVariableAccruedBalance = PRBMathSD59x18Typed.mul(
-
-                PRBMath.SD59x18({
-                    value: -int256(amount1)
-                }),
-
-                PRBMath.SD59x18({
-                    // value: int256(variableFactor(false))
-                    value: accruedVariableFactor
-                })
-            );
-
-            excessBalance = PRBMathSD59x18Typed.add(
-                excessFixedAccruedBalance,
-                excessVariableAccruedBalance
-            ).value;
-
-            fixedTokenBalance = calculateFixedTokenBalance(int256(amount0), excessBalance, termStartTimestamp, termEndTimestamp);
         } else {
-    
-            PRBMath.SD59x18 memory excessFixedAccruedBalance = PRBMathSD59x18Typed.mul(
+            PRBMath.SD59x18
+                memory excessFixedAccruedBalance = PRBMathSD59x18Typed.mul(
+                    PRBMath.SD59x18({value: -int256(amount0)}),
+                    PRBMath.SD59x18({
+                        value: int256(
+                            fixedFactor(
+                                false,
+                                termStartTimestamp,
+                                termEndTimestamp
+                            )
+                        )
+                    })
+                );
 
-                PRBMath.SD59x18({
-                    value: -int256(amount0)
-                }),
+            PRBMath.SD59x18
+                memory excessVariableAccruedBalance = PRBMathSD59x18Typed.mul(
+                    PRBMath.SD59x18({value: int256(amount1)}),
+                    PRBMath.SD59x18({value: accruedVariableFactor})
+                );
 
-                PRBMath.SD59x18({
-                    value: int256(fixedFactor(false, termStartTimestamp, termEndTimestamp))
-                })
-            ); 
+            excessBalance = PRBMathSD59x18Typed
+                .add(excessFixedAccruedBalance, excessVariableAccruedBalance)
+                .value;
 
-            PRBMath.SD59x18 memory excessVariableAccruedBalance = PRBMathSD59x18Typed.mul(
-
-                PRBMath.SD59x18({
-                    value: int256(amount1)
-                }),
-
-                PRBMath.SD59x18({
-                    // value: int256(variableFactor(false))
-                    value: accruedVariableFactor
-                })
+            fixedTokenBalance = calculateFixedTokenBalance(
+                -int256(amount0),
+                excessBalance,
+                termStartTimestamp,
+                termEndTimestamp
             );
-
-            
-            excessBalance = PRBMathSD59x18Typed.add(
-                excessFixedAccruedBalance,
-                excessVariableAccruedBalance
-            ).value;
-
-            fixedTokenBalance = calculateFixedTokenBalance(-int256(amount0), excessBalance, termStartTimestamp, termEndTimestamp);
-
         }
-  
     }
 }

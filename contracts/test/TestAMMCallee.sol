@@ -8,133 +8,123 @@ import "../AMM.sol";
 contract TestAMMCallee is AMM {
     using SafeCast for uint256;
 
-  function swapExact0For1(
+    function swapExact0For1(
         address amm,
         uint256 amount0In,
         address recipient,
         uint160 sqrtPriceLimitX96,
         int256 proposedMargin
     ) external {
-
         SwapParams memory params = SwapParams({
-               recipient: recipient,
-               isFT: true,
-               amountSpecified: amount0In.toInt256(),
-               sqrtPriceLimitX96: sqrtPriceLimitX96,
-               isUnwind: false,
-               isTrader: true,
-               proposedMargin: proposedMargin
+            recipient: recipient,
+            isFT: true,
+            amountSpecified: amount0In.toInt256(),
+            sqrtPriceLimitX96: sqrtPriceLimitX96,
+            isUnwind: false,
+            isTrader: true,
+            proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
-  }
+    }
 
-  function swap0ForExact1(
+    function swap0ForExact1(
         address amm,
         uint256 amount1Out,
         address recipient,
         uint160 sqrtPriceLimitX96,
         int256 proposedMargin
     ) external {
-
         SwapParams memory params = SwapParams({
-               recipient: recipient,
-               isFT: true,
-               amountSpecified: -amount1Out.toInt256(),
-               sqrtPriceLimitX96: sqrtPriceLimitX96,
-               isUnwind: false,
-               isTrader: true,
-               proposedMargin: proposedMargin
+            recipient: recipient,
+            isFT: true,
+            amountSpecified: -amount1Out.toInt256(),
+            sqrtPriceLimitX96: sqrtPriceLimitX96,
+            isUnwind: false,
+            isTrader: true,
+            proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
-  }
+    }
 
-
-  function swapExact1For0(
+    function swapExact1For0(
         address amm,
         uint256 amount1In,
         address recipient,
         uint160 sqrtPriceLimitX96,
         int256 proposedMargin
     ) external {
-
         SwapParams memory params = SwapParams({
-               recipient: recipient,
-               isFT: false,
-               amountSpecified: amount1In.toInt256(),
-               sqrtPriceLimitX96: sqrtPriceLimitX96,
-               isUnwind: false,
-               isTrader: true,
-               proposedMargin: proposedMargin
+            recipient: recipient,
+            isFT: false,
+            amountSpecified: amount1In.toInt256(),
+            sqrtPriceLimitX96: sqrtPriceLimitX96,
+            isUnwind: false,
+            isTrader: true,
+            proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
-  }
+    }
 
-  
-  function swap1ForExact0(
+    function swap1ForExact0(
         address amm,
         uint256 amount0Out,
         address recipient,
         uint160 sqrtPriceLimitX96,
         int256 proposedMargin
     ) external {
-
         SwapParams memory params = SwapParams({
-               recipient: recipient,
-               isFT: false,
-               amountSpecified: -amount0Out.toInt256(),
-               sqrtPriceLimitX96: sqrtPriceLimitX96,
-               isUnwind: false,
-               isTrader: true,
-               proposedMargin: proposedMargin
+            recipient: recipient,
+            isFT: false,
+            amountSpecified: -amount0Out.toInt256(),
+            sqrtPriceLimitX96: sqrtPriceLimitX96,
+            isUnwind: false,
+            isTrader: true,
+            proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
-  }
+    }
 
-
-  function swapToLowerSqrtPrice(
+    function swapToLowerSqrtPrice(
         address amm,
         uint160 sqrtPriceX96,
         address recipient,
         int256 proposedMargin
     ) external {
-
         SwapParams memory params = SwapParams({
-               recipient: recipient,
-               isFT: true,
-               amountSpecified: type(int256).max,
-               sqrtPriceLimitX96: sqrtPriceX96,
-               isUnwind: false,
-               isTrader: true,
-               proposedMargin: proposedMargin
+            recipient: recipient,
+            isFT: true,
+            amountSpecified: type(int256).max,
+            sqrtPriceLimitX96: sqrtPriceX96,
+            isUnwind: false,
+            isTrader: true,
+            proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
-  }
+    }
 
-  
-  function swapToHigherSqrtPrice(
+    function swapToHigherSqrtPrice(
         address amm,
         uint160 sqrtPriceX96,
         address recipient,
         int256 proposedMargin
     ) external {
-
         SwapParams memory params = SwapParams({
-               recipient: recipient,
-               isFT: false,
-               amountSpecified: type(int256).max,
-               sqrtPriceLimitX96: sqrtPriceX96,
-               isUnwind: false,
-               isTrader: true,
-               proposedMargin: proposedMargin
+            recipient: recipient,
+            isFT: false,
+            amountSpecified: type(int256).max,
+            sqrtPriceLimitX96: sqrtPriceX96,
+            isUnwind: false,
+            isTrader: true,
+            proposedMargin: proposedMargin
         });
 
         IAMM(amm).swap(params);
-  }
+    }
 
     function mint(
         address amm,
@@ -151,8 +141,4 @@ contract TestAMMCallee is AMM {
             abi.encode(msg.sender)
         );
     }
-
-
-
-
 }

@@ -17,10 +17,8 @@ library Position {
         uint128 liquidity; // todo: should be an int
         // fee growth per unit of liquidity as of the last update to liquidity or fees owed
         int256 margin;
-
         int256 fixedTokenGrowthInsideLast;
         int256 variableTokenGrowthInsideLast;
-        
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
     }
@@ -41,27 +39,17 @@ library Position {
             keccak256(abi.encodePacked(owner, tickLower, tickUpper))
         ];
     }
-    
-    function updateMargin(
-        Info storage self,
-        int256 marginDelta
-    ) internal {
-        
+
+    function updateMargin(Info storage self, int256 marginDelta) internal {
         Info memory _self = self;
-        int256 updatedMargin = PRBMathSD59x18Typed.add(
-            
-            PRBMath.SD59x18({
-                value: _self.margin
-            }),
-
-            PRBMath.SD59x18({
-                value: marginDelta
-            })
-
-        ).value;
+        int256 updatedMargin = PRBMathSD59x18Typed
+            .add(
+                PRBMath.SD59x18({value: _self.margin}),
+                PRBMath.SD59x18({value: marginDelta})
+            )
+            .value;
 
         self.margin = updatedMargin;
-
     }
 
     function updateBalances(
@@ -71,41 +59,29 @@ library Position {
     ) internal {
         Info memory _self = self;
 
-        int256 fixedTokenBalance = PRBMathSD59x18Typed.add(
-            
-            PRBMath.SD59x18({
-                value: _self.fixedTokenBalance
-            }),
+        int256 fixedTokenBalance = PRBMathSD59x18Typed
+            .add(
+                PRBMath.SD59x18({value: _self.fixedTokenBalance}),
+                PRBMath.SD59x18({value: fixedTokenBalanceDelta})
+            )
+            .value;
 
-            PRBMath.SD59x18({
-                value: fixedTokenBalanceDelta
-            })
-
-        ).value;
-
-        int256 variableTokenBalance = PRBMathSD59x18Typed.add(
-            
-            PRBMath.SD59x18({
-                value: _self.variableTokenBalance
-            }),
-
-            PRBMath.SD59x18({
-                value: variableTokenBalanceDelta
-            })
-
-        ).value;
+        int256 variableTokenBalance = PRBMathSD59x18Typed
+            .add(
+                PRBMath.SD59x18({value: _self.variableTokenBalance}),
+                PRBMath.SD59x18({value: variableTokenBalanceDelta})
+            )
+            .value;
 
         self.fixedTokenBalance = fixedTokenBalance;
         self.variableTokenBalance = variableTokenBalance;
     }
-    
-    
+
     function updateFixedAndVariableTokenBalances(
         Info storage self,
         int256 fixedTokenGrowthInside,
         int256 variableTokenGrowthInside
     ) internal {
-
         Info memory _self = self;
 
         // todo: make sure the ordering of operations is correct
@@ -113,83 +89,51 @@ library Position {
         self.variableTokenGrowthInsideLast = variableTokenGrowthInside;
 
         // calculate accumuldated fixed and variable tokens
-        int256 fixedTokenBalance = PRBMathSD59x18Typed.mul(
-            
-            PRBMathSD59x18Typed.sub(
+        int256 fixedTokenBalance = PRBMathSD59x18Typed
+            .mul(
+                PRBMathSD59x18Typed.sub(
+                    PRBMath.SD59x18({value: fixedTokenGrowthInside}),
+                    PRBMath.SD59x18({value: _self.fixedTokenGrowthInsideLast})
+                ),
+                PRBMath.SD59x18({value: int256(uint256(_self.liquidity))})
+            )
+            .value;
 
-                PRBMath.SD59x18({
-                    value: fixedTokenGrowthInside
-                }),
+        int256 variableTokenBalance = PRBMathSD59x18Typed
+            .mul(
+                PRBMathSD59x18Typed.sub(
+                    PRBMath.SD59x18({value: variableTokenGrowthInside}),
+                    PRBMath.SD59x18({
+                        value: _self.variableTokenGrowthInsideLast
+                    })
+                ),
+                PRBMath.SD59x18({value: int256(uint256(_self.liquidity))})
+            )
+            .value;
 
-                PRBMath.SD59x18({
-                    value: _self.fixedTokenGrowthInsideLast
-                })
-            ),
-
-            PRBMath.SD59x18({
-                value: int256(uint256(_self.liquidity))
-            })
-
-        ).value;
-
-
-        int256 variableTokenBalance = PRBMathSD59x18Typed.mul(
-            
-            PRBMathSD59x18Typed.sub(
-
-                PRBMath.SD59x18({
-                    value: variableTokenGrowthInside
-                }),
-
-                PRBMath.SD59x18({
-                    value: _self.variableTokenGrowthInsideLast
-                })
-            ),
-
-            PRBMath.SD59x18({
-                value: int256(uint256(_self.liquidity))
-            })
-
-        ).value;
-
-    
         if (fixedTokenBalance > 0 || variableTokenBalance > 0) {
-            
-            self.fixedTokenBalance = PRBMathSD59x18Typed.add(
+            self.fixedTokenBalance = PRBMathSD59x18Typed
+                .add(
+                    PRBMath.SD59x18({value: self.fixedTokenBalance}),
+                    PRBMath.SD59x18({value: fixedTokenBalance})
+                )
+                .value;
 
-                PRBMath.SD59x18({
-                    value: self.fixedTokenBalance
-                }),
-
-                PRBMath.SD59x18({
-                    value: fixedTokenBalance
-                })
-            ).value;
-
-
-            self.variableTokenBalance = PRBMathSD59x18Typed.add(
-
-                PRBMath.SD59x18({
-                    value: self.variableTokenBalance
-                }),
-
-                PRBMath.SD59x18({
-                    value: variableTokenBalance
-                })
-            ).value;
-
+            self.variableTokenBalance = PRBMathSD59x18Typed
+                .add(
+                    PRBMath.SD59x18({value: self.variableTokenBalance}),
+                    PRBMath.SD59x18({value: variableTokenBalance})
+                )
+                .value;
         }
-
     }
-    
-    
+
     /// @notice Credits accumulated fees to a user's position
     /// @param self The individual position to update
     /// @param liquidityDelta The change in pool liquidity as a result of the position update
-    function updateLiquidity(
-        Info storage self,
-        int128 liquidityDelta
-    ) internal {
+    function updateLiquidity(Info storage self, int128 liquidityDelta)
+        internal
+    {
         Info memory _self = self;
 
         uint128 liquidityNext;
@@ -202,10 +146,9 @@ library Position {
                 liquidityDelta
             );
         }
-        
+
         // update the position
         // todo: have a timestamp that check when was the last time the position was updated and avoids the update cost
         if (liquidityDelta != 0) self.liquidity = liquidityNext;
-
     }
 }

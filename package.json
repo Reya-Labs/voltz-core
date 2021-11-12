@@ -24,6 +24,7 @@
     "ethers": "^5.4.7",
     "hardhat": "^2.6.6",
     "hardhat-gas-reporter": "^1.0.4",
+    "husky": "^7.0.4",
     "prettier": "^2.4.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "solhint": "^3.3.6",
@@ -49,6 +50,13 @@
     "format-fix": "npx prettier '**/*.{json,js,ts,md}' --write",
     "lint-check": "npx solhint 'contracts/**/*.sol'",
     "lint-fix": "npx solhint 'contracts/**/*.sol' --fix",
-    "solhint": "./node_modules/.bin/solhint -f table contracts/**/*.sol"
+    "solhint": "./node_modules/.bin/solhint -f table contracts/**/*.sol",
+    "prettier:solidity": "./node_modules/.bin/prettier --write contracts/**/*.sol"
+  },
+
+  "husky": {
+    "hooks": {
+       "pre-push": "npm run prettier:solidity"
+    }
   }
 }
