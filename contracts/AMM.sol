@@ -236,7 +236,7 @@ contract AMM is IAMM, NoDelegateCall {
             } else {
                 // the variable token balance is 0
                 vars.expectedVariableTokenBalance = int256(vars.amount1);
-                vars.expectedFixedTokenBalance = -int256(FixedAndVariableMath.getFixedTokenBalance(uint256(vars.amount0), uint256(vars.amount1), int256(variableFactor(false)), false, termStartTimestamp, termEndTimestamp));
+                vars.expectedFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(vars.amount0, vars.amount1, variableFactor(false), termStartTimestamp, termEndTimestamp);
 
                 margin = calculator.getTraderMarginRequirement(
                     IMarginCalculator.TraderMarginRequirementParams({
@@ -247,14 +247,6 @@ contract AMM is IAMM, NoDelegateCall {
                         isLM: params.isLM
                     })
                 );
-                
-                // margin = calculator.getTraderMarginRequirement(
-                //     expectedFixedTokenBalance,
-                //     expectedVariableTokenBalance,
-                //     termStartTimestamp,
-                //     termEndTimestamp,
-                //     params.isLM
-                // );
 
             }
 
@@ -294,7 +286,9 @@ contract AMM is IAMM, NoDelegateCall {
                 }),
 
                 PRBMath.SD59x18({
-                    value: -int256(FixedAndVariableMath.getFixedTokenBalance(uint256(vars.amount0Up), uint256(vars.amount1Up), int256(variableFactor(false)), false, termStartTimestamp, termEndTimestamp))
+                    // value: -int256(FixedAndVariableMath.getFixedTokenBalance(uint256(vars.amount0Up), uint256(vars.amount1Up), int256(variableFactor(false)), false, termStartTimestamp, termEndTimestamp))
+                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Up, vars.amount1Up, variableFactor(false), termStartTimestamp, termEndTimestamp)
+
                 })
 
             ).value;
@@ -308,14 +302,6 @@ contract AMM is IAMM, NoDelegateCall {
                         isLM: params.isLM
                     })
                 );
-            
-            // uint256 marginReqAfterUp = calculator.getTraderMarginRequirement(
-            //     expectedFixedTokenBalanceAfterUp,
-            //     expectedVariableTokenBalanceAfterUp,
-            //     termStartTimestamp,
-            //     termEndTimestamp,
-            //     params.isLM
-            // );
 
             // going down balance delta
             vars.amount0Down = SqrtPriceMath.getAmount0Delta(
@@ -352,7 +338,7 @@ contract AMM is IAMM, NoDelegateCall {
                 }),
 
                 PRBMath.SD59x18({
-                    value: int256(FixedAndVariableMath.getFixedTokenBalance(uint256(vars.amount0Down), uint256(vars.amount1Down), int256(variableFactor(false)), true, termStartTimestamp, termEndTimestamp))
+                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Down, vars.amount1Down, variableFactor(false), termStartTimestamp, termEndTimestamp)
                 })
 
             ).value;
@@ -395,7 +381,7 @@ contract AMM is IAMM, NoDelegateCall {
             } else {
                 // the variable token balance is 0
                 vars.expectedVariableTokenBalance = -int256(vars.amount1);
-                vars.expectedFixedTokenBalance = int256(FixedAndVariableMath.getFixedTokenBalance(uint256(vars.amount0), uint256(vars.amount1), int256(variableFactor(false)), true, termStartTimestamp, termEndTimestamp));
+                vars.expectedFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(vars.amount0, vars.amount1, variableFactor(false), termStartTimestamp, termEndTimestamp);
 
                 margin = calculator.getTraderMarginRequirement(
                     IMarginCalculator.TraderMarginRequirementParams({
@@ -1271,7 +1257,8 @@ contract AMM is IAMM, NoDelegateCall {
                         PRBMathSD59x18Typed.div(
 
                             PRBMath.SD59x18({
-                                value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), !params.isFT, termStartTimestamp, termEndTimestamp)
+                                // value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), !params.isFT, termStartTimestamp, termEndTimestamp)
+                                value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amount0), int256(step.amount1), variableFactor(false), termStartTimestamp, termEndTimestamp)
                             }),
 
                             PRBMath.SD59x18({
@@ -1295,7 +1282,9 @@ contract AMM is IAMM, NoDelegateCall {
                         PRBMathSD59x18Typed.div(
 
                             PRBMath.SD59x18({
-                                value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), params.isFT, termStartTimestamp, termEndTimestamp)
+                                // value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), params.isFT, termStartTimestamp, termEndTimestamp)
+                                // todo: check the amount0 and amount1 signs
+                                value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amount0), int256(step.amount1), variableFactor(false), termStartTimestamp, termEndTimestamp)
                             }),
 
                             PRBMath.SD59x18({
@@ -1364,7 +1353,7 @@ contract AMM is IAMM, NoDelegateCall {
         variableTokenGrowthGlobal = state.variableTokenGrowthGlobal;
         fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;
         
-        _fixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(uint256(amount0), uint256(amount1), int256(variableFactor(false)), params.isFT, termStartTimestamp, termEndTimestamp);
+        _fixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(amount0, amount1, variableFactor(false), termStartTimestamp, termEndTimestamp);
 
         if (params.isFT) {
             _variableTokenBalance = -int256(uint256(amount1));

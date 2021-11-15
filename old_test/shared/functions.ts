@@ -19,8 +19,3 @@ export function mul(x: EthersBigNumber, y: EthersBigNumber) {
   const result: MathjsBigNumber = toMbn(x).mul(toMbn(y));
   return toEbn(result);
 }
-
-export function add(x: EthersBigNumber, y: EthersBigNumber) {
-  const result: MathjsBigNumber = toMbn(x).add(toMbn(y));
-  return toEbn(result);
-}

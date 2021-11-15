@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AMM IRS tests medium fee, 10:1 price, 2e18 max range liquidity swap exactly 1.0000 token0 for token1 to price 0.50000 1`] = `
+Object {
+  "ammPriceBefore": "10.000",
+  "executionPrice": "NaN",
+  "poolPriceAfter": "1.5010",
+  "tickAfter": 4061,
+  "tickBefore": 23027,
+}
+`;
