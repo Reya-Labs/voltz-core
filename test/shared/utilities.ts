@@ -13,6 +13,8 @@ import { MockTimeAMM } from "../../typechain/MockTimeAMM";
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
 import { sqrt } from "./sqrt";
+import { div, sub, mul, add } from "./functions";
+import { toBn } from "evm-bn";
 
 export enum FeeAmount {
   LOW = 500,
@@ -25,6 +27,9 @@ export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
   [FeeAmount.MEDIUM]: 60,
   [FeeAmount.HIGH]: 200,
 };
+
+export const SECONDS_IN_YEAR = toBn("31536000")
+export const BLOCK_TIMESTAMP = 1632249308
 
 // export function getCreate2Address(
 //   factoryAddress: string,
@@ -225,4 +230,31 @@ export const MAX_SQRT_RATIO = BigNumber.from(
 
 export function expandTo18Decimals(n: number): BigNumber {
   return BigNumber.from(n).mul(BigNumber.from(10).pow(18));
+}
+
+export function accrualFact(timePeriodInSeconds: BigNumber) : BigNumber {
+  return div(timePeriodInSeconds, SECONDS_IN_YEAR);
+}
+
+
+export function fixedFactor(atMaturity: boolean, termStartTimestamp: BigNumber, termEndTimestamp: BigNumber) : BigNumber {
+
+  let timePeriodInSeconds: BigNumber
+
+  const currentBlockTimestamp = toBn(BLOCK_TIMESTAMP.toString())
+  
+  if (atMaturity) {
+    timePeriodInSeconds = sub(termEndTimestamp, termStartTimestamp)
+  } else {
+    // timePeriodInSeconds = sub(toBn(Math.floor(Date.now()/1000).toString()), termStartTimestamp)
+    timePeriodInSeconds = sub(currentBlockTimestamp, termStartTimestamp)
+  }
+
+  const timePeriodInYears: BigNumber = accrualFact(timePeriodInSeconds)
+  
+
+  const fixedFactorValue: BigNumber = mul(timePeriodInYears, toBn("0.01"))
+
+  return fixedFactorValue
+
 }

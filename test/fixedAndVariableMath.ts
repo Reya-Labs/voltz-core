@@ -2,44 +2,13 @@ import { BigNumber, constants } from "ethers";
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import {FixedAndVariableMath} from "../typechain/FixedAndVariableMath";
-import { encodeSqrtRatioX96, expandTo18Decimals } from "./shared/utilities";
+import { encodeSqrtRatioX96, expandTo18Decimals, accrualFact, fixedFactor } from "./shared/utilities";
 import { toBn } from "evm-bn";
 import { div, sub, mul, add } from "./shared/functions";
-
-
 
 const SECONDS_IN_YEAR = toBn("31536000")
 const BLOCK_TIMESTAMP = 1632249308
 
-
-function accrualFact(timePeriodInSeconds: BigNumber) : BigNumber {
-
-  return div(timePeriodInSeconds, SECONDS_IN_YEAR)
-
-}
-
-
-function fixedFactor(atMaturity: boolean, termStartTimestamp: BigNumber, termEndTimestamp: BigNumber) : BigNumber {
-
-  let timePeriodInSeconds: BigNumber
-
-  const currentBlockTimestamp = toBn(BLOCK_TIMESTAMP.toString())
-  
-  if (atMaturity) {
-    timePeriodInSeconds = sub(termEndTimestamp, termStartTimestamp)
-  } else {
-    // timePeriodInSeconds = sub(toBn(Math.floor(Date.now()/1000).toString()), termStartTimestamp)
-    timePeriodInSeconds = sub(currentBlockTimestamp, termStartTimestamp)
-  }
-
-  const timePeriodInYears: BigNumber = accrualFact(timePeriodInSeconds)
-  
-
-  const fixedFactorValue: BigNumber = mul(timePeriodInYears, toBn("0.01"))
-
-  return fixedFactorValue
-
-}
 
 
 function getFixedTokenBalance(amount0: BigNumber, amount1: BigNumber, variableFactorAccrued: BigNumber, termStartTimestamp: BigNumber, termEndTimestamp: BigNumber) : BigNumber {
@@ -127,11 +96,6 @@ describe("FixedAndVariableMath", () => {
 
 
         it(`returns the correct fixed factor at maturity`, async () => {
-
-          // const timePeriodInSeconds = sub(termEndTimestamp, termStartTimestamp)
-          // const timePeriodInYears = div(timePeriodInSeconds, toBn("31536000"))
-          // const fixedFactorValue = mul(timePeriodInYears, toBn("0.01"));
-
           const fixedFactorValue = fixedFactor(true, termStartTimestamp, termEndTimestamp)
 
           expect(await fixedAndVariableMath.fixedFactor(atMaturity, termStartTimestamp, termEndTimestamp)).to.eq(fixedFactorValue);

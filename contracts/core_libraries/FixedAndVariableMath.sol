@@ -55,7 +55,14 @@ library FixedAndVariableMath {
         uint256 timePeriodInSeconds;
 
         if (atMaturity) {
-            timePeriodInSeconds = termEndTimestamp - termStartTimestamp;
+            timePeriodInSeconds = PRBMathUD60x18Typed.sub(
+                PRBMath.UD60x18({
+                    value: termEndTimestamp
+                }),
+                PRBMath.UD60x18({
+                    value: termStartTimestamp
+                })
+            ).value;
         } else {
             timePeriodInSeconds = blockTimestampScaled() - termStartTimestamp;
         }

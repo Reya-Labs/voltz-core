@@ -7,6 +7,7 @@ import "./utils/SqrtPriceMath.sol";
 import "./interfaces/IMarginCalculator.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "./core_libraries/Position.sol";
+import "hardhat/console.sol";
 
 
 contract MarginCalculator is IMarginCalculator{
@@ -18,7 +19,7 @@ contract MarginCalculator is IMarginCalculator{
     uint256 public override apyUpperMultiplier = 2 * 10**18; // 2.0
     uint256 public override apyLowerMultiplier = 5 * 10**17; // 0.5
 
-    uint256 public override minDeltaLM = 125 * 10**14; // 0.00125
+    uint256 public override minDeltaLM = 125 * 10**14; // 0.0125
     uint256 public override minDeltaIM = 500 * 10**14; // 0.05
 
     uint256 public override constant SECONDS_IN_YEAR = 31536000 * 10**18; // todo: push into library
@@ -98,134 +99,108 @@ contract MarginCalculator is IMarginCalculator{
     }
 
 
-    function getMinimumMarginRequirement(
-        TraderMarginRequirementParams memory params,
-        bool isFT
-    ) public view returns(uint256 margin) {
-        // todo: for vts there needs to be a zero lower bound --> so need to have an idea of the underlying fixed rate
-        uint256 timePeriodInYears = FixedAndVariableMath.accrualFact(params.termEndTimestamp-params.termStartTimestamp);
+    struct MinimumMarginRequirementLocalVars {
+
         uint256 minDelta;
         uint256 notional;
+        uint256 timePeriodInSeconds;
+        uint256 timePeriodInYears;
+        uint256 zeroLowerBoundMargin;
+
+    }
+    
+    function getMinimumMarginRequirement(
+        TraderMarginRequirementParams memory params
+    ) public view returns(uint256 margin) {
+        // todo: for vts there needs to be a zero lower bound --> so need to have an idea of the underlying fixed rate
+        // todo: check signs
+
+        MinimumMarginRequirementLocalVars memory vars;
+        
+        vars.timePeriodInSeconds = PRBMathUD60x18Typed.sub(
+
+            PRBMath.UD60x18({
+                value: params.termEndTimestamp
+            }),
+
+            PRBMath.UD60x18({
+                value: params.termStartTimestamp
+            })
+        ).value;
+
+        vars.timePeriodInYears = FixedAndVariableMath.accrualFact(vars.timePeriodInSeconds);
         
         if (params.isLM) {
-            minDelta = minDeltaLM;
+            vars.minDelta = minDeltaLM;
         } else {
-            minDelta = minDeltaIM;
+            vars.minDelta = minDeltaIM;
         }
 
-        if (isFT) {
+        if (params.variableTokenBalance < 0) {
             // variable token balance must be negative
-            notional = uint256(-params.variableTokenBalance);
+            vars.notional = uint256(-params.variableTokenBalance);
             
             margin = PRBMathUD60x18Typed.mul(
 
                 PRBMath.UD60x18({
-                    value: notional
+                    value: vars.notional
                 }),
 
                 PRBMathUD60x18Typed.mul(
 
                     PRBMath.UD60x18({
-                        value: minDelta
+                        value: vars.minDelta
                     }),
 
                     PRBMath.UD60x18({
-                        value: timePeriodInYears
+                        value: vars.timePeriodInYears
                     })
                 )
             ).value;
 
         } else {
-            // variable token balance must be positive
-            // fixed token balance must be negative
-            notional = uint256(params.variableTokenBalance);
+            // variable token balance must be non-negative
+            // fixed token balance must be non-positive
+            // check that at least one is non-zero
 
-            uint256 zeroLowerBoundMargin = PRBMathUD60x18Typed.mul(
+            vars.notional = uint256(params.variableTokenBalance);
 
+            console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
+            console.log("The time in years is", vars.timePeriodInYears);
+            
+            vars.zeroLowerBoundMargin = PRBMathUD60x18Typed.mul(
                 PRBMath.UD60x18({
                     value: uint256(-params.fixedTokenBalance)
                 }),
 
-                PRBMathUD60x18Typed.mul(
-
-                    PRBMath.UD60x18({
+                PRBMath.UD60x18({
                         value: FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp)
-                    }),
-
-                    PRBMath.UD60x18({
-                        value: timePeriodInYears
-                    })
-                )
+                })
             ).value;
 
             margin = PRBMathUD60x18Typed.mul(
 
                 PRBMath.UD60x18({
-                    value: uint256(params.variableTokenBalance)
+                    value: vars.notional
                 }),
 
                 PRBMathUD60x18Typed.mul(
 
                     PRBMath.UD60x18({
-                        value: minDelta
+                        value: vars.minDelta
                     }),
 
                     PRBMath.UD60x18({
-                        value: timePeriodInYears
+                        value: vars.timePeriodInYears
                     })
                 )
             ).value;
 
-            if (margin > zeroLowerBoundMargin) {
-                margin = zeroLowerBoundMargin;
+            if (margin > vars.zeroLowerBoundMargin) {
+                margin = vars.zeroLowerBoundMargin;
             }
 
         }
-    }
-
-    function tickRangeFixedAndVariableBalance(
-        uint160 sqrtRatioLower,
-        uint160 sqrtRatioUpper,
-        uint128 liquidity
-    ) internal pure returns(uint256 fixedTokenBalance, uint256 variableTokenBalance) {
-        
-        // todo: (explain and document the logic) worst cast assumption is that we assume that the LP enters into worst case FT or VT trade
-        
-        fixedTokenBalance = SqrtPriceMath.getAmount0Delta(
-            sqrtRatioLower,
-            sqrtRatioUpper,
-            liquidity,
-            true
-        );
-        
-        variableTokenBalance = SqrtPriceMath.getAmount1Delta(
-            sqrtRatioLower,
-            sqrtRatioUpper,
-            liquidity,
-            true
-        );
-
-    }
-    
-    
-    function maxMarginReq(
-        TraderMarginRequirementParams memory params
-        ) internal returns(uint256 margin) {
-        
-        uint256 marginReqFT = getTraderMarginRequirement(
-            params
-        );
-
-        uint256 marginReqVT = getTraderMarginRequirement(
-            params
-        );
-
-        if (marginReqFT > marginReqVT) {
-            margin = uint256(marginReqFT);
-        } else{
-            margin = uint256(marginReqVT);
-        }
-
     }
     
     function getTraderMarginRequirement(
@@ -234,8 +209,29 @@ contract MarginCalculator is IMarginCalculator{
         
         // todo: only matters if there is a negative balance in either token
         // return 0 in these cases, isLM doesn't matter
+        // todo: or check if the signs are different
+        // minimum margin needs to be >= 0
 
         bool isFT = params.variableTokenBalance < 0;
+
+        uint256 timePeriodInSeconds = PRBMathUD60x18Typed.sub(
+
+                    PRBMath.UD60x18({
+                        value: params.termEndTimestamp
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: params.termStartTimestamp
+                    })
+        ).value;
+
+
+        console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
+        console.log("TimePeriodInSeconds is", timePeriodInSeconds);
+        console.log("Worst Case Var Factor is", worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, params.isLM));
+        // console.log(int256(worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, params.isLM)));
+        // console.log("Variable Token Balance is", params.variableTokenBalance);
+        // console.log("Fixed Token Balance is", params.fixedTokenBalance);
 
         PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
 
@@ -254,20 +250,20 @@ contract MarginCalculator is IMarginCalculator{
                 value: params.variableTokenBalance
             }),
 
-            // todo: safemath?
             PRBMath.SD59x18({
-                value: int256(worstCaseVariableFactorAtMaturity(params.termEndTimestamp-params.termStartTimestamp, isFT, params.isLM))
+                value: int256(worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, params.isLM))
             })
         );
 
-        margin = uint256(PRBMathSD59x18Typed.add(exp1, exp2).value);
+        int256 modelMargin = PRBMathSD59x18Typed.add(exp1, exp2).value;
 
-        uint256 minimumMargin = getMinimumMarginRequirement(
-                                    params,
-                                    isFT
-                                );
-        if (margin < minimumMargin) {
-            margin = minimumMargin;
+        int256 minimumMargin = int256(getMinimumMarginRequirement(
+                                    params
+                                ));
+        if (modelMargin < minimumMargin) {
+            margin = uint256(minimumMargin);
+        } else {
+            margin = uint256(modelMargin);
         }
 
     }
