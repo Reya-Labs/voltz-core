@@ -123,21 +123,15 @@ library FixedAndVariableMath {
         int256 excessBalance;
     }
     
-    function getFixedTokenBalance(
+
+
+    function getExcessBalance(
         int256 amount0,
         int256 amount1,
         uint256 accruedVariableFactor,
         uint256 termStartTimestamp,
-        uint256 termEndTimestamp
-    ) public view returns (int256 fixedTokenBalance) {
+        uint256 termEndTimestamp) internal view returns (int256) {
 
-        // todo: check that amount0 and amount1 are of different signs? (scribble?)
-        
-        // require(
-        //     termEndTimestamp > termStartTimestamp,
-        //     "E<=S"
-        // );
-        
         AccruedValues memory accruedValues;
 
         accruedValues.excessFixedAccruedBalance = PRBMathSD59x18Typed.mul(
@@ -163,9 +157,33 @@ library FixedAndVariableMath {
                 PRBMath.SD59x18({value: accruedValues.excessVariableAccruedBalance})
         ).value;
 
+        return accruedValues.excessBalance;
+
+    }
+    
+    
+
+    /// #if_succeeds termEndTimestamp > termStartTimestamp;
+    function getFixedTokenBalance(
+        int256 amount0,
+        int256 amount1,
+        uint256 accruedVariableFactor,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp
+    ) public view returns (int256 fixedTokenBalance) {
+
+        // todo: check that amount0 and amount1 are of different signs? (scribble?)
+        
+        // require(
+        //     termEndTimestamp > termStartTimestamp,
+        //     "E<=S"
+        // );
+
+        int256 excessBalance = getExcessBalance(amount0, amount1, accruedVariableFactor, termStartTimestamp, termEndTimestamp);
+        
         fixedTokenBalance = calculateFixedTokenBalance(
             amount0,
-            accruedValues.excessBalance,
+            excessBalance,
             termStartTimestamp,
             termEndTimestamp
         );

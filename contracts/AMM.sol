@@ -188,7 +188,7 @@ contract AMM is IAMM, NoDelegateCall {
             })
         );
 
-        position.updateFixedAndVariableTokenBalances(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
+        position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
 
         // todo: only update the  necessary quantities
         // position.update(position.liquidityDelta, position.feeGrowthInsideX128, position.margin, fixedTokenGrowthInside, variableTokenGrowthInside);
@@ -846,7 +846,7 @@ contract AMM is IAMM, NoDelegateCall {
         );
 
         position.updateLiquidity(params.liquidityDelta);
-        position.updateFixedAndVariableTokenBalances(params.fixedTokenGrowthInside, params.variableTokenGrowthInside);
+        position.updateFixedAndVariableTokenGrowthInside(params.fixedTokenGrowthInside, params.variableTokenGrowthInside);
         
         // clear any tick data that is no longer needed
         if (params.liquidityDelta < 0) {
