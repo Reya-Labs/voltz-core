@@ -62,9 +62,11 @@ contract AaveRateOracle is IAaveRateOracle {
 
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public override returns(uint256 result) {
 
+        Rate memory rate;
+        
         if (FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp) {
             // atMaturity is true
-            Rate memory rate = rates[underlyingToken][termEndTimestamp];
+            rate = rates[underlyingToken][termEndTimestamp];
 
             if(!rate.isSet) {
                 if (termEndTimestamp == FixedAndVariableMath.blockTimestampScaled()) {
@@ -73,48 +75,21 @@ contract AaveRateOracle is IAaveRateOracle {
             }
 
             result = getRateFromTo(underlyingToken, termStartTimestamp, termEndTimestamp);
-            
-            result = result / (10 ** (27 - 18)); // 18 decimals, todo: is this optimal?
 
+        } else {
+            if (atMaturity) {
+                revert();
+            } else {
+                rate = rates[underlyingToken][FixedAndVariableMath.blockTimestampScaled()];
+
+                if(!rate.isSet) {
+                    updateRate(underlyingToken);
+                }
+
+                result = getRateFromTo(underlyingToken, termStartTimestamp, FixedAndVariableMath.blockTimestampScaled());
+            }
         }
 
-        // todo: atMaturity is redundunt, remove and replace with if statements based on block.timestamp
-        // todo: atMaturity boolean is only relevant for the fixedFactor
-        // if (atMaturity) {
-            
-        //     // todo: require check that current timestamp is after or equal to the maturity date
-
-        //     Rate memory rate = rates[underlyingToken][termEndTimestamp];
-
-        //     if(!rate.isSet) {
-        //         // todo: test this logic separately
-        //         if (termEndTimestamp == FixedAndVariableMath.blockTimestampScaled()) {
-        //             updateRate(underlyingToken);
-        //         } // else  raise an error        
-        //     }
-
-        //     uint256 rateFromPoolStartToMaturity = getRateFromTo(underlyingToken, termStartTimestamp, termEndTimestamp);
-            
-        //     rateFromPoolStartToMaturity = rateFromPoolStartToMaturity / (10 ** (27 - 18)); // 18 decimals, todo: is this optimal?
-
-        //     return rateFromPoolStartToMaturity;
-        
-        // } else {
-
-        //     // todo: make sure the block timestamp does not change from one line to another (does so in the tests)
-        //     Rate memory rate = rates[underlyingToken][FixedAndVariableMath.blockTimestampScaled()];
-
-        //     if(!rate.isSet) {
-        //         updateRate(underlyingToken);
-        //     }
-
-        //     uint256 rateFromPoolStartToNow = getRateFromTo(underlyingToken, termStartTimestamp, FixedAndVariableMath.blockTimestampScaled());
-
-        //     rateFromPoolStartToNow = rateFromPoolStartToNow / 10 ** (27 - 18); // 18 decimals 
-            
-        //     return rateFromPoolStartToNow;
-        // } 
-        
-
+        result = result / (10 ** (27 - 18)); // 18 decimals, todo: is this optimal?
     }
 }

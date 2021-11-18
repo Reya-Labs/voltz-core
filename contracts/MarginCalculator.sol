@@ -8,6 +8,8 @@ import "./interfaces/IMarginCalculator.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "./core_libraries/Position.sol";
 import "hardhat/console.sol";
+import "./core_libraries/Tick.sol";
+import "./interfaces/IAaveRateOracle.sol";
 
 
 contract MarginCalculator is IMarginCalculator{
@@ -264,6 +266,274 @@ contract MarginCalculator is IMarginCalculator{
             margin = uint256(minimumMargin);
         } else {
             margin = uint256(modelMargin);
+        }
+
+    }
+
+    struct PositionMarginRequirementsVars {
+
+        int256 amount0;
+        int256 amount1;
+
+        int256 expectedVariableTokenBalance;
+        int256 expectedFixedTokenBalance;
+
+        int256 amount0Up;
+        int256 amount1Up;
+
+        int256 amount0Down;
+        int256 amount1Down;
+
+        int256 expectedVariableTokenBalanceAfterUp;
+        int256 expectedFixedTokenBalanceAfterUp;
+
+        int256 expectedVariableTokenBalanceAfterDown;
+        int256 expectedFixedTokenBalanceAfterDown;
+
+        uint256 marginReqAfterUp;
+        uint256 marginReqAfterDown;
+
+        int256 margin;
+
+    }
+
+    function positionMarginBetweenTicksHelper(PositionMarginRequirementParams memory params, PositionMarginRequirementsVars memory vars) internal view returns (uint256 margin) {
+
+            // going up balance delta
+            // todo: make sure the signs are correct
+            vars.amount0Up = SqrtPriceMath.getAmount0Delta(
+                TickMath.getSqrtRatioAtTick(params.currentTick),
+                TickMath.getSqrtRatioAtTick(params.tickUpper),
+                int128(params.liquidity)
+            );
+            vars.amount1Up = SqrtPriceMath.getAmount1Delta(
+                TickMath.getSqrtRatioAtTick(params.currentTick),
+                TickMath.getSqrtRatioAtTick(params.tickUpper),
+                int128(params.liquidity)
+            );
+
+            // todo: convert to uints in here
+            
+            vars.expectedVariableTokenBalanceAfterUp = PRBMathSD59x18Typed.add(
+
+                PRBMath.SD59x18({
+                    value: params.variableTokenBalance
+                }),
+
+                PRBMath.SD59x18({
+                    value: -int256(vars.amount1Up)
+                })
+
+            ).value;
+
+            vars.expectedFixedTokenBalanceAfterUp = PRBMathSD59x18Typed.add(
+
+                PRBMath.SD59x18({
+                    value: params.fixedTokenBalance
+                }),
+
+                PRBMath.SD59x18({
+                    // value: -int256(FixedAndVariableMath.getFixedTokenBalance(uint256(vars.amount0Up), uint256(vars.amount1Up), int256(variableFactor(false)), false, termStartTimestamp, termEndTimestamp))
+                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Up, vars.amount1Up, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp)
+
+                })
+
+            ).value;
+
+            uint256 marginReqAfterUp = getTraderMarginRequirement(
+                    TraderMarginRequirementParams({
+                        fixedTokenBalance: vars.expectedFixedTokenBalanceAfterUp,
+                        variableTokenBalance: vars.expectedVariableTokenBalanceAfterUp,
+                        termStartTimestamp:params.termStartTimestamp,
+                        termEndTimestamp:params.termEndTimestamp,
+                        isLM: params.isLM
+                    })
+                );
+
+            // going down balance delta
+            vars.amount0Down = SqrtPriceMath.getAmount0Delta(
+                TickMath.getSqrtRatioAtTick(params.tickLower),
+                TickMath.getSqrtRatioAtTick(params.currentTick),
+                int128(params.liquidity)
+            );
+
+            vars.amount1Down = SqrtPriceMath.getAmount0Delta(
+                TickMath.getSqrtRatioAtTick(params.tickLower),
+                TickMath.getSqrtRatioAtTick(params.currentTick),
+                int128(params.liquidity)
+            );
+
+            // todo: fix the signs and convert to uint
+
+            vars.expectedVariableTokenBalanceAfterDown = PRBMathSD59x18Typed.add(
+
+                PRBMath.SD59x18({
+                    value: params.variableTokenBalance
+                }),
+
+                PRBMath.SD59x18({
+                    value: -int256(vars.amount1Down)
+                })
+
+            ).value;
+
+            vars.expectedFixedTokenBalanceAfterDown = PRBMathSD59x18Typed.add(
+
+                PRBMath.SD59x18({
+                    value: params.fixedTokenBalance
+                }),
+
+                PRBMath.SD59x18({
+                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Down, vars.amount1Down, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp)
+                })
+
+            ).value;
+
+            vars.marginReqAfterDown = getTraderMarginRequirement(
+                    TraderMarginRequirementParams({
+                        fixedTokenBalance: vars.expectedFixedTokenBalanceAfterDown,
+                        variableTokenBalance: vars.expectedVariableTokenBalanceAfterDown,
+                        termStartTimestamp:params.termStartTimestamp,
+                        termEndTimestamp:params.termEndTimestamp,
+                        isLM: params.isLM
+                    })
+                );
+
+        
+            if (vars.marginReqAfterUp > vars.marginReqAfterDown) {
+                margin = marginReqAfterUp;
+            } else {
+                margin = vars.marginReqAfterDown;
+            }
+    }
+    
+    
+
+    function isLiquidatablePosition(PositionMarginRequirementParams memory params, int256 currentMargin) public view override returns(bool _isLiquidatable) {
+
+        uint256 marginRequirement = getPositionMarginRequirement(params);
+        if (currentMargin < int256(marginRequirement)) {
+            _isLiquidatable = true;
+        } else {
+            _isLiquidatable = false;
+        }
+
+    }
+
+    function isLiquidatableTrader(
+        TraderMarginRequirementParams memory params,
+        int256 currentMargin
+    ) public view override returns(bool isLiquidatable) {
+
+        // todo: liquidation only supported by accounts that are not fully collateralised
+        // todo: cannot liquidate expired position?
+
+        uint256 marginRequirement = getTraderMarginRequirement(params);
+     
+        if (currentMargin < int256(marginRequirement)) {
+            isLiquidatable = true;
+        } else {
+            isLiquidatable = false;
+        }
+    
+    }
+    
+
+    function getPositionMarginRequirement(PositionMarginRequirementParams memory params) public view override returns (uint256 margin) {
+
+        // todo: check if position's liqudity delta is not zero
+
+        PositionMarginRequirementsVars memory vars;
+
+        vars.amount0 = SqrtPriceMath.getAmount0Delta(
+            TickMath.getSqrtRatioAtTick(params.tickLower),
+            TickMath.getSqrtRatioAtTick(params.tickUpper),
+            int128(params.liquidity)
+        );
+    
+        vars.amount1 = SqrtPriceMath.getAmount1Delta(
+            TickMath.getSqrtRatioAtTick(params.tickLower),
+            TickMath.getSqrtRatioAtTick(params.tickUpper),
+            int128(params.liquidity)
+        );
+
+        // tood: fix amount signs and convert to uint256
+        
+        if (params.currentTick < params.tickLower) {
+
+            if (params.variableTokenBalance > 0) {
+                revert(); // this should not be possible
+            } else if (params.variableTokenBalance < 0) {
+                // means the trader deposited on the other side of the tick rang
+                // the margin just covers the current balances of the position
+                
+                margin = getTraderMarginRequirement(
+                    TraderMarginRequirementParams({
+                        fixedTokenBalance: params.fixedTokenBalance,
+                        variableTokenBalance: params.variableTokenBalance,
+                        termStartTimestamp:params.termStartTimestamp,
+                        termEndTimestamp:params.termEndTimestamp,
+                        isLM: params.isLM
+                    })
+                );
+
+            } else {
+                // the variable token balance is 0
+                vars.expectedVariableTokenBalance = int256(vars.amount1);
+                vars.expectedFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(vars.amount0, vars.amount1, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp);
+
+                margin = getTraderMarginRequirement(
+                    TraderMarginRequirementParams({
+                        fixedTokenBalance: vars.expectedFixedTokenBalance,
+                        variableTokenBalance: vars.expectedVariableTokenBalance,
+                        termStartTimestamp:params.termStartTimestamp,
+                        termEndTimestamp:params.termEndTimestamp,
+                        isLM: params.isLM
+                    })
+                );
+
+            }
+
+        } else if (params.currentTick < params.tickUpper) {
+            
+            margin = positionMarginBetweenTicksHelper(params, vars);
+
+        } else {
+
+            if (params.variableTokenBalance < 0) {
+                revert(); // this should not be possible
+            } else if (params.variableTokenBalance > 0) {
+                // means the trader deposited on the other side of the tick rang
+                // the margin just covers the current balances of the position
+                
+                margin = getTraderMarginRequirement(
+                    TraderMarginRequirementParams({
+                        fixedTokenBalance: params.fixedTokenBalance,
+                        variableTokenBalance: params.variableTokenBalance,
+                        termStartTimestamp:params.termStartTimestamp,
+                        termEndTimestamp:params.termEndTimestamp,
+                        isLM: params.isLM
+                    })
+                );
+
+            } else {
+                // the variable token balance is 0
+                vars.expectedVariableTokenBalance = -int256(vars.amount1);
+                vars.expectedFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(vars.amount0, vars.amount1, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp);
+                // todo: params.rateOracle.variableFactor(false, params.underlyingToken, params.termStartTimestamp, params.termEndTimestamp)
+  
+                margin = getTraderMarginRequirement(
+                    TraderMarginRequirementParams({
+                        fixedTokenBalance: vars.expectedFixedTokenBalance,
+                        variableTokenBalance: vars.expectedVariableTokenBalance,
+                        termStartTimestamp:params.termStartTimestamp,
+                        termEndTimestamp:params.termEndTimestamp,
+                        isLM: params.isLM
+                    })
+                );
+                
+            }
+            
         }
 
     }

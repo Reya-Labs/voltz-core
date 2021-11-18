@@ -19,6 +19,20 @@ interface IMarginCalculator {
         bool isLM;
     }
 
+    struct PositionMarginRequirementParams {
+        address owner;
+        int24 tickLower;
+        int24 tickUpper;
+        bool isLM;
+        int24 currentTick;
+        uint256 termStartTimestamp;
+        uint256 termEndTimestamp;
+        uint128 liquidity;
+        int256 fixedTokenBalance;
+        int256 variableTokenBalance;
+        uint256 variableFactor;
+    }
+
     function apyUpper() external view returns (uint256);
 
     function apyLower() external view returns (uint256);
@@ -38,4 +52,15 @@ interface IMarginCalculator {
     function getTraderMarginRequirement(
         TraderMarginRequirementParams memory params
     ) external view returns (uint256 margin);
+
+
+    function isLiquidatablePosition(PositionMarginRequirementParams memory params, int256 currentMargin) external view returns(bool _isLiquidatable);
+
+    function isLiquidatableTrader(
+        TraderMarginRequirementParams memory params,
+        int256 currentMargin
+    ) external view returns(bool isLiquidatable);
+
+    function getPositionMarginRequirement(PositionMarginRequirementParams memory params) external view returns (uint256 margin);
+
 }
