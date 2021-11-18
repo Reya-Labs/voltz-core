@@ -236,7 +236,7 @@ contract AMM is IAMM, NoDelegateCall {
             } else {
                 // the variable token balance is 0
                 vars.expectedVariableTokenBalance = int256(vars.amount1);
-                vars.expectedFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(vars.amount0, vars.amount1, variableFactor(false), termStartTimestamp, termEndTimestamp);
+                vars.expectedFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(vars.amount0, vars.amount1, rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp);
 
                 margin = calculator.getTraderMarginRequirement(
                     IMarginCalculator.TraderMarginRequirementParams({
@@ -287,7 +287,7 @@ contract AMM is IAMM, NoDelegateCall {
 
                 PRBMath.SD59x18({
                     // value: -int256(FixedAndVariableMath.getFixedTokenBalance(uint256(vars.amount0Up), uint256(vars.amount1Up), int256(variableFactor(false)), false, termStartTimestamp, termEndTimestamp))
-                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Up, vars.amount1Up, variableFactor(false), termStartTimestamp, termEndTimestamp)
+                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Up, vars.amount1Up, rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp)
 
                 })
 
@@ -338,7 +338,7 @@ contract AMM is IAMM, NoDelegateCall {
                 }),
 
                 PRBMath.SD59x18({
-                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Down, vars.amount1Down, variableFactor(false), termStartTimestamp, termEndTimestamp)
+                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Down, vars.amount1Down, rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp)
                 })
 
             ).value;
@@ -381,7 +381,7 @@ contract AMM is IAMM, NoDelegateCall {
             } else {
                 // the variable token balance is 0
                 vars.expectedVariableTokenBalance = -int256(vars.amount1);
-                vars.expectedFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(vars.amount0, vars.amount1, variableFactor(false), termStartTimestamp, termEndTimestamp);
+                vars.expectedFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(vars.amount0, vars.amount1, rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp);
 
                 margin = calculator.getTraderMarginRequirement(
                     IMarginCalculator.TraderMarginRequirementParams({
@@ -531,15 +531,6 @@ contract AMM is IAMM, NoDelegateCall {
     }
 
      
-
-
-
-
-
-    
-    
-    
-    
     function unwindTrader(
         address traderAddress,
         int256 notional // absolute value of the variableToken balance
@@ -1059,48 +1050,6 @@ contract AMM is IAMM, NoDelegateCall {
         int256 margin;
         bool settled;
     }
-
-    // function settleTrader() {
-    //     // todo: finish
-    //     // consider al the cases, before and after maturity
-    //     // if before maturity can only settle if the trader has a 0 variableTokenBalance
-    // }
-    
-    function variableFactor(bool atMaturity) public returns(uint256) {
-        
-        if (atMaturity) {
-            
-            // todo: require check that current timestamp is after or equal to the maturity date
-
-            (bool isSet,,) = rateOracle.rates(underlyingToken, termEndTimestamp);
-
-            if(!isSet) {
-                if (termEndTimestamp == block.timestamp) {
-                    rateOracle.updateRate(underlyingToken);
-                } // else  raise an error        
-            }
-
-            uint256 rateFromPoolStartToMaturity = rateOracle.getRateFromTo(underlyingToken, termStartTimestamp, block.timestamp);
-            
-            rateFromPoolStartToMaturity = rateFromPoolStartToMaturity / 10 ** (27 - 18); // 18 decimals 
-
-            return rateFromPoolStartToMaturity;
-        
-        } else {
-            (bool isSet,,) = rateOracle.rates(underlyingToken, block.timestamp);
-
-            if(!isSet) {
-                rateOracle.updateRate(underlyingToken);
-            }
-
-            uint256 rateFromPoolStartToNow = rateOracle.getRateFromTo(underlyingToken, termStartTimestamp, block.timestamp);
-
-            rateFromPoolStartToNow = rateFromPoolStartToNow / 10 ** (27 - 18); // 18 decimals 
-            
-            return rateFromPoolStartToNow;
-        }        
-
-    }
     
 
     function updateTrader(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, int256 proposedMargin) public {
@@ -1258,7 +1207,7 @@ contract AMM is IAMM, NoDelegateCall {
 
                             PRBMath.SD59x18({
                                 // value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), !params.isFT, termStartTimestamp, termEndTimestamp)
-                                value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amount0), int256(step.amount1), variableFactor(false), termStartTimestamp, termEndTimestamp)
+                                value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amount0), int256(step.amount1), rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp)
                             }),
 
                             PRBMath.SD59x18({
@@ -1284,7 +1233,7 @@ contract AMM is IAMM, NoDelegateCall {
                             PRBMath.SD59x18({
                                 // value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), params.isFT, termStartTimestamp, termEndTimestamp)
                                 // todo: check the amount0 and amount1 signs
-                                value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amount0), int256(step.amount1), variableFactor(false), termStartTimestamp, termEndTimestamp)
+                                value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amount0), int256(step.amount1), rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp)
                             }),
 
                             PRBMath.SD59x18({
@@ -1353,7 +1302,10 @@ contract AMM is IAMM, NoDelegateCall {
         variableTokenGrowthGlobal = state.variableTokenGrowthGlobal;
         fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;
         
-        _fixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(amount0, amount1, variableFactor(false), termStartTimestamp, termEndTimestamp);
+
+        // bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp
+
+        _fixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(amount0, amount1, rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp);
 
         if (params.isFT) {
             _variableTokenBalance = -int256(uint256(amount1));

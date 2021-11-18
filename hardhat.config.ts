@@ -8,6 +8,11 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-prettier";
+import "hardhat-gas-reporter";
+import "@tenderly/hardhat-tenderly"
+import '@openzeppelin/hardhat-upgrades';
+import "@nomiclabs/hardhat-solhint";
+
 
 dotenv.config();
 
@@ -29,6 +34,10 @@ const config: HardhatUserConfig = {
         url: "https://eth-mainnet.alchemyapi.io/v2/pNmKK8pTXHVggw2X4XPAOOuL9SllmxdZ",
         blockNumber: 13270796,
       },
+      // accounts: {
+      //   accountsBalance: "100000000000000000000000", // 100000 ETH
+      //   count: 5,
+      // },
       allowUnlimitedContractSize: true,
     },
   },

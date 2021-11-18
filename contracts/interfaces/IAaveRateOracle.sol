@@ -25,13 +25,19 @@ interface IAaveRateOracle {
 
     function updateRate(address underlying) external;
 
-    function getRateAtTimestamp(address underlying, uint256 timestamp)
-        external
-        returns (uint256);
+    // function getRateAtTimestamp(address underlying, uint256 timestamp)
+    //     external
+    //     returns (uint256);
 
     function getRateFromTo(
         address underlying,
         uint256 from,
         uint256 to
     ) external returns (uint256);
+
+    function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256);
+
+    // todo: remove
+    function getReserveNormalizedIncome(address underlying) external view returns(uint256);
+
 }

@@ -4,7 +4,7 @@ import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 
 library FixedAndVariableMath {
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
-
+    
     // todo: place in a separate library?
     function blockTimestampScaled() public view returns(uint256) {
         return uint256(block.timestamp) * 10**18;
