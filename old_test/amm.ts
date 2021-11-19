@@ -66,14 +66,14 @@ describe("AMM", () => {
     createAMM = async (
       _underlyingToken,
       _underlyingPool,
-      _termInDays,
+      _termEndTimestamp,
       _fee,
       _tickSpacing
     ) => {
       const amm = await oldCreateAMM(
         _underlyingToken,
         _underlyingPool,
-        _termInDays,
+        _termEndTimestamp,
         _fee,
         _tickSpacing
       );
@@ -106,7 +106,7 @@ describe("AMM", () => {
 
     expect(await amm.underlyingPool()).to.eq(aave_lending_pool_addr);
 
-    expect(await amm.termInDays()).to.eq(term_in_days);
+    expect(await amm.termEndTimestamp()).to.eq(term_in_days);
 
     expect(await amm.fee()).to.eq(FeeAmount.MEDIUM);
 

@@ -30,14 +30,14 @@ export function getCreate2Address(
   factoryAddress: string,
   underlyingToken: string,
   underlyingPool: string,
-  termInDays: number,
+  termEndTimestamp: number,
   termStartTimestamp: number,
   fee: number,
   bytecode: string
 ): string {
   const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
     ["address", "address", "uint256", "uint256", "uint24"],
-    [underlyingToken, underlyingPool, termInDays, termStartTimestamp, fee]
+    [underlyingToken, underlyingPool, termEndTimestamp, termStartTimestamp, fee]
   );
 
   const create2Inputs = [

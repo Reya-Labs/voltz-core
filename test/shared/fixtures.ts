@@ -1,45 +1,79 @@
-import { AMMFactory } from "../../typechain";
+import { AMMFactory } from "../../typechain/AMMFactory";
 import { Fixture } from "ethereum-waffle";
 import { ethers } from "hardhat";
 import { TestAMMCallee } from "../../typechain/TestAMMCallee";
 import { MockTimeAMM } from "../../typechain/MockTimeAMM";
 import { MockTimeAMMDeployer } from "../../typechain/MockTimeAMMDeployer";
+import { BigNumber } from "@ethersproject/bignumber";
+
+import {FixedAndVariableMath} from "../../typechain/FixedAndVariableMath";
+import {Position} from "../../typechain/Position";
+// import {Tick} from "../../typechain/Tick"; todo: fix this
 
 interface FactoryFixture {
   factory: AMMFactory;
 }
 
-async function factoryFixture(): Promise<FactoryFixture> {
-  const factoryFactory = await ethers.getContractFactory("AMMFactory");
+async function factoryFixture(fixedAndVariableMathAddress: string, positionAddress: string, tickAddress: string): Promise<FactoryFixture> {
+  const factoryFactory = await ethers.getContractFactory(
+    "AMMFactory", {
+      libraries: {
+        FixedAndVariableMath: fixedAndVariableMathAddress,
+        Tick: tickAddress,
+        Position: positionAddress
+      }
+    }
+  );
   const factory = (await factoryFactory.deploy()) as AMMFactory;
   return { factory };
 }
 
 interface AMMFixture extends FactoryFixture {
   swapTargetCallee: TestAMMCallee;
-  createAMM(
-    underlyingToken: string,
-    underlyingPool: string,
-    termInDays: number,
-    fee: number,
-    tickSpacing: number
-  ): Promise<MockTimeAMM>;
 }
 
-// Monday, October 5, 2020 9:00:00 AM GMT-05:00
-export const TEST_AMM_START_TIME = 1601906400;
+
+async function dependencyDeploymentAddresses() {
+   // linking
+  const fixedAndVariableMathFactory = await ethers.getContractFactory(
+    "FixedAndVariableMath"
+  );
+
+  const fixedAndVariableMath = (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMath;
+
+
+  const TickFactory = await ethers.getContractFactory(
+    "Tick"
+  );
+
+  const tick = (await TickFactory.deploy());
+
+  const PositionFactory = await ethers.getContractFactory(
+    "Position"
+  );
+
+  const position = (await PositionFactory.deploy()) as Position;
+
+  return (fixedAndVariableMath.address, tick.address, position.address)
+  
+}
+
 
 export const AMMFixture: Fixture<AMMFixture> =
   async function (): Promise<AMMFixture> {
-    const { factory } = await factoryFixture();
 
-    const MockTimeAMMDeployerFactory = await ethers.getContractFactory(
-      "MockTimeAMMDeployer"
-    );
-    const MockTimeAMMFactory = await ethers.getContractFactory("MockTimeAMM");
+    let [fixedAndVariableMathAddress, positionAddress, tickAddress] = await dependencyDeploymentAddresses();
+
+    const { factory } = await factoryFixture(fixedAndVariableMathAddress, positionAddress, tickAddress);
 
     const calleeContractFactory = await ethers.getContractFactory(
-      "TestAMMCallee"
+      "TestAMMCallee", {
+        libraries: {
+          FixedAndVariableMath: fixedAndVariableMathAddress,
+          Tick: tickAddress,
+          Position: positionAddress
+        }
+      }
     );
 
     const swapTargetCallee =
@@ -47,28 +81,6 @@ export const AMMFixture: Fixture<AMMFixture> =
 
     return {
       factory,
-      swapTargetCallee,
-      createAMM: async (
-        underlyingToken,
-        underlyingPool,
-        termInDays,
-        fee,
-        tickSpacing
-      ) => {
-        const mockTimeAMMDeployer =
-          (await MockTimeAMMDeployerFactory.deploy()) as MockTimeAMMDeployer;
-        const tx = await mockTimeAMMDeployer.deploy(
-          factory.address,
-          underlyingToken,
-          underlyingPool,
-          termInDays,
-          fee,
-          tickSpacing
-        );
-
-        const receipt = await tx.wait();
-        const ammAddress = receipt.events?.[0].args?.amm as string;
-        return MockTimeAMMFactory.attach(ammAddress) as MockTimeAMM;
-      },
+      swapTargetCallee
     };
   };

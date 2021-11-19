@@ -62,7 +62,7 @@ describe("AMMFactory", () => {
   async function createAndCheckAMM(
     underlyingToken: string,
     underlyingPool: string,
-    termInDays: number,
+    termEndTimestamp: number,
     termStartTimestamp: number,
     feeAmount: FeeAmount,
     tickSpacing: number = TICK_SPACINGS[feeAmount]
@@ -70,14 +70,14 @@ describe("AMMFactory", () => {
     const create = await factory.createAMM(
       underlyingToken,
       underlyingPool,
-      termInDays,
+      termEndTimestamp,
       termStartTimestamp,
       feeAmount
     );
 
     const ammAddress = await factory.getAMMMAp(
       underlyingPool,
-      termInDays,
+      termEndTimestamp,
       termStartTimestamp,
       feeAmount
     );

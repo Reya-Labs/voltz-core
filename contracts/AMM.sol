@@ -58,21 +58,19 @@ contract AMM is IAMM, NoDelegateCall {
 
     int256 public override variableTokenGrowthGlobal;
 
-    // uint256 public override balance0;
-    // uint256 public override balance1;
-
     IMarginCalculator public override calculator;
     
     IAaveRateOracle public override rateOracle; 
 
     constructor() {
+
         int24 _tickSpacing;
         (
             factory,
             underlyingToken,
             underlyingPool,
-            termEndTimestamp,
             termStartTimestamp,
+            termEndTimestamp,
             fee,
             _tickSpacing
         ) = IAMMDeployer(msg.sender).parameters();
@@ -262,7 +260,7 @@ contract AMM is IAMM, NoDelegateCall {
         int256 notional // absolute value of the variableToken balance
     ) public {
 
-        Trader.Info storage trader = traders.get(traderAddress);
+        // Trader.Info storage trader = traders.get(traderAddress);
 
         bool isFT = notional > 0;
 
@@ -299,8 +297,6 @@ contract AMM is IAMM, NoDelegateCall {
             swap(params); // max price --> modifyTrader then updates the trader
 
         }
-
-
     }
     
     function unwindPosition(
@@ -317,16 +313,15 @@ contract AMM is IAMM, NoDelegateCall {
 
         Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
 
-        UpdatePositionParams memory updatePositionParams;
+        ModifyPositionParams memory modifyPositionparams;
 
-        updatePositionParams.owner = owner;
-        updatePositionParams.tickLower = tickLower;
-        updatePositionParams.tickUpper = tickUpper;
-        updatePositionParams.liquidityDelta = 0;
-        updatePositionParams.tick = _slot0.tick;
+        modifyPositionparams.owner = owner;
+        modifyPositionparams.tickLower = tickLower;
+        modifyPositionparams.tickUpper = tickUpper;
+        modifyPositionparams.liquidityDelta = 0;
 
         // update the position
-        _updatePosition(updatePositionParams);
+        _updatePosition(modifyPositionparams);
 
         // initiate a swap
         bool isFT = position.fixedTokenBalance > 0;
@@ -392,185 +387,78 @@ contract AMM is IAMM, NoDelegateCall {
         unwindPosition(msg.sender, tickLower, tickUpper);
         
     }
-
-    struct ModifyPositionParams {
-        // the address that owns the position
-        address owner;
-        // the lower and upper tick of the position
-        int24 tickLower;
-        int24 tickUpper;
-        // any change in liquidity
-        int128 liquidityDelta;
-    }
-
     
-    // todo: can be migrated into the Position.sol contract
-    // function settlePosition(ModifyPositionParams memory params) public {
-        
-    //     // check if the current block is more or equal to maturity
-
-    //     checkTicks(params.tickLower, params.tickUpper);
-
-    //     Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
-
-    //     UpdatePositionParams memory updatePositionParams;
-
-    //     updatePositionParams.owner = params.owner;
-    //     updatePositionParams.tickLower = params.tickLower;
-    //     updatePositionParams.tickUpper = params.tickUpper;
-    //     updatePositionParams.liquidityDelta = params.liquidityDelta;
-    //     updatePositionParams.tick = _slot0.tick;
-
-    //     // update the position
-    //     _updatePosition(updatePositionParams);
-        
-    //     Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
-
-    //     // todo: code repetition below
-    //     PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
-
-    //         PRBMath.SD59x18({
-    //             value: position.fixedTokenBalance
-    //         }),
-
-    //         PRBMath.SD59x18({
-    //             value: int256(FixedAndVariableMath.fixedFactor(true, termStartTimestamp, termEndTimestamp))
-    //         })
-    //     );
-
-        
-    //     PRBMath.SD59x18 memory exp2 = PRBMathSD59x18Typed.mul(
-
-    //         PRBMath.SD59x18({
-    //             value: position.variableTokenBalance
-    //         }),
-
-    //         PRBMath.SD59x18({
-    //             value: int256(variableFactor(true))
-    //         })
-    //     );
-
-    //     int256 irsCashflow = PRBMathSD59x18Typed.add(exp1, exp2).value;
-
-    //     position.updateMargin(irsCashflow);
-
-    //     // IERC20Minimal(underlyingToken).transferFrom(recipient, address(this), uint256(margin));
-
-    // }
-
-    struct UpdatePositionParams {
-        // the address that owns the position
-        address owner;
-        // the lower and upper tick of the position
-        int24 tickLower;
-        int24 tickUpper;
-        // any change in liquidity
-        int128 liquidityDelta;
-
-        int24 tick;
-
-        uint256 _feeGrowthGlobalX128;
-        int256 _notionalGrowthGlobal;
-        int256 _notionalGlobal;
-        int256 _fixedRateGlobal;
-        int256 _fixedTokenGrowthGlobal;
-        int256 _variableTokenGrowthGlobal;
-
-        bool flippedLower;
-        bool flippedUpper;
-
-        uint256 feeGrowthInsideX128;
-
-        int256 fixedTokenGrowthInside;
-
-        int256 variableTokenGrowthInside;
-
-    }
+    // todo: can be migrated into the Position.sol contract (settlePosition function draft in earlier commits)
     
-
+    // todo make the function private
     function _updatePosition(
-        UpdatePositionParams memory params
+        ModifyPositionParams memory params
     )
-        private
+        internal
         returns (
             Position.Info storage position
         )
     {
         position = positions.get(params.owner, params.tickLower, params.tickUpper);
 
-        // params._feeGrowthGlobalX128 = feeGrowthGlobalX128; // SLOAD for gas optimization
-        // params._notionalGrowthGlobal = notionalGrowthGlobal;
-        // params._notionalGlobal = notionalGlobal; 
-        // params._fixedRateGlobal = fixedRateGlobal;
-        params._fixedTokenGrowthGlobal = fixedTokenGrowthGlobal;
-        params._variableTokenGrowthGlobal = variableTokenGrowthGlobal;
+        UpdatePositionVars memory vars;
 
-    
-        
         // if we need to update the ticks, do it
         if (params.liquidityDelta != 0) {
-            params.flippedLower = ticks.update(
+            vars.flippedLower = ticks.update(
                 params.tickLower,
-                params.tick,
+                slot0.tick,
                 params.liquidityDelta,
-                params._fixedTokenGrowthGlobal,
-                params._variableTokenGrowthGlobal,
+                fixedTokenGrowthGlobal,
+                variableTokenGrowthGlobal,
                 false,
                 maxLiquidityPerTick
             );
-            params.flippedUpper = ticks.update(
+            vars.flippedUpper = ticks.update(
                 params.tickUpper,
-                params.tick,
+                slot0.tick,
                 params.liquidityDelta,
-                params._fixedTokenGrowthGlobal,
-                params._variableTokenGrowthGlobal,
+                fixedTokenGrowthGlobal,
+                variableTokenGrowthGlobal,
                 true,
                 maxLiquidityPerTick
             );
 
-            if (params.flippedLower) {
+            if (vars.flippedLower) {
                 tickBitmap.flipTick(params.tickLower, tickSpacing);
             }
-            if (params.flippedUpper) {
+            if (vars.flippedUpper) {
                 tickBitmap.flipTick(params.tickUpper, tickSpacing);
             }
         }
 
-        // todo: get rid of this for now
-        // params.feeGrowthInsideX128 = ticks.getFeeGrowthInside(
-        //     params.tickLower,
-        //     params.tickUpper,
-        //     params.tick,
-        //     params._feeGrowthGlobalX128
-        // );
-
-        params.fixedTokenGrowthInside = ticks.getFixedTokenGrowthInside(
+        vars.fixedTokenGrowthInside = ticks.getFixedTokenGrowthInside(
             Tick.FixedTokenGrowthInsideParams({
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
-                tickCurrent: params.tick,
-                fixedTokenGrowthGlobal: params._fixedTokenGrowthGlobal
+                tickCurrent: slot0.tick,
+                fixedTokenGrowthGlobal: fixedTokenGrowthGlobal
             }) 
         );
 
-        params.variableTokenGrowthInside = ticks.getVariableTokenGrowthInside(
+        vars.variableTokenGrowthInside = ticks.getVariableTokenGrowthInside(
             Tick.VariableTokenGrowthInsideParams({
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
-                tickCurrent: params.tick,
-                variableTokenGrowthGlobal: params._variableTokenGrowthGlobal
+                tickCurrent: slot0.tick,
+                variableTokenGrowthGlobal: variableTokenGrowthGlobal
             })
         );
 
         position.updateLiquidity(params.liquidityDelta);
-        position.updateFixedAndVariableTokenGrowthInside(params.fixedTokenGrowthInside, params.variableTokenGrowthInside);
+        position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
         
         // clear any tick data that is no longer needed
         if (params.liquidityDelta < 0) {
-            if (params.flippedLower) {
+            if (vars.flippedLower) {
                 ticks.clear(params.tickLower);
             }
-            if (params.flippedUpper) {
+            if (vars.flippedUpper) {
                 ticks.clear(params.tickUpper);
             }
         }
@@ -593,20 +481,7 @@ contract AMM is IAMM, NoDelegateCall {
 
         Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
 
-        
-        UpdatePositionParams memory updatePositionParams;
-
-        // todo: below feels redundunt
-        updatePositionParams.owner = params.owner;
-        updatePositionParams.tickLower = params.tickLower;
-        updatePositionParams.tickUpper = params.tickUpper;
-        updatePositionParams.liquidityDelta = params.liquidityDelta;
-        updatePositionParams.tick = _slot0.tick;
-
-        
-        // todo: TypeError: This variable is of storage pointer type and can be returned without prior assignment, which would lead to undefined behaviour.
-        // when move the assignment to the bottom of the function
-        position = _updatePosition(updatePositionParams);
+        position = _updatePosition(params);
 
         if (params.liquidityDelta != 0) {
             if (_slot0.tick < params.tickLower) {
@@ -649,30 +524,13 @@ contract AMM is IAMM, NoDelegateCall {
             }
         }
     }
-
-    function getRatioFromSqrt(
-     uint160 sqrtRatio
-    ) internal returns(uint160 ratio){
-
-        ratio = uint160(PRBMathUD60x18Typed.mul(
-
-            PRBMath.UD60x18({
-                value: sqrtRatio
-            }),
-
-            PRBMath.UD60x18({
-                value: sqrtRatio
-            })
-        ).value);
-    }
     
     /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function mint(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount,
-        bytes calldata data
+        uint128 amount
     ) external override lock {
         require(amount > 0);
 
@@ -686,9 +544,6 @@ contract AMM is IAMM, NoDelegateCall {
         );
 
         Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
-
-        // todo: check the sign of integers
-        // position.updateAmounts(amount0Int, amount1Int);
 
         Slot0 memory _slot0 = slot0;
 
@@ -710,74 +565,7 @@ contract AMM is IAMM, NoDelegateCall {
             amount
         );
     }
-
-    struct SwapCache {
-        // liquidity at the beginning of the swap
-        uint128 liquidityStart;
-        // the timestamp of the current block
-        uint256 blockTimestamp;
-    }
-
-    // the top level state of the swap, the results of which are recorded in storage at the end
-    struct SwapState {
-        // the amount remaining to be swapped in/out of the input/output asset
-        int256 amountSpecifiedRemaining;
-        // the amount already swapped out/in of the output/input asset
-        int256 amountCalculated;
-        // current sqrt(price)
-        uint160 sqrtPriceX96;
-        // the tick associated with the current price
-        int24 tick;
-        // the global fee growth of the input token
-        // uint256 feeGrowthGlobalX128;
-
-        // int256 notionalGrowthGlobal;
-        // int256 notionalGlobal;
-        // int256 fixedRateGlobal;
-
-        int256 fixedTokenGrowthGlobal;
-
-        int256 variableTokenGrowthGlobal;
-
-        // the current liquidity in range
-        uint128 liquidity;
-    }
-
-    struct StepComputations {
-        // the price at the beginning of the step
-        uint160 sqrtPriceStartX96;
-        // the next tick to swap to from the current tick in the swap direction
-        int24 tickNext;
-        // whether tickNext is initialized or not
-        bool initialized;
-        // sqrt(price) for the next tick (1/0)
-        uint160 sqrtPriceNextX96;
-        // how much is being swapped in in this step
-        uint256 amountIn;
-        // how much is being swapped out
-        uint256 amountOut;
-
-        int256 notionalAmount;
-        int256 fixedRate;
-
-        uint256 amount0;
-        uint256 amount1;
-
-    }
-
-    struct InitiateIRSParams {
-        // trader's address
-        address traderAddress;
-        // the lower and upper tick of the position
-
-        int256 fixedTokenBalance;
-        int256 variableTokenBalance;
-
-        int256 margin;
-        bool settled;
-    }
     
-
     function updateTrader(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, int256 proposedMargin) public {
 
         Trader.Info storage trader = traders.get(recipient);
@@ -819,6 +607,8 @@ contract AMM is IAMM, NoDelegateCall {
 
     }
     
+
+    // todo: more swap params in the struct
     function swap(
         SwapParams memory params
     ) public override noDelegateCall returns (int256 _fixedTokenBalance, int256 _variableTokenBalance){
@@ -853,9 +643,6 @@ contract AMM is IAMM, NoDelegateCall {
             tick: slot0Start.tick,
             // feeGrowthGlobalX128: feeGrowthGlobalX128,
             liquidity: cache.liquidityStart,
-            // notionalGrowthGlobal: notionalGrowthGlobal,
-            // notionalGlobal: notionalGlobal,
-            // fixedRateGlobal: fixedRateGlobal,
             fixedTokenGrowthGlobal: fixedTokenGrowthGlobal,
             variableTokenGrowthGlobal: variableTokenGrowthGlobal
         });
@@ -1019,11 +806,6 @@ contract AMM is IAMM, NoDelegateCall {
                 state.amountCalculated,
                 params.amountSpecified - state.amountSpecifiedRemaining
             );
-
-        // feeGrowthGlobalX128 = state.feeGrowthGlobalX128;
-        // notionalGrowthGlobal = state.notionalGrowthGlobal;
-        // notionalGlobal = state.notionalGlobal;
-        // fixedRateGlobal = state.fixedRateGlobal;
 
         variableTokenGrowthGlobal = state.variableTokenGrowthGlobal;
         fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;

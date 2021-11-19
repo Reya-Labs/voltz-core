@@ -5,9 +5,10 @@ import "./interfaces/IAMMFactory.sol";
 import "./AMMDeployer.sol";
 import "./AMM.sol";
 import "./utils/NoDelegateCall.sol";
+import "./core_libraries/FixedAndVariableMath.sol";
 
 /// @title Canonical Voltz factory
-/// @notice Deploys Voltz AMMs and manages ownership and control over pool protocol fees
+/// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
 contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
     /// @inheritdoc IAMMFactory
     address public override owner;
@@ -15,10 +16,7 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
     /// @inheritdoc IAMMFactory
     mapping(uint24 => int24) public override feeAmountTickSpacing;
 
-    mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint24 => address))))
-        public getAMMMAp;
-
-    // [underlyingPool][termInDays][termStartTimestamp][fee]
+    mapping(address => mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint24 => address))))) public getAMMMAp;
 
     constructor() {
         owner = msg.sender;
@@ -36,29 +34,35 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
     function createAMM(
         address underlyingToken,
         address underlyingPool,
-        uint256 termInDays,
-        uint256 termStartTimestamp,
+        uint256 termEndTimestamp,
         uint24 fee
     ) external override noDelegateCall returns (address amm) {
-        require(underlyingPool != address(0)); // todo: why do we need this check?
-        int24 tickSpacing = feeAmountTickSpacing[fee]; // todo: shouldn't termStartTimestamp be block.tickstamp?
+        require(underlyingPool != address(0));
+        int24 tickSpacing = feeAmountTickSpacing[fee]; 
         require(tickSpacing != 0);
+        
+        uint256 termStartTimestamp = FixedAndVariableMath.blockTimestampScaled();
+
         require(
-            getAMMMAp[underlyingPool][termInDays][termStartTimestamp][fee] ==
+            getAMMMAp[underlyingPool][underlyingToken][termStartTimestamp][termEndTimestamp][fee] ==
                 address(0)
         );
+
         amm = deploy(
             address(this),
             underlyingToken,
             underlyingPool,
-            termInDays,
+            termStartTimestamp,
+            termEndTimestamp,
             fee,
             tickSpacing
         );
-        getAMMMAp[underlyingPool][termInDays][termStartTimestamp][fee] = amm;
+
+        getAMMMAp[underlyingPool][underlyingToken][termStartTimestamp][termEndTimestamp][fee] = amm;
         emit AMMCreated(
             underlyingPool,
-            termInDays,
+            underlyingToken,
+            termEndTimestamp,
             termStartTimestamp,
             fee,
             tickSpacing,

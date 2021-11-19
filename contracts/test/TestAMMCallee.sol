@@ -8,6 +8,25 @@ import "../AMM.sol";
 contract TestAMMCallee is AMM {
     using SafeCast for uint256;
 
+    function mintTest(
+        address amm,
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external {
+        IAMM(amm).mint(
+            recipient,
+            tickLower,
+            tickUpper,
+            amount
+        );
+    }
+
+    function updatePositionTest(ModifyPositionParams memory params) external returns(Position.Info memory position) {
+        return _updatePosition(params);
+    }
+    
     function swapExact0For1(
         address amm,
         uint256 amount0In,
@@ -124,21 +143,5 @@ contract TestAMMCallee is AMM {
         });
 
         IAMM(amm).swap(params);
-    }
-
-    function mint(
-        address amm,
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount
-    ) external {
-        IAMM(amm).mint(
-            recipient,
-            tickLower,
-            tickUpper,
-            amount,
-            abi.encode(msg.sender)
-        );
     }
 }

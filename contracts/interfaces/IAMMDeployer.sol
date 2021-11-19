@@ -10,7 +10,7 @@ interface IAMMDeployer {
     /// Returns factory The factory address
     /// Returns underlyingToken Address of the underlying token
     /// Returns underlyingPool Address of the underlying pool
-    /// Returns termInDays number of days from inception of the pool till maturity
+    /// Returns termEndTimestamp number of days from inception of the pool till maturity
     /// Returns termStartTimestamp Datetime of pool's inception
     /// Returns fee The fee collected upon every swap in the pool, denominated in hundredths of a bip
     /// Returns tickSpacing The minimum number of ticks between initialized ticks
@@ -21,9 +21,9 @@ interface IAMMDeployer {
             address factory,
             address underlyingToken,
             address underlyingPool,
-            uint256 termInDays,
             uint256 termStartTimestamp,
+            uint256 termEndTimestamp,
             uint24 fee,
             int24 tickSpacing
         );
-}
+} 

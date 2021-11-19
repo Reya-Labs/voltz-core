@@ -52,7 +52,7 @@ describe("Aave Rate Oracle", () => {
         let rateOracle: AaveRateOracle;
         let fixedAndVariableMath: FixedAndVariableMath;
         let rateOracleTest: AaveRateOracleTest;
-        let lendingPool: IAaveLendingPool;
+        // let lendingPool: IAaveLendingPool;
 
         
         let loadFixture: ReturnType<typeof createFixtureLoader>;

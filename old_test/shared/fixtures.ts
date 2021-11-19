@@ -20,7 +20,7 @@ interface AMMFixture extends FactoryFixture {
   createAMM(
     underlyingToken: string,
     underlyingPool: string,
-    termInDays: number,
+    termEndTimestamp: number,
     fee: number,
     tickSpacing: number
   ): Promise<MockTimeAMM>;
@@ -51,7 +51,7 @@ export const AMMFixture: Fixture<AMMFixture> =
       createAMM: async (
         underlyingToken,
         underlyingPool,
-        termInDays,
+        termEndTimestamp,
         fee,
         tickSpacing
       ) => {
@@ -61,7 +61,7 @@ export const AMMFixture: Fixture<AMMFixture> =
           factory.address,
           underlyingToken,
           underlyingPool,
-          termInDays,
+          termEndTimestamp,
           fee,
           tickSpacing
         );

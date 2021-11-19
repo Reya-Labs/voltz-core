@@ -12,8 +12,9 @@ interface IAMMFactory {
     /// @notice Emitted when a amm is created
     event AMMCreated(
         address indexed underlyingPool,
-        uint256 indexed termInDays,
+        address indexed underlyingToken,
         uint256 indexed termStartTimestamp,
+        uint256 termEndTimestamp,
         uint24 fee,
         int24 tickSpacing,
         address amm
@@ -38,28 +39,26 @@ interface IAMMFactory {
     /// @notice Returns the amm address for a given pair of tokens and a fee, or address 0 if it does not exist
     /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order
     /// @param underlyingPool The contract address of the underlying pool
-    /// @param termInDays Number of days between the inception of the pool and its maturity
+    /// @param termEndTimestamp Number of days between the inception of the pool and its maturity
     /// @param termStartTimestamp Timestamp of pool initialisation
     /// @param fee The fee collected upon every swap in the pool (as a percentage of notional traded), denominated in hundredths of a bip
     /// @return amm The amm address
     // function getAMM( // todo: fix
     //     address underlyingPool,
-    //     uint256 termInDays,
+    //     uint256 termEndTimestamp,
     //     uint32 termStartTimestamp,
     //     uint24 fee
     // ) external view returns (address amm);
 
     /// @notice Creates an amm
     /// @param underlyingPool The contract address of the underlying pool
-    /// @param termInDays Number of days between the inception of the pool and its maturity
-    /// @param termStartTimestamp Timestamp of pool initialisation
+    /// @param termEndTimestamp Number of days between the inception of the pool and its maturity
     /// @param fee The fee collected upon every swap in the pool (as a percentage of notional traded), denominated in hundredths of a bip
     /// @return amm The address of the newly created amm
     function createAMM(
         address underlyingToken,
         address underlyingPool,
-        uint256 termInDays,
-        uint256 termStartTimestamp,
+        uint256 termEndTimestamp,
         uint24 fee
     ) external returns (address amm);
 

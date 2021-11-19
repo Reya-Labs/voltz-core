@@ -17,6 +17,86 @@ interface IAmmActions {
         int256 proposedMargin;        
     }
 
+    struct SwapCache {
+        // liquidity at the beginning of the swap
+        uint128 liquidityStart;
+        // the timestamp of the current block
+        uint256 blockTimestamp;
+    }
+
+    // the top level state of the swap, the results of which are recorded in storage at the end
+    struct SwapState {
+        // the amount remaining to be swapped in/out of the input/output asset
+        int256 amountSpecifiedRemaining;
+        // the amount already swapped out/in of the output/input asset
+        int256 amountCalculated;
+        // current sqrt(price)
+        uint160 sqrtPriceX96;
+        // the tick associated with the current price
+        int24 tick;
+
+        int256 fixedTokenGrowthGlobal;
+
+        int256 variableTokenGrowthGlobal;
+
+        // the current liquidity in range
+        uint128 liquidity;
+    }
+
+    struct StepComputations {
+        // the price at the beginning of the step
+        uint160 sqrtPriceStartX96;
+        // the next tick to swap to from the current tick in the swap direction
+        int24 tickNext;
+        // whether tickNext is initialized or not
+        bool initialized;
+        // sqrt(price) for the next tick (1/0)
+        uint160 sqrtPriceNextX96;
+        // how much is being swapped in in this step
+        uint256 amountIn;
+        // how much is being swapped out
+        uint256 amountOut;
+
+        int256 notionalAmount;
+        int256 fixedRate;
+
+        uint256 amount0;
+        uint256 amount1;
+
+    }
+
+    struct InitiateIRSParams {
+        // trader's address
+        address traderAddress;
+        // the lower and upper tick of the position
+
+        int256 fixedTokenBalance;
+        int256 variableTokenBalance;
+
+        int256 margin;
+        bool settled;
+    }
+
+    struct ModifyPositionParams {
+        // the address that owns the position
+        address owner;
+        // the lower and upper tick of the position
+        int24 tickLower;
+        int24 tickUpper;
+        // any change in liquidity
+        int128 liquidityDelta;
+    }
+
+    
+    struct UpdatePositionVars {
+        
+        bool flippedLower;
+        bool flippedUpper;
+
+        int256 fixedTokenGrowthInside;
+        int256 variableTokenGrowthInside;
+    }
+
     /// @notice Sets the initial price for the pool
     /// @dev Price is represented as a sqrt(amountToken1/amountToken0) Q64.96 value
     /// @param sqrtPriceX96 the initial sqrt price of the pool as a Q64.96
@@ -30,13 +110,11 @@ interface IAmmActions {
     /// @param tickLower The lower tick of the position in which to add liquidity
     /// @param tickUpper The upper tick of the position in which to add liquidity
     /// @param amount The amount of liquidity to mint
-    /// @param data Any data that should be passed through to the callback
     function mint(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
-        uint128 amount,
-        bytes calldata data
+        uint128 amount
     ) external;
 
     function swap(
