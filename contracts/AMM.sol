@@ -129,10 +129,47 @@ contract AMM is IAMM, NoDelegateCall {
     }
 
     
+    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) public {
+
+        require(params.owner == msg.sender, "only the position owner can update the position margin");
+
+        require(marginDelta!=0, "delta cannot be zero");
+
+        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
+
+        int256 updatedMargin = PRBMathSD59x18Typed.add(
+            PRBMath.SD59x18({value: position.margin}),
+            PRBMath.SD59x18({value: marginDelta})
+        ).value;
+
+        if (FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp) {
+            require(updatedMargin > 0, "Cannot withdraw more margin than you have");
+        } else {
+
+            IMarginCalculator.PositionMarginRequirementParams memory marginReqParams;
+
+            (marginReqParams.owner, marginReqParams.tickLower, marginReqParams.tickUpper, marginReqParams.isLM) = (params.owner, params.tickLower, params.tickUpper, false);
+
+            int256 positionMarginRequirement =  int256(calculator.getPositionMarginRequirement(marginReqParams));             
+
+            require(updatedMargin > positionMarginRequirement, "Cannot withdraw more margin than the minimum requirement");
+
+        }
+
+        position.updateMargin(marginDelta);
+
+        if (marginDelta > 0) {
+            IERC20Minimal(underlyingToken).transferFrom(params.owner, address(this), uint256(marginDelta));
+        } else {
+            IERC20Minimal(underlyingToken).transferFrom(address(this), params.owner, uint256(-marginDelta));
+        }
+
+    }
 
     function updateTraderMargin(address recipient, int256 marginDelta) public {
 
         require(marginDelta!=0, "delta cannot be zero");
+        require(recipient == msg.sender, "only the trader can update the margin");
 
         /*  
             todo: each trader as their own termEndTimestamp
@@ -171,9 +208,9 @@ contract AMM is IAMM, NoDelegateCall {
         trader.updateMargin(marginDelta);
 
         if (marginDelta > 0) {
-            IERC20Minimal(underlyingToken).transferFrom(msg.sender, address(this), uint256(marginDelta));
+            IERC20Minimal(underlyingToken).transferFrom(recipient, address(this), uint256(marginDelta));
         } else {
-            IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, uint256(-marginDelta));
+            IERC20Minimal(underlyingToken).transferFrom(address(this), recipient, uint256(-marginDelta));
         }
 
     }
