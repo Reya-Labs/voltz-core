@@ -120,4 +120,8 @@ interface IAmmActions {
     function swap(
         SwapParams memory params
     ) external returns (int256 _fixedTokenBalance, int256 _variableTokenBalance);
+
+    function settleTrader(address recipient) external;
+
+    function settlePosition(ModifyPositionParams memory params) external;
 }

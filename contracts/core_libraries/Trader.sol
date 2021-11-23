@@ -26,8 +26,13 @@ library Trader {
         trader = self[keccak256(abi.encodePacked(owner))];
     }
 
-    function updateMargin(Info storage self, int256 updatedMargin) internal {
-        self.margin = updatedMargin;
+    function updateMargin(Info storage self, int256 marginDelta) internal {
+        self.margin = PRBMathSD59x18Typed
+            .add(
+                PRBMath.SD59x18({value: self.margin}),
+                PRBMath.SD59x18({value: marginDelta})
+            )
+            .value;
     }
 
     function updateBalances(

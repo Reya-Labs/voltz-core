@@ -62,6 +62,8 @@ contract AMM is IAMM, NoDelegateCall {
     
     IAaveRateOracle public override rateOracle; 
 
+    // todo: make this pool resettable: can change termStart and termEnd timestamps
+
     constructor() {
 
         int24 _tickSpacing;
@@ -126,6 +128,107 @@ contract AMM is IAMM, NoDelegateCall {
         emit Initialize(sqrtPriceX96, tick);
     }
 
+    
+
+    function updateTraderMargin(address recipient, int256 marginDelta) public {
+
+        require(marginDelta!=0, "delta cannot be zero");
+
+        /*  
+            todo: each trader as their own termEndTimestamp
+            If current timestamp is beyond the term end timestamp, the trader should be able to withdraw all of the margin from the contract
+            If current timestamp is within the term of the amm, the trader should be able to only withdraw up to the maintenance margin requirement
+        */
+        
+        Trader.Info storage trader = traders.get(recipient);
+
+        int256 updatedMargin = PRBMathSD59x18Typed.add(
+            PRBMath.SD59x18({value: trader.margin}),
+            PRBMath.SD59x18({value: marginDelta})
+        ).value;
+        
+    
+        if (FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp) {
+    
+            require(updatedMargin > 0, "Cannot withdraw more margin than you have");
+
+        } else {
+
+            int256 traderMarginRequirement = int256(calculator.getTraderMarginRequirement(
+                IMarginCalculator.TraderMarginRequirementParams({
+                        fixedTokenBalance: trader.fixedTokenBalance,
+                        variableTokenBalance: trader.variableTokenBalance,
+                        termStartTimestamp:termStartTimestamp,
+                        termEndTimestamp:termEndTimestamp,
+                        isLM: false
+                    })
+            ));                
+
+            require(updatedMargin > traderMarginRequirement, "Cannot withdraw more margin than the minimum requirement");
+    
+        }
+
+        trader.updateMargin(marginDelta);
+
+        if (marginDelta > 0) {
+            IERC20Minimal(underlyingToken).transferFrom(msg.sender, address(this), uint256(marginDelta));
+        } else {
+            IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, uint256(-marginDelta));
+        }
+
+    }
+    
+    function settlePosition(ModifyPositionParams memory params) public override {
+
+        require(FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp, "A Position cannot settle before maturity");
+        checkTicks(params.tickLower, params.tickUpper);
+
+        Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
+
+        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
+
+        int256 fixedTokenDelta;
+        int256 variableTokenDelta;
+
+        int256 fixedTokenGrowthInside = ticks.getFixedTokenGrowthInside(
+            Tick.FixedTokenGrowthInsideParams({
+                tickLower: params.tickLower,
+                tickUpper: params.tickUpper,
+                tickCurrent: slot0.tick,
+                fixedTokenGrowthGlobal: fixedTokenGrowthGlobal
+            }) 
+        );
+
+        int256 variableTokenGrowthInside = ticks.getVariableTokenGrowthInside(
+            Tick.VariableTokenGrowthInsideParams({
+                tickLower: params.tickLower,
+                tickUpper: params.tickUpper,
+                tickCurrent: slot0.tick,
+                variableTokenGrowthGlobal: variableTokenGrowthGlobal
+            })
+        );
+
+        (fixedTokenDelta, variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
+        position.updateBalances(fixedTokenDelta, variableTokenDelta);
+        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
+
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(true, underlyingToken, termStartTimestamp, termEndTimestamp));
+
+        position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
+        position.updateMargin(settlementCashflow);
+
+    }
+    
+    function settleTrader(address recipient) public override  {
+
+        require(FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp, "A Trader cannot settle before maturity");
+        Trader.Info storage trader = traders.get(recipient);        
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(true, underlyingToken, termStartTimestamp, termEndTimestamp));
+
+        trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
+        trader.updateMargin(settlementCashflow);
+    }
+    
     function liquidatePosition(ModifyPositionParams memory params) external {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
@@ -465,7 +568,6 @@ contract AMM is IAMM, NoDelegateCall {
     }
 
 
-    
     /// @param params the position details and the change to the position's liquidity to effect
     /// @return position a storage pointer referencing the position with the given owner and tick range
     function _modifyPosition(ModifyPositionParams memory params)

@@ -81,7 +81,6 @@ library Position {
                 .value;
         }
 
-  
     }
 
 
