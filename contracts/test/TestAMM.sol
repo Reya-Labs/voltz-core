@@ -8,7 +8,7 @@ import "../AMM.sol";
 contract TestAMM is AMM {
     using SafeCast for uint256;
 
-    function getAMMFee(address amm) external returns(uint24) {
+    function getAMMFee(address amm) external returns(uint256) {
         return IAMM(amm).fee();
     }
 

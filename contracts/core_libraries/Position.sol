@@ -23,6 +23,8 @@ library Position {
         int256 variableTokenGrowthInsideLast;
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
+
+        uint256 feeGrowthInsideLast;
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
@@ -84,6 +86,28 @@ library Position {
     }
 
 
+    
+    function calculateFeeDelta(
+        Info storage self,
+        uint256 feeGrowthInside
+    ) internal pure returns (uint256 _feeDelta) {
+        
+        Info memory _self = self;
+
+        require(_self.liquidity > 0, "NP");
+
+        _feeDelta = PRBMathUD60x18Typed
+            .mul(
+                PRBMathUD60x18Typed.sub(
+                    PRBMath.UD60x18({value: feeGrowthInside}),
+                    PRBMath.UD60x18({value: _self.feeGrowthInsideLast})
+                ),
+                PRBMath.UD60x18({value: uint256(_self.liquidity) * 10**18 })
+            )
+            .value;
+    }
+    
+    
     /// #if_succeeds fixedTokenGrowthInside==_self.fixedTokenGrowthInsideLast ==> _fixedTokenBalance == 0;
     /// #if_succeeds variableTokenGrowthInside==_self.variableTokenGrowthInsideLast ==> _variableTokenBalance == 0;
     /// #if_succeeds _self.liquidity > 0;
@@ -91,13 +115,13 @@ library Position {
         Info storage self,
         int256 fixedTokenGrowthInside,
         int256 variableTokenGrowthInside
-    ) internal pure returns(int256 _fixedTokenBalance, int256 _variableTokenBalance) {
+    ) internal pure returns(int256 _fixedTokenDelta, int256 _variableTokenDelta) {
 
         Info memory _self = self;
 
         require(_self.liquidity > 0, "NP");
 
-        _fixedTokenBalance = PRBMathSD59x18Typed
+        _fixedTokenDelta = PRBMathSD59x18Typed
             .mul(
                 PRBMathSD59x18Typed.sub(
                     PRBMath.SD59x18({value: fixedTokenGrowthInside}),
@@ -108,7 +132,7 @@ library Position {
             )
             .value;
 
-        _variableTokenBalance = PRBMathSD59x18Typed
+        _variableTokenDelta = PRBMathSD59x18Typed
             .mul(
                 PRBMathSD59x18Typed.sub(
                     PRBMath.SD59x18({value: variableTokenGrowthInside}),
@@ -127,10 +151,19 @@ library Position {
         Info storage self,
         int256 fixedTokenGrowthInside,
         int256 variableTokenGrowthInside
-    ) public {
+    ) internal {
 
         self.fixedTokenGrowthInsideLast = fixedTokenGrowthInside;
         self.variableTokenGrowthInsideLast = variableTokenGrowthInside;
+
+    }
+
+    function updateFeeGrowthInside(
+        Info storage self,
+        uint256 feeGrowthInside
+    ) public {
+
+        self.feeGrowthInsideLast = feeGrowthInside;
 
     }
 

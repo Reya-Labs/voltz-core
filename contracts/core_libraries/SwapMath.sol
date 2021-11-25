@@ -3,10 +3,38 @@ pragma solidity ^0.8.0;
 import "../utils/FullMath.sol";
 import "../utils/SqrtPriceMath.sol";
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
+import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "../core_libraries/FixedAndVariableMath.sol";
 
 /// @title Computes the result of a swap within ticks
 /// @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
 library SwapMath {
+    
+    
+    function computeFeeAmount(uint256 notional, uint256 timeToMaturityInSeconds, uint256 feePercentage) internal pure returns(uint256 feeAmount) {
+        
+        uint256 timePeriodInYears = FixedAndVariableMath.accrualFact(timeToMaturityInSeconds);
+        
+        feeAmount = PRBMathUD60x18Typed.mul(
+
+                PRBMath.UD60x18({
+                    value: notional
+                }),
+
+                PRBMathUD60x18Typed.mul(
+                    
+                    PRBMath.UD60x18({
+                        value: feePercentage
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: timePeriodInYears
+                    })
+                )
+
+            ).value;
+    }
+    
     /// @notice Computes the result of swapping some amount in, or amount out, given the parameters of the swap
     /// @dev The fee, plus the amount in, will never exceed the amount remaining if the swap's `amountSpecified` is positive
     /// @param sqrtRatioCurrentX96 The current sqrt price of the pool
@@ -20,7 +48,9 @@ library SwapMath {
         uint160 sqrtRatioCurrentX96,
         uint160 sqrtRatioTargetX96,
         uint128 liquidity,
-        int256 amountRemaining
+        int256 amountRemaining,
+        uint256 feePercentage,
+        uint256 timeToMaturityInSeconds
     )
         internal
         pure
@@ -28,10 +58,7 @@ library SwapMath {
             uint160 sqrtRatioNextX96,
             uint256 amountIn,
             uint256 amountOut,
-            int256 notionalAmount,
-            int256 fixedRate,
-            uint256 amount0,
-            uint256 amount1
+            uint256 feeAmount
         )
     {
         bool zeroForOne = sqrtRatioCurrentX96 >= sqrtRatioTargetX96;
@@ -86,6 +113,7 @@ library SwapMath {
         }
 
         bool max = sqrtRatioTargetX96 == sqrtRatioNextX96;
+        uint256 notional;
 
         // get the input/output amounts
         if (zeroForOne) {
@@ -105,6 +133,9 @@ library SwapMath {
                     liquidity,
                     false
                 );
+            // variable taker
+            notional = amountOut;
+
         } else {
             amountIn = max && exactIn
                 ? amountIn
@@ -122,6 +153,9 @@ library SwapMath {
                     liquidity,
                     false
                 );
+
+            // fixed taker
+            notional = amountIn;
         }
 
         // cap the output amount to not exceed the remaining output amount
@@ -129,35 +163,14 @@ library SwapMath {
             amountOut = uint256(-amountRemaining);
         }
 
-        PRBMath.SD59x18 memory amount0UD = PRBMath.SD59x18({
-            value: int256(amountIn)
-        });
-        PRBMath.SD59x18 memory amount1UD = PRBMath.SD59x18({
-            value: int256(amountOut)
-        });
-
-        if (zeroForOne) {
-            amount0UD = PRBMath.SD59x18({value: int256(amountIn)});
-            amount1UD = PRBMath.SD59x18({value: int256(amountOut)});
-
-            notionalAmount = -amount1UD.value;
+        if (exactIn && sqrtRatioNextX96 != sqrtRatioTargetX96) {
+            // todo: understand this
+            // we didn't reach the target, so take the remainder of the maximum input as fee
+            // feeAmount = uint256(amountRemaining) - amountIn;
         } else {
-            // isFT
-
-            amount0UD = PRBMath.SD59x18({value: int256(amountOut)});
-            amount1UD = PRBMath.SD59x18({value: int256(amountIn)});
-
-            notionalAmount = amount1UD.value;
+            feeAmount = computeFeeAmount(notional, timeToMaturityInSeconds, feePercentage);
         }
 
-        PRBMath.SD59x18 memory fixedRateUD = PRBMathSD59x18Typed.mul(
-            PRBMathSD59x18Typed.div(amount0UD, amount1UD),
-            PRBMath.SD59x18({value: 10**16})
-        );
-
-        fixedRate = fixedRateUD.value;
-
-        amount0 = uint256(amount0UD.value);
-        amount1 = uint256(amount1UD.value);
+    
     }
 }

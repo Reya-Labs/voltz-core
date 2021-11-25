@@ -26,16 +26,12 @@ interface IAMMEvents {
     /// @notice Emitted by the amm for any swaps between token0 and token1
     /// @param sender The address that initiated the swap call (and that received the callback)
     /// @param recipient The address that received the output of the swap
-    /// @param amount0 The delta of the token0 balance of the pool
-    /// @param amount1 The delta of the token1 balance of the pool
     /// @param sqrtPriceX96 The sqrt(price) of the pool after the swap, as a Q64.96
     /// @param liquidity The liquidity of the pool after the swap
     /// @param tick The log base 1.0001 of price of the pool after the swap
     event Swap(
         address indexed sender,
         address indexed recipient,
-        int256 amount0,
-        int256 amount1,
         uint160 sqrtPriceX96,
         uint128 liquidity,
         int24 tick

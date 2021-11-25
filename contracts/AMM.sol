@@ -15,10 +15,11 @@ import "./core_libraries/SwapMath.sol";
 import "hardhat/console.sol";
 import "./interfaces/IMarginCalculator.sol";
 import "./interfaces/IAaveRateOracle.sol";
+import "./interfaces/IERC20Minimal.sol";
+import "./interfaces/IAMMFactory.sol";
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
-import "./utils/TransferHelper.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
 
@@ -46,7 +47,7 @@ contract AMM is IAMM, NoDelegateCall {
 
     uint256 public immutable override termStartTimestamp;
 
-    uint24 public immutable override fee;
+    uint256 public immutable override fee; // 0.3%=0.003 of the total notional
 
     uint256 public constant LIQUIDATOR_REWARD = 2 * 10**15; // 0.2%=0.002 of the total margin (or remaining?)
 
@@ -60,9 +61,7 @@ contract AMM is IAMM, NoDelegateCall {
 
     IMarginCalculator public override calculator;
     
-    IAaveRateOracle public override rateOracle; 
-
-    // todo: make this pool resettable: can change termStart and termEnd timestamps
+    IAaveRateOracle public override rateOracle;
 
     constructor() {
 
@@ -87,11 +86,19 @@ contract AMM is IAMM, NoDelegateCall {
         uint160 sqrtPriceX96;
         // the current tick
         int24 tick;
+
+        // the current protocol fee as a percentage of the swap fee taken on withdrawal
+        uint256 feeProtocol;
+
         // whether the pool is locked
         bool unlocked;
     }
 
     Slot0 public override slot0;
+
+    uint256 public override feeGrowthGlobal;
+
+    uint256 protocolFees;
 
     uint128 public override liquidity;
 
@@ -110,6 +117,12 @@ contract AMM is IAMM, NoDelegateCall {
         slot0.unlocked = true;
     }
 
+    /// @dev Prevents calling a function from anyone except the address returned by IUniswapV3Factory#owner()
+    modifier onlyFactoryOwner() {
+        require(msg.sender == IAMMFactory(factory).owner());
+        _;
+    }
+
     /// @dev Common checks for valid tick inputs.
     function checkTicks(int24 tickLower, int24 tickUpper) private pure {
         require(tickLower < tickUpper, "TLU");
@@ -123,7 +136,7 @@ contract AMM is IAMM, NoDelegateCall {
 
         int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
-        slot0 = Slot0({sqrtPriceX96: sqrtPriceX96, tick: tick, unlocked: true});
+        slot0 = Slot0({sqrtPriceX96: sqrtPriceX96, tick: tick, feeProtocol: 0, unlocked: true});
 
         emit Initialize(sqrtPriceX96, tick);
     }
@@ -451,6 +464,8 @@ contract AMM is IAMM, NoDelegateCall {
 
         checkTicks(tickLower, tickUpper);
 
+
+        // todo: rename slot0 (takes up more slots now)
         Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
 
         ModifyPositionParams memory modifyPositionparams;
@@ -541,6 +556,8 @@ contract AMM is IAMM, NoDelegateCall {
     {
         position = positions.get(params.owner, params.tickLower, params.tickUpper);
 
+        uint256 _feeGrowthGlobal = feeGrowthGlobal;
+
         UpdatePositionVars memory vars;
 
         // if we need to update the ticks, do it
@@ -551,6 +568,7 @@ contract AMM is IAMM, NoDelegateCall {
                 params.liquidityDelta,
                 fixedTokenGrowthGlobal,
                 variableTokenGrowthGlobal,
+                feeGrowthGlobal,
                 false,
                 maxLiquidityPerTick
             );
@@ -560,6 +578,7 @@ contract AMM is IAMM, NoDelegateCall {
                 params.liquidityDelta,
                 fixedTokenGrowthGlobal,
                 variableTokenGrowthGlobal,
+                feeGrowthGlobal,
                 true,
                 maxLiquidityPerTick
             );
@@ -571,6 +590,8 @@ contract AMM is IAMM, NoDelegateCall {
                 tickBitmap.flipTick(params.tickUpper, tickSpacing);
             }
         }
+
+
 
         vars.fixedTokenGrowthInside = ticks.getFixedTokenGrowthInside(
             Tick.FixedTokenGrowthInsideParams({
@@ -590,9 +611,23 @@ contract AMM is IAMM, NoDelegateCall {
             })
         );
 
-        position.updateLiquidity(params.liquidityDelta);
-        position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
+        vars.feeGrowthInside = ticks.getFeeGrowthInside(
+            params.tickLower,
+            params.tickUpper,
+            slot0.tick,
+            feeGrowthGlobal
+        );
+
         
+        // todo: some of the below can be simplified into another function (repeated in the settlement logic)
+        position.updateLiquidity(params.liquidityDelta);
+        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
+        uint256 feeDelta = position.calculateFeeDelta(vars.feeGrowthInside);
+        position.updateBalances(fixedTokenDelta, variableTokenDelta);
+        position.updateMargin(int256(feeDelta));
+        position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
+        position.updateFeeGrowthInside(vars.feeGrowthInside);
+
         // clear any tick data that is no longer needed
         if (params.liquidityDelta < 0) {
             if (vars.flippedLower) {
@@ -770,7 +805,8 @@ contract AMM is IAMM, NoDelegateCall {
 
         SwapCache memory cache = SwapCache({
             liquidityStart: liquidity,
-            blockTimestamp: block.timestamp
+            blockTimestamp: FixedAndVariableMath.blockTimestampScaled(),
+            feeProtocol: slot0.feeProtocol 
         });
 
         // bool exactInput = params.amountSpecified > 0;
@@ -780,10 +816,11 @@ contract AMM is IAMM, NoDelegateCall {
             amountCalculated: 0,
             sqrtPriceX96: slot0Start.sqrtPriceX96,
             tick: slot0Start.tick,
-            // feeGrowthGlobalX128: feeGrowthGlobalX128,
             liquidity: cache.liquidityStart,
             fixedTokenGrowthGlobal: fixedTokenGrowthGlobal,
-            variableTokenGrowthGlobal: variableTokenGrowthGlobal
+            variableTokenGrowthGlobal: variableTokenGrowthGlobal,
+            feeGrowthGlobal: feeGrowthGlobal,
+            protocolFee: 0
         });
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
@@ -812,9 +849,21 @@ contract AMM is IAMM, NoDelegateCall {
             // get the price for the next tick
             step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
 
+            // todo: create a helper function
+            uint256 timeToMaturityInSeconds = PRBMathUD60x18Typed.sub(
+                    
+                PRBMath.UD60x18({
+                    value: termEndTimestamp
+                }),
+
+                PRBMath.UD60x18({
+                    value: FixedAndVariableMath.blockTimestampScaled()
+                })
+
+            ).value;
+
             // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
-            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.notionalAmount, step.fixedRate,
-            step.amount0, step.amount1) = SwapMath
+            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath
                 .computeSwapStep(
                     state.sqrtPriceX96,
                     (
@@ -825,10 +874,13 @@ contract AMM is IAMM, NoDelegateCall {
                         ? params.sqrtPriceLimitX96
                         : step.sqrtPriceNextX96,
                     state.liquidity,
-                    state.amountSpecifiedRemaining
+                    state.amountSpecifiedRemaining,
+                    fee,
+                    timeToMaturityInSeconds
                 );
 
             if (params.amountSpecified > 0) {
+                // exact input
                 state.amountSpecifiedRemaining -= (step.amountIn).toInt256();
                 state.amountCalculated = state.amountCalculated.sub(
                     (step.amountOut).toInt256()
@@ -840,14 +892,88 @@ contract AMM is IAMM, NoDelegateCall {
                 );
             }
 
+            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+            if (cache.feeProtocol > 0) {
+                // uint256 delta = step.feeAmount / cache.feeProtocol;
+
+                uint256 delta = PRBMathUD60x18Typed.mul(
+                    
+                    PRBMath.UD60x18({
+                        value: step.feeAmount
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: cache.feeProtocol // as a percentage of LP fees
+                    })
+                ).value;
+
+                step.feeAmount = PRBMathUD60x18Typed.sub(
+                    
+                    PRBMath.UD60x18({
+                        value: step.feeAmount
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: delta
+                    })
+                
+                ).value;
+
+                state.protocolFee = PRBMathUD60x18Typed.add(
+                    
+                    PRBMath.UD60x18({
+                        value: state.protocolFee
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: delta
+                    })
+                
+                ).value;
+            }
+
             // update global fee tracker
             if (state.liquidity > 0) {
-                // state.feeGrowthGlobalX128 += FullMath.mulDiv(0, FixedPoint128.Q128, state.liquidity); // todo: set to zero for now
+
+                state.feeGrowthGlobal = PRBMathUD60x18Typed.add(
+
+                    PRBMath.UD60x18({
+                        value: state.feeGrowthGlobal
+                    }),
+
+                    PRBMathUD60x18Typed.div(
+
+                        PRBMath.UD60x18({
+                            value: step.feeAmount
+                        }),
+
+                        PRBMath.UD60x18({
+                            value: uint256(state.liquidity)
+                        })
+                    )
+
+                ).value;
 
                 if (params.isFT) {
                     // then the AMM is a VT
 
-                    state.variableTokenGrowthGlobal = int256(step.amount1);
+                    state.variableTokenGrowthGlobal = PRBMathSD59x18Typed.add(
+
+                        PRBMath.SD59x18({
+                            value: state.variableTokenGrowthGlobal
+                        }),
+
+                        PRBMathSD59x18Typed.div(
+
+                            PRBMath.SD59x18({
+                                value: int256(step.amountOut)
+                            }),
+
+                            PRBMath.SD59x18({
+                                value: int256(uint256(state.liquidity))
+                            })
+                        )
+                    ).value;
 
                     state.fixedTokenGrowthGlobal = PRBMathSD59x18Typed.add(
 
@@ -858,8 +984,8 @@ contract AMM is IAMM, NoDelegateCall {
                         PRBMathSD59x18Typed.div(
 
                             PRBMath.SD59x18({
-                                // value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), !params.isFT, termStartTimestamp, termEndTimestamp)
-                                value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amount0), int256(step.amount1), rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp)
+                                // todo: check the signs
+                                value: FixedAndVariableMath.getFixedTokenBalance(-int256(step.amountIn), int256(step.amountOut), rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp)
                             }),
 
                             PRBMath.SD59x18({
@@ -870,8 +996,25 @@ contract AMM is IAMM, NoDelegateCall {
 
                 } else {
                     // then the AMM is an FT
+                    
+                    state.variableTokenGrowthGlobal = PRBMathSD59x18Typed.add(
 
-                    state.variableTokenGrowthGlobal = -int256(step.amount1); // todo: redundunt code, fix during testing
+                        PRBMath.SD59x18({
+                            value: state.variableTokenGrowthGlobal
+                        }),
+
+                        PRBMathSD59x18Typed.div(
+
+                            PRBMath.SD59x18({
+                                // todo: check the signs are correct
+                                value: -int256(step.amountIn)
+                            }),
+
+                            PRBMath.SD59x18({
+                                value: int256(uint256(state.liquidity))
+                            })
+                        )
+                    ).value;
 
                     state.fixedTokenGrowthGlobal = PRBMathSD59x18Typed.add(
 
@@ -879,13 +1022,11 @@ contract AMM is IAMM, NoDelegateCall {
                             value: state.fixedTokenGrowthGlobal
                         }),
 
-
                         PRBMathSD59x18Typed.div(
 
                             PRBMath.SD59x18({
-                                // value: FixedAndVariableMath.getFixedTokenBalance(step.amount0, step.amount1, int256(variableFactor(false)), params.isFT, termStartTimestamp, termEndTimestamp)
-                                // todo: check the amount0 and amount1 signs
-                                value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amount0), int256(step.amount1), rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp)
+                                // todo: check the signs are correct
+                                value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amountOut), -int256(step.amountIn), rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp)
                             }),
 
                             PRBMath.SD59x18({
@@ -905,7 +1046,8 @@ contract AMM is IAMM, NoDelegateCall {
                     int128 liquidityNet = ticks.cross(
                         step.tickNext,
                         state.fixedTokenGrowthGlobal,
-                        state.variableTokenGrowthGlobal
+                        state.variableTokenGrowthGlobal,
+                        state.feeGrowthGlobal
                     );
 
                     // if we're moving leftward, we interpret liquidityNet as the opposite sign
@@ -933,10 +1075,19 @@ contract AMM is IAMM, NoDelegateCall {
         }
 
         // update liquidity if it changed
-        if (cache.liquidityStart != state.liquidity)
-            liquidity = state.liquidity;
+        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;
 
-        (int256 amount0, int256 amount1) = params.isFT == params.amountSpecified > 0
+        feeGrowthGlobal = state.feeGrowthGlobal;
+        if (state.protocolFee > 0) {
+            protocolFees = PRBMathUD60x18Typed
+            .add(
+                PRBMath.UD60x18({value: protocolFees}),
+                PRBMath.UD60x18({value: state.protocolFee})
+            )
+            .value;
+        }
+
+        (int256 amount0Int, int256 amount1Int) = params.isFT == params.amountSpecified > 0
             ? (
                 params.amountSpecified - state.amountSpecifiedRemaining,
                 state.amountCalculated
@@ -945,31 +1096,39 @@ contract AMM is IAMM, NoDelegateCall {
                 state.amountCalculated,
                 params.amountSpecified - state.amountSpecifiedRemaining
             );
+        
+        uint256 amount0;
+        uint256 amount1;
+        
+        if (amount0Int > 0) {
+            require(amount1Int<0, "amount0 and amount1 should have opposite signs");
+            amount0 = uint256(amount0Int);   
+            amount1 = uint256(-amount1Int);
+        } else if (amount1Int > 0) {
+            require(amount0Int<0, "amount0 and amount1 should have opposite signs");
+            amount0 = uint256(-amount0Int);
+            amount1 = uint256(amount1Int);
+        }
 
         variableTokenGrowthGlobal = state.variableTokenGrowthGlobal;
         fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;
         
 
-        // bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp
-
-        _fixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(amount0, amount1, rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp);
-
         if (params.isFT) {
-            _variableTokenBalance = -int256(uint256(amount1));
+            _variableTokenBalance = -int256(amount1);
+            _fixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(int256(amount0), -int256(amount1), rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp);
         } else {
-            _variableTokenBalance = int256(uint256(amount1));
+            _variableTokenBalance = int256(amount1);
+            _fixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(-int256(amount0), int256(amount1), rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp), termStartTimestamp, termEndTimestamp);
         }
 
         if (params.isTrader) {
                 updateTrader(params.recipient, _fixedTokenBalance, _variableTokenBalance, params.proposedMargin);
         }
         
-
         emit Swap(
             msg.sender,
             params.recipient,
-            amount0,
-            amount1,
             state.sqrtPriceX96,
             state.liquidity,
             state.tick
@@ -977,4 +1136,28 @@ contract AMM is IAMM, NoDelegateCall {
 
         slot0.unlocked = true;
     }
+
+    function setFeeProtocol(uint256 feeProtocol) external lock onlyFactoryOwner  {
+        // todo: add to interface and override
+        // todo: introduce checks
+        slot0.feeProtocol = feeProtocol;
+        // todo: emit set fee protocol
+    }
+
+    function collectProtocol(
+        address recipient,
+        uint256 amountRequested
+    ) external lock onlyFactoryOwner returns (uint256 amount){
+
+        amount = amountRequested > protocolFees ? protocolFees : amountRequested;
+
+        if (amount > 0) {
+            protocolFees -= amount;
+            IERC20Minimal(underlyingToken).transferFrom(address(this), recipient, amount);
+        }
+
+        // todo: emit collect protocol event
+    }
+
+
 }

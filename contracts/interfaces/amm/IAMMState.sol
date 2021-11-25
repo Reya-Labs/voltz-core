@@ -16,6 +16,7 @@ interface IAMMState {
         returns (
             uint160 sqrtPriceX96,
             int24 tick,
+            uint256 feeProtocol,
             bool unlocked
         );
 
@@ -32,6 +33,8 @@ interface IAMMState {
     function fixedTokenGrowthGlobal() external view returns (int256);
 
     function variableTokenGrowthGlobal() external view returns (int256);
+
+    function feeGrowthGlobal() external view returns (uint256);
 
     /// @notice The currently in range liquidity available to the amm
     /// @dev This value has no relationship to the total liquidity across all ticks
@@ -53,6 +56,7 @@ interface IAMMState {
             int128 liquidityNet,
             int256 fixedTokenGrowthOutside,
             int256 variableTokenGrowthOutside,
+            uint256 feeGrowthOutside,
             bool initialized
         );
 
@@ -70,7 +74,8 @@ interface IAMMState {
             int256 fixedTokenGrowthInsideLast,
             int256 variableTokenGrowthInsideLast,        
             int256 fixedTokenBalance,
-            int256 variableTokenBalance
+            int256 variableTokenBalance,
+            uint256 feeGrowthInsideLast
         );
 
     /// @notice Returns the information about a trader by the trader key

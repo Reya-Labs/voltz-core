@@ -6,6 +6,7 @@ import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
 
+import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 
 /// @title Tick
@@ -25,9 +26,73 @@ library Tick {
 
         int256 fixedTokenGrowthOutside;
         int256 variableTokenGrowthOutside;
+
+        uint256 feeGrowthOutside;
+
         bool initialized;
     }
 
+
+    function getFeeGrowthInside(
+        mapping(int24 => Tick.Info) storage self,
+        int24 tickLower,
+        int24 tickUpper,
+        int24 tickCurrent,
+        uint256 feeGrowthGlobal
+    ) internal view returns (uint256 feeGrowthInside) {
+        Info storage lower = self[tickLower];
+        Info storage upper = self[tickUpper];
+
+        // calculate fee growth below
+        uint256 feeGrowthBelow;
+
+        if (tickCurrent >= tickLower) {
+            feeGrowthBelow = lower.feeGrowthOutside;
+        } else {
+            feeGrowthBelow = PRBMathUD60x18Typed.sub(
+
+                PRBMath.UD60x18({
+                    value: feeGrowthGlobal
+                }),
+
+                PRBMath.UD60x18({
+                    value: lower.feeGrowthOutside
+                })
+
+            ).value;
+        }
+
+        // calculate fee growth above
+        uint256 feeGrowthAbove;
+
+        if (tickCurrent < tickUpper) {
+            feeGrowthAbove = upper.feeGrowthOutside;
+        } else {
+            feeGrowthAbove = PRBMathUD60x18Typed.sub(
+
+                PRBMath.UD60x18({
+                    value: feeGrowthGlobal
+                }),
+
+                PRBMath.UD60x18({
+                    value: upper.feeGrowthOutside
+                })
+
+            ).value;
+        }
+
+        feeGrowthInside = PRBMathUD60x18Typed
+            .sub(
+                PRBMath.UD60x18({value: feeGrowthGlobal}),
+                PRBMathUD60x18Typed.add(
+                    PRBMath.UD60x18({value: feeGrowthBelow}),
+                    PRBMath.UD60x18({value: feeGrowthAbove})
+                )
+            ).value;
+
+    }
+    
+    
     /// @notice Derives max liquidity per tick from given tick spacing
     /// @dev Executed within the pool constructor
     /// @param tickSpacing The amount of required tick separation, realized in multiples of `tickSpacing`
@@ -165,6 +230,7 @@ library Tick {
         int128 liquidityDelta,
         int256 fixedTokenGrowthGlobal,
         int256 variableTokenGrowthGlobal,
+        uint256 feeGrowthGlobal,
         bool upper,
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
@@ -183,6 +249,8 @@ library Tick {
         if (liquidityGrossBefore == 0) {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tick <= tickCurrent) {
+                info.feeGrowthOutside = feeGrowthGlobal;
+
                 info.fixedTokenGrowthOutside = fixedTokenGrowthGlobal;
 
                 info.variableTokenGrowthOutside = variableTokenGrowthGlobal;
@@ -216,9 +284,17 @@ library Tick {
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
         int256 fixedTokenGrowthGlobal,
-        int256 variableTokenGrowthGlobal
+        int256 variableTokenGrowthGlobal,
+        uint256 feeGrowthGlobal
     ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
+
+        info.feeGrowthOutside = PRBMathUD60x18Typed
+            .sub(
+                PRBMath.UD60x18({value: feeGrowthGlobal}),
+                PRBMath.UD60x18({value: info.feeGrowthOutside})
+            )
+            .value;
 
         info.fixedTokenGrowthOutside = PRBMathSD59x18Typed
             .sub(

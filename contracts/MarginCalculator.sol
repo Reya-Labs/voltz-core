@@ -14,7 +14,7 @@ import "./interfaces/IAaveRateOracle.sol";
 
 contract MarginCalculator is IMarginCalculator{
 
-    // todo: replace the apyUpper and apyLower with the 
+    // todo: replace the apyUpper and apyLower with the chainlink oracle feed that is custom for each underlying pool 
     uint256 public override apyUpper = 9 * 10**16; // 0.09, 9%
     uint256 public override apyLower = 1 * 10**16; // 0.01, 1%;
 

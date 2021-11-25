@@ -22,6 +22,9 @@ interface IAmmActions {
         uint128 liquidityStart;
         // the timestamp of the current block
         uint256 blockTimestamp;
+
+        // the protocol fee for the underlying token (is this a percentage amount?)
+        uint256 feeProtocol;
     }
 
     // the top level state of the swap, the results of which are recorded in storage at the end
@@ -41,6 +44,10 @@ interface IAmmActions {
 
         // the current liquidity in range
         uint128 liquidity;
+
+        uint256 feeGrowthGlobal;
+        // amount of input token paid as protocol fee
+        uint256 protocolFee;
     }
 
     struct StepComputations {
@@ -56,12 +63,8 @@ interface IAmmActions {
         uint256 amountIn;
         // how much is being swapped out
         uint256 amountOut;
-
-        int256 notionalAmount;
-        int256 fixedRate;
-
-        uint256 amount0;
-        uint256 amount1;
+        // how much fee is being paid in (underlying token)
+        uint256 feeAmount;
 
     }
 
@@ -95,6 +98,8 @@ interface IAmmActions {
 
         int256 fixedTokenGrowthInside;
         int256 variableTokenGrowthInside;
+
+        uint256 feeGrowthInside;
     }
 
     /// @notice Sets the initial price for the pool

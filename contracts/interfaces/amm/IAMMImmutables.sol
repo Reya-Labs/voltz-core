@@ -34,7 +34,7 @@ interface IAMMImmutables {
 
     /// @notice The amm's fee in hundredths of a bip, i.e. 1e-6
     /// @return The fee
-    function fee() external view returns (uint24);
+    function fee() external view returns (uint256);
 
     /// @notice The amm tick spacing
     /// @dev Ticks can only be used at multiples of this value, minimum of 1 and always positive
