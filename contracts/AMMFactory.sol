@@ -2,21 +2,22 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IAMMFactory.sol";
+import "./interfaces/IAMMFactory.sol";
+import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./AMMDeployer.sol";
 import "./AMM.sol";
 import "./utils/NoDelegateCall.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
+// todo: introduce VoltzData.sol that is above the AMMFactory?
 /// @title Canonical Voltz factory
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
 contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
-    /// @inheritdoc IAMMFactory
+    
+    mapping(bytes32 => address) public override getRateOracleAddress;
     address public override owner;
-
-    /// @inheritdoc IAMMFactory
     mapping(uint24 => int24) public override feeAmountTickSpacing;
-
-    mapping(address => mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint24 => address))))) public getAMMMAp;
+    mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint24 => address))))) public getAMMMAp;
 
     constructor() {
         owner = msg.sender;
@@ -30,37 +31,36 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
         emit FeeAmountEnabled(10000, 200);
     }
 
-    /// @inheritdoc IAMMFactory
+
     function createAMM(
         address underlyingToken,
-        address underlyingPool,
+        bytes32 rateOracleId,
         uint256 termEndTimestamp,
         uint24 fee
     ) external override noDelegateCall returns (address amm) {
-        require(underlyingPool != address(0));
         int24 tickSpacing = feeAmountTickSpacing[fee]; 
         require(tickSpacing != 0);
         
         uint256 termStartTimestamp = FixedAndVariableMath.blockTimestampScaled();
 
         require(
-            getAMMMAp[underlyingPool][underlyingToken][termStartTimestamp][termEndTimestamp][fee] ==
+            getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][termEndTimestamp][fee] ==
                 address(0)
         );
 
         amm = deploy(
             address(this),
             underlyingToken,
-            underlyingPool,
+            rateOracleId,
             termStartTimestamp,
             termEndTimestamp,
             fee,
             tickSpacing
         );
 
-        getAMMMAp[underlyingPool][underlyingToken][termStartTimestamp][termEndTimestamp][fee] = amm;
+        getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][termEndTimestamp][fee] = amm;
         emit AMMCreated(
-            underlyingPool,
+            rateOracleId,
             underlyingToken,
             termEndTimestamp,
             termStartTimestamp,
@@ -71,14 +71,13 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
         return amm;
     }
 
-    /// @inheritdoc IAMMFactory
     function setOwner(address _owner) external override {
         require(msg.sender == owner);
         emit OwnerChanged(owner, _owner);
         owner = _owner;
     }
 
-    /// @inheritdoc IAMMFactory
+
     function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
         require(msg.sender == owner);
         require(fee < 1000000); // todo: where does this amount come from?
@@ -90,5 +89,18 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
 
         feeAmountTickSpacing[fee] = tickSpacing;
         emit FeeAmountEnabled(fee, tickSpacing);
+    }
+
+    // todo initialised, onlyGovernance
+    function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress) external override {
+        
+        require(_rateOracleId != bytes32(0), "ZERO_BYTES");
+        require(_rateOracleAddress != address(0), "ZERO_ADDRESS");
+        require(_rateOracleId == IRateOracle(_rateOracleAddress).rateOracleId(), "INVALID_ID");
+        require(getRateOracleAddress[_rateOracleId] == address(0), "EXISTED_ID");
+
+        getRateOracleAddress[_rateOracleId] = _rateOracleAddress;
+
+        // todo: emit RateOracleAdded
     }
 }

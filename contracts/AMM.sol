@@ -14,7 +14,7 @@ import "./core_libraries/SwapMath.sol";
 
 import "hardhat/console.sol";
 import "./interfaces/IMarginCalculator.sol";
-import "./interfaces/IAaveRateOracle.sol";
+import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IAMMFactory.sol";
 
@@ -37,11 +37,11 @@ contract AMM is IAMM, NoDelegateCall {
     using Trader for mapping(bytes32 => Trader.Info);
     using Trader for Trader.Info;
 
-    address public immutable override factory;
+    address public override factory; // todo: make immutable
 
     address public immutable override underlyingToken;
 
-    address public immutable override underlyingPool;
+    bytes32 public override rateOracleId; // todo: make immutable
 
     uint256 public immutable override termEndTimestamp;
 
@@ -61,7 +61,7 @@ contract AMM is IAMM, NoDelegateCall {
 
     IMarginCalculator public override calculator;
     
-    IAaveRateOracle public override rateOracle;
+    IRateOracle public override rateOracle;
 
     constructor() {
 
@@ -69,7 +69,7 @@ contract AMM is IAMM, NoDelegateCall {
         (
             factory,
             underlyingToken,
-            underlyingPool,
+            rateOracleId, // todo: underlyingPool everywhere else, refactor
             termStartTimestamp,
             termEndTimestamp,
             fee,
@@ -79,6 +79,10 @@ contract AMM is IAMM, NoDelegateCall {
         maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(
             _tickSpacing
         );
+        
+        address rateOracleAddress = IAMMFactory(factory).getRateOracleAddress(rateOracleId);
+
+        rateOracle = IRateOracle(rateOracleAddress);
     }
 
     struct Slot0 {
@@ -117,7 +121,7 @@ contract AMM is IAMM, NoDelegateCall {
         slot0.unlocked = true;
     }
 
-    /// @dev Prevents calling a function from anyone except the address returned by IUniswapV3Factory#owner()
+    
     modifier onlyFactoryOwner() {
         require(msg.sender == IAMMFactory(factory).owner());
         _;
@@ -740,12 +744,11 @@ contract AMM is IAMM, NoDelegateCall {
         );
     }
     
-    function updateTrader(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, int256 proposedMargin) public {
+    function updateTrader(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, int256 additionalMargin) public {
 
         Trader.Info storage trader = traders.get(recipient);
         trader.updateBalances(fixedTokenBalance, variableTokenBalance);
         
-        uint256 timePeriodInSeconds = termEndTimestamp - termStartTimestamp;
 
         int256 margin = int256(calculator.getTraderMarginRequirement(
             IMarginCalculator.TraderMarginRequirementParams({
@@ -757,26 +760,47 @@ contract AMM is IAMM, NoDelegateCall {
             })
         ));
 
-        if (proposedMargin > margin) {
-            margin = proposedMargin;
-        }
+        int256 proposedMargin = PRBMathSD59x18Typed.mul(
 
-        if (margin > trader.margin) {
-            int256 marginDelta = PRBMathSD59x18Typed.mul(
+            PRBMath.SD59x18({
+                value: additionalMargin
+            }),
+
+            PRBMath.SD59x18({
+                value: trader.margin
+            })
+
+        ).value;
+
+        if (proposedMargin >= margin)  {
+            
+            if (additionalMargin > 0) {
+                IERC20Minimal(underlyingToken).transferFrom(recipient, address(this), uint256(additionalMargin));
+                trader.updateMargin(additionalMargin);
+            } else if (additionalMargin < 0) {
+                IERC20Minimal(underlyingToken).transferFrom(address(this), recipient, uint256(-additionalMargin));
+                trader.updateMargin(additionalMargin);
+            }
+            
+        } else {
+            
+            int256 marginDelta = PRBMathSD59x18Typed.sub(
 
                 PRBMath.SD59x18({
                     value: margin
                 }),
 
                 PRBMath.SD59x18({
-                    value: trader.margin
+                    value: proposedMargin
                 })
+
             ).value;
 
-            IERC20Minimal(underlyingToken).transferFrom(recipient, address(this), uint256(marginDelta));
+            // insurance module, todo: acount for a potential undercollateralised scenario
+            // v2 --> automatic circuit breaks that pause the amm in exceptional circumstances
+            IERC20Minimal(underlyingToken).transferFrom(factory, address(this), uint256(marginDelta));
 
-            trader.updateMargin(margin);
-        
+            trader.updateMargin(-trader.margin);
         }
 
     }

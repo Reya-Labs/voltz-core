@@ -9,7 +9,6 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "./core_libraries/Position.sol";
 import "hardhat/console.sol";
 import "./core_libraries/Tick.sol";
-import "./interfaces/IAaveRateOracle.sol";
 
 
 contract MarginCalculator is IMarginCalculator{
@@ -205,10 +204,13 @@ contract MarginCalculator is IMarginCalculator{
         }
     }
     
+    
+
     function getTraderMarginRequirement(
         TraderMarginRequirementParams memory params
     ) public view override returns(uint256 margin) {
         
+        // todo: analyse scenarios where both are negative, because if both are positive, just return 0
         // todo: only matters if there is a negative balance in either token
         // return 0 in these cases, isLM doesn't matter
         // todo: or check if the signs are different
@@ -226,7 +228,6 @@ contract MarginCalculator is IMarginCalculator{
                         value: params.termStartTimestamp
                     })
         ).value;
-
 
         console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
         console.log("TimePeriodInSeconds is", timePeriodInSeconds);

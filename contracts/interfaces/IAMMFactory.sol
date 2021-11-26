@@ -11,7 +11,7 @@ interface IAMMFactory {
 
     /// @notice Emitted when a amm is created
     event AMMCreated(
-        address indexed underlyingPool,
+        bytes32 indexed rateOracleId,
         address indexed underlyingToken,
         uint256 indexed termStartTimestamp,
         uint256 termEndTimestamp,
@@ -30,6 +30,8 @@ interface IAMMFactory {
     /// @return The address of the factory owner
     function owner() external view returns (address);
 
+    function getRateOracleAddress(bytes32 rateOracleId) external view returns (address);
+    
     /// @notice Returns the tick spacing for a given fee amount, if enabled, or 0 if not enabled
     /// @dev A fee amount can never be removed, so this value should be hard coded or cached in the calling context
     /// @param fee The enabled fee, denominated in hundredths of a bip. Returns 0 in case of unenabled fee
@@ -51,13 +53,12 @@ interface IAMMFactory {
     // ) external view returns (address amm);
 
     /// @notice Creates an amm
-    /// @param underlyingPool The contract address of the underlying pool
     /// @param termEndTimestamp Number of days between the inception of the pool and its maturity
     /// @param fee The fee collected upon every swap in the pool (as a percentage of notional traded), denominated in hundredths of a bip
     /// @return amm The address of the newly created amm
     function createAMM(
         address underlyingToken,
-        address underlyingPool,
+        bytes32 rateOracleId,
         uint256 termEndTimestamp,
         uint24 fee
     ) external returns (address amm);
@@ -72,4 +73,7 @@ interface IAMMFactory {
     /// @param fee The fee amount to enable, denominated in hundredths of a bip (i.e. 1e-6)
     /// @param tickSpacing The spacing between ticks to be enforced for all pools created with the given fee amount
     function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
+
+    function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress) external;
+
 }

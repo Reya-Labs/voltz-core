@@ -1,46 +1,45 @@
 pragma solidity ^0.8.0;
 
-import "./interfaces/IAaveRateOracle.sol";
-import "./interfaces/underlyingPool/IAaveLendingPool.sol";
-import "./core_libraries/FixedAndVariableMath.sol";
-import "./utils/WayRayMath.sol";
+import "../interfaces/rate_oracles/IAaveRateOracle.sol";
+import "../interfaces/aave/IAaveV2LendingPool.sol";
+import "../core_libraries/FixedAndVariableMath.sol";
+import "../utils/WayRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "../rate_oracles/BaseRateOracle.sol";
 
 
-// todo: fixed point math
-contract AaveRateOracle is IAaveRateOracle {
+contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
-    using SafeMath for uint256; // todo: remove and do fpm
+    using SafeMath for uint256;
 
     uint256 public mostRecentTimestamp;
+
+    mapping(address => mapping(uint256 => Rate)) public rates;
     
-    IAaveLendingPool public override lendingPool;
-    mapping(address => mapping(uint256 => Rate)) public override rates;
+    IAaveV2LendingPool public override aaveLendingPool;
 
-    address constant aaveLendingPoolAddress = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9; // mainnet
-
-    constructor() {
-        lendingPool = IAaveLendingPool(aaveLendingPoolAddress);
+    constructor(IAaveV2LendingPool _aaveLendingPool, bytes32 _rateOracleId) BaseRateOracle(_rateOracleId) {
+        aaveLendingPool = _aaveLendingPool;
     }
 
+    // todo: bring some of the conditional logic from amm to here
     // todo: remove and use aave lib instead (or separate test solidity contract)
     function getReserveNormalizedIncome(address underlying) public view override returns(uint256){
-        return lendingPool.getReserveNormalizedIncome(underlying);
+        return aaveLendingPool.getReserveNormalizedIncome(underlying);
     }
-    
+
     function updateRate(address underlying) public override {
         
-        uint256 result = lendingPool.getReserveNormalizedIncome(underlying);
+        uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
         require(result != 0, "Oracle only supports active Aave-V2 assets");
 
         uint256 blockTimestampScaled = FixedAndVariableMath.blockTimestampScaled();
         
-        rates[underlying][blockTimestampScaled] = Rate(true, blockTimestampScaled, result);
+        rates[underlying][blockTimestampScaled] = IRateOracle.Rate(true, blockTimestampScaled, result);
 
         mostRecentTimestamp = blockTimestampScaled;
         
     }
-
     
     function getRateFromTo(
         address underlying,
@@ -50,8 +49,8 @@ contract AaveRateOracle is IAaveRateOracle {
         // note that we have to convert aave index into "floating rate" for
         // swap calculations, i.e. index 1.04*10**27 corresponds to
         // 0.04*10**27 = 4*10*25
-        Rate memory rateFrom = rates[underlying][from];
-        Rate memory rateTo = rates[underlying][to];
+        IRateOracle.Rate memory rateFrom = rates[underlying][from];
+        IRateOracle.Rate memory rateTo = rates[underlying][to];
         require(rateFrom.isSet, "Oracle does not have rateFrom");
         require(rateTo.isSet, "Oracle doesn not have rateTo");
         return
@@ -60,9 +59,9 @@ contract AaveRateOracle is IAaveRateOracle {
             );
     }
 
-    function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public override returns(uint256 result) {
+    function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public override(BaseRateOracle, IRateOracle) returns(uint256 result) {
 
-        Rate memory rate;
+        IRateOracle.Rate memory rate;
         
         if (FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp) {
             // atMaturity is true

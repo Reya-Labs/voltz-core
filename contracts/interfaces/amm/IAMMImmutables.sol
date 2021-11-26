@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 import "../IMarginCalculator.sol";
-import "../IAaveRateOracle.sol";
+import "../rate_oracles/IRateOracle.sol";
 
 /// @title Pool state that never changes
 /// @notice These parameters are fixed for a amm forever, i.e., the methods will always return the same values
@@ -10,21 +10,18 @@ interface IAMMImmutables {
     /// @return The margin calculator interface
     function calculator() external view returns (IMarginCalculator);
 
-    /// @notice Aave Rate Oracle Interface
-    /// @return The Aave Rate Oracle Interface
-    function rateOracle() external view returns (IAaveRateOracle);
+    
+    function rateOracle() external view returns (IRateOracle);
 
     /// @notice The contract that deployed the amm, which must adhere to the AMMFactory interface
     /// @return The contract address
     function factory() external view returns (address);
 
-    /// @notice The address of the underlying pool token
-    /// @return The underlying pool token address
+    // /// @notice The address of the underlying pool token
+    // /// @return The underlying pool token address
     function underlyingToken() external view returns (address);
 
-    /// @notice The address of the underlying yield generating pool
-    /// @return The underlying pool address
-    function underlyingPool() external view returns (address);
+    function rateOracleId() external view returns (bytes32);
 
     function termEndTimestamp() external view returns (uint256);
 

@@ -20,7 +20,7 @@ interface IAMMDeployer {
         returns (
             address factory,
             address underlyingToken,
-            address underlyingPool,
+            bytes32 rateOracleId,
             uint256 termStartTimestamp,
             uint256 termEndTimestamp,
             uint24 fee,

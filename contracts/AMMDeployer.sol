@@ -8,7 +8,7 @@ contract AMMDeployer is IAMMDeployer {
     struct Parameters {
         address factory;
         address underlyingToken;
-        address underlyingPool;
+        bytes32 rateOracleId;
         uint256 termStartTimestamp;
         uint256 termEndTimestamp;
         uint24 fee;
@@ -22,14 +22,14 @@ contract AMMDeployer is IAMMDeployer {
     /// clearing it after deploying the amm.
     /// @param factory The contract address of the Voltz factory
     /// @param underlyingToken The contract address of the token in the underlying pool
-    /// @param underlyingPool The contract address of the underlying pool
+    /// @param rateOracleId rate oracle id
     /// @param termEndTimestamp Number of days between the inception of the pool and its maturity
     /// @param fee The fee collected upon every swap in the pool (as a percentage of notional traded), denominated in hundredths of a bip
     /// @param tickSpacing The spacing between usable ticks
     function deploy(
         address factory,
         address underlyingToken,
-        address underlyingPool,
+        bytes32 rateOracleId,
         uint termStartTimestamp,
         uint256 termEndTimestamp,
         uint24 fee,
@@ -40,7 +40,7 @@ contract AMMDeployer is IAMMDeployer {
         parameters = Parameters({
             factory: factory,
             underlyingToken: underlyingToken,
-            underlyingPool: underlyingPool,
+            rateOracleId: rateOracleId,
             termStartTimestamp: termStartTimestamp,
             termEndTimestamp: termEndTimestamp,
             fee: fee,
@@ -51,7 +51,7 @@ contract AMMDeployer is IAMMDeployer {
             new AMM{
                 salt: keccak256(
                     abi.encode(
-                        underlyingPool,
+                        rateOracleId,
                         underlyingToken,
                         termStartTimestamp,
                         termEndTimestamp,
