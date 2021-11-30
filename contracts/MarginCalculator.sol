@@ -41,7 +41,7 @@ contract MarginCalculator is IMarginCalculator{
 
     // insted of storing alpha, store 4*alpha
     // insted of storing beta, store 4*bet
-    function compute_apy_bound(bytes32 rateOracleId, uint256 timeInSeconds, int256 apySinceInception, bool isUpper) internal view returns (uint256 apyBound) {
+    function computeApyBound(bytes32 rateOracleId, uint256 timeInSeconds, int256 apySinceInception, bool isUpper) internal view returns (uint256 apyBound) {
 
         // todo: isLm check
 
@@ -92,9 +92,9 @@ contract MarginCalculator is IMarginCalculator{
 
     }
     
-    function worstCaseVariableFactorAtMaturity(uint256 timePeriodInSeconds, bool isFT, bool isLM) internal view returns(uint256 variableFactor) {
+    function worstCaseVariableFactorAtMaturity(uint256 timeInSeconds, bool isFT, bool isLM) internal view returns(uint256 variableFactor) {
         
-        uint256 timePeriodInYears = FixedAndVariableMath.accrualFact(timePeriodInSeconds);
+        uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
 
         if (isFT) {
 
@@ -106,7 +106,7 @@ contract MarginCalculator is IMarginCalculator{
                     }),
 
                     PRBMath.UD60x18({
-                        value: timePeriodInYears
+                        value: timeInYears
                     })
                 ).value;
             } else {
@@ -124,7 +124,7 @@ contract MarginCalculator is IMarginCalculator{
                     ),
 
                     PRBMath.UD60x18({
-                        value: timePeriodInYears
+                        value: timeInYears
                     })
                 ).value;
             }
@@ -139,7 +139,7 @@ contract MarginCalculator is IMarginCalculator{
                     }),
 
                     PRBMath.UD60x18({
-                        value: timePeriodInYears
+                        value: timeInYears
                     })
                 ).value;
             } else {
@@ -157,7 +157,7 @@ contract MarginCalculator is IMarginCalculator{
                     ),
 
                     PRBMath.UD60x18({
-                        value: timePeriodInYears
+                        value: timeInYears
                     })
                 ).value;
             }
@@ -169,8 +169,8 @@ contract MarginCalculator is IMarginCalculator{
 
         uint256 minDelta;
         uint256 notional;
-        uint256 timePeriodInSeconds;
-        uint256 timePeriodInYears;
+        uint256 timeInSeconds;
+        uint256 timeInYears;
         uint256 zeroLowerBoundMargin;
 
     }
@@ -183,7 +183,7 @@ contract MarginCalculator is IMarginCalculator{
 
         MinimumMarginRequirementLocalVars memory vars;
         
-        vars.timePeriodInSeconds = PRBMathUD60x18Typed.sub(
+        vars.timeInSeconds = PRBMathUD60x18Typed.sub(
 
             PRBMath.UD60x18({
                 value: params.termEndTimestamp
@@ -194,7 +194,7 @@ contract MarginCalculator is IMarginCalculator{
             })
         ).value;
 
-        vars.timePeriodInYears = FixedAndVariableMath.accrualFact(vars.timePeriodInSeconds);
+        vars.timeInYears = FixedAndVariableMath.accrualFact(vars.timeInSeconds);
         
         if (params.isLM) {
             vars.minDelta = minDeltaLM;
@@ -219,7 +219,7 @@ contract MarginCalculator is IMarginCalculator{
                     }),
 
                     PRBMath.UD60x18({
-                        value: vars.timePeriodInYears
+                        value: vars.timeInYears
                     })
                 )
             ).value;
@@ -232,7 +232,7 @@ contract MarginCalculator is IMarginCalculator{
             vars.notional = uint256(params.variableTokenBalance);
 
             console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
-            console.log("The time in years is", vars.timePeriodInYears);
+            console.log("The time in years is", vars.timeInYears);
             
             vars.zeroLowerBoundMargin = PRBMathUD60x18Typed.mul(
                 PRBMath.UD60x18({
@@ -257,7 +257,7 @@ contract MarginCalculator is IMarginCalculator{
                     }),
 
                     PRBMath.UD60x18({
-                        value: vars.timePeriodInYears
+                        value: vars.timeInYears
                     })
                 )
             ).value;
@@ -283,7 +283,7 @@ contract MarginCalculator is IMarginCalculator{
 
         bool isFT = params.variableTokenBalance < 0;
 
-        uint256 timePeriodInSeconds = PRBMathUD60x18Typed.sub(
+        uint256 timeInSeconds = PRBMathUD60x18Typed.sub(
 
                     PRBMath.UD60x18({
                         value: params.termEndTimestamp
@@ -295,9 +295,9 @@ contract MarginCalculator is IMarginCalculator{
         ).value;
 
         console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
-        console.log("TimePeriodInSeconds is", timePeriodInSeconds);
-        console.log("Worst Case Var Factor is", worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, params.isLM));
-        // console.log(int256(worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, params.isLM)));
+        console.log("timeInSeconds is", timeInSeconds);
+        console.log("Worst Case Var Factor is", worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM));
+        // console.log(int256(worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM)));
         // console.log("Variable Token Balance is", params.variableTokenBalance);
         // console.log("Fixed Token Balance is", params.fixedTokenBalance);
 
@@ -319,7 +319,7 @@ contract MarginCalculator is IMarginCalculator{
             }),
 
             PRBMath.SD59x18({
-                value: int256(worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, params.isLM))
+                value: int256(worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM))
             })
         );
 

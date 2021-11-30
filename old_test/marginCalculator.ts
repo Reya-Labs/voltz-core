@@ -97,7 +97,7 @@ describe("Margin Calculator", () => {
   });
 
   describe("#ft margin computation works correclty", async () => {
-    // uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds
+    // uint256 notional, uint256 fixedRate, uint256 timeInSeconds
 
     // is liquidation margin
 
@@ -115,15 +115,15 @@ describe("Margin Calculator", () => {
     testSets.forEach((testSet) => {
       const notional: BigNumber = testSet[0];
       const fixedRate: BigNumber = testSet[1];
-      const timePeriodInSeconds: BigNumber = testSet[2];
+      const timeInSeconds: BigNumber = testSet[2];
 
-      it(`takes notional of ${notional}, fixedRate of ${fixedRate} and timePeriodInSeconds of ${timePeriodInSeconds}`, async () => {
+      it(`takes notional of ${notional}, fixedRate of ${fixedRate} and timeInSeconds of ${timeInSeconds}`, async () => {
         const apyUpper = toBn("0.09");
         const minDeltaLM = toBn("0.0125");
         let rateDelta: BigNumber = sub(apyUpper, fixedRate);
         rateDelta = rateDelta > minDeltaLM ? rateDelta : minDeltaLM;
 
-        const accrualFactor = div(timePeriodInSeconds, toBn("31536000"));
+        const accrualFactor = div(timeInSeconds, toBn("31536000"));
 
         const margin = mul(mul(notional, rateDelta), accrualFactor);
 
@@ -131,7 +131,7 @@ describe("Margin Calculator", () => {
           await calculator.getFTMarginRequirement(
             notional,
             fixedRate,
-            timePeriodInSeconds,
+            timeInSeconds,
             true
           )
         ).to.eq(margin);
@@ -140,7 +140,7 @@ describe("Margin Calculator", () => {
   });
 
   describe("#vt margin computation works correclty", async () => {
-    // uint256 notional, uint256 fixedRate, uint256 timePeriodInSeconds
+    // uint256 notional, uint256 fixedRate, uint256 timeInSeconds
 
     // is liquidation margin
 
@@ -160,15 +160,15 @@ describe("Margin Calculator", () => {
     testSets.forEach((testSet) => {
       const notional: BigNumber = testSet[0];
       const fixedRate: BigNumber = testSet[1];
-      const timePeriodInSeconds: BigNumber = testSet[2];
+      const timeInSeconds: BigNumber = testSet[2];
 
-      it(`takes notional of ${notional}, fixedRate of ${fixedRate} and timePeriodInSeconds of ${timePeriodInSeconds}`, async () => {
+      it(`takes notional of ${notional}, fixedRate of ${fixedRate} and timeInSeconds of ${timeInSeconds}`, async () => {
         const apyLower = toBn("0.01");
         const minDeltaLM = toBn("0.0125");
         let rateDelta: BigNumber = sub(fixedRate, apyLower);
         rateDelta = rateDelta > minDeltaLM ? rateDelta : minDeltaLM;
 
-        const accrualFactor = div(timePeriodInSeconds, toBn("31536000"));
+        const accrualFactor = div(timeInSeconds, toBn("31536000"));
 
         const margin = mul(mul(notional, rateDelta), accrualFactor);
 
@@ -176,7 +176,7 @@ describe("Margin Calculator", () => {
           await calculator.getVTMarginRequirement(
             notional,
             fixedRate,
-            timePeriodInSeconds,
+            timeInSeconds,
             true
           )
         ).to.eq(margin);

@@ -23,6 +23,8 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
 
     address public override insuranceFund;
 
+    address public override calculator;
+
     constructor(address _treasury, address _insuranceFund) {
 
         require(_treasury != address(0), "ZERO_ADDRESS");
@@ -47,6 +49,14 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
         treasury = _treasury;
 
         // emit treasury set
+    }
+
+    function setCalculator(address _calculator) external override {
+        require(_calculator != address(0), "ZERO_ADDRESS");
+
+        calculator = _calculator;
+
+        // emit calculator set
     }
 
     function setInsuranceFund(address _insuranceFund) external override {

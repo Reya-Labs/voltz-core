@@ -31,6 +31,8 @@ interface IAMMFactory {
     function owner() external view returns (address);
 
     function treasury() external view returns (address);
+
+    function calculator() external view returns (address);
     
     function insuranceFund() external view returns (address);
 
@@ -43,6 +45,8 @@ interface IAMMFactory {
     function feeAmountTickSpacing(uint24 fee) external view returns (int24);
 
     function setTreasury(address _treasury) external;
+
+    function setCalculator(address _calculator) external;
 
     function setInsuranceFund(address _insuranceFund) external;
 

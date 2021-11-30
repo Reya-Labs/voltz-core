@@ -41,15 +41,15 @@ library FixedAndVariableMath {
     
     // todo: scribble properties to test prb math
     /// #if_succeeds $result > 0;
-    /// #if_succeeds old(timePeriodInSeconds) > 0;
-    function accrualFact(uint256 timePeriodInSeconds)
+    /// #if_succeeds old(timeInSeconds) > 0;
+    function accrualFact(uint256 timeInSeconds)
         public
         pure
-        returns (uint256 timePeriodInYears) {
+        returns (uint256 timeInYears) {
         
-        timePeriodInYears = PRBMathUD60x18Typed.div(
+        timeInYears = PRBMathUD60x18Typed.div(
             PRBMath.UD60x18({
-                value: timePeriodInSeconds
+                value: timeInSeconds
             }),
             PRBMath.UD60x18({
                 value: SECONDS_IN_YEAR
@@ -59,7 +59,7 @@ library FixedAndVariableMath {
 
 
     /// #if_succeeds old(termStartTimestamp) < old(termEndTimestamp);
-    /// #if_succeeds old(atMaturity) == true ==> timePeriodInSeconds == termEndTimestamp - termStartTimestamp;
+    /// #if_succeeds old(atMaturity) == true ==> timeInSeconds == termEndTimestamp - termStartTimestamp;
     function fixedFactor(
         bool atMaturity,
         uint256 termStartTimestamp,
@@ -81,10 +81,10 @@ library FixedAndVariableMath {
         //     "B.T>=S"
         // );
 
-        uint256 timePeriodInSeconds;
+        uint256 timeInSeconds;
 
         if (atMaturity) {
-            timePeriodInSeconds = PRBMathUD60x18Typed.sub(
+            timeInSeconds = PRBMathUD60x18Typed.sub(
                 PRBMath.UD60x18({
                     value: termEndTimestamp
                 }),
@@ -93,14 +93,14 @@ library FixedAndVariableMath {
                 })
             ).value;
         } else {
-            timePeriodInSeconds = blockTimestampScaled() - termStartTimestamp;
+            timeInSeconds = blockTimestampScaled() - termStartTimestamp;
         }
 
-        uint256 timePeriodInYears = accrualFact(timePeriodInSeconds);
+        uint256 timeInYears = accrualFact(timeInSeconds);
 
         fixedFactorValue = PRBMathUD60x18Typed
             .mul(
-                PRBMath.UD60x18({value: timePeriodInYears}),
+                PRBMath.UD60x18({value: timeInYears}),
                 PRBMath.UD60x18({value: 10**16})
             )
             .value;

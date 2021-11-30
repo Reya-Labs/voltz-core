@@ -3,8 +3,8 @@
 
 // contract FixedAndVariableMathTest {
     
-//     function accrualFact(uint256 timePeriodInSeconds) external pure returns(uint256 timePeriodInYears) {
-//         return FixedAndVariableMath.accrualFact(timePeriodInSeconds);
+//     function accrualFact(uint256 timeInSeconds) external pure returns(uint256 timeInYears) {
+//         return FixedAndVariableMath.accrualFact(timeInSeconds);
 //     }
     
 // }

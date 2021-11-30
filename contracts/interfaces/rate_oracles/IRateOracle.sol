@@ -24,4 +24,12 @@ interface IRateOracle {
 
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256);
 
+    // function getApyFromTo(
+    //     address underlying,
+    //     uint256 from,
+    //     uint256 to
+    // )  view returns (uint256 apyFromTo);
+
+    function writeOrcleEntry(address underlying) external;
+
 }

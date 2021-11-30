@@ -20,11 +20,11 @@ function getTraderMarginRequirement(fixedTokenBalance: BigNumber,
         
         const isFT: boolean = variableTokenBalance < toBn("0")
 
-        const timePeriodInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp)
+        const timeInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp)
 
         const exp1: BigNumber = mul(fixedTokenBalance, fixedFactor(true, termStartTimestamp, termEndTimestamp))
 
-        const exp2: BigNumber = mul(variableTokenBalance, worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, isLM))
+        const exp2: BigNumber = mul(variableTokenBalance, worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, isLM))
 
         let margin: BigNumber = add(exp1, exp2)
 
@@ -38,21 +38,21 @@ function getTraderMarginRequirement(fixedTokenBalance: BigNumber,
 }
 
 
-function worstCaseVariableFactorAtMaturity(timePeriodInSeconds: BigNumber, isFT: boolean, isLM: boolean) : BigNumber {
-    const timePeriodInYears: BigNumber = accrualFact(timePeriodInSeconds)
+function worstCaseVariableFactorAtMaturity(timeInSeconds: BigNumber, isFT: boolean, isLM: boolean) : BigNumber {
+    const timeInYears: BigNumber = accrualFact(timeInSeconds)
     let variableFactor: BigNumber; 
 
     if (isFT) {
         if (isLM) {
-            variableFactor = mul(timePeriodInYears, toBn("0.09"))
+            variableFactor = mul(timeInYears, toBn("0.09"))
         } else {
-            variableFactor = mul(timePeriodInYears, mul(toBn("0.09"), toBn("2.0")))
+            variableFactor = mul(timeInYears, mul(toBn("0.09"), toBn("2.0")))
         }
     } else {
         if (isLM) {
-            variableFactor = mul(timePeriodInYears, toBn("0.01"))
+            variableFactor = mul(timeInYears, toBn("0.01"))
         } else {
-            variableFactor = mul(timePeriodInYears, mul(toBn("0.09"), toBn("0.5")))
+            variableFactor = mul(timeInYears, mul(toBn("0.09"), toBn("0.5")))
         }
     }
 
@@ -65,8 +65,8 @@ function getMinimumMarginRequirement(fixedTokenBalance: BigNumber,
     variableTokenBalance: BigNumber, termStartTimestamp: BigNumber, termEndTimestamp: BigNumber, 
     isLM: boolean) {
 
-    const timePeriodInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp)
-    const timePeriodInYears: BigNumber = accrualFact(timePeriodInSeconds)
+    const timeInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp)
+    const timeInYears: BigNumber = accrualFact(timeInSeconds)
     let minDelta: BigNumber;
     let margin: BigNumber;
     let notional: BigNumber;
@@ -80,11 +80,11 @@ function getMinimumMarginRequirement(fixedTokenBalance: BigNumber,
     if (variableTokenBalance < toBn("0")) {
         // isFT
         notional = mul(variableTokenBalance, toBn("-1"))
-        margin = mul(notional, mul(minDelta, timePeriodInYears))
+        margin = mul(notional, mul(minDelta, timeInYears))
     } else {
         notional = variableTokenBalance
         const zeroLowerBoundMargin: BigNumber = mul(fixedTokenBalance, mul(fixedFactor(true, termStartTimestamp, termEndTimestamp), toBn("-1")))
-        margin = mul(mul(variableTokenBalance, minDelta), timePeriodInYears)
+        margin = mul(mul(variableTokenBalance, minDelta), timeInYears)
 
         if (margin > zeroLowerBoundMargin) {
             margin = zeroLowerBoundMargin
@@ -218,12 +218,12 @@ describe("Margin Calculator", () => {
         
     //         const termStartTimestamp: BigNumber = toBn("1636996083")
     //         const termEndTimestamp: BigNumber = toBn("1646996083")
-    //         const timePeriodInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp)
+    //         const timeInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp)
     //         const isLM: boolean = true
     //         const isFT: boolean = true
 
-    //         const expected = worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, isLM)
-    //         expect(await calculatorTest.worstCaseVariableFactorAtMaturityTest(timePeriodInSeconds, isFT, isLM)).to.eq(expected)
+    //         const expected = worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, isLM)
+    //         expect(await calculatorTest.worstCaseVariableFactorAtMaturityTest(timeInSeconds, isFT, isLM)).to.eq(expected)
 
     //     })
     // })

@@ -41,6 +41,45 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         
     }
     
+    function getApyFromTo(
+        address underlying,
+        uint256 from,
+        uint256 to
+    ) internal view override(BaseRateOracle) returns (uint256 apyFromTo) {
+
+        // todo: require from to be larger than to
+
+        uint256 rateFromTo = getRateFromTo(underlying, from, to);
+        
+        rateFromTo =  rateFromTo / (10 ** (27 - 18)); // convert to wei todo: add annotations in the variable names of wei, ray, etc
+        uint256 timeInSeconds = PRBMathUD60x18Typed.sub(
+
+            PRBMath.UD60x18({
+                value: from
+            }),
+
+            PRBMath.UD60x18({
+                value: to
+            })
+
+        ).value;
+
+        uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
+
+        apyFromTo = PRBMathUD60x18Typed.mul(
+
+            PRBMath.UD60x18({
+                value: rateFromTo
+            }),
+
+            PRBMath.UD60x18({
+                value: timeInYears
+            })
+
+        ).value;
+
+    }
+    
     function getRateFromTo(
         address underlying,
         uint256 from,

@@ -234,28 +234,28 @@ export function expandTo18Decimals(n: number): BigNumber {
   return BigNumber.from(n).mul(BigNumber.from(10).pow(18));
 }
 
-export function accrualFact(timePeriodInSeconds: BigNumber) : BigNumber {
-  return div(timePeriodInSeconds, SECONDS_IN_YEAR);
+export function accrualFact(timeInSeconds: BigNumber) : BigNumber {
+  return div(timeInSeconds, SECONDS_IN_YEAR);
 }
 
 
 export function fixedFactor(atMaturity: boolean, termStartTimestamp: BigNumber, termEndTimestamp: BigNumber) : BigNumber {
 
-  let timePeriodInSeconds: BigNumber
+  let timeInSeconds: BigNumber
 
   const currentBlockTimestamp = toBn(BLOCK_TIMESTAMP.toString())
   
   if (atMaturity) {
-    timePeriodInSeconds = sub(termEndTimestamp, termStartTimestamp)
+    timeInSeconds = sub(termEndTimestamp, termStartTimestamp)
   } else {
-    // timePeriodInSeconds = sub(toBn(Math.floor(Date.now()/1000).toString()), termStartTimestamp)
-    timePeriodInSeconds = sub(currentBlockTimestamp, termStartTimestamp)
+    // timeInSeconds = sub(toBn(Math.floor(Date.now()/1000).toString()), termStartTimestamp)
+    timeInSeconds = sub(currentBlockTimestamp, termStartTimestamp)
   }
 
-  const timePeriodInYears: BigNumber = accrualFact(timePeriodInSeconds)
+  const timeInYears: BigNumber = accrualFact(timeInSeconds)
   
 
-  const fixedFactorValue: BigNumber = mul(timePeriodInYears, toBn("0.01"))
+  const fixedFactorValue: BigNumber = mul(timeInYears, toBn("0.01"))
 
   return fixedFactorValue
 

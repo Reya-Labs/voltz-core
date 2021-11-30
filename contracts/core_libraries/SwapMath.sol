@@ -13,7 +13,7 @@ library SwapMath {
     
     function computeFeeAmount(uint256 notional, uint256 timeToMaturityInSeconds, uint256 feePercentage) internal pure returns(uint256 feeAmount) {
         
-        uint256 timePeriodInYears = FixedAndVariableMath.accrualFact(timeToMaturityInSeconds);
+        uint256 timeInYears = FixedAndVariableMath.accrualFact(timeToMaturityInSeconds);
         
         feeAmount = PRBMathUD60x18Typed.mul(
 
@@ -28,7 +28,7 @@ library SwapMath {
                     }),
 
                     PRBMath.UD60x18({
-                        value: timePeriodInYears
+                        value: timeInYears
                     })
                 )
 

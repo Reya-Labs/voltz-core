@@ -83,6 +83,10 @@ contract AMM is IAMM, NoDelegateCall {
         address rateOracleAddress = IAMMFactory(factory).getRateOracleAddress(rateOracleId);
 
         rateOracle = IRateOracle(rateOracleAddress);
+
+        address calculatorAddress = IAMMFactory(factory).calculator();
+        
+        calculator = IMarginCalculator(calculatorAddress);
     }
 
     struct Slot0 {
@@ -665,6 +669,8 @@ contract AMM is IAMM, NoDelegateCall {
 
         position = _updatePosition(params);
 
+        rateOracle.writeOrcleEntry(underlyingToken);
+
         if (params.liquidityDelta != 0) {
             if (_slot0.tick < params.tickLower) {
                 // current tick is below the passed range; liquidity can only become in range by crossing from left to
@@ -851,6 +857,8 @@ contract AMM is IAMM, NoDelegateCall {
             feeGrowthGlobal: feeGrowthGlobal,
             protocolFee: 0
         });
+
+        rateOracle.writeOrcleEntry(underlyingToken);
 
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
         while (

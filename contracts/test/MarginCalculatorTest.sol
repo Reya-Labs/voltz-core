@@ -20,8 +20,8 @@ contract MarginCalculatorTest is MarginCalculator {
     }
 
 
-    function worstCaseVariableFactorAtMaturityTest(uint256 timePeriodInSeconds, bool isFT, bool isLM) public view returns(uint256 variableFactor) {
-        return worstCaseVariableFactorAtMaturity(timePeriodInSeconds, isFT, isLM);
+    function worstCaseVariableFactorAtMaturityTest(uint256 timeInSeconds, bool isFT, bool isLM) public view returns(uint256 variableFactor) {
+        return worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, isLM);
     }
 
 
