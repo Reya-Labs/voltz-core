@@ -30,6 +30,10 @@ interface IAMMFactory {
     /// @return The address of the factory owner
     function owner() external view returns (address);
 
+    function treasury() external view returns (address);
+    
+    function insuranceFund() external view returns (address);
+
     function getRateOracleAddress(bytes32 rateOracleId) external view returns (address);
     
     /// @notice Returns the tick spacing for a given fee amount, if enabled, or 0 if not enabled
@@ -37,6 +41,10 @@ interface IAMMFactory {
     /// @param fee The enabled fee, denominated in hundredths of a bip. Returns 0 in case of unenabled fee
     /// @return The tick spacing
     function feeAmountTickSpacing(uint24 fee) external view returns (int24);
+
+    function setTreasury(address _treasury) external;
+
+    function setInsuranceFund(address _insuranceFund) external;
 
     /// @notice Returns the amm address for a given pair of tokens and a fee, or address 0 if it does not exist
     /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order

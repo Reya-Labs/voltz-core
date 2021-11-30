@@ -19,7 +19,17 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
     mapping(uint24 => int24) public override feeAmountTickSpacing;
     mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint24 => address))))) public getAMMMAp;
 
-    constructor() {
+    address public override treasury;
+
+    address public override insuranceFund;
+
+    constructor(address _treasury, address _insuranceFund) {
+
+        require(_treasury != address(0), "ZERO_ADDRESS");
+        require(_insuranceFund != address(0), "ZERO_ADDRESS");
+        treasury = _treasury;
+        insuranceFund = _insuranceFund;
+
         owner = msg.sender;
         emit OwnerChanged(address(0), msg.sender);
 
@@ -31,6 +41,21 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
         emit FeeAmountEnabled(10000, 200);
     }
 
+    function setTreasury(address _treasury) external override {
+        require(_treasury != address(0), "ZERO_ADDRESS");
+
+        treasury = _treasury;
+
+        // emit treasury set
+    }
+
+    function setInsuranceFund(address _insuranceFund) external override {
+        require(_insuranceFund != address(0), "ZERO_ADDRESS");
+
+        insuranceFund = _insuranceFund;
+
+        // emit insurance fund set
+    }
 
     function createAMM(
         address underlyingToken,

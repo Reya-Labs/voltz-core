@@ -19,6 +19,8 @@ contract MarginCalculator is IMarginCalculator{
 
     uint256 public override apyUpperMultiplier = 2 * 10**18; // 2.0
     uint256 public override apyLowerMultiplier = 5 * 10**17; // 0.5
+    
+    
 
     uint256 public override minDeltaLM = 125 * 10**14; // 0.0125
     uint256 public override minDeltaIM = 500 * 10**14; // 0.05
@@ -27,6 +29,69 @@ contract MarginCalculator is IMarginCalculator{
 
     uint256 public override maxLeverage = 10 * 10**18; // 10x
 
+
+    PRBMath.SD59x18 public sigmaSquared; // todo: turn into a mapping based on the rateOracleId
+    PRBMath.SD59x18 public  alpha;
+    PRBMath.SD59x18 public beta;
+
+    mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInSeconds; // rateOralceId --> timeInSeconds --> timeFactor
+
+    PRBMath.SD59x18 public xi_upper; // should be negative
+    PRBMath.SD59x18 public xi_lower; 
+
+    // insted of storing alpha, store 4*alpha
+    // insted of storing beta, store 4*bet
+    function compute_apy_bound(bytes32 rateOracleId, uint256 timeInSeconds, int256 apySinceInception, bool isUpper) internal view returns (uint256 apyBound) {
+
+        // todo: isLm check
+
+        PRBMath.SD59x18 memory timeFactor =  timeFactorTimeInSeconds[rateOracleId][timeInSeconds];
+        PRBMath.SD59x18 memory oneMinusTimeFactor = PRBMathSD59x18Typed.sub(
+            PRBMath.SD59x18({
+                value: 1
+            }),
+            timeFactor
+        );
+
+        PRBMath.SD59x18 memory k = PRBMathSD59x18Typed.div(alpha, sigmaSquared);
+
+        PRBMath.SD59x18 memory zeta = PRBMathSD59x18Typed.div(
+            PRBMathSD59x18Typed.mul(sigmaSquared,oneMinusTimeFactor),
+            beta
+        );
+
+        PRBMath.SD59x18 memory lambda_num = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(beta, timeFactor), PRBMath.SD59x18({value:apySinceInception}));
+        PRBMath.SD59x18 memory lambda_den = PRBMathSD59x18Typed.mul(beta, timeFactor);
+        PRBMath.SD59x18 memory lambda = PRBMathSD59x18Typed.div(lambda_num, lambda_den);
+
+
+        PRBMath.SD59x18 memory criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2}), lambda), k), PRBMath.SD59x18({value: 2}));
+
+        PRBMath.SD59x18 memory criticalValue;
+
+        if (isUpper) {
+            criticalValue = PRBMathSD59x18Typed.sub(
+                xi_upper,
+                PRBMathSD59x18Typed.sqrt(criticalValueMultiplier)    
+            );            
+        } else {
+            criticalValue = PRBMathSD59x18Typed.sub(
+                xi_lower,
+                PRBMathSD59x18Typed.sqrt(criticalValueMultiplier)    
+            );            
+        }
+
+        
+        int256 apyBoundInt = PRBMathSD59x18Typed.mul(zeta, PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.add(k, lambda), criticalValue)).value;
+
+        if (apyBoundInt < 0) {
+            apyBound = 0;
+        } else {
+            apyBound = uint256(apyBoundInt);
+        }
+
+    }
+    
     function worstCaseVariableFactorAtMaturity(uint256 timePeriodInSeconds, bool isFT, bool isLM) internal view returns(uint256 variableFactor) {
         
         uint256 timePeriodInYears = FixedAndVariableMath.accrualFact(timePeriodInSeconds);

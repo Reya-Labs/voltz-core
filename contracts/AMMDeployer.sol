@@ -52,7 +52,7 @@ contract AMMDeployer is IAMMDeployer {
                 salt: keccak256(
                     abi.encode(
                         rateOracleId,
-                        underlyingToken,
+                        underlyingToken, // todo: redundunt since the rateOracleId incorporates the underlying token?
                         termStartTimestamp,
                         termEndTimestamp,
                         fee

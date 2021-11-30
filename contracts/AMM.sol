@@ -120,7 +120,11 @@ contract AMM is IAMM, NoDelegateCall {
         _;
         slot0.unlocked = true;
     }
-
+    
+    modifier onlyTreasury() {
+        require(msg.sender == IAMMFactory(factory).treasury());
+        _;
+    }
     
     modifier onlyFactoryOwner() {
         require(msg.sender == IAMMFactory(factory).owner());
@@ -796,9 +800,10 @@ contract AMM is IAMM, NoDelegateCall {
 
             ).value;
 
-            // insurance module, todo: acount for a potential undercollateralised scenario
+            
+            // todo: account for the scenario where the insurance fund is depleted?
             // v2 --> automatic circuit breaks that pause the amm in exceptional circumstances
-            IERC20Minimal(underlyingToken).transferFrom(factory, address(this), uint256(marginDelta));
+            IERC20Minimal(underlyingToken).transferFrom(IAMMFactory(factory).insuranceFund(), address(this), uint256(marginDelta));
 
             trader.updateMargin(-trader.margin);
         }
@@ -1171,7 +1176,7 @@ contract AMM is IAMM, NoDelegateCall {
     function collectProtocol(
         address recipient,
         uint256 amountRequested
-    ) external lock onlyFactoryOwner returns (uint256 amount){
+    ) external lock onlyTreasury returns (uint256 amount){
 
         amount = amountRequested > protocolFees ? protocolFees : amountRequested;
 
