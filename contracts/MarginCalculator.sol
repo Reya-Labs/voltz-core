@@ -14,13 +14,12 @@ import "./core_libraries/Tick.sol";
 contract MarginCalculator is IMarginCalculator{
 
     // todo: replace the apyUpper and apyLower with the chainlink oracle feed that is custom for each underlying pool 
-    uint256 public override apyUpper = 9 * 10**16; // 0.09, 9%
-    uint256 public override apyLower = 1 * 10**16; // 0.01, 1%;
+    // uint256 public override apyUpper = 9 * 10**16; // 0.09, 9%
+    // uint256 public override apyLower = 1 * 10**16; // 0.01, 1%;
 
+    // todo: introduce a mapping by rateOracleId
     uint256 public override apyUpperMultiplier = 2 * 10**18; // 2.0
     uint256 public override apyLowerMultiplier = 5 * 10**17; // 0.5
-    
-    
 
     uint256 public override minDeltaLM = 125 * 10**14; // 0.0125
     uint256 public override minDeltaIM = 500 * 10**14; // 0.05
@@ -41,7 +40,7 @@ contract MarginCalculator is IMarginCalculator{
 
     // insted of storing alpha, store 4*alpha
     // insted of storing beta, store 4*bet
-    function computeApyBound(bytes32 rateOracleId, uint256 timeInSeconds, int256 apySinceInception, bool isUpper) internal view returns (uint256 apyBound) {
+    function computeApyBound(bytes32 rateOracleId, uint256 timeInSeconds, uint256 twapApy, bool isUpper) internal view returns (uint256 apyBound) {
 
         // todo: isLm check
 
@@ -59,8 +58,9 @@ contract MarginCalculator is IMarginCalculator{
             PRBMathSD59x18Typed.mul(sigmaSquared,oneMinusTimeFactor),
             beta
         );
-
-        PRBMath.SD59x18 memory lambda_num = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(beta, timeFactor), PRBMath.SD59x18({value:apySinceInception}));
+        
+        // todo: fix
+        PRBMath.SD59x18 memory lambda_num = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(beta, timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
         PRBMath.SD59x18 memory lambda_den = PRBMathSD59x18Typed.mul(beta, timeFactor);
         PRBMath.SD59x18 memory lambda = PRBMathSD59x18Typed.div(lambda_num, lambda_den);
 
@@ -92,7 +92,7 @@ contract MarginCalculator is IMarginCalculator{
 
     }
     
-    function worstCaseVariableFactorAtMaturity(uint256 timeInSeconds, bool isFT, bool isLM) internal view returns(uint256 variableFactor) {
+    function worstCaseVariableFactorAtMaturity(uint256 timeInSeconds, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy ) internal view returns(uint256 variableFactor) {
         
         uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
 
@@ -102,7 +102,7 @@ contract MarginCalculator is IMarginCalculator{
                 variableFactor = PRBMathUD60x18Typed.mul(
 
                     PRBMath.UD60x18({
-                        value: apyUpper
+                        value: computeApyBound(rateOracleId, timeInSeconds, twapApy, true)
                     }),
 
                     PRBMath.UD60x18({
@@ -115,7 +115,7 @@ contract MarginCalculator is IMarginCalculator{
                     PRBMathUD60x18Typed.mul(
 
                         PRBMath.UD60x18({
-                            value: apyUpper
+                            value: computeApyBound(rateOracleId, timeInSeconds, twapApy, true)
                         }),
 
                         PRBMath.UD60x18({
@@ -135,7 +135,7 @@ contract MarginCalculator is IMarginCalculator{
                 variableFactor = PRBMathUD60x18Typed.mul(
 
                     PRBMath.UD60x18({
-                        value: apyLower
+                        value: computeApyBound(rateOracleId, timeInSeconds, twapApy, false)
                     }),
 
                     PRBMath.UD60x18({
@@ -148,7 +148,7 @@ contract MarginCalculator is IMarginCalculator{
                     PRBMathUD60x18Typed.mul(
 
                         PRBMath.UD60x18({
-                            value: apyLower
+                            value: computeApyBound(rateOracleId, timeInSeconds, twapApy, false)
                         }),
 
                         PRBMath.UD60x18({
@@ -270,7 +270,6 @@ contract MarginCalculator is IMarginCalculator{
     }
     
     
-
     function getTraderMarginRequirement(
         TraderMarginRequirementParams memory params
     ) public view override returns(uint256 margin) {
@@ -296,7 +295,7 @@ contract MarginCalculator is IMarginCalculator{
 
         console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
         console.log("timeInSeconds is", timeInSeconds);
-        console.log("Worst Case Var Factor is", worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM));
+        console.log("Worst Case Var Factor is", worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM, params.rateOracleId, params.twapApy));
         // console.log(int256(worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM)));
         // console.log("Variable Token Balance is", params.variableTokenBalance);
         // console.log("Fixed Token Balance is", params.fixedTokenBalance);
@@ -319,7 +318,7 @@ contract MarginCalculator is IMarginCalculator{
             }),
 
             PRBMath.SD59x18({
-                value: int256(worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM))
+                value: int256(worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM, params.rateOracleId, params.twapApy))
             })
         );
 
@@ -412,7 +411,9 @@ contract MarginCalculator is IMarginCalculator{
                         variableTokenBalance: vars.expectedVariableTokenBalanceAfterUp,
                         termStartTimestamp:params.termStartTimestamp,
                         termEndTimestamp:params.termEndTimestamp,
-                        isLM: params.isLM
+                        isLM: params.isLM,
+                        rateOracleId: params.rateOracleId,
+                        twapApy: params.twapApy
                     })
                 );
 
@@ -461,7 +462,9 @@ contract MarginCalculator is IMarginCalculator{
                         variableTokenBalance: vars.expectedVariableTokenBalanceAfterDown,
                         termStartTimestamp:params.termStartTimestamp,
                         termEndTimestamp:params.termEndTimestamp,
-                        isLM: params.isLM
+                        isLM: params.isLM,
+                        rateOracleId: params.rateOracleId,
+                        twapApy: params.twapApy
                     })
                 );
 
@@ -539,7 +542,9 @@ contract MarginCalculator is IMarginCalculator{
                         variableTokenBalance: params.variableTokenBalance,
                         termStartTimestamp:params.termStartTimestamp,
                         termEndTimestamp:params.termEndTimestamp,
-                        isLM: params.isLM
+                        isLM: params.isLM,
+                        rateOracleId: params.rateOracleId,
+                        twapApy: params.twapApy
                     })
                 );
 
@@ -554,7 +559,9 @@ contract MarginCalculator is IMarginCalculator{
                         variableTokenBalance: vars.expectedVariableTokenBalance,
                         termStartTimestamp:params.termStartTimestamp,
                         termEndTimestamp:params.termEndTimestamp,
-                        isLM: params.isLM
+                        isLM: params.isLM,
+                        rateOracleId: params.rateOracleId,
+                        twapApy: params.twapApy
                     })
                 );
 
@@ -578,7 +585,9 @@ contract MarginCalculator is IMarginCalculator{
                         variableTokenBalance: params.variableTokenBalance,
                         termStartTimestamp:params.termStartTimestamp,
                         termEndTimestamp:params.termEndTimestamp,
-                        isLM: params.isLM
+                        isLM: params.isLM,
+                        rateOracleId: params.rateOracleId,
+                        twapApy: params.twapApy
                     })
                 );
 
@@ -594,7 +603,9 @@ contract MarginCalculator is IMarginCalculator{
                         variableTokenBalance: vars.expectedVariableTokenBalance,
                         termStartTimestamp:params.termStartTimestamp,
                         termEndTimestamp:params.termEndTimestamp,
-                        isLM: params.isLM
+                        isLM: params.isLM,
+                        rateOracleId: params.rateOracleId,
+                        twapApy: params.twapApy
                     })
                 );
                 

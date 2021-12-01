@@ -1,6 +1,5 @@
 pragma solidity ^0.8.0;
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
-
+import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 
 
 library Oracle {
@@ -10,7 +9,7 @@ library Oracle {
         uint256 blockTimestamp; // todo: uint32 so that it fits into a single slot
         // the logApy accumulator, i.e. logApy * time elapsed since the rate oracle was first initialized 
         // todo: geometric vs arithmetic twap gas + utility considerations
-        int256 logApyCumulative;
+        uint256 logApyCumulative;
         // whether or not the observation is initialized
         bool initialized;
     }
@@ -88,7 +87,6 @@ library Oracle {
 
         self[indexUpdated] = transform(last, blockTimestamp, logApy);
 
-
     }
 
     
@@ -108,27 +106,27 @@ library Oracle {
         uint256 logApy
     ) private pure returns (Observation memory) {
         
-        PRBMath.SD59x18 memory delta = PRBMathSD59x18Typed.sub(
-            PRBMath.SD59x18({
-                value: int256(blockTimestamp)
+        PRBMath.UD60x18 memory delta = PRBMathUD60x18Typed.sub(
+            PRBMath.UD60x18({
+                value: uint256(blockTimestamp)
             }),
 
-            PRBMath.SD59x18({
-                value: int256(last.blockTimestamp)
+            PRBMath.UD60x18({
+                value: uint256(last.blockTimestamp)
             }) 
         );
 
-        int256 logApyCumulativeNew = PRBMathSD59x18Typed.add(
+        uint256 logApyCumulativeNew = PRBMathUD60x18Typed.add(
             
-            PRBMathSD59x18Typed.mul(
-                PRBMath.SD59x18({
-                    value:  int256(logApy)
+            PRBMathUD60x18Typed.mul(
+                PRBMath.UD60x18({
+                    value:  uint256(logApy)
                 }),
 
                 delta
             ),
 
-            PRBMath.SD59x18({
+            PRBMath.UD60x18({
                 value: last.logApyCumulative
             }) 
         ).value;
@@ -142,6 +140,194 @@ library Oracle {
             });
 
     }
+    
+    /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    /// @dev Assumes there is at least 1 initialized observation.
+    /// Used by observeSingle() to compute the counterfactual accumulator values as of a given block timestamp.
+    /// @param self The stored oracle array
+    /// @param target The timestamp at which the reserved observation should be for
+    /// @param logApy logApy
+    /// @param index The index of the observation that was most recently written to the observations array
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
+    /// @return atOrAfter The observation which occurred at, or after, the given timestamp
+    function getSurroundingObservarions(
+        Observation[65535] storage self,
+        uint256 target,
+        uint256 logApy,
+        uint16 index,
+        uint16 cardinality
+    ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
+
+        // optimistically set before to the newest observation
+        beforeOrAt = self[index];
+
+        if (beforeOrAt.blockTimestamp <= target) {
+            if (beforeOrAt.blockTimestamp == target) {
+                // if the newest observation eqauls target, we are in the same block, so we can ignore atOrAfter
+                return (beforeOrAt, atOrAfter);
+            } else {
+                // otherwise, we need to transform
+                return (beforeOrAt, transform(beforeOrAt, target, logApy));
+            }
+        }
+
+        // set to the oldest observation
+        beforeOrAt = self[(index + 1) % cardinality];
+        if (!beforeOrAt.initialized) beforeOrAt = self[0];
+
+        require(beforeOrAt.blockTimestamp <= target, "OLD");
+
+        // if we've reached this point, we have to binary search
+        return binarySearch(self, target, index, cardinality);
+
+    }
+
+
+    function binarySearch(
+        Observation[65535] storage self,
+        uint256 target,
+        uint16 index,
+        uint16 cardinality
+    ) private view returns (Observation memory beforeOrAt, Observation memory atOrAfter) {
+        uint256 l = (index + 1) % cardinality; // oldest observation
+        uint256 r = l + cardinality - 1; // newest observation
+        uint256 i;
+        while (true) {
+            i = (l + r) / 2;
+
+            beforeOrAt = self[i % cardinality];
+
+            // we've landed on an uninitialized tick, keep searching higher (more recently)
+            if (!beforeOrAt.initialized) {
+                l = i + 1;
+                continue;
+            }
+
+            atOrAfter = self[(i + 1) % cardinality];
+
+            bool targetAtOrAfter = beforeOrAt.blockTimestamp <= target; //lte(time, beforeOrAt.blockTimestamp, target);
+        
+            // check if we've found the answer!
+            if (targetAtOrAfter && target <= atOrAfter.blockTimestamp) break;
+
+            if (!targetAtOrAfter) r = i - 1;
+            else l = i + 1;
+        }
+    }
+
+
+    /// @dev Reverts if an observation at or before the desired observation timestamp does not exist.
+    /// 0 may be passed as `secondsAgo' to return the current cumulative values.
+    /// If called with a timestamp falling between two observations, returns the counterfactual accumulator values
+    /// at exactly the timestamp between the two observations.
+    /// @param self The stored oracle array
+    /// @param time The current block timestamp
+    /// @param secondsAgo The amount of time to look back, in seconds, at which point to return an observation
+    /// @param index The index of the observation that was most recently written to the observations array
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @return logApyCumulative The logApy * time elapsed since the pool was first initialized, as of `secondsAgo`
+    function observeSingle(
+        Observation[65535] storage self,
+        uint256 time,
+        uint256 secondsAgo,
+        uint256 logApy,
+        uint16 index,
+        uint16 cardinality
+    ) internal view returns (uint256 logApyCumulative) {
+
+        if (secondsAgo == 0) {
+            Observation memory last = self[index];
+            if (last.blockTimestamp != time) last = transform(last, time, logApy);
+        }
+
+        uint256 target = PRBMathUD60x18Typed.sub(
+
+            PRBMath.UD60x18({
+                value: time
+            }),
+
+            PRBMath.UD60x18({
+                value: secondsAgo
+            })
+        ).value;
+
+        (Observation memory beforeOrAt, Observation memory atOrAfter) = getSurroundingObservarions(self, target, logApy, index, cardinality);
+
+        if (target == beforeOrAt.blockTimestamp) {
+            // we are at the left boundary
+            return (beforeOrAt.logApyCumulative);
+        } else if (target == atOrAfter.blockTimestamp) {
+            // we are at the right boundary
+            return (atOrAfter.logApyCumulative);
+        } else {
+            // we are in the middle
+            uint256 observationTimeDelta = PRBMathUD60x18Typed.sub(
+
+                PRBMath.UD60x18({
+                    value: atOrAfter.blockTimestamp
+                }),
+
+                PRBMath.UD60x18({
+                    value: beforeOrAt.blockTimestamp
+                })
+            ).value;
+
+            uint256 targetDelta = PRBMathUD60x18Typed.sub(
+
+                PRBMath.UD60x18({
+                    value: target
+                }),
+
+                PRBMath.UD60x18({
+                    value: beforeOrAt.blockTimestamp
+                })
+            ).value;
+
+            PRBMath.UD60x18 memory cumulativeLogApyDifferenceScaled = PRBMathUD60x18Typed.div(
+
+                PRBMathUD60x18Typed.sub(
+
+                    PRBMath.UD60x18({
+                        value: atOrAfter.logApyCumulative
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: beforeOrAt.logApyCumulative
+                    })
+
+                ),
+
+                PRBMath.UD60x18({
+                    value: uint256(observationTimeDelta)
+                })
+
+            );
+
+            logApyCumulative = PRBMathUD60x18Typed.add(
+
+                PRBMathUD60x18Typed.mul(
+
+                    cumulativeLogApyDifferenceScaled,
+
+                    PRBMath.UD60x18({
+                        value: uint256(targetDelta)
+                    })
+
+                ),
+
+                PRBMath.UD60x18({
+                    value: beforeOrAt.logApyCumulative
+                })
+
+            ).value;
+
+        }
+
+    }
+
+
+    // todo: function observe
 
 
 }

@@ -11,6 +11,8 @@ import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 abstract contract BaseRateOracle is IRateOracle {
 
     bytes32 public immutable override rateOracleId;
+    uint256 public override secondsAgo;
+
     using Oracle for Oracle.Observation[65535];
     constructor(bytes32 _rateOracleId) {
         rateOracleId = _rateOracleId;
@@ -57,11 +59,67 @@ abstract contract BaseRateOracle is IRateOracle {
         uint256 to
     ) internal view virtual returns (uint256 apyFromTo);
     
+
+    
+    function getTwapApy(address underlying) external view override returns (uint256 twapApy) {
+
+        // https://uniswap.org/whitepaper-v3.pdf
+
+        // need logApy since the last observation
+        Oracle.Observation memory last = observations[oracleVars.observationIndex];
+        
+        uint256 from = last.blockTimestamp;
+        uint256 to = FixedAndVariableMath.blockTimestampScaled();
+
+        uint256 apyFromTo = getApyFromTo(underlying, from, to);
+
+        uint256 logApy = PRBMathUD60x18Typed.log10(
+            PRBMath.UD60x18({
+                value: apyFromTo
+            })
+        ).value;
+
+        uint256 aT1 = observations.observeSingle(to, secondsAgo, logApy, oracleVars.observationIndex, oracleVars.observationCardinality);
+        uint256 aT2 = observations.observeSingle(to, 0, logApy, oracleVars.observationIndex, oracleVars.observationCardinality); 
+        
+        PRBMath.UD60x18 memory logTwapApy = PRBMathUD60x18Typed.div(
+
+            PRBMathUD60x18Typed.sub(
+
+                PRBMath.UD60x18({
+                    value: aT2
+                }),
+
+                PRBMath.UD60x18({
+                    value: aT1
+                })
+
+            ),
+
+            PRBMathUD60x18Typed.sub(
+
+                PRBMath.UD60x18({
+                    value: to
+                }),
+
+                PRBMath.UD60x18({
+                    value: from
+                })
+
+            )
+
+        );
+
+        twapApy = PRBMathUD60x18Typed.pow(logTwapApy, PRBMath.UD60x18({value: 10})).value;
+
+    }
+
     
     function writeOrcleEntry(address underlying) external override {
 
         Oracle.Observation memory last = observations[oracleVars.observationIndex];
         
+        // todo: duplicate code
         uint256 from = last.blockTimestamp;
         uint256 to = FixedAndVariableMath.blockTimestampScaled();
         

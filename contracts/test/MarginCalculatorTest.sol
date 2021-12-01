@@ -20,8 +20,8 @@ contract MarginCalculatorTest is MarginCalculator {
     }
 
 
-    function worstCaseVariableFactorAtMaturityTest(uint256 timeInSeconds, bool isFT, bool isLM) public view returns(uint256 variableFactor) {
-        return worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, isLM);
+    function worstCaseVariableFactorAtMaturityTest(uint256 timeInSeconds, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy) public view returns(uint256 variableFactor) {
+        return worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, isLM, rateOracleId, twapApy);
     }
 
 

@@ -174,6 +174,9 @@ contract AMM is IAMM, NoDelegateCall {
             IMarginCalculator.PositionMarginRequirementParams memory marginReqParams;
 
             (marginReqParams.owner, marginReqParams.tickLower, marginReqParams.tickUpper, marginReqParams.isLM) = (params.owner, params.tickLower, params.tickUpper, false);
+            
+            marginReqParams.rateOracleId = rateOracleId;
+            marginReqParams.twapApy = rateOracle.getTwapApy(underlyingToken);
 
             int256 positionMarginRequirement =  int256(calculator.getPositionMarginRequirement(marginReqParams));             
 
@@ -215,14 +218,16 @@ contract AMM is IAMM, NoDelegateCall {
             require(updatedMargin > 0, "Cannot withdraw more margin than you have");
 
         } else {
-
+    
             int256 traderMarginRequirement = int256(calculator.getTraderMarginRequirement(
                 IMarginCalculator.TraderMarginRequirementParams({
                         fixedTokenBalance: trader.fixedTokenBalance,
                         variableTokenBalance: trader.variableTokenBalance,
                         termStartTimestamp:termStartTimestamp,
                         termEndTimestamp:termEndTimestamp,
-                        isLM: false
+                        isLM: false,
+                        rateOracleId: rateOracleId,
+                        twapApy: rateOracle.getTwapApy(underlyingToken)
                     })
             ));                
 
@@ -327,7 +332,9 @@ contract AMM is IAMM, NoDelegateCall {
                 liquidity: position.liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp)
+                variableFactor: rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp),
+                rateOracleId: rateOracleId,
+                twapApy: rateOracle.getTwapApy(underlyingToken)
             }),
             position.margin
         );
@@ -379,7 +386,9 @@ contract AMM is IAMM, NoDelegateCall {
                 variableTokenBalance: trader.variableTokenBalance,
                 termStartTimestamp: termStartTimestamp,
                 termEndTimestamp: termEndTimestamp,
-                isLM: true
+                isLM: true,
+                rateOracleId: rateOracleId,
+                twapApy: rateOracle.getTwapApy(underlyingToken)
             }),
             trader.margin
         );
@@ -739,6 +748,9 @@ contract AMM is IAMM, NoDelegateCall {
 
         (marginReqParams.owner, marginReqParams.tickLower, marginReqParams.tickUpper, marginReqParams.isLM) = (recipient, tickLower, tickUpper, false);
 
+        marginReqParams.rateOracleId = rateOracleId;
+        marginReqParams.twapApy = rateOracle.getTwapApy(underlyingToken);
+
         int256 margin = int256(calculator.getPositionMarginRequirement(marginReqParams));
 
         IERC20Minimal(underlyingToken).transferFrom(recipient, address(this), uint256(margin));
@@ -766,7 +778,9 @@ contract AMM is IAMM, NoDelegateCall {
                 variableTokenBalance: trader.variableTokenBalance,
                 termStartTimestamp:termStartTimestamp,
                 termEndTimestamp:termEndTimestamp,
-                isLM: false
+                isLM: false,
+                rateOracleId: rateOracleId,
+                twapApy: rateOracle.getTwapApy(underlyingToken)
             })
         ));
 
@@ -1160,7 +1174,7 @@ contract AMM is IAMM, NoDelegateCall {
         }
 
         if (params.isTrader) {
-                updateTrader(params.recipient, _fixedTokenBalance, _variableTokenBalance, params.proposedMargin);
+            updateTrader(params.recipient, _fixedTokenBalance, _variableTokenBalance, params.proposedMargin);
         }
         
         emit Swap(

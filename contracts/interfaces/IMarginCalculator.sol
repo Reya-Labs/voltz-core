@@ -17,6 +17,9 @@ interface IMarginCalculator {
         uint256 termStartTimestamp;
         uint256 termEndTimestamp;
         bool isLM;
+
+        bytes32 rateOracleId;
+        uint256 twapApy;
     }
 
     struct PositionMarginRequirementParams {
@@ -31,11 +34,14 @@ interface IMarginCalculator {
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
         uint256 variableFactor;
+
+        bytes32 rateOracleId;
+        uint256 twapApy;
     }
 
-    function apyUpper() external view returns (uint256);
+    // function apyUpper() external view returns (uint256);
 
-    function apyLower() external view returns (uint256);
+    // function apyLower() external view returns (uint256);
 
     function apyUpperMultiplier() external view returns (uint256);
 
