@@ -112,19 +112,20 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
         owner = _owner;
     }
 
+    // todo: don't need this since can directly set the fee proportion via the multisig
+    // function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
+    //     require(msg.sender == owner);
+    //     require(fee < 1000000); // todo: where does this amount come from?
+    //     // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
+    //     // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
+    //     // 16384 ticks represents a >5x price change with ticks of 1 bips
+    //     require(tickSpacing > 0 && tickSpacing < 16384);
+    //     require(feeAmountTickSpacing[fee] == 0);
 
-    function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
-        require(msg.sender == owner);
-        require(fee < 1000000); // todo: where does this amount come from?
-        // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
-        // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
-        // 16384 ticks represents a >5x price change with ticks of 1 bips
-        require(tickSpacing > 0 && tickSpacing < 16384);
-        require(feeAmountTickSpacing[fee] == 0);
+    //     feeAmountTickSpacing[fee] = tickSpacing;
+    //     emit FeeAmountEnabled(fee, tickSpacing);
+    // }
 
-        feeAmountTickSpacing[fee] = tickSpacing;
-        emit FeeAmountEnabled(fee, tickSpacing);
-    }
 
     // todo initialised, onlyGovernance
     function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress) external override {

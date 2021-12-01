@@ -22,8 +22,11 @@ import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
+import "@openzeppelin/contracts/security/Pausable.sol";
 
-contract AMM is IAMM, NoDelegateCall {
+// todo: factoryOwner is the treasury, don't need a separate treasury address
+
+contract AMM is IAMM, NoDelegateCall, Pausable {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
     using SafeCast for uint256;
@@ -63,7 +66,7 @@ contract AMM is IAMM, NoDelegateCall {
     
     IRateOracle public override rateOracle;
 
-    constructor() {
+    constructor() Pausable() {
 
         int24 _tickSpacing;
         (
@@ -154,7 +157,7 @@ contract AMM is IAMM, NoDelegateCall {
     }
 
     
-    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) public {
+    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external {
 
         require(params.owner == msg.sender, "only the position owner can update the position margin");
 
@@ -194,7 +197,7 @@ contract AMM is IAMM, NoDelegateCall {
 
     }
 
-    function updateTraderMargin(address recipient, int256 marginDelta) public {
+    function updateTraderMargin(address recipient, int256 marginDelta) external {
 
         require(marginDelta!=0, "delta cannot be zero");
         require(recipient == msg.sender, "only the trader can update the margin");
@@ -245,7 +248,7 @@ contract AMM is IAMM, NoDelegateCall {
 
     }
     
-    function settlePosition(ModifyPositionParams memory params) public override {
+    function settlePosition(ModifyPositionParams memory params) external {
 
         require(FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp, "A Position cannot settle before maturity");
         checkTicks(params.tickLower, params.tickUpper);
@@ -296,7 +299,7 @@ contract AMM is IAMM, NoDelegateCall {
         trader.updateMargin(settlementCashflow);
     }
     
-    function liquidatePosition(ModifyPositionParams memory params) external {
+    function liquidatePosition(ModifyPositionParams memory params) whenNotPaused external {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
@@ -376,7 +379,7 @@ contract AMM is IAMM, NoDelegateCall {
      * @notice liquidate a liquidatable trader
      * @param params liquidation action arguments struct
     */
-    function liquidateTrader(LiquidateTraderParams memory params) external {
+    function liquidateTrader(LiquidateTraderParams memory params) whenNotPaused external {
         
         Trader.Info storage trader = traders.get(params.traderAddress);
             
@@ -432,7 +435,7 @@ contract AMM is IAMM, NoDelegateCall {
     function unwindTrader(
         address traderAddress,
         int256 notional // absolute value of the variableToken balance
-    ) public {
+    ) internal {
 
         // Trader.Info storage trader = traders.get(traderAddress);
 
@@ -477,7 +480,7 @@ contract AMM is IAMM, NoDelegateCall {
         address owner,
         int24 tickLower,
         int24 tickUpper
-    ) public {
+    ) internal {
         
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
 
@@ -728,7 +731,7 @@ contract AMM is IAMM, NoDelegateCall {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external override lock {
+    ) external override lock whenNotPaused {
         require(amount > 0);
 
         (, int256 amount0Int, int256 amount1Int) = _modifyPosition(
@@ -830,11 +833,10 @@ contract AMM is IAMM, NoDelegateCall {
 
     }
     
-
     // todo: more swap params in the struct
     function swap(
         SwapParams memory params
-    ) public override noDelegateCall returns (int256 _fixedTokenBalance, int256 _variableTokenBalance){
+    ) public override noDelegateCall whenNotPaused returns (int256 _fixedTokenBalance, int256 _variableTokenBalance){
         require(params.amountSpecified != 0, "AS");
 
         Slot0 memory slot0Start = slot0;
@@ -1188,8 +1190,7 @@ contract AMM is IAMM, NoDelegateCall {
         slot0.unlocked = true;
     }
 
-    function setFeeProtocol(uint256 feeProtocol) external lock onlyFactoryOwner  {
-        // todo: add to interface and override
+    function setFeeProtocol(uint256 feeProtocol) external lock override onlyFactoryOwner  {
         // todo: introduce checks
         slot0.feeProtocol = feeProtocol;
         // todo: emit set fee protocol
@@ -1198,7 +1199,7 @@ contract AMM is IAMM, NoDelegateCall {
     function collectProtocol(
         address recipient,
         uint256 amountRequested
-    ) external lock onlyTreasury returns (uint256 amount){
+    ) external lock override onlyFactoryOwner returns (uint256 amount){
 
         amount = amountRequested > protocolFees ? protocolFees : amountRequested;
 
