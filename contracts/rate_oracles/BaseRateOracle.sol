@@ -13,6 +13,14 @@ abstract contract BaseRateOracle is IRateOracle {
     bytes32 public immutable override rateOracleId;
     uint256 public override secondsAgo;
 
+    // todo: controlled by the owner
+    function setSecondsAgo(uint256 _secondsAgo) external override {
+
+        secondsAgo =  _secondsAgo;
+
+        // emit seconds ago set
+    }
+
     using Oracle for Oracle.Observation[65535];
     constructor(bytes32 _rateOracleId) {
         rateOracleId = _rateOracleId;

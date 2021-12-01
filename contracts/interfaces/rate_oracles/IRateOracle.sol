@@ -16,6 +16,8 @@ interface IRateOracle {
 
     function secondsAgo() external view returns (uint256);
 
+    function setSecondsAgo(uint256 _secondsAgo) external;
+
     function getTwapApy(address underlying) external view returns (uint256 twapApy);
 
     // function rates(address underlying, uint256 stamp)

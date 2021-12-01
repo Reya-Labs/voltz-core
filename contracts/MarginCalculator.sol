@@ -13,76 +13,79 @@ import "./core_libraries/Tick.sol";
 
 contract MarginCalculator is IMarginCalculator{
 
-    // todo: replace the apyUpper and apyLower with the chainlink oracle feed that is custom for each underlying pool 
-    // uint256 public override apyUpper = 9 * 10**16; // 0.09, 9%
-    // uint256 public override apyLower = 1 * 10**16; // 0.01, 1%;
-
-    // todo: introduce a mapping by rateOracleId
-    uint256 public override apyUpperMultiplier = 2 * 10**18; // 2.0
-    uint256 public override apyLowerMultiplier = 5 * 10**17; // 0.5
-
-    uint256 public override minDeltaLM = 125 * 10**14; // 0.0125
-    uint256 public override minDeltaIM = 500 * 10**14; // 0.05
-
+    // todo: convert into a struct of mappings?
+    // todo: optimise the representation of these parameters
+    mapping(bytes32 => PRBMath.UD60x18) public getApyUpperMultiplier;
+    mapping(bytes32 => PRBMath.UD60x18) public getApyLowerMultiplier;
+    mapping(bytes32 => PRBMath.UD60x18) public getMinDeltaLM;
+    mapping(bytes32 => PRBMath.UD60x18) public getMinDeltaMM; // Maintenance Margin (MM) 
+    mapping(bytes32 => PRBMath.UD60x18) public getMaxLeverage; // e.g 10x
+    mapping(bytes32 => PRBMath.SD59x18) public getSigmaSquared; // e.g 10x
+    mapping(bytes32 => PRBMath.SD59x18) public getAlpha; // insted of storing alpha, store 4*alpha
+    mapping(bytes32 => PRBMath.SD59x18) public getBeta; // insted of storing beta, store 4*beta
+    mapping(bytes32 => PRBMath.SD59x18) public getXiUpper; // todo: should be negative (require statement in the setter)
+    mapping(bytes32 => PRBMath.SD59x18) public getXiLower;
+    mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInSeconds; // rateOralceId --> timeInSeconds --> timeFactor
     uint256 public override constant SECONDS_IN_YEAR = 31536000 * 10**18; // todo: push into library
 
-    uint256 public override maxLeverage = 10 * 10**18; // 10x
+    // todo: setters for these mappings? alternative representation that is more space efficient?
 
-
-    PRBMath.SD59x18 public sigmaSquared; // todo: turn into a mapping based on the rateOracleId
-    PRBMath.SD59x18 public  alpha;
-    PRBMath.SD59x18 public beta;
-
-    mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInSeconds; // rateOralceId --> timeInSeconds --> timeFactor
-
-    PRBMath.SD59x18 public xi_upper; // should be negative
-    PRBMath.SD59x18 public xi_lower; 
-
-    // insted of storing alpha, store 4*alpha
-    // insted of storing beta, store 4*bet
+    struct ApyBoundVars {
+        PRBMath.SD59x18 timeFactor;
+        PRBMath.SD59x18 oneMinusTimeFactor;
+        PRBMath.SD59x18 k;
+        PRBMath.SD59x18 zeta;
+        PRBMath.SD59x18 lambda_num;
+        PRBMath.SD59x18 lambda_den;
+        PRBMath.SD59x18 lambda;
+        PRBMath.SD59x18 criticalValueMultiplier;
+        PRBMath.SD59x18 criticalValue;
+    }
+    
     function computeApyBound(bytes32 rateOracleId, uint256 timeInSeconds, uint256 twapApy, bool isUpper) internal view returns (uint256 apyBound) {
-
+        
         // todo: isLm check
+        // todo: fix costly sorage reads
 
-        PRBMath.SD59x18 memory timeFactor =  timeFactorTimeInSeconds[rateOracleId][timeInSeconds];
-        PRBMath.SD59x18 memory oneMinusTimeFactor = PRBMathSD59x18Typed.sub(
+        ApyBoundVars memory apyBoundVars;
+
+        apyBoundVars.timeFactor =  timeFactorTimeInSeconds[rateOracleId][timeInSeconds];
+        apyBoundVars.oneMinusTimeFactor = PRBMathSD59x18Typed.sub(
             PRBMath.SD59x18({
                 value: 1
             }),
-            timeFactor
+            apyBoundVars.timeFactor
         );
 
-        PRBMath.SD59x18 memory k = PRBMathSD59x18Typed.div(alpha, sigmaSquared);
+        apyBoundVars.k = PRBMathSD59x18Typed.div(getAlpha[rateOracleId], getSigmaSquared[rateOracleId]);
 
-        PRBMath.SD59x18 memory zeta = PRBMathSD59x18Typed.div(
-            PRBMathSD59x18Typed.mul(sigmaSquared,oneMinusTimeFactor),
-            beta
+        apyBoundVars.zeta = PRBMathSD59x18Typed.div(
+            PRBMathSD59x18Typed.mul(getSigmaSquared[rateOracleId],apyBoundVars.oneMinusTimeFactor),
+            getBeta[rateOracleId]
         );
         
         // todo: fix
-        PRBMath.SD59x18 memory lambda_num = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(beta, timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
-        PRBMath.SD59x18 memory lambda_den = PRBMathSD59x18Typed.mul(beta, timeFactor);
-        PRBMath.SD59x18 memory lambda = PRBMathSD59x18Typed.div(lambda_num, lambda_den);
+        apyBoundVars.lambda_num = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
+        apyBoundVars.lambda_den = PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor);
+        apyBoundVars.lambda = PRBMathSD59x18Typed.div(apyBoundVars.lambda_num, apyBoundVars.lambda_den);
 
+        apyBoundVars.criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2}), apyBoundVars.lambda), apyBoundVars.k), PRBMath.SD59x18({value: 2}));
 
-        PRBMath.SD59x18 memory criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2}), lambda), k), PRBMath.SD59x18({value: 2}));
-
-        PRBMath.SD59x18 memory criticalValue;
+        apyBoundVars.criticalValue;
 
         if (isUpper) {
-            criticalValue = PRBMathSD59x18Typed.sub(
-                xi_upper,
-                PRBMathSD59x18Typed.sqrt(criticalValueMultiplier)    
+            apyBoundVars.criticalValue = PRBMathSD59x18Typed.sub(
+                getXiUpper[rateOracleId],
+                PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
         } else {
-            criticalValue = PRBMathSD59x18Typed.sub(
-                xi_lower,
-                PRBMathSD59x18Typed.sqrt(criticalValueMultiplier)    
+            apyBoundVars.criticalValue = PRBMathSD59x18Typed.sub(
+                getXiLower[rateOracleId],
+                PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
         }
 
-        
-        int256 apyBoundInt = PRBMathSD59x18Typed.mul(zeta, PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.add(k, lambda), criticalValue)).value;
+        int256 apyBoundInt = PRBMathSD59x18Typed.mul(apyBoundVars.zeta, PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.add(apyBoundVars.k, apyBoundVars.lambda), apyBoundVars.criticalValue)).value;
 
         if (apyBoundInt < 0) {
             apyBound = 0;
@@ -119,7 +122,7 @@ contract MarginCalculator is IMarginCalculator{
                         }),
 
                         PRBMath.UD60x18({
-                            value: apyUpperMultiplier
+                            value: getApyUpperMultiplier[rateOracleId].value
                         })
                     ),
 
@@ -152,7 +155,7 @@ contract MarginCalculator is IMarginCalculator{
                         }),
 
                         PRBMath.UD60x18({
-                            value: apyLowerMultiplier
+                            value: getApyLowerMultiplier[rateOracleId].value
                         })
                     ),
 
@@ -197,9 +200,9 @@ contract MarginCalculator is IMarginCalculator{
         vars.timeInYears = FixedAndVariableMath.accrualFact(vars.timeInSeconds);
         
         if (params.isLM) {
-            vars.minDelta = minDeltaLM;
+            vars.minDelta = uint256(getMinDeltaLM[params.rateOracleId].value);
         } else {
-            vars.minDelta = minDeltaIM;
+            vars.minDelta = uint256(getMinDeltaMM[params.rateOracleId].value);
         }
 
         if (params.variableTokenBalance < 0) {

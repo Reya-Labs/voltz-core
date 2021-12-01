@@ -43,17 +43,17 @@ interface IMarginCalculator {
 
     // function apyLower() external view returns (uint256);
 
-    function apyUpperMultiplier() external view returns (uint256);
+    // function apyUpperMultiplier() external view returns (uint256);
 
-    function apyLowerMultiplier() external view returns (uint256);
+    // function apyLowerMultiplier() external view returns (uint256);
 
-    function minDeltaLM() external view returns (uint256);
+    // function minDeltaLM() external view returns (uint256);
 
-    function minDeltaIM() external view returns (uint256);
+    // function minDeltaIM() external view returns (uint256);
 
     function SECONDS_IN_YEAR() external view returns (uint256);
 
-    function maxLeverage() external view returns (uint256);
+    // function maxLeverage() external view returns (uint256);
 
     function getTraderMarginRequirement(
         TraderMarginRequirementParams memory params
