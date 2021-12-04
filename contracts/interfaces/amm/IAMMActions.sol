@@ -14,7 +14,8 @@ interface IAmmActions {
         uint160 sqrtPriceLimitX96;
         bool isUnwind;
         bool isTrader;
-        int256 proposedMargin;        
+        int256 additionalMargin;
+        int256 additionalYieldBearingNotional;
     }
 
     struct SwapCache {

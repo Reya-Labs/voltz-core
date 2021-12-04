@@ -28,7 +28,10 @@ contract MarginCalculator is IMarginCalculator{
     mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInSeconds; // rateOralceId --> timeInSeconds --> timeFactor
     uint256 public override constant SECONDS_IN_YEAR = 31536000 * 10**18; // todo: push into library
 
+    mapping(address => uint256) public override getMinNotional;
+
     // todo: setters for these mappings? alternative representation that is more space efficient?
+    // todo: sertter for the getMinNotional
 
     struct ApyBoundVars {
         PRBMath.SD59x18 timeFactor;

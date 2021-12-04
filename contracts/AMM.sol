@@ -16,6 +16,7 @@ import "hardhat/console.sol";
 import "./interfaces/IMarginCalculator.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
+
 import "./interfaces/IAMMFactory.sol";
 
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
@@ -43,6 +44,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
     address public override factory; // todo: make immutable
 
     address public immutable override underlyingToken;
+    address public immutable override underlyingYieldBearingToken;
 
     bytes32 public override rateOracleId; // todo: make immutable
 
@@ -72,6 +74,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
         (
             factory,
             underlyingToken,
+            underlyingYieldBearingToken,
             rateOracleId, // todo: underlyingPool everywhere else, refactor
             termStartTimestamp,
             termEndTimestamp,
@@ -248,7 +251,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
 
     }
     
-    function settlePosition(ModifyPositionParams memory params) external {
+    function settlePosition(ModifyPositionParams memory params) override external {
 
         require(FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp, "A Position cannot settle before maturity");
         checkTicks(params.tickLower, params.tickUpper);
@@ -452,7 +455,8 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
                isUnwind: true,
                isTrader: true,
-               proposedMargin: 0 
+               additionalMargin: 0,
+               additionalYieldBearingNotional: 0
             });
 
             swap(params); // min price --> modifyTrader then updates the trader
@@ -468,7 +472,8 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
                isUnwind: true,
                isTrader: true,
-               proposedMargin: 0 
+               additionalMargin: 0,
+               additionalYieldBearingNotional: 0
             });
 
             swap(params); // max price --> modifyTrader then updates the trader
@@ -518,7 +523,8 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
                isUnwind: true,
                isTrader: false,
-               proposedMargin: 0
+               additionalMargin: 0,
+               additionalYieldBearingNotional: 0
             });
 
             (_fixedTokenBalance, _variableTokenBalance) = swap(params); // min price --> modifyTrader then updates the trader
@@ -534,7 +540,8 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
                isUnwind: true,
                isTrader: false,
-               proposedMargin: 0 // todo: is this the best choice?
+               additionalMargin: 0, // todo: is this the best choice?
+               additionalYieldBearingNotional: 0
             });
 
             (_fixedTokenBalance, _variableTokenBalance) = swap(params); // max price --> modifyTrader then updates the trader
@@ -769,11 +776,12 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
         );
     }
     
-    function updateTrader(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, int256 additionalMargin) public {
+
+    // examples of additional yield bearing asset: aDai (always represents the amount of notional)
+    function updateTrader(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, int256 additionalMargin, int256 additionalYieldBearingNotional) public {
 
         Trader.Info storage trader = traders.get(recipient);
         trader.updateBalances(fixedTokenBalance, variableTokenBalance);
-        
 
         int256 margin = int256(calculator.getTraderMarginRequirement(
             IMarginCalculator.TraderMarginRequirementParams({
@@ -803,11 +811,12 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
             
             if (additionalMargin > 0) {
                 IERC20Minimal(underlyingToken).transferFrom(recipient, address(this), uint256(additionalMargin));
-                trader.updateMargin(additionalMargin);
             } else if (additionalMargin < 0) {
                 IERC20Minimal(underlyingToken).transferFrom(address(this), recipient, uint256(-additionalMargin));
-                trader.updateMargin(additionalMargin);
             }
+
+            // todo: only update if the additional margin is nonzero
+            trader.updateMargin(additionalMargin);
             
         } else {
             
@@ -1163,6 +1172,24 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
             amount1 = uint256(amount1Int);
         }
 
+        require(amount1 >= calculator.getMinNotional(underlyingToken), "min notional"); // otherwise not enough incentive for liquidators
+
+        // todo: require that the variable token balance is not smaller than the additional yield bearing notional
+    
+        rateOracle.depositYieldBearingToken(uint256(params.additionalYieldBearingNotional), address(this), params.recipient, underlyingToken);
+        // todo: update the trader margin in the update trader call
+        amount1 = PRBMathUD60x18Typed.sub(
+
+            PRBMath.UD60x18({
+                value: amount1
+            }),
+
+            PRBMath.UD60x18({
+                value: uint256(params.additionalYieldBearingNotional)
+            })
+
+        ).value;
+
         variableTokenGrowthGlobal = state.variableTokenGrowthGlobal;
         fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;
         
@@ -1176,7 +1203,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
         }
 
         if (params.isTrader) {
-            updateTrader(params.recipient, _fixedTokenBalance, _variableTokenBalance, params.proposedMargin);
+            updateTrader(params.recipient, _fixedTokenBalance, _variableTokenBalance, params.additionalMargin, params.additionalYieldBearingNotional);
         }
         
         emit Swap(

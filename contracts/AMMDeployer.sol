@@ -8,6 +8,7 @@ contract AMMDeployer is IAMMDeployer {
     struct Parameters {
         address factory;
         address underlyingToken;
+        address underlyingYieldBearingToken;
         bytes32 rateOracleId;
         uint256 termStartTimestamp;
         uint256 termEndTimestamp;
@@ -29,6 +30,7 @@ contract AMMDeployer is IAMMDeployer {
     function deploy(
         address factory,
         address underlyingToken,
+        address underlyingYieldBearingToken,
         bytes32 rateOracleId,
         uint termStartTimestamp,
         uint256 termEndTimestamp,
@@ -40,6 +42,7 @@ contract AMMDeployer is IAMMDeployer {
         parameters = Parameters({
             factory: factory,
             underlyingToken: underlyingToken,
+            underlyingYieldBearingToken: underlyingYieldBearingToken,
             rateOracleId: rateOracleId,
             termStartTimestamp: termStartTimestamp,
             termEndTimestamp: termEndTimestamp,

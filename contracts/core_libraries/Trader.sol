@@ -12,6 +12,7 @@ library Trader {
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
         bool settled; // todo: feels redundunt
+        int256 yieldBearingMargin;
     }
 
     /// @notice Returns the Info struct of a trader, given an owner
@@ -26,6 +27,17 @@ library Trader {
         trader = self[keccak256(abi.encodePacked(owner))];
     }
 
+
+    // todo: change
+    // function updateYieldBearingMargin(Info storage self, int256 yieldBearingMarginDelta) internal {
+    //     self.yieldBearingMargin = PRBMathSD59x18Typed
+    //         .add(
+    //             PRBMath.SD59x18({value: self.yieldBearingMargin}),
+    //             PRBMath.SD59x18({value: yieldBearingMarginDelta})
+    //         )
+    //         .value;
+    // }
+    
     function updateMargin(Info storage self, int256 marginDelta) internal {
         self.margin = PRBMathSD59x18Typed
             .add(

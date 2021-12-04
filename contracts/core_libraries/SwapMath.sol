@@ -163,14 +163,15 @@ library SwapMath {
             amountOut = uint256(-amountRemaining);
         }
 
-        if (exactIn && sqrtRatioNextX96 != sqrtRatioTargetX96) {
-            // todo: understand this
-            // we didn't reach the target, so take the remainder of the maximum input as fee
-            // feeAmount = uint256(amountRemaining) - amountIn;
-        } else {
-            feeAmount = computeFeeAmount(notional, timeToMaturityInSeconds, feePercentage);
-        }
+        feeAmount = computeFeeAmount(notional, timeToMaturityInSeconds, feePercentage);
 
+        // if (exactIn && sqrtRatioNextX96 != sqrtRatioTargetX96) {
+        //     // todo: understand this
+        //     // we didn't reach the target, so take the remainder of the maximum input as fee
+        //     // feeAmount = uint256(amountRemaining) - amountIn;
+        // } else {
+        //     feeAmount = computeFeeAmount(notional, timeToMaturityInSeconds, feePercentage);
+        // }
     
     }
 }

@@ -59,6 +59,7 @@ interface IMarginCalculator {
         TraderMarginRequirementParams memory params
     ) external view returns (uint256 margin);
 
+    function getMinNotional(address underlyingToken) external view returns (uint256 minNotional);    
 
     function isLiquidatablePosition(PositionMarginRequirementParams memory params, int256 currentMargin) external view returns(bool _isLiquidatable);
 

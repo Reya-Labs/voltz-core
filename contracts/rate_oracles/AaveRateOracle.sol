@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
+import "../interfaces/aave/IAToken.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WayRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -17,6 +18,9 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     mapping(address => mapping(uint256 => Rate)) public rates;
     
     IAaveV2LendingPool public override aaveLendingPool;
+
+    // todo: needs a setter?
+    mapping(address => address) private reserveATokenAddress;
 
     constructor(IAaveV2LendingPool _aaveLendingPool, bytes32 _rateOracleId) BaseRateOracle(_rateOracleId) {
         aaveLendingPool = _aaveLendingPool;
@@ -130,4 +134,36 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         result = result / (10 ** (27 - 18)); // 18 decimals, todo: is this optimal?
     }
+
+
+    // todo: override
+    function _getYieldBearingToken(address _underlyingToken) public returns (address) { 
+        if (reserveATokenAddress[_underlyingToken] == address(0)) {
+            reserveATokenAddress[_underlyingToken] = aaveLendingPool.getReserveData(_underlyingToken).aTokenAddress;
+            
+            require(reserveATokenAddress[_underlyingToken] != address(0), "Invalid Underlying Asset");
+        }
+        return reserveATokenAddress[_underlyingToken];
+    }
+
+
+    // todo: withdraw Yield Bearing Token
+
+    // additionalYieldBearingNotional (in terms of the notional covered at this point in time)
+    function depositYieldBearingToken(
+            uint256 additionalYieldBearingNotional, 
+            address ammAddress, 
+            address FTAddress, 
+            address _underlyingToken
+        ) external override(BaseRateOracle, IRateOracle) {
+        
+        // todo: calculate the amount in here
+        // todo: make sure there is a success check
+
+        // todo: figure out how the amm can claim the interest earned while it was holding the aTokens
+        IAToken(_getYieldBearingToken(_underlyingToken)).transferFrom(FTAddress, ammAddress, additionalYieldBearingNotional);
+    }
+
+
+
 }

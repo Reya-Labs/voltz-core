@@ -69,6 +69,7 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
 
     function createAMM(
         address underlyingToken,
+        address underlyingYieldBearingToken,
         bytes32 rateOracleId,
         uint256 termEndTimestamp,
         uint24 fee
@@ -86,6 +87,7 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
         amm = deploy(
             address(this),
             underlyingToken,
+            underlyingYieldBearingToken,
             rateOracleId,
             termStartTimestamp,
             termEndTimestamp,

@@ -47,6 +47,13 @@ abstract contract BaseRateOracle is IRateOracle {
     
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public virtual override returns(uint256 result);
 
+    function depositYieldBearingToken(
+            uint256 additionalYieldBearingNotional, 
+            address ammAddress, 
+            address FTAddress, 
+            address _underlyingToken
+        ) external virtual override;
+
 
     // todo: add override, lock the amm when calling this function, noDelegateCall
     function increaseObservarionCardinalityNext(uint16 observationCardinalityNext) external {

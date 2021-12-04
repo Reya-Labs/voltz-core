@@ -87,7 +87,8 @@ interface IAMMState {
             int256 margin,
             int256 fixedTokenBalance,
             int256 variableTokenBalance,
-            bool settled
+            bool settled,
+            int256 yieldBearingMargin
         );
 
 

@@ -30,6 +30,13 @@ interface IRateOracle {
 
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256);
 
+    function depositYieldBearingToken(
+            uint256 additionalYieldBearingNotional, 
+            address ammAddress, 
+            address FTAddress, 
+            address _underlyingToken
+        ) external;
+
     // function getApyFromTo(
     //     address underlying,
     //     uint256 from,

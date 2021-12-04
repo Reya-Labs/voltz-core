@@ -9,6 +9,7 @@ interface IAMMDeployer {
     /// @dev Called by the pool constructor to fetch the parameters of the pool
     /// Returns factory The factory address
     /// Returns underlyingToken Address of the underlying token
+    /// Returns underlyingYieldBearingToken Address of the underlying yield bearing token
     /// Returns underlyingPool Address of the underlying pool
     /// Returns termEndTimestamp number of days from inception of the pool till maturity
     /// Returns termStartTimestamp Datetime of pool's inception
@@ -20,6 +21,7 @@ interface IAMMDeployer {
         returns (
             address factory,
             address underlyingToken,
+            address underlyingYieldBearingToken,
             bytes32 rateOracleId,
             uint256 termStartTimestamp,
             uint256 termEndTimestamp,

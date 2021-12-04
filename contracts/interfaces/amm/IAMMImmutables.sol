@@ -18,8 +18,12 @@ interface IAMMImmutables {
     function factory() external view returns (address);
 
     // /// @notice The address of the underlying pool token
-    // /// @return The underlying pool token address
+    // /// @return The underlying token address
     function underlyingToken() external view returns (address);
+
+    // /// @notice The address of the underlying yield bearing token
+    // /// @return The underlying yield bearing token address
+    function underlyingYieldBearingToken() external view returns (address);
 
     function rateOracleId() external view returns (bytes32);
 
