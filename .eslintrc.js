@@ -21,4 +21,9 @@ module.exports = {
       { ignores: ["modules"] },
     ],
   },
+  settings: {
+    node: {
+      tryExtensions: [".js", ".json", ".ts", ".d.ts"],
+    },
+  },
 };
