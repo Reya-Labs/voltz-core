@@ -1,7 +1,9 @@
-// pragma solidity ^0.8.0;
+// SPDX-License-Identifier: BUSL-1.1
+
+pragma solidity ^0.8.0;
+
 // import "../rate_oracles/AaveRateOracle.sol";
 // import "../core_libraries/FixedAndVariableMath.sol";
-
 
 // contract AaveRateOracleTest is AaveRateOracle {
 
@@ -13,7 +15,7 @@
 //     function variableFactorTest(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public returns(uint256 result) {
 //         mostRecentVariableFactor = variableFactor(atMaturity, underlyingToken, termStartTimestamp, termEndTimestamp);
 //     }
-    
+
 //     // function getReserveNormalizedIncome(address underlying) public view override returns(uint256){
 //     //     return lendingPool.getReserveNormalizedIncome(underlying);
 //     // }
@@ -29,10 +31,7 @@
 //         } else {
 //             endRate = rates[underlying][FixedAndVariableMath.blockTimestampScaled()];
 //         }
-        
+
 //     }
-
-
-
 
 // }

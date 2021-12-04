@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 pragma solidity ^0.8.0;
 
 /// @title Math library for computing sqrt prices from ticks and vice versa
