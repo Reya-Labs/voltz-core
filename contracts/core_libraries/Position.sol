@@ -145,7 +145,7 @@ library Position {
   }
 
   function updateFeeGrowthInside(Info storage self, uint256 feeGrowthInside)
-    public
+    internal
   {
     self.feeGrowthInsideLast = feeGrowthInside;
   }

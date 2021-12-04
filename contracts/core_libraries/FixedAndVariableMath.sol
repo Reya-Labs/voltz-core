@@ -8,7 +8,7 @@ library FixedAndVariableMath {
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
     
     
-    function calculateSettlementCashflow(int256 fixedTokenBalance, int256 variableTokenBalance, uint256 termStartTimestamp, uint256 termEndTimestamp, uint256 variableFactorToMaturity) public view returns(int256 cashflow) {
+    function calculateSettlementCashflow(int256 fixedTokenBalance, int256 variableTokenBalance, uint256 termStartTimestamp, uint256 termEndTimestamp, uint256 variableFactorToMaturity) external view returns(int256 cashflow) {
         
         PRBMath.SD59x18 memory fixedCashflow = PRBMathSD59x18Typed.mul(
 
@@ -117,7 +117,7 @@ library FixedAndVariableMath {
         int256 excessBalance,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
-    ) public view returns (int256 fixedTokenBalance) {
+    ) internal view returns (int256 fixedTokenBalance) {
 
         require(
             termEndTimestamp > termStartTimestamp,
