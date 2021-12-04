@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 pragma solidity ^0.8.0;
 
 /// @title An interface for a contract that is capable of deploying Voltz AMMs
