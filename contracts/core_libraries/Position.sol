@@ -16,7 +16,7 @@ library Position {
 
   // info stored for each user's position
   struct Info {
-    uint128 liquidity;
+    uint128 _liquidity;
     int256 margin;
     int256 fixedTokenGrowthInsideLast;
     int256 variableTokenGrowthInsideLast;
@@ -83,7 +83,7 @@ library Position {
   {
     Info memory _self = self;
 
-    require(_self.liquidity > 0, "NP");
+    require(_self._liquidity > 0, "NP");
 
     _feeDelta = PRBMathUD60x18Typed
       .mul(
@@ -91,14 +91,14 @@ library Position {
           PRBMath.UD60x18({ value: feeGrowthInside }),
           PRBMath.UD60x18({ value: _self.feeGrowthInsideLast })
         ),
-        PRBMath.UD60x18({ value: uint256(_self.liquidity) * 10**18 })
+        PRBMath.UD60x18({ value: uint256(_self._liquidity) * 10**18 })
       )
       .value;
   }
 
   /// #if_succeeds fixedTokenGrowthInside==_self.fixedTokenGrowthInsideLast ==> _fixedTokenBalance == 0;
   /// #if_succeeds variableTokenGrowthInside==_self.variableTokenGrowthInsideLast ==> _variableTokenBalance == 0;
-  /// #if_succeeds _self.liquidity > 0;
+  /// #if_succeeds _self._liquidity > 0;
   function calculateFixedAndVariableDelta(
     Info storage self,
     int256 fixedTokenGrowthInside,
@@ -110,7 +110,7 @@ library Position {
   {
     Info memory _self = self;
 
-    require(_self.liquidity > 0, "NP");
+    require(_self._liquidity > 0, "NP");
 
     _fixedTokenDelta = PRBMathSD59x18Typed
       .mul(
@@ -118,7 +118,7 @@ library Position {
           PRBMath.SD59x18({ value: fixedTokenGrowthInside }),
           PRBMath.SD59x18({ value: _self.fixedTokenGrowthInsideLast })
         ),
-        PRBMath.SD59x18({ value: int256(uint256(_self.liquidity)) * 10**18 })
+        PRBMath.SD59x18({ value: int256(uint256(_self._liquidity)) * 10**18 })
         // PRBMath.SD59x18({value: 10**18 })
       )
       .value;
@@ -129,7 +129,7 @@ library Position {
           PRBMath.SD59x18({ value: variableTokenGrowthInside }),
           PRBMath.SD59x18({ value: _self.variableTokenGrowthInsideLast })
         ),
-        PRBMath.SD59x18({ value: int256(uint256(_self.liquidity)) * 10**18 })
+        PRBMath.SD59x18({ value: int256(uint256(_self._liquidity)) * 10**18 })
         // PRBMath.SD59x18({value: 10**18 })
       )
       .value;
@@ -160,14 +160,14 @@ library Position {
 
     uint128 liquidityNext;
     if (liquidityDelta == 0) {
-      require(_self.liquidity > 0, "NP"); // disallow pokes for 0 liquidity positions
-      liquidityNext = _self.liquidity;
+      require(_self._liquidity > 0, "NP"); // disallow pokes for 0 liquidity positions
+      liquidityNext = _self._liquidity;
     } else {
-      liquidityNext = LiquidityMath.addDelta(_self.liquidity, liquidityDelta);
+      liquidityNext = LiquidityMath.addDelta(_self._liquidity, liquidityDelta);
     }
 
     // update the position
     // todo: have a timestamp that check when was the last time the position was updated and avoids the update cost
-    if (liquidityDelta != 0) self.liquidity = liquidityNext;
+    if (liquidityDelta != 0) self._liquidity = liquidityNext;
   }
 }

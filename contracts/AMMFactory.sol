@@ -11,6 +11,13 @@ import "./utils/NoDelegateCall.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
 // todo: introduce VoltzData.sol that is above the AMMFactory?
+
+/*
+Warning: Contract code size exceeds 24576 bytes (a limit introduced in Spurious Dragon). 
+This contract may not be deployable on mainnet. Consider enabling the optimizer (with a low "runs" value!),
+turning off revert strings, or using libraries.
+*/
+
 /// @title Canonical Voltz factory
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
 contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {

@@ -7,10 +7,11 @@ import "../utils/TickMath.sol";
 import "../interfaces/IAMM.sol";
 import "../AMM.sol";
 
+// Warning: Contract code size exceeds 24576 bytes todo: just need to fix AMM.sol (make it smaller)
 contract TestAMM is AMM {
     using SafeCast for uint256;
 
-    function getAMMFee(address amm) external returns(uint256) {
+    function getAMMFee(address amm) external view returns(uint256) {
         return IAMM(amm).fee();
     }
 

@@ -28,6 +28,12 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 
 // todo: factoryOwner is the treasury, don't need a separate treasury address
 
+
+/*
+todo: Warning: Contract code size exceeds 24576 bytes (a limit introduced in Spurious Dragon).
+This contract may not be deployable on mainnet. Consider enabling the optimizer (with a low "runs" value!),
+ turning off revert strings, or using libraries.
+*/
 contract AMM is IAMM, NoDelegateCall, Pausable {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
@@ -250,7 +256,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
 
     }
     
-    function settlePosition(ModifyPositionParams memory params) external {
+    function settlePosition(ModifyPositionParams memory params) external override {
 
         require(FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp, "A Position cannot settle before maturity");
         checkTicks(params.tickLower, params.tickUpper);
@@ -266,7 +272,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
             Tick.FixedTokenGrowthInsideParams({
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
-                tickCurrent: slot0.tick,
+                tickCurrent: _slot0.tick,
                 fixedTokenGrowthGlobal: fixedTokenGrowthGlobal
             }) 
         );
@@ -275,7 +281,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
             Tick.VariableTokenGrowthInsideParams({
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
-                tickCurrent: slot0.tick,
+                tickCurrent: _slot0.tick,
                 variableTokenGrowthGlobal: variableTokenGrowthGlobal
             })
         );
@@ -334,7 +340,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
                 currentTick: slot0.tick,
                 termStartTimestamp: termStartTimestamp,
                 termEndTimestamp: termEndTimestamp,
-                liquidity: position.liquidity,
+                liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
                 variableFactor: rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp),
@@ -363,7 +369,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
 
         IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, liquidatorReward);
 
-        burn(params.tickLower, params.tickUpper, position.liquidity); // burn all liquidity
+        burn(params.tickLower, params.tickUpper, position._liquidity); // burn all liquidity
         
     }
 
@@ -492,7 +498,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
 
 
         // todo: rename slot0 (takes up more slots now)
-        Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
+        // Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
 
         ModifyPositionParams memory modifyPositionparams;
 
@@ -553,17 +559,17 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
         uint128 amount
     ) public lock {
 
-        Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
+        // Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
 
-        (Position.Info storage position, int256 amount0Int, int256 amount1Int) =
-            _modifyPosition(
-                ModifyPositionParams({
-                    owner: msg.sender,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    liquidityDelta: -int256(uint256(amount)).toInt128()
-                })
-            );
+        // (Position.Info storage position, int256 amount0Int, int256 amount1Int) =
+        _modifyPosition(
+            ModifyPositionParams({
+                owner: msg.sender,
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                liquidityDelta: -int256(uint256(amount)).toInt128()
+            })
+        );
 
         unwindPosition(msg.sender, tickLower, tickUpper);
         
@@ -594,7 +600,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
                 params.liquidityDelta,
                 fixedTokenGrowthGlobal,
                 variableTokenGrowthGlobal,
-                feeGrowthGlobal,
+                _feeGrowthGlobal,
                 false,
                 maxLiquidityPerTick
             );
@@ -604,7 +610,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
                 params.liquidityDelta,
                 fixedTokenGrowthGlobal,
                 variableTokenGrowthGlobal,
-                feeGrowthGlobal,
+                _feeGrowthGlobal,
                 true,
                 maxLiquidityPerTick
             );
@@ -736,7 +742,8 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
     ) external override lock whenNotPaused {
         require(amount > 0);
 
-        (, int256 amount0Int, int256 amount1Int) = _modifyPosition(
+        // (, int256 amount0Int, int256 amount1Int) = _modifyPosition(
+        _modifyPosition(
             ModifyPositionParams({
                 owner: recipient,
                 tickLower: tickLower,
@@ -747,7 +754,7 @@ contract AMM is IAMM, NoDelegateCall, Pausable {
 
         Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
 
-        Slot0 memory _slot0 = slot0;
+        // Slot0 memory _slot0 = slot0;
 
         IMarginCalculator.PositionMarginRequirementParams memory marginReqParams;
 

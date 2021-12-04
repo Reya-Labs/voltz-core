@@ -71,7 +71,7 @@ interface IAMMState {
     external
     view
     returns (
-      uint128 liquidity,
+      uint128 _liquidity,
       int256 margin,
       int256 fixedTokenGrowthInsideLast,
       int256 variableTokenGrowthInsideLast,
