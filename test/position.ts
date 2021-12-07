@@ -1,196 +1,195 @@
-import { BigNumber, constants } from "ethers";
-import { ethers, network } from "hardhat";
-import { expect } from "chai";
-import {PositionTest} from "../typechain/PositionTest";
-import {Position} from "../typechain/Position";
-import { encodeSqrtRatioX96, expandTo18Decimals } from "./shared/utilities";
-import { toBn } from "evm-bn";
-import { div, sub, mul, add } from "./shared/functions";
+// import { BigNumber, constants } from "ethers";
+// import { ethers, network } from "hardhat";
+// import { expect } from "chai";
+// import {PositionTest} from "../typechain/PositionTest";
+// import { Position } from "../typechain/Position";
+// import { encodeSqrtRatioX96, expandTo18Decimals } from "./shared/utilities";
+// import { toBn } from "evm-bn";
+// import { div, sub, mul, add } from "./shared/functions";
 
 
-function calculateFixedAndVariableDelta(fixedTokenGrowthInside: BigNumber, variableTokenGrowthInside: BigNumber, 
-    fixedTokenGrowthInsideLast: BigNumber, variableTokenGrowthInsideLast: BigNumber, liquidity: BigNumber) {
+// function calculateFixedAndVariableDelta(fixedTokenGrowthInside: BigNumber, variableTokenGrowthInside: BigNumber, 
+//     fixedTokenGrowthInsideLast: BigNumber, variableTokenGrowthInsideLast: BigNumber, liquidity: BigNumber) {
     
-    const fixedTokenBalance: BigNumber = mul(sub(fixedTokenGrowthInside, fixedTokenGrowthInsideLast), liquidity)
-    const variableTokenBalance: BigNumber = mul(sub(variableTokenGrowthInside, variableTokenGrowthInsideLast), liquidity) 
+//     const fixedTokenBalance: BigNumber = mul(sub(fixedTokenGrowthInside, fixedTokenGrowthInsideLast), liquidity)
+//     const variableTokenBalance: BigNumber = mul(sub(variableTokenGrowthInside, variableTokenGrowthInsideLast), liquidity) 
 
-    return [fixedTokenBalance, variableTokenBalance]
+//     return [fixedTokenBalance, variableTokenBalance]
 
-}
+// }
 
 
-describe("Position", () => {
-    let positionTest: PositionTest;
-    let position: Position;
+// describe("Position", () => {
+//     let positionTest: PositionTest;
   
-    before(async () => {
+//     before(async () => {
 
-        const positionFactory = await ethers.getContractFactory(
-            "Position"
-        );
+//         const positionFactory = await ethers.getContractFactory(
+//             "Position"
+//         );
 
-        const position = (await positionFactory.deploy()) as Position;
+//         const position = (await positionFactory.deploy()) as Position;
 
-        const positionTestFactory = await ethers.getContractFactory(
-            "PositionTest", {
-                libraries: {
-                    Position: position.address
-                }
-            }
-        );
+//         const positionTestFactory = await ethers.getContractFactory(
+//             "PositionTest", {
+//                 libraries: {
+//                     Position: position.address
+//                 }
+//             }
+//         );
           
-        positionTest = (await positionTestFactory.deploy()) as PositionTest;
+//         positionTest = (await positionTestFactory.deploy()) as PositionTest;
   
-    });
+//     });
 
 
-    describe("#updateLiquidity", () => {
+//     describe("#updateLiquidity", () => {
 
-        before(async () => {
+//         before(async () => {
       
-            // const positionLiquidity = await positionTest.position()
-            // expect(positionLiquidity[0]).to.eq(0)
+//             // const positionLiquidity = await positionTest.position()
+//             // expect(positionLiquidity[0]).to.eq(0)
 
         
-        });
+//         });
     
-        it("correctly updates the liqudity of a position", async () => {
+//         it("correctly updates the liqudity of a position", async () => {
 
-            await positionTest.updateLiquidity(100);
+//             await positionTest.updateLiquidity(100);
 
-            await positionTest.updateLiquidity(-10);
+//             await positionTest.updateLiquidity(-10);
             
-            const positionLiquidityUpdated = await positionTest.position()
+//             const positionLiquidityUpdated = await positionTest.position()
             
-            expect(positionLiquidityUpdated[0]).to.eq(90)
+//             expect(positionLiquidityUpdated[0]).to.eq(90)
         
-        })
+//         })
 
-        it("reverts if liquidity delta is zero", async () => {
+//         it("reverts if liquidity delta is zero", async () => {
             
-            expect(positionTest.updateLiquidity(0)).to.be.revertedWith("NP")
+//             expect(positionTest.updateLiquidity(0)).to.be.revertedWith("NP")
     
-        })
+//         })
         
     
-    });
+//     });
 
 
-    describe("#updateMargin", () => {
+//     describe("#updateMargin", () => {
 
-        // before(async () => {
+//         // before(async () => {
 
-        //     await positionTest.updateMargin(toBn("10"));
+//         //     await positionTest.updateMargin(toBn("10"));
             
-        // });
-    
-        
-        it("correctly updates the margin of a position", async () => {
-
-            await positionTest.updateMargin(toBn("10"));
-
-            await positionTest.updateMargin(toBn("-1"));
-            
-            const positionMarginUpdated = await positionTest.position()
-            
-            expect(positionMarginUpdated[1]).to.eq(toBn("9"))
-            
-        })
-    
-    });
-
-    describe("#updateBalances", () => {
-
-        before(async () => {
-            
-        });
+//         // });
     
         
-        it("correctly updates the variable and fixed token balances of a position", async () => {
+//         it("correctly updates the margin of a position", async () => {
 
-            await positionTest.updateBalances(toBn("1000"), toBn("-2000"));
+//             await positionTest.updateMargin(toBn("10"));
+
+//             await positionTest.updateMargin(toBn("-1"));
             
-            await positionTest.updateBalances(toBn("2000"), toBn("-3000"));
+//             const positionMarginUpdated = await positionTest.position()
             
-            const positionBalancesUpdated = await positionTest.position()
+//             expect(positionMarginUpdated[1]).to.eq(toBn("9"))
             
-            expect(positionBalancesUpdated[4]).to.eq(toBn("3000"))
-            expect(positionBalancesUpdated[5]).to.eq(toBn("-5000"))
-            
-        })
+//         })
     
-    });
+//     });
 
+//     describe("#updateBalances", () => {
 
-    describe("#updateFixedAndVariableTokenGrowthInside", () => {
-
-        before(async () => {
+//         before(async () => {
             
-            
-            
-        });
+//         });
     
         
-        it("check the inside last balances are correctly updated", async () => {
+//         it("correctly updates the variable and fixed token balances of a position", async () => {
 
-            await positionTest.updateLiquidity(100);
+//             await positionTest.updateBalances(toBn("1000"), toBn("-2000"));
             
-            await positionTest.updateFixedAndVariableTokenGrowthInside(toBn("20"), toBn("-30"))
+//             await positionTest.updateBalances(toBn("2000"), toBn("-3000"));
             
-            const positionUpdated = await positionTest.position()
-
-            expect(positionUpdated[2]).to.eq(toBn("20"))
-            expect(positionUpdated[3]).to.eq(toBn("-30"))
+//             const positionBalancesUpdated = await positionTest.position()
             
-        })
+//             expect(positionBalancesUpdated[4]).to.eq(toBn("3000"))
+//             expect(positionBalancesUpdated[5]).to.eq(toBn("-5000"))
+            
+//         })
     
-    });
+//     });
 
 
-    describe("#calculateFixedAndVariableDelta", () => {
+//     describe("#updateFixedAndVariableTokenGrowthInside", () => {
 
-        before(async () => {
-
-            const positionFactory = await ethers.getContractFactory(
-                "Position"
-            );
+//         before(async () => {
+            
+            
+            
+//         });
     
-            const position = (await positionFactory.deploy()) as Position;
+        
+//         it("check the inside last balances are correctly updated", async () => {
+
+//             await positionTest.updateLiquidity(100);
+            
+//             await positionTest.updateFixedAndVariableTokenGrowthInside(toBn("20"), toBn("-30"))
+            
+//             const positionUpdated = await positionTest.position()
+
+//             expect(positionUpdated[2]).to.eq(toBn("20"))
+//             expect(positionUpdated[3]).to.eq(toBn("-30"))
+            
+//         })
     
-            const positionTestFactory = await ethers.getContractFactory(
-                "PositionTest", {
-                    libraries: {
-                        Position: position.address
-                    }
-                }
-            );
+//     });
+
+
+//     describe("#calculateFixedAndVariableDelta", () => {
+
+//         before(async () => {
+
+//             const positionFactory = await ethers.getContractFactory(
+//                 "Position"
+//             );
+    
+//             const position = (await positionFactory.deploy()) as Position;
+    
+//             const positionTestFactory = await ethers.getContractFactory(
+//                 "PositionTest", {
+//                     libraries: {
+//                         Position: position.address
+//                     }
+//                 }
+//             );
               
-            positionTest = (await positionTestFactory.deploy()) as PositionTest;
+//             positionTest = (await positionTestFactory.deploy()) as PositionTest;
             
             
-        });
+//         });
     
         
-        it("check the inside last balances are correctly updated", async () => {
+//         it("check the inside last balances are correctly updated", async () => {
 
-            await positionTest.updateLiquidity(10);
-            const updatedPosition = await positionTest.position()
+//             await positionTest.updateLiquidity(10);
+//             const updatedPosition = await positionTest.position()
 
-            expect(updatedPosition[0]).to.eq(10)
+//             expect(updatedPosition[0]).to.eq(10)
             
-            const result = await positionTest.calculateFixedAndVariableDelta(toBn("20"), toBn("-30"))
+//             const result = await positionTest.calculateFixedAndVariableDelta(toBn("20"), toBn("-30"))
 
-            const expectedResult = calculateFixedAndVariableDelta(toBn("20"), toBn("-30"), toBn("0"), toBn("0"), toBn("10"))
+//             const expectedResult = calculateFixedAndVariableDelta(toBn("20"), toBn("-30"), toBn("0"), toBn("0"), toBn("10"))
 
-            expect(result[0]).to.eq(expectedResult[0])
-            expect(result[1]).to.eq(expectedResult[1])
+//             expect(result[0]).to.eq(expectedResult[0])
+//             expect(result[1]).to.eq(expectedResult[1])
  
-            await positionTest.updateFixedAndVariableTokenGrowthInside(toBn("20"), toBn("-30"))
+//             await positionTest.updateFixedAndVariableTokenGrowthInside(toBn("20"), toBn("-30"))
             
-        })
+//         })
     
-    });
+//     });
 
 
 
-})
+// })

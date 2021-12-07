@@ -1,9 +1,6 @@
-import bn from "bignumber.js";
 import {
   BigNumber,
   BigNumberish,
-  constants,
-  Contract,
   ContractTransaction,
   utils,
   Wallet,
@@ -13,7 +10,7 @@ import { MockTimeAMM } from "../../typechain/MockTimeAMM";
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
 import { sqrt } from "./sqrt";
-import { div, sub, mul, add } from "./functions";
+import { div, sub, mul } from "./functions";
 import { toBn } from "evm-bn";
 
 export enum FeeAmount {
