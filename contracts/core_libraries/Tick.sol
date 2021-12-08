@@ -31,13 +31,21 @@ library Tick {
     bool initialized;
   }
 
+  /// @dev Common checks for valid tick inputs.
+  // todo: make sure no vulnurabilities because of external vs. private
+  function checkTicks(int24 tickLower, int24 tickUpper) external pure {
+      require(tickLower < tickUpper, "TLU");
+      require(tickLower >= TickMath.MIN_TICK, "TLM");
+      require(tickUpper <= TickMath.MAX_TICK, "TUM");
+  }
+  
   function getFeeGrowthInside(
     mapping(int24 => Tick.Info) storage self,
     int24 tickLower,
     int24 tickUpper,
     int24 tickCurrent,
     uint256 feeGrowthGlobal
-  ) internal view returns (uint256 feeGrowthInside) {
+  ) external view returns (uint256 feeGrowthInside) {
     Info storage lower = self[tickLower];
     Info storage upper = self[tickUpper];
 
@@ -220,7 +228,10 @@ library Tick {
     uint256 feeGrowthGlobal,
     bool upper,
     uint128 maxLiquidity
-  ) internal returns (bool flipped) {
+  ) external returns (bool flipped) {
+
+    // todo: update is no longe internal
+
     Tick.Info storage info = self[tick];
 
     uint128 liquidityGrossBefore = info.liquidityGross;
@@ -258,7 +269,7 @@ library Tick {
   /// @param self The mapping containing all initialized tick information for initialized ticks
   /// @param tick The tick that will be cleared
   function clear(mapping(int24 => Tick.Info) storage self, int24 tick)
-    internal
+    external
   {
     delete self[tick];
   }
@@ -273,7 +284,7 @@ library Tick {
     int256 fixedTokenGrowthGlobal,
     int256 variableTokenGrowthGlobal,
     uint256 feeGrowthGlobal
-  ) internal returns (int128 liquidityNet) {
+  ) external returns (int128 liquidityNet) {
     Tick.Info storage info = self[tick];
 
     info.feeGrowthOutside = PRBMathUD60x18Typed

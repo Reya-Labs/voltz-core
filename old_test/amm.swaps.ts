@@ -1,7 +1,7 @@
 import { Decimal } from "decimal.js";
 import { ethers, waffle } from "hardhat";
 import { BigNumber, BigNumberish, Wallet, ContractTransaction } from "ethers";
-import { AMMFactory } from "../typechain/AMMFactory";
+import { Factory } from "../typechain/Factory";
 import {
   aave_lending_pool_addr,
   term_in_days,

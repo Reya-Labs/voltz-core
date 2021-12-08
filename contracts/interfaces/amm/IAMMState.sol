@@ -2,46 +2,32 @@
 
 pragma solidity ^0.8.0;
 
+import "../IVAMM.sol";
+import "../IMarginEngine.sol";
+import "../../core_libraries/Tick.sol";
+
 /// @title AMM state that can change
 /// @notice These methods compose the amm's state, and can change with any frequency including multiple times
 /// per transaction
 interface IAMMState {
-  /// @notice The 0th storage slot in the amm stores many values, and is exposed as a single method to save gas
-  /// when accessed externally.
-  /// @return sqrtPriceX96 The current price of the amm as a sqrt(token1/token0) Q64.96 value
-  /// tick The current tick of the amm, i.e. according to the last tick transition that was run.
-  /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96) if the price is on a tick
-  /// boundary.
-  function slot0()
-    external
-    view
-    returns (
-      uint160 sqrtPriceX96,
-      int24 tick,
-      uint256 feeProtocol,
-      bool unlocked
-    );
 
-  /// @notice The fee growth as a Q128.128 fees of underlying Token collected per unit of liquidity for the entire life of the amm
-  /// @dev This value can overflow the uint256
-  // function feeGrowthGlobalX128() external view returns (uint256);
+  function getSlot0() external view;
 
-  // function notionalGrowthGlobal() external view returns (int256);
+  function getVariableTokenGrowthGlobal() external view;
 
-  // function notionalGlobal() external view returns (int256);
+  function getFixedTokenGrowthGlobal() external view;
 
-  // function fixedRateGlobal() external view returns (int256);
+  function getVariableTokenGrowthInside(Tick.VariableTokenGrowthInsideParams memory params) external view;
 
-  function fixedTokenGrowthGlobal() external view returns (int256);
+  function getFixedTokenGrowthInside(Tick.FixedTokenGrowthInsideParams memory params) external view;
 
-  function variableTokenGrowthGlobal() external view returns (int256);
-
-  function feeGrowthGlobal() external view returns (uint256);
-
-  /// @notice The currently in range liquidity available to the amm
-  /// @dev This value has no relationship to the total liquidity across all ticks
-  function liquidity() external view returns (uint128);
-
+  function getFeeGrowthInside(
+        int24 tickLower,
+        int24 tickUpper,
+        int24 tickCurrent,
+        uint256 feeGrowthGlobal
+  ) external view;
+ 
   /// @notice Look up information about a specific tick in the amm
   /// @param tick The tick to look up
   /// @return liquidityGross the total amount of position liquidity that uses the amm either as tick lower or
@@ -91,4 +77,11 @@ interface IAMMState {
       int256 variableTokenBalance,
       bool settled
     );
+
+
+    function vamm() external view returns (IVAMM);
+    function marginEngine() external returns (IMarginEngine);
+    function unlocked() external returns (bool);
+
+
 }

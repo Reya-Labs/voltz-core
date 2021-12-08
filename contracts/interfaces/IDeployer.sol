@@ -6,7 +6,19 @@ pragma solidity ^0.8.0;
 /// @notice A contract that constructs an AMM must implement this to pass arguments to the pool
 /// @dev This is used to avoid having constructor arguments in the pool contract, which results in the init code hash
 /// of the pool being constant allowing the CREATE2 address of the pool to be cheaply computed on-chain
-interface IAMMDeployer {
+interface IDeployer {
+    
+    function vammParameters() external view returns(
+        address ammAddress,
+        uint24 fee,
+        int24 tickSpacing
+    );
+
+    function marginEngineParameters() external view returns(
+        address ammAddress
+    );
+    
+    
     /// @notice Get the parameters to be used in constructing the pool, set transiently during pool creation.
     /// @dev Called by the pool constructor to fetch the parameters of the pool
     /// Returns factory The factory address
@@ -14,9 +26,7 @@ interface IAMMDeployer {
     /// Returns underlyingPool Address of the underlying pool
     /// Returns termEndTimestamp number of days from inception of the pool till maturity
     /// Returns termStartTimestamp Datetime of pool's inception
-    /// Returns fee The fee collected upon every swap in the pool, denominated in hundredths of a bip
-    /// Returns tickSpacing The minimum number of ticks between initialized ticks
-    function parameters()
+    function ammParameters()
         external
         view
         returns (
@@ -24,8 +34,6 @@ interface IAMMDeployer {
             address underlyingToken,
             bytes32 rateOracleId,
             uint256 termStartTimestamp,
-            uint256 termEndTimestamp,
-            uint24 fee,
-            int24 tickSpacing
+            uint256 termEndTimestamp
         );
 } 

@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 
 import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
-import "../interfaces/IAMM.sol";
+import "../interfaces/IVAMM.sol";
 import "../AMM.sol";
 
-// Warning: Contract code size exceeds 24576 bytes todo: just need to fix AMM.sol (make it smaller)
+// Warning: Contract code size exceeds 24576 bytes todo: just need to fix VAMM.sol (make it smaller)
 contract TestAMM is AMM {
     using SafeCast for uint256;
 

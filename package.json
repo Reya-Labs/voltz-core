@@ -42,6 +42,7 @@
     "@aave/protocol-js": "^4.3.0",
     "@aave/protocol-v2": "^1.0.1",
     "@openzeppelin/contracts": "^4.4.0",
+    "hardhat-contract-sizer": "^2.1.1",
     "hardhat-prettier": "0.0.1",
     "hardhat-tracer": "^1.0.0-alpha.6",
     "jsbi": "^4.0.0",

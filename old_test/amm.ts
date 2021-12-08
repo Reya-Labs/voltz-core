@@ -1,6 +1,6 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, BigNumberish, constants, Wallet } from "ethers";
-import { AMMFactory } from "../typechain/AMMFactory";
+import { Factory } from "../typechain/Factory";
 import { expect } from "chai";
 
 import {
@@ -33,7 +33,7 @@ type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
 
 describe("AMM", () => {
   let wallet: Wallet, other: Wallet;
-  let factory: AMMFactory;
+  let factory: Factory;
   let amm: MockTimeAMM;
 
   let swapTarget: TestAMMCallee;

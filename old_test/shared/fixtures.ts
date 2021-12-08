@@ -1,17 +1,17 @@
-import { AMMFactory } from "../../typechain";
+import { Factory } from "../../typechain";
 import { Fixture } from "ethereum-waffle";
 import { ethers } from "hardhat";
 import { TestAMMCallee } from "../../typechain/TestAMMCallee";
 import { MockTimeAMM } from "../../typechain/MockTimeAMM";
-import { MockTimeAMMDeployer } from "../../typechain/MockTimeAMMDeployer";
+import { MockTimeDeployer } from "../../typechain/MockTimeDeployer";
 
 interface FactoryFixture {
-  factory: AMMFactory;
+  factory: Factory;
 }
 
 async function factoryFixture(): Promise<FactoryFixture> {
-  const factoryFactory = await ethers.getContractFactory("AMMFactory");
-  const factory = (await factoryFactory.deploy()) as AMMFactory;
+  const factoryFactory = await ethers.getContractFactory("Factory");
+  const factory = (await factoryFactory.deploy()) as Factory;
   return { factory };
 }
 
@@ -33,10 +33,10 @@ export const AMMFixture: Fixture<AMMFixture> =
   async function (): Promise<AMMFixture> {
     const { factory } = await factoryFixture();
 
-    const MockTimeAMMDeployerFactory = await ethers.getContractFactory(
-      "MockTimeAMMDeployer"
+    const MockTimeDeployerFactory = await ethers.getContractFactory(
+      "MockTimeDeployer"
     );
-    const MockTimeAMMFactory = await ethers.getContractFactory("MockTimeAMM");
+    const MockTimeFactory = await ethers.getContractFactory("MockTimeAMM");
 
     const calleeContractFactory = await ethers.getContractFactory(
       "TestAMMCallee"
@@ -55,9 +55,9 @@ export const AMMFixture: Fixture<AMMFixture> =
         fee,
         tickSpacing
       ) => {
-        const mockTimeAMMDeployer =
-          (await MockTimeAMMDeployerFactory.deploy()) as MockTimeAMMDeployer;
-        const tx = await mockTimeAMMDeployer.deploy(
+        const mockTimeDeployer =
+          (await MockTimeDeployerFactory.deploy()) as MockTimeDeployer;
+        const tx = await mockTimeDeployer.deploy(
           factory.address,
           underlyingToken,
           underlyingPool,
@@ -68,7 +68,7 @@ export const AMMFixture: Fixture<AMMFixture> =
 
         const receipt = await tx.wait();
         const ammAddress = receipt.events?.[0].args?.amm as string;
-        return MockTimeAMMFactory.attach(ammAddress) as MockTimeAMM;
+        return MockTimeFactory.attach(ammAddress) as MockTimeAMM;
       },
     };
   };

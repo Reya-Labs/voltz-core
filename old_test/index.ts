@@ -1,7 +1,7 @@
 import { Wallet } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
-import { AMMFactory } from "../typechain/AMMFactory";
+import { Factory } from "../typechain/Factory";
 
 import {
   FeeAmount,
@@ -16,15 +16,15 @@ const TEST_ADDRESSES: [string, string] = [
   "0x2000000000000000000000000000000000000000",
 ];
 
-describe("AMMFactory", () => {
+describe("Factory", () => {
   let wallet: Wallet, other: Wallet;
 
-  let factory: AMMFactory;
+  let factory: Factory;
   let poolBytecode: string;
 
   const fixture = async () => {
-    const factoryFactory = await ethers.getContractFactory("AMMFactory");
-    return (await factoryFactory.deploy()) as AMMFactory;
+    const factoryFactory = await ethers.getContractFactory("Factory");
+    return (await factoryFactory.deploy()) as Factory;
   };
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;

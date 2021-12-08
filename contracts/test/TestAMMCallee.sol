@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 
 // import "../utils/SafeCast.sol";
 // import "../utils/TickMath.sol";
-// import "../interfaces/IAMM.sol";
-// import "../AMM.sol";
+// import "../interfaces/IVAMM.sol";
+// import "../VAMM.sol";
 
 // contract TestAMMCallee is AMM {
 //     using SafeCast for uint256;

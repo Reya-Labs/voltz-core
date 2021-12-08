@@ -1,6 +1,6 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, BigNumberish, constants, Wallet } from "ethers";
-import { AMMFactory } from "../typechain/AMMFactory";
+import { Factory } from "../typechain/Factory";
 import { expect } from "chai";
 
 import { toBn } from "evm-bn";
@@ -88,7 +88,7 @@ async function generateFactory(contractName:string) {
 
 describe("AMM", () => {
   let wallet: Wallet, other: Wallet;
-  let factory: AMMFactory;
+  let factory: Factory;
 
 
   let fixedAndVariableMath: FixedAndVariableMath;
@@ -138,8 +138,8 @@ describe("AMM", () => {
 
     const position = (await PositionFactory.deploy()) as Position;
 
-    const AMMFactoryFactory = await ethers.getContractFactory(
-      "AMMFactory", {
+    const FactoryFactory = await ethers.getContractFactory(
+      "Factory", {
         libraries: {
           FixedAndVariableMath: fixedAndVariableMath.address,
           Tick: tick.address,
@@ -148,7 +148,7 @@ describe("AMM", () => {
       }
     );
 
-    return (await AMMFactoryFactory.deploy()) as AMMFactory;
+    return (await FactoryFactory.deploy()) as Factory;
   };
 
   
@@ -176,9 +176,9 @@ describe("AMM", () => {
     await factory.createAMM(usdc_mainnet_addr, aave_lending_pool_addr, toBn(termEndTimestamp.toString()), FeeAmount.MEDIUM)
 
     const ammAddress = await factory.getAMMMAp(aave_lending_pool_addr, usdc_mainnet_addr, toBn(termStartTimestamp.toString()), toBn(termEndTimestamp.toString()), FeeAmount.MEDIUM)
-    const TestAMMFactory = await generateFactory("TestAMM")
+    const TestFactory = await generateFactory("TestAMM")
 
-    ammTest = (await TestAMMFactory.deploy()) as TestAMM;
+    ammTest = (await TestFactory.deploy()) as TestAMM;
   }); 
 
   afterEach(async () => {

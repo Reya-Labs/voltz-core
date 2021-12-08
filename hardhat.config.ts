@@ -12,7 +12,7 @@ import "hardhat-gas-reporter";
 import "@tenderly/hardhat-tenderly"
 import '@openzeppelin/hardhat-upgrades';
 import "@nomiclabs/hardhat-solhint";
-
+import "hardhat-contract-sizer";
 
 dotenv.config();
 

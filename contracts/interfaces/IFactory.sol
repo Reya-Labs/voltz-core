@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 /// @title The interface for the Voltz AMM Factory
 /// @notice The AMM Factory facilitates creation of Voltz AMMs and control over the protocol fees
-interface IAMMFactory {
+interface IFactory {
   /// @notice Emitted when the owner of the factory is changed
   /// @param oldOwner The owner before the owner was changed
   /// @param newOwner The owner after the owner was changed
@@ -72,12 +72,12 @@ interface IAMMFactory {
   /// @param termEndTimestamp Number of days between the inception of the pool and its maturity
   /// @param fee The fee collected upon every swap in the pool (as a percentage of notional traded), denominated in hundredths of a bip
   /// @return amm The address of the newly created amm
-  function createAMM(
-    address underlyingToken,
-    bytes32 rateOracleId,
-    uint256 termEndTimestamp,
-    uint24 fee
-  ) external returns (address amm);
+  // function createAMM(
+  //   address underlyingToken,
+  //   bytes32 rateOracleId,
+  //   uint256 termEndTimestamp,
+  //   uint24 fee
+  // ) external returns (address amm);
 
   /// @notice Updates the owner of the factory
   /// @dev Must be called by the current owner

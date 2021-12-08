@@ -1,9 +1,9 @@
-// import { AMMFactory } from "../../typechain/AMMFactory";
+// import { Factory } from "../../typechain/Factory";
 // import { Fixture } from "ethereum-waffle";
 // import { ethers } from "hardhat";
 // import { TestAMMCallee } from "../../typechain/TestAMMCallee";
 // import { MockTimeAMM } from "../../typechain/MockTimeAMM";
-// import { MockTimeAMMDeployer } from "../../typechain/MockTimeAMMDeployer";
+// import { MockTimeDeployer } from "../../typechain/MockTimeDeployer";
 // import { BigNumber } from "@ethersproject/bignumber";
 
 // import {FixedAndVariableMath} from "../../typechain/FixedAndVariableMath";
@@ -11,7 +11,7 @@
 // // import {Tick} from "../../typechain/Tick"; todo: fix this
 
 // interface FactoryFixture {
-//   factory: AMMFactory;
+//   factory: Factory;
 // }
 
 // async function factoryFixture(): Promise<FactoryFixture> {
@@ -36,7 +36,7 @@
 //   const position = (await PositionFactory.deploy()) as Position;
 
 //   const factoryFactory = await ethers.getContractFactory(
-//     "AMMFactory", {
+//     "Factory", {
 //       libraries: {
 //         FixedAndVariableMath: fixedAndVariableMath.address,
 //         Tick: tick.address,
@@ -44,7 +44,7 @@
 //       }
 //     }
 //   );
-//   const factory = (await factoryFactory.deploy()) as AMMFactory;
+//   const factory = (await factoryFactory.deploy()) as Factory;
 //   return { factory };
 // }
 

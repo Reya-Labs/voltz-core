@@ -2,15 +2,15 @@
 
 pragma solidity ^0.8.0;
 
-import "./interfaces/IAMMFactory.sol";
-import "./interfaces/IAMMFactory.sol";
+import "./interfaces/IFactory.sol";
+import "./interfaces/IFactory.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
-import "./AMMDeployer.sol";
-import "./AMM.sol";
+import "./Deployer.sol";
+import "./VAMM.sol";
 import "./utils/NoDelegateCall.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
-// todo: introduce VoltzData.sol that is above the AMMFactory?
+// todo: introduce VoltzData.sol that is above the Factory?
 
 /*
 Warning: Contract code size exceeds 24576 bytes (a limit introduced in Spurious Dragon). 
@@ -20,7 +20,7 @@ turning off revert strings, or using libraries.
 
 /// @title Canonical Voltz factory
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
-contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
+contract Factory is IFactory, Deployer, NoDelegateCall {
   mapping(bytes32 => address) public override getRateOracleAddress;
   address public override owner;
   mapping(uint24 => int24) public override feeAmountTickSpacing;
@@ -74,47 +74,49 @@ contract AMMFactory is IAMMFactory, AMMDeployer, NoDelegateCall {
     // emit insurance fund set
   }
 
-  function createAMM(
-    address underlyingToken,
-    bytes32 rateOracleId,
-    uint256 termEndTimestamp,
-    uint24 fee
-  ) external override noDelegateCall returns (address amm) {
-    int24 tickSpacing = feeAmountTickSpacing[fee];
-    require(tickSpacing != 0);
+  // todo: sort this out when modularising the Factory contract
+  // todo: needs to also have create vAMM and create MarginEngine functions
+  // function createAMM(
+  //   address underlyingToken,
+  //   bytes32 rateOracleId,
+  //   uint256 termEndTimestamp,
+  //   uint24 fee
+  // ) external override noDelegateCall returns (address amm) {
+  //   int24 tickSpacing = feeAmountTickSpacing[fee];
+  //   require(tickSpacing != 0);
 
-    uint256 termStartTimestamp = FixedAndVariableMath.blockTimestampScaled();
+  //   uint256 termStartTimestamp = FixedAndVariableMath.blockTimestampScaled();
 
-    require(
-      getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
-        termEndTimestamp
-      ][fee] == address(0)
-    );
+  //   require(
+  //     getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
+  //       termEndTimestamp
+  //     ][fee] == address(0)
+  //   );
 
-    amm = deploy(
-      address(this),
-      underlyingToken,
-      rateOracleId,
-      termStartTimestamp,
-      termEndTimestamp,
-      fee,
-      tickSpacing
-    );
+  //   amm = deploy(
+  //     address(this),
+  //     underlyingToken,
+  //     rateOracleId,
+  //     termStartTimestamp,
+  //     termEndTimestamp,
+  //     fee,
+  //     tickSpacing
+  //   );
 
-    getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
-      termEndTimestamp
-    ][fee] = amm;
-    emit AMMCreated(
-      rateOracleId,
-      underlyingToken,
-      termEndTimestamp,
-      termStartTimestamp,
-      fee,
-      tickSpacing,
-      amm
-    );
-    return amm;
-  }
+  //   getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
+  //     termEndTimestamp
+  //   ][fee] = amm;
+  //   emit AMMCreated(
+  //     rateOracleId,
+  //     underlyingToken,
+  //     termEndTimestamp,
+  //     termStartTimestamp,
+  //     fee,
+  //     tickSpacing,
+  //     amm
+  //   );
+  //   return amm;
+  // }
 
   function setOwner(address _owner) external override {
     require(msg.sender == owner);
