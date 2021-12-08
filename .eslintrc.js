@@ -20,5 +20,11 @@ module.exports = {
       "error",
       { ignores: ["modules"] },
     ],
+    "camelcase": "off",
+  },
+  settings: {
+    node: {
+      tryExtensions: [".js", ".json", ".ts", ".d.ts"],
+    },
   },
 };
