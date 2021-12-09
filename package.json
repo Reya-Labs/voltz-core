@@ -53,9 +53,9 @@
   },
   "scripts": {
     "compile": "npx hardhat compile",
-    "test": "npx hardhat test",
-    "format-check": "npx prettier '**/*.{js,ts}' --check",
-    "format-fix": "npx prettier '**/*.{js,ts}' --write",
+
+    "format-check": "npx prettier '**/*.{json,js,ts}' --check",
+    "format-fix": "npx prettier '**/*.{json,js,ts, md}' --write",
     "lint-check": "npx solhint 'contracts/**/*.sol'",
     "lint-fix": "npx solhint 'contracts/**/*.sol' --fix",
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/*.sol",
