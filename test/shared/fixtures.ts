@@ -22,7 +22,6 @@
 
 //   const fixedAndVariableMath = (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMath;
 
-
 //   const TickFactory = await ethers.getContractFactory(
 //     "Tick"
 //   );
@@ -52,7 +51,6 @@
 //   swapTargetCallee: TestAMMCallee;
 // }
 
-
 // async function dependencyDeploymentAddresses() {
 //    // linking
 //   const fixedAndVariableMathFactory = await ethers.getContractFactory(
@@ -60,7 +58,6 @@
 //   );
 
 //   const fixedAndVariableMath = (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMath;
-
 
 //   const TickFactory = await ethers.getContractFactory(
 //     "Tick"
@@ -75,12 +72,10 @@
 //   const position = (await PositionFactory.deploy()) as Position;
 
 //   return (fixedAndVariableMath.address, tick.address, position.address)
-  
-// }
 
+// }
 
 // export const AMMFixture: Fixture<AMMFixture> =
 //   async function (): Promise<AMMFixture> {
-
 
 //   };

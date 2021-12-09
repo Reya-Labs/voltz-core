@@ -9,8 +9,8 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-prettier";
 import "hardhat-gas-reporter";
-import "@tenderly/hardhat-tenderly"
-import '@openzeppelin/hardhat-upgrades';
+import "@tenderly/hardhat-tenderly";
+import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 
@@ -50,9 +50,8 @@ const config: HardhatUserConfig = {
   },
 
   mocha: {
-    timeout: 20000
-  }
-
+    timeout: 20000,
+  },
 };
 
 export default config;

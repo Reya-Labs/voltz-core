@@ -28,8 +28,8 @@ export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
   [FeeAmount.HIGH]: 200,
 };
 
-export const SECONDS_IN_YEAR = toBn("31536000")
-export const BLOCK_TIMESTAMP = 1632249308
+export const SECONDS_IN_YEAR = toBn("31536000");
+export const BLOCK_TIMESTAMP = 1632249308;
 
 export function getCreate2Address(
   factoryAddress: string,
@@ -234,29 +234,29 @@ export function expandTo18Decimals(n: number): BigNumber {
   return BigNumber.from(n).mul(BigNumber.from(10).pow(18));
 }
 
-export function accrualFact(timeInSeconds: BigNumber) : BigNumber {
+export function accrualFact(timeInSeconds: BigNumber): BigNumber {
   return div(timeInSeconds, SECONDS_IN_YEAR);
 }
 
+export function fixedFactor(
+  atMaturity: boolean,
+  termStartTimestamp: BigNumber,
+  termEndTimestamp: BigNumber
+): BigNumber {
+  let timeInSeconds: BigNumber;
 
-export function fixedFactor(atMaturity: boolean, termStartTimestamp: BigNumber, termEndTimestamp: BigNumber) : BigNumber {
+  const currentBlockTimestamp = toBn(BLOCK_TIMESTAMP.toString());
 
-  let timeInSeconds: BigNumber
-
-  const currentBlockTimestamp = toBn(BLOCK_TIMESTAMP.toString())
-  
   if (atMaturity) {
-    timeInSeconds = sub(termEndTimestamp, termStartTimestamp)
+    timeInSeconds = sub(termEndTimestamp, termStartTimestamp);
   } else {
     // timeInSeconds = sub(toBn(Math.floor(Date.now()/1000).toString()), termStartTimestamp)
-    timeInSeconds = sub(currentBlockTimestamp, termStartTimestamp)
+    timeInSeconds = sub(currentBlockTimestamp, termStartTimestamp);
   }
 
-  const timeInYears: BigNumber = accrualFact(timeInSeconds)
-  
+  const timeInYears: BigNumber = accrualFact(timeInSeconds);
 
-  const fixedFactorValue: BigNumber = mul(timeInYears, toBn("0.01"))
+  const fixedFactorValue: BigNumber = mul(timeInYears, toBn("0.01"));
 
-  return fixedFactorValue
-
+  return fixedFactorValue;
 }
