@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
-import "./utils/NoDelegateCall.sol";
 import "./core_libraries/Tick.sol";
 import "./interfaces/IDeployer.sol";
 import "./interfaces/IAMM.sol";
@@ -9,7 +8,6 @@ import "./core_libraries/TickBitmap.sol";
 import "./core_libraries/Position.sol";
 import "./core_libraries/Trader.sol";
 
-import "./utils/SafeCast.sol";
 import "./utils/LowGasSafeMath.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
@@ -34,6 +32,9 @@ import "./interfaces/IVAMM.sol";
 
 // todo: only the amm can interact with the vAMM and the MarginEngine, hence if you make the AMM pausable, you are essentially pausing the vAMM and the MarginEngine
 contract AMM is IAMM, Pausable {
+
+    using LowGasSafeMath for uint256;
+    using LowGasSafeMath for int256;
     
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;

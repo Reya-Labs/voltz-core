@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
