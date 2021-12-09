@@ -7,7 +7,6 @@ import "./interfaces/IFactory.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./Deployer.sol";
 import "./VAMM.sol";
-import "./utils/NoDelegateCall.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
 // todo: introduce VoltzData.sol that is above the Factory?
@@ -20,7 +19,7 @@ turning off revert strings, or using libraries.
 
 /// @title Canonical Voltz factory
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
-contract Factory is IFactory, Deployer, NoDelegateCall {
+contract Factory is IFactory, Deployer {
   mapping(bytes32 => address) public override getRateOracleAddress;
   address public override owner;
   mapping(uint24 => int24) public override feeAmountTickSpacing;

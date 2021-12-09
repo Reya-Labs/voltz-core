@@ -20,7 +20,7 @@ module.exports = {
       "error",
       { ignores: ["modules"] },
     ],
-    "camelcase": "off",
+    camelcase: "off",
   },
   settings: {
     node: {
