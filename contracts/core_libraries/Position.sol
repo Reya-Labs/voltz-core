@@ -23,6 +23,7 @@ library Position {
     int256 fixedTokenBalance;
     int256 variableTokenBalance;
     uint256 feeGrowthInsideLast;
+    bool isBurned;
   }
 
   /// @notice Returns the Info struct of a position, given an owner and position boundaries

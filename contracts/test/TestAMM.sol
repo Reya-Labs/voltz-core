@@ -11,9 +11,9 @@ import "../AMM.sol";
 contract TestAMM is AMM {
     using SafeCast for uint256;
 
-    function getAMMFee(address amm) external view returns(uint256) {
-        return IAMM(amm).fee();
-    }
+    // function getAMMFee(address amm) external view returns(uint256) {
+    //     return IAMM(amm).fee();
+    // }
 
     function mintTest(
         address amm,

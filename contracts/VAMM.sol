@@ -33,12 +33,6 @@ contract VAMM is IVAMM {
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
     using TickBitmap for mapping(int16 => uint256); // todo: resolve the issue with tick bitmap
-    
-    using Position for mapping(bytes32 => Position.Info);
-    using Position for Position.Info;
-
-    using Trader for mapping(bytes32 => Trader.Info);
-    using Trader for Trader.Info;
 
     uint256 public immutable override fee; // 0.3%=0.003 of the total notional
 
@@ -46,16 +40,25 @@ contract VAMM is IVAMM {
 
     uint128 public immutable override maxLiquidityPerTick;
 
+    mapping(int24 => Tick.Info) public override ticks;
+    mapping(int16 => uint256) public override tickBitmap;
+
     constructor() {
-        address ammAddress;
+        address _ammAddress;
+        int24 _tickSpacing;
         
         (
-            ammAddress,
+            _ammAddress,
             fee,
-            tickSpacing
+            _tickSpacing
         ) = IDeployer(msg.sender).vammParameters();        
 
-        amm = IAMM(ammAddress);
+        amm = IAMM(_ammAddress);
+
+        tickSpacing = _tickSpacing;
+
+        maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing); 
+
     }
     
     Slot0 public override slot0; // todo: rename, no longer the 0th slot
@@ -87,12 +90,14 @@ contract VAMM is IVAMM {
         require(protocolFeesCollected <= protocolFees, "Can't withdraw more than have");
         // todo: alternative less severe implementation
         // amount = amountRequested > protocolFees ? protocolFees : amountRequested;
-        protocolFees = PRBMathSD59x18Typed.sub(
-            PRBMath.SD59x18({
+        protocolFees = PRBMathUD60x18Typed.sub(
+            PRBMath.UD60x18({
                 value: protocolFees
             }),
-            protocolFeesCollected
-        );
+            PRBMath.UD60x18({
+                value: protocolFeesCollected
+            })
+        ).value;
     }
     
     /// @dev not locked because it initializes unlocked
@@ -129,20 +134,48 @@ contract VAMM is IVAMM {
             })
         );
 
-        UnwindTraderUnwindPosition.unwindPosition(address(amm), msg.sender, tickLower, tickUpper);
+        amm.marginEngine().unwindPosition(msg.sender, tickLower, tickUpper);
         
     }
     
+    function flipTicks(ModifyPositionParams memory params) internal returns(bool flippedLower, bool flippedUpper) {
+        
+        flippedLower = ticks.update(
+            params.tickLower,
+            slot0.tick,
+            params.liquidityDelta,
+            fixedTokenGrowthGlobal,
+            variableTokenGrowthGlobal,
+            feeGrowthGlobal,
+            false,
+            maxLiquidityPerTick
+        );
+        flippedUpper = ticks.update(
+            params.tickUpper,
+            slot0.tick,
+            params.liquidityDelta,
+            fixedTokenGrowthGlobal,
+            variableTokenGrowthGlobal,
+            feeGrowthGlobal,
+            true,
+            maxLiquidityPerTick
+        );
+
+        if (flippedLower) {
+            tickBitmap.flipTick(params.tickLower, tickSpacing);
+        }
+        if (flippedUpper) {
+            tickBitmap.flipTick(params.tickUpper, tickSpacing);
+        }
+
+    }
+
+
     function updatePosition(
         ModifyPositionParams memory params
     )
         private
-        returns (
-            Position.Info storage position
-        )
     {
-        
-        position = amm.positions(params.owner, params.tickLower, params.tickUpper);
 
         uint256 _feeGrowthGlobal = feeGrowthGlobal;
 
@@ -150,10 +183,10 @@ contract VAMM is IVAMM {
 
         if (params.liquidityDelta != 0) {
             // update the ticks if necessary
-            (vars.flippedLower, vars.flippedUpper) = amm.flipTicks(params, _feeGrowthGlobal);
+            (vars.flippedLower, vars.flippedUpper) = flipTicks(params);
         }
         
-        vars.fixedTokenGrowthInside = amm.getFixedTokenGrowthInside(
+        vars.fixedTokenGrowthInside = ticks.getFixedTokenGrowthInside(
             Tick.FixedTokenGrowthInsideParams({
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
@@ -162,7 +195,7 @@ contract VAMM is IVAMM {
             }) 
         );
 
-        vars.variableTokenGrowthInside = amm.getVariableTokenGrowthInside(
+        vars.variableTokenGrowthInside = ticks.getVariableTokenGrowthInside(
             Tick.VariableTokenGrowthInsideParams({
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
@@ -171,35 +204,28 @@ contract VAMM is IVAMM {
             })
         );
 
-        vars.feeGrowthInside = amm.getFeeGrowthInside(
+        vars.feeGrowthInside = ticks.getFeeGrowthInside(
             params.tickLower,
             params.tickUpper,
             slot0.tick,
             feeGrowthGlobal
         );
 
-
-        // todo: the below logic needs to be optimised
-        position.updateLiquidity(params.liquidityDelta);
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
-        uint256 feeDelta = position.calculateFeeDelta(vars.feeGrowthInside);
-        position.updateBalances(fixedTokenDelta, variableTokenDelta);
-        position.updateMargin(int256(feeDelta));
-        position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
-        position.updateFeeGrowthInside(vars.feeGrowthInside);
+        amm.marginEngine().updatePosition(params, vars);
 
         // clear any tick data that is no longer needed
         if (params.liquidityDelta < 0) {
             if (vars.flippedLower) {
-                amm.clearTicks(params.tickLower);
+                // amm.clearTicks(params.tickLower);
+                ticks.clear(params.tickLower);
             }
             if (vars.flippedUpper) {
-                amm.clearTicks(params.tickUpper);
+                ticks.clear(params.tickUpper);
+                // amm.clearTicks(params.tickUpper);
             }
         }
     }
-
-
+    
     function modifyPosition(ModifyPositionParams memory params)
         private
     {
@@ -207,7 +233,7 @@ contract VAMM is IVAMM {
 
         Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
 
-        Position.Info storage position = updatePosition(params);
+        updatePosition(params);
 
         amm.rateOracle().writeOrcleEntry(amm.underlyingToken());
 
@@ -227,33 +253,6 @@ contract VAMM is IVAMM {
         }
     }
     
-
-    function checkPositionMarginRequirementSatisfied(
-            
-            address recipient,
-            int24 tickLower,
-            int24 tickUpper,
-            uint128 amount,
-            int256 positionMargin
-
-        ) internal view {
-        
-        // todo: check why amount is not used
-        int256 marginRequirement = int256(amm.calculator().getPositionMarginRequirement(
-            IMarginCalculator.PositionMarginRequirementParams({
-                owner: recipient,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                isLM: false,
-                rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
-            })
-        ));
-
-        require(positionMargin >= marginRequirement, "position margin higher than requirement");
-
-    }
-    
     
     function mint(
         address recipient,
@@ -263,9 +262,11 @@ contract VAMM is IVAMM {
     ) external override {
         require(amount > 0);
 
-        Position.Info storage position = amm.positions(recipient, tickLower, tickUpper);
-
-        checkPositionMarginRequirementSatisfied(recipient, tickLower, tickUpper, amount, position.margin);
+        // Position.Info storage position = amm.positions(recipient, tickLower, tickUpper);
+        // todo: have a helper function that just pulls the margin for the following call
+        amm.marginEngine().checkPositionMarginRequirementSatisfied(recipient, tickLower, tickUpper, amount);
+        
+        // todo: liqudiity delta is the liquidity of the position after the amount is deposited
         
         modifyPosition(
             ModifyPositionParams({
@@ -289,8 +290,9 @@ contract VAMM is IVAMM {
     function calculateUpdatedGlobalTrackerValues(
         SwapParams memory params,
         SwapState memory state,
-        StepComputations memory step
-        ) internal view returns(uint256 stateFeeGrowthGlobal, uint256 stateVariableTokenGrowthGlobal, uint256 stateFixedTokenGrowthGlobal) {
+        StepComputations memory step,
+        uint256 variableFactor
+        ) internal view returns(uint256 stateFeeGrowthGlobal, int256 stateVariableTokenGrowthGlobal, int256 stateFixedTokenGrowthGlobal) {
 
         stateFeeGrowthGlobal = PRBMathUD60x18Typed.add(
 
@@ -340,7 +342,7 @@ contract VAMM is IVAMM {
 
                     PRBMath.SD59x18({
                         // todo: check the signs
-                        value: FixedAndVariableMath.getFixedTokenBalance(-int256(step.amountIn), int256(step.amountOut), amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()), amm.termStartTimestamp(), amm.termEndTimestamp())
+                        value: FixedAndVariableMath.getFixedTokenBalance(-int256(step.amountIn), int256(step.amountOut), variableFactor, amm.termStartTimestamp(), amm.termEndTimestamp())
                     }),
 
                     PRBMath.SD59x18({
@@ -378,7 +380,14 @@ contract VAMM is IVAMM {
 
                     PRBMath.SD59x18({
                         // todo: check the signs are correct
-                        value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amountOut), -int256(step.amountIn), amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()), amm.termStartTimestamp(), amm.termEndTimestamp())
+                        // int256 amount0,
+                        // int256 amount1,
+                        // uint256 accruedVariableFactor,
+                        // uint256 termStartTimestamp,
+                        // uint256 termEndTimestamp
+                        // (stopped here)
+                        
+                        value: FixedAndVariableMath.getFixedTokenBalance(int256(step.amountOut), -int256(step.amountIn), variableFactor, amm.termStartTimestamp(), amm.termEndTimestamp()) // variable factor maturity false
                     }),
 
                     PRBMath.SD59x18({
@@ -417,34 +426,11 @@ contract VAMM is IVAMM {
                 value: stateProtocolFee
             }),
 
-            PRBMath.UD60x18({
-                value: delta
-            })
+            delta
                 
         ).value;
 
         return (stepFeeAmount, stateProtocolFee);
-
-    }
-    
-    function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance) internal {
-        Trader.Info storage trader = amm.traders(recipient);
-        trader.updateBalances(fixedTokenBalance, variableTokenBalance);
-
-        int256 marginRequirement = int256(amm.calculator().getTraderMarginRequirement(
-            IMarginCalculator.TraderMarginRequirementParams({
-                fixedTokenBalance: trader.fixedTokenBalance,
-                variableTokenBalance: trader.variableTokenBalance,
-                termStartTimestamp:amm.termStartTimestamp(),
-                termEndTimestamp:amm.termEndTimestamp(),
-                isLM: false,
-                rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
-            })
-        ));
-
-        // todo: revert if margin requirement is satisfied unless it is a liquidation
-        require(trader.margin >= marginRequirement, "Margin Requirement");
 
     }
     
@@ -501,7 +487,7 @@ contract VAMM is IVAMM {
 
             step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
-            (step.tickNext, step.initialized) = amm.tickBitmap()
+            (step.tickNext, step.initialized) = tickBitmap
                 .nextInitializedTickWithinOneWord(
                     state.tick,
                     tickSpacing,
@@ -567,15 +553,22 @@ contract VAMM is IVAMM {
             }
 
             // update global fee tracker
-            if (state.liquidity > 0) {                
-                (state.feeGrowthGlobal, state.variableTokenGrowthGlobal, state.fixedTokenGrowthGlobal) = calculateUpdatedGlobalTrackerValues(params, state, step);                
+            if (state.liquidity > 0) {  
+                uint256 variableFactor = amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp());             
+                (state.feeGrowthGlobal, state.variableTokenGrowthGlobal, state.fixedTokenGrowthGlobal) = calculateUpdatedGlobalTrackerValues(params, state, step, variableFactor);
             }
 
             // shift tick if we reached the next price
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
-                    int128 liquidityNet = amm.crossTicks(
+                    // int128 liquidityNet = amm.crossTicks(
+                    //     step.tickNext,
+                    //     state.fixedTokenGrowthGlobal,
+                    //     state.variableTokenGrowthGlobal,
+                    //     state.feeGrowthGlobal
+                    // );
+                    int128 liquidityNet = ticks.cross(
                         step.tickNext,
                         state.fixedTokenGrowthGlobal,
                         state.variableTokenGrowthGlobal,
@@ -649,12 +642,12 @@ contract VAMM is IVAMM {
             _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(int256(amount0), -int256(amount1), amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()), amm.termStartTimestamp(), amm.termEndTimestamp());
         } else {
             _variableTokenDelta = int256(amount1);
-            _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(-int256(amount0), int256(amount1), amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()), amm.termStartTimestamp()(), amm.termEndTimestamp());
+            _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(-int256(amount0), int256(amount1), amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()), amm.termStartTimestamp(), amm.termEndTimestamp());
         }
 
         // if this is not the case then it is a position unwind induced swap triggered by a position liquidation which is handled in the position unwind function
         if (params.isTrader) {
-            updateTraderBalances(params.recipient, _fixedTokenDelta, _variableTokenDelta);
+            amm.marginEngine().updateTraderBalances(params.recipient, _fixedTokenDelta, _variableTokenDelta);
         }
         
         emit Swap(
@@ -667,6 +660,29 @@ contract VAMM is IVAMM {
 
         // slot0.unlocked = true;
         amm.setUnlocked(true);
+    }
+
+    function computePositionFixedAndVariableGrowthInside(ModifyPositionParams memory params, int24 currentTick)
+     external view override returns(int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) {
+
+        fixedTokenGrowthInside = ticks.getFixedTokenGrowthInside(
+            Tick.FixedTokenGrowthInsideParams({
+                tickLower: params.tickLower,
+                tickUpper: params.tickUpper,
+                tickCurrent: currentTick,
+                fixedTokenGrowthGlobal: variableTokenGrowthGlobal
+            }) 
+        ); 
+
+        variableTokenGrowthInside = ticks.getVariableTokenGrowthInside(
+            Tick.VariableTokenGrowthInsideParams({
+                tickLower: params.tickLower,
+                tickUpper: params.tickUpper,
+                tickCurrent: currentTick,
+                variableTokenGrowthGlobal: variableTokenGrowthGlobal
+            })
+        );
+
     }
 
 }

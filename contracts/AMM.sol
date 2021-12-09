@@ -41,14 +41,11 @@ contract AMM is IAMM, Pausable {
     using Trader for mapping(bytes32 => Trader.Info);
     using Trader for Trader.Info;
 
-    using Tick for mapping(int24 => Tick.Info);
-    using TickBitmap for mapping(int16 => uint256);
-
-    address public immutable override factory;
+    address public override factory; // todo: make immutable? but this causes the constructor call to break, use memory
 
     address public immutable override underlyingToken;
 
-    bytes32 public immutable override rateOracleId;
+    bytes32 public override rateOracleId; // todo: make immutable?
 
     uint256 public immutable override termStartTimestamp;
 
@@ -58,17 +55,10 @@ contract AMM is IAMM, Pausable {
     
     IRateOracle public override rateOracle;
 
-    mapping(bytes32 => Position.Info) public override positions;
-    mapping(bytes32 => Trader.Info) public override traders;
-
     IVAMM public override vamm;  
     IMarginEngine public override marginEngine;
-    bool public override unlocked;
+    bool public override unlocked; // todo: consider moving to vamm if no longer need amm.sol as an interface to the protocol
 
-    mapping(int24 => Tick.Info) public override ticks;
-    mapping(int16 => uint256) public override tickBitmap;
-
-    
     constructor() Pausable() {
         (
             factory,
@@ -110,33 +100,25 @@ contract AMM is IAMM, Pausable {
         unlocked = true;
     }
 
-    function getSlot0() external view override {
-        return vamm.slot0();
+    function getSlot0() external view override returns (IVAMM.Slot0 memory) {
+
+        (uint160 sqrtPriceX96, int24 tick, uint256 feeProtocol) = vamm.slot0();
+
+        return IVAMM.Slot0(
+            {
+                sqrtPriceX96: sqrtPriceX96,
+                tick: tick,
+                feeProtocol: feeProtocol
+            }
+        );
     }
 
-    function getVariableTokenGrowthGlobal() external view override {
+    function getVariableTokenGrowthGlobal() external view override returns (int256) {
         return vamm.variableTokenGrowthGlobal();
     }
 
-    function getFixedTokenGrowthGlobal() external view override {
+    function getFixedTokenGrowthGlobal() external view override returns (int256) {
         return vamm.fixedTokenGrowthGlobal();
-    }
-
-    function getFixedTokenGrowthInside(Tick.FixedTokenGrowthInsideParams memory params) external view override {
-        return ticks.getFixedTokenGrowthInside(params);
-    }
-
-    function getVariableTokenGrowthInside(Tick.VariableTokenGrowthInsideParams memory params) external view override {
-        return ticks.getVariableTokenGrowthInside(params);
-    }
-
-    function getFeeGrowthInside(
-        int24 tickLower,
-        int24 tickUpper,
-        int24 tickCurrent,
-        uint256 feeGrowthGlobal
-    ) external view override {
-        return ticks.getFeeGrowthInside(tickLower, tickUpper, tickCurrent, feeGrowthGlobal);
     }
     
     function setVAMM(address _vAMMAddress) external onlyFactoryOwner override {
@@ -207,8 +189,10 @@ contract AMM is IAMM, Pausable {
 
     function swap(
         IVAMM.SwapParams memory params
-    ) external override whenNotPaused lock{
-        vamm.swap(params); // no need to register the returned values
+    ) external override whenNotPaused lock returns (int256 _fixedTokenDelta, int256 _variableTokenDelta) {
+        
+        (_fixedTokenDelta, _variableTokenDelta) = vamm.swap(params);
+
     }
 
     function setFeeProtocol(uint256 feeProtocol) external lock override onlyFactoryOwner  {
@@ -233,50 +217,19 @@ contract AMM is IAMM, Pausable {
 
     // tick related logic (feels like it shouldn't be here)
 
-    function flipTicks(IVAMM.ModifyPositionParams memory params, uint256 _feeGrowthGlobal, int24 currentTick, int256 fixedTokenGrowthGlobal, int256 variableTokenGrowthGlobal,  uint128 maxLiquidityPerTick, int24 tickSpacing) external override returns(bool flippedLower, bool flippedUpper) {
-        
-        flippedLower = ticks.update(
-            params.tickLower,
-            currentTick,
-            params.liquidityDelta,
-            fixedTokenGrowthGlobal,
-            variableTokenGrowthGlobal,
-            _feeGrowthGlobal,
-            false,
-            maxLiquidityPerTick
-        );
-        flippedUpper = ticks.update(
-            params.tickUpper,
-            currentTick,
-            params.liquidityDelta,
-            fixedTokenGrowthGlobal,
-            variableTokenGrowthGlobal,
-            _feeGrowthGlobal,
-            true,
-            maxLiquidityPerTick
-        );
+    // function clearTicks(int24 tick) external override{
+    //     ticks.clear(tick);
+    // }
 
-        if (flippedLower) {
-            tickBitmap.flipTick(params.tickLower, tickSpacing);
-        }
-        if (flippedUpper) {
-            tickBitmap.flipTick(params.tickUpper, tickSpacing);
-        }
-
-    }
-
-    function clearTicks(int24 tick) external override{
-        ticks.clear(tick);
-    }
-
-    function crossTicks(
-        int24 tick,
-        int256 fixedTokenGrowthGlobal,
-        int256 variableTokenGrowthGlobal,
-        uint256 feeGrowthGlobal
-    ) external override {
-        ticks.cross(tick, fixedTokenGrowthGlobal, variableTokenGrowthGlobal, feeGrowthGlobal);
-    }
+    // function crossTicks(
+    //     int24 tick,
+    //     int256 fixedTokenGrowthGlobal,
+    //     int256 variableTokenGrowthGlobal,
+    //     uint256 feeGrowthGlobal
+    // ) external override {
+    //     ticks.cross(tick, fixedTokenGrowthGlobal, variableTokenGrowthGlobal, feeGrowthGlobal);
+    // }
+    
 
 
 }

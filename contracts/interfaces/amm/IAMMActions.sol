@@ -18,7 +18,5 @@ interface IAMMActions {
     function liquidateTrader(address traderAddress) external;
     function burn(int24 tickLower, int24 tickUpper, uint128 amount) external;
     function mint(address recipient, int24 tickLower, int24 tickUpper, uint128 amount) external;
-    function swap(IVAMM.SwapParams memory params) external;
-    // function setFeeProtocol(uint256 feeProtocol) external;
-    // function collectProtocol(address recipient, uint256 amountRequested) external;
+    function swap(IVAMM.SwapParams memory params) external returns (int256 _fixedTokenDelta, int256 _variableTokenDelta);
 }

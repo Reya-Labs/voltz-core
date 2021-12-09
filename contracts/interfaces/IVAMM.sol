@@ -2,8 +2,9 @@
 
 pragma solidity ^0.8.0;
 import "./IAMM.sol";
+import "./IPositionStructs.sol";
 
-interface IVAMM {
+interface IVAMM is IPositionStructs {
 
     // structs
     struct Slot0 {
@@ -106,17 +107,6 @@ interface IVAMM {
         int256 margin;
         bool settled;
     }
-
-    struct ModifyPositionParams {
-        // the address that owns the position
-        address owner;
-        // the lower and upper tick of the position
-        int24 tickLower;
-        int24 tickUpper;
-        // any change in liquidity
-        int128 liquidityDelta;
-    }
-
     
     struct UpdatePositionVars {
         
@@ -195,5 +185,31 @@ interface IVAMM {
     function swap(
         SwapParams memory params
     ) external returns (int256 _fixedTokenDelta, int256 _variableTokenDelta);
+
+  /// @notice Look up information about a specific tick in the amm
+  /// @param tick The tick to look up
+  /// @return liquidityGross the total amount of position liquidity that uses the amm either as tick lower or
+  /// tick upper,
+  /// liquidityNet how much liquidity changes when the amm price crosses the tick,
+  /// feeGrowthOutsideX128 the fee growth on the other side of the tick from the current tick in underlying Token
+  /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
+  /// compute snapshots.
+  function ticks(int24 tick)
+    external
+    view
+    returns (
+      uint128 liquidityGross,
+      int128 liquidityNet,
+      int256 fixedTokenGrowthOutside,
+      int256 variableTokenGrowthOutside,
+      uint256 feeGrowthOutside,
+      bool initialized
+    );
+
+  /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
+  function tickBitmap(int16 wordPosition) external view returns (uint256);
+
+  function computePositionFixedAndVariableGrowthInside(ModifyPositionParams memory params, int24 currentTick)
+     external view returns(int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside);
 
 }
