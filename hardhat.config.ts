@@ -50,8 +50,13 @@ const config: HardhatUserConfig = {
   },
 
   mocha: {
+<<<<<<< HEAD
     timeout: 20000,
   },
+=======
+    timeout: 20000
+  }
+>>>>>>> 7e1d12b0eb1c6d26e9f747c622b9aede83b54b4d
 };
 
 export default config;

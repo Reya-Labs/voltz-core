@@ -84,7 +84,11 @@ interface IFactory {
   /// @param _owner The new owner of the factory
   function setOwner(address _owner) external;
 
-  // function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
+  //   // @notice Enables a fee amount with the given tickSpacing
+  //   // @dev Fee amounts may never be removed once enabled
+  //   // @param fee The fee amount to enable, denominated in hundredths of a bip (i.e. 1e-6)
+  //   // @param tickSpacing The spacing between ticks to be enforced for all pools created with the given fee amount
+  //   function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
 
   function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress)
     external;
