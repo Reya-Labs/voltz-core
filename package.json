@@ -53,6 +53,7 @@
   },
   "scripts": {
     "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
     "format-check": "npx prettier '**/*.{json,js,ts}' --check",
     "format-fix": "npx prettier '**/*.{json,js,ts, md}' --write",
     "lint-check": "npx solhint 'contracts/**/*.sol'",
