@@ -11,20 +11,15 @@ import "./core_libraries/FixedAndVariableMath.sol";
 
 // todo: introduce VoltzData.sol that is above the Factory?
 
-/*
-Warning: Contract code size exceeds 24576 bytes (a limit introduced in Spurious Dragon). 
-This contract may not be deployable on mainnet. Consider enabling the optimizer (with a low "runs" value!),
-turning off revert strings, or using libraries.
-*/
 
 /// @title Canonical Voltz factory
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
 contract Factory is IFactory, Deployer {
   mapping(bytes32 => address) public override getRateOracleAddress;
   address public override owner;
-  mapping(uint24 => int24) public override feeAmountTickSpacing;
-  mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint24 => address)))))
-    public getAMMMAp;
+  // mapping(uint24 => int24) public override feeAmountTickSpacing;
+  mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address))))
+    public getAMMMAp; // todo: make edits to the mapping
 
   address public override treasury;
 
@@ -32,21 +27,23 @@ contract Factory is IFactory, Deployer {
 
   address public override calculator;
 
-  constructor(address _treasury, address _insuranceFund) {
-    require(_treasury != address(0), "ZERO_ADDRESS");
-    require(_insuranceFund != address(0), "ZERO_ADDRESS");
-    treasury = _treasury;
-    insuranceFund = _insuranceFund;
+  // constructor(address _treasury, address _insuranceFund) {
+  constructor() {
+    // don't really need to set the treasury and the insurance fund at the construction
+    // require(_treasury != address(0), "ZERO_ADDRESS");
+    // require(_insuranceFund != address(0), "ZERO_ADDRESS");
+    // treasury = _treasury;
+    // insuranceFund = _insuranceFund;
 
     owner = msg.sender;
     emit OwnerChanged(address(0), msg.sender);
 
-    feeAmountTickSpacing[500] = 10; // todo: why different fee amounts for each tick spacing?
-    emit FeeAmountEnabled(500, 10);
-    feeAmountTickSpacing[3000] = 60;
-    emit FeeAmountEnabled(3000, 60);
-    feeAmountTickSpacing[10000] = 200;
-    emit FeeAmountEnabled(10000, 200);
+    // feeAmountTickSpacing[500] = 10; // todo: why different fee amounts for each tick spacing?
+    // emit FeeAmountEnabled(500, 10);
+    // feeAmountTickSpacing[3000] = 60;
+    // emit FeeAmountEnabled(3000, 60);
+    // feeAmountTickSpacing[10000] = 200;
+    // emit FeeAmountEnabled(10000, 200);
   }
 
   function setTreasury(address _treasury) external override {
@@ -73,49 +70,50 @@ contract Factory is IFactory, Deployer {
     // emit insurance fund set
   }
 
-  // todo: sort this out when modularising the Factory contract
-  // todo: needs to also have create vAMM and create MarginEngine functions
-  // function createAMM(
-  //   address underlyingToken,
-  //   bytes32 rateOracleId,
-  //   uint256 termEndTimestamp,
-  //   uint24 fee
-  // ) external override noDelegateCall returns (address amm) {
-  //   int24 tickSpacing = feeAmountTickSpacing[fee];
-  //   require(tickSpacing != 0);
 
-  //   uint256 termStartTimestamp = FixedAndVariableMath.blockTimestampScaled();
+  function createVAMM(
+        address ammAddress
+  ) external override returns (address vamm) {
+    require(ammAddress != address(0));
+    
+    vamm = deployVAMM(ammAddress);
 
-  //   require(
-  //     getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
-  //       termEndTimestamp
-  //     ][fee] == address(0)
-  //   );
+    // todo: separate mapping for vamms? to query by ammAddress.
+    return vamm;
+  }
 
-  //   amm = deploy(
-  //     address(this),
-  //     underlyingToken,
-  //     rateOracleId,
-  //     termStartTimestamp,
-  //     termEndTimestamp,
-  //     fee,
-  //     tickSpacing
-  //   );
+  function createMarginEngine(
+    address ammAddress
+  ) external override returns (address marginEngine) {
+    require(ammAddress != address(0));
 
-  //   getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
-  //     termEndTimestamp
-  //   ][fee] = amm;
-  //   emit AMMCreated(
-  //     rateOracleId,
-  //     underlyingToken,
-  //     termEndTimestamp,
-  //     termStartTimestamp,
-  //     fee,
-  //     tickSpacing,
-  //     amm
-  //   );
-  //   return amm;
-  // }
+    marginEngine = deployMarginEngine(ammAddress);
+
+    // todo: separate mapping for marginEngines? to query by amm address.
+
+    return marginEngine;
+
+  }
+
+  function createAMM(
+    address underlyingToken,
+    bytes32 rateOracleId,
+    uint256 termEndTimestamp
+  ) external override returns (address amm) {
+    
+    uint256 termStartTimestamp = FixedAndVariableMath.blockTimestampScaled();
+    require(
+      getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][termEndTimestamp] == address(0)
+    );
+
+    amm = deployAMM(address(this), underlyingToken, rateOracleId, termStartTimestamp, termEndTimestamp);
+
+    getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][termEndTimestamp] = amm;
+
+    // todo: emit amm created
+
+  }
+
 
   function setOwner(address _owner) external override {
     require(msg.sender == owner);
@@ -125,17 +123,6 @@ contract Factory is IFactory, Deployer {
 
   // todo: don't need this since can directly set the fee proportion via the multisig
   // function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
-  //     require(msg.sender == owner);
-  //     require(fee < 1000000); // todo: where does this amount come from?
-  //     // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
-  //     // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
-  //     // 16384 ticks represents a >5x price change with ticks of 1 bips
-  //     require(tickSpacing > 0 && tickSpacing < 16384);
-  //     require(feeAmountTickSpacing[fee] == 0);
-
-  //     feeAmountTickSpacing[fee] = tickSpacing;
-  //     emit FeeAmountEnabled(fee, tickSpacing);
-  // }
 
   // todo initialised, onlyGovernance
   function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress)

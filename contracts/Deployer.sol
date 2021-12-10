@@ -18,24 +18,17 @@ contract Deployer is IDeployer {
     uint256 termEndTimestamp;
   }
 
-
-  struct VAMMParameters {
-    address ammAddress;
-    uint24 fee;
-    int24 tickSpacing;
-  }
-
-  struct MarginEngineParameters {
+  struct MarginEngineAndVAMMParameters {
     address ammAddress;
   }
 
 
   AMMParameters public override ammParameters;
-  VAMMParameters public override vammParameters;
-  MarginEngineParameters public override marginEngineParameters;
+  MarginEngineAndVAMMParameters public override marginEngineParameters;
+  MarginEngineAndVAMMParameters public override vammParameters;
 
   function deployMarginEngine(address ammAddress) internal returns (address marginEngine) {
-    marginEngineParameters = MarginEngineParameters({
+    marginEngineParameters = MarginEngineAndVAMMParameters({
       ammAddress: ammAddress
     });
 
@@ -54,15 +47,11 @@ contract Deployer is IDeployer {
   }
   
   function deployVAMM(
-    address ammAddress,
-    uint24 fee, 
-    int24 tickSpacing
+    address ammAddress
   ) internal returns (address vamm) {
     
-    vammParameters = VAMMParameters({
-      ammAddress: ammAddress,
-      fee: fee,
-      tickSpacing: tickSpacing
+    vammParameters = MarginEngineAndVAMMParameters({
+      ammAddress: ammAddress
     });
 
     vamm = address(
@@ -70,8 +59,7 @@ contract Deployer is IDeployer {
         salt: keccak256(
           // think don't need tickSpacing here
           abi.encode(
-            ammAddress,
-            fee
+            ammAddress
           )
         )
       }()

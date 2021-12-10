@@ -34,30 +34,30 @@ contract VAMM is IVAMM {
     using Tick for mapping(int24 => Tick.Info);
     using TickBitmap for mapping(int16 => uint256); // todo: resolve the issue with tick bitmap
 
-    uint256 public immutable override fee; // 0.3%=0.003 of the total notional
+    uint256 public override fee; // 0.3%=0.003 of the total notional
 
-    int24 public immutable override tickSpacing;
+    int24 public override tickSpacing; // todo: make settable
 
-    uint128 public immutable override maxLiquidityPerTick;
+    uint128 public override maxLiquidityPerTick;
 
     mapping(int24 => Tick.Info) public override ticks;
     mapping(int16 => uint256) public override tickBitmap;
 
     constructor() {
         address _ammAddress;
-        int24 _tickSpacing;
+        // int24 _tickSpacing;
         
         (
-            _ammAddress,
-            fee,
-            _tickSpacing
+            _ammAddress
+            // _tickSpacing
         ) = IDeployer(msg.sender).vammParameters();        
 
         amm = IAMM(_ammAddress);
 
-        tickSpacing = _tickSpacing;
+        // tickSpacing = _tickSpacing;
+        // todo: tickSpacing can just be set the same way the feeProportion is set
 
-        maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing); 
+        // maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing); // todo: should also be set separately
 
     }
     

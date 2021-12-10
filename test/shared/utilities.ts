@@ -28,32 +28,6 @@ export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
 export const SECONDS_IN_YEAR: BigNumber = toBn("31536000");
 export const BLOCK_TIMESTAMP: number = 1632249308;
 
-export function getCreate2Address(
-  factoryAddress: string,
-  underlyingToken: string,
-  underlyingPool: string,
-  termEndTimestamp: number,
-  termStartTimestamp: number,
-  fee: number,
-  bytecode: string
-): string {
-  const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "uint24"],
-    [underlyingToken, underlyingPool, termEndTimestamp, termStartTimestamp, fee]
-  );
-
-  const create2Inputs = [
-    "0xff",
-    factoryAddress,
-    // salt
-    utils.keccak256(constructorArgumentsEncoded),
-    // init code. bytecode + constructor arguments
-    utils.keccak256(bytecode),
-  ];
-  const sanitizedInputs = `0x${create2Inputs.map((i) => i.slice(2)).join("")}`;
-  return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`);
-}
-
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,

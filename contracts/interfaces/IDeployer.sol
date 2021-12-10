@@ -9,9 +9,7 @@ pragma solidity ^0.8.0;
 interface IDeployer {
     
     function vammParameters() external view returns(
-        address ammAddress,
-        uint24 fee,
-        int24 tickSpacing
+        address ammAddress
     );
 
     function marginEngineParameters() external view returns(
