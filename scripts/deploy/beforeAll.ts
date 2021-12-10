@@ -1,8 +1,7 @@
 // import { Deployment, validAddress } from '../helpers/deployHelpers';
 
 // export async function beforeAll(deployer: any, hre: any, deployment: Deployment, consts: any) {
-    
-    
+
 //     if (!['mainnet', 'goerli', 'kovan'].includes(hre.network.name)) {
 //         // console.log(
 //         //   `[NOTICE] its not mainnet, so we are using deployer account ${deployer.address} as the multisigs, and the emergency handlers`

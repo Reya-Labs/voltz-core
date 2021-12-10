@@ -9,43 +9,36 @@ import "./Deployer.sol";
 import "./VAMM.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
-// todo: introduce VoltzData.sol that is above the Factory?
-
-
-/// @title Canonical Voltz factory
+/// @title Voltz Factory Contract
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
 contract Factory is IFactory, Deployer {
-  mapping(bytes32 => address) public override getRateOracleAddress;
+  
+  /// @inheritdoc IFactory
   address public override owner;
-  // mapping(uint24 => int24) public override feeAmountTickSpacing;
-  mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address))))
-    public getAMMMAp; // todo: make edits to the mapping
 
+  /// @inheritdoc IFactory
+  mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address)))) public override getAMMMAp;
+
+  /// @inheritdoc IFactory
+  mapping(bytes32 => address) public override getRateOracleAddress;
+
+  /// @inheritdoc IFactory
   address public override treasury;
 
+  /// @inheritdoc IFactory
   address public override insuranceFund;
 
+  /// @inheritdoc IFactory
   address public override calculator;
 
-  // constructor(address _treasury, address _insuranceFund) {
+  
   constructor() {
     // don't really need to set the treasury and the insurance fund at the construction
-    // require(_treasury != address(0), "ZERO_ADDRESS");
-    // require(_insuranceFund != address(0), "ZERO_ADDRESS");
-    // treasury = _treasury;
-    // insuranceFund = _insuranceFund;
-
     owner = msg.sender;
     emit OwnerChanged(address(0), msg.sender);
-
-    // feeAmountTickSpacing[500] = 10; // todo: why different fee amounts for each tick spacing?
-    // emit FeeAmountEnabled(500, 10);
-    // feeAmountTickSpacing[3000] = 60;
-    // emit FeeAmountEnabled(3000, 60);
-    // feeAmountTickSpacing[10000] = 200;
-    // emit FeeAmountEnabled(10000, 200);
   }
 
+  /// @inheritdoc IFactory
   function setTreasury(address _treasury) external override {
     require(_treasury != address(0), "ZERO_ADDRESS");
 
@@ -54,6 +47,7 @@ contract Factory is IFactory, Deployer {
     // emit treasury set
   }
 
+  /// @inheritdoc IFactory
   function setCalculator(address _calculator) external override {
     require(_calculator != address(0), "ZERO_ADDRESS");
 
@@ -62,6 +56,7 @@ contract Factory is IFactory, Deployer {
     // emit calculator set
   }
 
+  /// @inheritdoc IFactory
   function setInsuranceFund(address _insuranceFund) external override {
     require(_insuranceFund != address(0), "ZERO_ADDRESS");
 
@@ -70,7 +65,7 @@ contract Factory is IFactory, Deployer {
     // emit insurance fund set
   }
 
-
+  /// @inheritdoc IFactory
   function createVAMM(
         address ammAddress
   ) external override returns (address vamm) {
@@ -82,6 +77,7 @@ contract Factory is IFactory, Deployer {
     return vamm;
   }
 
+  /// @inheritdoc IFactory
   function createMarginEngine(
     address ammAddress
   ) external override returns (address marginEngine) {
@@ -95,6 +91,7 @@ contract Factory is IFactory, Deployer {
 
   }
 
+  /// @inheritdoc IFactory
   function createAMM(
     address underlyingToken,
     bytes32 rateOracleId,
@@ -114,17 +111,14 @@ contract Factory is IFactory, Deployer {
 
   }
 
-
+  /// @inheritdoc IFactory
   function setOwner(address _owner) external override {
     require(msg.sender == owner);
     emit OwnerChanged(owner, _owner);
     owner = _owner;
   }
 
-  // todo: don't need this since can directly set the fee proportion via the multisig
-  // function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
-
-  // todo initialised, onlyGovernance
+  /// @inheritdoc IFactory
   function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress)
     external
     override
