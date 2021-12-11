@@ -1,7 +1,3 @@
----
-description: This repository contains the core smart contracts for the Voltz Protocol.
----
-
 # Voltz Core
 
 ![](<.gitbook/assets/whitepaper\_banner (1).jpg>)
