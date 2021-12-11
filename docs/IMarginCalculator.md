@@ -1,13 +1,5 @@
 # IMarginCalculator
 
-
-
-
-
-
-
-
-
 ## Methods
 
 ### SECONDS_IN_YEAR
@@ -16,16 +8,11 @@
 function SECONDS_IN_YEAR() external view returns (uint256)
 ```
 
-
-
-
-
-
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
 
 ### getPositionMarginRequirement
 
@@ -33,21 +20,17 @@ function SECONDS_IN_YEAR() external view returns (uint256)
 function getPositionMarginRequirement(IMarginCalculator.PositionMarginRequirementParams params) external view returns (uint256 margin)
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IMarginCalculator.PositionMarginRequirementParams | undefined
+| Name   | Type                                              | Description |
+| ------ | ------------------------------------------------- | ----------- |
+| params | IMarginCalculator.PositionMarginRequirementParams | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| margin | uint256 | undefined
+| Name   | Type    | Description |
+| ------ | ------- | ----------- |
+| margin | uint256 | undefined   |
 
 ### getTraderMarginRequirement
 
@@ -55,21 +38,17 @@ function getPositionMarginRequirement(IMarginCalculator.PositionMarginRequiremen
 function getTraderMarginRequirement(IMarginCalculator.TraderMarginRequirementParams params) external view returns (uint256 margin)
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IMarginCalculator.TraderMarginRequirementParams | undefined
+| Name   | Type                                            | Description |
+| ------ | ----------------------------------------------- | ----------- |
+| params | IMarginCalculator.TraderMarginRequirementParams | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| margin | uint256 | undefined
+| Name   | Type    | Description |
+| ------ | ------- | ----------- |
+| margin | uint256 | undefined   |
 
 ### isLiquidatablePosition
 
@@ -77,22 +56,18 @@ function getTraderMarginRequirement(IMarginCalculator.TraderMarginRequirementPar
 function isLiquidatablePosition(IMarginCalculator.PositionMarginRequirementParams params, int256 currentMargin) external view returns (bool _isLiquidatable)
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IMarginCalculator.PositionMarginRequirementParams | undefined
-| currentMargin | int256 | undefined
+| Name          | Type                                              | Description |
+| ------------- | ------------------------------------------------- | ----------- |
+| params        | IMarginCalculator.PositionMarginRequirementParams | undefined   |
+| currentMargin | int256                                            | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| _isLiquidatable | bool | undefined
+| Name             | Type | Description |
+| ---------------- | ---- | ----------- |
+| \_isLiquidatable | bool | undefined   |
 
 ### isLiquidatableTrader
 
@@ -100,23 +75,15 @@ function isLiquidatablePosition(IMarginCalculator.PositionMarginRequirementParam
 function isLiquidatableTrader(IMarginCalculator.TraderMarginRequirementParams params, int256 currentMargin) external view returns (bool isLiquidatable)
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IMarginCalculator.TraderMarginRequirementParams | undefined
-| currentMargin | int256 | undefined
+| Name          | Type                                            | Description |
+| ------------- | ----------------------------------------------- | ----------- |
+| params        | IMarginCalculator.TraderMarginRequirementParams | undefined   |
+| currentMargin | int256                                          | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| isLiquidatable | bool | undefined
-
-
-
-
+| Name           | Type | Description |
+| -------------- | ---- | ----------- |
+| isLiquidatable | bool | undefined   |

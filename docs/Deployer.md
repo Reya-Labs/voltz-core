@@ -1,13 +1,5 @@
 # Deployer
 
-
-
-
-
-
-
-
-
 ## Methods
 
 ### ammParameters
@@ -18,18 +10,17 @@ function ammParameters() external view returns (address factory, address underly
 
 Get the parameters to be used in constructing the pool, set transiently during pool creation.
 
-*Called by the pool constructor to fetch the parameters of the pool Returns factory The factory address Returns underlyingToken Address of the underlying token Returns underlyingPool Address of the underlying pool Returns termEndTimestamp number of days from inception of the pool till maturity Returns termStartTimestamp Datetime of pool&#39;s inception*
-
+_Called by the pool constructor to fetch the parameters of the pool Returns factory The factory address Returns underlyingToken Address of the underlying token Returns underlyingPool Address of the underlying pool Returns termEndTimestamp number of days from inception of the pool till maturity Returns termStartTimestamp Datetime of pool&#39;s inception_
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| factory | address | undefined
-| underlyingToken | address | undefined
-| rateOracleId | bytes32 | undefined
-| termStartTimestamp | uint256 | undefined
-| termEndTimestamp | uint256 | undefined
+| Name               | Type    | Description |
+| ------------------ | ------- | ----------- |
+| factory            | address | undefined   |
+| underlyingToken    | address | undefined   |
+| rateOracleId       | bytes32 | undefined   |
+| termStartTimestamp | uint256 | undefined   |
+| termEndTimestamp   | uint256 | undefined   |
 
 ### marginEngineParameters
 
@@ -37,16 +28,11 @@ Get the parameters to be used in constructing the pool, set transiently during p
 function marginEngineParameters() external view returns (address ammAddress)
 ```
 
-
-
-
-
-
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| ammAddress | address | undefined
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| ammAddress | address | undefined   |
 
 ### vammParameters
 
@@ -54,17 +40,8 @@ function marginEngineParameters() external view returns (address ammAddress)
 function vammParameters() external view returns (address ammAddress)
 ```
 
-
-
-
-
-
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| ammAddress | address | undefined
-
-
-
-
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| ammAddress | address | undefined   |

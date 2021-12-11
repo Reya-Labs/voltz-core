@@ -1,13 +1,5 @@
 # MarginEngine
 
-
-
-
-
-
-
-
-
 ## Methods
 
 ### LIQUIDATOR_REWARD
@@ -16,16 +8,11 @@
 function LIQUIDATOR_REWARD() external view returns (uint256)
 ```
 
-
-
-
-
-
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | uint256 | undefined   |
 
 ### amm
 
@@ -33,16 +20,11 @@ function LIQUIDATOR_REWARD() external view returns (uint256)
 function amm() external view returns (contract IAMM)
 ```
 
-
-
-
-
-
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| _0 | contract IAMM | undefined
+| Name | Type          | Description |
+| ---- | ------------- | ----------- |
+| \_0  | contract IAMM | undefined   |
 
 ### checkPositionMarginRequirementSatisfied
 
@@ -50,18 +32,14 @@ function amm() external view returns (contract IAMM)
 function checkPositionMarginRequirementSatisfied(address recipient, int24 tickLower, int24 tickUpper, uint128 amount) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| recipient | address | undefined
-| tickLower | int24 | undefined
-| tickUpper | int24 | undefined
-| amount | uint128 | undefined
+| Name      | Type    | Description |
+| --------- | ------- | ----------- |
+| recipient | address | undefined   |
+| tickLower | int24   | undefined   |
+| tickUpper | int24   | undefined   |
+| amount    | uint128 | undefined   |
 
 ### liquidatePosition
 
@@ -69,15 +47,11 @@ function checkPositionMarginRequirementSatisfied(address recipient, int24 tickLo
 function liquidatePosition(IPositionStructs.ModifyPositionParams params) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IPositionStructs.ModifyPositionParams | undefined
+| Name   | Type                                  | Description |
+| ------ | ------------------------------------- | ----------- |
+| params | IPositionStructs.ModifyPositionParams | undefined   |
 
 ### liquidateTrader
 
@@ -85,15 +59,11 @@ function liquidatePosition(IPositionStructs.ModifyPositionParams params) externa
 function liquidateTrader(address traderAddress) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| traderAddress | address | undefined
+| Name          | Type    | Description |
+| ------------- | ------- | ----------- |
+| traderAddress | address | undefined   |
 
 ### positions
 
@@ -103,26 +73,24 @@ function positions(bytes32) external view returns (uint128 _liquidity, int256 ma
 
 Returns the information about a position by the position&#39;s key
 
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| _0 | bytes32 | undefined
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | bytes32 | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| _liquidity | uint128 | undefined
-| margin | int256 | undefined
-| fixedTokenGrowthInsideLast | int256 | undefined
-| variableTokenGrowthInsideLast | int256 | undefined
-| fixedTokenBalance | int256 | undefined
-| variableTokenBalance | int256 | undefined
-| feeGrowthInsideLast | uint256 | undefined
-| isBurned | bool | undefined
+| Name                          | Type    | Description |
+| ----------------------------- | ------- | ----------- |
+| \_liquidity                   | uint128 | undefined   |
+| margin                        | int256  | undefined   |
+| fixedTokenGrowthInsideLast    | int256  | undefined   |
+| variableTokenGrowthInsideLast | int256  | undefined   |
+| fixedTokenBalance             | int256  | undefined   |
+| variableTokenBalance          | int256  | undefined   |
+| feeGrowthInsideLast           | uint256 | undefined   |
+| isBurned                      | bool    | undefined   |
 
 ### setAMM
 
@@ -130,15 +98,11 @@ Returns the information about a position by the position&#39;s key
 function setAMM(address _ammAddress) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| _ammAddress | address | undefined
+| Name         | Type    | Description |
+| ------------ | ------- | ----------- |
+| \_ammAddress | address | undefined   |
 
 ### settlePosition
 
@@ -146,15 +110,11 @@ function setAMM(address _ammAddress) external nonpayable
 function settlePosition(IPositionStructs.ModifyPositionParams params) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IPositionStructs.ModifyPositionParams | undefined
+| Name   | Type                                  | Description |
+| ------ | ------------------------------------- | ----------- |
+| params | IPositionStructs.ModifyPositionParams | undefined   |
 
 ### settleTrader
 
@@ -162,15 +122,11 @@ function settlePosition(IPositionStructs.ModifyPositionParams params) external n
 function settleTrader(address recipient) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| recipient | address | undefined
+| Name      | Type    | Description |
+| --------- | ------- | ----------- |
+| recipient | address | undefined   |
 
 ### traders
 
@@ -180,22 +136,20 @@ function traders(bytes32) external view returns (int256 margin, int256 fixedToke
 
 Returns the information about a trader by the trader key
 
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| _0 | bytes32 | undefined
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| \_0  | bytes32 | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| margin | int256 | undefined
-| fixedTokenBalance | int256 | undefined
-| variableTokenBalance | int256 | undefined
-| isSettled | bool | undefined
+| Name                 | Type   | Description |
+| -------------------- | ------ | ----------- |
+| margin               | int256 | undefined   |
+| fixedTokenBalance    | int256 | undefined   |
+| variableTokenBalance | int256 | undefined   |
+| isSettled            | bool   | undefined   |
 
 ### unwindPosition
 
@@ -203,24 +157,20 @@ Returns the information about a trader by the trader key
 function unwindPosition(address owner, int24 tickLower, int24 tickUpper) external nonpayable returns (int256 _fixedTokenBalance, int256 _variableTokenBalance)
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| owner | address | undefined
-| tickLower | int24 | undefined
-| tickUpper | int24 | undefined
+| Name      | Type    | Description |
+| --------- | ------- | ----------- |
+| owner     | address | undefined   |
+| tickLower | int24   | undefined   |
+| tickUpper | int24   | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| _fixedTokenBalance | int256 | undefined
-| _variableTokenBalance | int256 | undefined
+| Name                   | Type   | Description |
+| ---------------------- | ------ | ----------- |
+| \_fixedTokenBalance    | int256 | undefined   |
+| \_variableTokenBalance | int256 | undefined   |
 
 ### updatePosition
 
@@ -228,16 +178,12 @@ function unwindPosition(address owner, int24 tickLower, int24 tickUpper) externa
 function updatePosition(IPositionStructs.ModifyPositionParams params, IVAMM.UpdatePositionVars vars) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IPositionStructs.ModifyPositionParams | undefined
-| vars | IVAMM.UpdatePositionVars | undefined
+| Name   | Type                                  | Description |
+| ------ | ------------------------------------- | ----------- |
+| params | IPositionStructs.ModifyPositionParams | undefined   |
+| vars   | IVAMM.UpdatePositionVars              | undefined   |
 
 ### updatePositionMargin
 
@@ -245,16 +191,12 @@ function updatePosition(IPositionStructs.ModifyPositionParams params, IVAMM.Upda
 function updatePositionMargin(IPositionStructs.ModifyPositionParams params, int256 marginDelta) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IPositionStructs.ModifyPositionParams | undefined
-| marginDelta | int256 | undefined
+| Name        | Type                                  | Description |
+| ----------- | ------------------------------------- | ----------- |
+| params      | IPositionStructs.ModifyPositionParams | undefined   |
+| marginDelta | int256                                | undefined   |
 
 ### updateTraderBalances
 
@@ -262,17 +204,13 @@ function updatePositionMargin(IPositionStructs.ModifyPositionParams params, int2
 function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| recipient | address | undefined
-| fixedTokenBalance | int256 | undefined
-| variableTokenBalance | int256 | undefined
+| Name                 | Type    | Description |
+| -------------------- | ------- | ----------- |
+| recipient            | address | undefined   |
+| fixedTokenBalance    | int256  | undefined   |
+| variableTokenBalance | int256  | undefined   |
 
 ### updateTraderMargin
 
@@ -280,23 +218,16 @@ function updateTraderBalances(address recipient, int256 fixedTokenBalance, int25
 function updateTraderMargin(address recipient, int256 marginDelta) external nonpayable
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| recipient | address | undefined
-| marginDelta | int256 | undefined
-
-
-
+| Name        | Type    | Description |
+| ----------- | ------- | ----------- |
+| recipient   | address | undefined   |
+| marginDelta | int256  | undefined   |
 
 ## Errors
 
-### PRBMathSD59x18__MulInputTooSmall
+### PRBMathSD59x18\_\_MulInputTooSmall
 
 ```solidity
 error PRBMathSD59x18__MulInputTooSmall()
@@ -304,10 +235,7 @@ error PRBMathSD59x18__MulInputTooSmall()
 
 Emitted when one of the inputs is MIN_SD59x18.
 
-
-
-
-### PRBMathSD59x18__MulOverflow
+### PRBMathSD59x18\_\_MulOverflow
 
 ```solidity
 error PRBMathSD59x18__MulOverflow(uint256 rAbs)
@@ -315,15 +243,13 @@ error PRBMathSD59x18__MulOverflow(uint256 rAbs)
 
 Emitted when the intermediary absolute result overflows SD59x18.
 
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| rAbs | uint256 | undefined |
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| rAbs | uint256 | undefined   |
 
-### PRBMathUD60x18__SubUnderflow
+### PRBMathUD60x18\_\_SubUnderflow
 
 ```solidity
 error PRBMathUD60x18__SubUnderflow(uint256 x, uint256 y)
@@ -331,16 +257,14 @@ error PRBMathUD60x18__SubUnderflow(uint256 x, uint256 y)
 
 Emitted when subtraction underflows UD60x18.
 
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| x | uint256 | undefined |
-| y | uint256 | undefined |
+| Name | Type    | Description |
+| ---- | ------- | ----------- |
+| x    | uint256 | undefined   |
+| y    | uint256 | undefined   |
 
-### PRBMath__MulDivFixedPointOverflow
+### PRBMath\_\_MulDivFixedPointOverflow
 
 ```solidity
 error PRBMath__MulDivFixedPointOverflow(uint256 prod1)
@@ -348,12 +272,8 @@ error PRBMath__MulDivFixedPointOverflow(uint256 prod1)
 
 Emitted when the result overflows uint256.
 
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| prod1 | uint256 | undefined |
-
-
+| Name  | Type    | Description |
+| ----- | ------- | ----------- |
+| prod1 | uint256 | undefined   |
