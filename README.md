@@ -4,6 +4,8 @@ description: This repository contains the core smart contracts for the Voltz Pro
 
 # Voltz Core
 
+![](<.gitbook/assets/whitepaper\_banner (1).jpg>)
+
 ## Introduction
 
 Voltz is a noncustodial automated market maker for Interest Rate Swaps (IRS). Voltz uses a Concentrated Liquidity Virtual AMM (vAMM) for price discovery only, with the management of the underlying assets performed by the Margin Engine. The combined impact of these modules enables counterparties to create and trade fixed and variable rates through a mechanism that is up to 3,000x more capital efficient than alternative interest rate swap models, whilst also providing Liquidity Providers and Traders with significant control and flexibility over their positions.
@@ -11,8 +13,6 @@ Voltz is a noncustodial automated market maker for Interest Rate Swaps (IRS). Vo
 
 
 This repository contains the smart contracts that power Voltz Protocol. Over time, the Voltz Protocol will be governed by the VoltzDAO, so that the protocol is owned and managed by the community that uses it. Decentralising ownership is critical to ensure the strength of the ecosystem we are all looking to build and to provide control to those that use the system. However, Voltz will initially be controlled by the Voltz Multisigs whilst the VoltzDAO is being developed.
-
-
 
 We would love to see how you can build and improve upon what we've built here at Voltz.
 
