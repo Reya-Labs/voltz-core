@@ -458,7 +458,7 @@ contract VAMM is IVAMM {
 
         SwapCache memory cache = SwapCache({
             liquidityStart: liquidity,
-            blockTimestamp: FixedAndVariableMath.blockTimestampScaled(),
+            blockTimestamp: Time.blockTimestampScaled(),
             feeProtocol: slot0.feeProtocol 
         });
 
@@ -511,7 +511,7 @@ contract VAMM is IVAMM {
                 }),
 
                 PRBMath.UD60x18({
-                    value: FixedAndVariableMath.blockTimestampScaled()
+                    value: Time.blockTimestampScaled()
                 })
 
             ).value;

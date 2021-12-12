@@ -79,7 +79,7 @@ abstract contract BaseRateOracle is IRateOracle {
         Oracle.Observation memory last = observations[oracleVars.observationIndex];
         
         uint256 from = last.blockTimestamp;
-        uint256 to = FixedAndVariableMath.blockTimestampScaled();
+        uint256 to = Time.blockTimestampScaled();
 
         uint256 apyFromTo = getApyFromTo(underlying, from, to);
 
@@ -131,7 +131,7 @@ abstract contract BaseRateOracle is IRateOracle {
         
         // todo: duplicate code
         uint256 from = last.blockTimestamp;
-        uint256 to = FixedAndVariableMath.blockTimestampScaled();
+        uint256 to = Time.blockTimestampScaled();
         
         uint256 apyFromTo = getApyFromTo(underlying, from, to);
 

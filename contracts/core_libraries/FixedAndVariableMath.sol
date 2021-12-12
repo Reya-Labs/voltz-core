@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "./Time.sol";
 
 library FixedAndVariableMath {
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
@@ -33,11 +34,6 @@ library FixedAndVariableMath {
 
         cashflow = PRBMathSD59x18Typed.add(fixedCashflow, variableCashflow).value;
     
-    }
-    
-
-    function blockTimestampScaled() public view returns(uint256) {
-        return uint256(block.timestamp) * 10**18;
     }
     
     /// #if_succeeds $result > 0;
@@ -72,12 +68,12 @@ library FixedAndVariableMath {
         // );
 
         // require(
-        //     blockTimestampScaled()  >= termStartTimestamp,
+        //     Time.blockTimestampScaled()  >= termStartTimestamp,
         //     "B.T>=S"
         // );
 
         // require(
-        //     blockTimestampScaled()  <= termEndTimestamp,
+        //     Time.blockTimestampScaled()  <= termEndTimestamp,
         //     "B.T>=S"
         // );
 
@@ -93,7 +89,7 @@ library FixedAndVariableMath {
                 })
             ).value;
         } else {
-            timeInSeconds = blockTimestampScaled() - termStartTimestamp;
+            timeInSeconds = Time.blockTimestampScaled() - termStartTimestamp;
         }
 
         uint256 timeInYears = accrualFact(timeInSeconds);

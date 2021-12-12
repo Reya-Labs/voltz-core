@@ -302,7 +302,7 @@ contract MarginCalculator is IMarginCalculator{
                     }),
 
                     PRBMath.UD60x18({
-                        value: FixedAndVariableMath.blockTimestampScaled()
+                        value: Time.blockTimestampScaled()
                     })
         ).value;
 

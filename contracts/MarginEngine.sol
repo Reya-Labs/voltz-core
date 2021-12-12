@@ -114,7 +114,7 @@ contract MarginEngine is IMarginEngine {
     
     function checkTraderMarginCanBeUpdated(address recipient, int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, bool isTraderSettled) internal view {
 
-        if (FixedAndVariableMath.blockTimestampScaled() >= amm.termEndTimestamp()) {
+        if (Time.blockTimestampScaled() >= amm.termEndTimestamp()) {
             require(isTraderSettled);
 
             require(updatedMarginWouldBe>=0, "can't withdraw more than have");
@@ -137,7 +137,7 @@ contract MarginEngine is IMarginEngine {
         int256 positionVariableTokenBalance,
         uint256 variableFactor) internal view {
 
-        if (FixedAndVariableMath.blockTimestampScaled() >= amm.termEndTimestamp()) {
+        if (Time.blockTimestampScaled() >= amm.termEndTimestamp()) {
             // todo: check if the position is settled 
             require(isPositionBurned);
             require(updatedMarginWouldBe>=0, "can't withdraw more than have");
@@ -208,7 +208,7 @@ contract MarginEngine is IMarginEngine {
     
     function settlePosition(ModifyPositionParams memory params) external override onlyAMM {
 
-        require(FixedAndVariableMath.blockTimestampScaled() >= amm.termEndTimestamp(), "Position cannot be settled before maturity");
+        require(Time.blockTimestampScaled() >= amm.termEndTimestamp(), "Position cannot be settled before maturity");
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         IVAMM.Slot0 memory _slot0 = amm.getSlot0(); // SLOAD for gas optimization
@@ -232,7 +232,7 @@ contract MarginEngine is IMarginEngine {
     
     function settleTrader(address recipient) external override onlyAMM {
 
-        require(FixedAndVariableMath.blockTimestampScaled() >= amm.termEndTimestamp(), "A Trader cannot settle before maturity");
+        require(Time.blockTimestampScaled() >= amm.termEndTimestamp(), "A Trader cannot settle before maturity");
         Trader.Info storage trader = traders.get(recipient);        
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()));
 
@@ -242,7 +242,7 @@ contract MarginEngine is IMarginEngine {
     
     function liquidatePosition(ModifyPositionParams memory params) external override {
 
-        require(FixedAndVariableMath.blockTimestampScaled() < amm.termEndTimestamp(), "A position cannot be liquidted after maturity");
+        require(Time.blockTimestampScaled() < amm.termEndTimestamp(), "A position cannot be liquidted after maturity");
         Tick.checkTicks(params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 

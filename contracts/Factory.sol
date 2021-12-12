@@ -98,7 +98,7 @@ contract Factory is IFactory, Deployer {
     uint256 termEndTimestamp
   ) external override returns (address amm) {
     
-    uint256 termStartTimestamp = FixedAndVariableMath.blockTimestampScaled();
+    uint256 termStartTimestamp = Time.blockTimestampScaled();
     require(
       getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][termEndTimestamp] == address(0)
     );

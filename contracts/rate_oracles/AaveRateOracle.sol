@@ -35,7 +35,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
         require(result != 0, "Oracle only supports active Aave-V2 assets");
 
-        uint256 blockTimestampScaled = FixedAndVariableMath.blockTimestampScaled();
+        uint256 blockTimestampScaled = Time.blockTimestampScaled();
         
         rates[underlying][blockTimestampScaled] = IRateOracle.Rate(true, blockTimestampScaled, result);
 
@@ -104,12 +104,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         IRateOracle.Rate memory rate;
         
-        if (FixedAndVariableMath.blockTimestampScaled() >= termEndTimestamp) {
+        if (Time.blockTimestampScaled() >= termEndTimestamp) {
             // atMaturity is true
             rate = rates[underlyingToken][termEndTimestamp];
 
             if(!rate.isSet) {
-                if (termEndTimestamp == FixedAndVariableMath.blockTimestampScaled()) {
+                if (termEndTimestamp == Time.blockTimestampScaled()) {
                     updateRate(underlyingToken);
                 }    
             }
@@ -120,13 +120,13 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             if (atMaturity) {
                 revert();
             } else {
-                rate = rates[underlyingToken][FixedAndVariableMath.blockTimestampScaled()];
+                rate = rates[underlyingToken][Time.blockTimestampScaled()];
 
                 if(!rate.isSet) {
                     updateRate(underlyingToken);
                 }
 
-                result = getRateFromTo(underlyingToken, termStartTimestamp, FixedAndVariableMath.blockTimestampScaled());
+                result = getRateFromTo(underlyingToken, termStartTimestamp, Time.blockTimestampScaled());
             }
         }
 

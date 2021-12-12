@@ -20,16 +20,16 @@ pragma solidity ^0.8.0;
 //     //     return lendingPool.getReserveNormalizedIncome(underlying);
 //     // }
 //     function getCurrentTimestamp() public view returns (uint256 result) {
-//         result = FixedAndVariableMath.blockTimestampScaled();
+//         result = Time.blockTimestampScaled();
 //     }
 
 //     function updateRateTest(address underlying, bool isStartRate) public {
 //         updateRate(underlying);
 
 //         if (isStartRate) {
-//             startRate = rates[underlying][FixedAndVariableMath.blockTimestampScaled()];
+//             startRate = rates[underlying][Time.blockTimestampScaled()];
 //         } else {
-//             endRate = rates[underlying][FixedAndVariableMath.blockTimestampScaled()];
+//             endRate = rates[underlying][Time.blockTimestampScaled()];
 //         }
 
 //     }

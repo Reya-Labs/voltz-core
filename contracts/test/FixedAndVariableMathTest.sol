@@ -22,10 +22,6 @@ contract FixedAndVariableMathTest {
       );
   }
 
-  function blockTimestampScaled() public view returns (uint256) {
-    return FixedAndVariableMath.blockTimestampScaled();
-  }
-
   function accrualFact(uint256 timeInSeconds)
     public
     pure
