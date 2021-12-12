@@ -12,12 +12,13 @@ import "./core_libraries/FixedAndVariableMath.sol";
 /// @title Voltz Factory Contract
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
 contract Factory is IFactory, Deployer {
-  
   /// @inheritdoc IFactory
   address public override owner;
 
   /// @inheritdoc IFactory
-  mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address)))) public override getAMMMAp;
+  mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address))))
+    public
+    override getAMMMAp;
 
   /// @inheritdoc IFactory
   mapping(bytes32 => address) public override getRateOracleAddress;
@@ -31,7 +32,6 @@ contract Factory is IFactory, Deployer {
   /// @inheritdoc IFactory
   address public override calculator;
 
-  
   constructor() {
     // don't really need to set the treasury and the insurance fund at the construction
     owner = msg.sender;
@@ -66,26 +66,29 @@ contract Factory is IFactory, Deployer {
   }
 
   /// @inheritdoc IFactory
-  function createVAMM(
-        address ammAddress
-  ) external override returns (address vamm) {
+  function createVAMM(address ammAddress)
+    external
+    override
+    returns (address vamm)
+  {
     require(ammAddress != address(0));
-    
+
     vamm = deployVAMM(ammAddress);
 
     return vamm;
   }
 
   /// @inheritdoc IFactory
-  function createMarginEngine(
-    address ammAddress
-  ) external override returns (address marginEngine) {
+  function createMarginEngine(address ammAddress)
+    external
+    override
+    returns (address marginEngine)
+  {
     require(ammAddress != address(0));
 
     marginEngine = deployMarginEngine(ammAddress);
 
     return marginEngine;
-
   }
 
   /// @inheritdoc IFactory
@@ -94,18 +97,26 @@ contract Factory is IFactory, Deployer {
     bytes32 rateOracleId,
     uint256 termEndTimestamp
   ) external override returns (address amm) {
-    
     uint256 termStartTimestamp = Time.blockTimestampScaled();
     require(
-      getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][termEndTimestamp] == address(0)
+      getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
+        termEndTimestamp
+      ] == address(0)
     );
 
-    amm = deployAMM(address(this), underlyingToken, rateOracleId, termStartTimestamp, termEndTimestamp);
+    amm = deployAMM(
+      address(this),
+      underlyingToken,
+      rateOracleId,
+      termStartTimestamp,
+      termEndTimestamp
+    );
 
-    getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][termEndTimestamp] = amm;
+    getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
+      termEndTimestamp
+    ] = amm;
 
     // todo: emit amm created
-
   }
 
   /// @inheritdoc IFactory
