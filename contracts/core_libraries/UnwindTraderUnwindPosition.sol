@@ -6,11 +6,9 @@ import "../interfaces/IAMM.sol";
 import "../interfaces/IVAMM.sol";
 import "../utils/TickMath.sol";
 import "../core_libraries/Position.sol";
-import "../core_libraries/Tick.sol"; // todo: can add check ticks to tickmath
-
+import "../core_libraries/Tick.sol";
 
 library UnwindTraderUnwindPosition {
-
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
 
