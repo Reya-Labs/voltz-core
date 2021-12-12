@@ -24,9 +24,6 @@ import "./core_libraries/FixedAndVariableMath.sol";
 
 import "./core_libraries/UnwindTraderUnwindPosition.sol";
 
-
-// todo: factoryOwner is the treasury, don't need a separate treasury address
-
 contract MarginEngine is IMarginEngine {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
@@ -126,8 +123,6 @@ contract MarginEngine is IMarginEngine {
 
     }
     
-    // todo: don't let position settlements be done separately from burning?
-    // todo: can be a modifier
     function checkPositionMarginCanBeUpdated(
         ModifyPositionParams memory params,
         int256 updatedMarginWouldBe,
@@ -138,7 +133,6 @@ contract MarginEngine is IMarginEngine {
         uint256 variableFactor) internal view {
 
         if (FixedAndVariableMath.blockTimestampScaled() >= amm.termEndTimestamp()) {
-            // todo: check if the position is settled 
             require(isPositionBurned);
             require(updatedMarginWouldBe>=0, "can't withdraw more than have");
         } else {

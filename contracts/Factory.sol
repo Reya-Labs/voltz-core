@@ -73,7 +73,6 @@ contract Factory is IFactory, Deployer {
     
     vamm = deployVAMM(ammAddress);
 
-    // todo: separate mapping for vamms? to query by ammAddress.
     return vamm;
   }
 
@@ -84,8 +83,6 @@ contract Factory is IFactory, Deployer {
     require(ammAddress != address(0));
 
     marginEngine = deployMarginEngine(ammAddress);
-
-    // todo: separate mapping for marginEngines? to query by amm address.
 
     return marginEngine;
 
