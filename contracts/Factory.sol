@@ -116,7 +116,13 @@ contract Factory is IFactory, Deployer {
       termEndTimestamp
     ] = amm;
 
-    // todo: emit amm created
+    emit AMMCreated(
+      amm,
+      underlyingToken,
+      rateOracleId,
+      termStartTimestamp,
+      termEndTimestamp
+    );
   }
 
   /// @inheritdoc IFactory

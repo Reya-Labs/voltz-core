@@ -5,11 +5,18 @@ pragma solidity ^0.8.0;
 /// @title The interface for the Voltz AMM Factory
 /// @notice The AMM Factory facilitates creation of Voltz AMMs
 interface IFactory {
-  
   /// @notice Emitted when the owner of the factory is changed
   /// @param oldOwner The owner before the owner was changed
   /// @param newOwner The owner after the owner was changed
   event OwnerChanged(address indexed oldOwner, address indexed newOwner);
+
+  /// @notice Emitted when an AMM is successfully created
+  /// @param ammAddress The new AMM's address
+  /// @param tokenAddress The new AMM's token
+  /// @param rateOracleId The new AMM's rate oracle ID in Factory.getAMMMAp
+  /// @param termStartTimestamp The new AMM's term start timestamp in wei-seconds (ie the deployed block time)
+  /// @param termEndTimestamp The new AMM's maturity date in wei-seconds
+  event AMMCreated(address indexed ammAddress, address indexed tokenAddress, bytes32 indexed rateOracleId, uint256 termStartTimestamp, uint256 termEndTimestamp);
 
   /// @notice Returns the current owner of the factory
   /// @dev Can be changed by the current owner via setOwner
