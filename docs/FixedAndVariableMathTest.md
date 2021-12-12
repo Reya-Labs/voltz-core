@@ -32,23 +32,6 @@ function accrualFact(uint256 timeInSeconds) external pure returns (uint256 timeI
 |---|---|---|
 | timeInYears | uint256 | undefined
 
-### blockTimestampScaled
-
-```solidity
-function blockTimestampScaled() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined
-
 ### calculateFixedTokenBalance
 
 ```solidity

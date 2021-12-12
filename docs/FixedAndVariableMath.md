@@ -1,8 +1,8 @@
 # FixedAndVariableMath
 
+*Artur Begyan*
 
-
-
+> A utility library for mathematics of fixed and variable token amounts.
 
 
 
@@ -16,9 +16,9 @@
 function SECONDS_IN_YEAR() external view returns (uint256)
 ```
 
+Number of wei-seconds in a year
 
-
-
+*Ignoring leap years since we&#39;re only using it to calculate the eventual APY rate*
 
 
 #### Returns
@@ -33,7 +33,7 @@ function SECONDS_IN_YEAR() external view returns (uint256)
 function accrualFact(uint256 timeInSeconds) external pure returns (uint256 timeInYears)
 ```
 
-#if_succeeds $result &gt; 0; #if_succeeds old(timeInSeconds) &gt; 0;
+Divide a given time in seconds by the number of wei-seconds in a year
 
 
 
@@ -41,30 +41,13 @@ function accrualFact(uint256 timeInSeconds) external pure returns (uint256 timeI
 
 | Name | Type | Description |
 |---|---|---|
-| timeInSeconds | uint256 | undefined
+| timeInSeconds | uint256 | A time in wei-seconds
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| timeInYears | uint256 | undefined
-
-### blockTimestampScaled
-
-```solidity
-function blockTimestampScaled() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined
+| timeInYears | uint256 | An annualised factor of timeInSeconds #if_succeeds $result &gt; 0; #if_succeeds old(timeInSeconds) &gt; 0;
 
 ### calculateSettlementCashflow
 
@@ -72,7 +55,7 @@ function blockTimestampScaled() external view returns (uint256)
 function calculateSettlementCashflow(int256 fixedTokenBalance, int256 variableTokenBalance, uint256 termStartTimestamp, uint256 termEndTimestamp, uint256 variableFactorToMaturity) external view returns (int256 cashflow)
 ```
 
-
+Caclulate the remaining cashflow to settle a position
 
 
 
@@ -80,17 +63,17 @@ function calculateSettlementCashflow(int256 fixedTokenBalance, int256 variableTo
 
 | Name | Type | Description |
 |---|---|---|
-| fixedTokenBalance | int256 | undefined
-| variableTokenBalance | int256 | undefined
-| termStartTimestamp | uint256 | undefined
-| termEndTimestamp | uint256 | undefined
-| variableFactorToMaturity | uint256 | undefined
+| fixedTokenBalance | int256 | The current balance of the fixed side of the position
+| variableTokenBalance | int256 | The current balance of the variable side of the position
+| termStartTimestamp | uint256 | When did the position begin, in seconds
+| termEndTimestamp | uint256 | When does the position reach maturity, in seconds
+| variableFactorToMaturity | uint256 | What factor expresses the current remaining variable rate, up to position maturity?
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| cashflow | int256 | undefined
+| cashflow | int256 | The remaining cashflow of the position
 
 ### fixedFactor
 
@@ -98,7 +81,7 @@ function calculateSettlementCashflow(int256 fixedTokenBalance, int256 variableTo
 function fixedFactor(bool atMaturity, uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns (uint256 fixedFactorValue)
 ```
 
-#if_succeeds old(termStartTimestamp) &lt; old(termEndTimestamp); #if_succeeds old(atMaturity) == true ==&gt; timeInSeconds == termEndTimestamp - termStartTimestamp;
+Calculate the fixed factor for a position
 
 
 
@@ -106,15 +89,15 @@ function fixedFactor(bool atMaturity, uint256 termStartTimestamp, uint256 termEn
 
 | Name | Type | Description |
 |---|---|---|
-| atMaturity | bool | undefined
-| termStartTimestamp | uint256 | undefined
-| termEndTimestamp | uint256 | undefined
+| atMaturity | bool | Whether to calculate the factor at maturity (true), or now (false)
+| termStartTimestamp | uint256 | When does the period of time begin, in wei-seconds
+| termEndTimestamp | uint256 | When does the period of time end, in wei-seconds
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| fixedFactorValue | uint256 | undefined
+| fixedFactorValue | uint256 | The fixed factor for the position  #if_succeeds old(termStartTimestamp) &lt; old(termEndTimestamp); #if_succeeds old(atMaturity) == true ==&gt; timeInSeconds == termEndTimestamp - termStartTimestamp;
 
 ### getFixedTokenBalance
 
@@ -122,7 +105,7 @@ function fixedFactor(bool atMaturity, uint256 termStartTimestamp, uint256 termEn
 function getFixedTokenBalance(int256 amount0, int256 amount1, uint256 accruedVariableFactor, uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns (int256 fixedTokenBalance)
 ```
 
-#if_succeeds termEndTimestamp &gt; termStartTimestamp;
+Calculate the fixed token balance given both fixed and variable balances
 
 
 
@@ -130,17 +113,17 @@ function getFixedTokenBalance(int256 amount0, int256 amount1, uint256 accruedVar
 
 | Name | Type | Description |
 |---|---|---|
-| amount0 | int256 | undefined
-| amount1 | int256 | undefined
-| accruedVariableFactor | uint256 | undefined
-| termStartTimestamp | uint256 | undefined
-| termEndTimestamp | uint256 | undefined
+| amount0 | int256 | A fixed balance
+| amount1 | int256 | A variable balance
+| accruedVariableFactor | uint256 | An annualised factor in wei-years
+| termStartTimestamp | uint256 | When does the period of time begin, in wei-seconds
+| termEndTimestamp | uint256 | When does the period of time end, in wei-seconds
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| fixedTokenBalance | int256 | undefined
+| fixedTokenBalance | int256 | The fixed token balance for that time period #if_succeeds termEndTimestamp &gt; termStartTimestamp;
 
 
 
