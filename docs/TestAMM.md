@@ -48,7 +48,7 @@ function calculator() external view returns (contract IMarginCalculator)
 ### collectProtocol
 
 ```solidity
-function collectProtocol(address recipient, uint256 amountRequested) external nonpayable returns (uint256 amount)
+function collectProtocol(address recipient) external nonpayable returns (uint256 amount)
 ```
 
 
@@ -60,7 +60,6 @@ function collectProtocol(address recipient, uint256 amountRequested) external no
 | Name | Type | Description |
 |---|---|---|
 | recipient | address | undefined
-| amountRequested | uint256 | undefined
 
 #### Returns
 

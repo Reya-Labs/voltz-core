@@ -13,7 +13,7 @@ Contains amm methods that may only be called by the factory owner
 ### collectProtocol
 
 ```solidity
-function collectProtocol(address recipient, uint256 amountRequested) external nonpayable returns (uint256 amount)
+function collectProtocol(address recipient) external nonpayable returns (uint256 amount)
 ```
 
 
@@ -25,7 +25,6 @@ function collectProtocol(address recipient, uint256 amountRequested) external no
 | Name | Type | Description |
 |---|---|---|
 | recipient | address | undefined
-| amountRequested | uint256 | undefined
 
 #### Returns
 

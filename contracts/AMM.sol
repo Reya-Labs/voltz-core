@@ -214,16 +214,13 @@ contract AMM is IAMM, Pausable {
     vamm.setFeeProtocol(feeProtocol);
   }
 
-  function collectProtocol(address recipient, uint256 amountRequested)
+  function collectProtocol(address recipient)
     external
     override
     lock
     onlyFactoryOwner
     returns (uint256 amount)
   {
-    // moved this logic to vamm.updateProtocolFees
-    // amount = amountRequested > protocolFees ? protocolFees : amountRequested;
-
     if (amount > 0) {
       vamm.updateProtocolFees(amount);
       IERC20Minimal(underlyingToken).transferFrom(
