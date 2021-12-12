@@ -8,26 +8,6 @@ Contains functions for managing tick processes and relevant calculations
 
 
 
-## Methods
-
-### checkTicks
-
-```solidity
-function checkTicks(int24 tickLower, int24 tickUpper) external pure
-```
-
-
-
-*Common checks for valid tick inputs.*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| tickLower | int24 | undefined
-| tickUpper | int24 | undefined
-
-
 
 
 ## Errors
