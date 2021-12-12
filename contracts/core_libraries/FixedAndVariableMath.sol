@@ -7,7 +7,6 @@ import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 library FixedAndVariableMath {
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
     
-    
     function calculateSettlementCashflow(int256 fixedTokenBalance, int256 variableTokenBalance, uint256 termStartTimestamp, uint256 termEndTimestamp, uint256 variableFactorToMaturity) external view returns(int256 cashflow) {
         
         PRBMath.SD59x18 memory fixedCashflow = PRBMathSD59x18Typed.mul(
@@ -36,12 +35,11 @@ library FixedAndVariableMath {
     
     }
     
-    // todo: place in a separate library?
+
     function blockTimestampScaled() public view returns(uint256) {
         return uint256(block.timestamp) * 10**18;
     }
     
-    // todo: scribble properties to test prb math
     /// #if_succeeds $result > 0;
     /// #if_succeeds old(timeInSeconds) > 0;
     function accrualFact(uint256 timeInSeconds)

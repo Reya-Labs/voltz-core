@@ -89,8 +89,49 @@ interface IMarginCalculator {
         uint256 twapApy;
     }
 
+    struct MinimumMarginRequirementLocalVars {
+
+        uint256 minDelta;
+        uint256 notional;
+        uint256 timeInSeconds;
+        uint256 timeInYears;
+        uint256 zeroLowerBoundMargin;
+
+    }
+
+
+    struct PositionMarginRequirementsVars {
+
+        int256 amount0;
+        int256 amount1;
+
+        int256 expectedVariableTokenBalance;
+        int256 expectedFixedTokenBalance;
+
+        int256 amount0Up;
+        int256 amount1Up;
+
+        int256 amount0Down;
+        int256 amount1Down;
+
+        int256 expectedVariableTokenBalanceAfterUp;
+        int256 expectedFixedTokenBalanceAfterUp;
+
+        int256 expectedVariableTokenBalanceAfterDown;
+        int256 expectedFixedTokenBalanceAfterDown;
+
+        uint256 marginReqAfterUp;
+        uint256 marginReqAfterDown;
+
+        int256 margin;
+
+    }
+
     // view functions
 
+    function getMinimumMarginRequirement(
+        TraderMarginRequirementParams memory params
+    ) external view returns(uint256 margin);
 
     /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
     /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement

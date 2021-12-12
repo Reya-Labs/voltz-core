@@ -14,132 +14,6 @@ function SECONDS_IN_YEAR() external view returns (uint256)
 | ---- | ------- | ----------- |
 | \_0  | uint256 | undefined   |
 
-### getAlpha
-
-```solidity
-function getAlpha(bytes32) external view returns (int256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type   | Description |
-| ----- | ------ | ----------- |
-| value | int256 | undefined   |
-
-### getApyLowerMultiplier
-
-```solidity
-function getApyLowerMultiplier(bytes32) external view returns (uint256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type    | Description |
-| ----- | ------- | ----------- |
-| value | uint256 | undefined   |
-
-### getApyUpperMultiplier
-
-```solidity
-function getApyUpperMultiplier(bytes32) external view returns (uint256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type    | Description |
-| ----- | ------- | ----------- |
-| value | uint256 | undefined   |
-
-### getBeta
-
-```solidity
-function getBeta(bytes32) external view returns (int256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type   | Description |
-| ----- | ------ | ----------- |
-| value | int256 | undefined   |
-
-### getMaxLeverage
-
-```solidity
-function getMaxLeverage(bytes32) external view returns (uint256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type    | Description |
-| ----- | ------- | ----------- |
-| value | uint256 | undefined   |
-
-### getMinDeltaLM
-
-```solidity
-function getMinDeltaLM(bytes32) external view returns (uint256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type    | Description |
-| ----- | ------- | ----------- |
-| value | uint256 | undefined   |
-
-### getMinDeltaIM
-
-```solidity
-function getMinDeltaIM(bytes32) external view returns (uint256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type    | Description |
-| ----- | ------- | ----------- |
-| value | uint256 | undefined   |
-
 ### getMinimumMarginRequirement
 
 ```solidity
@@ -198,41 +72,25 @@ function getPositionMarginRequirement(IMarginCalculator.PositionMarginRequiremen
 | ------ | ------- | ----------- |
 | margin | uint256 | undefined   |
 
-### getSigmaSquared
-
-```solidity
-function getSigmaSquared(bytes32) external view returns (int256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type   | Description |
-| ----- | ------ | ----------- |
-| value | int256 | undefined   |
-
 ### getTraderMarginRequirement
 
 ```solidity
 function getTraderMarginRequirement(IMarginCalculator.TraderMarginRequirementParams params) external view returns (uint256 margin)
 ```
 
+Returns either the Liquidation or Initial Margin Requirement of a given trader
+
 #### Parameters
 
-| Name   | Type                                            | Description |
-| ------ | ----------------------------------------------- | ----------- |
-| params | IMarginCalculator.TraderMarginRequirementParams | undefined   |
+| Name   | Type                                            | Description                                                                           |
+| ------ | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| params | IMarginCalculator.TraderMarginRequirementParams | Values necessary for the purposes of the computation of the Trader Margin Requirement |
 
 #### Returns
 
-| Name   | Type    | Description |
-| ------ | ------- | ----------- |
-| margin | uint256 | undefined   |
+| Name   | Type    | Description                                                                                          |
+| ------ | ------- | ---------------------------------------------------------------------------------------------------- |
+| margin | uint256 | Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens |
 
 ### getTraderMarginRequirementTest
 
@@ -256,47 +114,15 @@ function getTraderMarginRequirementTest(int256 fixedTokenBalance, int256 variabl
 | ------ | ------- | ----------- |
 | margin | uint256 | undefined   |
 
-### getXiLower
-
-```solidity
-function getXiLower(bytes32) external view returns (int256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type   | Description |
-| ----- | ------ | ----------- |
-| value | int256 | undefined   |
-
-### getXiUpper
-
-```solidity
-function getXiUpper(bytes32) external view returns (int256 value)
-```
-
-#### Parameters
-
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
-
-#### Returns
-
-| Name  | Type   | Description |
-| ----- | ------ | ----------- |
-| value | int256 | undefined   |
-
 ### isLiquidatablePosition
 
 ```solidity
 function isLiquidatablePosition(IMarginCalculator.PositionMarginRequirementParams params, int256 currentMargin) external view returns (bool _isLiquidatable)
 ```
+
+Checks if a given position is liquidatable
+
+_In order for a position to be liquidatable its current margin needs to be lower than the position&#39;s liquidation margin requirement_
 
 #### Parameters
 
@@ -307,9 +133,9 @@ function isLiquidatablePosition(IMarginCalculator.PositionMarginRequirementParam
 
 #### Returns
 
-| Name             | Type | Description |
-| ---------------- | ---- | ----------- |
-| \_isLiquidatable | bool | undefined   |
+| Name             | Type | Description                                                  |
+| ---------------- | ---- | ------------------------------------------------------------ |
+| \_isLiquidatable | bool | A boolean which suggests if a given position is liquidatable |
 
 ### isLiquidatableTrader
 
@@ -317,34 +143,37 @@ function isLiquidatablePosition(IMarginCalculator.PositionMarginRequirementParam
 function isLiquidatableTrader(IMarginCalculator.TraderMarginRequirementParams params, int256 currentMargin) external view returns (bool isLiquidatable)
 ```
 
+Checks if a given trader is liquidatable
+
 #### Parameters
 
-| Name          | Type                                            | Description |
-| ------------- | ----------------------------------------------- | ----------- |
-| params        | IMarginCalculator.TraderMarginRequirementParams | undefined   |
-| currentMargin | int256                                          | undefined   |
+| Name          | Type                                            | Description                                                                           |
+| ------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| params        | IMarginCalculator.TraderMarginRequirementParams | Values necessary for the purposes of the computation of the Trader Margin Requirement |
+| currentMargin | int256                                          | Current margin of a trader in terms of the underlying tokens (18 decimals)            |
 
 #### Returns
 
-| Name           | Type | Description |
-| -------------- | ---- | ----------- |
-| isLiquidatable | bool | undefined   |
+| Name           | Type | Description                                                |
+| -------------- | ---- | ---------------------------------------------------------- |
+| isLiquidatable | bool | A boolean which suggests if a given trader is liquidatable |
 
 ### worstCaseVariableFactorAtMaturityTest
 
 ```solidity
-function worstCaseVariableFactorAtMaturityTest(uint256 timeInSeconds, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy) external view returns (uint256 variableFactor)
+function worstCaseVariableFactorAtMaturityTest(uint256 timeInSecondsFromStartToMaturity, uint256 timeInSecondsFromNowToMaturity, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy) external view returns (uint256 variableFactor)
 ```
 
 #### Parameters
 
-| Name          | Type    | Description |
-| ------------- | ------- | ----------- |
-| timeInSeconds | uint256 | undefined   |
-| isFT          | bool    | undefined   |
-| isLM          | bool    | undefined   |
-| rateOracleId  | bytes32 | undefined   |
-| twapApy       | uint256 | undefined   |
+| Name                             | Type    | Description |
+| -------------------------------- | ------- | ----------- |
+| timeInSecondsFromStartToMaturity | uint256 | undefined   |
+| timeInSecondsFromNowToMaturity   | uint256 | undefined   |
+| isFT                             | bool    | undefined   |
+| isLM                             | bool    | undefined   |
+| rateOracleId                     | bytes32 | undefined   |
+| twapApy                          | uint256 | undefined   |
 
 #### Returns
 

@@ -42,12 +42,14 @@ contract MarginCalculator is IMarginCalculator{
     /// @dev Seconds in a year
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
     
-
+    /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
+    /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
+    /// @param timeInSeconds Number of seconds from now until IRS AMM maturity
+    /// @param twapApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
+    /// @param isUpper isUpper = true ==> calculating the APY Upper Bound, otherwise APY Lower Bound
+    /// @return apyBound APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
     function computeApyBound(bytes32 rateOracleId, uint256 timeInSeconds, uint256 twapApy, bool isUpper) internal view returns (uint256 apyBound) {
         
-        // todo: isLm check
-        // todo: fix costly sorage reads
-
         ApyBoundVars memory apyBoundVars;
 
         apyBoundVars.timeFactor =  timeFactorTimeInSeconds[rateOracleId][timeInSeconds];
@@ -96,9 +98,17 @@ contract MarginCalculator is IMarginCalculator{
 
     }
     
-    function worstCaseVariableFactorAtMaturity(uint256 timeInSeconds, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy ) internal view returns(uint256 variableFactor) {
+    /// @notice Calculates the Worst Case Variable Factor At Maturity
+    /// @param timeInSecondsFromStartToMaturity Duration of a given IRS AMM (18 decimals)
+    /// @param timeInSecondsFromNowToMaturity Number of seconds from now to the maturity of a given IRS AMM (18 decimals)
+    /// @param isFT isFT => we are dealing with a Fixed Taker (short) IRS position, otherwise it is a Variable Taker (long) IRS position
+    /// @param isLM isLM => we are computing a Liquidation Margin otherwise computing an Initial Margin
+    /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
+    /// @param twapApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
+    /// @return variableFactor The Worst Case Variable Factor At Maturity = APY Bound * accrualFactor(timeInYearsFromStartUntilMaturity) where APY Bound = APY Upper Bound for Fixed Takers and APY Lower Bound for Variable Takers
+    function worstCaseVariableFactorAtMaturity(uint256 timeInSecondsFromStartToMaturity, uint256 timeInSecondsFromNowToMaturity, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy ) internal view returns(uint256 variableFactor) {
         
-        uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
+        uint256 timeInYearsFromStartUntilMaturity = FixedAndVariableMath.accrualFact(timeInSecondsFromStartToMaturity);
 
         if (isFT) {
 
@@ -106,11 +116,11 @@ contract MarginCalculator is IMarginCalculator{
                 variableFactor = PRBMathUD60x18Typed.mul(
 
                     PRBMath.UD60x18({
-                        value: computeApyBound(rateOracleId, timeInSeconds, twapApy, true)
+                        value: computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, true)
                     }),
 
                     PRBMath.UD60x18({
-                        value: timeInYears
+                        value: timeInYearsFromStartUntilMaturity
                     })
                 ).value;
             } else {
@@ -119,7 +129,7 @@ contract MarginCalculator is IMarginCalculator{
                     PRBMathUD60x18Typed.mul(
 
                         PRBMath.UD60x18({
-                            value: computeApyBound(rateOracleId, timeInSeconds, twapApy, true)
+                            value: computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, true)
                         }),
 
                         PRBMath.UD60x18({
@@ -128,7 +138,7 @@ contract MarginCalculator is IMarginCalculator{
                     ),
 
                     PRBMath.UD60x18({
-                        value: timeInYears
+                        value: timeInYearsFromStartUntilMaturity
                     })
                 ).value;
             }
@@ -139,11 +149,11 @@ contract MarginCalculator is IMarginCalculator{
                 variableFactor = PRBMathUD60x18Typed.mul(
 
                     PRBMath.UD60x18({
-                        value: computeApyBound(rateOracleId, timeInSeconds, twapApy, false)
+                        value: computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, false)
                     }),
 
                     PRBMath.UD60x18({
-                        value: timeInYears
+                        value: timeInYearsFromStartUntilMaturity
                     })
                 ).value;
             } else {
@@ -152,7 +162,7 @@ contract MarginCalculator is IMarginCalculator{
                     PRBMathUD60x18Typed.mul(
 
                         PRBMath.UD60x18({
-                            value: computeApyBound(rateOracleId, timeInSeconds, twapApy, false)
+                            value: computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, false)
                         }),
 
                         PRBMath.UD60x18({
@@ -161,30 +171,18 @@ contract MarginCalculator is IMarginCalculator{
                     ),
 
                     PRBMath.UD60x18({
-                        value: timeInYears
+                        value: timeInYearsFromStartUntilMaturity
                     })
                 ).value;
             }
         }
     }
-
-
-    struct MinimumMarginRequirementLocalVars {
-
-        uint256 minDelta;
-        uint256 notional;
-        uint256 timeInSeconds;
-        uint256 timeInYears;
-        uint256 zeroLowerBoundMargin;
-
-    }
     
+    /// @inheritdoc IMarginCalculator
     function getMinimumMarginRequirement(
         TraderMarginRequirementParams memory params
-    ) public view returns(uint256 margin) {
-        // todo: for vts there needs to be a zero lower bound --> so need to have an idea of the underlying fixed rate
-        // todo: check signs
-
+    ) public view override returns(uint256 margin) {
+    
         MinimumMarginRequirementLocalVars memory vars;
         
         vars.timeInSeconds = PRBMathUD60x18Typed.sub(
@@ -273,7 +271,7 @@ contract MarginCalculator is IMarginCalculator{
         }
     }
     
-    
+    /// @inheritdoc IMarginCalculator
     function getTraderMarginRequirement(
         TraderMarginRequirementParams memory params
     ) public view override returns(uint256 margin) {
@@ -284,9 +282,9 @@ contract MarginCalculator is IMarginCalculator{
         // todo: or check if the signs are different
         // minimum margin needs to be >= 0
 
-        bool isFT = params.variableTokenBalance < 0;
+        // bool isFT = params.variableTokenBalance < 0;
 
-        uint256 timeInSeconds = PRBMathUD60x18Typed.sub(
+        uint256 timeInSecondsFromStartToMaturity = PRBMathUD60x18Typed.sub(
 
                     PRBMath.UD60x18({
                         value: params.termEndTimestamp
@@ -297,12 +295,16 @@ contract MarginCalculator is IMarginCalculator{
                     })
         ).value;
 
-        console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
-        console.log("timeInSeconds is", timeInSeconds);
-        console.log("Worst Case Var Factor is", worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM, params.rateOracleId, params.twapApy));
-        // console.log(int256(worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM)));
-        // console.log("Variable Token Balance is", params.variableTokenBalance);
-        // console.log("Fixed Token Balance is", params.fixedTokenBalance);
+        uint256 timeInSecondsFromNowToMaturity = PRBMathUD60x18Typed.sub(
+
+                    PRBMath.UD60x18({
+                        value: params.termEndTimestamp
+                    }),
+
+                    PRBMath.UD60x18({
+                        value: FixedAndVariableMath.blockTimestampScaled()
+                    })
+        ).value;
 
         PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
 
@@ -322,7 +324,7 @@ contract MarginCalculator is IMarginCalculator{
             }),
 
             PRBMath.SD59x18({
-                value: int256(worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, params.isLM, params.rateOracleId, params.twapApy))
+                value: int256(worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, params.variableTokenBalance < 0, params.isLM, params.rateOracleId, params.twapApy))
             })
         );
 
@@ -336,33 +338,6 @@ contract MarginCalculator is IMarginCalculator{
         } else {
             margin = uint256(modelMargin);
         }
-
-    }
-
-    struct PositionMarginRequirementsVars {
-
-        int256 amount0;
-        int256 amount1;
-
-        int256 expectedVariableTokenBalance;
-        int256 expectedFixedTokenBalance;
-
-        int256 amount0Up;
-        int256 amount1Up;
-
-        int256 amount0Down;
-        int256 amount1Down;
-
-        int256 expectedVariableTokenBalanceAfterUp;
-        int256 expectedFixedTokenBalanceAfterUp;
-
-        int256 expectedVariableTokenBalanceAfterDown;
-        int256 expectedFixedTokenBalanceAfterDown;
-
-        uint256 marginReqAfterUp;
-        uint256 marginReqAfterDown;
-
-        int256 margin;
 
     }
 
@@ -480,8 +455,7 @@ contract MarginCalculator is IMarginCalculator{
             }
     }
     
-    
-
+    /// @inheritdoc IMarginCalculator
     function isLiquidatablePosition(PositionMarginRequirementParams memory params, int256 currentMargin) public view override returns(bool _isLiquidatable) {
 
         uint256 marginRequirement = getPositionMarginRequirement(params);
@@ -493,6 +467,7 @@ contract MarginCalculator is IMarginCalculator{
 
     }
 
+    /// @inheritdoc IMarginCalculator
     function isLiquidatableTrader(
         TraderMarginRequirementParams memory params,
         int256 currentMargin
@@ -511,7 +486,7 @@ contract MarginCalculator is IMarginCalculator{
     
     }
     
-
+    /// @inheritdoc IMarginCalculator
     function getPositionMarginRequirement(PositionMarginRequirementParams memory params) public view override returns (uint256 margin) {
 
         // todo: check if position's liqudity delta is not zero
