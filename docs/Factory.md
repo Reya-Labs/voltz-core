@@ -333,6 +333,26 @@ function vammParameters() external view returns (address ammAddress)
 
 ## Events
 
+### AMMCreated
+
+```solidity
+event AMMCreated(address indexed ammAddress, address indexed tokenAddress, bytes32 indexed rateOracleId, uint256 termStartTimestamp, uint256 termEndTimestamp)
+```
+
+Emitted when an AMM is successfully created
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| ammAddress `indexed` | address | undefined |
+| tokenAddress `indexed` | address | undefined |
+| rateOracleId `indexed` | bytes32 | undefined |
+| termStartTimestamp  | uint256 | undefined |
+| termEndTimestamp  | uint256 | undefined |
+
 ### OwnerChanged
 
 ```solidity

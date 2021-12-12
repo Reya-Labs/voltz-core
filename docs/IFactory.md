@@ -278,6 +278,26 @@ Returns the current treasury of the factory (i.e. Voltz Treasury)
 
 ## Events
 
+### AMMCreated
+
+```solidity
+event AMMCreated(address indexed ammAddress, address indexed tokenAddress, bytes32 indexed rateOracleId, uint256 termStartTimestamp, uint256 termEndTimestamp)
+```
+
+Emitted when an AMM is successfully created
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| ammAddress `indexed` | address | The new AMM&#39;s address |
+| tokenAddress `indexed` | address | The new AMM&#39;s token |
+| rateOracleId `indexed` | bytes32 | The new AMM&#39;s rate oracle ID in Factory.getAMMMAp |
+| termStartTimestamp  | uint256 | The new AMM&#39;s term start timestamp in wei-seconds (ie the deployed block time) |
+| termEndTimestamp  | uint256 | The new AMM&#39;s maturity date in wei-seconds |
+
 ### OwnerChanged
 
 ```solidity
