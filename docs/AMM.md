@@ -1,5 +1,13 @@
 # AMM
 
+
+
+
+
+
+
+
+
 ## Methods
 
 ### burn
@@ -8,13 +16,17 @@
 function burn(int24 tickLower, int24 tickUpper, uint128 amount) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name      | Type    | Description |
-| --------- | ------- | ----------- |
-| tickLower | int24   | undefined   |
-| tickUpper | int24   | undefined   |
-| amount    | uint128 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| tickLower | int24 | undefined
+| tickUpper | int24 | undefined
+| amount | uint128 | undefined
 
 ### calculator
 
@@ -22,11 +34,16 @@ function burn(int24 tickLower, int24 tickUpper, uint128 amount) external nonpaya
 function calculator() external view returns (contract IMarginCalculator)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type                       | Description |
-| ---- | -------------------------- | ----------- |
-| \_0  | contract IMarginCalculator | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IMarginCalculator | undefined
 
 ### collectProtocol
 
@@ -34,18 +51,22 @@ function calculator() external view returns (contract IMarginCalculator)
 function collectProtocol(address recipient, uint256 amountRequested) external nonpayable returns (uint256 amount)
 ```
 
+
+
+
+
 #### Parameters
 
-| Name            | Type    | Description |
-| --------------- | ------- | ----------- |
-| recipient       | address | undefined   |
-| amountRequested | uint256 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| recipient | address | undefined
+| amountRequested | uint256 | undefined
 
 #### Returns
 
-| Name   | Type    | Description |
-| ------ | ------- | ----------- |
-| amount | uint256 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| amount | uint256 | undefined
 
 ### factory
 
@@ -55,11 +76,14 @@ function factory() external view returns (address)
 
 The contract that deployed the amm, which must adhere to the Factory interface
 
+
+
+
 #### Returns
 
-| Name | Type    | Description          |
-| ---- | ------- | -------------------- |
-| \_0  | address | The contract address |
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | The contract address
 
 ### getFixedTokenGrowthGlobal
 
@@ -67,11 +91,16 @@ The contract that deployed the amm, which must adhere to the Factory interface
 function getFixedTokenGrowthGlobal() external view returns (int256)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type   | Description |
-| ---- | ------ | ----------- |
-| \_0  | int256 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | int256 | undefined
 
 ### getSlot0
 
@@ -79,11 +108,16 @@ function getFixedTokenGrowthGlobal() external view returns (int256)
 function getSlot0() external view returns (struct IVAMM.Slot0)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type        | Description |
-| ---- | ----------- | ----------- |
-| \_0  | IVAMM.Slot0 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | IVAMM.Slot0 | undefined
 
 ### getVariableTokenGrowthGlobal
 
@@ -91,11 +125,16 @@ function getSlot0() external view returns (struct IVAMM.Slot0)
 function getVariableTokenGrowthGlobal() external view returns (int256)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type   | Description |
-| ---- | ------ | ----------- |
-| \_0  | int256 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | int256 | undefined
 
 ### liquidatePosition
 
@@ -103,11 +142,15 @@ function getVariableTokenGrowthGlobal() external view returns (int256)
 function liquidatePosition(IPositionStructs.ModifyPositionParams params) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name   | Type                                  | Description |
-| ------ | ------------------------------------- | ----------- |
-| params | IPositionStructs.ModifyPositionParams | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| params | IPositionStructs.ModifyPositionParams | undefined
 
 ### liquidateTrader
 
@@ -115,11 +158,15 @@ function liquidatePosition(IPositionStructs.ModifyPositionParams params) externa
 function liquidateTrader(address traderAddress) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name          | Type    | Description |
-| ------------- | ------- | ----------- |
-| traderAddress | address | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| traderAddress | address | undefined
 
 ### marginEngine
 
@@ -127,11 +174,16 @@ function liquidateTrader(address traderAddress) external nonpayable
 function marginEngine() external view returns (contract IMarginEngine)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type                   | Description |
-| ---- | ---------------------- | ----------- |
-| \_0  | contract IMarginEngine | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IMarginEngine | undefined
 
 ### mint
 
@@ -139,14 +191,18 @@ function marginEngine() external view returns (contract IMarginEngine)
 function mint(address recipient, int24 tickLower, int24 tickUpper, uint128 amount) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name      | Type    | Description |
-| --------- | ------- | ----------- |
-| recipient | address | undefined   |
-| tickLower | int24   | undefined   |
-| tickUpper | int24   | undefined   |
-| amount    | uint128 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| recipient | address | undefined
+| tickLower | int24 | undefined
+| tickUpper | int24 | undefined
+| amount | uint128 | undefined
 
 ### paused
 
@@ -154,13 +210,16 @@ function mint(address recipient, int24 tickLower, int24 tickUpper, uint128 amoun
 function paused() external view returns (bool)
 ```
 
-_Returns true if the contract is paused, and false otherwise._
+
+
+*Returns true if the contract is paused, and false otherwise.*
+
 
 #### Returns
 
 | Name | Type | Description |
-| ---- | ---- | ----------- |
-| \_0  | bool | undefined   |
+|---|---|---|
+| _0 | bool | undefined
 
 ### rateOracle
 
@@ -168,11 +227,16 @@ _Returns true if the contract is paused, and false otherwise._
 function rateOracle() external view returns (contract IRateOracle)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type                 | Description |
-| ---- | -------------------- | ----------- |
-| \_0  | contract IRateOracle | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IRateOracle | undefined
 
 ### rateOracleId
 
@@ -180,11 +244,16 @@ function rateOracle() external view returns (contract IRateOracle)
 function rateOracleId() external view returns (bytes32)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined
 
 ### setFeeProtocol
 
@@ -194,11 +263,13 @@ function setFeeProtocol(uint256 feeProtocol) external nonpayable
 
 Set the proportion of LP fees used as protocols fees
 
+
+
 #### Parameters
 
-| Name        | Type    | Description      |
-| ----------- | ------- | ---------------- |
-| feeProtocol | uint256 | new protocol fee |
+| Name | Type | Description |
+|---|---|---|
+| feeProtocol | uint256 | new protocol fee
 
 ### setMarginEngine
 
@@ -206,11 +277,15 @@ Set the proportion of LP fees used as protocols fees
 function setMarginEngine(address _marginEngine) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name           | Type    | Description |
-| -------------- | ------- | ----------- |
-| \_marginEngine | address | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _marginEngine | address | undefined
 
 ### setUnlocked
 
@@ -218,11 +293,15 @@ function setMarginEngine(address _marginEngine) external nonpayable
 function setUnlocked(bool _unlocked) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name       | Type | Description |
-| ---------- | ---- | ----------- |
-| \_unlocked | bool | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _unlocked | bool | undefined
 
 ### setVAMM
 
@@ -230,11 +309,15 @@ function setUnlocked(bool _unlocked) external nonpayable
 function setVAMM(address _vAMMAddress) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name          | Type    | Description |
-| ------------- | ------- | ----------- |
-| \_vAMMAddress | address | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _vAMMAddress | address | undefined
 
 ### settlePosition
 
@@ -242,11 +325,15 @@ function setVAMM(address _vAMMAddress) external nonpayable
 function settlePosition(IPositionStructs.ModifyPositionParams params) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name   | Type                                  | Description |
-| ------ | ------------------------------------- | ----------- |
-| params | IPositionStructs.ModifyPositionParams | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| params | IPositionStructs.ModifyPositionParams | undefined
 
 ### settleTrader
 
@@ -254,11 +341,15 @@ function settlePosition(IPositionStructs.ModifyPositionParams params) external n
 function settleTrader(address recipient) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name      | Type    | Description |
-| --------- | ------- | ----------- |
-| recipient | address | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| recipient | address | undefined
 
 ### swap
 
@@ -266,18 +357,22 @@ function settleTrader(address recipient) external nonpayable
 function swap(IVAMM.SwapParams params) external nonpayable returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
 ```
 
+
+
+
+
 #### Parameters
 
-| Name   | Type             | Description |
-| ------ | ---------------- | ----------- |
-| params | IVAMM.SwapParams | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| params | IVAMM.SwapParams | undefined
 
 #### Returns
 
-| Name                 | Type   | Description |
-| -------------------- | ------ | ----------- |
-| \_fixedTokenDelta    | int256 | undefined   |
-| \_variableTokenDelta | int256 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _fixedTokenDelta | int256 | undefined
+| _variableTokenDelta | int256 | undefined
 
 ### termEndTimestamp
 
@@ -285,11 +380,16 @@ function swap(IVAMM.SwapParams params) external nonpayable returns (int256 _fixe
 function termEndTimestamp() external view returns (uint256)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | uint256 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined
 
 ### termStartTimestamp
 
@@ -297,11 +397,16 @@ function termEndTimestamp() external view returns (uint256)
 function termStartTimestamp() external view returns (uint256)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | uint256 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined
 
 ### underlyingToken
 
@@ -309,11 +414,16 @@ function termStartTimestamp() external view returns (uint256)
 function underlyingToken() external view returns (address)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | address | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined
 
 ### unlocked
 
@@ -321,11 +431,16 @@ function underlyingToken() external view returns (address)
 function unlocked() external view returns (bool)
 ```
 
+
+
+
+
+
 #### Returns
 
 | Name | Type | Description |
-| ---- | ---- | ----------- |
-| \_0  | bool | undefined   |
+|---|---|---|
+| _0 | bool | undefined
 
 ### updatePositionMargin
 
@@ -333,12 +448,16 @@ function unlocked() external view returns (bool)
 function updatePositionMargin(IPositionStructs.ModifyPositionParams params, int256 marginDelta) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name        | Type                                  | Description |
-| ----------- | ------------------------------------- | ----------- |
-| params      | IPositionStructs.ModifyPositionParams | undefined   |
-| marginDelta | int256                                | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| params | IPositionStructs.ModifyPositionParams | undefined
+| marginDelta | int256 | undefined
 
 ### updateTraderMargin
 
@@ -346,12 +465,16 @@ function updatePositionMargin(IPositionStructs.ModifyPositionParams params, int2
 function updateTraderMargin(address recipient, int256 marginDelta) external nonpayable
 ```
 
+
+
+
+
 #### Parameters
 
-| Name        | Type    | Description |
-| ----------- | ------- | ----------- |
-| recipient   | address | undefined   |
-| marginDelta | int256  | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| recipient | address | undefined
+| marginDelta | int256 | undefined
 
 ### vamm
 
@@ -359,11 +482,18 @@ function updateTraderMargin(address recipient, int256 marginDelta) external nonp
 function vamm() external view returns (contract IVAMM)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type           | Description |
-| ---- | -------------- | ----------- |
-| \_0  | contract IVAMM | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IVAMM | undefined
+
+
 
 ## Events
 
@@ -373,11 +503,15 @@ function vamm() external view returns (contract IVAMM)
 event Paused(address account)
 ```
 
+
+
+
+
 #### Parameters
 
-| Name    | Type    | Description |
-| ------- | ------- | ----------- |
-| account | address | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| account  | address | undefined |
 
 ### Unpaused
 
@@ -385,8 +519,15 @@ event Paused(address account)
 event Unpaused(address account)
 ```
 
+
+
+
+
 #### Parameters
 
-| Name    | Type    | Description |
-| ------- | ------- | ----------- |
-| account | address | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| account  | address | undefined |
+
+
+

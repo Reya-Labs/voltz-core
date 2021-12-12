@@ -67,7 +67,6 @@ contract MarginCalculator is IMarginCalculator{
             getBeta[rateOracleId]
         );
         
-        // todo: fix
         apyBoundVars.lambdaNum = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
         apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor);
         apyBoundVars.lambda = PRBMathSD59x18Typed.div(apyBoundVars.lambdaNum, apyBoundVars.lambdaDen);
@@ -275,13 +274,7 @@ contract MarginCalculator is IMarginCalculator{
     function getTraderMarginRequirement(
         TraderMarginRequirementParams memory params
     ) public view override returns(uint256 margin) {
-        
-        // todo: analyse scenarios where both are negative, because if both are positive, just return 0
-        // todo: only matters if there is a negative balance in either token
-        // return 0 in these cases, isLM doesn't matter
-        // todo: or check if the signs are different
-        // minimum margin needs to be >= 0
-
+    
         // bool isFT = params.variableTokenBalance < 0;
 
         uint256 timeInSecondsFromStartToMaturity = PRBMathUD60x18Typed.sub(
@@ -341,10 +334,14 @@ contract MarginCalculator is IMarginCalculator{
 
     }
 
+    /// @notice Calculates the margin requirement for an LP whose position is in a tick range that bounds the current tick in the vAMM
+    /// @param params Values necessary for the purposes of the computation of the Position Margin Requirement
+    /// @param vars Intermediate Values necessary for the purposes of the computation of the Position Margin Requirement
+    /// @return margin Either Liquidation or Initial Margin Requirement of a given position in terms of the underlying tokens
     function positionMarginBetweenTicksHelper(PositionMarginRequirementParams memory params, PositionMarginRequirementsVars memory vars) internal view returns (uint256 margin) {
 
             // going up balance delta
-            // todo: make sure the signs are correct
+
             vars.amount0Up = SqrtPriceMath.getAmount0Delta(
                 TickMath.getSqrtRatioAtTick(params.currentTick),
                 TickMath.getSqrtRatioAtTick(params.tickUpper),
@@ -355,9 +352,6 @@ contract MarginCalculator is IMarginCalculator{
                 TickMath.getSqrtRatioAtTick(params.tickUpper),
                 int128(params.liquidity)
             );
-
-            // todo: convert to uints in here
-            
             vars.expectedVariableTokenBalanceAfterUp = PRBMathSD59x18Typed.add(
 
                 PRBMath.SD59x18({
@@ -408,8 +402,6 @@ contract MarginCalculator is IMarginCalculator{
                 TickMath.getSqrtRatioAtTick(params.currentTick),
                 int128(params.liquidity)
             );
-
-            // todo: fix the signs and convert to uint
 
             vars.expectedVariableTokenBalanceAfterDown = PRBMathSD59x18Typed.add(
 
@@ -473,9 +465,6 @@ contract MarginCalculator is IMarginCalculator{
         int256 currentMargin
     ) public view override returns(bool isLiquidatable) {
 
-        // todo: liquidation only supported by accounts that are not fully collateralised
-        // todo: cannot liquidate expired position?
-
         uint256 marginRequirement = getTraderMarginRequirement(params);
      
         if (currentMargin < int256(marginRequirement)) {
@@ -488,8 +477,6 @@ contract MarginCalculator is IMarginCalculator{
     
     /// @inheritdoc IMarginCalculator
     function getPositionMarginRequirement(PositionMarginRequirementParams memory params) public view override returns (uint256 margin) {
-
-        // todo: check if position's liqudity delta is not zero
 
         PositionMarginRequirementsVars memory vars;
 
@@ -505,14 +492,14 @@ contract MarginCalculator is IMarginCalculator{
             int128(params.liquidity)
         );
 
-        // tood: fix amount signs and convert to uint256
+        // todo: fix amount signs and convert to uint256
         
         if (params.currentTick < params.tickLower) {
 
             if (params.variableTokenBalance > 0) {
                 revert(); // this should not be possible
             } else if (params.variableTokenBalance < 0) {
-                // means the trader deposited on the other side of the tick rang
+                // means the trader deposited on the other side of the tick range
                 // the margin just covers the current balances of the position
                 
                 margin = getTraderMarginRequirement(
@@ -574,7 +561,6 @@ contract MarginCalculator is IMarginCalculator{
                 // the variable token balance is 0
                 vars.expectedVariableTokenBalance = -int256(vars.amount1);
                 vars.expectedFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(vars.amount0, vars.amount1, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp);
-                // todo: params.rateOracle.variableFactor(false, params.underlyingToken, params.termStartTimestamp, params.termEndTimestamp)
   
                 margin = getTraderMarginRequirement(
                     TraderMarginRequirementParams({

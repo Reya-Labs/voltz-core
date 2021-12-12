@@ -94,7 +94,7 @@ contract Deployer is IDeployer {
         salt: keccak256(
           abi.encode(
             rateOracleId,
-            underlyingToken, // todo: redundunt since the rateOracleId incorporates the underlying token?
+            underlyingToken,
             termStartTimestamp,
             termEndTimestamp
           )
