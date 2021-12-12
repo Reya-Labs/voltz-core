@@ -13,37 +13,36 @@ import "hardhat/console.sol";
 import "./core_libraries/Tick.sol";
 
 
+/// @title Margin Calculator
+/// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
 contract MarginCalculator is IMarginCalculator{
 
-    // todo: convert into a struct of mappings?
-    // todo: optimise the representation of these parameters
-    mapping(bytes32 => PRBMath.UD60x18) public getApyUpperMultiplier;
-    mapping(bytes32 => PRBMath.UD60x18) public getApyLowerMultiplier;
-    mapping(bytes32 => PRBMath.UD60x18) public getMinDeltaLM;
-    mapping(bytes32 => PRBMath.UD60x18) public getMinDeltaMM; // Maintenance Margin (MM) 
-    mapping(bytes32 => PRBMath.UD60x18) public getMaxLeverage; // e.g 10x
-    mapping(bytes32 => PRBMath.SD59x18) public getSigmaSquared; // e.g 10x
-    mapping(bytes32 => PRBMath.SD59x18) public getAlpha; // insted of storing alpha, store 4*alpha
-    mapping(bytes32 => PRBMath.SD59x18) public getBeta; // insted of storing beta, store 4*beta
-    mapping(bytes32 => PRBMath.SD59x18) public getXiUpper; // todo: should be negative (require statement in the setter)
-    mapping(bytes32 => PRBMath.SD59x18) public getXiLower;
+    /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
+    mapping(bytes32 => PRBMath.UD60x18) internal getApyUpperMultiplier;
+    /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
+    mapping(bytes32 => PRBMath.UD60x18) internal getApyLowerMultiplier;
+    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Liquidation Margin Computation
+    mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaLM;
+    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Initial Margin Computation
+    mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaIM;
+    /// @dev Maximum allowed leverage on Voltz Protocol where leverage = (notional traded in an IRS contract) / (margin in the account of an LP/FT/VT)
+    mapping(bytes32 => PRBMath.UD60x18) internal getMaxLeverage;
+    /// @dev The standard deviation that determines the volatility of the underlying pool APY
+    mapping(bytes32 => PRBMath.SD59x18) internal getSigmaSquared;
+    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing alpha (from the litepaper), the contract stores 4*alpha
+    mapping(bytes32 => PRBMath.SD59x18) internal getAlpha;
+    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing beta (from the litepaper), the contract stores 4*beta
+    mapping(bytes32 => PRBMath.SD59x18) internal getBeta; // insted of storing beta, store 4*beta
+    /// @dev Standard normal critical value used in the computation of the Upper APY Bound of the underlying pool
+    mapping(bytes32 => PRBMath.SD59x18) internal getXiUpper;
+    /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
+    mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
+    /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
     mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInSeconds; // rateOralceId --> timeInSeconds --> timeFactor
-    uint256 public override constant SECONDS_IN_YEAR = 31536000 * 10**18; // todo: push into library
-
-    // todo: setters for these mappings? alternative representation that is more space efficient?
-
-    struct ApyBoundVars {
-        PRBMath.SD59x18 timeFactor;
-        PRBMath.SD59x18 oneMinusTimeFactor;
-        PRBMath.SD59x18 k;
-        PRBMath.SD59x18 zeta;
-        PRBMath.SD59x18 lambda_num;
-        PRBMath.SD59x18 lambda_den;
-        PRBMath.SD59x18 lambda;
-        PRBMath.SD59x18 criticalValueMultiplier;
-        PRBMath.SD59x18 criticalValue;
-    }
+    /// @dev Seconds in a year
+    uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
     
+
     function computeApyBound(bytes32 rateOracleId, uint256 timeInSeconds, uint256 twapApy, bool isUpper) internal view returns (uint256 apyBound) {
         
         // todo: isLm check
@@ -67,9 +66,9 @@ contract MarginCalculator is IMarginCalculator{
         );
         
         // todo: fix
-        apyBoundVars.lambda_num = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
-        apyBoundVars.lambda_den = PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor);
-        apyBoundVars.lambda = PRBMathSD59x18Typed.div(apyBoundVars.lambda_num, apyBoundVars.lambda_den);
+        apyBoundVars.lambdaNum = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
+        apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor);
+        apyBoundVars.lambda = PRBMathSD59x18Typed.div(apyBoundVars.lambdaNum, apyBoundVars.lambdaDen);
 
         apyBoundVars.criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2}), apyBoundVars.lambda), apyBoundVars.k), PRBMath.SD59x18({value: 2}));
 
@@ -204,7 +203,7 @@ contract MarginCalculator is IMarginCalculator{
         if (params.isLM) {
             vars.minDelta = uint256(getMinDeltaLM[params.rateOracleId].value);
         } else {
-            vars.minDelta = uint256(getMinDeltaMM[params.rateOracleId].value);
+            vars.minDelta = uint256(getMinDeltaIM[params.rateOracleId].value);
         }
 
         if (params.variableTokenBalance < 0) {

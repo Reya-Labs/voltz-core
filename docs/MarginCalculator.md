@@ -122,10 +122,10 @@ function getMinDeltaLM(bytes32) external view returns (uint256 value)
 | ----- | ------- | ----------- |
 | value | uint256 | undefined   |
 
-### getMinDeltaMM
+### getMinDeltaIM
 
 ```solidity
-function getMinDeltaMM(bytes32) external view returns (uint256 value)
+function getMinDeltaIM(bytes32) external view returns (uint256 value)
 ```
 
 #### Parameters
