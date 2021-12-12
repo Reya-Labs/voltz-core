@@ -9,19 +9,32 @@ import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
-/// @dev Positions store additional state for tracking fees owed to the position
+/// @dev Positions store additional state for tracking fees owed to the position as well as their fixed and variable token balances
 library Position {
   using Position for Position.Info;
 
   // info stored for each user's position
   struct Info {
+    // the amount of liquidity owned by this position
     uint128 _liquidity;
+    // current margin of the position in terms of the underlyingToken (18 decimals)
     int256 margin;
+    // fixed token growth per unit of liquidity as of the last update to liquidity or fixed/variable token balance
     int256 fixedTokenGrowthInsideLast;
+    // variable token growth per unit of liquidity as of the last update to liquidity or fixed/variable token balance
     int256 variableTokenGrowthInsideLast;
+    // current Fixed Token balance of the position, 1 fixed token can be redeemed for 1% APY * (annualised amm term) at the maturity of the amm
+    // assuming 1 token worth of notional "deposited" in the underlying pool at the inception of the amm
+    // can be negative/positive/zero
     int256 fixedTokenBalance;
+    // current Variable Token Balance of the position, 1 variable token can be redeemed for underlyingPoolAPY*(annualised amm term) at the maturity of the amm
+    // assuming 1 token worth of notional "deposited" in the underlying pool at the inception of the amm
+    // can be negative/positive/zero
     int256 variableTokenBalance;
+    // fee growth per unit of liquidity as of the last update to liquidity or fees owed (via the margin)
     uint256 feeGrowthInsideLast;
+    // has the position been already burned
+    // a burned position can no longer support new IRS contracts but still needs to cover settlement cash-flows of on-going IRS contracts it entered
     bool isBurned;
   }
 
@@ -40,6 +53,10 @@ library Position {
     position = self[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
   }
 
+  
+  /// @notice Updates the Info struct of a position by changing the amount of margin according to marginDelta
+  /// @param self Position Info Struct of the Liquidity Provider
+  /// @param marginDelta Change in the margin account of the position
   function updateMargin(Info storage self, int256 marginDelta) internal {
     Info memory _self = self;
     self.margin = PRBMathSD59x18Typed
@@ -50,13 +67,17 @@ library Position {
       .value;
   }
 
+  
+  /// @notice Updates the Info struct of a position by changing the fixed and variable token balances of the position
+  /// @param self Position Info struct of the liquidity provider
+  /// @param fixedTokenBalanceDelta Change in the number of fixed tokens in the position's fixed token balance
+  /// @param variableTokenBalanceDelta Change in the number of variable tokens in the position's variable token balance
   /// #if_succeeds fixedTokenBalanceDelta!=0 || variableTokenBalanceDelta!=0;
   function updateBalances(
     Info storage self,
     int256 fixedTokenBalanceDelta,
     int256 variableTokenBalanceDelta
   ) internal {
-    // todo: turn into a require statement?
     if (fixedTokenBalanceDelta != 0 || variableTokenBalanceDelta != 0) {
       Info memory _self = self;
 
@@ -76,6 +97,11 @@ library Position {
     }
   }
 
+
+  /// @notice Returns Fee Delta = (feeGrowthInside-feeGrowthInsideLast) * liquidity of the position
+  /// @param self position info struct represeting a liquidity provider 
+  /// @param feeGrowthInside fee growth per unit of liquidity as of now
+  /// @return _feeDelta Fee Delta
   function calculateFeeDelta(Info storage self, uint256 feeGrowthInside)
     internal
     pure
@@ -96,9 +122,17 @@ library Position {
       .value;
   }
 
+  
   /// #if_succeeds fixedTokenGrowthInside==_self.fixedTokenGrowthInsideLast ==> _fixedTokenBalance == 0;
   /// #if_succeeds variableTokenGrowthInside==_self.variableTokenGrowthInsideLast ==> _variableTokenBalance == 0;
   /// #if_succeeds _self._liquidity > 0;
+
+  /// @notice Returns Fixed and Variable Token Deltas
+  /// @param self position info struct represeting a liquidity provider 
+  /// @param fixedTokenGrowthInside fixed token growth per unit of liquidity as of now
+  /// @param variableTokenGrowthInside variable token growth per unit of liquidity as of now
+  /// @return _fixedTokenDelta = (fixedTokenGrowthInside-fixedTokenGrowthInsideLast) * liquidity of a position
+  /// @return _variableTokenDelta = (variableTokenGrowthInside-variableTokenGrowthInsideLast) * liquidity of a position
   function calculateFixedAndVariableDelta(
     Info storage self,
     int256 fixedTokenGrowthInside,
@@ -119,7 +153,6 @@ library Position {
           PRBMath.SD59x18({ value: _self.fixedTokenGrowthInsideLast })
         ),
         PRBMath.SD59x18({ value: int256(uint256(_self._liquidity)) * 10**18 })
-        // PRBMath.SD59x18({value: 10**18 })
       )
       .value;
 
@@ -135,6 +168,11 @@ library Position {
       .value;
   }
 
+
+  /// @notice Updates fixedTokenGrowthInsideLast and variableTokenGrowthInsideLast to the current values
+  /// @param self position info struct represeting a liquidity provider 
+  /// @param fixedTokenGrowthInside fixed token growth per unit of liquidity as of now
+  /// @param variableTokenGrowthInside variable token growth per unit of liquidity as of now
   function updateFixedAndVariableTokenGrowthInside(
     Info storage self,
     int256 fixedTokenGrowthInside,
@@ -144,17 +182,21 @@ library Position {
     self.variableTokenGrowthInsideLast = variableTokenGrowthInside;
   }
 
+  /// @notice Updates feeGrowthInsideLast to the current value
+  /// @param self position info struct represeting a liquidity provider 
+  /// @param feeGrowthInside fee growth per unit of liquidity as of now
   function updateFeeGrowthInside(Info storage self, uint256 feeGrowthInside)
     internal
   {
     self.feeGrowthInsideLast = feeGrowthInside;
   }
 
-  /// @notice Credits accumulated fees to a user's position
+  
+  /// #if_succeeds liquidityDelta != 0;
+
+  /// @notice Updates position's liqudity following either mint or a burn
   /// @param self The individual position to update
   /// @param liquidityDelta The change in pool liquidity as a result of the position update
-
-  /// #if_succeeds liquidityDelta != 0;
   function updateLiquidity(Info storage self, int128 liquidityDelta) internal {
     Info memory _self = self;
 
@@ -166,8 +208,6 @@ library Position {
       liquidityNext = LiquidityMath.addDelta(_self._liquidity, liquidityDelta);
     }
 
-    // update the position
-    // todo: have a timestamp that check when was the last time the position was updated and avoids the update cost
     if (liquidityDelta != 0) self._liquidity = liquidityNext;
   }
 }
