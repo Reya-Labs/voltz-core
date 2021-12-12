@@ -32,7 +32,6 @@ library Tick {
   }
 
   /// @dev Common checks for valid tick inputs.
-  // todo: make sure no vulnurabilities because of external vs. private
   function checkTicks(int24 tickLower, int24 tickUpper) internal pure {
       require(tickLower < tickUpper, "TLU");
       require(tickLower >= TickMath.MIN_TICK, "TLM");
