@@ -12,6 +12,11 @@ import "./core_libraries/FixedAndVariableMath.sol";
 /// @title Voltz Factory Contract
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
 contract Factory is IFactory, Deployer {
+  modifier onlyOwner {
+    require(msg.sender == owner, "NOT_OWNER");
+    _;
+  }
+
   /// @inheritdoc IFactory
   address public override owner;
 
@@ -39,7 +44,7 @@ contract Factory is IFactory, Deployer {
   }
 
   /// @inheritdoc IFactory
-  function setTreasury(address _treasury) external override {
+  function setTreasury(address _treasury) external override onlyOwner {
     require(_treasury != address(0), "ZERO_ADDRESS");
 
     treasury = _treasury;
@@ -48,7 +53,7 @@ contract Factory is IFactory, Deployer {
   }
 
   /// @inheritdoc IFactory
-  function setCalculator(address _calculator) external override {
+  function setCalculator(address _calculator) external override onlyOwner {
     require(_calculator != address(0), "ZERO_ADDRESS");
 
     calculator = _calculator;
@@ -57,7 +62,7 @@ contract Factory is IFactory, Deployer {
   }
 
   /// @inheritdoc IFactory
-  function setInsuranceFund(address _insuranceFund) external override {
+  function setInsuranceFund(address _insuranceFund) external override onlyOwner {
     require(_insuranceFund != address(0), "ZERO_ADDRESS");
 
     insuranceFund = _insuranceFund;
@@ -69,6 +74,7 @@ contract Factory is IFactory, Deployer {
   function createVAMM(address ammAddress)
     external
     override
+    onlyOwner
     returns (address vamm)
   {
     require(ammAddress != address(0));
@@ -82,6 +88,7 @@ contract Factory is IFactory, Deployer {
   function createMarginEngine(address ammAddress)
     external
     override
+    onlyOwner
     returns (address marginEngine)
   {
     require(ammAddress != address(0));
@@ -96,7 +103,7 @@ contract Factory is IFactory, Deployer {
     address underlyingToken,
     bytes32 rateOracleId,
     uint256 termEndTimestamp
-  ) external override returns (address amm) {
+  ) external override onlyOwner returns (address amm) {
     uint256 termStartTimestamp = Time.blockTimestampScaled();
     require(
       getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
@@ -126,8 +133,7 @@ contract Factory is IFactory, Deployer {
   }
 
   /// @inheritdoc IFactory
-  function setOwner(address _owner) external override {
-    require(msg.sender == owner);
+  function setOwner(address _owner) external override onlyOwner {
     emit OwnerChanged(owner, _owner);
     owner = _owner;
   }
@@ -136,6 +142,7 @@ contract Factory is IFactory, Deployer {
   function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress)
     external
     override
+    onlyOwner
   {
     require(_rateOracleId != bytes32(0), "ZERO_BYTES");
     require(_rateOracleAddress != address(0), "ZERO_ADDRESS");
