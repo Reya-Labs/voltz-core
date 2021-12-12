@@ -11,6 +11,10 @@ library FixedAndVariableMath {
   /// @notice Number of wei-seconds in a year
   /// @dev Ignoring leap years since we're only using it to calculate the eventual APY rate
   uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
+  
+  /// @notice One percent
+  /// @dev No scary unnamed constants!
+  uint256 internal constant ONE_PERCENT = 10**16;
 
   /// @notice Caclulate the remaining cashflow to settle a position
   /// @param fixedTokenBalance The current balance of the fixed side of the position
@@ -106,7 +110,7 @@ library FixedAndVariableMath {
     fixedFactorValue = PRBMathUD60x18Typed
       .mul(
         PRBMath.UD60x18({ value: timeInYears }),
-        PRBMath.UD60x18({ value: 10**16 })
+        PRBMath.UD60x18({ value: ONE_PERCENT })
       )
       .value;
   }
