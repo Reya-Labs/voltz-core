@@ -174,8 +174,6 @@ contract VAMM is IVAMM {
   }
 
   function updatePosition(ModifyPositionParams memory params) private {
-    uint256 _feeGrowthGlobal = feeGrowthGlobal;
-
     UpdatePositionVars memory vars;
 
     if (params.liquidityDelta != 0) {
@@ -375,7 +373,7 @@ contract VAMM is IVAMM {
     uint256 stepFeeAmount,
     uint256 cacheFeeProtocol,
     uint256 stateProtocolFee
-  ) internal view returns (uint256, uint256) {
+  ) internal pure returns (uint256, uint256) {
     PRBMath.UD60x18 memory delta = PRBMathUD60x18Typed.mul(
       PRBMath.UD60x18({ value: stepFeeAmount }),
       PRBMath.UD60x18({
