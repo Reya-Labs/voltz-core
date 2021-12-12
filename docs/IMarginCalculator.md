@@ -1,13 +1,5 @@
 # IMarginCalculator
 
-
-
-
-
-
-
-
-
 ## Methods
 
 ### getMinimumMarginRequirement
@@ -18,19 +10,19 @@ function getMinimumMarginRequirement(IMarginCalculator.TraderMarginRequirementPa
 
 Returns the Minimum Margin Requirement
 
-*As a safety measure, Voltz Protocol also computes the minimum margin requirement for FTs and VTs.This ensures the protocol has a cap on the amount of leverage FTs and VTs can takeMinimum Margin = abs(varaibleTokenBalance) * minDelta * tminDelta is a parameter that is set separately for FTs and VTs and it is free to vary depending on the underlying rates poolAlso the minDelta is different for Liquidation and Initial Margin Requirementswhere minDeltaIM &gt; minDeltaLM*
+_As a safety measure, Voltz Protocol also computes the minimum margin requirement for FTs and VTs.This ensures the protocol has a cap on the amount of leverage FTs and VTs can takeMinimum Margin = abs(varaibleTokenBalance) _ minDelta _ tminDelta is a parameter that is set separately for FTs and VTs and it is free to vary depending on the underlying rates poolAlso the minDelta is different for Liquidation and Initial Margin Requirementswhere minDeltaIM &gt; minDeltaLM_
 
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IMarginCalculator.TraderMarginRequirementParams | Values necessary for the purposes of the computation of the Trader Margin Requirement
+| Name   | Type                                            | Description                                                                           |
+| ------ | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| params | IMarginCalculator.TraderMarginRequirementParams | Values necessary for the purposes of the computation of the Trader Margin Requirement |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| margin | uint256 | Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens    
+| Name   | Type    | Description                                                                                          |
+| ------ | ------- | ---------------------------------------------------------------------------------------------------- |
+| margin | uint256 | Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens |
 
 ### getPositionMarginRequirement
 
@@ -38,21 +30,17 @@ Returns the Minimum Margin Requirement
 function getPositionMarginRequirement(IMarginCalculator.PositionMarginRequirementParams params) external view returns (uint256 margin)
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IMarginCalculator.PositionMarginRequirementParams | undefined
+| Name   | Type                                              | Description |
+| ------ | ------------------------------------------------- | ----------- |
+| params | IMarginCalculator.PositionMarginRequirementParams | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| margin | uint256 | undefined
+| Name   | Type    | Description |
+| ------ | ------- | ----------- |
+| margin | uint256 | undefined   |
 
 ### getTraderMarginRequirement
 
@@ -62,19 +50,17 @@ function getTraderMarginRequirement(IMarginCalculator.TraderMarginRequirementPar
 
 Returns either the Liquidation or Initial Margin Requirement of a given trader
 
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IMarginCalculator.TraderMarginRequirementParams | Values necessary for the purposes of the computation of the Trader Margin Requirement
+| Name   | Type                                            | Description                                                                           |
+| ------ | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| params | IMarginCalculator.TraderMarginRequirementParams | Values necessary for the purposes of the computation of the Trader Margin Requirement |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| margin | uint256 | Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
+| Name   | Type    | Description                                                                                          |
+| ------ | ------- | ---------------------------------------------------------------------------------------------------- |
+| margin | uint256 | Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens |
 
 ### isLiquidatablePosition
 
@@ -84,20 +70,20 @@ function isLiquidatablePosition(IMarginCalculator.PositionMarginRequirementParam
 
 Checks if a given position is liquidatable
 
-*In order for a position to be liquidatable its current margin needs to be lower than the position&#39;s liquidation margin requirement*
+_In order for a position to be liquidatable its current margin needs to be lower than the position&#39;s liquidation margin requirement_
 
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IMarginCalculator.PositionMarginRequirementParams | undefined
-| currentMargin | int256 | undefined
+| Name          | Type                                              | Description |
+| ------------- | ------------------------------------------------- | ----------- |
+| params        | IMarginCalculator.PositionMarginRequirementParams | undefined   |
+| currentMargin | int256                                            | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| _isLiquidatable | bool | A boolean which suggests if a given position is liquidatable
+| Name             | Type | Description                                                  |
+| ---------------- | ---- | ------------------------------------------------------------ |
+| \_isLiquidatable | bool | A boolean which suggests if a given position is liquidatable |
 
 ### isLiquidatableTrader
 
@@ -107,21 +93,15 @@ function isLiquidatableTrader(IMarginCalculator.TraderMarginRequirementParams pa
 
 Checks if a given trader is liquidatable
 
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| params | IMarginCalculator.TraderMarginRequirementParams | Values necessary for the purposes of the computation of the Trader Margin Requirement
-| currentMargin | int256 | Current margin of a trader in terms of the underlying tokens (18 decimals)
+| Name          | Type                                            | Description                                                                           |
+| ------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| params        | IMarginCalculator.TraderMarginRequirementParams | Values necessary for the purposes of the computation of the Trader Margin Requirement |
+| currentMargin | int256                                          | Current margin of a trader in terms of the underlying tokens (18 decimals)            |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| isLiquidatable | bool | A boolean which suggests if a given trader is liquidatable
-
-
-
-
+| Name           | Type | Description                                                |
+| -------------- | ---- | ---------------------------------------------------------- |
+| isLiquidatable | bool | A boolean which suggests if a given trader is liquidatable |

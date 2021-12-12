@@ -1,12 +1,8 @@
 # IAMMOwnerActions
 
-
-
 > Permissioned amm actions
 
 Contains amm methods that may only be called by the factory owner
-
-
 
 ## Methods
 
@@ -16,21 +12,17 @@ Contains amm methods that may only be called by the factory owner
 function collectProtocol(address recipient) external nonpayable returns (uint256 amount)
 ```
 
-
-
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| recipient | address | undefined
+| Name      | Type    | Description |
+| --------- | ------- | ----------- |
+| recipient | address | undefined   |
 
 #### Returns
 
-| Name | Type | Description |
-|---|---|---|
-| amount | uint256 | undefined
+| Name   | Type    | Description |
+| ------ | ------- | ----------- |
+| amount | uint256 | undefined   |
 
 ### setFeeProtocol
 
@@ -40,14 +32,8 @@ function setFeeProtocol(uint256 feeProtocol) external nonpayable
 
 Set the proportion of LP fees used as protocols fees
 
-
-
 #### Parameters
 
-| Name | Type | Description |
-|---|---|---|
-| feeProtocol | uint256 | new protocol fee
-
-
-
-
+| Name        | Type    | Description      |
+| ----------- | ------- | ---------------- |
+| feeProtocol | uint256 | new protocol fee |
