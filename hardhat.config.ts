@@ -6,7 +6,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
-// import "solidity-coverage";
+import "solidity-coverage";
 import "hardhat-prettier";
 import "hardhat-gas-reporter";
 import "@tenderly/hardhat-tenderly";

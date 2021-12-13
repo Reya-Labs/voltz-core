@@ -30,4 +30,12 @@ contract PositionTest {
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
     }
 
+    function updateFeeGrowthInside(uint256 feeGrowthInside) public {
+        position.updateFeeGrowthInside(feeGrowthInside);
+    }
+
+    function calculateFeeDelta(uint256 feeGrowthInside) public view returns (uint256 feeDelta) {
+        return position.calculateFeeDelta(feeGrowthInside);
+    }
+
 }
