@@ -8,6 +8,20 @@ interface IMarginCalculator {
 
     // structs 
 
+    // docs missing (collect them from MarginCalculator.sol old mappings)
+    struct MarginCalculatorParameters {
+        PRBMath.UD60x18 apyUpperMultiplier;
+        PRBMath.UD60x18 apyLowerMultiplier;
+        PRBMath.UD60x18 minDeltaLM;
+        PRBMath.UD60x18 minDeltaIM;
+        PRBMath.UD60x18 maxLeverage;
+        PRBMath.SD59x18 sigmaSquared;
+        PRBMath.SD59x18 alpha;
+        PRBMath.SD59x18 beta;
+        PRBMath.SD59x18 xiUpper;
+        PRBMath.SD59x18 xiLower;
+    }
+
     struct ApyBoundVars {
         /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
         PRBMath.SD59x18 timeFactor;
@@ -178,5 +192,7 @@ interface IMarginCalculator {
         TraderMarginRequirementParams memory params,
         int256 currentMargin
     ) external view returns(bool isLiquidatable);
+
+    function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) external;
 
 }
