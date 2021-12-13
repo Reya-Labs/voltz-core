@@ -6,9 +6,12 @@ import { PositionTest } from "../../typechain/PositionTest";
 import { encodeSqrtRatioX96, expandTo18Decimals } from "../shared/utilities";
 import { toBn } from "evm-bn";
 import { div, sub, mul, add } from "../shared/functions";
-import { createSnapshot, restoreSnapshot } from "../helpers/snapshots";
 
-const { provider } = waffle;
+const { provider, loadFixture } = waffle;
+
+interface PostitionTestFixture {
+  positionTest: PositionTest;
+}
 
 function calculateFixedAndVariableDelta(
   fixedTokenGrowthInside: BigNumber,
@@ -30,28 +33,22 @@ function calculateFixedAndVariableDelta(
 }
 
 describe("Position", () => {
-  let positionTest: PositionTest;
-  let snapshotId: number;
-
-  before(async () => {
+  async function fixture(): Promise<PostitionTestFixture> {
     const positionTestFactory = await ethers.getContractFactory("PositionTest");
-    positionTest = (await positionTestFactory.deploy()) as PositionTest;
-    snapshotId = await createSnapshot(provider);
-  });
-
-  afterEach(async () => {
-    // revert back to initial state after each test
-    await restoreSnapshot(provider, snapshotId);
-  });
+    const positionTest = (await positionTestFactory.deploy()) as PositionTest;
+    return { positionTest };
+  }
 
   describe("#updateLiquidity", () => {
     it("reverts if liquidity delta is zero", async () => {
+      const { positionTest } = await loadFixture(fixture);
       const positionLiquidity = await positionTest.position();
       expect(positionLiquidity._liquidity).to.eq(0);
       return expect(positionTest.updateLiquidity(0)).to.be.revertedWith("NP");
     });
 
     it("correctly updates the liqudity of a position", async () => {
+      const { positionTest } = await loadFixture(fixture);
       await positionTest.updateLiquidity(100);
       await positionTest.updateLiquidity(0);
       await positionTest.updateLiquidity(-10);
@@ -62,6 +59,7 @@ describe("Position", () => {
 
   describe("#updateMargin", () => {
     it("correctly updates the margin of a position", async () => {
+      const { positionTest } = await loadFixture(fixture);
       await positionTest.updateMargin(toBn("10"));
       await positionTest.updateMargin(toBn("-1"));
       const positionMarginUpdated = await positionTest.position();
@@ -71,12 +69,10 @@ describe("Position", () => {
 
   describe("#updateBalances", () => {
     it("correctly updates the variable and fixed token balances of a position", async () => {
+      const { positionTest } = await loadFixture(fixture);
       await positionTest.updateBalances(toBn("1000"), toBn("-2000"));
-
       await positionTest.updateBalances(toBn("2000"), toBn("-3000"));
-
       const positionBalancesUpdated = await positionTest.position();
-
       expect(positionBalancesUpdated[4]).to.eq(toBn("3000"));
       expect(positionBalancesUpdated[5]).to.eq(toBn("-5000"));
     });
@@ -84,8 +80,8 @@ describe("Position", () => {
 
   describe("#updateFixedAndVariableTokenGrowthInside", () => {
     it("check the inside last balances are correctly updated", async () => {
+      const { positionTest } = await loadFixture(fixture);
       await positionTest.updateLiquidity(100);
-
       await positionTest.updateFixedAndVariableTokenGrowthInside(
         toBn("20"),
         toBn("-30")
@@ -100,6 +96,7 @@ describe("Position", () => {
 
   describe("#feeGrowthInside", () => {
     it("check feeGrowthInsideLast correctly updated", async () => {
+      const { positionTest } = await loadFixture(fixture);
       await positionTest.updateFeeGrowthInside(toBn("21"));
       const positionUpdated = await positionTest.position();
       expect(positionUpdated.feeGrowthInsideLast).to.eq(toBn("21"));
@@ -107,21 +104,8 @@ describe("Position", () => {
   });
 
   describe("#calculateFixedAndVariableDelta", () => {
-    before(async () => {
-      await createSnapshot(provider);
-      const positionTestFactory = await ethers.getContractFactory(
-        "PositionTest"
-      );
-
-      positionTest = (await positionTestFactory.deploy()) as PositionTest;
-    });
-
-    after(async () => {
-      // revert back to initial state after all tests pass
-      await restoreSnapshot(provider);
-    });
-
     it("check the inside last balances are correctly updated", async () => {
+      const { positionTest } = await loadFixture(fixture);
       await positionTest.updateLiquidity(10);
       const updatedPosition = await positionTest.position();
 
