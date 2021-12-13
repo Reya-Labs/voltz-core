@@ -10,6 +10,23 @@ interface IFactory {
   /// @param newOwner The owner after the owner was changed
   event OwnerChanged(address indexed oldOwner, address indexed newOwner);
 
+  /// @notice Emitted when treasury address is changed
+  /// @param newTreasury The new treasury address after it was changed by owner
+  event TreasuaryChanged(address indexed newTreasury);
+
+  /// @notice Emitted when calculator address is changed
+  /// @param newCalculator The new calculator address after it was changed by owner
+  event CalculatorChanged(address indexed newCalculator);
+
+  /// @notice Emitted when insurance fund address is changed
+  /// @param newInsuranceFund The new insurance fund address after it was changed by owner
+  event InsuranceFundChanged(address indexed newInsuranceFund);
+
+  /// @notice Emmited when Rate Oracle Address is changed
+  /// @param rateOracleId The rate oracle Id
+  /// @param newOracleAddress The rate oracle address given its Id 
+  event RateOracleAdded(bytes32 indexed rateOracleId, address newOracleAddress);
+
   /// @notice Emitted when an AMM is successfully created
   /// @param ammAddress The new AMM's address
   /// @param tokenAddress The new AMM's token
@@ -52,6 +69,16 @@ interface IFactory {
   /// @param termEndTimestamp The block.timestamp of amm maturity
   /// @return amm The amm address
   function getAMMMAp(bytes32 rateOracleId, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns (address);
+
+  /// @notice Returns vAMM address for a given AMM address
+  /// @param ammAddress The address of the AMM
+  /// @return vAMM The vAMM address
+  function getVAMMMap(address ammAddress) external view returns(address);
+
+  /// @notice Returns Margin Engine address for a given AMM address
+  /// @param ammAddress The address of the AMM
+  /// @return marginEngine The Margin Engine address
+  function getMarginEngineMap(address ammAddress) external view returns(address);
 
   /// @notice Updates the owner of the factory
   /// @dev Must be called by the current owner

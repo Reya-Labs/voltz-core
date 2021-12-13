@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IFactory.sol";
-import "./interfaces/IFactory.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./Deployer.sol";
 import "./VAMM.sol";
@@ -24,6 +23,12 @@ contract Factory is IFactory, Deployer {
   mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address))))
     public
     override getAMMMAp;
+  
+  /// @inheritdoc IFactory
+  mapping(address => address) public override getVAMMMap;
+
+  /// @inheritdoc IFactory
+  mapping(address => address) public override getMatginEngineMap;
 
   /// @inheritdoc IFactory
   mapping(bytes32 => address) public override getRateOracleAddress;
@@ -47,27 +52,27 @@ contract Factory is IFactory, Deployer {
   function setTreasury(address _treasury) external override onlyOwner {
     require(_treasury != address(0), "ZERO_ADDRESS");
 
-    treasury = _treasury;
+    emit TreasuaryChanged(_treasury);
 
-    // emit treasury set
+    treasury = _treasury;
   }
 
   /// @inheritdoc IFactory
   function setCalculator(address _calculator) external override onlyOwner {
     require(_calculator != address(0), "ZERO_ADDRESS");
 
-    calculator = _calculator;
+    emit CalculatorChanged(_calculator);
 
-    // emit calculator set
+    calculator = _calculator;
   }
 
   /// @inheritdoc IFactory
   function setInsuranceFund(address _insuranceFund) external override onlyOwner {
     require(_insuranceFund != address(0), "ZERO_ADDRESS");
 
-    insuranceFund = _insuranceFund;
+    emit InsuranceFundChanged(_insuranceFund);
 
-    // emit insurance fund set
+    insuranceFund = _insuranceFund;
   }
 
   /// @inheritdoc IFactory
@@ -77,7 +82,8 @@ contract Factory is IFactory, Deployer {
     onlyOwner
     returns (address vamm)
   {
-    require(ammAddress != address(0));
+    require(ammAddress != address(0), "ZERO_ADDRESS");
+    require(getVAMMMap[ammAddress] == address(0), "EXISTED_VAMM");
 
     vamm = deployVAMM(ammAddress);
 
@@ -91,7 +97,8 @@ contract Factory is IFactory, Deployer {
     onlyOwner
     returns (address marginEngine)
   {
-    require(ammAddress != address(0));
+    require(ammAddress != address(0), "ZERO_ADDRESS");
+    require(getMarginEngineMap[ammAddress] == address(0), "EXISTED_MargineEngine");
 
     marginEngine = deployMarginEngine(ammAddress);
 
@@ -108,7 +115,8 @@ contract Factory is IFactory, Deployer {
     require(
       getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
         termEndTimestamp
-      ] == address(0)
+      ] == address(0),
+      "EXISTED_AMM"
     );
 
     amm = deployAMM(
@@ -152,8 +160,8 @@ contract Factory is IFactory, Deployer {
     );
     require(getRateOracleAddress[_rateOracleId] == address(0), "EXISTED_ID");
 
-    getRateOracleAddress[_rateOracleId] = _rateOracleAddress;
+    emit RateOracleAdded(_rateOracleId, _rateOracleAddress);
 
-    // emit RateOracleAdded
+    getRateOracleAddress[_rateOracleId] = _rateOracleAddress;
   }
 }
