@@ -28,7 +28,7 @@ contract Factory is IFactory, Deployer {
   mapping(address => address) public override getVAMMMap;
 
   /// @inheritdoc IFactory
-  mapping(address => address) public override getMatginEngineMap;
+  mapping(address => address) public override getMarginEngineMap;
 
   /// @inheritdoc IFactory
   mapping(bytes32 => address) public override getRateOracleAddress;

@@ -1,8 +1,12 @@
 # IAMMImmutables
 
+
+
 > Pool state that never changes
 
 These parameters are fixed for a amm forever, i.e., the methods will always return the same values
+
+
 
 ## Methods
 
@@ -12,11 +16,16 @@ These parameters are fixed for a amm forever, i.e., the methods will always retu
 function calculator() external view returns (contract IMarginCalculator)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type                       | Description |
-| ---- | -------------------------- | ----------- |
-| \_0  | contract IMarginCalculator | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IMarginCalculator | undefined
 
 ### factory
 
@@ -26,11 +35,14 @@ function factory() external view returns (address)
 
 The contract that deployed the amm, which must adhere to the Factory interface
 
+
+
+
 #### Returns
 
-| Name | Type    | Description          |
-| ---- | ------- | -------------------- |
-| \_0  | address | The contract address |
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | The contract address
 
 ### rateOracle
 
@@ -38,11 +50,16 @@ The contract that deployed the amm, which must adhere to the Factory interface
 function rateOracle() external view returns (contract IRateOracle)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type                 | Description |
-| ---- | -------------------- | ----------- |
-| \_0  | contract IRateOracle | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IRateOracle | undefined
 
 ### rateOracleId
 
@@ -50,11 +67,16 @@ function rateOracle() external view returns (contract IRateOracle)
 function rateOracleId() external view returns (bytes32)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | bytes32 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined
 
 ### termEndTimestamp
 
@@ -62,11 +84,16 @@ function rateOracleId() external view returns (bytes32)
 function termEndTimestamp() external view returns (uint256)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | uint256 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined
 
 ### termStartTimestamp
 
@@ -74,11 +101,16 @@ function termEndTimestamp() external view returns (uint256)
 function termStartTimestamp() external view returns (uint256)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | uint256 | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined
 
 ### underlyingToken
 
@@ -86,8 +118,17 @@ function termStartTimestamp() external view returns (uint256)
 function underlyingToken() external view returns (address)
 ```
 
+
+
+
+
+
 #### Returns
 
-| Name | Type    | Description |
-| ---- | ------- | ----------- |
-| \_0  | address | undefined   |
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined
+
+
+
+
