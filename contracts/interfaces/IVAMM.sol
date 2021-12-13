@@ -35,7 +35,6 @@ interface IVAMM is IPositionStructs {
 
     event Initialize(uint160 sqrtPriceX96, int24 tick);
     
-    // todo: trim the structs
     struct SwapParams {
         address recipient;
         bool isFT; // equivalent to !zeroForOne

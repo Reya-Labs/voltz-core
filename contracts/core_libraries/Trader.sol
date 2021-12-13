@@ -13,7 +13,7 @@ library Trader {
         int256 margin;
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
-        bool isSettled; // todo: feels redundunt
+        bool isSettled;
     }
 
     /// @notice Returns the Info struct of a trader, given an owner

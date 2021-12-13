@@ -229,7 +229,7 @@ library Tick {
     uint128 maxLiquidity
   ) external returns (bool flipped) {
 
-    // todo: update is no longe internal
+    // update is no longer internal
 
     Tick.Info storage info = self[tick];
 

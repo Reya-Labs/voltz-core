@@ -154,6 +154,6 @@ contract Factory is IFactory, Deployer {
 
     getRateOracleAddress[_rateOracleId] = _rateOracleAddress;
 
-    // todo: emit RateOracleAdded
+    // emit RateOracleAdded
   }
 }

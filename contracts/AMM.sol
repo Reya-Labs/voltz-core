@@ -192,7 +192,7 @@ contract AMM is IAMM, Pausable {
     int24 tickUpper,
     uint128 amount
   ) external override whenNotPaused lock {
-    vamm.mint(recipient, tickLower, tickUpper, amount); // todo: how costly are these calls?
+    vamm.mint(recipient, tickLower, tickUpper, amount);
   }
 
   function swap(IVAMM.SwapParams memory params)
@@ -230,6 +230,6 @@ contract AMM is IAMM, Pausable {
       );
     }
 
-    // todo: emit collect protocol event
+    // emit collect protocol event
   }
 }

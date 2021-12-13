@@ -10,7 +10,7 @@ library LowGasSafeMath {
   /// @param y The addend
   /// @return z The sum of x and y
 
-  // todo: better function name
+  
   function check(
     uint256 x,
     uint256 y,

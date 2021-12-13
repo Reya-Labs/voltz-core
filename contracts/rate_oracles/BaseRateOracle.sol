@@ -15,7 +15,7 @@ abstract contract BaseRateOracle is IRateOracle {
     bytes32 public immutable override rateOracleId;
     uint256 public override secondsAgo;
 
-    // todo: controlled by the owner
+    // should be controlled by the owner
     function setSecondsAgo(uint256 _secondsAgo) external override {
 
         secondsAgo =  _secondsAgo;
@@ -41,16 +41,16 @@ abstract contract BaseRateOracle is IRateOracle {
 
     }
 
-    // todo: override
+    // override
     OracleVars public oracleVars;
 
-    // todo: override
+    // override
     Oracle.Observation[65535] public observations;
     
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public virtual override returns(uint256 result);
 
 
-    // todo: add override, lock the amm when calling this function, noDelegateCall
+    // add override, lock the amm when calling this function, noDelegateCall
     function increaseObservarionCardinalityNext(uint16 observationCardinalityNext) external {
         uint16 observationCardinalityNextOld = oracleVars.observationCardinalityNext; // for the event
 
@@ -129,7 +129,7 @@ abstract contract BaseRateOracle is IRateOracle {
 
         Oracle.Observation memory last = observations[oracleVars.observationIndex];
         
-        // todo: duplicate code
+        // duplicate code
         uint256 from = last.blockTimestamp;
         uint256 to = Time.blockTimestampScaled();
         

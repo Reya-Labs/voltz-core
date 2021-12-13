@@ -492,7 +492,7 @@ contract MarginCalculator is IMarginCalculator{
             int128(params.liquidity)
         );
 
-        // todo: fix amount signs and convert to uint256
+        // fix amount signs and convert to uint256
         
         if (params.currentTick < params.tickLower) {
 

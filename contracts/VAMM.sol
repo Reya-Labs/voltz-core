@@ -32,11 +32,11 @@ contract VAMM is IVAMM {
   using SafeCast for uint256;
   using SafeCast for int256;
   using Tick for mapping(int24 => Tick.Info);
-  using TickBitmap for mapping(int16 => uint256); // todo: resolve the issue with tick bitmap
+  using TickBitmap for mapping(int16 => uint256);
 
-  uint256 public override fee; // 0.3%=0.003 of the total notional
+  uint256 public override fee;
 
-  int24 public override tickSpacing; // todo: make settable
+  int24 public override tickSpacing;
 
   uint128 public override maxLiquidityPerTick;
 
@@ -45,22 +45,14 @@ contract VAMM is IVAMM {
 
   constructor() {
     address _ammAddress;
-    // int24 _tickSpacing;
-
     (
       _ammAddress
-      // _tickSpacing
     ) = IDeployer(msg.sender).vammParameters();
 
     amm = IAMM(_ammAddress);
-
-    // tickSpacing = _tickSpacing;
-    // todo: tickSpacing can just be set the same way the feeProportion is set
-
-    // maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing); // todo: should also be set separately
   }
 
-  Slot0 public override slot0; // todo: rename, no longer the 0th slot
+  Slot0 public override slot0;
 
   int256 public override fixedTokenGrowthGlobal;
 
@@ -84,7 +76,6 @@ contract VAMM is IVAMM {
     amm = IAMM(_ammAddress);
   }
 
-  // todo: do we need a lock in here?
   function updateProtocolFees(uint256 protocolFeesCollected)
     external
     override
@@ -94,8 +85,6 @@ contract VAMM is IVAMM {
       protocolFeesCollected <= protocolFees,
       "Can't withdraw more than have"
     );
-    // todo: alternative less severe implementation
-    // amount = amountRequested > protocolFees ? protocolFees : amountRequested;
     protocolFees = PRBMathUD60x18Typed
       .sub(
         PRBMath.UD60x18({ value: protocolFees }),
@@ -118,9 +107,8 @@ contract VAMM is IVAMM {
   }
 
   function setFeeProtocol(uint256 feeProtocol) external override onlyAMM {
-    // todo: introduce checks
     slot0.feeProtocol = feeProtocol;
-    // todo: emit set fee protocol
+    // emit set fee protocol
   }
 
   function burn(
@@ -133,7 +121,7 @@ contract VAMM is IVAMM {
         owner: msg.sender,
         tickLower: tickLower,
         tickUpper: tickUpper,
-        liquidityDelta: -int256(uint256(amount)).toInt128() // todo: toInt128 vs. int128()
+        liquidityDelta: -int256(uint256(amount)).toInt128()
       })
     );
 
@@ -253,8 +241,6 @@ contract VAMM is IVAMM {
   ) external override {
     require(amount > 0);
 
-    // Position.Info storage position = amm.positions(recipient, tickLower, tickUpper);
-    // todo: have a helper function that just pulls the margin for the following call
     amm.marginEngine().checkPositionMarginRequirementSatisfied(
       recipient,
       tickLower,
@@ -262,8 +248,7 @@ contract VAMM is IVAMM {
       amount
     );
 
-    // todo: liqudiity delta is the liquidity of the position after the amount is deposited
-
+    // liquidityDelta is the liquidity of the position after the amount is deposited (convert to dev doc)
     modifyPosition(
       ModifyPositionParams({
         owner: recipient,
@@ -276,7 +261,7 @@ contract VAMM is IVAMM {
     emit Mint(msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
-  // todo: can be in a separate library (but not reused elsewhere)
+  // can be in a separate library
   function calculateUpdatedGlobalTrackerValues(
     SwapParams memory params,
     SwapState memory state,
@@ -317,7 +302,7 @@ contract VAMM is IVAMM {
           PRBMath.SD59x18({ value: state.fixedTokenGrowthGlobal }),
           PRBMathSD59x18Typed.div(
             PRBMath.SD59x18({
-              // todo: check the signs
+              // check the signs
               value: FixedAndVariableMath.getFixedTokenBalance(
                 -int256(step.amountIn),
                 int256(step.amountOut),
@@ -334,7 +319,7 @@ contract VAMM is IVAMM {
       stateVariableTokenGrowthGlobal = PRBMathSD59x18Typed
         .add(
           PRBMath.SD59x18({ value: state.variableTokenGrowthGlobal }),
-          // todo: check the signs are correct
+          // check the signs are correct
           PRBMathSD59x18Typed.div(
             PRBMath.SD59x18({ value: -int256(step.amountIn) }),
             PRBMath.SD59x18({ value: int256(uint256(state.liquidity)) })
@@ -347,7 +332,7 @@ contract VAMM is IVAMM {
           PRBMath.SD59x18({ value: state.fixedTokenGrowthGlobal }),
           PRBMathSD59x18Typed.div(
             PRBMath.SD59x18({
-              // todo: check the signs are correct
+              // check the signs are correct
               // int256 amount0,
               // int256 amount1,
               // uint256 accruedVariableFactor,
@@ -392,7 +377,6 @@ contract VAMM is IVAMM {
     return (stepFeeAmount, stateProtocolFee);
   }
 
-  // todo: more swap params in the struct
   function swap(SwapParams memory params)
     external
     override
@@ -495,7 +479,7 @@ contract VAMM is IVAMM {
           (step.amountOut).toInt256()
         );
       } else {
-        // todo: prb math is not used in here
+        // prb math is not used in here
         state.amountSpecifiedRemaining += step.amountOut.toInt256();
         state.amountCalculated = state.amountCalculated.add(
           (step.amountIn).toInt256()
@@ -612,7 +596,7 @@ contract VAMM is IVAMM {
     }
 
     if (params.isFT) {
-      _variableTokenDelta = -int256(amount1); // todo: use delta instead of balance
+      _variableTokenDelta = -int256(amount1);
       _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
         int256(amount0),
         -int256(amount1),

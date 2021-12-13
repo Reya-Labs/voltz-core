@@ -8,9 +8,8 @@ library Oracle {
 
     struct Observation {
         // the block timestamp of the observation
-        uint256 blockTimestamp; // todo: uint32 so that it fits into a single slot
+        uint256 blockTimestamp; // uint32 so that it fits into a single slot?
         // the logApy accumulator, i.e. logApy * time elapsed since the rate oracle was first initialized 
-        // todo: geometric vs arithmetic twap gas + utility considerations
         uint256 logApyCumulative;
         // whether or not the observation is initialized
         bool initialized;
@@ -28,7 +27,7 @@ library Oracle {
 
         // store in each slot to prevent fresh SSTOREs in swaps 
         // this data will not be used because the initialized boolean is still false
-        for (uint16 i = current; i < next; i++) self[i].blockTimestamp = 1; // todo: figure out what this does
+        for (uint16 i = current; i < next; i++) self[i].blockTimestamp = 1;
 
         return next;
 
@@ -85,7 +84,7 @@ library Oracle {
             cardinalityUpdated = cardinality;
         }
 
-        indexUpdated = (index + 1) % cardinalityUpdated; // todo: why?, because of buffer recycling?
+        indexUpdated = (index + 1) % cardinalityUpdated;
 
         self[indexUpdated] = transform(last, blockTimestamp, logApy);
 
@@ -327,9 +326,5 @@ library Oracle {
         }
 
     }
-
-
-    // todo: function observe
-
 
 }

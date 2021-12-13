@@ -24,8 +24,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         aaveLendingPool = _aaveLendingPool;
     }
 
-    // todo: bring some of the conditional logic from amm to here
-    // todo: remove and use aave lib instead (or separate test solidity contract)
     function getReserveNormalizedIncome(address underlying) public view override returns(uint256){
         return aaveLendingPool.getReserveNormalizedIncome(underlying);
     }
@@ -49,11 +47,11 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 to
     ) internal view override(BaseRateOracle) returns (uint256 apyFromTo) {
 
-        // todo: require from to be larger than to
+        //  require from to be larger than to
 
         uint256 rateFromTo = getRateFromTo(underlying, from, to);
         
-        rateFromTo =  rateFromTo / (10 ** (27 - 18)); // convert to wei todo: add annotations in the variable names of wei, ray, etc
+        rateFromTo =  rateFromTo / (10 ** (27 - 18)); // convert to wei
         uint256 timeInSeconds = PRBMathUD60x18Typed.sub(
 
             PRBMath.UD60x18({
@@ -130,6 +128,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             }
         }
 
-        result = result / (10 ** (27 - 18)); // 18 decimals, todo: is this optimal?
+        result = result / (10 ** (27 - 18)); // 18 decimals, AB: is this optimal?
     }
 }

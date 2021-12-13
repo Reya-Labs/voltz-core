@@ -16,10 +16,6 @@ interface IAaveRateOracle is IRateOracle {
         uint256 to
     ) external returns (uint256);
 
-    // IRateOracle already has it
-    // function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256);
-
-    // todo: remove
     function getReserveNormalizedIncome(address underlying) external view returns(uint256);
 
 }

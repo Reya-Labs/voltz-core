@@ -35,7 +35,6 @@ library UnwindTraderUnwindPosition {
         isFT: !isFT,
         amountSpecified: -notional,
         sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
-        // todo: the last three need to be double checked
         isUnwind: true,
         isTrader: true
       });
@@ -81,7 +80,6 @@ library UnwindTraderUnwindPosition {
       "no need to unwind a net zero position"
     );
 
-    // todo: before checking the variable or fixed token balances, we need to make sure they have been updated (check lastTimestamp)
     // initiate a swap
     bool isFT = position.fixedTokenBalance > 0;
 
@@ -92,13 +90,13 @@ library UnwindTraderUnwindPosition {
       IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: owner,
         isFT: !isFT,
-        amountSpecified: position.variableTokenBalance, // todo: double check the sign
+        amountSpecified: position.variableTokenBalance, // check the sign
         sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
         isUnwind: true,
         isTrader: false
       });
 
-      (_fixedTokenBalance, _variableTokenBalance) = amm.swap(params); // todo: check the outputs are correct
+      (_fixedTokenBalance, _variableTokenBalance) = amm.swap(params); // check the outputs are correct
     } else {
       // get into an FT swap
       // variableTokenBalance is positive

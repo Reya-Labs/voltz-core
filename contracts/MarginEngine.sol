@@ -24,6 +24,8 @@ import "./core_libraries/FixedAndVariableMath.sol";
 
 import "./core_libraries/UnwindTraderUnwindPosition.sol";
 
+import "./core_libraries/MarginEngineHelpers.sol";
+
 contract MarginEngine is IMarginEngine {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
@@ -57,152 +59,6 @@ contract MarginEngine is IMarginEngine {
         require(msg.sender == address(amm));
         _;
     }
-    
-    /// @notice Check if the position margin is above the Initial Margin Requirement
-    /// @dev Reverts if position's margin is below the requirement
-    /// @param params Position owner, position tickLower, position tickUpper, _
-    /// @param updatedMarginWouldBe Amount of margin supporting the position following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
-    /// @param positionLiquidity Current liquidity supplied by the position
-    /// @param positionFixedTokenBalance Fixed token balance of a position since the last mint/burn/poke
-    /// @param positionVariableTokenBalance Variable token balance of a position since the last mint/burn/poke
-    /// @param variableFactor Accrued Variable Factor, i.e. the variable APY of the underlying yield-bearing pool since the inception of the IRS AMM until now 
-    /// @dev multiplied by (time in seconds since IRS AMM inception / number of seconds in a year)
-    function checkPositionMarginAboveRequirement(
-        ModifyPositionParams memory params,
-        int256 updatedMarginWouldBe,
-        uint128 positionLiquidity,
-        int256 positionFixedTokenBalance,
-        int256 positionVariableTokenBalance,
-        uint256 variableFactor
-       )  internal view {
-            
-        IMarginCalculator.PositionMarginRequirementParams memory marginReqParams = IMarginCalculator.PositionMarginRequirementParams(
-            {
-                owner: params.owner,
-                tickLower: params.tickLower,
-                tickUpper: params.tickUpper,
-                isLM: false,
-                currentTick: amm.getSlot0().tick,
-                termStartTimestamp: amm.termStartTimestamp(),
-                termEndTimestamp: amm.termEndTimestamp(),
-                liquidity: positionLiquidity,
-                fixedTokenBalance: positionFixedTokenBalance,
-                variableTokenBalance: positionVariableTokenBalance,
-                variableFactor: variableFactor,
-                rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
-            }
-        );
-
-        int256 positionMarginRequirement = int256(amm.calculator().getPositionMarginRequirement(marginReqParams));             
-
-        require(updatedMarginWouldBe > positionMarginRequirement, "Cannot have less margin than the minimum requirement");
-    }
-
-    /// @notice Check if the trader margin is above the Initial Margin Requirement
-    /// @dev Reverts if trader's margin is below the requirement
-    /// @param updatedMarginWouldBe Amount of margin supporting the trader following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
-    /// @param fixedTokenBalance Current fixed token balance of a trader
-    /// @param variableTokenBalance Current variable token balance of a trader
-    function checkTraderMarginAboveRequirement(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance) internal view {
-
-        int256 traderMarginRequirement = int256(amm.calculator().getTraderMarginRequirement(
-            IMarginCalculator.TraderMarginRequirementParams({
-                    fixedTokenBalance: fixedTokenBalance,
-                    variableTokenBalance: variableTokenBalance,
-                    termStartTimestamp:amm.termStartTimestamp(),
-                    termEndTimestamp:amm.termEndTimestamp(),
-                    isLM: false,
-                    rateOracleId: amm.rateOracleId(),
-                    twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
-                })
-        ));                
-
-        require(updatedMarginWouldBe > traderMarginRequirement, "Cannot have less margin than the minimum requirement");
-
-    }
-    
-    /// @notice Check if the trader margin is above the Initial Margin Requirement
-    /// @dev Reverts if trader's margin is below the requirement
-    /// @param updatedMarginWouldBe Amount of margin supporting the trader following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
-    /// @param fixedTokenBalance Current fixed token balance of a trader
-    /// @param variableTokenBalance Current variable token balance of a trader
-    /// @param isTraderSettled Is the Trader settled, i.e. has the trader settled their IRS cashflows post IRS AMM maturity
-    /// @dev Trader's margin cannot be updated unless the trader is settled
-    /// @dev If the current block timestamp is higher than the term end timestamp of the IRS AMM then the trader needs to be settled to be able to update their margin
-    /// @dev If the AMM has already expired and the trader is settled then the trader can withdraw their margin
-    function checkTraderMarginCanBeUpdated(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, bool isTraderSettled) internal view {
-
-        if (Time.blockTimestampScaled() >= amm.termEndTimestamp()) {
-            require(isTraderSettled, "Trader's margin cannot be updated unless the trader is settled");
-
-            require(updatedMarginWouldBe>=0, "can't withdraw more than have");
-
-        } else {
-
-            checkTraderMarginAboveRequirement(updatedMarginWouldBe, fixedTokenBalance, variableTokenBalance);
-        }
-
-    }
-    
-    /// @notice Check if the position margin can be updated
-    /// @param params Position owner, position tickLower, position tickUpper, _
-    /// @param updatedMarginWouldBe Amount of margin supporting the position following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
-    /// @param isPositionBurned The precise definition of a burn position is a position which has zero active liquidity in the vAMM and has settled the IRS cashflows post AMM maturity
-    /// @param positionLiquidity Current liquidity supplied by the position
-    /// @param positionFixedTokenBalance Fixed token balance of a position since the last mint/burn/poke
-    /// @param positionVariableTokenBalance Variable token balance of a position since the last mint/burn/poke
-    /// @param variableFactor Accrued Variable Factor, i.e. the variable APY of the underlying yield-bearing pool since the inception of the IRS AMM until now 
-    /// @dev If the current timestamp is higher than the maturity timestamp of the AMM, then the position needs to be burned (detailed definition above)
-    function checkPositionMarginCanBeUpdated(
-        ModifyPositionParams memory params,
-        int256 updatedMarginWouldBe,
-        bool isPositionBurned,
-        uint128 positionLiquidity,
-        int256 positionFixedTokenBalance,
-        int256 positionVariableTokenBalance,
-        uint256 variableFactor) internal view {
-
-        if (Time.blockTimestampScaled() >= amm.termEndTimestamp()) {
-            require(isPositionBurned);
-            require(updatedMarginWouldBe>=0, "can't withdraw more than have");
-        } else {
-            checkPositionMarginAboveRequirement(params, updatedMarginWouldBe, positionLiquidity, positionFixedTokenBalance, positionVariableTokenBalance, variableFactor);
-        }
-
-    }
-
-
-    /// @notice Calculate the liquidator reward and the updated trader margin
-    /// @param traderMargin Current margin of the trader
-    /// @return liquidatorReward Liquidator Reward as a proportion of the traderMargin
-    /// @return updatedMargin Trader margin net the liquidatorReward
-    /// @dev liquidatorReward = traderMargin * LIQUIDATOR_REWARD
-    /// @dev updatedMargin = traderMargin - liquidatorReward
-    function calculateLiquidatorRewardAndUpdatedMargin(int256 traderMargin) internal pure returns (uint256 liquidatorReward, int256 updatedMargin) {
-
-        liquidatorReward = PRBMathUD60x18Typed.mul(
-
-            PRBMath.UD60x18({
-                value: uint256(traderMargin)
-            }),
-
-            PRBMath.UD60x18({
-                value: LIQUIDATOR_REWARD
-            })
-        ).value;
-
-        updatedMargin = PRBMathSD59x18Typed.sub(
-
-            PRBMath.SD59x18({
-                value: traderMargin
-            }),
-
-            PRBMath.SD59x18({
-                value: int256(liquidatorReward)
-            })
-        ).value;
-    }
 
     
     /// @inheritdoc IMarginEngine
@@ -229,7 +85,7 @@ contract MarginEngine is IMarginEngine {
         uint256 variableFactor = amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp());
         
         // make sure 0,0 is fixed
-        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, 0, 0, variableFactor); 
+        MarginEngineHelpers.checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, 0, 0, variableFactor, address(amm)); 
 
         position.updateMargin(marginDelta);
 
@@ -254,7 +110,7 @@ contract MarginEngine is IMarginEngine {
             PRBMath.SD59x18({value: marginDelta})
         ).value;
         
-        checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled);
+        MarginEngineHelpers.checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled, address(amm));
 
         trader.updateMargin(marginDelta);
 
@@ -274,7 +130,7 @@ contract MarginEngine is IMarginEngine {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
 
-        // todo: can directly call vamm from margin engine
+        // AB: theoretically can directly call vamm from margin engine
         (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params, amm.getSlot0().tick);
         
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
@@ -307,7 +163,7 @@ contract MarginEngine is IMarginEngine {
         Tick.checkTicks(params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
-        // todo: code duplication
+        // code duplication
         (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params, amm.getSlot0().tick);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
 
@@ -342,7 +198,7 @@ contract MarginEngine is IMarginEngine {
             }),
 
             PRBMath.UD60x18({
-                value: LIQUIDATOR_REWARD // todo: code a more sophisticated incentives engine for liquidators
+                value: LIQUIDATOR_REWARD
             })
 
         ).value;
@@ -375,7 +231,7 @@ contract MarginEngine is IMarginEngine {
 
         require(isLiquidatable, "The trader needs to be below the liquidation threshold to be liquidated");
 
-        (uint256 liquidatorReward, int256 updatedMargin) = calculateLiquidatorRewardAndUpdatedMargin(trader.margin);
+        (uint256 liquidatorReward, int256 updatedMargin) = MarginEngineHelpers.calculateLiquidatorRewardAndUpdatedMargin(trader.margin, LIQUIDATOR_REWARD);
 
         trader.updateMargin(updatedMargin);
 
@@ -397,10 +253,8 @@ contract MarginEngine is IMarginEngine {
         
         Position.Info memory position = positions.get(recipient, tickLower, tickUpper);
     
-        // todo: make sure the math is safe
         uint128 amountTotal = amount + position._liquidity;
         
-        // todo: check why amount is not used
         int256 marginRequirement = int256(amm.calculator().getPositionMarginRequirement(
             IMarginCalculator.PositionMarginRequirementParams({
                 owner: recipient,
@@ -411,8 +265,8 @@ contract MarginEngine is IMarginEngine {
                 termStartTimestamp: amm.termStartTimestamp(),
                 termEndTimestamp: amm.termEndTimestamp(),
                 liquidity: amountTotal,
-                fixedTokenBalance: 0, // todo: check not applicable for the implementation of getPositionMarginRequirement
-                variableTokenBalance: 0, // todo: check not applicable for the implementation of getPositionMarginRequirement
+                fixedTokenBalance: 0, // should not be set to 0!
+                variableTokenBalance: 0, // should not be set to 0!
                 variableFactor: amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()),
                 rateOracleId: amm.rateOracleId(),
                 twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
@@ -426,7 +280,6 @@ contract MarginEngine is IMarginEngine {
     /// @inheritdoc IMarginEngine
     function updatePosition(IVAMM.ModifyPositionParams memory params, IVAMM.UpdatePositionVars memory vars) external override {
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
-        // todo: the below logic needs to be optimised
         position.updateLiquidity(params.liquidityDelta);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
         uint256 feeDelta = position.calculateFeeDelta(vars.feeGrowthInside);
@@ -453,7 +306,7 @@ contract MarginEngine is IMarginEngine {
             })
         ));
 
-        // todo: revert if margin requirement is satisfied unless it is a liquidation
+        // AB: revert if margin requirement is satisfied (unless it is a liquidation?)
         require(trader.margin >= marginRequirement, "Margin Requirement");
 
     }

@@ -18,7 +18,7 @@ library TickBitmap {
     returns (int16 wordPos, uint8 bitPos)
   {
     wordPos = int16(tick >> 8);
-    bitPos = uint8(int8(tick % 256)); //todo: resolve this issue, might be new solidity version issue
+    bitPos = uint8(int8(tick % 256));
   }
 
   /// @notice Flips the initialized state for a given tick from false to true, or vice versa

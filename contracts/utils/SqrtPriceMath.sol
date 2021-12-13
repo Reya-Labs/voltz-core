@@ -209,7 +209,7 @@ library SqrtPriceMath {
 
         require(sqrtRatioAX96 > 0);
 
-        // todo: test the effect of he unchecked blocks
+        // test the effect of he unchecked blocks
         unchecked {
             return
                 roundUp

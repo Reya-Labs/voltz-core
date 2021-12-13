@@ -68,7 +68,7 @@ interface IFactory {
   /// @param _calculator The new calculator of the factory
   function setCalculator(address _calculator) external;
 
-  // todo: rename IF to IE?
+  // rename IF to IE?
   /// @notice Updates the Incentives Engine of the factory
   /// @dev Must be called by the current owner
   /// @param _insuranceFund The new Incentives Engine of the factory
