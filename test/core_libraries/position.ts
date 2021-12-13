@@ -57,15 +57,6 @@ describe("Position", () => {
     });
   });
 
-  describe("#get", () => {
-    it("when all zeros", async () => {
-      const { positionTest } = await loadFixture(fixture);
-      await positionTest.updateMargin(toBn("-1"));
-      const positionMarginUpdated = await positionTest.position();
-      expect(positionMarginUpdated[1]).to.eq(toBn("9"));
-    });
-  });
-
   describe("#updateMargin", () => {
     it("correctly updates the margin of a position", async () => {
       const { positionTest } = await loadFixture(fixture);
