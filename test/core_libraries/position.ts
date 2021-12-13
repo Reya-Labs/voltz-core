@@ -4,7 +4,7 @@ import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
 import { PositionTest } from "../../typechain/PositionTest";
 import { encodeSqrtRatioX96, expandTo18Decimals } from "../shared/utilities";
-import { toBn } from "evm-bn";
+import { toBn } from "../helpers/toBn";
 import { div, sub, mul, add } from "../shared/functions";
 
 const { provider, loadFixture } = waffle;
@@ -57,6 +57,15 @@ describe("Position", () => {
     });
   });
 
+  describe("#get", () => {
+    it("when all zeros", async () => {
+      const { positionTest } = await loadFixture(fixture);
+      await positionTest.updateMargin(toBn("-1"));
+      const positionMarginUpdated = await positionTest.position();
+      expect(positionMarginUpdated[1]).to.eq(toBn("9"));
+    });
+  });
+
   describe("#updateMargin", () => {
     it("correctly updates the margin of a position", async () => {
       const { positionTest } = await loadFixture(fixture);
@@ -89,8 +98,8 @@ describe("Position", () => {
 
       const positionUpdated = await positionTest.position();
 
-      expect(positionUpdated.fixedTokenGrowthInsideLast).to.eq(toBn("20"));
-      expect(positionUpdated.variableTokenGrowthInsideLast).to.eq(toBn("-30"));
+      expect(positionUpdated.fixedTokenGrowthInsideLast).to.eq(toBn(20));
+      expect(positionUpdated.variableTokenGrowthInsideLast).to.eq(toBn(-30));
     });
   });
 
@@ -130,6 +139,30 @@ describe("Position", () => {
       await positionTest.updateFixedAndVariableTokenGrowthInside(
         toBn("20"),
         toBn("-30")
+      );
+    });
+  });
+
+  describe("#calculateFeeDelta", () => {
+    it("check fails when liquidity zero", async () => {
+      const { positionTest } = await loadFixture(fixture);
+      return expect(
+        positionTest.calculateFeeDelta(toBn("50"))
+      ).to.be.revertedWith("NP");
+    });
+
+    it("test when feeGrowthInsideLast = 0", async () => {
+      const { positionTest } = await loadFixture(fixture);
+      const lastFeeGrowthInside = 0;
+      const feeGrowthInside = 50;
+      const liquidity = 10;
+      await positionTest.updateLiquidity(liquidity);
+      const result = await positionTest.calculateFeeDelta(
+        toBn(feeGrowthInside)
+      );
+      console.log("result", result);
+      expect(result).to.eq(
+        toBn((feeGrowthInside - lastFeeGrowthInside) * liquidity)
       );
     });
   });

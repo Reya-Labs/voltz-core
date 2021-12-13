@@ -34,7 +34,7 @@ contract PositionTest {
         position.updateFeeGrowthInside(feeGrowthInside);
     }
 
-    function calculateFeeDelta(uint256 feeGrowthInside) public returns (uint256 feeDelta) {
+    function calculateFeeDelta(uint256 feeGrowthInside) public view returns (uint256 feeDelta) {
         return position.calculateFeeDelta(feeGrowthInside);
     }
 
