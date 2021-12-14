@@ -9,11 +9,11 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-prettier";
 import "hardhat-gas-reporter";
-import "@tenderly/hardhat-tenderly";
+// import "@tenderly/hardhat-tenderly";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
-import "@primitivefi/hardhat-dodoc";
+// import "@primitivefi/hardhat-dodoc"; bring back on demand
 
 dotenv.config();
 

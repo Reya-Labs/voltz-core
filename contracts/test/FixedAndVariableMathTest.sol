@@ -24,13 +24,13 @@ contract FixedAndVariableMathTest {
 
   function accrualFact(uint256 timeInSeconds)
     public
-    pure
+    view
     returns (uint256 timeInYears)
   {
     return FixedAndVariableMath.accrualFact(timeInSeconds);
   }
 
-  function fixedFactor(
+  function fixedFactorTest(
     bool atMaturity,
     uint256 termStartTimestamp,
     uint256 termEndTimestamp

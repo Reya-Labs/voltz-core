@@ -17,30 +17,41 @@ import "./core_libraries/Tick.sol";
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
 contract MarginCalculator is IMarginCalculator{
 
-    /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
-    mapping(bytes32 => PRBMath.UD60x18) internal getApyUpperMultiplier;
-    /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
-    mapping(bytes32 => PRBMath.UD60x18) internal getApyLowerMultiplier;
-    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Liquidation Margin Computation
-    mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaLM;
-    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Initial Margin Computation
-    mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaIM;
-    /// @dev Maximum allowed leverage on Voltz Protocol where leverage = (notional traded in an IRS contract) / (margin in the account of an LP/FT/VT)
-    mapping(bytes32 => PRBMath.UD60x18) internal getMaxLeverage;
-    /// @dev The standard deviation that determines the volatility of the underlying pool APY
-    mapping(bytes32 => PRBMath.SD59x18) internal getSigmaSquared;
-    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing alpha (from the litepaper), the contract stores 4*alpha
-    mapping(bytes32 => PRBMath.SD59x18) internal getAlpha;
-    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing beta (from the litepaper), the contract stores 4*beta
-    mapping(bytes32 => PRBMath.SD59x18) internal getBeta; // insted of storing beta, store 4*beta
-    /// @dev Standard normal critical value used in the computation of the Upper APY Bound of the underlying pool
-    mapping(bytes32 => PRBMath.SD59x18) internal getXiUpper;
-    /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
-    mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
+    // /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
+    // mapping(bytes32 => PRBMath.UD60x18) internal getApyUpperMultiplier;
+    // /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
+    // mapping(bytes32 => PRBMath.UD60x18) internal getApyLowerMultiplier;
+    // /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Liquidation Margin Computation
+    // mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaLM;
+    // /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Initial Margin Computation
+    // mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaIM;
+    // /// @dev Maximum allowed leverage on Voltz Protocol where leverage = (notional traded in an IRS contract) / (margin in the account of an LP/FT/VT)
+    // mapping(bytes32 => PRBMath.UD60x18) internal getMaxLeverage;
+    // /// @dev The standard deviation that determines the volatility of the underlying pool APY
+    // mapping(bytes32 => PRBMath.SD59x18) internal getSigmaSquared;
+    // /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing alpha (from the litepaper), the contract stores 4*alpha
+    // mapping(bytes32 => PRBMath.SD59x18) internal getAlpha;
+    // /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing beta (from the litepaper), the contract stores 4*beta
+    // mapping(bytes32 => PRBMath.SD59x18) internal getBeta; // instead of storing beta, store 4*beta
+    // /// @dev Standard normal critical value used in the computation of the Upper APY Bound of the underlying pool
+    // mapping(bytes32 => PRBMath.SD59x18) internal getXiUpper;
+    // /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
+    // mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
+
+
+    // docs missing
+    mapping(bytes32 => MarginCalculatorParameters) internal getMarginCalculatorParameters;
+
     /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
     mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInSeconds; // rateOralceId --> timeInSeconds --> timeFactor
     /// @dev Seconds in a year
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
+
+    // docs missing, only Factory, make this function external? 
+    function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) override public {
+        // require statements to check the parameters and the rateOracleId passed into this function
+        getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
+    }
     
     /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
@@ -60,15 +71,15 @@ contract MarginCalculator is IMarginCalculator{
             apyBoundVars.timeFactor
         );
 
-        apyBoundVars.k = PRBMathSD59x18Typed.div(getAlpha[rateOracleId], getSigmaSquared[rateOracleId]);
+        apyBoundVars.k = PRBMathSD59x18Typed.div(getMarginCalculatorParameters[rateOracleId].alpha, getMarginCalculatorParameters[rateOracleId].sigmaSquared);
 
         apyBoundVars.zeta = PRBMathSD59x18Typed.div(
-            PRBMathSD59x18Typed.mul(getSigmaSquared[rateOracleId],apyBoundVars.oneMinusTimeFactor),
-            getBeta[rateOracleId]
+            PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].sigmaSquared, apyBoundVars.oneMinusTimeFactor),
+            getMarginCalculatorParameters[rateOracleId].beta
         );
         
-        apyBoundVars.lambdaNum = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
-        apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor);
+        apyBoundVars.lambdaNum = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
+        apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor);
         apyBoundVars.lambda = PRBMathSD59x18Typed.div(apyBoundVars.lambdaNum, apyBoundVars.lambdaDen);
 
         apyBoundVars.criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2}), apyBoundVars.lambda), apyBoundVars.k), PRBMath.SD59x18({value: 2}));
@@ -77,12 +88,12 @@ contract MarginCalculator is IMarginCalculator{
 
         if (isUpper) {
             apyBoundVars.criticalValue = PRBMathSD59x18Typed.sub(
-                getXiUpper[rateOracleId],
+                getMarginCalculatorParameters[rateOracleId].xiUpper,
                 PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
         } else {
             apyBoundVars.criticalValue = PRBMathSD59x18Typed.sub(
-                getXiLower[rateOracleId],
+                getMarginCalculatorParameters[rateOracleId].xiLower,
                 PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
         }
@@ -132,7 +143,7 @@ contract MarginCalculator is IMarginCalculator{
                         }),
 
                         PRBMath.UD60x18({
-                            value: getApyUpperMultiplier[rateOracleId].value
+                            value: getMarginCalculatorParameters[rateOracleId].apyUpperMultiplier.value
                         })
                     ),
 
@@ -165,7 +176,7 @@ contract MarginCalculator is IMarginCalculator{
                         }),
 
                         PRBMath.UD60x18({
-                            value: getApyLowerMultiplier[rateOracleId].value
+                            value: getMarginCalculatorParameters[rateOracleId].apyLowerMultiplier.value
                         })
                     ),
 
@@ -198,9 +209,9 @@ contract MarginCalculator is IMarginCalculator{
         vars.timeInYears = FixedAndVariableMath.accrualFact(vars.timeInSeconds);
         
         if (params.isLM) {
-            vars.minDelta = uint256(getMinDeltaLM[params.rateOracleId].value);
+            vars.minDelta = uint256(getMarginCalculatorParameters[params.rateOracleId].minDeltaLM.value);
         } else {
-            vars.minDelta = uint256(getMinDeltaIM[params.rateOracleId].value);
+            vars.minDelta = uint256(getMarginCalculatorParameters[params.rateOracleId].minDeltaIM.value);
         }
 
         if (params.variableTokenBalance < 0) {
@@ -231,9 +242,6 @@ contract MarginCalculator is IMarginCalculator{
             // check that at least one is non-zero
 
             vars.notional = uint256(params.variableTokenBalance);
-
-            console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
-            console.log("The time in years is", vars.timeInYears);
             
             vars.zeroLowerBoundMargin = PRBMathUD60x18Typed.mul(
                 PRBMath.UD60x18({
@@ -263,9 +271,17 @@ contract MarginCalculator is IMarginCalculator{
                 )
             ).value;
 
+            console.log("Zero Lower Bound Margin: ", vars.zeroLowerBoundMargin);
+            console.log("Margin before ZLB correction: ", margin);
+
             if (margin > vars.zeroLowerBoundMargin) {
                 margin = vars.zeroLowerBoundMargin;
             }
+
+            console.log("Contract: The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
+            console.log("Contract: The time in years is", vars.timeInYears);
+            console.log("Contract: The notional is", vars.notional);
+            console.log("Contract: The margin is", margin);
 
         }
     }
