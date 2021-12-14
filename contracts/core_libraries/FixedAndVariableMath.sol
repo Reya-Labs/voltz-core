@@ -12,11 +12,8 @@ library FixedAndVariableMath {
   /// @notice Number of wei-seconds in a year
   /// @dev Ignoring leap years since we're only using it to calculate the eventual APY rate
   uint256 public constant SECONDS_IN_YEAR_IN_WAD = 31536000 * 10**18;
+  uint256 public constant ONE_HUNDRED_IN_WAD = 100 * 10**18;
   
-  // /// @notice One percent
-  // /// @dev No scary unnamed constants!
-  // uint256 internal constant ONE_PERCENT_IN_WAD = 10**16;
-
   /// @notice Caclulate the remaining cashflow to settle a position
   /// @param fixedTokenBalance The current balance of the fixed side of the position
   /// @param variableTokenBalance The current balance of the variable side of the position
@@ -51,7 +48,7 @@ library FixedAndVariableMath {
   /// #if_succeeds old(timeInSeconds) > 0;
   function accrualFact(uint256 timeInSecondsAsWad)
     public
-    view
+    pure
     returns (uint256 timeInYears)
   {
     timeInYears = PRBMathUD60x18.div(timeInSecondsAsWad, SECONDS_IN_YEAR_IN_WAD);
@@ -94,11 +91,8 @@ library FixedAndVariableMath {
     }
 
     uint256 timeInYears = accrualFact(timeInSeconds);
-
-    fixedFactorValue = PRBMathUD60x18.div(timeInYears, 100 * (10**18));
-    
-    console.log("Contract: Fixed factor value is ", fixedFactorValue);
-    
+    fixedFactorValue = PRBMathUD60x18
+      .div(timeInYears, ONE_HUNDRED_IN_WAD);
   }
 
   /// @notice Calculate the fixed token balance for a position over a timespan
