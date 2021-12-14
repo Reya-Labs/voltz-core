@@ -49,7 +49,11 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
-
+  gasReporter: {
+    outputFile: process.env.REPORT_GAS_TO_FILE,
+    noColors: !!process.env.REPORT_GAS_TO_FILE,
+    enabled: !!(process.env.REPORT_GAS && process.env.REPORT_GAS != "false"),
+  },
   mocha: {
     timeout: 20000,
   },

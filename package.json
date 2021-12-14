@@ -16,6 +16,7 @@
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
     "chai": "^4.3.4",
+    "cross-env": "^7.0.3",
     "dotenv": "^10.0.0",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
@@ -62,7 +63,9 @@
     "lint-check": "npx solhint 'contracts/**/*.sol'",
     "lint-fix": "npx solhint 'contracts/**/*.sol' --fix",
     "solhint": "./node_modules/.bin/solhint -f table contracts/**/*.sol",
-    "prettier:solidity": "./node_modules/.bin/prettier --write contracts/**/*.sol"
+    "prettier:solidity": "./node_modules/.bin/prettier --write contracts/**/*.sol",
+    "test:gas": "cross-env REPORT_GAS=true npx hardhat test",
+    "test:gasreport": "cross-env REPORT_GAS_TO_FILE=gasCosts.txt REPORT_GAS=true npx hardhat test"
   },
   "husky": {
     "hooks": {
