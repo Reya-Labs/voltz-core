@@ -80,6 +80,8 @@ contract MarginCalculator is IMarginCalculator{
 
         uint256 timeInDaysFloor = PRBMathUD60x18Typed.floor(timeInDays).value;
 
+        console.log("Contract: Time in Days Floor", timeInDaysFloor);
+
         apyBoundVars.timeFactor =  timeFactorTimeInDays[rateOracleId][timeInDaysFloor];
         apyBoundVars.oneMinusTimeFactor = PRBMathSD59x18Typed.sub(
             PRBMath.SD59x18({

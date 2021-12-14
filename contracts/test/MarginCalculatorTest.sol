@@ -10,11 +10,40 @@ contract MarginCalculatorTest is MarginCalculator {
     
     // view functions
 
-    // function computeApyBoundTest(bytes32 rateOracleId, uint256 timeInSeconds, uint256 twapApy, bool isUpper) external returns(uint256 apyBound) {
+    function getTraderMarginRequirementTest(
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp,
+        bool isLM,
+        bytes32 rateOracleId,
+        uint256 twapApy
+    ) external view returns(uint256 margin) {
 
-    //     return computeApyBound(rateOracleId, timeInSeconds, twapApy, isUpper);
+        return getTraderMarginRequirement(TraderMarginRequirementParams({
+            fixedTokenBalance: fixedTokenBalance,
+            variableTokenBalance: variableTokenBalance,
+            termStartTimestamp: termStartTimestamp,
+            termEndTimestamp: termEndTimestamp,
+            isLM: isLM,
+            rateOracleId: rateOracleId,
+            twapApy: twapApy
+        }));
+        
+    }
+    
+    
+    function worstCaseVariableFactorAtMaturityTest(
+        uint256 timeInSecondsFromStartToMaturity,
+        uint256 timeInSecondsFromNowToMaturity,
+        bool isFT,
+        bool isLM,
+        bytes32 rateOracleId,
+        uint256 twapApy
+        ) external view returns(uint256 variableFactor) {
 
-    // }
+            return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, rateOracleId, twapApy);
+    }
     
     function getTimeFactorTest(bytes32 rateOracleId, uint256 timeInDays) external view returns (int256) {
 
@@ -70,19 +99,6 @@ contract MarginCalculatorTest is MarginCalculator {
             twapApy: twapApy
         }));
 
-    }
-
-
-    function worstCaseVariableFactorAtMaturityTest(
-        uint256 timeInSecondsFromStartToMaturity,
-        uint256 timeInSecondsFromNowToMaturity,
-        bool isFT,
-        bool isLM,
-        bytes32 rateOracleId,
-        uint256 twapApy
-        ) external view returns(uint256 variableFactor) {
-
-            return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, rateOracleId, twapApy);
     }
 
 
