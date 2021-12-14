@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "prb-math/contracts/PRBMathSD59x18.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./Time.sol";
 
 /// @title A utility library for mathematics of fixed and variable token amounts.
@@ -10,11 +10,11 @@ import "./Time.sol";
 library FixedAndVariableMath {
   /// @notice Number of wei-seconds in a year
   /// @dev Ignoring leap years since we're only using it to calculate the eventual APY rate
-  uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
+  uint256 public constant SECONDS_IN_YEAR_IN_WAD = 31536000 * 10**18;
   
   /// @notice One percent
   /// @dev No scary unnamed constants!
-  uint256 internal constant ONE_PERCENT = 10**16;
+  uint256 internal constant ONE_PERCENT_IN_WAD = 10**16;
 
   /// @notice Caclulate the remaining cashflow to settle a position
   /// @param fixedTokenBalance The current balance of the fixed side of the position
@@ -30,41 +30,33 @@ library FixedAndVariableMath {
     uint256 termEndTimestamp,
     uint256 variableFactorToMaturity
   ) external view returns (int256 cashflow) {
-    PRBMath.SD59x18 memory fixedCashflow = PRBMathSD59x18Typed.mul(
-      PRBMath.SD59x18({ value: fixedTokenBalance }),
-      PRBMath.SD59x18({
-        value: int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
-      })
+    int256 fixedCashflow = PRBMathSD59x18.mul(
+      fixedTokenBalance,
+      int256(fixedFactor(true, termStartTimestamp, termEndTimestamp)));
+
+    int256 variableCashflow = PRBMathSD59x18.mul(
+      variableTokenBalance,
+      int256(variableFactorToMaturity)
     );
 
-    PRBMath.SD59x18 memory variableCashflow = PRBMathSD59x18Typed.mul(
-      PRBMath.SD59x18({ value: variableTokenBalance }),
-      PRBMath.SD59x18({ value: int256(variableFactorToMaturity) })
-    );
-
-    cashflow = PRBMathSD59x18Typed.add(fixedCashflow, variableCashflow).value;
+    cashflow = fixedCashflow + variableCashflow;
   }
 
-  /// @notice Divide a given time in seconds by the number of wei-seconds in a year
-  /// @param timeInSeconds A time in wei-seconds
-  /// @return timeInYears An annualised factor of timeInSeconds
+  /// @notice Divide a given time in seconds by the number of seconds in a year
+  /// @param timeInSecondsAsWad A time in seconds in Wad (i.e. scaled up by 10^18)
+  /// @return timeInYears An annualised factor of timeInSeconds, also in Wad
   ///
   /// #if_succeeds $result > 0;
   /// #if_succeeds old(timeInSeconds) > 0;
-  function accrualFact(uint256 timeInSeconds)
+  function accrualFact(uint256 timeInSecondsAsWad)
     public
     pure
     returns (uint256 timeInYears)
   {
-    timeInYears = PRBMathUD60x18Typed
-      .div(
-        PRBMath.UD60x18({ value: timeInSeconds }),
-        PRBMath.UD60x18({ value: SECONDS_IN_YEAR })
-      )
-      .value;
+    timeInYears = PRBMathUD60x18.div(timeInSecondsAsWad, SECONDS_IN_YEAR_IN_WAD);
   }
 
-  /// @notice Calculate the fixed factor for a position
+  /// @notice Calculate the fixed factor for a position // @audit - explain what this means.
   /// @param atMaturity Whether to calculate the factor at maturity (true), or now (false)
   /// @param termStartTimestamp When does the period of time begin, in wei-seconds
   /// @param termEndTimestamp When does the period of time end, in wei-seconds
@@ -95,24 +87,15 @@ library FixedAndVariableMath {
     uint256 timeInSeconds;
 
     if (atMaturity) {
-      timeInSeconds = PRBMathUD60x18Typed
-        .sub(
-          PRBMath.UD60x18({ value: termEndTimestamp }),
-          PRBMath.UD60x18({ value: termStartTimestamp })
-        )
-        .value;
+      timeInSeconds = termEndTimestamp - termStartTimestamp;
     } else {
       timeInSeconds = Time.blockTimestampScaled() - termStartTimestamp;
     }
 
     uint256 timeInYears = accrualFact(timeInSeconds);
 
-    fixedFactorValue = PRBMathUD60x18Typed
-      .mul(
-        PRBMath.UD60x18({ value: timeInYears }),
-        PRBMath.UD60x18({ value: ONE_PERCENT })
-      )
-      .value;
+    fixedFactorValue = PRBMathUD60x18
+      .mul(timeInYears, ONE_PERCENT_IN_WAD);
   }
 
   /// @notice Calculate the fixed token balance for a position over a timespan
@@ -134,28 +117,20 @@ library FixedAndVariableMath {
     require(termEndTimestamp > termStartTimestamp, "E<=S");
 
     // expected fixed cashflow with unbalanced number of fixed tokens
-    PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
-      PRBMath.SD59x18({ value: amount0 }),
-      PRBMath.SD59x18({
-        value: int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
-      })
+    int256 exp1 = PRBMathSD59x18.mul(
+      amount0,
+      int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
     );
 
     // fixed cashflow  with balanced number of fixed tokens
-    PRBMath.SD59x18 memory numerator = PRBMathSD59x18Typed.sub(
-      exp1,
-      PRBMath.SD59x18({ value: excessBalance })
-    );
+    int256 numerator = exp1 - excessBalance;
 
     // fixed token balance that takes into account acrrued cashflows
-    fixedTokenBalance = PRBMathSD59x18Typed
+    fixedTokenBalance = PRBMathSD59x18
       .div(
         numerator,
-        PRBMath.SD59x18({
-          value: int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
-        })
-      )
-      .value;
+        int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
+      );
   }
 
   /// @notice Represent excess values accrued in some period
@@ -181,30 +156,15 @@ library FixedAndVariableMath {
   ) internal view returns (int256) {
     AccruedValues memory accruedValues;
 
-    accruedValues.excessFixedAccruedBalance = PRBMathSD59x18Typed
-      .mul(
-        PRBMath.SD59x18({ value: amount0 }),
-        PRBMath.SD59x18({
-          value: int256(
-            fixedFactor(false, termStartTimestamp, termEndTimestamp)
-          )
-        })
-      )
-      .value;
+    accruedValues.excessFixedAccruedBalance = PRBMathSD59x18
+      .mul(amount0,
+        int256(fixedFactor(false, termStartTimestamp, termEndTimestamp))
+      );
 
-    accruedValues.excessVariableAccruedBalance = PRBMathSD59x18Typed
-      .mul(
-        PRBMath.SD59x18({ value: amount1 }),
-        PRBMath.SD59x18({ value: int256(accruedVariableFactor) })
-      )
-      .value;
+    accruedValues.excessVariableAccruedBalance = PRBMathSD59x18
+      .mul(amount1,int256(accruedVariableFactor));
 
-    accruedValues.excessBalance = PRBMathSD59x18Typed
-      .add(
-        PRBMath.SD59x18({ value: accruedValues.excessFixedAccruedBalance }),
-        PRBMath.SD59x18({ value: accruedValues.excessVariableAccruedBalance })
-      )
-      .value;
+    accruedValues.excessBalance = accruedValues.excessFixedAccruedBalance + accruedValues.excessVariableAccruedBalance;
 
     return accruedValues.excessBalance;
   }

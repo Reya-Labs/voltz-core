@@ -76,13 +76,11 @@ contract AMM is IAMM, Pausable {
   }
 
   modifier onlyFactoryOwner() {
-    require(IFactory(factory).owner() != address(0));
     require(msg.sender == IFactory(factory).owner());
     _;
   }
 
   modifier onlyVAMM() {
-    require(address(vamm) != address(0));
     require(msg.sender == address(vamm));
     _;
   }
@@ -151,14 +149,14 @@ contract AMM is IAMM, Pausable {
     marginEngine.updateTraderMargin(recipient, marginDelta);
   }
 
-  function settlePosition(IMarginEngine.ModifyPositionParams memory params)
+  function settlePosition(IMarginEngine.ModifyPositionParams memory params) // @audit whenNotPaused?
     external
     override
   {
     marginEngine.settlePosition(params);
   }
 
-  function settleTrader(address recipient) external override {
+  function settleTrader(address recipient) external override { // @audit whenNotPaused?
     marginEngine.settleTrader(recipient);
   }
 

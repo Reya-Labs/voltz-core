@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/rate_oracles/IRateOracle.sol";
 import "../core_libraries/Oracle.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
@@ -62,7 +62,10 @@ abstract contract BaseRateOracle is IRateOracle {
             // emit IncreaseObservationCardinalityNext(observationCardinalityNextOld, observationCardinalityNextNew);
     }
 
-
+    /// @notice Calculates the observed APY returned by the underlying in a given period
+    /// @param underlying The address of an underlying ERC20 token known to this Oracle (e.g. USDC not aaveUSDC)
+    /// @param from The timestamp of the start of the period, in wei-seconds
+    /// @param to The timestamp of the end of the period, in wei-seconds
     function getApyFromTo(
         address underlying,
         uint256 from,
@@ -83,45 +86,14 @@ abstract contract BaseRateOracle is IRateOracle {
 
         uint256 apyFromTo = getApyFromTo(underlying, from, to);
 
-        uint256 logApy = PRBMathUD60x18Typed.log10(
-            PRBMath.UD60x18({
-                value: apyFromTo
-            })
-        ).value;
+        uint256 logApy = PRBMathUD60x18.log10(apyFromTo);
 
         uint256 aT1 = observations.observeSingle(to, secondsAgo, logApy, oracleVars.observationIndex, oracleVars.observationCardinality);
         uint256 aT2 = observations.observeSingle(to, 0, logApy, oracleVars.observationIndex, oracleVars.observationCardinality); 
         
-        PRBMath.UD60x18 memory logTwapApy = PRBMathUD60x18Typed.div(
+        uint256 logTwapApy = PRBMathUD60x18.div(aT2 - aT1, to - from);
 
-            PRBMathUD60x18Typed.sub(
-
-                PRBMath.UD60x18({
-                    value: aT2
-                }),
-
-                PRBMath.UD60x18({
-                    value: aT1
-                })
-
-            ),
-
-            PRBMathUD60x18Typed.sub(
-
-                PRBMath.UD60x18({
-                    value: to
-                }),
-
-                PRBMath.UD60x18({
-                    value: from
-                })
-
-            )
-
-        );
-
-        twapApy = PRBMathUD60x18Typed.pow(logTwapApy, PRBMath.UD60x18({value: 10})).value;
-
+        twapApy = PRBMathUD60x18.powu(logTwapApy, 10);
     }
 
     
@@ -134,12 +106,7 @@ abstract contract BaseRateOracle is IRateOracle {
         uint256 to = Time.blockTimestampScaled();
         
         uint256 apyFromTo = getApyFromTo(underlying, from, to);
-
-        uint256 apyFromToLog = PRBMathUD60x18Typed.log10(
-            PRBMath.UD60x18({
-                value: apyFromTo
-            })
-        ).value;
+        uint256 apyFromToLog = PRBMathUD60x18.log10(apyFromTo);
 
         (oracleVars.observationIndex, oracleVars.observationCardinality) = observations.write(
             oracleVars.observationIndex,
