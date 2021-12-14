@@ -80,6 +80,34 @@ Returns the Minimum Margin Requirement
 |---|---|---|
 | margin | uint256 | Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens    
 
+### getMinimumMarginRequirementTest
+
+```solidity
+function getMinimumMarginRequirementTest(int256 fixedTokenBalance, int256 variableTokenBalance, uint256 termStartTimestamp, uint256 termEndTimestamp, bool isLM, bytes32 rateOracleId, uint256 twapApy) external view returns (uint256 margin)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| fixedTokenBalance | int256 | undefined
+| variableTokenBalance | int256 | undefined
+| termStartTimestamp | uint256 | undefined
+| termEndTimestamp | uint256 | undefined
+| isLM | bool | undefined
+| rateOracleId | bytes32 | undefined
+| twapApy | uint256 | undefined
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| margin | uint256 | undefined
+
 ### getPositionMarginRequirement
 
 ```solidity

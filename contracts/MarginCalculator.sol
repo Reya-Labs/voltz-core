@@ -242,9 +242,6 @@ contract MarginCalculator is IMarginCalculator{
             // check that at least one is non-zero
 
             vars.notional = uint256(params.variableTokenBalance);
-
-            console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
-            console.log("The time in years is", vars.timeInYears);
             
             vars.zeroLowerBoundMargin = PRBMathUD60x18Typed.mul(
                 PRBMath.UD60x18({
@@ -274,9 +271,17 @@ contract MarginCalculator is IMarginCalculator{
                 )
             ).value;
 
+            console.log("Zero Lower Bound Margin: ", vars.zeroLowerBoundMargin);
+            console.log("Margin before ZLB correction: ", margin);
+
             if (margin > vars.zeroLowerBoundMargin) {
                 margin = vars.zeroLowerBoundMargin;
             }
+
+            console.log("Contract: The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
+            console.log("Contract: The time in years is", vars.timeInYears);
+            console.log("Contract: The notional is", vars.notional);
+            console.log("Contract: The margin is", margin);
 
         }
     }

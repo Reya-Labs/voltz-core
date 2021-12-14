@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 import "./Time.sol";
+import "hardhat/console.sol";
 
 /// @title A utility library for mathematics of fixed and variable token amounts.
 /// @author Artur Begyan
@@ -12,9 +13,10 @@ library FixedAndVariableMath {
   /// @dev Ignoring leap years since we're only using it to calculate the eventual APY rate
   uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
   
-  /// @notice One percent
-  /// @dev No scary unnamed constants!
-  uint256 internal constant ONE_PERCENT = 10**16;
+  // no longer need this
+  // /// @notice One percent
+  // /// @dev No scary unnamed constants!
+  // uint256 internal constant ONE_PERCENT = 10**16;
 
   /// @notice Caclulate the remaining cashflow to settle a position
   /// @param fixedTokenBalance The current balance of the fixed side of the position
@@ -53,7 +55,7 @@ library FixedAndVariableMath {
   /// #if_succeeds old(timeInSeconds) > 0;
   function accrualFact(uint256 timeInSeconds)
     public
-    pure
+    view
     returns (uint256 timeInYears)
   {
     timeInYears = PRBMathUD60x18Typed
@@ -62,6 +64,9 @@ library FixedAndVariableMath {
         PRBMath.UD60x18({ value: SECONDS_IN_YEAR })
       )
       .value;
+    
+    console.log("Contract: Time in Years is ", timeInYears);
+
   }
 
   /// @notice Calculate the fixed factor for a position
@@ -107,12 +112,23 @@ library FixedAndVariableMath {
 
     uint256 timeInYears = accrualFact(timeInSeconds);
 
+    // fixedFactorValue = PRBMathUD60x18Typed
+    //   .mul(
+    //     PRBMath.UD60x18({ value: timeInYears }),
+    //     PRBMath.UD60x18({ value: ONE_PERCENT })
+    //   )
+    //   .value;
+    // interesting the change below fixes the margin calculator tests
+
     fixedFactorValue = PRBMathUD60x18Typed
-      .mul(
+      .div(
         PRBMath.UD60x18({ value: timeInYears }),
-        PRBMath.UD60x18({ value: ONE_PERCENT })
+        PRBMath.UD60x18({ value: 100 * (10**18) })
       )
       .value;
+    
+    console.log("Contract: Fixed factor value is ", fixedFactorValue);
+    
   }
 
   /// @notice Calculate the fixed token balance for a position over a timespan

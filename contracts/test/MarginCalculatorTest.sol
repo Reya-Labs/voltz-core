@@ -36,6 +36,29 @@ contract MarginCalculatorTest is MarginCalculator {
 
     }
 
+
+    function getMinimumMarginRequirementTest(
+            int256 fixedTokenBalance, 
+            int256 variableTokenBalance,
+            uint256 termStartTimestamp,
+            uint256 termEndTimestamp,
+            bool isLM,
+            bytes32 rateOracleId,
+            uint256 twapApy
+        ) external view returns(uint256 margin) {
+
+        return getMinimumMarginRequirement(IMarginCalculator.TraderMarginRequirementParams({
+            fixedTokenBalance: fixedTokenBalance,
+            variableTokenBalance: variableTokenBalance,
+            termStartTimestamp: termStartTimestamp,
+            termEndTimestamp: termEndTimestamp,
+            isLM: isLM,
+            rateOracleId: rateOracleId,
+            twapApy: twapApy
+        }));
+
+    }
+
     // non_view functions
     function setMarginCalculatorParametersTest(
         bytes32 rateOracleId,
@@ -50,7 +73,7 @@ contract MarginCalculatorTest is MarginCalculator {
         int256 xiUpper,
         int256 xiLower
         ) external {
-            
+
             setMarginCalculatorParameters(MarginCalculatorParameters({
                 apyUpperMultiplier: PRBMath.UD60x18({
                     value: apyUpperMultiplier
@@ -85,20 +108,6 @@ contract MarginCalculatorTest is MarginCalculator {
             }),
             rateOracleId);
         }
-
-    // function getMinimumMarginRequirementTest(int256 fixedTokenBalance, 
-    //     int256 variableTokenBalance, uint256 termStartTimestamp, uint256 termEndTimestamp, bool isLM) public view returns(uint256 margin) {
-
-    //     IMarginCalculator.TraderMarginRequirementParams memory params;
-    //     params.variableTokenBalance = variableTokenBalance;
-    //     params.fixedTokenBalance = fixedTokenBalance;
-    //     params.termStartTimestamp = termStartTimestamp;
-    //     params.termEndTimestamp = termEndTimestamp;
-    //     params.isLM = isLM;
-
-    //     return getMinimumMarginRequirement(params);
-
-    // }
 
 
     // function worstCaseVariableFactorAtMaturityTest(uint256 timeInSecondsFromStartToMaturity, uint256 timeInSecondsFromNowToMaturity, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy) public view returns(uint256 variableFactor) {
