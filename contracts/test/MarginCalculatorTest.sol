@@ -9,6 +9,19 @@ import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 contract MarginCalculatorTest is MarginCalculator {
     
     // view functions
+
+    // function computeApyBoundTest(bytes32 rateOracleId, uint256 timeInSeconds, uint256 twapApy, bool isUpper) external returns(uint256 apyBound) {
+
+    //     return computeApyBound(rateOracleId, timeInSeconds, twapApy, isUpper);
+
+    // }
+    
+    function getTimeFactorTest(bytes32 rateOracleId, uint256 timeInDays) external view returns (int256) {
+
+        return timeFactorTimeInDays[rateOracleId][timeInDays].value;
+
+    }
+
     function getMarginCalculatorParametersTest(bytes32 rateOracleId) external view returns (
         uint256 apyUpperMultiplier,
         uint256 apyLowerMultiplier,
@@ -59,7 +72,32 @@ contract MarginCalculatorTest is MarginCalculator {
 
     }
 
+
+    function worstCaseVariableFactorAtMaturityTest(
+        uint256 timeInSecondsFromStartToMaturity,
+        uint256 timeInSecondsFromNowToMaturity,
+        bool isFT,
+        bool isLM,
+        bytes32 rateOracleId,
+        uint256 twapApy
+        ) external view returns(uint256 variableFactor) {
+
+            return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, rateOracleId, twapApy);
+    }
+
+
+    function computeApyBoundTest(bytes32 rateOracleId, uint256 timeInSeconds, uint256 twapApy, bool isUpper) external view returns (uint256 apyBound) {
+        
+        return computeApyBound(rateOracleId, timeInSeconds, twapApy, isUpper);
+    
+    }
+
     // non_view functions
+
+    function setTimeFactorTest(bytes32 rateOracleId, uint256 timeInDays, int256 timeFactor) external {
+        setTimeFactor(rateOracleId, timeInDays, timeFactor);
+    }
+
     function setMarginCalculatorParametersTest(
         bytes32 rateOracleId,
         uint256 apyUpperMultiplier,

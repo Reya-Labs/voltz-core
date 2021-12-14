@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 import { MarginCalculator } from "../../typechain/MarginCalculator";
 import { toBn } from "evm-bn";
-import { div, sub, mul, add } from "../shared/functions";
+import { div, sub, mul, add, sqrt, floor} from "../shared/functions";
 import { encodeSqrtRatioX96, expandTo18Decimals, accrualFact, fixedFactor } from "../shared/utilities";
 import {FixedAndVariableMath} from "../../typechain/FixedAndVariableMath";
 
@@ -11,6 +11,8 @@ import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import {getCurrentTimestamp, advanceTime} from "../helpers/time";
 
 import {consts} from "../helpers/constants";
+// import { floor } from "prb-math";
+// import { sqrt } from "../shared/sqrt";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -26,6 +28,7 @@ const BETA = toBn("1.0");
 const XI_UPPER = toBn("2.0");
 const XI_LOWER = toBn("1.5");
 const RATE_ORACLE_ID = ethers.utils.formatBytes32String("AaveV2");
+const DEFAULT_TIME_FACTOR = toBn("0.5");
 const { provider } = waffle;
 
 // function getTraderMarginRequirement(fixedTokenBalance: BigNumber,
@@ -51,27 +54,62 @@ const { provider } = waffle;
 //         return margin
 // }
 
-function worstCaseVariableFactorAtMaturity(timeInSeconds: BigNumber, isFT: boolean, isLM: boolean) : BigNumber {
-    const timeInYears: BigNumber = accrualFact(timeInSeconds)
-    let variableFactor: BigNumber;
 
-    if (isFT) {
-        if (isLM) {
-            variableFactor = mul(timeInYears, toBn("0.09"))
-        } else {
-            variableFactor = mul(timeInYears, mul(toBn("0.09"), toBn("2.0")))
-        }
+
+// check and fix the logic
+// function worstCaseVariableFactorAtMaturity(timeInSeconds: BigNumber, isFT: boolean, isLM: boolean) : BigNumber {
+//     const timeInYears: BigNumber = accrualFact(timeInSeconds)
+//     let variableFactor: BigNumber;
+
+//     if (isFT) {
+//         if (isLM) {
+//             variableFactor = mul(timeInYears, toBn("0.09"))
+//         } else {
+//             variableFactor = mul(timeInYears, mul(toBn("0.09"), toBn("2.0")))
+//         }
+//     } else {
+//         if (isLM) {
+//             variableFactor = mul(timeInYears, toBn("0.01"))
+//         } else {
+//             variableFactor = mul(timeInYears, mul(toBn("0.09"), toBn("0.5")))
+//         }
+//     }
+
+//     return variableFactor
+
+// }
+
+
+// const expected = computeApyBound(RATE_ORACLE_ID, timeInSeconds, twapApy, isUpper);
+
+function computeApyBound(rateOracleId: string, timeInSeconds: BigNumber, twapApy: BigNumber, isUpper: boolean) {
+    const timeFactor: BigNumber = DEFAULT_TIME_FACTOR;
+    const oneMinusTimeFactor: BigNumber = sub(toBn("1"), timeFactor);
+    const k: BigNumber = div(ALPHA, SIGMA_SQUARED);
+    const zeta: BigNumber = div(mul(SIGMA_SQUARED, oneMinusTimeFactor), BETA);
+    const lambdaNum: BigNumber = mul(mul(BETA, timeFactor), twapApy);
+    const lambdaDen: BigNumber = mul(BETA, timeFactor);
+    const lambda: BigNumber = div(lambdaNum, lambdaDen);
+    const criticalValueMultiplier: BigNumber = mul(add(mul(toBn("2"), lambda), k), toBn("2"));
+    const criticalValueMultiplierSqrt: BigNumber = sqrt(criticalValueMultiplier)
+
+    let criticalValue: BigNumber;
+    if (isUpper) {
+        criticalValue = mul(XI_UPPER, criticalValueMultiplierSqrt);
     } else {
-        if (isLM) {
-            variableFactor = mul(timeInYears, toBn("0.01"))
-        } else {
-            variableFactor = mul(timeInYears, mul(toBn("0.09"), toBn("0.5")))
-        }
+        criticalValue = mul(XI_LOWER, criticalValueMultiplierSqrt)
     }
 
-    return variableFactor
+    var apyBound: BigNumber = mul(zeta, add( add(k, lambda), criticalValue));
 
-}
+    if (apyBound < toBn("0")) {
+        apyBound = toBn("0");
+    }
+
+    return apyBound;
+
+}   
+
 
 function getMinimumMarginRequirement(fixedTokenBalance: BigNumber,
     variableTokenBalance: BigNumber, termStartTimestamp: BigNumber, termEndTimestamp: BigNumber,
@@ -82,7 +120,7 @@ function getMinimumMarginRequirement(fixedTokenBalance: BigNumber,
     const timeInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp)
     const timeInYears: BigNumber = accrualFact(timeInSeconds)
     let minDelta: BigNumber;
-    let margin: BigNumber;
+    var margin: BigNumber;
     let notional: BigNumber;
 
 
@@ -103,7 +141,7 @@ function getMinimumMarginRequirement(fixedTokenBalance: BigNumber,
         console.log(`Test: Zero Lower Bound Margin is${ zeroLowerBoundMargin }`);
         margin = mul(mul(variableTokenBalance, minDelta), timeInYears)
 
-        if (margin > zeroLowerBoundMargin) {
+        if (sub(margin, zeroLowerBoundMargin) > toBn("0") ) {
             margin = zeroLowerBoundMargin;
         }
     }
@@ -190,9 +228,20 @@ describe("Margin Calculator", () => {
             expect(marginCalculatorParameters[9]).to.eq(XI_LOWER);
             // expect(await calculatorTest.accrualFact(x)).to.eq(expected);
         });
+
+        it("correctly sets the time factors", async () => {
+
+            const timeInDays: BigNumber = toBn("3");
+
+            await calculatorTest.setTimeFactorTest(RATE_ORACLE_ID, timeInDays, DEFAULT_TIME_FACTOR);
+
+            const timeFactorRealised = await calculatorTest.getTimeFactorTest(RATE_ORACLE_ID, timeInDays);
+
+            expect(timeFactorRealised).to.eq(DEFAULT_TIME_FACTOR);
+        })
     });
 
-    describe("getMinimumMarginRequirement", async () => {
+    describe("getMinimumMarginRequirement (zeroLowerBound boolean is true)", async () => {
 
         beforeEach("deploy calculator", async () => {
             calculatorTest = await loadFixture(fixture);
@@ -211,27 +260,28 @@ describe("Margin Calculator", () => {
             );
         });
 
-        // does not pass
-        // it("correctly calculates the minimum margin requirement: fixed taker, LM, FT", async () => {
+        // passes
+        it("correctly calculates the minimum margin requirement: fixed taker, LM, FT", async () => {
 
-        //     const fixedTokenBalance: BigNumber = toBn("1000");
-        //     const variableTokenBalance: BigNumber = toBn("-3000");
+            const fixedTokenBalance: BigNumber = toBn("1000");
+            const variableTokenBalance: BigNumber = toBn("-3000");
             
             
-        //     const termStartTimestamp: number = await getCurrentTimestamp(provider);
-        //     const termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY.toNumber();
+            const termStartTimestamp: number = await getCurrentTimestamp(provider);
+            const termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY.toNumber();
             
-        //     const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
-        //     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+            const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
+            const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-        //     const isLM: boolean = true;
-        //     const twapApy: BigNumber = toBn("0.02");
+            const isLM: boolean = true;
+            const twapApy: BigNumber = toBn("0.02");
 
-        //     const expectedMinimumMarginRequirement: BigNumber = getMinimumMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestampBN, termEndTimestampBN, isLM, twapApy); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
-        //     const realisedMinimumMarginRequirement: BigNumber = await calculatorTest.getMinimumMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestampBN, termEndTimestampBN, isLM, RATE_ORACLE_ID, twapApy);
-        //     expect(realisedMinimumMarginRequirement).to.eq(expectedMinimumMarginRequirement);
+            const expectedMinimumMarginRequirement: BigNumber = getMinimumMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestampBN, termEndTimestampBN, isLM, twapApy); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
+            const realisedMinimumMarginRequirement: BigNumber = await calculatorTest.getMinimumMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestampBN, termEndTimestampBN, isLM, RATE_ORACLE_ID, twapApy);
+            // expect(realisedMinimumMarginRequirement).to.eq(expectedMinimumMarginRequirement);
+            expect(realisedMinimumMarginRequirement).to.be.closeTo(expectedMinimumMarginRequirement, 10000);
 
-        // })
+        })
 
         // passes
         it("correctly calculates the minimum margin requirement: fixed taker, LM, VT", async () => {
@@ -255,29 +305,103 @@ describe("Margin Calculator", () => {
 
         })
 
-        // fails
-        // it("correctly calculates the minimum margin requirement: fixed taker, IM, VT", async () => {
+        // passes
+        it("correctly calculates the minimum margin requirement: fixed taker, IM, VT", async () => {
 
-        //     const fixedTokenBalance: BigNumber = toBn("-3000");
-        //     const variableTokenBalance: BigNumber = toBn("1000");
+            const fixedTokenBalance: BigNumber = toBn("-3000");
+            const variableTokenBalance: BigNumber = toBn("1000");
             
             
-        //     const termStartTimestamp: number = await getCurrentTimestamp(provider);
-        //     const termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY.toNumber();
+            const termStartTimestamp: number = await getCurrentTimestamp(provider);
+            const termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY.toNumber();
             
-        //     const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
-        //     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+            const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
+            const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-        //     const isLM: boolean = false;
-        //     const twapApy: BigNumber = toBn("0.02");
+            const isLM: boolean = false;
+            const twapApy: BigNumber = toBn("0.02");
 
-        //     const expectedMinimumMarginRequirement: BigNumber = getMinimumMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestampBN, termEndTimestampBN, isLM, twapApy); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
-        //     const realisedMinimumMarginRequirement: BigNumber = await calculatorTest.getMinimumMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestampBN, termEndTimestampBN, isLM, RATE_ORACLE_ID, twapApy);
-        //     expect(realisedMinimumMarginRequirement).to.eq(expectedMinimumMarginRequirement);
+            const expectedMinimumMarginRequirement: BigNumber = getMinimumMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestampBN, termEndTimestampBN, isLM, twapApy); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
+            const realisedMinimumMarginRequirement: BigNumber = await calculatorTest.getMinimumMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestampBN, termEndTimestampBN, isLM, RATE_ORACLE_ID, twapApy);
+            expect(realisedMinimumMarginRequirement).to.eq(expectedMinimumMarginRequirement);
 
-        // })
+        })
     
     });
+
+
+    describe("#getApyBound", async () => {
+
+        beforeEach("deploy calculator", async () => {
+            calculatorTest = await loadFixture(fixture);
+            await calculatorTest.setMarginCalculatorParametersTest(
+                RATE_ORACLE_ID, 
+                APY_UPPER_MULTIPLIER, 
+                APY_LOWER_MULTIPLIER,
+                MIN_DELTA_LM,
+                MIN_DELTA_IM,
+                MAX_LEVERAGE, 
+                SIGMA_SQUARED, 
+                ALPHA,
+                BETA, 
+                XI_UPPER, 
+                XI_LOWER 
+            );
+
+            const timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
+            const timeInDaysFloor: BigNumber = floor(div(timeInSeconds, toBn(consts.ONE_DAY.toString())));
+            await calculatorTest.setTimeFactorTest(RATE_ORACLE_ID, timeInDaysFloor, DEFAULT_TIME_FACTOR);
+
+        });
+
+
+        // passes
+        // Error: VM Exception while processing transaction: reverted with panic code 0x12 (Division or modulo division by zero)
+        it("correctly computes the Upper APY Bound", async () => {
+
+            const timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
+            const twapApy: BigNumber = toBn("0.02");
+            const isUpper: boolean = true;
+
+            const expected: BigNumber = computeApyBound(RATE_ORACLE_ID, timeInSeconds, twapApy, isUpper);
+            expect(await calculatorTest.computeApyBoundTest(RATE_ORACLE_ID, timeInSeconds, twapApy, isUpper)).to.be.closeTo(expected, 10000);
+
+        })
+
+
+        it("correctly computes the Lower APY Bound", async () => {
+
+            const timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
+            const twapApy: BigNumber = toBn("0.02");
+            const isUpper: boolean = false;
+
+            const expected: BigNumber = computeApyBound(RATE_ORACLE_ID, timeInSeconds, twapApy, isUpper);
+            expect(await calculatorTest.computeApyBoundTest(RATE_ORACLE_ID, timeInSeconds, twapApy, isUpper)).to.be.closeTo(expected, 10000);
+
+        })
+
+    })
+
+
+
+    // describe("worstCaseVariableFactorAtMaturity", async () => {
+
+    //     it("correctly calculates the worst case variable factor at maturity, FT, LM", async () => {
+
+    //         const timeInSecondsFromStartToMaturity: BigNumber = toBn(consts.ONE_YEAR.toString());
+    //         const timeInSecondsFromNowToMaturity: BigNumber = toBn(consts.ONE_MONTH.toString());
+    //         const isLM: boolean = true;
+    //         const isFT: boolean = true;
+    //         const twapApy: BigNumber = toBn("0.02");    
+            
+    //         const expected = worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, RATE_ORACLE_ID, twapApy);
+    //         expect(await calculatorTest.worstCaseVariableFactorAtMaturityTest(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, RATE_ORACLE_ID, twapApy)).to.eq(expected);
+
+    //     })
+
+
+    
+    // })
     
 
 

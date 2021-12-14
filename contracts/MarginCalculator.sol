@@ -43,7 +43,7 @@ contract MarginCalculator is IMarginCalculator{
     mapping(bytes32 => MarginCalculatorParameters) internal getMarginCalculatorParameters;
 
     /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
-    mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInSeconds; // rateOralceId --> timeInSeconds --> timeFactor
+    mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInDays; // rateOralceId --> timeInSeconds --> timeFactor
     /// @dev Seconds in a year
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
@@ -51,6 +51,10 @@ contract MarginCalculator is IMarginCalculator{
     function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) override public {
         // require statements to check the parameters and the rateOracleId passed into this function
         getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
+    }
+
+    function setTimeFactor(bytes32 rateOracleId, uint256 timeInDays, int256 timeFactor) override public {
+        timeFactorTimeInDays[rateOracleId][timeInDays] = PRBMath.SD59x18({value: timeFactor});
     }
     
     /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
@@ -63,10 +67,23 @@ contract MarginCalculator is IMarginCalculator{
         
         ApyBoundVars memory apyBoundVars;
 
-        apyBoundVars.timeFactor =  timeFactorTimeInSeconds[rateOracleId][timeInSeconds];
+        // daily for now (check works correctly)
+        PRBMath.UD60x18 memory timeInDays = PRBMathUD60x18Typed.div(
+            PRBMath.UD60x18({
+                value: timeInSeconds
+            }),
+
+            PRBMath.UD60x18({
+                value: 86400 * 10**18 // create a constant called ONE_DAY
+            })
+        );
+
+        uint256 timeInDaysFloor = PRBMathUD60x18Typed.floor(timeInDays).value;
+
+        apyBoundVars.timeFactor =  timeFactorTimeInDays[rateOracleId][timeInDaysFloor];
         apyBoundVars.oneMinusTimeFactor = PRBMathSD59x18Typed.sub(
             PRBMath.SD59x18({
-                value: 1
+                value: 10 ** 18 // convert into a constant called ONE
             }),
             apyBoundVars.timeFactor
         );
@@ -79,20 +96,20 @@ contract MarginCalculator is IMarginCalculator{
         );
         
         apyBoundVars.lambdaNum = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
-        apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor);
+        apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor); // check the time factor exists, if not have a fallback?
         apyBoundVars.lambda = PRBMathSD59x18Typed.div(apyBoundVars.lambdaNum, apyBoundVars.lambdaDen);
 
-        apyBoundVars.criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2}), apyBoundVars.lambda), apyBoundVars.k), PRBMath.SD59x18({value: 2}));
+        apyBoundVars.criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2 * (10 ** 18) }), apyBoundVars.lambda), apyBoundVars.k), PRBMath.SD59x18({value: 2 * (10 ** 18)}));
 
         apyBoundVars.criticalValue;
 
         if (isUpper) {
-            apyBoundVars.criticalValue = PRBMathSD59x18Typed.sub(
+            apyBoundVars.criticalValue = PRBMathSD59x18Typed.mul(
                 getMarginCalculatorParameters[rateOracleId].xiUpper,
                 PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
         } else {
-            apyBoundVars.criticalValue = PRBMathSD59x18Typed.sub(
+            apyBoundVars.criticalValue = PRBMathSD59x18Typed.mul(
                 getMarginCalculatorParameters[rateOracleId].xiLower,
                 PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
