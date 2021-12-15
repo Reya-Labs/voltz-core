@@ -12,7 +12,7 @@ import { consts } from "../helpers/constants";
 // const SECONDS_IN_YEAR = toBn("31536000");
 const BLOCK_TIMESTAMP = 1632249308;
 
-function getFixedTokenBalance(
+export function getFixedTokenBalance(
   amount0: BigNumber,
   amount1: BigNumber,
   variableFactorAccrued: BigNumber,
