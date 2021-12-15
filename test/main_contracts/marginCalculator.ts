@@ -4,11 +4,13 @@ import { ethers, waffle } from "hardhat";
 import { MarginCalculator } from "../../typechain/MarginCalculator";
 import { toBn } from "evm-bn";
 import { div, sub, mul, add, sqrt, floor} from "../shared/functions";
-import { encodeSqrtRatioX96, expandTo18Decimals, accrualFact, fixedFactor } from "../shared/utilities";
+import { encodeSqrtRatioX96, expandTo18Decimals, accrualFact, fixedFactor, MIN_SQRT_RATIO, MAX_SQRT_RATIO } from "../shared/utilities";
 import {FixedAndVariableMath} from "../../typechain/FixedAndVariableMath";
 
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import {getCurrentTimestamp, advanceTime} from "../helpers/time";
+
+import {getFixedTokenBalance} from "../core_libraries/fixedAndVariableMath";
 
 import {consts} from "../helpers/constants";
 // import { floor } from "prb-math";
@@ -28,8 +30,144 @@ const BETA = toBn("1.0");
 const XI_UPPER = toBn("2.0");
 const XI_LOWER = toBn("1.5");
 const RATE_ORACLE_ID = ethers.utils.formatBytes32String("AaveV2");
-const DEFAULT_TIME_FACTOR = toBn("0.5");
+const DEFAULT_TIME_FACTOR = toBn("0.1");
+const MIN_TICK = -887272;
+const MAX_TICK = 887272;
 const { provider } = waffle;
+
+
+async function calculateExpectedAmounts(
+    currentTick: number,
+    liquidity: BigNumber
+) {
+
+    let sqrtRatioAtTickLower: BigNumber = MIN_SQRT_RATIO;
+    let sqrtRatioAtTickUpper: BigNumber = MAX_SQRT_RATIO;
+    let sqrtRatioAtTickCurrent: BigNumber = MAX_SQRT_RATIO;
+
+    if (currentTick == MIN_TICK) {
+        sqrtRatioAtTickCurrent = MIN_SQRT_RATIO;
+    }
+
+    const sqrtPriceMathFactory = await ethers.getContractFactory("SqrtPriceMathTest");
+    const sqrtPriceMath = await sqrtPriceMathFactory.deploy();
+
+    let amount1Up: BigNumber = await sqrtPriceMath.getAmount1Delta(
+        sqrtRatioAtTickCurrent,
+        sqrtRatioAtTickUpper,
+        liquidity,
+        true
+    );
+
+    amount1Up = mul(amount1Up, toBn("-1.0"));
+
+    // going down balanace delta
+    let amount0Down = await sqrtPriceMath.getAmount0Delta(
+        sqrtRatioAtTickLower,
+        sqrtRatioAtTickCurrent,
+        liquidity,
+        true
+    );
+
+    amount0Down = mul(amount0Down, toBn("-1.0"));  
+
+    return [amount1Up, amount0Down];
+}
+
+async function positionMarginBetweenTicksHelper(
+    tickLower: number,
+    tickUpper: number,
+    isLM: boolean,
+    currentTick: number,
+    termStartTimestamp: BigNumber,
+    termEndTimestamp: BigNumber,
+    liquidity: BigNumber,
+    fixedTokenBalance: BigNumber,
+    variableTokenBalance: BigNumber,
+    variableFactor: BigNumber,
+    rateOracleId: string,
+    twapApy: BigNumber,
+    blockTimestampScaled: BigNumber
+) {
+
+    // make sure that in here the variable factor is the accrued variable factor
+    // emphasise this in the docs
+
+    let sqrtRatioAtTickLower: BigNumber = MIN_SQRT_RATIO;
+    let sqrtRatioAtTickUpper: BigNumber = MAX_SQRT_RATIO;
+    let sqrtRatioAtTickCurrent: BigNumber = MAX_SQRT_RATIO;
+
+    if (currentTick == MIN_TICK) {
+        sqrtRatioAtTickCurrent = MIN_SQRT_RATIO;
+    }
+
+    const sqrtPriceMathFactory = await ethers.getContractFactory("SqrtPriceMathTest");
+    const sqrtPriceMath = await sqrtPriceMathFactory.deploy();
+
+        
+    const amount0Up: BigNumber = await sqrtPriceMath.getAmount0Delta(
+        sqrtRatioAtTickCurrent,
+        sqrtRatioAtTickUpper,
+        liquidity,
+        true 
+    );
+
+    let amount1Up: BigNumber = await sqrtPriceMath.getAmount1Delta(
+        sqrtRatioAtTickCurrent,
+        sqrtRatioAtTickUpper,
+        liquidity,
+        true
+    );
+
+    amount1Up = mul(amount1Up, toBn("-1.0"));
+
+    const expectedVariableTokenBalanceAfterUp: BigNumber = add(variableTokenBalance, amount1Up);
+    let fixedTokenBalanceAfterRebalancing: BigNumber = getFixedTokenBalance(amount0Up, amount1Up, variableFactor, termStartTimestamp, termEndTimestamp);
+    const expectedFixedTokenBalanceAfterUp: BigNumber = add(fixedTokenBalance, fixedTokenBalanceAfterRebalancing);
+    const marginReqAfterUp: BigNumber = getTraderMarginRequirement(expectedFixedTokenBalanceAfterUp, expectedVariableTokenBalanceAfterUp, termStartTimestamp, termEndTimestamp, isLM, rateOracleId, twapApy, blockTimestampScaled);
+
+    // going down balanace delta
+    let amount0Down = await sqrtPriceMath.getAmount0Delta(
+        sqrtRatioAtTickLower,
+        sqrtRatioAtTickCurrent,
+        liquidity,
+        true
+    );
+
+    const amount1Down = await sqrtPriceMath.getAmount1Delta(
+        sqrtRatioAtTickLower,
+        sqrtRatioAtTickCurrent,
+        liquidity,
+        true
+    );
+
+    amount0Down = mul(amount0Down, toBn("-1.0"));
+
+    const expectedVariableTokenBalanceAfterDown: BigNumber = add(variableTokenBalance, amount1Down);
+    fixedTokenBalanceAfterRebalancing = getFixedTokenBalance(amount0Down, amount1Down, variableFactor, termStartTimestamp, termEndTimestamp);
+    const expectedFixedTokenBalanceAfterDown: BigNumber = add(fixedTokenBalance, fixedTokenBalanceAfterRebalancing);
+    const marginReqAfterDown: BigNumber = getTraderMarginRequirement(
+        expectedFixedTokenBalanceAfterDown,
+        expectedVariableTokenBalanceAfterDown,
+        termStartTimestamp,
+        termEndTimestamp,
+        isLM,
+        rateOracleId,
+        twapApy,
+        blockTimestampScaled
+    );
+
+    let margin: BigNumber;
+
+    if (sub(marginReqAfterUp, marginReqAfterDown) > toBn("0")) {
+        margin = marginReqAfterUp;
+    } else {
+        margin = marginReqAfterDown;
+    }
+
+    return margin;
+    
+}
 
 function getTraderMarginRequirement(fixedTokenBalance: BigNumber,
     variableTokenBalance: BigNumber, termStartTimestamp: BigNumber, termEndTimestamp: BigNumber,
@@ -585,86 +723,148 @@ describe("Margin Calculator", () => {
 
         })
 
+    })  
+
+    describe("#positionMarginBetweenTicksHelper", async () => {
+
+        beforeEach("deploy calculator", async () => {
+            calculatorTest = await loadFixture(fixture);
+            await calculatorTest.setMarginCalculatorParametersTest(
+                RATE_ORACLE_ID, 
+                APY_UPPER_MULTIPLIER, 
+                APY_LOWER_MULTIPLIER,
+                MIN_DELTA_LM,
+                MIN_DELTA_IM,
+                MAX_LEVERAGE, 
+                SIGMA_SQUARED, 
+                ALPHA,
+                BETA, 
+                XI_UPPER, 
+                XI_LOWER 
+            );
+
+            let timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
+            let timeInDaysFloor: BigNumber = floor(div(timeInSeconds, toBn(consts.ONE_DAY.toString())));
+            await calculatorTest.setTimeFactorTest(RATE_ORACLE_ID, timeInDaysFloor, DEFAULT_TIME_FACTOR);
+
+            timeInSeconds = toBn(consts.ONE_MONTH.toString());
+            timeInDaysFloor = floor(div(timeInSeconds, toBn(consts.ONE_DAY.toString())));
+            
+            await calculatorTest.setTimeFactorTest(RATE_ORACLE_ID, timeInDaysFloor, DEFAULT_TIME_FACTOR);
+
+            timeInSeconds = toBn(consts.ONE_DAY.toString());
+            timeInDaysFloor = floor(div(timeInSeconds, toBn(consts.ONE_DAY.toString())));
+            
+            await calculatorTest.setTimeFactorTest(RATE_ORACLE_ID, timeInDaysFloor, DEFAULT_TIME_FACTOR);
+
+        });
+
+        // fails
+        it("correctly calculates intermediate variables", async () => {
+
+            const tickLower: number = MIN_TICK;
+            const tickUpper: number = MAX_TICK;
+            const currentTick: number = MAX_TICK;
+            
+            const termStartTimestamp: number = await getCurrentTimestamp(provider);
+            const termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY.toNumber();
+            const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
+            const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+            const liquidity: BigNumber = toBn("1");
+            const fixedTokenBalance: BigNumber = toBn("-3000");
+            const variableTokenBalance: BigNumber = toBn("1000");
+            const variableFactor: BigNumber = toBn("0.02");
+            const twapApy: BigNumber = toBn("0.3");
+            const blockTimestampScaled: BigNumber = toBn((termStartTimestamp+1).toString());
+
+            // async function calculateExpectedAmounts(
+            //     currentTick: number,
+            //     liquidity: BigNumber
+            // ) {
+
+            let [amount1Up, amount0Down] = await calculateExpectedAmounts(currentTick, liquidity);
+            let returnedAmounts = await calculatorTest.calculateExpectedAmountsTest(liquidity, currentTick, tickUpper, tickLower);
+
+            console.log(`Test: amoun1Up is ${amount1Up}`); 
+            console.log(`Test: amount0Down is ${amount0Down}`); 
+
+            expect(returnedAmounts[0]).to.be.closeTo(amount1Up, 10000);            
+            expect(returnedAmounts[1]).to.be.closeTo(amount0Down, 10000);            
+
+        })
+        
+        
+        // fails        
+        // it("correctly calculates positionMarginBetweenTicks (current tick is max tick), LM, (MIN_TICK, MAX_TICK)", async () => {
+        //     const tickLower: number = MIN_TICK;
+        //     const tickUpper: number = MAX_TICK;
+        //     const isLM: boolean = true;
+        //     const currentTick: number = MAX_TICK;
+            
+        //     const termStartTimestamp: number = await getCurrentTimestamp(provider);
+        //     const termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY.toNumber();
+        //     const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
+        //     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+        //     const liquidity: BigNumber = toBn("1");
+
+        //     const fixedTokenBalance: BigNumber = toBn("-3000");
+        //     const variableTokenBalance: BigNumber = toBn("1000");
+
+        //     const variableFactor: BigNumber = toBn("0.02");
+        //     const twapApy: BigNumber = toBn("0.3");
+
+        //     const blockTimestampScaled: BigNumber = toBn((termStartTimestamp+1).toString());
+
+        //     const expected: BigNumber = await positionMarginBetweenTicksHelper(
+        //         tickLower, 
+        //         tickUpper, 
+        //         isLM, 
+        //         currentTick,
+        //         termStartTimestampBN,
+        //         termEndTimestampBN,
+        //         liquidity,
+        //         fixedTokenBalance,
+        //         variableTokenBalance,
+        //         variableFactor,
+        //         RATE_ORACLE_ID,
+        //         twapApy,
+        //         blockTimestampScaled
+        //     );
+
+        //     const realised: BigNumber = await calculatorTest.positionMarginBetweenTicksHelperLMTest(
+        //         tickLower, 
+        //         tickUpper, 
+        //         // isLM, 
+        //         currentTick,
+        //         termStartTimestampBN,
+        //         termEndTimestampBN,
+        //         liquidity,
+        //         fixedTokenBalance,
+        //         variableTokenBalance,
+        //         variableFactor,
+        //         RATE_ORACLE_ID,
+        //         twapApy
+        //     );
+
+        //     // let errorMargin: BigNumber;
+
+        //     // if (realised > expected) {
+        //     //     errorMargin = sub(realised, expected);
+        //     // } else {
+        //     //     errorMargin = sub(expected, realised);
+        //     // }
+
+        //     // errorMargin = floor(div(errorMargin, toBn("10.0")));
+
+        //     // console.log(`Test: Error Margin is ${errorMargin}`); 
+
+        //     // expect(realised).to.be.closeTo(expected, ); // todo: huge margin or error, investigate further
+        //     // expect(errorMargin).to.be.eq(0);
+
+        // })
+    
     })
     
-
-
-
-    // todo: fix these small discrepancies
-    // describe("worstCaseVariableFactorAtMaturity", async () => {
-
-    //     it("correctly calculates the worst case variable factor at maturity, FT, LM", async () => {
-
-    //         const termStartTimestamp: BigNumber = toBn("1636996083")
-    //         const termEndTimestamp: BigNumber = toBn("1646996083")
-    //         const timeInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp)
-    //         const isLM: boolean = true
-    //         const isFT: boolean = true
-
-    //         const expected = worstCaseVariableFactorAtMaturity(timeInSeconds, isFT, isLM)
-    //         expect(await calculatorTest.worstCaseVariableFactorAtMaturityTest(timeInSeconds, isFT, isLM)).to.eq(expected)
-
-    //     })
-    // })
-
-    // describe("#getTraderMarginRequirement", async () => {
-
-    //     it("correctly calculates the trader margin requirement", async () => {
-
-    //         const fixedTokenBalance: BigNumber = toBn("1000")
-    //         const variableTokenBalance: BigNumber = toBn("-2000")
-    //         const termStartTimestamp: BigNumber = toBn("1636996083")
-    //         const termEndTimestamp: BigNumber = toBn("1646996083")
-    //         const isLM: boolean = false
-
-    //         const expected = getTraderMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestamp, termEndTimestamp, isLM)
-    //         expect(await calculatorTest.getTraderMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestamp, termEndTimestamp, isLM)).to.eq(expected)
-
-    //     })
-
-    //     it("correctly calculates the trader margin requirement", async () => {
-
-    //         const fixedTokenBalance: BigNumber = toBn("1000")
-    //         const variableTokenBalance: BigNumber = toBn("-2000")
-    //         const termStartTimestamp: BigNumber = toBn("1636996083")
-    //         const termEndTimestamp: BigNumber = toBn("1646996083")
-    //         const isLM: boolean = true
-
-    //         const expected = getTraderMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestamp, termEndTimestamp, isLM)
-    //         expect(await calculatorTest.getTraderMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestamp, termEndTimestamp, isLM)).to.eq(expected)
-
-    //     })
-
-    //     // todo: fails
-    //     // it("correctly calculates the trader margin requirement", async () => {
-
-    //     //     const fixedTokenBalance: BigNumber = toBn("-1000")
-    //     //     const variableTokenBalance: BigNumber = toBn("2000")
-    //     //     const termStartTimestamp: BigNumber = toBn("1636996083")
-    //     //     const termEndTimestamp: BigNumber = toBn("1646996083")
-    //     //     const isLM: boolean = true
-
-    //     //     const expected = getTraderMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestamp, termEndTimestamp, isLM)
-    //     //     expect(await calculatorTest.getTraderMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestamp, termEndTimestamp, isLM)).to.eq(expected)
-
-    //     // })
-
-    //     // todo: fails
-    //     // it("correctly calculates the trader margin requirement", async () => {
-
-    //     //     const fixedTokenBalance: BigNumber = toBn("-1000")
-    //     //     const variableTokenBalance: BigNumber = toBn("2000")
-    //     //     const termStartTimestamp: BigNumber = toBn("1636996083")
-    //     //     const termEndTimestamp: BigNumber = toBn("1646996083")
-    //     //     const isLM: boolean = false
-
-    //     //     const expected = getTraderMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestamp, termEndTimestamp, isLM)
-    //     //     expect(await calculatorTest.getTraderMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestamp, termEndTimestamp, isLM)).to.eq(expected)
-
-    //     // })
-
-    //     // todo: introduce tests for scenarios where the minimum margin requirement is higher, lower, modelMargin is negative, positive, etc
-
-    // })
+    
 
 })

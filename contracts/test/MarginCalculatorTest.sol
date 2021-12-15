@@ -8,7 +8,62 @@ import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 
 contract MarginCalculatorTest is MarginCalculator {
     
-    // view functions
+    // view function
+
+    function calculateExpectedAmountsTest(uint128 liquidity, int24 currentTick, int24 tickUpper, int24 tickLower) external pure returns (int256 amount1Up, int256 amount0Down) {
+        
+        // go through this again [ask Moody for elaboration]
+        
+        // want this to be negative
+        
+        amount1Up = SqrtPriceMath.getAmount1Delta(
+            TickMath.getSqrtRatioAtTick(currentTick),
+            TickMath.getSqrtRatioAtTick(tickUpper),
+            -int128(liquidity) 
+        );
+
+        // want this to be negative
+
+        amount0Down = SqrtPriceMath.getAmount0Delta(
+            TickMath.getSqrtRatioAtTick(currentTick),
+            TickMath.getSqrtRatioAtTick(tickLower),
+            -int128(liquidity)
+        );
+        
+    }
+    
+    function positionMarginBetweenTicksHelperLMTest(
+        int24 tickLower,
+        int24 tickUpper,
+        // bool isLM,
+        int24 currentTick,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp,
+        uint128 liquidity,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 variableFactor,
+        bytes32 rateOracleId,
+        uint256 twapApy
+    ) external view returns (uint256 margin) {
+
+        return positionMarginBetweenTicksHelper(PositionMarginRequirementParams({
+            owner: address(0), // owner should not matter for the purposes of comouting position's margin
+            tickLower: tickLower,
+            tickUpper: tickUpper,
+            isLM: true,
+            currentTick: currentTick,
+            termStartTimestamp: termStartTimestamp,
+            termEndTimestamp: termEndTimestamp,
+            liquidity: liquidity,
+            fixedTokenBalance: fixedTokenBalance,
+            variableTokenBalance: variableTokenBalance,
+            variableFactor: variableFactor,
+            rateOracleId: rateOracleId,
+            twapApy: twapApy
+        }));
+
+    }
 
     function getTraderMarginRequirementTest(
         int256 fixedTokenBalance,

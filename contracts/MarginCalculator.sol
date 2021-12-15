@@ -82,7 +82,10 @@ contract MarginCalculator is IMarginCalculator{
 
         console.log("Contract: Time in Days Floor", timeInDaysFloor);
 
-        apyBoundVars.timeFactor =  timeFactorTimeInDays[rateOracleId][timeInDaysFloor];
+        // apyBoundVars.timeFactor =  timeFactorTimeInDays[rateOracleId][timeInDaysFloor];
+        // PRBMath.SD59x18({value: timeFactor});
+        apyBoundVars.timeFactor = PRBMath.SD59x18({value: 10**17});
+
         apyBoundVars.oneMinusTimeFactor = PRBMathSD59x18Typed.sub(
             PRBMath.SD59x18({
                 value: 10 ** 18 // convert into a constant called ONE
@@ -98,6 +101,9 @@ contract MarginCalculator is IMarginCalculator{
         );
         
         apyBoundVars.lambdaNum = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
+        // todo: fix, following the conversation with Mudit, decided to not use mapping and instead focus on just doing the exponential maths on-chain
+        // includes the line above that hardcodes the time factor
+        // apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor); // check the t
         apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor); // check the time factor exists, if not have a fallback?
         apyBoundVars.lambda = PRBMathSD59x18Typed.div(apyBoundVars.lambdaNum, apyBoundVars.lambdaDen);
 
@@ -371,22 +377,29 @@ contract MarginCalculator is IMarginCalculator{
 
     /// @notice Calculates the margin requirement for an LP whose position is in a tick range that bounds the current tick in the vAMM
     /// @param params Values necessary for the purposes of the computation of the Position Margin Requirement
-    /// @param vars Intermediate Values necessary for the purposes of the computation of the Position Margin Requirement
+    /// @dev vars Intermediate Values necessary for the purposes of the computation of the Position Margin Requirement
     /// @return margin Either Liquidation or Initial Margin Requirement of a given position in terms of the underlying tokens
-    function positionMarginBetweenTicksHelper(PositionMarginRequirementParams memory params, PositionMarginRequirementsVars memory vars) internal view returns (uint256 margin) {
-
-            // going up balance delta
+    function positionMarginBetweenTicksHelper(PositionMarginRequirementParams memory params) internal view returns (uint256 margin) {
+            PositionMarginRequirementsVars memory vars;
+            
+            // going up balance delta --> the trader is giving up variable and is receiving fixed (the trader is a Fixed Taker)
+            // causes the prices to go up, implied fixed rates to go down 
+            // hence amount0Up should be positive and amount1Up should be negative for the trader
+            // however, we are interested in the LP's who take the opposite side, so for them
+            // amount0Up must be negative and amount1Up should be positive
 
             vars.amount0Up = SqrtPriceMath.getAmount0Delta(
                 TickMath.getSqrtRatioAtTick(params.currentTick),
                 TickMath.getSqrtRatioAtTick(params.tickUpper),
                 int128(params.liquidity)
             );
+
             vars.amount1Up = SqrtPriceMath.getAmount1Delta(
                 TickMath.getSqrtRatioAtTick(params.currentTick),
                 TickMath.getSqrtRatioAtTick(params.tickUpper),
-                int128(params.liquidity)
+                -int128(params.liquidity) 
             );
+
             vars.expectedVariableTokenBalanceAfterUp = PRBMathSD59x18Typed.add(
 
                 PRBMath.SD59x18({
@@ -394,7 +407,7 @@ contract MarginCalculator is IMarginCalculator{
                 }),
 
                 PRBMath.SD59x18({
-                    value: -int256(vars.amount1Up)
+                    value: vars.amount1Up
                 })
 
             ).value;
@@ -425,16 +438,21 @@ contract MarginCalculator is IMarginCalculator{
                     })
                 );
 
-            // going down balance delta
+            // going down balance delta --> the trader is giving up fixed and is receiving variable (the trader is a Variable Taker)
+            // causes the prices to go down, implied fixed rates to go up 
+            // hence amount0Down must be negative and amount1Up should be positve for the trader
+            // however, we are interested in calculating the margin requirement for the LPs who take the opposite side
+            // hence, for LPs the amount0Down must be positive and amount1Down should be negative
+
             vars.amount0Down = SqrtPriceMath.getAmount0Delta(
-                TickMath.getSqrtRatioAtTick(params.tickLower),
                 TickMath.getSqrtRatioAtTick(params.currentTick),
-                int128(params.liquidity)
+                TickMath.getSqrtRatioAtTick(params.tickLower),
+                -int128(params.liquidity)
             );
 
-            vars.amount1Down = SqrtPriceMath.getAmount0Delta(
-                TickMath.getSqrtRatioAtTick(params.tickLower),
+            vars.amount1Down = SqrtPriceMath.getAmount1Delta(
                 TickMath.getSqrtRatioAtTick(params.currentTick),
+                TickMath.getSqrtRatioAtTick(params.tickLower),
                 int128(params.liquidity)
             );
 
@@ -445,7 +463,7 @@ contract MarginCalculator is IMarginCalculator{
                 }),
 
                 PRBMath.SD59x18({
-                    value: -int256(vars.amount1Down)
+                    value: vars.amount1Down
                 })
 
             ).value;
@@ -570,7 +588,8 @@ contract MarginCalculator is IMarginCalculator{
 
         } else if (params.currentTick < params.tickUpper) {
             
-            margin = positionMarginBetweenTicksHelper(params, vars);
+            // margin = positionMarginBetweenTicksHelper(params, vars); got rid of the vars and just initialise that struct directly in positionMarginBetweenTicksHelper 
+            margin = positionMarginBetweenTicksHelper(params);
 
         } else {
 
