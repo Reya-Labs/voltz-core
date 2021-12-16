@@ -32,12 +32,12 @@ contract TickTest {
 
     // be very specific about the path
     function getVariableTokenGrowthInside(int24 tickLower, int24 tickUpper, int24 tickCurrent, int256 variableTokenGrowthGlobal) public view returns (int256 variablTokenGrowthInside) {
-        return ticks.getVariableTokenGrowthInside(Tick.VariableTokenGrowthInsideParams({
-            tickLower:
+        return ticks.getVariableTokenGrowthInside(Tick.VariableTokenGrowthInsideParams(
+            tickLower,
             tickUpper,
-            tickCurrent:
+            tickCurrent,
             variableTokenGrowthGlobal
-        }));
+        ));
     }
     
     // NOT DONE
@@ -47,12 +47,12 @@ contract TickTest {
     mapping(int24 => Tick.FixedTokenGrowthInsideParams) public fixedTokenParams;
 
     function getFixedTokenGrowthInside(int24 tickLower, int24 tickUpper, int24 tickCurrent, int256 fixedTokenGrowthGlobal) public view returns (int256 fixedTokenGrowthInside) {
-        return ticks.getFixedTokenGrowthInside(Tick.FixedTokenGrowthInsideParams({
+        return ticks.getFixedTokenGrowthInside(Tick.FixedTokenGrowthInsideParams(
             tickLower,
             tickUpper,
-            tickCurrent
+            tickCurrent,
             fixedTokenGrowthGlobal
-        }));
+        ));
     }
     
     // DONE
