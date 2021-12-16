@@ -20,8 +20,8 @@ import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IFactory.sol";
 
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
+import "prb-math/contracts/PRBMathSD59x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
 import "./core_libraries/UnwindTraderUnwindPosition.sol";
@@ -85,12 +85,7 @@ contract VAMM is IVAMM {
       protocolFeesCollected <= protocolFees,
       "Can't withdraw more than have"
     );
-    protocolFees = PRBMathUD60x18Typed
-      .sub(
-        PRBMath.UD60x18({ value: protocolFees }),
-        PRBMath.UD60x18({ value: protocolFeesCollected })
-      )
-      .value;
+    protocolFees = protocolFees - protocolFeesCollected;
   }
 
   /// @dev not locked because it initializes unlocked
@@ -276,74 +271,39 @@ contract VAMM is IVAMM {
       int256 stateFixedTokenGrowthGlobal
     )
   {
-    stateFeeGrowthGlobal = PRBMathUD60x18Typed
-      .add(
-        PRBMath.UD60x18({ value: state.feeGrowthGlobal }),
-        PRBMathUD60x18Typed.div(
-          PRBMath.UD60x18({ value: step.feeAmount }),
-          PRBMath.UD60x18({ value: uint256(state.liquidity) })
-        )
-      )
-      .value;
+    stateFeeGrowthGlobal = state.feeGrowthGlobal  + PRBMathUD60x18.div(step.feeAmount, uint256(state.liquidity));
 
     if (params.isFT) {
-      stateVariableTokenGrowthGlobal = PRBMathSD59x18Typed
-        .add(
-          PRBMath.SD59x18({ value: state.variableTokenGrowthGlobal }),
-          PRBMathSD59x18Typed.div(
-            PRBMath.SD59x18({ value: int256(step.amountOut) }),
-            PRBMath.SD59x18({ value: int256(uint256(state.liquidity)) })
-          )
-        )
-        .value;
+      stateVariableTokenGrowthGlobal =  state.variableTokenGrowthGlobal + PRBMathSD59x18.div(int256(step.amountOut), int256(uint256(state.liquidity)));
 
       // check the signs
-      stateFixedTokenGrowthGlobal = PRBMathSD59x18Typed
-        .add(
-          PRBMath.SD59x18({ value: state.fixedTokenGrowthGlobal }),
-          PRBMathSD59x18Typed.div(
-            PRBMath.SD59x18({
-              value: FixedAndVariableMath.getFixedTokenBalance(
+      stateFixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal + 
+          PRBMathSD59x18.div(
+              FixedAndVariableMath.getFixedTokenBalance(
                 -int256(step.amountIn),
                 int256(step.amountOut),
                 variableFactor,
                 amm.termStartTimestamp(),
                 amm.termEndTimestamp()
-              )
-            }),
-            PRBMath.SD59x18({ value: int256(uint256(state.liquidity)) })
-          )
-        )
-        .value;
+              ),
+            int256(uint256(state.liquidity))
+          );
     } else {
       // check the signs are correct
-      stateVariableTokenGrowthGlobal = PRBMathSD59x18Typed
-        .add(
-          PRBMath.SD59x18({ value: state.variableTokenGrowthGlobal }),
-          PRBMathSD59x18Typed.div(
-            PRBMath.SD59x18({ value: -int256(step.amountIn) }),
-            PRBMath.SD59x18({ value: int256(uint256(state.liquidity)) })
-          )
-        )
-        .value;
+      stateVariableTokenGrowthGlobal = state.variableTokenGrowthGlobal + 
+          PRBMathSD59x18.div(-int256(step.amountIn), int256(uint256(state.liquidity)));
 
-      stateFixedTokenGrowthGlobal = PRBMathSD59x18Typed
-        .add(
-          PRBMath.SD59x18({ value: state.fixedTokenGrowthGlobal }),
-          PRBMathSD59x18Typed.div(
-            PRBMath.SD59x18({
-              value: FixedAndVariableMath.getFixedTokenBalance(
+      stateFixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal +
+          PRBMathSD59x18.div(
+            FixedAndVariableMath.getFixedTokenBalance(
                 int256(step.amountOut),
                 -int256(step.amountIn),
                 variableFactor,
                 amm.termStartTimestamp(),
                 amm.termEndTimestamp()
-              ) // variable factor maturity false
-            }),
-            PRBMath.SD59x18({ value: int256(uint256(state.liquidity)) })
-          )
-        )
-        .value;
+              ), // variable factor maturity false
+            int256(uint256(state.liquidity))
+          );
     }
   }
 
@@ -352,20 +312,11 @@ contract VAMM is IVAMM {
     uint256 cacheFeeProtocol,
     uint256 stateProtocolFee
   ) internal pure returns (uint256, uint256) {
-    PRBMath.UD60x18 memory delta = PRBMathUD60x18Typed.mul(
-      PRBMath.UD60x18({ value: stepFeeAmount }),
-      PRBMath.UD60x18({
-        value: cacheFeeProtocol // as a percentage of LP fees
-      })
-    );
+    uint256 delta = PRBMathUD60x18.mul(stepFeeAmount, cacheFeeProtocol); // as a percentage of LP fees
 
-    stepFeeAmount = PRBMathUD60x18Typed
-      .sub(PRBMath.UD60x18({ value: stepFeeAmount }), delta)
-      .value;
+    stepFeeAmount = stepFeeAmount - delta;
 
-    stateProtocolFee = PRBMathUD60x18Typed
-      .add(PRBMath.UD60x18({ value: stateProtocolFee }), delta)
-      .value;
+    stateProtocolFee = stateProtocolFee + delta;
 
     return (stepFeeAmount, stateProtocolFee);
   }
@@ -437,12 +388,7 @@ contract VAMM is IVAMM {
       // get the price for the next tick
       step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
 
-      uint256 timeToMaturityInSeconds = PRBMathUD60x18Typed
-        .sub(
-          PRBMath.UD60x18({ value: amm.termEndTimestamp() }),
-          PRBMath.UD60x18({ value: Time.blockTimestampScaled() })
-        )
-        .value;
+      uint256 timeToMaturityInSeconds = amm.termEndTimestamp() - Time.blockTimestampScaled();
 
       // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
       (
@@ -556,12 +502,7 @@ contract VAMM is IVAMM {
     fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;
 
     if (state.protocolFee > 0) {
-      protocolFees = PRBMathUD60x18Typed
-        .add(
-          PRBMath.UD60x18({ value: protocolFees }),
-          PRBMath.UD60x18({ value: state.protocolFee })
-        )
-        .value;
+      protocolFees = protocolFees + state.protocolFee;
     }
 
     (int256 amount0Int, int256 amount1Int) = params.isFT ==
