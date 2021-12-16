@@ -62,7 +62,8 @@ contract MarginEngine is IMarginEngine {
 
     
     /// @inheritdoc IMarginEngine
-    function setAMM(address _ammAddress) external onlyAMM override {
+    function setAMM(address _ammAddress) public onlyAMM override {
+        // set to external
         amm = IAMM(_ammAddress);
     }
 

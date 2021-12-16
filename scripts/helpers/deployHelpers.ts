@@ -117,7 +117,32 @@ export function getDeployment(filePath: string): Deployment {
   return existingDeploymentJson as Deployment;
 }
 
-// todo: adapt to AMM
+
+export function getCreate2AddressMarginEngine(
+  factoryAddress: string,
+  ammAddress: string,
+  marginEngineBytecode: string
+) {
+
+  const constructorArgumentsEncoded = utils.defaultAbiCoder.encode(
+    ["address"],
+    [ammAddress]
+  );
+
+  const create2Inputs = [
+    "0xff",
+    factoryAddress,
+    // salt
+    utils.keccak256(constructorArgumentsEncoded),
+    // init code. bytecode + constructor arguments
+    utils.keccak256(marginEngineBytecode),
+  ];
+
+  const sanitizedInputs = `0x${create2Inputs.map((i) => i.slice(2)).join("")}`;
+  return utils.getAddress(`0x${utils.keccak256(sanitizedInputs).slice(-40)}`);
+
+}
+
 export function getCreate2Address(
   factoryAddress: string,
   rateOracleId: string,
