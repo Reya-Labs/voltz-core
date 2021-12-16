@@ -14,6 +14,9 @@ interface IMarginEngine is IPositionStructs {
     /// @return Interface of the IRS AMM linked to this Margin Engine
     function amm() external view returns (IAMM);
     
+    
+    function getAMMAddress() external view returns(address);
+    
     /// @notice Returns the information about a position by the position's key
     /// @param key The position's key is a hash of a preimage composed by the owner, tickLower and tickUpper
     /// @return _liquidity The amount of liquidity in the position,

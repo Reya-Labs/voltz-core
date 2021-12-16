@@ -64,15 +64,8 @@ contract AMM is IAMM, Pausable {
       termEndTimestamp
     ) = IDeployer(msg.sender).ammParameters();
 
-    address rateOracleAddress = IFactory(factory).getRateOracleAddress(
-      rateOracleId
-    );
-
-    rateOracle = IRateOracle(rateOracleAddress);
-
-    address calculatorAddress = IFactory(factory).calculator();
-
-    calculator = IMarginCalculator(calculatorAddress);
+    // setting rate oracle separately
+    // set the calculator in the factory since it is persistent
   }
 
   modifier onlyFactoryOwner() {
@@ -107,7 +100,7 @@ contract AMM is IAMM, Pausable {
         feeProtocol: feeProtocol
       });
   }
-
+  
   function getVariableTokenGrowthGlobal()
     external
     view
@@ -120,6 +113,16 @@ contract AMM is IAMM, Pausable {
   function getFixedTokenGrowthGlobal() external view override returns (int256) {
     return vamm.fixedTokenGrowthGlobal();
   }
+
+
+  function setRateOracle(address _rateOracleAddress) external override onlyFactoryOwner {
+    // reference to how you can extract the rateOracleAddress via its rateOracleId key
+    // address rateOracleAddress = IFactory(factory).getRateOracleAddress(
+    //   rateOracleId
+    // );
+    rateOracle = IRateOracle(_rateOracleAddress);
+  }
+
 
   function setVAMM(address _vAMMAddress) external override onlyFactoryOwner {
     vamm = IVAMM(_vAMMAddress);

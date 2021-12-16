@@ -10,15 +10,13 @@ contract MarginEngineCallee {
     // view functions
 
     function getAMMAddressCallee(address marginEngineAddress) external view returns (address){
-        IMarginEngine marginEngine = IMarginEngine(marginEngineAddress);
-        return address(marginEngine.amm());
+        return address(IMarginEngine(marginEngineAddress).amm());
     }
 
     // non-view functions
 
     function setAMMCallee(address marginEngineAddress, address ammAddress) external {
-        IMarginEngine marginEngine = IMarginEngine(marginEngineAddress);
-        marginEngine.setAMM(ammAddress);
+        IMarginEngine(marginEngineAddress).setAMM(ammAddress);
     }
 
 

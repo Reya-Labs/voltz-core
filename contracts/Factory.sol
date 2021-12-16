@@ -87,6 +87,10 @@ contract Factory is IFactory, Deployer {
 
     vamm = deployVAMM(ammAddress);
 
+    emit VAMMCreated(vamm);
+
+    getVAMMMap[ammAddress] = vamm;
+
     return vamm;
   }
 
@@ -101,6 +105,10 @@ contract Factory is IFactory, Deployer {
     require(getMarginEngineMap[ammAddress] == address(0), "EXISTED_MargineEngine");
 
     marginEngine = deployMarginEngine(ammAddress);
+
+    emit MarginEngineCreated(marginEngine);
+
+    getMarginEngineMap[ammAddress] = marginEngine;
 
     return marginEngine;
   }

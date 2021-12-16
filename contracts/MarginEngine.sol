@@ -55,6 +55,12 @@ contract MarginEngine is IMarginEngine {
         amm = IAMM(ammAddress);
     }
 
+    // duplicate of amm()?
+    function getAMMAddress() external view override returns(address) {
+        return address(amm);
+    }
+
+    // remove
     modifier onlyAMM () {
         require(msg.sender == address(amm));
         _;
@@ -62,7 +68,8 @@ contract MarginEngine is IMarginEngine {
 
     
     /// @inheritdoc IMarginEngine
-    function setAMM(address _ammAddress) public onlyAMM override {
+    function setAMM(address _ammAddress) public override {
+        // onlyFactory
         // set to external
         amm = IAMM(_ammAddress);
     }

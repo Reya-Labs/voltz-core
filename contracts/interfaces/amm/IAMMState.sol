@@ -17,21 +17,9 @@ interface IAMMState {
 
   function getFixedTokenGrowthGlobal() external view returns(int256);
 
-  // function getVariableTokenGrowthInside(Tick.VariableTokenGrowthInsideParams memory params) external view returns(int256);
-
-  // function getFixedTokenGrowthInside(Tick.FixedTokenGrowthInsideParams memory params) external view returns(int256);
-
-  // function getFeeGrowthInside(
-  //       int24 tickLower,
-  //       int24 tickUpper,
-  //       int24 tickCurrent,
-  //       uint256 feeGrowthGlobal
-  // ) external view returns(uint256);
-  
-
-    function vamm() external view returns (IVAMM);
-    function marginEngine() external returns (IMarginEngine);
-    function unlocked() external returns (bool);
+  function vamm() external view returns (IVAMM);
+  function marginEngine() external returns (IMarginEngine);
+  function unlocked() external returns (bool);
 
 
 }

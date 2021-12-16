@@ -27,6 +27,10 @@ interface IFactory {
   /// @param newOracleAddress The rate oracle address given its Id 
   event RateOracleAdded(bytes32 indexed rateOracleId, address newOracleAddress);
 
+  event MarginEngineCreated(address marginEngineAddress);
+
+  event VAMMCreated(address vammAddress);
+
   /// @notice Emitted when an AMM is successfully created
   /// @param ammAddress The new AMM's address
   /// @param tokenAddress The new AMM's token

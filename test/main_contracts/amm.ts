@@ -23,6 +23,8 @@ const { provider } = waffle;
 const createFixtureLoader = waffle.createFixtureLoader;
 
 
+// move fixtures to a separate file
+
 export async function factoryFixture() {
 
     const timeFactory = await ethers.getContractFactory("Time");
@@ -91,77 +93,78 @@ export async function ammFixture() {
 
 }
 
-describe("AMM", () => {
 
-    let wallet: Wallet, other: Wallet;
-    let amm: AMM;
+// describe("AMM", () => {
 
-    const fixture = async () => {
+//     let wallet: Wallet, other: Wallet;
+//     let amm: AMM;
 
-        const timeFactory = await ethers.getContractFactory("Time");
+//     const fixture = async () => {
 
-        const timeLibrary = await timeFactory.deploy();
+//         const timeFactory = await ethers.getContractFactory("Time");
 
-        const factoryFactory = await ethers.getContractFactory(
-            "Factory",
-            {
-                libraries: {
-                    Time: timeLibrary.address,
-                },
-            }
-        );
-        const factory = await factoryFactory.deploy();
-        await factory.deployed();
+//         const timeLibrary = await timeFactory.deploy();
+
+//         const factoryFactory = await ethers.getContractFactory(
+//             "Factory",
+//             {
+//                 libraries: {
+//                     Time: timeLibrary.address,
+//                 },
+//             }
+//         );
+//         const factory = await factoryFactory.deploy();
+//         await factory.deployed();
         
-        let termStartTimestamp: number = await getCurrentTimestamp(provider);
-        let termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY.toNumber();
+//         let termStartTimestamp: number = await getCurrentTimestamp(provider);
+//         let termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY.toNumber();
 
-        // let ammBytecode: string;
-        // ammBytecode = (await ethers.getContractFactory("AMM")).bytecode;
-        await factory.createAMM(
-            mainnetConstants.tokens.USDC.address,
-            utils.formatBytes32String("AaveV2"),
-            toBn(termEndTimestamp.toString())
-        );
+//         // let ammBytecode: string;
+//         // ammBytecode = (await ethers.getContractFactory("AMM")).bytecode;
+//         await factory.createAMM(
+//             mainnetConstants.tokens.USDC.address,
+//             utils.formatBytes32String("AaveV2"),
+//             toBn(termEndTimestamp.toString())
+//         );
         
-        let termStartTimestampBN = toBn((termStartTimestamp + 1).toString());
-        let termEndTimestampBN = toBn(termEndTimestamp.toString());
+//         let termStartTimestampBN = toBn((termStartTimestamp + 1).toString());
+//         let termEndTimestampBN = toBn(termEndTimestamp.toString());
 
-        let ammBytecode: string;
-        ammBytecode = (await ethers.getContractFactory("AMM")).bytecode;
+//         let ammBytecode: string;
+//         ammBytecode = (await ethers.getContractFactory("AMM")).bytecode;
 
-        const ammAddress = getCreate2Address(
-            factory.address,
-            utils.formatBytes32String("AaveV2"),
-            mainnetConstants.tokens.USDC.address,
-            termStartTimestampBN,
-            termEndTimestampBN,
-            ammBytecode
-        );
+//         const ammAddress = getCreate2Address(
+//             factory.address,
+//             utils.formatBytes32String("AaveV2"),
+//             mainnetConstants.tokens.USDC.address,
+//             termStartTimestampBN,
+//             termEndTimestampBN,
+//             ammBytecode
+//         );
 
-        const ammFactory = await ethers.getContractFactory("AMM");
+//         const ammFactory = await ethers.getContractFactory("AMM");
 
-        return (await ammFactory.attach(ammAddress)) as AMM;
+//         return (await ammFactory.attach(ammAddress)) as AMM;
 
-    };
+//     };
 
-    let loadFixture: ReturnType<typeof createFixtureLoader>;
+//     let loadFixture: ReturnType<typeof createFixtureLoader>;
 
-    before("create fixture loader", async () => {
-        [wallet, other] = await (ethers as any).getSigners();
+//     before("create fixture loader", async () => {
+//         [wallet, other] = await (ethers as any).getSigners();
   
-        loadFixture = createFixtureLoader([wallet, other]);
-    });
+//         loadFixture = createFixtureLoader([wallet, other]);
+//     });
   
-    beforeEach("deploy calculator", async () => {
-        amm = await loadFixture(fixture);
-    });
+//     beforeEach("deploy calculator", async () => {
+//         amm = await loadFixture(fixture);
+//     });
 
-    describe("Key AMM variables", async () => {
-        it("correctly sets the underlying token", async () => {
-            const realisedUnderlyingToken = await amm.underlyingToken();
-            expect(realisedUnderlyingToken.toLowerCase()).to.eq(mainnetConstants.tokens.USDC.address.toLowerCase());
-        })
-    })
+//     describe("Key AMM variables", async () => {
+//         it("correctly sets the underlying token", async () => {
+//             const realisedUnderlyingToken = await amm.underlyingToken();
+//             expect(realisedUnderlyingToken.toLowerCase()).to.eq(mainnetConstants.tokens.USDC.address.toLowerCase());
+//         })
+//     })
 
-})
+// })

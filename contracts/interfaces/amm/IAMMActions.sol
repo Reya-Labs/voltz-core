@@ -6,6 +6,7 @@ import "../IMarginEngine.sol";
 import "../IVAMM.sol";
 
 interface IAMMActions {
+    function setRateOracle(address _rateOracleAddress) external;
     function setVAMM(address _vAMMAddress) external;
     function setMarginEngine(address _marginEngine) external;
     function setUnlocked(bool _unlocked) external;
