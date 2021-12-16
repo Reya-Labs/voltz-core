@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
 
 library Oracle {
@@ -107,30 +107,9 @@ library Oracle {
         uint256 logApy
     ) private pure returns (Observation memory) {
         
-        PRBMath.UD60x18 memory delta = PRBMathUD60x18Typed.sub(
-            PRBMath.UD60x18({
-                value: uint256(blockTimestamp)
-            }),
+        uint256 delta = uint256(blockTimestamp) - uint256(last.blockTimestamp);
 
-            PRBMath.UD60x18({
-                value: uint256(last.blockTimestamp)
-            }) 
-        );
-
-        uint256 logApyCumulativeNew = PRBMathUD60x18Typed.add(
-            
-            PRBMathUD60x18Typed.mul(
-                PRBMath.UD60x18({
-                    value:  uint256(logApy)
-                }),
-
-                delta
-            ),
-
-            PRBMath.UD60x18({
-                value: last.logApyCumulative
-            }) 
-        ).value;
+        uint256 logApyCumulativeNew = PRBMathUD60x18.mul(uint256(logApy), delta) + last.logApyCumulative;
 
 
         return
@@ -242,16 +221,7 @@ library Oracle {
             if (last.blockTimestamp != time) last = transform(last, time, logApy);
         }
 
-        uint256 target = PRBMathUD60x18Typed.sub(
-
-            PRBMath.UD60x18({
-                value: time
-            }),
-
-            PRBMath.UD60x18({
-                value: secondsAgo
-            })
-        ).value;
+        uint256 target = time - secondsAgo;
 
         (Observation memory beforeOrAt, Observation memory atOrAfter) = getSurroundingObservarions(self, target, logApy, index, cardinality);
 
@@ -263,66 +233,17 @@ library Oracle {
             return (atOrAfter.logApyCumulative);
         } else {
             // we are in the middle
-            uint256 observationTimeDelta = PRBMathUD60x18Typed.sub(
-
-                PRBMath.UD60x18({
-                    value: atOrAfter.blockTimestamp
-                }),
-
-                PRBMath.UD60x18({
-                    value: beforeOrAt.blockTimestamp
-                })
-            ).value;
-
-            uint256 targetDelta = PRBMathUD60x18Typed.sub(
-
-                PRBMath.UD60x18({
-                    value: target
-                }),
-
-                PRBMath.UD60x18({
-                    value: beforeOrAt.blockTimestamp
-                })
-            ).value;
-
-            PRBMath.UD60x18 memory cumulativeLogApyDifferenceScaled = PRBMathUD60x18Typed.div(
-
-                PRBMathUD60x18Typed.sub(
-
-                    PRBMath.UD60x18({
-                        value: atOrAfter.logApyCumulative
-                    }),
-
-                    PRBMath.UD60x18({
-                        value: beforeOrAt.logApyCumulative
-                    })
-
-                ),
-
-                PRBMath.UD60x18({
-                    value: uint256(observationTimeDelta)
-                })
-
+            uint256 observationTimeDelta = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
+            uint256 targetDelta = target - beforeOrAt.blockTimestamp;
+            uint256 cumulativeLogApyDifferenceScaled = PRBMathUD60x18.div(
+                atOrAfter.logApyCumulative - beforeOrAt.logApyCumulative,
+                uint256(observationTimeDelta)
             );
 
-            logApyCumulative = PRBMathUD60x18Typed.add(
-
-                PRBMathUD60x18Typed.mul(
-
+            logApyCumulative = PRBMathUD60x18.mul(
                     cumulativeLogApyDifferenceScaled,
-
-                    PRBMath.UD60x18({
-                        value: uint256(targetDelta)
-                    })
-
-                ),
-
-                PRBMath.UD60x18({
-                    value: beforeOrAt.logApyCumulative
-                })
-
-            ).value;
-
+                    uint256(targetDelta)
+                ) + beforeOrAt.logApyCumulative;
         }
 
     }
