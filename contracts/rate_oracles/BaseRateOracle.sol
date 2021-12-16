@@ -73,7 +73,14 @@ abstract contract BaseRateOracle is IRateOracle {
     ) internal view virtual returns (uint256 apyFromTo);
     
 
-    
+    // todo: can we use this TWAP approach for all oracle results, instead of the results array?
+    // Advantage of the TWAP approach is that it can calc rates for timestamps at which we do not have data
+    // about the exact APY. This would allow settlement at maturity time, even after the fact. Disadvantage may be
+    // extra complexity and gas cost. If we do go the TWAP route, we should:
+    //  - Rename it TWAAPY
+    //  - ensure that the buffer of observations is large enough to span any active IRS.
+    //
+    // But there's still a question here about the buffer size, if we want to allow settlement of an IRS months or years after its expiry!
     function getTwapApy(address underlying) external view override returns (uint256 twapApy) {
 
         // https://uniswap.org/whitepaper-v3.pdf

@@ -90,20 +90,20 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             );
     }
 
-    /// @inheritdoc BaseRateOracle
+    /// @inheritdoc IRateOracle
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public override(BaseRateOracle, IRateOracle) returns(uint256 result) {
 
         IRateOracle.Rate memory rate;
         
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
-            // atMaturity is true
+            // atMaturity is true. todo: assert this?
             rate = rates[underlyingToken][termEndTimestamp];
 
             if(!rate.isSet) {
                 if (termEndTimestamp == Time.blockTimestampScaled()) {
                     updateRate(underlyingToken);
                 } else {
-                    // @audit We are asking for rates up until an end timestamp for which we already know we have no date. We are going to revert What to do? Revert, or extrapolate? 
+                    // @audit We are asking for rates up until an end timestamp for which we already know we have no data. We are going to revert What to do? Better to revert here explicity, or extrapolate? 
                 }    
             }
 
