@@ -28,41 +28,36 @@ contract TickTest {
         return Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing);
     }
     
-    // NOT-DONE
-    // Variable Token stuff
-    // intiate struct
-    // using Tick for mapping(int24 => Tick.VariableTokenGrowthInsideParams);
-    // mapping(int24 => Tick.VariableTokenGrowthInsideParams) public variableTokenParams; 
-
-    // // be very specific about the path
-    // function getVariableTokenGrowthInside(int24 tickLower, int24 tickUpper, int24 tickCurrent, int256 variableTokenGrowthGlobal) public view returns (int256 variablTokenGrowthInside) {
-    //     return ticks.getVariableTokenGrowthInside(Tick.VariableTokenGrowthInsideParams({
-    //         tickLower:
-    //         tickUpper,
-    //         tickCurrent:
-    //         variableTokenGrowthGlobal
-    //     }));
-    // }
+    // DONE
+    function getVariableTokenGrowthInside(
+     int24 tickLower, 
+     int24 tickUpper, 
+     int24 tickCurrent, 
+     int256 variableTokenGrowthGlobal
+      
+     ) public view returns (int256 variableTokenGrowthInside) {
+        return ticks.getVariableTokenGrowthInside(Tick.VariableTokenGrowthInsideParams({
+            tickLower: tickLower,
+            tickUpper: tickUpper, 
+            tickCurrent: tickCurrent,
+            variableTokenGrowthGlobal: variableTokenGrowthGlobal
+        }));
+    }
     
-    // NOT DONE
-    // Fixed Token stuff
-
-    // using Tick for mapping(int24 => Tick.FixedTokenGrowthInsideParams);
-    // mapping(int24 => Tick.FixedTokenGrowthInsideParams) public fixedTokenParams;
-
-    // function getFixedTokenGrowthInside(int24 tickLower, int24 tickUpper, int24 tickCurrent, int256 fixedTokenGrowthGlobal) public view returns (int256 fixedTokenGrowthInside) {
-    //     return ticks.getFixedTokenGrowthInside(Tick.FixedTokenGrowthInsideParams({
-    //         tickLower,
-    //         tickUpper,
-    //         tickCurrent
-    //         fixedTokenGrowthGlobal
-    //     }));
-    // }
+    // DONE
+    function getFixedTokenGrowthInside(int24 tickLower, int24 tickUpper, int24 tickCurrent, int256 fixedTokenGrowthGlobal) public view returns (int256 fixedTokenGrowthInside) {
+        return ticks.getFixedTokenGrowthInside(Tick.FixedTokenGrowthInsideParams({
+            tickLower : tickLower,
+            tickUpper : tickUpper,
+            tickCurrent : tickCurrent,
+            fixedTokenGrowthGlobal : fixedTokenGrowthGlobal
+        }));
+    }
     
     // DONE
     function update(int24 tick, int24 tickCurrent, int128 liquidityDelta, int256 fixedTokenGrowthGlobal, int256 variableTokenGrowthGlobal, uint256 feeGrowthGlobal, bool upper, uint128 maxLiquidity)
     external returns (bool flipped) {
-        ticks.update(tick, tickCurrent, liquidityDelta, fixedTokenGrowthGlobal, variableTokenGrowthGlobal, feeGrowthGlobal, upper, maxLiquidity);
+        return ticks.update(tick, tickCurrent, liquidityDelta, fixedTokenGrowthGlobal, variableTokenGrowthGlobal, feeGrowthGlobal, upper, maxLiquidity);
     }
 
     // DONE
