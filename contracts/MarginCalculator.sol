@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
+import "prb-math/contracts/PRBMathSD59x18.sol";
 import "./utils/TickMath.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./interfaces/IMarginCalculator.sol";
@@ -43,7 +43,7 @@ contract MarginCalculator is IMarginCalculator{
     mapping(bytes32 => MarginCalculatorParameters) internal getMarginCalculatorParameters;
 
     /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
-    mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInDays; // rateOralceId --> timeInSeconds --> timeFactor
+    mapping(bytes32 => mapping(uint256 => int256)) internal timeFactorTimeInDays; // rateOralceId --> timeInSeconds --> timeFactor
     /// @dev Seconds in a year
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
@@ -54,7 +54,7 @@ contract MarginCalculator is IMarginCalculator{
     }
 
     function setTimeFactor(bytes32 rateOracleId, uint256 timeInDays, int256 timeFactor) override public {
-        timeFactorTimeInDays[rateOracleId][timeInDays] = PRBMath.SD59x18({value: timeFactor});
+        timeFactorTimeInDays[rateOracleId][timeInDays] = timeFactor;
     }
     
     /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
@@ -68,62 +68,53 @@ contract MarginCalculator is IMarginCalculator{
         ApyBoundVars memory apyBoundVars;
 
         // daily for now (check works correctly)
-        PRBMath.UD60x18 memory timeInDays = PRBMathUD60x18Typed.div(
-            PRBMath.UD60x18({
-                value: timeInSeconds
-            }),
+        uint256 timeInDays = PRBMathUD60x18.div(timeInSeconds, 86400 * 10**18); // create a constant called ONE_DAY
 
-            PRBMath.UD60x18({
-                value: 86400 * 10**18 // create a constant called ONE_DAY
-            })
-        );
-
-        uint256 timeInDaysFloor = PRBMathUD60x18Typed.floor(timeInDays).value;
+        uint256 timeInDaysFloor = PRBMathUD60x18.floor(timeInDays);
 
         console.log("Contract: Time in Days Floor", timeInDaysFloor);
 
         // apyBoundVars.timeFactor =  timeFactorTimeInDays[rateOracleId][timeInDaysFloor];
         // PRBMath.SD59x18({value: timeFactor});
-        apyBoundVars.timeFactor = PRBMath.SD59x18({value: 10**17});
+        apyBoundVars.timeFactor = 10**17;
 
-        apyBoundVars.oneMinusTimeFactor = PRBMathSD59x18Typed.sub(
-            PRBMath.SD59x18({
-                value: 10 ** 18 // convert into a constant called ONE
-            }),
-            apyBoundVars.timeFactor
-        );
+        apyBoundVars.oneMinusTimeFactor = 10 ** 18 - apyBoundVars.timeFactor; // convert into a constant called ONE
 
-        apyBoundVars.k = PRBMathSD59x18Typed.div(getMarginCalculatorParameters[rateOracleId].alpha, getMarginCalculatorParameters[rateOracleId].sigmaSquared);
+        apyBoundVars.k = PRBMathSD59x18.div(getMarginCalculatorParameters[rateOracleId].alpha, getMarginCalculatorParameters[rateOracleId].sigmaSquared);
 
-        apyBoundVars.zeta = PRBMathSD59x18Typed.div(
-            PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].sigmaSquared, apyBoundVars.oneMinusTimeFactor),
+        apyBoundVars.zeta = PRBMathSD59x18.div(
+            PRBMathSD59x18.mul(getMarginCalculatorParameters[rateOracleId].sigmaSquared, apyBoundVars.oneMinusTimeFactor),
             getMarginCalculatorParameters[rateOracleId].beta
         );
         
-        apyBoundVars.lambdaNum = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
+        apyBoundVars.lambdaNum = PRBMathSD59x18.mul(
+            PRBMathSD59x18.mul(getMarginCalculatorParameters[rateOracleId].beta,
+                                    apyBoundVars.timeFactor),
+            int256(twapApy));
         // todo: fix, following the conversation with Mudit, decided to not use mapping and instead focus on just doing the exponential maths on-chain
         // includes the line above that hardcodes the time factor
-        // apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor); // check the t
-        apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor); // check the time factor exists, if not have a fallback?
-        apyBoundVars.lambda = PRBMathSD59x18Typed.div(apyBoundVars.lambdaNum, apyBoundVars.lambdaDen);
+        apyBoundVars.lambdaDen = PRBMathSD59x18.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor); // check the time factor exists, if not have a fallback?
+        apyBoundVars.lambda = PRBMathSD59x18.div(apyBoundVars.lambdaNum, apyBoundVars.lambdaDen);
 
-        apyBoundVars.criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2 * (10 ** 18) }), apyBoundVars.lambda), apyBoundVars.k), PRBMath.SD59x18({value: 2 * (10 ** 18)}));
+        apyBoundVars.criticalValueMultiplier = PRBMathSD59x18.mul(
+            PRBMathSD59x18.mul(2 * (10 ** 18), apyBoundVars.lambda) + apyBoundVars.k,
+            (2 * (10 ** 18)));
 
         apyBoundVars.criticalValue;
 
         if (isUpper) {
-            apyBoundVars.criticalValue = PRBMathSD59x18Typed.mul(
+            apyBoundVars.criticalValue = PRBMathSD59x18.mul(
                 getMarginCalculatorParameters[rateOracleId].xiUpper,
-                PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
+                PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
         } else {
-            apyBoundVars.criticalValue = PRBMathSD59x18Typed.mul(
+            apyBoundVars.criticalValue = PRBMathSD59x18.mul(
                 getMarginCalculatorParameters[rateOracleId].xiLower,
-                PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
+                PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
         }
 
-        int256 apyBoundInt = PRBMathSD59x18Typed.mul(apyBoundVars.zeta, PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.add(apyBoundVars.k, apyBoundVars.lambda), apyBoundVars.criticalValue)).value;
+        int256 apyBoundInt = PRBMathSD59x18.mul(apyBoundVars.zeta, apyBoundVars.k + apyBoundVars.lambda + apyBoundVars.criticalValue);
 
         if (apyBoundInt < 0) {
             apyBound = 0;
@@ -148,67 +139,24 @@ contract MarginCalculator is IMarginCalculator{
         if (isFT) {
 
             if (isLM) {
-                variableFactor = PRBMathUD60x18Typed.mul(
-
-                    PRBMath.UD60x18({
-                        value: computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, true)
-                    }),
-
-                    PRBMath.UD60x18({
-                        value: timeInYearsFromStartUntilMaturity
-                    })
-                ).value;
+                variableFactor = PRBMathUD60x18.mul(computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, true),
+                timeInYearsFromStartUntilMaturity);
             } else {
-                variableFactor = PRBMathUD60x18Typed.mul(
-
-                    PRBMathUD60x18Typed.mul(
-
-                        PRBMath.UD60x18({
-                            value: computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, true)
-                        }),
-
-                        PRBMath.UD60x18({
-                            value: getMarginCalculatorParameters[rateOracleId].apyUpperMultiplier.value
-                        })
-                    ),
-
-                    PRBMath.UD60x18({
-                        value: timeInYearsFromStartUntilMaturity
-                    })
-                ).value;
+                variableFactor = PRBMathUD60x18.mul(
+                    PRBMathUD60x18.mul(computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, true), getMarginCalculatorParameters[rateOracleId].apyUpperMultiplier),
+                    timeInYearsFromStartUntilMaturity
+                );
             }
 
 
         } else {
             if (isLM) {
-                variableFactor = PRBMathUD60x18Typed.mul(
-
-                    PRBMath.UD60x18({
-                        value: computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, false)
-                    }),
-
-                    PRBMath.UD60x18({
-                        value: timeInYearsFromStartUntilMaturity
-                    })
-                ).value;
+                variableFactor = PRBMathUD60x18.mul(computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, false),
+                timeInYearsFromStartUntilMaturity);
             } else {
-                variableFactor = PRBMathUD60x18Typed.mul(
-
-                    PRBMathUD60x18Typed.mul(
-
-                        PRBMath.UD60x18({
-                            value: computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, false)
-                        }),
-
-                        PRBMath.UD60x18({
-                            value: getMarginCalculatorParameters[rateOracleId].apyLowerMultiplier.value
-                        })
-                    ),
-
-                    PRBMath.UD60x18({
-                        value: timeInYearsFromStartUntilMaturity
-                    })
-                ).value;
+                variableFactor = PRBMathUD60x18.mul(
+                    PRBMathUD60x18.mul(computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, false),                  getMarginCalculatorParameters[rateOracleId].apyLowerMultiplier),
+                    timeInYearsFromStartUntilMaturity);
             }
         }
     }
@@ -220,46 +168,21 @@ contract MarginCalculator is IMarginCalculator{
     
         MinimumMarginRequirementLocalVars memory vars;
         
-        vars.timeInSeconds = PRBMathUD60x18Typed.sub(
-
-            PRBMath.UD60x18({
-                value: params.termEndTimestamp
-            }),
-
-            PRBMath.UD60x18({
-                value: params.termStartTimestamp
-            })
-        ).value;
+        vars.timeInSeconds = params.termEndTimestamp - params.termStartTimestamp;
 
         vars.timeInYears = FixedAndVariableMath.accrualFact(vars.timeInSeconds);
         
         if (params.isLM) {
-            vars.minDelta = uint256(getMarginCalculatorParameters[params.rateOracleId].minDeltaLM.value);
+            vars.minDelta = uint256(getMarginCalculatorParameters[params.rateOracleId].minDeltaLM);
         } else {
-            vars.minDelta = uint256(getMarginCalculatorParameters[params.rateOracleId].minDeltaIM.value);
+            vars.minDelta = uint256(getMarginCalculatorParameters[params.rateOracleId].minDeltaIM);
         }
 
         if (params.variableTokenBalance < 0) {
             // variable token balance must be negative
             vars.notional = uint256(-params.variableTokenBalance);
             
-            margin = PRBMathUD60x18Typed.mul(
-
-                PRBMath.UD60x18({
-                    value: vars.notional
-                }),
-
-                PRBMathUD60x18Typed.mul(
-
-                    PRBMath.UD60x18({
-                        value: vars.minDelta
-                    }),
-
-                    PRBMath.UD60x18({
-                        value: vars.timeInYears
-                    })
-                )
-            ).value;
+            margin = PRBMathUD60x18.mul(vars.notional, PRBMathUD60x18.mul(vars.minDelta, vars.timeInYears));
 
         } else {
             // variable token balance must be non-negative
@@ -268,33 +191,9 @@ contract MarginCalculator is IMarginCalculator{
 
             vars.notional = uint256(params.variableTokenBalance);
             
-            vars.zeroLowerBoundMargin = PRBMathUD60x18Typed.mul(
-                PRBMath.UD60x18({
-                    value: uint256(-params.fixedTokenBalance)
-                }),
+            vars.zeroLowerBoundMargin = PRBMathUD60x18.mul(uint256(-params.fixedTokenBalance), FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
 
-                PRBMath.UD60x18({
-                        value: FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp)
-                })
-            ).value;
-
-            margin = PRBMathUD60x18Typed.mul(
-
-                PRBMath.UD60x18({
-                    value: vars.notional
-                }),
-
-                PRBMathUD60x18Typed.mul(
-
-                    PRBMath.UD60x18({
-                        value: vars.minDelta
-                    }),
-
-                    PRBMath.UD60x18({
-                        value: vars.timeInYears
-                    })
-                )
-            ).value;
+            margin = PRBMathUD60x18.mul(vars.notional, PRBMathUD60x18.mul(vars.minDelta, vars.timeInYears));
 
             console.log("Zero Lower Bound Margin: ", vars.zeroLowerBoundMargin);
             console.log("Margin before ZLB correction: ", margin);
@@ -318,51 +217,15 @@ contract MarginCalculator is IMarginCalculator{
     
         // bool isFT = params.variableTokenBalance < 0;
 
-        uint256 timeInSecondsFromStartToMaturity = PRBMathUD60x18Typed.sub(
+        uint256 timeInSecondsFromStartToMaturity = params.termEndTimestamp - params.termStartTimestamp;
 
-                    PRBMath.UD60x18({
-                        value: params.termEndTimestamp
-                    }),
+        uint256 timeInSecondsFromNowToMaturity = params.termEndTimestamp - Time.blockTimestampScaled();
 
-                    PRBMath.UD60x18({
-                        value: params.termStartTimestamp
-                    })
-        ).value;
+        int256 exp1 = PRBMathSD59x18.mul(params.fixedTokenBalance, int256(FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp)));
 
-        uint256 timeInSecondsFromNowToMaturity = PRBMathUD60x18Typed.sub(
+        int256 exp2 = PRBMathSD59x18.mul(params.variableTokenBalance, int256(worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, params.variableTokenBalance < 0, params.isLM, params.rateOracleId, params.twapApy)));
 
-                    PRBMath.UD60x18({
-                        value: params.termEndTimestamp
-                    }),
-
-                    PRBMath.UD60x18({
-                        value: Time.blockTimestampScaled()
-                    })
-        ).value;
-
-        PRBMath.SD59x18 memory exp1 = PRBMathSD59x18Typed.mul(
-
-            PRBMath.SD59x18({
-                value: params.fixedTokenBalance
-            }),
-
-            PRBMath.SD59x18({
-                value: int256(FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp))
-            })
-        );
-
-        PRBMath.SD59x18 memory exp2 = PRBMathSD59x18Typed.mul(
-
-            PRBMath.SD59x18({
-                value: params.variableTokenBalance
-            }),
-
-            PRBMath.SD59x18({
-                value: int256(worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, params.variableTokenBalance < 0, params.isLM, params.rateOracleId, params.twapApy))
-            })
-        );
-
-        int256 modelMargin = PRBMathSD59x18Typed.add(exp1, exp2).value;
+        int256 modelMargin = exp1 + exp2;
 
         int256 minimumMargin = int256(getMinimumMarginRequirement(
                                     params
@@ -400,30 +263,9 @@ contract MarginCalculator is IMarginCalculator{
                 -int128(params.liquidity) 
             );
 
-            vars.expectedVariableTokenBalanceAfterUp = PRBMathSD59x18Typed.add(
+            vars.expectedVariableTokenBalanceAfterUp = params.variableTokenBalance + vars.amount1Up;
 
-                PRBMath.SD59x18({
-                    value: params.variableTokenBalance
-                }),
-
-                PRBMath.SD59x18({
-                    value: vars.amount1Up
-                })
-
-            ).value;
-
-            vars.expectedFixedTokenBalanceAfterUp = PRBMathSD59x18Typed.add(
-
-                PRBMath.SD59x18({
-                    value: params.fixedTokenBalance
-                }),
-
-                PRBMath.SD59x18({
-                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Up, vars.amount1Up, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp)
-
-                })
-
-            ).value;
+            vars.expectedFixedTokenBalanceAfterUp = params.fixedTokenBalance + FixedAndVariableMath.getFixedTokenBalance(vars.amount0Up, vars.amount1Up, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp);
 
             uint256 marginReqAfterUp = getTraderMarginRequirement(
                     TraderMarginRequirementParams({
@@ -455,29 +297,9 @@ contract MarginCalculator is IMarginCalculator{
                 int128(params.liquidity)
             );
 
-            vars.expectedVariableTokenBalanceAfterDown = PRBMathSD59x18Typed.add(
+            vars.expectedVariableTokenBalanceAfterDown = params.variableTokenBalance + vars.amount1Down;
 
-                PRBMath.SD59x18({
-                    value: params.variableTokenBalance
-                }),
-
-                PRBMath.SD59x18({
-                    value: vars.amount1Down
-                })
-
-            ).value;
-
-            vars.expectedFixedTokenBalanceAfterDown = PRBMathSD59x18Typed.add(
-
-                PRBMath.SD59x18({
-                    value: params.fixedTokenBalance
-                }),
-
-                PRBMath.SD59x18({
-                    value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Down, vars.amount1Down, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp)
-                })
-
-            ).value;
+            vars.expectedFixedTokenBalanceAfterDown = params.fixedTokenBalance + FixedAndVariableMath.getFixedTokenBalance(vars.amount0Down, vars.amount1Down, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp);
 
             vars.marginReqAfterDown = getTraderMarginRequirement(
                     TraderMarginRequirementParams({
