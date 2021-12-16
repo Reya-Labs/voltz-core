@@ -4,10 +4,11 @@ pragma solidity ^0.8.0;
 
 interface IRateOracle {
     
+    // @audit May make sense to move this to IAaveRateOracle so we can document it using Aave terminology? Other oracle types may use the same or different ways of tracking values - e.g. not in unity of Ray.
     struct Rate {
-        bool isSet;
-        uint256 timestamp;
-        uint256 rateValue;
+        bool isSet; // @audit - don't think we need this? Non-zero timestamp sufficient check for existence?
+        uint256 timestamp; /// In wei-seconds
+        uint256 rateValue; /// in Ray. A return value of 1e27 (1 Ray) indicates no income since pool creation. A value of 2e27 indicates a 100% yield since pool creation. Etc.
     }
 
      /**
