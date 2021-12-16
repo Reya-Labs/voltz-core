@@ -45,6 +45,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
     
     /// @inheritdoc BaseRateOracle
+    /// @dev Reverts if we have no data point for either timestamp
     function getApyFromTo(
         address underlying,
         uint256 from,
@@ -66,6 +67,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
     
     /// @notice Calculates the observed interest returned by the underlying in a given period
+    /// @dev Reverts if we have no data point for either timestamp
     /// @param underlying The address of an underlying ERC20 token known to this Oracle (e.g. USDC not aaveUSDC)
     /// @param from The timestamp of the start of the period, in wei-seconds
     /// @param to The timestamp of the end of the period, in wei-seconds
@@ -100,6 +102,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             if(!rate.isSet) {
                 if (termEndTimestamp == Time.blockTimestampScaled()) {
                     updateRate(underlyingToken);
+                } else {
+                    // @audit We are asking for rates up until an end timestamp for which we already know we have no date. We are going to revert What to do? Revert, or extrapolate? 
                 }    
             }
 
