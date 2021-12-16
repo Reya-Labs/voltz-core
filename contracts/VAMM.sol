@@ -297,12 +297,12 @@ contract VAMM is IVAMM {
         )
         .value;
 
+      // check the signs
       stateFixedTokenGrowthGlobal = PRBMathSD59x18Typed
         .add(
           PRBMath.SD59x18({ value: state.fixedTokenGrowthGlobal }),
           PRBMathSD59x18Typed.div(
             PRBMath.SD59x18({
-              // check the signs
               value: FixedAndVariableMath.getFixedTokenBalance(
                 -int256(step.amountIn),
                 int256(step.amountOut),
@@ -316,10 +316,10 @@ contract VAMM is IVAMM {
         )
         .value;
     } else {
+      // check the signs are correct
       stateVariableTokenGrowthGlobal = PRBMathSD59x18Typed
         .add(
           PRBMath.SD59x18({ value: state.variableTokenGrowthGlobal }),
-          // check the signs are correct
           PRBMathSD59x18Typed.div(
             PRBMath.SD59x18({ value: -int256(step.amountIn) }),
             PRBMath.SD59x18({ value: int256(uint256(state.liquidity)) })
@@ -332,13 +332,6 @@ contract VAMM is IVAMM {
           PRBMath.SD59x18({ value: state.fixedTokenGrowthGlobal }),
           PRBMathSD59x18Typed.div(
             PRBMath.SD59x18({
-              // check the signs are correct
-              // int256 amount0,
-              // int256 amount1,
-              // uint256 accruedVariableFactor,
-              // uint256 termStartTimestamp,
-              // uint256 termEndTimestamp
-              // (stopped here)
               value: FixedAndVariableMath.getFixedTokenBalance(
                 int256(step.amountOut),
                 -int256(step.amountIn),
