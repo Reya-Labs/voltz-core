@@ -9,11 +9,11 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-prettier";
 import "hardhat-gas-reporter";
-import "@tenderly/hardhat-tenderly";
+// import "@tenderly/hardhat-tenderly";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
-import "@primitivefi/hardhat-dodoc";
+// import "@primitivefi/hardhat-dodoc"; bring back on demand
 
 dotenv.config();
 
@@ -49,7 +49,11 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
-
+  gasReporter: {
+    outputFile: process.env.REPORT_GAS_TO_FILE,
+    noColors: !!process.env.REPORT_GAS_TO_FILE,
+    enabled: !!(process.env.REPORT_GAS && process.env.REPORT_GAS != "false"),
+  },
   mocha: {
     timeout: 20000,
   },

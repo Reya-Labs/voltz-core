@@ -17,30 +17,45 @@ import "./core_libraries/Tick.sol";
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
 contract MarginCalculator is IMarginCalculator{
 
-    /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
-    mapping(bytes32 => PRBMath.UD60x18) internal getApyUpperMultiplier;
-    /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
-    mapping(bytes32 => PRBMath.UD60x18) internal getApyLowerMultiplier;
-    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Liquidation Margin Computation
-    mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaLM;
-    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Initial Margin Computation
-    mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaIM;
-    /// @dev Maximum allowed leverage on Voltz Protocol where leverage = (notional traded in an IRS contract) / (margin in the account of an LP/FT/VT)
-    mapping(bytes32 => PRBMath.UD60x18) internal getMaxLeverage;
-    /// @dev The standard deviation that determines the volatility of the underlying pool APY
-    mapping(bytes32 => PRBMath.SD59x18) internal getSigmaSquared;
-    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing alpha (from the litepaper), the contract stores 4*alpha
-    mapping(bytes32 => PRBMath.SD59x18) internal getAlpha;
-    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing beta (from the litepaper), the contract stores 4*beta
-    mapping(bytes32 => PRBMath.SD59x18) internal getBeta; // insted of storing beta, store 4*beta
-    /// @dev Standard normal critical value used in the computation of the Upper APY Bound of the underlying pool
-    mapping(bytes32 => PRBMath.SD59x18) internal getXiUpper;
-    /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
-    mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
+    // /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
+    // mapping(bytes32 => PRBMath.UD60x18) internal getApyUpperMultiplier;
+    // /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
+    // mapping(bytes32 => PRBMath.UD60x18) internal getApyLowerMultiplier;
+    // /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Liquidation Margin Computation
+    // mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaLM;
+    // /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Initial Margin Computation
+    // mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaIM;
+    // /// @dev Maximum allowed leverage on Voltz Protocol where leverage = (notional traded in an IRS contract) / (margin in the account of an LP/FT/VT)
+    // mapping(bytes32 => PRBMath.UD60x18) internal getMaxLeverage;
+    // /// @dev The standard deviation that determines the volatility of the underlying pool APY
+    // mapping(bytes32 => PRBMath.SD59x18) internal getSigmaSquared;
+    // /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing alpha (from the litepaper), the contract stores 4*alpha
+    // mapping(bytes32 => PRBMath.SD59x18) internal getAlpha;
+    // /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing beta (from the litepaper), the contract stores 4*beta
+    // mapping(bytes32 => PRBMath.SD59x18) internal getBeta; // instead of storing beta, store 4*beta
+    // /// @dev Standard normal critical value used in the computation of the Upper APY Bound of the underlying pool
+    // mapping(bytes32 => PRBMath.SD59x18) internal getXiUpper;
+    // /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
+    // mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
+
+
+    // docs missing
+    mapping(bytes32 => MarginCalculatorParameters) internal getMarginCalculatorParameters;
+
     /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
-    mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInSeconds; // rateOralceId --> timeInSeconds --> timeFactor
+    mapping(bytes32 => mapping(uint256 => PRBMath.SD59x18)) internal timeFactorTimeInDays; // rateOralceId --> timeInSeconds --> timeFactor
     /// @dev Seconds in a year
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
+
+    // docs missing, only Factory, make this function external? 
+    function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) override public {
+        // require statements to check the parameters and the rateOracleId passed into this function
+        getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
+    }
+
+    function setTimeFactor(bytes32 rateOracleId, uint256 timeInDays, int256 timeFactor) override public {
+        timeFactorTimeInDays[rateOracleId][timeInDays] = PRBMath.SD59x18({value: timeFactor});
+    }
     
     /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
@@ -52,37 +67,58 @@ contract MarginCalculator is IMarginCalculator{
         
         ApyBoundVars memory apyBoundVars;
 
-        apyBoundVars.timeFactor =  timeFactorTimeInSeconds[rateOracleId][timeInSeconds];
+        // daily for now (check works correctly)
+        PRBMath.UD60x18 memory timeInDays = PRBMathUD60x18Typed.div(
+            PRBMath.UD60x18({
+                value: timeInSeconds
+            }),
+
+            PRBMath.UD60x18({
+                value: 86400 * 10**18 // create a constant called ONE_DAY
+            })
+        );
+
+        uint256 timeInDaysFloor = PRBMathUD60x18Typed.floor(timeInDays).value;
+
+        console.log("Contract: Time in Days Floor", timeInDaysFloor);
+
+        // apyBoundVars.timeFactor =  timeFactorTimeInDays[rateOracleId][timeInDaysFloor];
+        // PRBMath.SD59x18({value: timeFactor});
+        apyBoundVars.timeFactor = PRBMath.SD59x18({value: 10**17});
+
         apyBoundVars.oneMinusTimeFactor = PRBMathSD59x18Typed.sub(
             PRBMath.SD59x18({
-                value: 1
+                value: 10 ** 18 // convert into a constant called ONE
             }),
             apyBoundVars.timeFactor
         );
 
-        apyBoundVars.k = PRBMathSD59x18Typed.div(getAlpha[rateOracleId], getSigmaSquared[rateOracleId]);
+        apyBoundVars.k = PRBMathSD59x18Typed.div(getMarginCalculatorParameters[rateOracleId].alpha, getMarginCalculatorParameters[rateOracleId].sigmaSquared);
 
         apyBoundVars.zeta = PRBMathSD59x18Typed.div(
-            PRBMathSD59x18Typed.mul(getSigmaSquared[rateOracleId],apyBoundVars.oneMinusTimeFactor),
-            getBeta[rateOracleId]
+            PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].sigmaSquared, apyBoundVars.oneMinusTimeFactor),
+            getMarginCalculatorParameters[rateOracleId].beta
         );
         
-        apyBoundVars.lambdaNum = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
-        apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getBeta[rateOracleId], apyBoundVars.timeFactor);
+        apyBoundVars.lambdaNum = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor), PRBMath.SD59x18({value:int256(twapApy)}));
+        // todo: fix, following the conversation with Mudit, decided to not use mapping and instead focus on just doing the exponential maths on-chain
+        // includes the line above that hardcodes the time factor
+        // apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor); // check the t
+        apyBoundVars.lambdaDen = PRBMathSD59x18Typed.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor); // check the time factor exists, if not have a fallback?
         apyBoundVars.lambda = PRBMathSD59x18Typed.div(apyBoundVars.lambdaNum, apyBoundVars.lambdaDen);
 
-        apyBoundVars.criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2}), apyBoundVars.lambda), apyBoundVars.k), PRBMath.SD59x18({value: 2}));
+        apyBoundVars.criticalValueMultiplier = PRBMathSD59x18Typed.mul(PRBMathSD59x18Typed.add(PRBMathSD59x18Typed.mul(PRBMath.SD59x18({value: 2 * (10 ** 18) }), apyBoundVars.lambda), apyBoundVars.k), PRBMath.SD59x18({value: 2 * (10 ** 18)}));
 
         apyBoundVars.criticalValue;
 
         if (isUpper) {
-            apyBoundVars.criticalValue = PRBMathSD59x18Typed.sub(
-                getXiUpper[rateOracleId],
+            apyBoundVars.criticalValue = PRBMathSD59x18Typed.mul(
+                getMarginCalculatorParameters[rateOracleId].xiUpper,
                 PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
         } else {
-            apyBoundVars.criticalValue = PRBMathSD59x18Typed.sub(
-                getXiLower[rateOracleId],
+            apyBoundVars.criticalValue = PRBMathSD59x18Typed.mul(
+                getMarginCalculatorParameters[rateOracleId].xiLower,
                 PRBMathSD59x18Typed.sqrt(apyBoundVars.criticalValueMultiplier)    
             );            
         }
@@ -132,7 +168,7 @@ contract MarginCalculator is IMarginCalculator{
                         }),
 
                         PRBMath.UD60x18({
-                            value: getApyUpperMultiplier[rateOracleId].value
+                            value: getMarginCalculatorParameters[rateOracleId].apyUpperMultiplier.value
                         })
                     ),
 
@@ -165,7 +201,7 @@ contract MarginCalculator is IMarginCalculator{
                         }),
 
                         PRBMath.UD60x18({
-                            value: getApyLowerMultiplier[rateOracleId].value
+                            value: getMarginCalculatorParameters[rateOracleId].apyLowerMultiplier.value
                         })
                     ),
 
@@ -198,9 +234,9 @@ contract MarginCalculator is IMarginCalculator{
         vars.timeInYears = FixedAndVariableMath.accrualFact(vars.timeInSeconds);
         
         if (params.isLM) {
-            vars.minDelta = uint256(getMinDeltaLM[params.rateOracleId].value);
+            vars.minDelta = uint256(getMarginCalculatorParameters[params.rateOracleId].minDeltaLM.value);
         } else {
-            vars.minDelta = uint256(getMinDeltaIM[params.rateOracleId].value);
+            vars.minDelta = uint256(getMarginCalculatorParameters[params.rateOracleId].minDeltaIM.value);
         }
 
         if (params.variableTokenBalance < 0) {
@@ -231,9 +267,6 @@ contract MarginCalculator is IMarginCalculator{
             // check that at least one is non-zero
 
             vars.notional = uint256(params.variableTokenBalance);
-
-            console.log("The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
-            console.log("The time in years is", vars.timeInYears);
             
             vars.zeroLowerBoundMargin = PRBMathUD60x18Typed.mul(
                 PRBMath.UD60x18({
@@ -263,9 +296,17 @@ contract MarginCalculator is IMarginCalculator{
                 )
             ).value;
 
+            console.log("Zero Lower Bound Margin: ", vars.zeroLowerBoundMargin);
+            console.log("Margin before ZLB correction: ", margin);
+
             if (margin > vars.zeroLowerBoundMargin) {
                 margin = vars.zeroLowerBoundMargin;
             }
+
+            console.log("Contract: The fixed factor is", FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp));
+            console.log("Contract: The time in years is", vars.timeInYears);
+            console.log("Contract: The notional is", vars.notional);
+            console.log("Contract: The margin is", margin);
 
         }
     }
@@ -336,22 +377,29 @@ contract MarginCalculator is IMarginCalculator{
 
     /// @notice Calculates the margin requirement for an LP whose position is in a tick range that bounds the current tick in the vAMM
     /// @param params Values necessary for the purposes of the computation of the Position Margin Requirement
-    /// @param vars Intermediate Values necessary for the purposes of the computation of the Position Margin Requirement
+    /// @dev vars Intermediate Values necessary for the purposes of the computation of the Position Margin Requirement
     /// @return margin Either Liquidation or Initial Margin Requirement of a given position in terms of the underlying tokens
-    function positionMarginBetweenTicksHelper(PositionMarginRequirementParams memory params, PositionMarginRequirementsVars memory vars) internal view returns (uint256 margin) {
-
-            // going up balance delta
+    function positionMarginBetweenTicksHelper(PositionMarginRequirementParams memory params) internal view returns (uint256 margin) {
+            PositionMarginRequirementsVars memory vars;
+            
+            // going up balance delta --> the trader is giving up variable and is receiving fixed (the trader is a Fixed Taker)
+            // causes the prices to go up, implied fixed rates to go down 
+            // hence amount0Up should be positive and amount1Up should be negative for the trader
+            // however, we are interested in the LP's who take the opposite side, so for them
+            // amount0Up must be negative and amount1Up should be positive
 
             vars.amount0Up = SqrtPriceMath.getAmount0Delta(
                 TickMath.getSqrtRatioAtTick(params.currentTick),
                 TickMath.getSqrtRatioAtTick(params.tickUpper),
                 int128(params.liquidity)
             );
+
             vars.amount1Up = SqrtPriceMath.getAmount1Delta(
                 TickMath.getSqrtRatioAtTick(params.currentTick),
                 TickMath.getSqrtRatioAtTick(params.tickUpper),
-                int128(params.liquidity)
+                -int128(params.liquidity) 
             );
+
             vars.expectedVariableTokenBalanceAfterUp = PRBMathSD59x18Typed.add(
 
                 PRBMath.SD59x18({
@@ -359,7 +407,7 @@ contract MarginCalculator is IMarginCalculator{
                 }),
 
                 PRBMath.SD59x18({
-                    value: -int256(vars.amount1Up)
+                    value: vars.amount1Up
                 })
 
             ).value;
@@ -371,7 +419,6 @@ contract MarginCalculator is IMarginCalculator{
                 }),
 
                 PRBMath.SD59x18({
-                    // value: -int256(FixedAndVariableMath.getFixedTokenBalance(uint256(vars.amount0Up), uint256(vars.amount1Up), int256(variableFactor(false)), false, termStartTimestamp, termEndTimestamp))
                     value: FixedAndVariableMath.getFixedTokenBalance(vars.amount0Up, vars.amount1Up, params.variableFactor, params.termStartTimestamp, params.termEndTimestamp)
 
                 })
@@ -390,16 +437,21 @@ contract MarginCalculator is IMarginCalculator{
                     })
                 );
 
-            // going down balance delta
+            // going down balance delta --> the trader is giving up fixed and is receiving variable (the trader is a Variable Taker)
+            // causes the prices to go down, implied fixed rates to go up 
+            // hence amount0Down must be negative and amount1Up should be positve for the trader
+            // however, we are interested in calculating the margin requirement for the LPs who take the opposite side
+            // hence, for LPs the amount0Down must be positive and amount1Down should be negative
+
             vars.amount0Down = SqrtPriceMath.getAmount0Delta(
-                TickMath.getSqrtRatioAtTick(params.tickLower),
                 TickMath.getSqrtRatioAtTick(params.currentTick),
-                int128(params.liquidity)
+                TickMath.getSqrtRatioAtTick(params.tickLower),
+                -int128(params.liquidity)
             );
 
-            vars.amount1Down = SqrtPriceMath.getAmount0Delta(
-                TickMath.getSqrtRatioAtTick(params.tickLower),
+            vars.amount1Down = SqrtPriceMath.getAmount1Delta(
                 TickMath.getSqrtRatioAtTick(params.currentTick),
+                TickMath.getSqrtRatioAtTick(params.tickLower),
                 int128(params.liquidity)
             );
 
@@ -410,7 +462,7 @@ contract MarginCalculator is IMarginCalculator{
                 }),
 
                 PRBMath.SD59x18({
-                    value: -int256(vars.amount1Down)
+                    value: vars.amount1Down
                 })
 
             ).value;
@@ -535,7 +587,8 @@ contract MarginCalculator is IMarginCalculator{
 
         } else if (params.currentTick < params.tickUpper) {
             
-            margin = positionMarginBetweenTicksHelper(params, vars);
+            // margin = positionMarginBetweenTicksHelper(params, vars); got rid of the vars and just initialise that struct directly in positionMarginBetweenTicksHelper 
+            margin = positionMarginBetweenTicksHelper(params);
 
         } else {
 

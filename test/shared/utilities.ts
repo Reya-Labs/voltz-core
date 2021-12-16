@@ -226,6 +226,8 @@ export function fixedFactor(
 
   const timeInYears: BigNumber = accrualFact(timeInSeconds);
 
+  console.log(`Test: Time in Years in a fixed factor call is ${timeInYears}`);
+
   const fixedFactorValue: BigNumber = mul(timeInYears, toBn("0.01"));
 
   return fixedFactorValue;

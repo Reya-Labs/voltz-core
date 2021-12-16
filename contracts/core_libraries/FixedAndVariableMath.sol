@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathSD59x18.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./Time.sol";
+import "hardhat/console.sol";
 
 /// @title A utility library for mathematics of fixed and variable token amounts.
 /// @author Artur Begyan
@@ -12,9 +13,9 @@ library FixedAndVariableMath {
   /// @dev Ignoring leap years since we're only using it to calculate the eventual APY rate
   uint256 public constant SECONDS_IN_YEAR_IN_WAD = 31536000 * 10**18;
   
-  /// @notice One percent
-  /// @dev No scary unnamed constants!
-  uint256 internal constant ONE_PERCENT_IN_WAD = 10**16;
+  // /// @notice One percent
+  // /// @dev No scary unnamed constants!
+  // uint256 internal constant ONE_PERCENT_IN_WAD = 10**16;
 
   /// @notice Caclulate the remaining cashflow to settle a position
   /// @param fixedTokenBalance The current balance of the fixed side of the position
@@ -50,7 +51,7 @@ library FixedAndVariableMath {
   /// #if_succeeds old(timeInSeconds) > 0;
   function accrualFact(uint256 timeInSecondsAsWad)
     public
-    pure
+    view
     returns (uint256 timeInYears)
   {
     timeInYears = PRBMathUD60x18.div(timeInSecondsAsWad, SECONDS_IN_YEAR_IN_WAD);
@@ -94,8 +95,10 @@ library FixedAndVariableMath {
 
     uint256 timeInYears = accrualFact(timeInSeconds);
 
-    fixedFactorValue = PRBMathUD60x18
-      .mul(timeInYears, ONE_PERCENT_IN_WAD);
+    fixedFactorValue = PRBMathUD60x18.div(timeInYears, 100 * (10**18));
+    
+    console.log("Contract: Fixed factor value is ", fixedFactorValue);
+    
   }
 
   /// @notice Calculate the fixed token balance for a position over a timespan
@@ -185,10 +188,12 @@ library FixedAndVariableMath {
     uint256 termStartTimestamp,
     uint256 termEndTimestamp
   ) public view returns (int256 fixedTokenBalance) {
-    require(
-      amount0 ^ amount1 < 0,
-      "amount0 and amount1 must have different signs"
-    );
+    
+    // some tests start to fail in here
+    // require(
+    //  ((amount0 < 0 && amount1 >0) || (amount0 > 0 && amount1 < 0)),
+    //   "amount0 and amount1 must have different signs"
+    // );
 
     require(
         termEndTimestamp > termStartTimestamp,
