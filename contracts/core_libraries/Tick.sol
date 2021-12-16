@@ -7,9 +7,6 @@ import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
 
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
-
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
@@ -54,12 +51,7 @@ library Tick {
     if (tickCurrent >= tickLower) {
       feeGrowthBelow = lower.feeGrowthOutside;
     } else {
-      feeGrowthBelow = PRBMathUD60x18Typed
-        .sub(
-          PRBMath.UD60x18({ value: feeGrowthGlobal }),
-          PRBMath.UD60x18({ value: lower.feeGrowthOutside })
-        )
-        .value;
+      feeGrowthBelow = feeGrowthGlobal - lower.feeGrowthOutside;
     }
 
     // calculate fee growth above
@@ -68,23 +60,10 @@ library Tick {
     if (tickCurrent < tickUpper) {
       feeGrowthAbove = upper.feeGrowthOutside;
     } else {
-      feeGrowthAbove = PRBMathUD60x18Typed
-        .sub(
-          PRBMath.UD60x18({ value: feeGrowthGlobal }),
-          PRBMath.UD60x18({ value: upper.feeGrowthOutside })
-        )
-        .value;
+      feeGrowthAbove = feeGrowthGlobal - upper.feeGrowthOutside;
     }
 
-    feeGrowthInside = PRBMathUD60x18Typed
-      .sub(
-        PRBMath.UD60x18({ value: feeGrowthGlobal }),
-        PRBMathUD60x18Typed.add(
-          PRBMath.UD60x18({ value: feeGrowthBelow }),
-          PRBMath.UD60x18({ value: feeGrowthAbove })
-        )
-      )
-      .value;
+    feeGrowthInside = feeGrowthGlobal - (feeGrowthBelow + feeGrowthAbove);
   }
 
   /// @notice Derives max liquidity per tick from given tick spacing
@@ -123,12 +102,7 @@ library Tick {
     if (params.tickCurrent >= params.tickLower) {
       variableTokenGrowthBelow = lower.variableTokenGrowthOutside;
     } else {
-      variableTokenGrowthBelow = PRBMathSD59x18Typed
-        .sub(
-          PRBMath.SD59x18({ value: params.variableTokenGrowthGlobal }),
-          PRBMath.SD59x18({ value: lower.variableTokenGrowthOutside })
-        )
-        .value;
+      variableTokenGrowthBelow = params.variableTokenGrowthGlobal - lower.variableTokenGrowthOutside;
     }
 
     // calculate the VariableTokenGrowth above
@@ -137,23 +111,10 @@ library Tick {
     if (params.tickCurrent < params.tickUpper) {
       variableTokenGrowthAbove = upper.variableTokenGrowthOutside;
     } else {
-      variableTokenGrowthAbove = PRBMathSD59x18Typed
-        .sub(
-          PRBMath.SD59x18({ value: params.variableTokenGrowthGlobal }),
-          PRBMath.SD59x18({ value: upper.variableTokenGrowthOutside })
-        )
-        .value;
+      variableTokenGrowthAbove = params.variableTokenGrowthGlobal - upper.variableTokenGrowthOutside;
     }
 
-    variableTokenGrowthInside = PRBMathSD59x18Typed
-      .sub(
-        PRBMath.SD59x18({ value: params.variableTokenGrowthGlobal }),
-        PRBMathSD59x18Typed.add(
-          PRBMath.SD59x18({ value: variableTokenGrowthBelow }),
-          PRBMath.SD59x18({ value: variableTokenGrowthAbove })
-        )
-      )
-      .value;
+    variableTokenGrowthInside = params.variableTokenGrowthGlobal - (variableTokenGrowthBelow + variableTokenGrowthAbove);
   }
 
   struct FixedTokenGrowthInsideParams {
@@ -176,12 +137,7 @@ library Tick {
     if (params.tickCurrent >= params.tickLower) {
       fixedTokenGrowthBelow = lower.fixedTokenGrowthOutside;
     } else {
-      fixedTokenGrowthBelow = PRBMathSD59x18Typed
-        .sub(
-          PRBMath.SD59x18({ value: params.fixedTokenGrowthGlobal }),
-          PRBMath.SD59x18({ value: lower.fixedTokenGrowthOutside })
-        )
-        .value;
+      fixedTokenGrowthBelow = params.fixedTokenGrowthGlobal - lower.fixedTokenGrowthOutside;
     }
 
     // calculate the FixedTokenGrowth above
@@ -190,23 +146,10 @@ library Tick {
     if (params.tickCurrent < params.tickUpper) {
       fixedTokenGrowthAbove = upper.fixedTokenGrowthOutside;
     } else {
-      fixedTokenGrowthAbove = PRBMathSD59x18Typed
-        .sub(
-          PRBMath.SD59x18({ value: params.fixedTokenGrowthGlobal }),
-          PRBMath.SD59x18({ value: upper.fixedTokenGrowthOutside })
-        )
-        .value;
+      fixedTokenGrowthAbove = params.fixedTokenGrowthGlobal - upper.fixedTokenGrowthOutside;
     }
 
-    fixedTokenGrowthInside = PRBMathSD59x18Typed
-      .sub(
-        PRBMath.SD59x18({ value: params.fixedTokenGrowthGlobal }),
-        PRBMathSD59x18Typed.add(
-          PRBMath.SD59x18({ value: fixedTokenGrowthBelow }),
-          PRBMath.SD59x18({ value: fixedTokenGrowthAbove })
-        )
-      )
-      .value;
+    fixedTokenGrowthInside = params.fixedTokenGrowthGlobal - (fixedTokenGrowthBelow + fixedTokenGrowthAbove);
   }
 
   /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
@@ -286,26 +229,11 @@ library Tick {
   ) external returns (int128 liquidityNet) {
     Tick.Info storage info = self[tick];
 
-    info.feeGrowthOutside = PRBMathUD60x18Typed
-      .sub(
-        PRBMath.UD60x18({ value: feeGrowthGlobal }),
-        PRBMath.UD60x18({ value: info.feeGrowthOutside })
-      )
-      .value;
+    info.feeGrowthOutside = feeGrowthGlobal - info.feeGrowthOutside;
 
-    info.fixedTokenGrowthOutside = PRBMathSD59x18Typed
-      .sub(
-        PRBMath.SD59x18({ value: fixedTokenGrowthGlobal }),
-        PRBMath.SD59x18({ value: info.fixedTokenGrowthOutside })
-      )
-      .value;
+    info.fixedTokenGrowthOutside = fixedTokenGrowthGlobal - info.fixedTokenGrowthOutside;
 
-    info.variableTokenGrowthOutside = PRBMathSD59x18Typed
-      .sub(
-        PRBMath.SD59x18({ value: variableTokenGrowthGlobal }),
-        PRBMath.SD59x18({ value: info.variableTokenGrowthOutside })
-      )
-      .value;
+    info.variableTokenGrowthOutside = variableTokenGrowthGlobal - info.variableTokenGrowthOutside;
 
     liquidityNet = info.liquidityNet;
   }
