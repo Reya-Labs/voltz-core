@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 
 interface IRateOracle {
     
-    // @audit May make sense to move this to IAaveRateOracle so we can document it using Aave terminology? Other oracle types may use the same or different ways of tracking values - e.g. not in unity of Ray.
+    // todo either delete this and usee the TWAP everywhere, or move this struct defn to IAaveRateOracle so we can document it using Aave terminology
     struct Rate {
-        bool isSet; // @audit - don't think we need this? Non-zero timestamp sufficient check for existence?
+        bool isSet; // todo: remove cos non-zero timestamp is sufficient
         uint256 timestamp; /// In wei-seconds
         uint256 rateValue; /// in Ray. A return value of 1e27 (1 Ray) indicates no income since pool creation. A value of 2e27 indicates a 100% yield since pool creation. Etc.
     }
@@ -31,6 +31,10 @@ interface IRateOracle {
     //         uint256 rateValue
     //     );
 
+    /// @notice Calculates the observed APY returned by the underlying in a given period
+    /// @param underlying The address of an underlying ERC20 token known to this Oracle (e.g. USDC not aaveUSDC)
+    /// @param from The timestamp of the start of the period, in wei-seconds
+    /// @param to The timestamp of the end of the period, in wei-seconds
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256);
 
     // function getApyFromTo(

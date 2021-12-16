@@ -54,7 +54,8 @@ library FixedAndVariableMath {
     timeInYears = PRBMathUD60x18.div(timeInSecondsAsWad, SECONDS_IN_YEAR_IN_WAD);
   }
 
-  /// @notice Calculate the fixed factor for a position // @audit - explain what this means.
+  /// @notice Calculate the fixed factor for a position - that is, the percentage earned over
+  /// the specified period of time, assuming 1% per year
   /// @param atMaturity Whether to calculate the factor at maturity (true), or now (false)
   /// @param termStartTimestamp When does the period of time begin, in wei-seconds
   /// @param termEndTimestamp When does the period of time end, in wei-seconds

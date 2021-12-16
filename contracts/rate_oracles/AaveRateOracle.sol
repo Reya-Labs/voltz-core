@@ -103,7 +103,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
                 if (termEndTimestamp == Time.blockTimestampScaled()) {
                     updateRate(underlyingToken);
                 } else {
-                    // @audit We are asking for rates up until an end timestamp for which we already know we have no date. We are going to revert What to do? Revert, or extrapolate? 
+                    // @audit We are asking for rates up until an end timestamp for which we already know we have no date. We are going to revert What to do? Better to revert here explicity, or extrapolate? 
                 }    
             }
 
