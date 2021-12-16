@@ -18,8 +18,6 @@ import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IFactory.sol";
 
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
 import "@openzeppelin/contracts/security/Pausable.sol";
