@@ -21,7 +21,7 @@ jobs:
       - name: Install NPM dependencies
         run: npm install
 
-      - name: Lint code
+      - name: Check formatting
         run: npm run format-check
 
       - name: Compile contracts
