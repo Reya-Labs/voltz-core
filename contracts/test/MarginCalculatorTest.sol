@@ -3,8 +3,6 @@
 pragma solidity ^0.8.0;
 import "../MarginCalculator.sol";
 import "../interfaces/IMarginCalculator.sol";
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 
 contract MarginCalculatorTest is MarginCalculator {
     
@@ -102,7 +100,7 @@ contract MarginCalculatorTest is MarginCalculator {
     
     function getTimeFactorTest(bytes32 rateOracleId, uint256 timeInDays) external view returns (int256) {
 
-        return timeFactorTimeInDays[rateOracleId][timeInDays].value;
+        return timeFactorTimeInDays[rateOracleId][timeInDays];
 
     }
 
@@ -120,16 +118,16 @@ contract MarginCalculatorTest is MarginCalculator {
 
             MarginCalculatorParameters memory marginCalculatorParameters = getMarginCalculatorParameters[rateOracleId];
 
-            apyUpperMultiplier = marginCalculatorParameters.apyUpperMultiplier.value;
-            apyLowerMultiplier = marginCalculatorParameters.apyLowerMultiplier.value;
-            minDeltaLM = marginCalculatorParameters.minDeltaLM.value;
-            minDeltaIM = marginCalculatorParameters.minDeltaIM.value;
-            maxLeverage = marginCalculatorParameters.maxLeverage.value;
-            sigmaSquared = marginCalculatorParameters.sigmaSquared.value;
-            alpha = marginCalculatorParameters.alpha.value;
-            beta = marginCalculatorParameters.beta.value;
-            xiUpper = marginCalculatorParameters.xiUpper.value;
-            xiLower = marginCalculatorParameters.xiLower.value;
+            apyUpperMultiplier = marginCalculatorParameters.apyUpperMultiplier;
+            apyLowerMultiplier = marginCalculatorParameters.apyLowerMultiplier;
+            minDeltaLM = marginCalculatorParameters.minDeltaLM;
+            minDeltaIM = marginCalculatorParameters.minDeltaIM;
+            maxLeverage = marginCalculatorParameters.maxLeverage;
+            sigmaSquared = marginCalculatorParameters.sigmaSquared;
+            alpha = marginCalculatorParameters.alpha;
+            beta = marginCalculatorParameters.beta;
+            xiUpper = marginCalculatorParameters.xiUpper;
+            xiLower = marginCalculatorParameters.xiLower;
 
     }
 
@@ -183,38 +181,18 @@ contract MarginCalculatorTest is MarginCalculator {
         int256 xiLower
         ) external {
 
-            setMarginCalculatorParameters(MarginCalculatorParameters({
-                apyUpperMultiplier: PRBMath.UD60x18({
-                    value: apyUpperMultiplier
-                }),
-                apyLowerMultiplier: PRBMath.UD60x18({
-                    value: apyLowerMultiplier
-                }),
-                minDeltaLM:  PRBMath.UD60x18({
-                    value: minDeltaLM
-                }),
-                minDeltaIM:  PRBMath.UD60x18({
-                    value: minDeltaIM
-                }),
-                maxLeverage:  PRBMath.UD60x18({
-                    value: maxLeverage
-                }),
-                sigmaSquared: PRBMath.SD59x18({
-                    value: sigmaSquared
-                }),
-                alpha: PRBMath.SD59x18({
-                    value: alpha
-                }),
-                beta: PRBMath.SD59x18({
-                    value: beta
-                }),
-                xiUpper: PRBMath.SD59x18({
-                    value: xiUpper
-                }),
-                xiLower: PRBMath.SD59x18({
-                    value: xiLower
-                })
-            }),
+            setMarginCalculatorParameters(MarginCalculatorParameters(
+              apyUpperMultiplier,
+              apyLowerMultiplier,
+              minDeltaLM,
+              minDeltaIM,
+              maxLeverage,
+              sigmaSquared,
+              alpha,
+              beta,
+              xiUpper,
+              xiLower
+            ),
             rateOracleId);
         }
 

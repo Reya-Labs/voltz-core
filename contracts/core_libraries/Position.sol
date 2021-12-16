@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 
 import "../utils/FullMath.sol";
 import "../utils/LiquidityMath.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "prb-math/contracts/PRBMathSD59x18.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
@@ -59,12 +59,7 @@ library Position {
   /// @param marginDelta Change in the margin account of the position
   function updateMargin(Info storage self, int256 marginDelta) internal {
     Info memory _self = self;
-    self.margin = PRBMathSD59x18Typed
-      .add(
-        PRBMath.SD59x18({ value: _self.margin }),
-        PRBMath.SD59x18({ value: marginDelta })
-      )
-      .value;
+    self.margin = _self.margin + marginDelta;
   }
 
   
@@ -81,19 +76,8 @@ library Position {
     if (fixedTokenBalanceDelta != 0 || variableTokenBalanceDelta != 0) {
       Info memory _self = self;
 
-      self.fixedTokenBalance = PRBMathSD59x18Typed
-        .add(
-          PRBMath.SD59x18({ value: _self.fixedTokenBalance }),
-          PRBMath.SD59x18({ value: fixedTokenBalanceDelta })
-        )
-        .value;
-
-      self.variableTokenBalance = PRBMathSD59x18Typed
-        .add(
-          PRBMath.SD59x18({ value: _self.variableTokenBalance }),
-          PRBMath.SD59x18({ value: variableTokenBalanceDelta })
-        )
-        .value;
+      self.fixedTokenBalance = _self.fixedTokenBalance + fixedTokenBalanceDelta;
+      self.variableTokenBalance = _self.variableTokenBalance + variableTokenBalanceDelta;
     }
   }
 
@@ -111,15 +95,11 @@ library Position {
 
     require(_self._liquidity > 0, "NP");
 
-    _feeDelta = PRBMathUD60x18Typed
+    _feeDelta = PRBMathUD60x18
       .mul(
-        PRBMathUD60x18Typed.sub(
-          PRBMath.UD60x18({ value: feeGrowthInside }),
-          PRBMath.UD60x18({ value: _self.feeGrowthInsideLast })
-        ),
-        PRBMath.UD60x18({ value: uint256(_self._liquidity) * 10**18 })
-      )
-      .value;
+        feeGrowthInside - _self.feeGrowthInsideLast,
+        uint256(_self._liquidity) * 10**18
+      );
   }
 
   
@@ -146,26 +126,17 @@ library Position {
 
     require(_self._liquidity > 0, "NP");
 
-    _fixedTokenDelta = PRBMathSD59x18Typed
+    _fixedTokenDelta = PRBMathSD59x18
       .mul(
-        PRBMathSD59x18Typed.sub(
-          PRBMath.SD59x18({ value: fixedTokenGrowthInside }),
-          PRBMath.SD59x18({ value: _self.fixedTokenGrowthInsideLast })
-        ),
-        PRBMath.SD59x18({ value: int256(uint256(_self._liquidity)) * 10**18 })
-      )
-      .value;
+        fixedTokenGrowthInside -_self.fixedTokenGrowthInsideLast,
+        int256(uint256(_self._liquidity)) * 10**18
+      );
 
-    _variableTokenDelta = PRBMathSD59x18Typed
+    _variableTokenDelta = PRBMathSD59x18
       .mul(
-        PRBMathSD59x18Typed.sub(
-          PRBMath.SD59x18({ value: variableTokenGrowthInside }),
-          PRBMath.SD59x18({ value: _self.variableTokenGrowthInsideLast })
-        ),
-        PRBMath.SD59x18({ value: int256(uint256(_self._liquidity)) * 10**18 })
-        // PRBMath.SD59x18({value: 10**18 })
-      )
-      .value;
+        variableTokenGrowthInside - _self.variableTokenGrowthInsideLast,
+        int256(uint256(_self._liquidity)) * 10**18
+      );
   }
 
 

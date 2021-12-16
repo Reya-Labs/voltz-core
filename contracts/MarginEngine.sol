@@ -18,8 +18,7 @@ import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/IDeployer.sol";
 
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
 import "./core_libraries/UnwindTraderUnwindPosition.sol";
@@ -77,10 +76,7 @@ contract MarginEngine is IMarginEngine {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
-        int256 updatedMarginWouldBe = PRBMathSD59x18Typed.add(
-            PRBMath.SD59x18({value: position.margin}),
-            PRBMath.SD59x18({value: marginDelta})
-        ).value;
+        int256 updatedMarginWouldBe = position.margin + marginDelta;
         
         uint256 variableFactor = amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp());
         
@@ -105,10 +101,7 @@ contract MarginEngine is IMarginEngine {
         
         Trader.Info storage trader = traders.get(recipient);
 
-        int256 updatedMarginWouldBe = PRBMathSD59x18Typed.add(
-            PRBMath.SD59x18({value: trader.margin}),
-            PRBMath.SD59x18({value: marginDelta})
-        ).value;
+        int256 updatedMarginWouldBe = trader.margin + marginDelta;
         
         MarginEngineHelpers.checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled, address(amm));
 
@@ -191,17 +184,7 @@ contract MarginEngine is IMarginEngine {
 
         require(isLiquidatable, "The position needs to be below the liquidation threshold to be liquidated");
 
-        uint256 liquidatorReward = PRBMathUD60x18Typed.mul(
-
-            PRBMath.UD60x18({
-                value: uint256(position.margin)
-            }),
-
-            PRBMath.UD60x18({
-                value: LIQUIDATOR_REWARD
-            })
-
-        ).value;
+        uint256 liquidatorReward = PRBMathUD60x18.mul(uint256(position.margin), LIQUIDATOR_REWARD);
 
         position.updateMargin(-int256(liquidatorReward));
 

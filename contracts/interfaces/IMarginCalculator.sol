@@ -9,36 +9,39 @@ interface IMarginCalculator {
     // structs 
 
     // docs missing (collect them from MarginCalculator.sol old mappings)
+    // TODO: below should all be SD59x18 or UD60x18 user defined types
+
     struct MarginCalculatorParameters {
-        PRBMath.UD60x18 apyUpperMultiplier;
-        PRBMath.UD60x18 apyLowerMultiplier;
-        PRBMath.UD60x18 minDeltaLM;
-        PRBMath.UD60x18 minDeltaIM;
-        PRBMath.UD60x18 maxLeverage;
-        PRBMath.SD59x18 sigmaSquared;
-        PRBMath.SD59x18 alpha;
-        PRBMath.SD59x18 beta;
-        PRBMath.SD59x18 xiUpper;
-        PRBMath.SD59x18 xiLower;
+        uint256 apyUpperMultiplier;
+        uint256 apyLowerMultiplier;
+        uint256 minDeltaLM;
+        uint256 minDeltaIM;
+        uint256 maxLeverage;
+        int256 sigmaSquared;
+        int256 alpha;
+        int256 beta;
+        int256 xiUpper;
+        int256 xiLower;
     }
 
+// TODO: below should all be SD59x18 user defined types
     struct ApyBoundVars {
         /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
-        PRBMath.SD59x18 timeFactor;
+        int256 timeFactor;
         /// @dev 1 - timeFactor
-        PRBMath.SD59x18 oneMinusTimeFactor;
+        int256 oneMinusTimeFactor;
         /// @dev k = (alpha/sigmaSquared)
-        PRBMath.SD59x18 k;
+        int256 k;
         /// @dev zeta = (sigmaSquared*(1-timeFactor))/beta
-        PRBMath.SD59x18 zeta;
-        PRBMath.SD59x18 lambdaNum;
-        PRBMath.SD59x18 lambdaDen;
+        int256 zeta;
+        int256 lambdaNum;
+        int256 lambdaDen;
         /// @dev lambda = lambdaNum/lambdaDen = (beta*timeFactor)*twapAPY / (sigmaSquared*(1-timeFactor))
-        PRBMath.SD59x18 lambda;
+        int256 lambda;
         /// @dev critical value from the normal distribution (refer to the litepaper, equations 12 and 13)
-        PRBMath.SD59x18 criticalValueMultiplier;
+        int256 criticalValueMultiplier;
         /// @dev critical value = sqrt(2(k+2*lambda))
-        PRBMath.SD59x18 criticalValue;
+        int256 criticalValue;
     }
 
     struct LPMarginParams {
