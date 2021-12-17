@@ -8,7 +8,7 @@ import "../interfaces/IVAMM.sol";
 import "../interfaces/IPositionStructs.sol";
 import "../VAMM.sol";
 
-contract TestAMMCallee is VAMM {
+contract TestVAMMCallee is VAMM {
     using SafeCast for uint256;
 
     function mintTest(
@@ -18,7 +18,7 @@ contract TestAMMCallee is VAMM {
         int24 tickUpper,
         uint128 amount
     ) external {
-        IVAMM(amm).mint(
+        IVAMM(vamm).mint(
             recipient,
             tickLower,
             tickUpper,
@@ -41,11 +41,11 @@ contract TestAMMCallee is VAMM {
             isTrader: true
         });
 
-        IAMM(amm).swap(params);
+        IAMM(vamm).swap(params);
     }
 
     function swap0ForExact1(
-        address amm,
+        address vamm,
         uint256 amount1Out,
         address recipient,
         uint160 sqrtPriceLimitX96
@@ -81,7 +81,7 @@ contract TestAMMCallee is VAMM {
     }
 
     function swap1ForExact0(
-        address amm,
+        address vamm,
         uint256 amount0Out,
         address recipient,
         uint160 sqrtPriceLimitX96

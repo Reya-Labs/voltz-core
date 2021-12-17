@@ -7,6 +7,6 @@ import "../utils/TickMath.sol";
 import "../AMM.sol";
 
 
-contract TestVAMM is AMM {
+contract TestAMM is AMM {
 
 }
