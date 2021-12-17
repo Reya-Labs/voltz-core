@@ -1,16 +1,14 @@
-
-
-
-
 import { Factory } from "../../typechain/Factory";
 import { Fixture } from "ethereum-waffle";
 import { ethers } from "hardhat";
 import { TestVAMM } from '../../typechain/TestVAMM';
+import { TestAMM } from '../../typechain/TestAMM';
+import { TestMarginEngine } from '../../typechain/TestMarginEngine';
 import { TestVAMMCallee } from '../../typechain/TestVAMMCallee';
+import { TestMarginEngineCallee } from '../../typechain/TestMarginEngineCallee';
 // import { TestERC20 } from '../../typechain/TestERC20'
 import { TestDeployer } from '../../typechain/TestDeployer';
 import { BigNumber } from "@ethersproject/bignumber";
-
 
 
 interface FactoryFixture {
@@ -58,6 +56,13 @@ interface VAMMFixture extends FactoryFixture {
   ): Promise<TestVAMM>
 }
 
+interface MarginEngineFixture extends FactoryFixture {
+  marginEngineCalleeTest: TestMarginEngineCallee;
+  createMarginEngine(
+      ammAddress: string
+  ): Promise<TestMarginEngine>
+}
+
 export const vammFixture: Fixture<VAMMFixture> = async function (): Promise<VAMMFixture> {
 
     const { factory } = await factoryFixture();
@@ -70,7 +75,7 @@ export const vammFixture: Fixture<VAMMFixture> = async function (): Promise<VAMM
     return {
         factory,
         vammCalleeTest,
-        createVAMM: async (ammAddress) => {
+        createVAMM: async (ammAddress: string) => {
             const deployerTest = (await deployerTestFactory.deploy()) as TestDeployer;
             const tx = await deployerTest.deployVAMM(
                 // factory.address,
@@ -84,11 +89,67 @@ export const vammFixture: Fixture<VAMMFixture> = async function (): Promise<VAMM
     }
 }
 
+export const marginEngineFixture: Fixture<MarginEngineFixture> = async function (): Promise<MarginEngineFixture> {
+  
+  const { factory } = await factoryFixture();
+  const deployerTestFactory = await ethers.getContractFactory('TestDeployer');
+  const marginEngineTestFactory = await ethers.getContractFactory('TestMarginEngine');
+  const testMarginEngineCalleeFactory = await ethers.getContractFactory("TestMarginEngineCallee");
+
+  const marginEngineCalleeTest = (await testMarginEngineCalleeFactory.deploy()) as TestMarginEngineCallee;
+
+  return {
+    factory,
+    marginEngineCalleeTest,
+    createMarginEngine: async (ammAddress: string) => {
+      const deployerTest = (await deployerTestFactory.deploy()) as TestDeployer;
+      const tx = await deployerTest.deployMarginEngine(
+        // factory.address,
+        ammAddress
+      );
+      const receipt = await tx.wait();
+      const marginEngineAddress = receipt.events?.[0].args?.marginEngine as string;
+      return marginEngineTestFactory.attach(marginEngineAddress) as TestMarginEngine;
+    }
+  }
+
+}
 
 
+interface AMMFixture extends FactoryFixture {
+  createAMM(
+      underlyingToken: string,
+      rateOracleId: string,
+      termStartTimestamp: BigNumber,
+      termEndTimestamp: BigNumber
+  ): Promise<TestAMM>
+}
 
 
-
+export const ammFixture: Fixture<AMMFixture> = async function (): Promise<AMMFixture> {
+  const { factory } = await factoryFixture();
+  const deployerTestFactory = await ethers.getContractFactory('TestDeployer');
+  const ammTestFactory = await ethers.getContractFactory('TestAMM');
+  // const testAMMCalleeFactory = await ethers.getContractFactory('TestAMMCallee');
+  // todo: override so that the TestAMM is attached to the TestVAMM
+  // const ammCalleeTest = (await testAMMCalleeFactory.deploy()) as TestAMMCallee;
+  return {
+    factory,
+    createAMM: async (underlyingToken: string, rateOracleId: string, termStartTimestamp: BigNumber, termEndTimestamp: BigNumber) => {
+      const deployerTest = (await deployerTestFactory.deploy()) as TestDeployer;
+      const tx = await deployerTest.deployAMM(
+        factory.address,
+        underlyingToken,
+        rateOracleId,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+      const receipt = await tx.wait();
+      const ammAddress = receipt.events?.[0].args?.amm as string;
+      return ammTestFactory.attach(ammAddress) as TestAMM;
+    }
+  }
+}
 
 
 // async function dependencyDeploymentAddresses() {

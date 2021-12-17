@@ -80,7 +80,7 @@ contract TestDeployer is IDeployer {
     bytes32 rateOracleId,
     uint256 termStartTimestamp,
     uint256 termEndTimestamp
-  ) internal returns (address amm) {
+  ) external returns (address amm) {
 
     ammParameters = AMMParameters({
       factory: factory,
