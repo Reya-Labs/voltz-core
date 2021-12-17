@@ -4,22 +4,21 @@ pragma solidity ^0.8.0;
 
 import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
-import "../interfaces/IAMM.sol";
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IPositionStructs.sol";
-import "../AMM.sol";
+import "../VAMM.sol";
 
-contract TestAMMCallee is AMM {
+contract TestAMMCallee is VAMM {
     using SafeCast for uint256;
 
     function mintTest(
-        address amm,
+        address vamm,
         address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
     ) external {
-        IAMM(amm).mint(
+        IVAMM(amm).mint(
             recipient,
             tickLower,
             tickUpper,
@@ -27,12 +26,8 @@ contract TestAMMCallee is AMM {
         );
     }
 
-    // function updatePositionTest(IPositionStructs.ModifyPositionParams memory params) external returns(Position.Info memory position) {
-    //     return _updatePosition(params);
-    // }
-
     function swapExact0For1(
-        address amm,
+        address vamm,
         uint256 amount0In,
         address recipient,
         uint160 sqrtPriceLimitX96
@@ -64,11 +59,11 @@ contract TestAMMCallee is AMM {
             isTrader: true
         });
 
-        IAMM(amm).swap(params);
+        IAMM(vamm).swap(params);
     }
 
     function swapExact1For0(
-        address amm,
+        address vamm,
         uint256 amount1In,
         address recipient,
         uint160 sqrtPriceLimitX96
@@ -82,7 +77,7 @@ contract TestAMMCallee is AMM {
             isTrader: true
         });
 
-        IAMM(amm).swap(params);
+        IAMM(vamm).swap(params);
     }
 
     function swap1ForExact0(
@@ -100,11 +95,11 @@ contract TestAMMCallee is AMM {
             isTrader: true
         });
 
-        IAMM(amm).swap(params);
+        IVAMM(vamm).swap(params);
     }
 
     function swapToLowerSqrtPrice(
-        address amm,
+        address vamm,
         uint160 sqrtPriceX96,
         address recipient
     ) external {
@@ -117,11 +112,11 @@ contract TestAMMCallee is AMM {
             isTrader: true
         });
 
-        IAMM(amm).swap(params);
+        IAMM(vamm).swap(params);
     }
 
     function swapToHigherSqrtPrice(
-        address amm,
+        address vamm,
         uint160 sqrtPriceX96,
         address recipient
     ) external {
@@ -134,6 +129,6 @@ contract TestAMMCallee is AMM {
             isTrader: true
         });
 
-        IAMM(amm).swap(params);
+        IAMM(vamm).swap(params);
     }
 }
