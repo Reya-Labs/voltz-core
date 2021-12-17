@@ -5,29 +5,24 @@ import {
   utils,
   Wallet,
 } from "ethers";
-import { TestAMMCallee } from "../../typechain/TestAMMCallee";
-import { MockTimeAMM } from "../../typechain/MockTimeAMM";
+// import { TestAMMCallee } from "../../typechain/TestAMMCallee";
+// import { MockTimeAMM } from "../../typechain/MockTimeAMM";
+import { TestVAMM } from '../typechain/TestVAMM';
+import { TestVAMMCallee } from '../typechain/TestVAMMCallee';
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
 import { sqrt } from "./sqrt";
 import { div, sub, mul } from "./functions";
 import { toBn } from "evm-bn";
 
-export enum FeeAmount {
-  LOW = 500,
-  MEDIUM = 3000,
-  HIGH = 10000,
-}
-
-export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
-  [FeeAmount.LOW]: 10,
-  [FeeAmount.MEDIUM]: 60,
-  [FeeAmount.HIGH]: 200,
-};
+export const TICK_SPACING: number = 60;
 
 export const SECONDS_IN_YEAR: BigNumber = toBn("31536000");
-export const BLOCK_TIMESTAMP: number = 1632249308;
+// export const BLOCK_TIMESTAMP: number = 1632249308;
+export const MaxUint128 = BigNumber.from(2).pow(128).sub(1);
 
+
+  
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
@@ -46,9 +41,8 @@ export type SwapFunction = (
   sqrtPriceLimitX96?: BigNumberish
 ) => Promise<ContractTransaction>;
 
-export interface AMMFunctions {
+export interface VAMMFunctions {
   mint: MintFunction;
-
   swapToLowerPrice: SwapToPriceFunction;
   swapToHigherPrice: SwapToPriceFunction;
   swapExact0For1: SwapFunction;
@@ -57,26 +51,26 @@ export interface AMMFunctions {
   swap1ForExact0: SwapFunction;
 }
 
-export function createAMMFunctions({
-  swapTarget,
-  amm,
-}: {
-  swapTarget: TestAMMCallee;
-  amm: MockTimeAMM;
-}): AMMFunctions {
+export function createVAMMMFunctions({
+  vammCalleeTest,
+  vammTest,
+} : {
+  vammCalleeTest: TestVAMMCallee;
+  vammTest: TestVAMM;
+}): VAMMFunctions {
+  
   async function swapToSqrtPrice(
     isFT: boolean,
     targetPrice: BigNumberish,
     to: Wallet | string
   ): Promise<ContractTransaction> {
     const method = isFT
-      ? swapTarget.swapToHigherSqrtPrice
-      : swapTarget.swapToLowerSqrtPrice;
-
+      ? vammCalleeTest.swapToHigherSqrtPrice
+      : vammCalleeTest.swapToLowerSqrtPrice;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
     const toAddress = typeof to === "string" ? to : to.address;
 
-    // todo: for now proposed margin is always 0
-    return method(amm.address, targetPrice, toAddress);
+    return method(vammTest.address, targetPrice, toAddress);
   }
 
   async function swap(
@@ -87,16 +81,17 @@ export function createAMMFunctions({
   ): Promise<ContractTransaction> {
     const exactInput = amountOut === 0;
 
-    // todo: make sure this is correct
+    // todo: make sure this is correct (isFT vs. !isFT)
     const method = isFT
       ? exactInput
-        ? swapTarget.swapExact1For0
-        : swapTarget.swap1ForExact0
+        ? vammCalleeTest.swapExact1For0
+        : vammCalleeTest.swap1ForExact0
       : exactInput
-      ? swapTarget.swapExact0For1
-      : swapTarget.swap0ForExact1;
+      ? vammCalleeTest.swapExact0For1
+      : vammCalleeTest.swap0ForExact1;
 
     if (typeof sqrtPriceLimitX96 === "undefined") {
+      // isFT vs. !isFT
       if (isFT) {
         sqrtPriceLimitX96 = MAX_SQRT_RATIO.sub(1);
       } else {
@@ -107,7 +102,7 @@ export function createAMMFunctions({
     const toAddress = typeof to === "string" ? to : to.address;
 
     return method(
-      amm.address,
+      vammTest.address,
       exactInput ? amountIn : amountOut,
       toAddress,
       sqrtPriceLimitX96
@@ -147,8 +142,8 @@ export function createAMMFunctions({
     tickUpper,
     liquidity
   ) => {
-    return swapTarget.mintTest(
-      amm.address,
+    return vammCalleeTest.mintTest(
+      vammTest.address,
       recipient,
       tickLower,
       tickUpper,
@@ -211,11 +206,12 @@ export function accrualFact(timeInSeconds: BigNumber): BigNumber {
 export function fixedFactor(
   atMaturity: boolean,
   termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber
+  termEndTimestamp: BigNumber,
+  currentBlockTimestamp: BigNumber
 ): BigNumber {
   let timeInSeconds: BigNumber;
 
-  const currentBlockTimestamp = toBn(BLOCK_TIMESTAMP.toString());
+  // const currentBlockTimestamp = toBn(BLOCK_TIMESTAMP.toString());
 
   if (atMaturity) {
     timeInSeconds = sub(termEndTimestamp, termStartTimestamp);
@@ -231,4 +227,8 @@ export function fixedFactor(
   const fixedFactorValue: BigNumber = mul(timeInYears, toBn("0.01"));
 
   return fixedFactorValue;
+}
+
+export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
+  return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
 }
