@@ -2,10 +2,10 @@
 import { ethers, waffle } from 'hardhat';
 import { BigNumber, BigNumberish, constants, Wallet } from 'ethers';
 import { Factory } from '../../typechain/Factory';
-import { TestVAMM } from '../typechain/TestVAMM';
+import { TestVAMM } from '../../typechain/TestVAMM';
 import { expect } from '../shared/expect';
 import { vammFixture } from '../shared/fixtures';
-import { TestVAMMCallee } from '../typechain/TestVAMMCallee';
+import { TestVAMMCallee } from '../../typechain/TestVAMMCallee';
 import {
     getPositionKey,
     getMaxTick,
@@ -34,17 +34,17 @@ describe('VAMM', () => {
     let vammCalleeTest: TestVAMMCallee;
     
     let swapToLowerPrice: SwapToPriceFunction;
-    // let swapToHigherPrice: SwapToPriceFunction
-    let swapExact0For1: SwapFunction
-    // let swap0ForExact1: SwapFunction
-    // let swapExact1For0: SwapFunction
-    // let swap1ForExact0: SwapFunction
+    let swapToHigherPrice: SwapToPriceFunction;
+    let swapExact0For1: SwapFunction;
+    let swap0ForExact1: SwapFunction;
+    let swapExact1For0: SwapFunction;
+    let swap1ForExact0: SwapFunction;
     let tickSpacing: number;
     let minTick: number;
     let maxTick: number;
     let mint: MintFunction;
-    let loadFixture: ReturnType<typeof createFixtureLoader>; // 
-    let createVAMM: ThenArg<ReturnType<typeof vammFixture>>['createVAMM']; // what does this syntax mean?
+    let loadFixture: ReturnType<typeof createFixtureLoader>;
+    let createVAMM: ThenArg<ReturnType<typeof vammFixture>>['createVAMM'];
 
     before('create fixture loader', async () => {
         ;[wallet, other] = await (ethers as any).getSigners()
@@ -55,25 +55,26 @@ describe('VAMM', () => {
         ;({factory, createVAMM, vammCalleeTest } = await loadFixture(vammFixture));
         const oldCreateVAMM = createVAMM;
         
-        createVAMM = async (_tickSpacing: number) => {
-            const vamm = await oldCreateVAMM(_);
+        createVAMM = async (_ammAddress: string) => {
+            const vamm = await oldCreateVAMM(_ammAddress);
             ;({
                 swapToLowerPrice,
                 swapExact0For1,
                 mint
               } = createVAMMMFunctions({
-                _
+                vammCalleeTest,
+                vammTest
             }));
 
-            minTick = getMinTick(_tickSpacing);
-            maxTick = getMaxTick(_tickSpacing);
+            minTick = getMinTick(TICK_SPACING);
+            maxTick = getMaxTick(TICK_SPACING);
 
-            tickSpacing = _tickSpacing;
+            tickSpacing = TICK_SPACING;
 
             return vamm;
         }
         
-      vammTest = await createVAMM(tickSpacing);
+      vammTest = await createVAMM(ammAddress);
 
     })
 

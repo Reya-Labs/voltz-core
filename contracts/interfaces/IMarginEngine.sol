@@ -65,7 +65,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Must be called by the owner of the position (unless marginDelta is positive?)
     /// @param params Values necessary for the purposes of the updating the Position Margin (owner, tickLower, tickUpper, liquidityDelta)
     /// @param marginDelta Determines the updated margin of the position where the updated margin = current margin + marginDelta
-    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external;
+    function updatePositionMargin(IPositionStructs.ModifyPositionParams memory params, int256 marginDelta) external;
 
     /// @notice Updates Trader Margin
     /// @dev Must be called by the trader address (unless marginDelta is positive?)
@@ -84,7 +84,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev 5. Calculates the settlement cashflow from all of the IRS contracts the position has entered since entering the AMM
     /// @dev 6. Updates the fixed and variable token balances of the position to be zero, adds the settlement cashflow to the position's current margin
     /// @param params Values necessary for the purposes of referencing the position being settled (owner, tickLower, tickUpper, _)
-    function settlePosition(ModifyPositionParams memory params) external;
+    function settlePosition(IPositionStructs.ModifyPositionParams memory params) external;
 
     /// @notice Settles a Trader
     /// @dev Can be called by anyone
@@ -100,7 +100,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Calculate the liquidation reward = current margin of the position * LIQUIDATOR_REWARD, subtract the liquidator reward from the position margin,
     /// @dev Burn the position's liquidity ==> not going to enter into new IRS contracts until the AMM maturity, transfer the reward to the liquidator
     /// @param params necessary for the purposes of referencing the position being liquidated (owner, tickLower, tickUpper, _)
-    function liquidatePosition(ModifyPositionParams memory params) external;
+    function liquidatePosition(IPositionStructs.ModifyPositionParams memory params) external;
 
     /// @notice Liquidate a Trader
     /// @dev Steps to liquidate: check if the trader is liquidatable (revert if that is not the case),
@@ -116,7 +116,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev 4. Update fixed and variable token growth + fee growth in the position info struct for future interactions with the position 
     /// @param params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _)
     /// @param vars Relevant variables from vars: feeGrowthInside, fixedTokenGrowthInside and variabelTokenGrowthInside of the tick range of the given position
-    function updatePosition(IVAMM.ModifyPositionParams memory params, IVAMM.UpdatePositionVars memory vars) external;
+    function updatePosition(IPositionStructs.ModifyPositionParams memory params, IVAMM.UpdatePositionVars memory vars) external;
 
     /// @notice Update Fixed and Variable Token Balances of a trader
     /// @dev Auth: 
