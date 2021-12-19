@@ -8,7 +8,7 @@ import "../interfaces/IVAMM.sol";
 import "../interfaces/IPositionStructs.sol";
 import "../VAMM.sol";
 
-contract TestVAMMCallee is VAMM {
+contract TestVAMMCallee {
     using SafeCast for uint256;
 
     function mintTest(
