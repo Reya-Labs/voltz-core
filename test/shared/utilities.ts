@@ -7,8 +7,8 @@ import {
 } from "ethers";
 // import { TestAMMCallee } from "../../typechain/TestAMMCallee";
 // import { MockTimeAMM } from "../../typechain/MockTimeAMM";
-import { TestVAMM } from '../typechain/TestVAMM';
-import { TestVAMMCallee } from '../typechain/TestVAMMCallee';
+import { TestVAMM } from '../../typechain/TestVAMM';
+import { TestVAMMCallee } from '../../typechain/TestVAMMCallee';
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
 import { sqrt } from "./sqrt";
@@ -21,8 +21,6 @@ export const SECONDS_IN_YEAR: BigNumber = toBn("31536000");
 // export const BLOCK_TIMESTAMP: number = 1632249308;
 export const MaxUint128 = BigNumber.from(2).pow(128).sub(1);
 
-
-  
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
@@ -232,3 +230,19 @@ export function fixedFactor(
 export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
   return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
 }
+
+// below numbers are arbitrary for now, move into another file
+export const APY_UPPER_MULTIPLIER: BigNumber = toBn("1.5"); // todo: use Neil's toBn implementation
+export const APY_LOWER_MULTIPLIER: BigNumber = toBn("0.7");
+export const MIN_DELTA_LM: BigNumber = toBn("0.03");
+export const MIN_DELTA_IM: BigNumber = toBn("0.06");
+export const MAX_LEVERAGE: BigNumber = toBn("10.0");
+export const SIGMA_SQUARED: BigNumber = toBn("0.01");
+export const ALPHA: BigNumber = toBn("0.04");
+export const BETA: BigNumber = toBn("1.0");
+export const XI_UPPER: BigNumber = toBn("2.0");
+export const XI_LOWER: BigNumber = toBn("1.5");
+export const RATE_ORACLE_ID: string = utils.formatBytes32String("AaveV2"); // just aave for now
+export const DEFAULT_TIME_FACTOR: BigNumber= toBn("0.1");
+export const MIN_TICK: number = -887272;
+export const MAX_TICK: number = 887272;

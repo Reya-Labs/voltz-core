@@ -20,26 +20,12 @@ import { getCurrentTimestamp, advanceTime } from "../helpers/time";
 import { getFixedTokenBalance } from "../core_libraries/fixedAndVariableMath";
 
 import { consts } from "../helpers/constants";
+import { APY_UPPER_MULTIPLIER, APY_LOWER_MULTIPLIER, MIN_DELTA_LM, MIN_DELTA_IM, MAX_LEVERAGE,
+         SIGMA_SQUARED, ALPHA, BETA, XI_UPPER, XI_LOWER, RATE_ORACLE_ID, DEFAULT_TIME_FACTOR, MIN_TICK, MAX_TICK } from "../shared/utilities";
 // import { floor } from "prb-math";
 // import { sqrt } from "../shared/sqrt";
 
 const createFixtureLoader = waffle.createFixtureLoader;
-
-// below numbers are arbitrary for now, move into another file
-const APY_UPPER_MULTIPLIER = toBn("1.5"); // todo: use Neil's toBn implementation
-const APY_LOWER_MULTIPLIER = toBn("0.7");
-const MIN_DELTA_LM = toBn("0.03");
-const MIN_DELTA_IM = toBn("0.06");
-const MAX_LEVERAGE = toBn("10.0");
-const SIGMA_SQUARED = toBn("0.01");
-const ALPHA = toBn("0.04");
-const BETA = toBn("1.0");
-const XI_UPPER = toBn("2.0");
-const XI_LOWER = toBn("1.5");
-const RATE_ORACLE_ID = ethers.utils.formatBytes32String("AaveV2");
-const DEFAULT_TIME_FACTOR = toBn("0.1");
-const MIN_TICK = -887272;
-const MAX_TICK = 887272;
 const { provider } = waffle;
 
 async function calculateExpectedAmounts(

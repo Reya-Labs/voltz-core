@@ -5,5 +5,6 @@ import "../VAMM.sol";
 
 contract TestVAMM is VAMM {
 
+  
 
 }

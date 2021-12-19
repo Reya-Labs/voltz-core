@@ -38,13 +38,14 @@ contract TestDeployer is IDeployer {
     vamm = address(
       new TestVAMM{
         salt: keccak256(
-          // think don't need tickSpacing here
           abi.encode(
             ammAddress
           )
         )
       }()
     );
+
+    emit VAMMDeployed(vamm);
     
     delete vammParameters;
   
@@ -53,14 +54,14 @@ contract TestDeployer is IDeployer {
   function deployMarginEngine(
     // address factoryAddress,
     address ammAddress
-  ) external returns (address vamm) {
+  ) external returns (address marginEngine) {
       
     marginEngineParameters = MarginEngineAndVAMMParameters({
       ammAddress: ammAddress
     });
 
-    vamm = address(
-      new TestVAMM{
+    marginEngine = address(
+      new TestMarginEngine{
         salt: keccak256(
           // think don't need tickSpacing here
           abi.encode(
@@ -69,8 +70,10 @@ contract TestDeployer is IDeployer {
         )
       }()
     );
+
+    emit MarginEngineDeployed(marginEngine);
     
-    delete vammParameters;
+    delete marginEngineParameters;
   
   }
 
@@ -102,6 +105,9 @@ contract TestDeployer is IDeployer {
         )
       }()
     );
+
+    emit AMMDeployed(amm);
+
     delete ammParameters;
   }
 
