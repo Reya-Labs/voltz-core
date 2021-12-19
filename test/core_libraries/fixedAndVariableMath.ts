@@ -22,7 +22,8 @@ export function getFixedTokenBalance(
   const fixedFactorAccrued: BigNumber = fixedFactor(
     false,
     termStartTimestamp,
-    termEndTimestamp
+    termEndTimestamp,
+    toBn((1632249308).toString())
   );
 
   const excessFixedAccruedBalance: BigNumber = mul(amount0, fixedFactorAccrued);
@@ -56,7 +57,8 @@ function calculateFixedTokenBalance(
   const fixedFactorAtMaturity: BigNumber = fixedFactor(
     true,
     termStartTimestamp,
-    termEndTimestamp
+    termEndTimestamp,
+    toBn((1632249308).toString()) // temporary
   );
 
   const exp1: BigNumber = mul(amount0, fixedFactorAtMaturity);
