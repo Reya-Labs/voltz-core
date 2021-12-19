@@ -20,8 +20,22 @@ import { getCurrentTimestamp, advanceTime } from "../helpers/time";
 import { getFixedTokenBalance } from "../core_libraries/fixedAndVariableMath";
 
 import { consts } from "../helpers/constants";
-import { APY_UPPER_MULTIPLIER, APY_LOWER_MULTIPLIER, MIN_DELTA_LM, MIN_DELTA_IM, MAX_LEVERAGE,
-         SIGMA_SQUARED, ALPHA, BETA, XI_UPPER, XI_LOWER, RATE_ORACLE_ID, DEFAULT_TIME_FACTOR, MIN_TICK, MAX_TICK } from "../shared/utilities";
+import {
+  APY_UPPER_MULTIPLIER,
+  APY_LOWER_MULTIPLIER,
+  MIN_DELTA_LM,
+  MIN_DELTA_IM,
+  MAX_LEVERAGE,
+  SIGMA_SQUARED,
+  ALPHA,
+  BETA,
+  XI_UPPER,
+  XI_LOWER,
+  RATE_ORACLE_ID,
+  DEFAULT_TIME_FACTOR,
+  MIN_TICK,
+  MAX_TICK,
+} from "../shared/utilities";
 // import { floor } from "prb-math";
 // import { sqrt } from "../shared/sqrt";
 
@@ -216,7 +230,12 @@ function getTraderMarginRequirement(
   );
   const exp1 = mul(
     fixedTokenBalance,
-    fixedFactor(true, termStartTimestamp, termEndTimestamp)
+    fixedFactor(
+      true,
+      termStartTimestamp,
+      termEndTimestamp,
+      toBn((1632249308).toString())
+    )
   );
   const exp2 = mul(
     variableTokenBalance,
@@ -367,7 +386,15 @@ function getMinimumMarginRequirement(
     notional = variableTokenBalance;
     const zeroLowerBoundMargin: BigNumber = mul(
       fixedTokenBalance,
-      mul(fixedFactor(true, termStartTimestamp, termEndTimestamp), toBn("-1"))
+      mul(
+        fixedFactor(
+          true,
+          termStartTimestamp,
+          termEndTimestamp,
+          toBn((1632249308).toString())
+        ),
+        toBn("-1")
+      )
     );
     console.log(`Test: Zero Lower Bound Margin is${zeroLowerBoundMargin}`);
     margin = mul(mul(variableTokenBalance, minDelta), timeInYears);
@@ -383,7 +410,8 @@ function getMinimumMarginRequirement(
     `Test: Fixed Factor is${fixedFactor(
       true,
       termStartTimestamp,
-      termEndTimestamp
+      termEndTimestamp,
+      toBn((1632249308).toString())
     )}`
   );
 

@@ -7,8 +7,8 @@ import {
 } from "ethers";
 // import { TestAMMCallee } from "../../typechain/TestAMMCallee";
 // import { MockTimeAMM } from "../../typechain/MockTimeAMM";
-import { TestVAMM } from '../../typechain/TestVAMM';
-import { TestVAMMCallee } from '../../typechain/TestVAMMCallee';
+import { TestVAMM } from "../../typechain/TestVAMM";
+import { TestVAMMCallee } from "../../typechain/TestVAMMCallee";
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
 import { sqrt } from "./sqrt";
@@ -52,11 +52,10 @@ export interface VAMMFunctions {
 export function createVAMMMFunctions({
   vammCalleeTest,
   vammTest,
-} : {
+}: {
   vammCalleeTest: TestVAMMCallee;
   vammTest: TestVAMM;
 }): VAMMFunctions {
-  
   async function swapToSqrtPrice(
     isFT: boolean,
     targetPrice: BigNumberish,
@@ -65,7 +64,7 @@ export function createVAMMMFunctions({
     const method = isFT
       ? vammCalleeTest.swapToHigherSqrtPrice
       : vammCalleeTest.swapToLowerSqrtPrice;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+
     const toAddress = typeof to === "string" ? to : to.address;
 
     return method(vammTest.address, targetPrice, toAddress);
@@ -227,8 +226,17 @@ export function fixedFactor(
   return fixedFactorValue;
 }
 
-export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
-  return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
+export function getPositionKey(
+  address: string,
+  lowerTick: number,
+  upperTick: number
+): string {
+  return utils.keccak256(
+    utils.solidityPack(
+      ["address", "int24", "int24"],
+      [address, lowerTick, upperTick]
+    )
+  );
 }
 
 // below numbers are arbitrary for now, move into another file
@@ -243,6 +251,6 @@ export const BETA: BigNumber = toBn("1.0");
 export const XI_UPPER: BigNumber = toBn("2.0");
 export const XI_LOWER: BigNumber = toBn("1.5");
 export const RATE_ORACLE_ID: string = utils.formatBytes32String("AaveV2"); // just aave for now
-export const DEFAULT_TIME_FACTOR: BigNumber= toBn("0.1");
+export const DEFAULT_TIME_FACTOR: BigNumber = toBn("0.1");
 export const MIN_TICK: number = -887272;
 export const MAX_TICK: number = 887272;
