@@ -6,6 +6,24 @@ import "./IPositionStructs.sol";
 
 interface IVAMM is IPositionStructs {
 
+    /// There are not enough funds available for the requested operation
+    error NotEnoughFunds(uint256 requested, uint256 available);
+
+    /// The two values were expected to have oppostite sigs, but do not
+    error ExpectedOppositeSigns(int256 amount0, int256 amount1);
+
+    error ExpectedSqrtPriceZeroBeforeInit(uint160 sqrtPriceX96);
+    // instead of require(slot0.sqrtPriceX96 == 0, "AI");
+
+    error LiquidityDeltaMustBePositiveInMint(uint128 amount);
+    // instead of require(amount > 0);
+
+    error IRSNotionalAmountSpecifiedMustBeNonZero(int256 amountSpecified);
+    // instead of require(params.amountSpecified != 0, "AS");
+
+    error CanOnlyTradeIfUnlocked(bool unlocked);
+    // instead of require(amm.unlocked(), "LOK");
+
     // structs
     struct Slot0 {
         // the current price
@@ -208,7 +226,7 @@ interface IVAMM is IPositionStructs {
   /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
   function tickBitmap(int16 wordPosition) external view returns (uint256);
 
-  function computePositionFixedAndVariableGrowthInside(ModifyPositionParams memory params, int24 currentTick)
+  function computePositionFixedAndVariableGrowthInside(int24 tickLower, int24 tickUpper, int24 currentTick)
      external view returns(int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside);
 
 }

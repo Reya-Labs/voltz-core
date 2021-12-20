@@ -148,7 +148,7 @@ contract MarginEngine is IMarginEngine {
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
 
         // AB: theoretically can directly call vamm from margin engine
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params, amm.getSlot0().tick);
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, amm.getSlot0().tick);
         
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
 
@@ -179,7 +179,7 @@ contract MarginEngine is IMarginEngine {
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
         // code duplication
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params, amm.getSlot0().tick);
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, amm.getSlot0().tick);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
 
         position.updateBalances(fixedTokenDelta, variableTokenDelta);

@@ -24,6 +24,8 @@ import "prb-math/contracts/PRBMathSD59x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 
 import "./core_libraries/UnwindTraderUnwindPosition.sol";
+import "./core_libraries/VAMMHelpers.sol";
+
 
 contract VAMM is IVAMM {
   using LowGasSafeMath for uint256;
@@ -63,12 +65,6 @@ contract VAMM is IVAMM {
 
   uint256 public override protocolFees;
 
-  /// There are not enough funds available for the requested operation
-  error NotEnoughFunds(uint256 requested, uint256 available);
-
-  /// The two values were expected to have oppostite sigs, but do not
-  error ExpectedOppositeSigns(int256 amount0, int256 amount1);
-
   IAMM public override amm;
 
   modifier onlyAMM() {
@@ -96,7 +92,10 @@ contract VAMM is IVAMM {
 
   /// @dev not locked because it initializes unlocked
   function initialize(uint160 sqrtPriceX96) external override onlyAMM {
-    require(slot0.sqrtPriceX96 == 0, "AI");
+    // require(slot0.sqrtPriceX96 == 0, "AI");
+    if (slot0.sqrtPriceX96 != 0)  {
+      revert ExpectedSqrtPriceZeroBeforeInit(slot0.sqrtPriceX96);
+    }
 
     int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
@@ -117,7 +116,7 @@ contract VAMM is IVAMM {
     int24 tickUpper,
     uint128 amount
   ) external override {
-    modifyPosition(
+    updatePosition(
       ModifyPositionParams({
         owner: msg.sender,
         tickLower: tickLower,
@@ -163,6 +162,11 @@ contract VAMM is IVAMM {
   }
 
   function updatePosition(ModifyPositionParams memory params) private {
+
+    Tick.checkTicks(params.tickLower, params.tickUpper);
+
+    Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
+
     UpdatePositionVars memory vars;
 
     if (params.liquidityDelta != 0) {
@@ -200,22 +204,12 @@ contract VAMM is IVAMM {
     // clear any tick data that is no longer needed
     if (params.liquidityDelta < 0) {
       if (vars.flippedLower) {
-        // amm.clearTicks(params.tickLower);
         ticks.clear(params.tickLower);
       }
       if (vars.flippedUpper) {
         ticks.clear(params.tickUpper);
-        // amm.clearTicks(params.tickUpper);
       }
     }
-  }
-
-  function modifyPosition(ModifyPositionParams memory params) private {
-    Tick.checkTicks(params.tickLower, params.tickUpper);
-
-    Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
-
-    updatePosition(params);
 
     amm.rateOracle().writeOrcleEntry(amm.underlyingToken());
 
@@ -234,13 +228,40 @@ contract VAMM is IVAMM {
     }
   }
 
+  // function modifyPosition(ModifyPositionParams memory params) private {
+  //   Tick.checkTicks(params.tickLower, params.tickUpper);
+
+  //   Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
+
+  //   updatePosition(params);
+
+  //   amm.rateOracle().writeOrcleEntry(amm.underlyingToken());
+
+  //   if (params.liquidityDelta != 0) {
+  //     if (
+  //       (_slot0.tick >= params.tickLower) && (_slot0.tick < params.tickUpper)
+  //     ) {
+  //       // current tick is inside the passed range
+  //       uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
+
+  //       liquidity = LiquidityMath.addDelta(
+  //         liquidityBefore,
+  //         params.liquidityDelta
+  //       );
+  //     }
+  //   }
+  // }
+
   function mint(
     address recipient,
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
   ) external override {
-    require(amount > 0);
+    // require(amount > 0);
+    if (amount <= 0) {
+      revert LiquidityDeltaMustBePositiveInMint(amount);
+    }
 
     amm.marginEngine().checkPositionMarginRequirementSatisfied(
       recipient,
@@ -250,7 +271,15 @@ contract VAMM is IVAMM {
     );
 
     // liquidityDelta is the liquidity of the position after the amount is deposited (convert to dev doc)
-    modifyPosition(
+    // modifyPosition(
+    //   ModifyPositionParams({
+    //     owner: recipient,
+    //     tickLower: tickLower,
+    //     tickUpper: tickUpper,
+    //     liquidityDelta: int256(uint256(amount)).toInt128()
+    //   })
+    // );
+    updatePosition(
       ModifyPositionParams({
         owner: recipient,
         tickLower: tickLower,
@@ -262,90 +291,30 @@ contract VAMM is IVAMM {
     emit Mint(msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
-  // can be in a separate library
-  function calculateUpdatedGlobalTrackerValues(
-    SwapParams memory params,
-    SwapState memory state,
-    StepComputations memory step,
-    uint256 variableFactor
-  )
-    internal
-    view
-    returns (
-      uint256 stateFeeGrowthGlobal,
-      int256 stateVariableTokenGrowthGlobal,
-      int256 stateFixedTokenGrowthGlobal
-    )
-  {
-    stateFeeGrowthGlobal = state.feeGrowthGlobal  + PRBMathUD60x18.div(step.feeAmount, uint256(state.liquidity));
+  // removed to optimise for contract size
+  // function accountForProtocolFees(
+  //   uint256 stepFeeAmount,
+  //   uint256 cacheFeeProtocol,
+  //   uint256 stateProtocolFee
+  // ) internal pure returns (uint256, uint256) {
+  //   uint256 delta = PRBMathUD60x18.mul(stepFeeAmount, cacheFeeProtocol); // as a percentage of LP fees
 
-    if (params.isFT) {
-      stateVariableTokenGrowthGlobal =  state.variableTokenGrowthGlobal + PRBMathSD59x18.div(int256(step.amountOut), int256(uint256(state.liquidity)));
+  //   stepFeeAmount = stepFeeAmount - delta;
 
-      // check the signs
-      stateFixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal + 
-          PRBMathSD59x18.div(
-              FixedAndVariableMath.getFixedTokenBalance(
-                -int256(step.amountIn),
-                int256(step.amountOut),
-                variableFactor,
-                amm.termStartTimestamp(),
-                amm.termEndTimestamp()
-              ),
-            int256(uint256(state.liquidity))
-          );
-    } else {
-      // check the signs are correct
-      stateVariableTokenGrowthGlobal = state.variableTokenGrowthGlobal + 
-          PRBMathSD59x18.div(-int256(step.amountIn), int256(uint256(state.liquidity)));
+  //   stateProtocolFee = stateProtocolFee + delta;
 
-      stateFixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal +
-          PRBMathSD59x18.div(
-            FixedAndVariableMath.getFixedTokenBalance(
-                int256(step.amountOut),
-                -int256(step.amountIn),
-                variableFactor,
-                amm.termStartTimestamp(),
-                amm.termEndTimestamp()
-              ), // variable factor maturity false
-            int256(uint256(state.liquidity))
-          );
-    }
-  }
-
-  function accountForProtocolFees(
-    uint256 stepFeeAmount,
-    uint256 cacheFeeProtocol,
-    uint256 stateProtocolFee
-  ) internal pure returns (uint256, uint256) {
-    uint256 delta = PRBMathUD60x18.mul(stepFeeAmount, cacheFeeProtocol); // as a percentage of LP fees
-
-    stepFeeAmount = stepFeeAmount - delta;
-
-    stateProtocolFee = stateProtocolFee + delta;
-
-    return (stepFeeAmount, stateProtocolFee);
-  }
+  //   return (stepFeeAmount, stateProtocolFee);
+  // }
 
   function swap(SwapParams memory params)
     external
     override
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
   {
-    require(params.amountSpecified != 0, "AS");
 
     Slot0 memory slot0Start = slot0;
 
-    require(amm.unlocked(), "LOK");
-
-    require(
-      params.isFT
-        ? params.sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 &&
-          params.sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
-        : params.sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 &&
-          params.sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO,
-      "SPL"
-    );
+    VAMMHelpers.checksBeforeSwap(params, slot0Start, !amm.unlocked());
 
     // slot0.unlocked = false;
     amm.setUnlocked(false);
@@ -433,11 +402,14 @@ contract VAMM is IVAMM {
 
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
-        (step.feeAmount, state.protocolFee) = accountForProtocolFees(
-          step.feeAmount,
-          cache.feeProtocol,
-          state.protocolFee
-        );
+        // (step.feeAmount, state.protocolFee) = accountForProtocolFees(
+        //   step.feeAmount,
+        //   cache.feeProtocol,
+        //   state.protocolFee
+        // );
+        uint256 delta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
+        step.feeAmount = step.feeAmount - delta;
+        state.protocolFee = state.protocolFee + delta;
       }
 
       // update global fee tracker
@@ -452,11 +424,13 @@ contract VAMM is IVAMM {
           state.feeGrowthGlobal,
           state.variableTokenGrowthGlobal,
           state.fixedTokenGrowthGlobal
-        ) = calculateUpdatedGlobalTrackerValues(
+        ) = VAMMHelpers.calculateUpdatedGlobalTrackerValues(
           params,
           state,
           step,
-          variableFactor
+          variableFactor,
+          amm.termStartTimestamp(),
+          amm.termEndTimestamp()
         );
       }
 
@@ -464,12 +438,6 @@ contract VAMM is IVAMM {
       if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
         // if the tick is initialized, run the tick transition
         if (step.initialized) {
-          // int128 liquidityNet = amm.crossTicks(
-          //     step.tickNext,
-          //     state.fixedTokenGrowthGlobal,
-          //     state.variableTokenGrowthGlobal,
-          //     state.feeGrowthGlobal
-          // );
           int128 liquidityNet = ticks.cross(
             step.tickNext,
             state.fixedTokenGrowthGlobal,
@@ -569,7 +537,8 @@ contract VAMM is IVAMM {
       );
     }
 
-    // if this is not the case then it is a position unwind induced swap triggered by a position liquidation which is handled in the position unwind function
+    // if this is not the case then it is a position unwind induced swap triggered by a position liquidation  which is handled in the position unwind function
+    // maybe would be cleaner to use callbacks like Uniswap v3?
     if (params.isTrader) {
       amm.marginEngine().updateTraderBalances(
         params.recipient,
@@ -591,7 +560,8 @@ contract VAMM is IVAMM {
   }
 
   function computePositionFixedAndVariableGrowthInside(
-    ModifyPositionParams memory params,
+    int24 tickLower,
+    int24 tickUpper,
     int24 currentTick
   )
     external
@@ -601,8 +571,8 @@ contract VAMM is IVAMM {
   {
     fixedTokenGrowthInside = ticks.getFixedTokenGrowthInside(
       Tick.FixedTokenGrowthInsideParams({
-        tickLower: params.tickLower,
-        tickUpper: params.tickUpper,
+        tickLower: tickLower,
+        tickUpper: tickUpper,
         tickCurrent: currentTick,
         fixedTokenGrowthGlobal: variableTokenGrowthGlobal
       })
@@ -610,8 +580,8 @@ contract VAMM is IVAMM {
 
     variableTokenGrowthInside = ticks.getVariableTokenGrowthInside(
       Tick.VariableTokenGrowthInsideParams({
-        tickLower: params.tickLower,
-        tickUpper: params.tickUpper,
+        tickLower: tickLower,
+        tickUpper: tickUpper,
         tickCurrent: currentTick,
         variableTokenGrowthGlobal: variableTokenGrowthGlobal
       })
