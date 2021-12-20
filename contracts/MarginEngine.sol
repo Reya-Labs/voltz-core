@@ -73,11 +73,30 @@ contract MarginEngine is IMarginEngine {
     /// The position/trader needs to be below the liquidation threshold to be liquidated
     error CannotLiquidate();
 
+    /// The resulting margin does not meet minimum requirements
+    error MarginRequirementNotMet();
+
     modifier nonZeroDelta (int256 marginDelta) {
         if (marginDelta == 0) {
             revert InvalidMarginDelta();
         }
         _;
+    }
+
+    modifier onlyAfterMaturity () {
+        if (amm.termEndTimestamp() > Time.blockTimestampScaled()) {
+            revert CannotSettleBeforeMaturity();
+        }
+        _;
+    }
+
+    /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
+    function transferMargin(address _account, int256 _marginDelta) internal {
+        if (_marginDelta > 0) {
+            IERC20Minimal(amm.underlyingToken()).transferFrom(_account, address(amm), uint256(_marginDelta));
+        } else {
+            IERC20Minimal(amm.underlyingToken()).transferFrom(address(amm), _account, uint256(-_marginDelta));
+        }
     }
 
     /// @inheritdoc IMarginEngine
@@ -100,12 +119,7 @@ contract MarginEngine is IMarginEngine {
 
         position.updateMargin(marginDelta);
 
-        if (marginDelta > 0) {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(params.owner, address(amm), uint256(marginDelta));
-        } else {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(address(amm), params.owner, uint256(-marginDelta));
-        }
-
+        transferMargin(params.owner, marginDelta);
     }
     
     /// @inheritdoc IMarginEngine
@@ -123,20 +137,11 @@ contract MarginEngine is IMarginEngine {
 
         trader.updateMargin(marginDelta);
 
-        if (marginDelta > 0) {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(recipient, address(amm), uint256(marginDelta));
-        } else {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(address(amm), recipient, uint256(-marginDelta));
-        }
-
+        transferMargin(recipient, marginDelta);
     }
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(ModifyPositionParams memory params) external override onlyAMM {
-
-        if (amm.termEndTimestamp() > Time.blockTimestampScaled()) {
-            revert CannotSettleBeforeMaturity();
-        }
+    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override onlyAMM {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
@@ -158,11 +163,7 @@ contract MarginEngine is IMarginEngine {
     }
     
     /// @inheritdoc IMarginEngine
-    function settleTrader(address recipient) external override onlyAMM {
-
-        if (amm.termEndTimestamp() > Time.blockTimestampScaled()) {
-            revert CannotSettleBeforeMaturity();
-        }
+    function settleTrader(address recipient) onlyAfterMaturity external override onlyAMM {
 
         Trader.Info storage trader = traders.get(recipient);        
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()));
@@ -172,11 +173,7 @@ contract MarginEngine is IMarginEngine {
     }
     
     /// @inheritdoc IMarginEngine
-    function liquidatePosition(ModifyPositionParams memory params) external override {
-
-        if (amm.termEndTimestamp() > Time.blockTimestampScaled()) {
-            revert CannotSettleBeforeMaturity();
-        }
+    function liquidatePosition(ModifyPositionParams memory params) onlyAfterMaturity external override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
@@ -284,9 +281,10 @@ contract MarginEngine is IMarginEngine {
                 twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
             })
         ));
-
-        require(position.margin >= marginRequirement, "position margin higher than requirement");
-
+   
+        if (marginRequirement > position.margin) {
+            revert MarginRequirementNotMet();
+        }
     }
 
     /// @inheritdoc IMarginEngine
@@ -319,8 +317,9 @@ contract MarginEngine is IMarginEngine {
         ));
 
         // AB: revert if margin requirement is satisfied (unless it is a liquidation?)
-        require(trader.margin >= marginRequirement, "Margin Requirement");
-
+        if (marginRequirement > trader.margin) {
+            revert MarginRequirementNotMet();
+        }
     }
 
     /// @inheritdoc IMarginEngine
@@ -341,7 +340,6 @@ contract MarginEngine is IMarginEngine {
 
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
         position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
-
     }
 
 }
