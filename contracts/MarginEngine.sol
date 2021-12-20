@@ -11,7 +11,6 @@ import "./core_libraries/Trader.sol";
 import "./utils/SafeCast.sol";
 import "./utils/LowGasSafeMath.sol";
 
-import "hardhat/console.sol";
 import "./interfaces/IMarginCalculator.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
@@ -65,14 +64,21 @@ contract MarginEngine is IMarginEngine {
         amm = IAMM(_ammAddress);
     }
 
+    /// Only the position owner can update the position margin
+    error OnlyOwnerCanUpdatePosition();
+
     /// @inheritdoc IMarginEngine
     function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external onlyAMM override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        require(params.owner == msg.sender, "only the position owner can update the position margin");
 
-        require(marginDelta!=0, "delta cannot be zero");
+        if (params.owner != msg.sender) {
+            revert OnlyOwnerCanUpdatePosition();
+        }
+        // require(params.owner == msg.sender, "only the position owner can update the position margin");
+
+        require(marginDelta!=0, "ZD");
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
