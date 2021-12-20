@@ -185,6 +185,10 @@ contract MarginEngine is IMarginEngine {
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
 
+        address underlyingToken = amm.underlyingToken();
+        uint256 startTimestamp = amm.termStartTimestamp();
+        uint256 endTimestamp = amm.termEndTimestamp();
+
         bool isLiquidatable = amm.calculator().isLiquidatablePosition(
             IMarginCalculator.PositionMarginRequirementParams({
                 owner: params.owner,
@@ -192,14 +196,14 @@ contract MarginEngine is IMarginEngine {
                 tickUpper: params.tickUpper,
                 isLM: true,
                 currentTick: amm.getSlot0().tick,
-                termStartTimestamp: amm.termStartTimestamp(),
-                termEndTimestamp: amm.termEndTimestamp(),
+                termStartTimestamp: startTimestamp,
+                termEndTimestamp: endTimestamp,
                 liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()),
+                variableFactor: amm.rateOracle().variableFactor(false, underlyingToken, startTimestamp, endTimestamp),
                 rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
+                twapApy: amm.rateOracle().getTwapApy(underlyingToken)
             }),
             position.margin
         );
@@ -263,6 +267,9 @@ contract MarginEngine is IMarginEngine {
         Position.Info memory position = positions.get(recipient, tickLower, tickUpper);
     
         uint128 amountTotal = amount + position._liquidity;
+        address underlyingToken = amm.underlyingToken();
+        uint256 startTimestamp = amm.termStartTimestamp();
+        uint256 endTimestamp = amm.termEndTimestamp();
         
         int256 marginRequirement = int256(amm.calculator().getPositionMarginRequirement(
             IMarginCalculator.PositionMarginRequirementParams({
@@ -271,14 +278,14 @@ contract MarginEngine is IMarginEngine {
                 tickUpper: tickUpper,
                 isLM: false,
                 currentTick: amm.getSlot0().tick,
-                termStartTimestamp: amm.termStartTimestamp(),
-                termEndTimestamp: amm.termEndTimestamp(),
+                termStartTimestamp: startTimestamp,
+                termEndTimestamp: endTimestamp,
                 liquidity: amountTotal,
                 fixedTokenBalance: 0, // should not be set to 0!
                 variableTokenBalance: 0, // should not be set to 0!
-                variableFactor: amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()),
+                variableFactor: amm.rateOracle().variableFactor(false, underlyingToken, startTimestamp, endTimestamp),
                 rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
+                twapApy: amm.rateOracle().getTwapApy(underlyingToken)
             })
         ));
    
