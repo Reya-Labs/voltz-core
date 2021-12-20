@@ -15,6 +15,24 @@ interface FactoryFixture {
   factory: Factory;
 }
 
+async function vammHelpersFixture() {
+
+  const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
+
+  const VAMMHelpersFactory = await ethers.getContractFactory(
+    "VAMMHelpers",
+    {
+      libraries: {
+        FixedAndVariableMath: fixedAndVariableMath.address
+      }
+    }
+  );
+
+  const vammHelpers = await VAMMHelpersFactory.deploy();
+
+  return { vammHelpers };
+}
+
 async function positionFixture() {
   // : Promise<PositionFixture> {
 
@@ -122,8 +140,8 @@ export const vammFixture: Fixture<VAMMFixture> =
     const { tick } = await tickFixture();
     const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
     const { marginEngineHelpers } = await marginEngineHelpersFixture();
-    const { unwindTraderUnwindPosition } =
-      await unwindTraderUnwinPositionFixture();
+    const { unwindTraderUnwindPosition } = await unwindTraderUnwinPositionFixture();
+    const { vammHelpers } = await vammHelpersFixture();      
 
     const deployerTestFactory = await ethers.getContractFactory(
       "TestDeployer",
@@ -134,6 +152,7 @@ export const vammFixture: Fixture<VAMMFixture> =
           Time: time.address,
           MarginEngineHelpers: marginEngineHelpers.address,
           UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
+          VAMMHelpers: vammHelpers.address
         },
       }
     );
@@ -143,6 +162,7 @@ export const vammFixture: Fixture<VAMMFixture> =
         FixedAndVariableMath: fixedAndVariableMath.address,
         Tick: tick.address,
         Time: time.address,
+        VAMMHelpers: vammHelpers.address
       },
     });
 
@@ -177,8 +197,8 @@ export const marginEngineFixture: Fixture<MarginEngineFixture> =
     const { tick } = await tickFixture();
     const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
     const { marginEngineHelpers } = await marginEngineHelpersFixture();
-    const { unwindTraderUnwindPosition } =
-      await unwindTraderUnwinPositionFixture();
+    const { unwindTraderUnwindPosition } = await unwindTraderUnwinPositionFixture();
+    const { vammHelpers } = await vammHelpersFixture();      
 
     const deployerTestFactory = await ethers.getContractFactory(
       "TestDeployer",
@@ -189,6 +209,7 @@ export const marginEngineFixture: Fixture<MarginEngineFixture> =
           Time: time.address,
           MarginEngineHelpers: marginEngineHelpers.address,
           UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
+          VAMMHelpers: vammHelpers.address
         },
       }
     );
@@ -240,6 +261,7 @@ export const ammFixture: Fixture<AMMFixture> =
     const { marginEngineHelpers } = await marginEngineHelpersFixture();
     const { unwindTraderUnwindPosition } =
       await unwindTraderUnwinPositionFixture();
+    const { vammHelpers } = await vammHelpersFixture();      
 
     const deployerTestFactory = await ethers.getContractFactory(
       "TestDeployer",
@@ -250,6 +272,7 @@ export const ammFixture: Fixture<AMMFixture> =
           Time: time.address,
           MarginEngineHelpers: marginEngineHelpers.address,
           UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
+          VAMMHelpers: vammHelpers.address
         },
       }
     );
