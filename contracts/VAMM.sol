@@ -14,7 +14,6 @@ import "./utils/LowGasSafeMath.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
 
-import "hardhat/console.sol";
 import "./interfaces/IMarginCalculator.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
@@ -64,6 +63,12 @@ contract VAMM is IVAMM {
 
   uint256 public override protocolFees;
 
+  /// There are not enough funds available for the requested operation
+  error NotEnoughFunds(uint256 requested, uint256 available);
+
+  /// The two values were expected to have oppostite sigs, but do not
+  error ExpectedOppositeSigns(int256 amount0, int256 amount1);
+
   IAMM public override amm;
 
   modifier onlyAMM() {
@@ -76,15 +81,16 @@ contract VAMM is IVAMM {
     amm = IAMM(_ammAddress);
   }
 
+
+  /// @notice Updates internal accounting to reflect a collection of protocol fees. The actual transfer of fees must happen separately.
   function updateProtocolFees(uint256 protocolFeesCollected)
     external
     override
     onlyAMM
   {
-    require(
-      protocolFeesCollected <= protocolFees,
-      "Can't withdraw more than have"
-    );
+    if (protocolFees < protocolFeesCollected) {
+      revert NotEnoughFunds(protocolFeesCollected, protocolFees);
+    }
     protocolFees = protocolFees - protocolFeesCollected;
   }
 
@@ -520,11 +526,15 @@ contract VAMM is IVAMM {
     uint256 amount1;
 
     if (amount0Int > 0) {
-      require(amount1Int < 0, "amount0 and amount1 should have opposite signs");
+      if (amount1Int >= 0) {
+        revert ExpectedOppositeSigns(amount0Int, amount1Int);
+      } 
       amount0 = uint256(amount0Int);
       amount1 = uint256(-amount1Int);
     } else if (amount1Int > 0) {
-      require(amount0Int < 0, "amount0 and amount1 should have opposite signs");
+      if (amount0Int >= 0) {
+        revert ExpectedOppositeSigns(amount0Int, amount1Int);
+      } 
       amount0 = uint256(-amount0Int);
       amount1 = uint256(amount1Int);
     }
