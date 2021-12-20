@@ -25,8 +25,6 @@ import "./core_libraries/UnwindTraderUnwindPosition.sol";
 import "./core_libraries/MarginEngineHelpers.sol";
 
 contract MarginEngine is IMarginEngine {
-    using LowGasSafeMath for uint256;
-    using LowGasSafeMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
@@ -58,7 +56,6 @@ contract MarginEngine is IMarginEngine {
         _;
     }
 
-    
     /// @inheritdoc IMarginEngine
     function setAMM(address _ammAddress) external onlyAMM override {
         amm = IAMM(_ammAddress);
@@ -76,18 +73,20 @@ contract MarginEngine is IMarginEngine {
     /// The position/trader needs to be below the liquidation threshold to be liquidated
     error CannotLiquidate();
 
+    modifier nonZeroDelta (int256 marginDelta) {
+        if (marginDelta == 0) {
+            revert InvalidMarginDelta();
+        }
+        _;
+    }
+
     /// @inheritdoc IMarginEngine
-    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external onlyAMM override {
+    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external onlyAMM nonZeroDelta(marginDelta) override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         if (params.owner != msg.sender) {
             revert OnlyOwnerCanUpdatePosition();
-        }
-        // require(params.owner == msg.sender, "only the position owner can update the position margin");
-
-        if (marginDelta == 0) {
-            revert InvalidMarginDelta();
         }
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
@@ -110,11 +109,8 @@ contract MarginEngine is IMarginEngine {
     }
     
     /// @inheritdoc IMarginEngine
-    function updateTraderMargin(address recipient, int256 marginDelta) external onlyAMM override {
+    function updateTraderMargin(address recipient, int256 marginDelta) external onlyAMM nonZeroDelta(marginDelta) override {
 
-        if (marginDelta == 0) {
-            revert InvalidMarginDelta();
-        }
         if (recipient != msg.sender) {
             revert OnlyOwnerCanUpdatePosition();
         }
