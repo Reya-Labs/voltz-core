@@ -5,12 +5,6 @@ pragma solidity ^0.8.0;
 /// @title Optimized overflow and underflow safe math operations
 /// @notice Contains methods for doing math operations that revert on overflow or underflow for minimal gas cost
 library LowGasSafeMath {
-  /// @notice Returns x + y, reverts if sum overflows uint256
-  /// @param x The augend
-  /// @param y The addend
-  /// @return z The sum of x and y
-
-  
   function check(
     uint256 x,
     uint256 y,
@@ -21,6 +15,10 @@ library LowGasSafeMath {
     }
   }
 
+  /// @notice Returns x + y, reverts if sum overflows uint256
+  /// @param x The augend
+  /// @param y The addend
+  /// @return z The sum of x and y
   function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
     require((z = x + y) >= x);
 

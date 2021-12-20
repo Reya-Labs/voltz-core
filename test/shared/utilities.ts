@@ -193,7 +193,11 @@ export const MAX_SQRT_RATIO = BigNumber.from(
 );
 
 export function expandTo18Decimals(n: number): BigNumber {
-  return BigNumber.from(n).mul(BigNumber.from(10).pow(18));
+  return expandToDecimals(n, 18);
+}
+
+export function expandToDecimals(n: number, decimals: number): BigNumber {
+  return BigNumber.from(n).mul(BigNumber.from(10).pow(decimals));
 }
 
 export function accrualFact(timeInSeconds: BigNumber): BigNumber {
