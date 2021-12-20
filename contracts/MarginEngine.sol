@@ -11,7 +11,6 @@ import "./core_libraries/Trader.sol";
 import "./utils/SafeCast.sol";
 import "./utils/LowGasSafeMath.sol";
 
-import "hardhat/console.sol";
 import "./interfaces/IMarginCalculator.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
@@ -26,8 +25,6 @@ import "./core_libraries/UnwindTraderUnwindPosition.sol";
 import "./core_libraries/MarginEngineHelpers.sol";
 
 contract MarginEngine is IMarginEngine {
-    using LowGasSafeMath for uint256;
-    using LowGasSafeMath for int256;
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
@@ -59,20 +56,57 @@ contract MarginEngine is IMarginEngine {
         _;
     }
 
-    
     /// @inheritdoc IMarginEngine
     function setAMM(address _ammAddress) external onlyAMM override {
         amm = IAMM(_ammAddress);
     }
 
+    /// Only the position/trade owner can update the position/trade margin
+    error OnlyOwnerCanUpdatePosition();
+
+    /// Margin delta must not equal zero
+    error InvalidMarginDelta();
+
+    /// Positions and Traders cannot be settled before the applicable interest rate swap has matured 
+    error CannotSettleBeforeMaturity();
+
+    /// The position/trader needs to be below the liquidation threshold to be liquidated
+    error CannotLiquidate();
+
+    /// The resulting margin does not meet minimum requirements
+    error MarginRequirementNotMet();
+
+    modifier nonZeroDelta (int256 marginDelta) {
+        if (marginDelta == 0) {
+            revert InvalidMarginDelta();
+        }
+        _;
+    }
+
+    modifier onlyAfterMaturity () {
+        if (amm.termEndTimestamp() > Time.blockTimestampScaled()) {
+            revert CannotSettleBeforeMaturity();
+        }
+        _;
+    }
+
+    /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
+    function transferMargin(address _account, int256 _marginDelta) internal {
+        if (_marginDelta > 0) {
+            IERC20Minimal(amm.underlyingToken()).transferFrom(_account, address(amm), uint256(_marginDelta));
+        } else {
+            IERC20Minimal(amm.underlyingToken()).transferFrom(address(amm), _account, uint256(-_marginDelta));
+        }
+    }
+
     /// @inheritdoc IMarginEngine
-    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external onlyAMM override {
+    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external onlyAMM nonZeroDelta(marginDelta) override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        require(params.owner == msg.sender, "only the position owner can update the position margin");
-
-        require(marginDelta!=0, "delta cannot be zero");
+        if (params.owner != msg.sender) {
+            revert OnlyOwnerCanUpdatePosition();
+        }
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
@@ -85,19 +119,15 @@ contract MarginEngine is IMarginEngine {
 
         position.updateMargin(marginDelta);
 
-        if (marginDelta > 0) {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(params.owner, address(amm), uint256(marginDelta));
-        } else {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(address(amm), params.owner, uint256(-marginDelta));
-        }
-
+        transferMargin(params.owner, marginDelta);
     }
     
     /// @inheritdoc IMarginEngine
-    function updateTraderMargin(address recipient, int256 marginDelta) external onlyAMM override {
+    function updateTraderMargin(address recipient, int256 marginDelta) external onlyAMM nonZeroDelta(marginDelta) override {
 
-        require(marginDelta!=0, "delta cannot be zero");
-        require(recipient == msg.sender, "only the trader can update the margin");
+        if (recipient != msg.sender) {
+            revert OnlyOwnerCanUpdatePosition();
+        }
         
         Trader.Info storage trader = traders.get(recipient);
 
@@ -107,18 +137,12 @@ contract MarginEngine is IMarginEngine {
 
         trader.updateMargin(marginDelta);
 
-        if (marginDelta > 0) {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(recipient, address(amm), uint256(marginDelta));
-        } else {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(address(amm), recipient, uint256(-marginDelta));
-        }
-
+        transferMargin(recipient, marginDelta);
     }
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(ModifyPositionParams memory params) external override onlyAMM {
+    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override onlyAMM {
 
-        require(Time.blockTimestampScaled() >= amm.termEndTimestamp(), "Position cannot be settled before maturity");
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
@@ -139,9 +163,8 @@ contract MarginEngine is IMarginEngine {
     }
     
     /// @inheritdoc IMarginEngine
-    function settleTrader(address recipient) external override onlyAMM {
+    function settleTrader(address recipient) onlyAfterMaturity external override onlyAMM {
 
-        require(Time.blockTimestampScaled() >= amm.termEndTimestamp(), "A Trader cannot settle before maturity");
         Trader.Info storage trader = traders.get(recipient);        
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()));
 
@@ -150,9 +173,8 @@ contract MarginEngine is IMarginEngine {
     }
     
     /// @inheritdoc IMarginEngine
-    function liquidatePosition(ModifyPositionParams memory params) external override {
+    function liquidatePosition(ModifyPositionParams memory params) onlyAfterMaturity external override {
 
-        require(Time.blockTimestampScaled() < amm.termEndTimestamp(), "A position cannot be liquidted after maturity");
         Tick.checkTicks(params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
@@ -163,6 +185,10 @@ contract MarginEngine is IMarginEngine {
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
 
+        address underlyingToken = amm.underlyingToken();
+        uint256 startTimestamp = amm.termStartTimestamp();
+        uint256 endTimestamp = amm.termEndTimestamp();
+
         bool isLiquidatable = amm.calculator().isLiquidatablePosition(
             IMarginCalculator.PositionMarginRequirementParams({
                 owner: params.owner,
@@ -170,19 +196,21 @@ contract MarginEngine is IMarginEngine {
                 tickUpper: params.tickUpper,
                 isLM: true,
                 currentTick: amm.getSlot0().tick,
-                termStartTimestamp: amm.termStartTimestamp(),
-                termEndTimestamp: amm.termEndTimestamp(),
+                termStartTimestamp: startTimestamp,
+                termEndTimestamp: endTimestamp,
                 liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()),
+                variableFactor: amm.rateOracle().variableFactor(false, underlyingToken, startTimestamp, endTimestamp),
                 rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
+                twapApy: amm.rateOracle().getTwapApy(underlyingToken)
             }),
             position.margin
         );
 
-        require(isLiquidatable, "The position needs to be below the liquidation threshold to be liquidated");
+        if (!isLiquidatable) {
+            revert CannotLiquidate();
+        }
 
         uint256 liquidatorReward = PRBMathUD60x18.mul(uint256(position.margin), LIQUIDATOR_REWARD);
 
@@ -212,7 +240,9 @@ contract MarginEngine is IMarginEngine {
             trader.margin
         );
 
-        require(isLiquidatable, "The trader needs to be below the liquidation threshold to be liquidated");
+        if (!isLiquidatable) {
+            revert CannotLiquidate();
+        }
 
         (uint256 liquidatorReward, int256 updatedMargin) = MarginEngineHelpers.calculateLiquidatorRewardAndUpdatedMargin(trader.margin, LIQUIDATOR_REWARD);
 
@@ -237,6 +267,9 @@ contract MarginEngine is IMarginEngine {
         Position.Info memory position = positions.get(recipient, tickLower, tickUpper);
     
         uint128 amountTotal = amount + position._liquidity;
+        address underlyingToken = amm.underlyingToken();
+        uint256 startTimestamp = amm.termStartTimestamp();
+        uint256 endTimestamp = amm.termEndTimestamp();
         
         int256 marginRequirement = int256(amm.calculator().getPositionMarginRequirement(
             IMarginCalculator.PositionMarginRequirementParams({
@@ -245,19 +278,20 @@ contract MarginEngine is IMarginEngine {
                 tickUpper: tickUpper,
                 isLM: false,
                 currentTick: amm.getSlot0().tick,
-                termStartTimestamp: amm.termStartTimestamp(),
-                termEndTimestamp: amm.termEndTimestamp(),
+                termStartTimestamp: startTimestamp,
+                termEndTimestamp: endTimestamp,
                 liquidity: amountTotal,
                 fixedTokenBalance: 0, // should not be set to 0!
                 variableTokenBalance: 0, // should not be set to 0!
-                variableFactor: amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()),
+                variableFactor: amm.rateOracle().variableFactor(false, underlyingToken, startTimestamp, endTimestamp),
                 rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
+                twapApy: amm.rateOracle().getTwapApy(underlyingToken)
             })
         ));
-
-        require(position.margin >= marginRequirement, "position margin higher than requirement");
-
+   
+        if (marginRequirement > position.margin) {
+            revert MarginRequirementNotMet();
+        }
     }
 
     /// @inheritdoc IMarginEngine
@@ -290,8 +324,9 @@ contract MarginEngine is IMarginEngine {
         ));
 
         // AB: revert if margin requirement is satisfied (unless it is a liquidation?)
-        require(trader.margin >= marginRequirement, "Margin Requirement");
-
+        if (marginRequirement > trader.margin) {
+            revert MarginRequirementNotMet();
+        }
     }
 
     /// @inheritdoc IMarginEngine
@@ -312,7 +347,6 @@ contract MarginEngine is IMarginEngine {
 
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
         position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
-
     }
 
 }
