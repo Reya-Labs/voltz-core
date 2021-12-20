@@ -64,21 +64,31 @@ contract MarginEngine is IMarginEngine {
         amm = IAMM(_ammAddress);
     }
 
-    /// Only the position owner can update the position margin
+    /// Only the position/trade owner can update the position/trade margin
     error OnlyOwnerCanUpdatePosition();
+
+    /// Margin delta must not equal zero
+    error InvalidMarginDelta();
+
+    /// Positions and Traders cannot be settled before the applicable interest rate swap has matured 
+    error CannotSettleBeforeMaturity();
+
+    /// The position/trader needs to be below the liquidation threshold to be liquidated
+    error CannotLiquidate();
 
     /// @inheritdoc IMarginEngine
     function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external onlyAMM override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-
         if (params.owner != msg.sender) {
             revert OnlyOwnerCanUpdatePosition();
         }
         // require(params.owner == msg.sender, "only the position owner can update the position margin");
 
-        require(marginDelta!=0, "ZD");
+        if (marginDelta == 0) {
+            revert InvalidMarginDelta();
+        }
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
@@ -102,8 +112,12 @@ contract MarginEngine is IMarginEngine {
     /// @inheritdoc IMarginEngine
     function updateTraderMargin(address recipient, int256 marginDelta) external onlyAMM override {
 
-        require(marginDelta!=0, "delta cannot be zero");
-        require(recipient == msg.sender, "only the trader can update the margin");
+        if (marginDelta == 0) {
+            revert InvalidMarginDelta();
+        }
+        if (recipient != msg.sender) {
+            revert OnlyOwnerCanUpdatePosition();
+        }
         
         Trader.Info storage trader = traders.get(recipient);
 
@@ -124,7 +138,10 @@ contract MarginEngine is IMarginEngine {
     /// @inheritdoc IMarginEngine
     function settlePosition(ModifyPositionParams memory params) external override onlyAMM {
 
-        require(Time.blockTimestampScaled() >= amm.termEndTimestamp(), "Position cannot be settled before maturity");
+        if (amm.termEndTimestamp() > Time.blockTimestampScaled()) {
+            revert CannotSettleBeforeMaturity();
+        }
+
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
@@ -147,7 +164,10 @@ contract MarginEngine is IMarginEngine {
     /// @inheritdoc IMarginEngine
     function settleTrader(address recipient) external override onlyAMM {
 
-        require(Time.blockTimestampScaled() >= amm.termEndTimestamp(), "A Trader cannot settle before maturity");
+        if (amm.termEndTimestamp() > Time.blockTimestampScaled()) {
+            revert CannotSettleBeforeMaturity();
+        }
+
         Trader.Info storage trader = traders.get(recipient);        
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()));
 
@@ -158,7 +178,10 @@ contract MarginEngine is IMarginEngine {
     /// @inheritdoc IMarginEngine
     function liquidatePosition(ModifyPositionParams memory params) external override {
 
-        require(Time.blockTimestampScaled() < amm.termEndTimestamp(), "A position cannot be liquidted after maturity");
+        if (amm.termEndTimestamp() > Time.blockTimestampScaled()) {
+            revert CannotSettleBeforeMaturity();
+        }
+
         Tick.checkTicks(params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
@@ -188,7 +211,9 @@ contract MarginEngine is IMarginEngine {
             position.margin
         );
 
-        require(isLiquidatable, "The position needs to be below the liquidation threshold to be liquidated");
+        if (!isLiquidatable) {
+            revert CannotLiquidate();
+        }
 
         uint256 liquidatorReward = PRBMathUD60x18.mul(uint256(position.margin), LIQUIDATOR_REWARD);
 
@@ -218,7 +243,9 @@ contract MarginEngine is IMarginEngine {
             trader.margin
         );
 
-        require(isLiquidatable, "The trader needs to be below the liquidation threshold to be liquidated");
+        if (!isLiquidatable) {
+            revert CannotLiquidate();
+        }
 
         (uint256 liquidatorReward, int256 updatedMargin) = MarginEngineHelpers.calculateLiquidatorRewardAndUpdatedMargin(trader.margin, LIQUIDATOR_REWARD);
 
