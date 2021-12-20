@@ -12,7 +12,7 @@ import "../core_libraries/FixedAndVariableMath.sol";
 /// @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
 library SwapMath {
     
-    function computeFeeAmount(uint256 notional, uint256 timeToMaturityInSeconds, uint256 feePercentage) internal view returns(uint256 feeAmount) {
+    function computeFeeAmount(uint256 notional, uint256 timeToMaturityInSeconds, uint256 feePercentage) internal pure returns(uint256 feeAmount) {
         
         uint256 timeInYears = FixedAndVariableMath.accrualFact(timeToMaturityInSeconds);
         
