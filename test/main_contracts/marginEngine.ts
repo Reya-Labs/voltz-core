@@ -21,7 +21,7 @@ import {
   MIN_SQRT_RATIO,
   encodeSqrtRatioX96,
   SwapToPriceFunction,
-  mint
+  mint,
 } from "../shared/utilities";
 import { mainnetConstants } from "../../scripts/helpers/constants";
 import { RATE_ORACLE_ID } from "../shared/utilities";
@@ -34,7 +34,6 @@ import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 const createFixtureLoader = waffle.createFixtureLoader;
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
 
-
 describe("MarginEngine", () => {
   let wallet: Wallet, other: Wallet;
   let factory: Factory;
@@ -46,7 +45,9 @@ describe("MarginEngine", () => {
   let maxTick: number;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
-  let createMarginEngine: ThenArg<ReturnType<typeof marginEngineFixture>>["createMarginEngine"];
+  let createMarginEngine: ThenArg<
+    ReturnType<typeof marginEngineFixture>
+  >["createMarginEngine"];
   let createAMM: ThenArg<ReturnType<typeof ammFixture>>["createAMM"];
 
   before("create fixture loader", async () => {
@@ -62,7 +63,7 @@ describe("MarginEngine", () => {
     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
     ({ factory, createAMM } = await loadFixture(ammFixture));
-    
+
     const amm = await createAMM(
       mainnetConstants.tokens.USDC.address,
       RATE_ORACLE_ID,
@@ -70,7 +71,8 @@ describe("MarginEngine", () => {
       termEndTimestampBN
     );
 
-    ({ factory, createMarginEngine, marginEngineCalleeTest } = await loadFixture(marginEngineFixture));
+    ({ factory, createMarginEngine, marginEngineCalleeTest } =
+      await loadFixture(marginEngineFixture));
 
     marginEngineTest = await createMarginEngine(amm.address);
 
@@ -80,24 +82,10 @@ describe("MarginEngine", () => {
     tickSpacing = TICK_SPACING;
   });
 
-
   describe("#updateTraderMargin", () => {
-
     it("reverts if margin delta is zero", async () => {
-      await expect(marginEngineTest.updateTraderMarginTest(wallet.address, 0)).to.be.reverted;
-    })
-
-
-  })
-
-
-
-
-
-
-
-
-})
-
-
-
+      await expect(marginEngineTest.updateTraderMarginTest(wallet.address, 0))
+        .to.be.reverted;
+    });
+  });
+});

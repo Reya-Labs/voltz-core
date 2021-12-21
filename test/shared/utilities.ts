@@ -15,7 +15,6 @@ import { sqrt } from "./sqrt";
 import { div, sub, mul } from "./functions";
 import { toBn } from "evm-bn";
 
-
 export const TICK_SPACING: number = 60;
 
 export const SECONDS_IN_YEAR: BigNumber = toBn("31536000");
@@ -28,7 +27,7 @@ export type MintFunction = (
   tickUpper: BigNumberish,
   liquidity: BigNumberish,
   vammCalleeTest: TestVAMMCallee,
-  vammTest: TestVAMM,
+  vammTest: TestVAMM
 ) => Promise<ContractTransaction>;
 
 export type SwapToPriceFunction = (
@@ -52,7 +51,6 @@ export interface VAMMFunctions {
   swap1ForExact0: SwapFunction;
 }
 
-
 export const mint: MintFunction = async (
   recipient,
   tickLower,
@@ -69,7 +67,6 @@ export const mint: MintFunction = async (
     liquidity
   );
 };
-
 
 // convert into above
 export function createVAMMMFunctions({

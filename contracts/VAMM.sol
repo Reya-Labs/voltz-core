@@ -228,30 +228,6 @@ contract VAMM is IVAMM {
     }
   }
 
-  // function modifyPosition(ModifyPositionParams memory params) private {
-  //   Tick.checkTicks(params.tickLower, params.tickUpper);
-
-  //   Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
-
-  //   updatePosition(params);
-
-  //   amm.rateOracle().writeOrcleEntry(amm.underlyingToken());
-
-  //   if (params.liquidityDelta != 0) {
-  //     if (
-  //       (_slot0.tick >= params.tickLower) && (_slot0.tick < params.tickUpper)
-  //     ) {
-  //       // current tick is inside the passed range
-  //       uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
-
-  //       liquidity = LiquidityMath.addDelta(
-  //         liquidityBefore,
-  //         params.liquidityDelta
-  //       );
-  //     }
-  //   }
-  // }
-
   function mint(
     address recipient,
     int24 tickLower,
@@ -282,21 +258,6 @@ contract VAMM is IVAMM {
 
     emit Mint(msg.sender, recipient, tickLower, tickUpper, amount);
   }
-
-  // removed to optimise for contract size
-  // function accountForProtocolFees(
-  //   uint256 stepFeeAmount,
-  //   uint256 cacheFeeProtocol,
-  //   uint256 stateProtocolFee
-  // ) internal pure returns (uint256, uint256) {
-  //   uint256 delta = PRBMathUD60x18.mul(stepFeeAmount, cacheFeeProtocol); // as a percentage of LP fees
-
-  //   stepFeeAmount = stepFeeAmount - delta;
-
-  //   stateProtocolFee = stateProtocolFee + delta;
-
-  //   return (stepFeeAmount, stateProtocolFee);
-  // }
 
   function swap(SwapParams memory params)
     external
@@ -394,11 +355,6 @@ contract VAMM is IVAMM {
 
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
-        // (step.feeAmount, state.protocolFee) = accountForProtocolFees(
-        //   step.feeAmount,
-        //   cache.feeProtocol,
-        //   state.protocolFee
-        // );
         uint256 delta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
         step.feeAmount = step.feeAmount - delta;
         state.protocolFee = state.protocolFee + delta;
