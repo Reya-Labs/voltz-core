@@ -2,16 +2,18 @@
 
 pragma solidity ^0.8.0;
 
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 import "../interfaces/IAMM.sol";
 import "../interfaces/IMarginEngine.sol";
 import "./Time.sol";
 
+contract MarginEngineHelpers {
 
-
-// get rid of Typed PRB
-library MarginEngineHelpers {
+    /// @notice Calculate block.timestamp to wei precision
+    /// @return Current timestamp in wei-seconds (1/1e18)
+    function blockTimestampScaled() public view returns (uint256) {
+        return block.timestamp * 10**18;
+    }
 
     /// @notice Calculate the liquidator reward and the updated trader margin
     /// @param traderMargin Current margin of the trader
@@ -19,29 +21,13 @@ library MarginEngineHelpers {
     /// @return updatedMargin Trader margin net the liquidatorReward
     /// @dev liquidatorReward = traderMargin * LIQUIDATOR_REWARD
     /// @dev updatedMargin = traderMargin - liquidatorReward
-    function calculateLiquidatorRewardAndUpdatedMargin(int256 traderMargin, uint256 liquidatorRewardAsProportionOfMargin) external pure returns (uint256 liquidatorReward, int256 updatedMargin) {
+    function calculateLiquidatorRewardAndUpdatedMargin(int256 traderMargin, uint256 liquidatorRewardAsProportionOfMargin) public pure returns (uint256 liquidatorReward, int256 updatedMargin) {
 
-        liquidatorReward = PRBMathUD60x18Typed.mul(
+        liquidatorReward = PRBMathUD60x18.mul(
+                                uint256(traderMargin),
+                                liquidatorRewardAsProportionOfMargin);
 
-            PRBMath.UD60x18({
-                value: uint256(traderMargin)
-            }),
-
-            PRBMath.UD60x18({
-                value: liquidatorRewardAsProportionOfMargin
-            })
-        ).value;
-
-        updatedMargin = PRBMathSD59x18Typed.sub(
-
-            PRBMath.SD59x18({
-                value: traderMargin
-            }),
-
-            PRBMath.SD59x18({
-                value: int256(liquidatorReward)
-            })
-        ).value;
+        updatedMargin = traderMargin - int256(liquidatorReward);
     }
 
     /// @notice Check if the position margin is above the Initial Margin Requirement
@@ -99,11 +85,11 @@ library MarginEngineHelpers {
     /// @dev Trader's margin cannot be updated unless the trader is settled
     /// @dev If the current block timestamp is higher than the term end timestamp of the IRS AMM then the trader needs to be settled to be able to update their margin
     /// @dev If the AMM has already expired and the trader is settled then the trader can withdraw their margin
-    function checkTraderMarginCanBeUpdated(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, bool isTraderSettled, address ammAddress) external view {
+    function checkTraderMarginCanBeUpdated(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, bool isTraderSettled, address ammAddress) public view {
 
         IAMM amm = IAMM(ammAddress);
 
-        if (Time.blockTimestampScaled() >= amm.termEndTimestamp()) {
+        if (blockTimestampScaled() >= amm.termEndTimestamp()) {
             require(isTraderSettled, "Trader's margin cannot be updated unless the trader is settled");
 
             require(updatedMarginWouldBe>=0, "can't withdraw more than have");
@@ -131,11 +117,11 @@ library MarginEngineHelpers {
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
         uint256 variableFactor,
-        address ammAddress) external view {
+        address ammAddress) public view {
 
         IAMM amm = IAMM(ammAddress);
 
-        if (Time.blockTimestampScaled() >= amm.termEndTimestamp()) {
+        if (blockTimestampScaled() >= amm.termEndTimestamp()) {
             require(isPositionBurned);
             require(updatedMarginWouldBe>=0, "can't withdraw more than have");
         } else {
