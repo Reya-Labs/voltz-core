@@ -12,6 +12,7 @@ import "./utils/SafeCast.sol";
 import "./utils/LowGasSafeMath.sol";
 
 import "./interfaces/IMarginCalculator.sol";
+import "./interfaces/amm/IAMMImmutables.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IFactory.sol";
@@ -24,7 +25,7 @@ import "./core_libraries/UnwindTraderUnwindPosition.sol";
 
 import "./core_libraries/MarginEngineHelpers.sol";
 
-contract MarginEngine is IMarginEngine {
+contract MarginEngine is IMarginEngine, IAMMImmutables {
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
@@ -40,6 +41,21 @@ contract MarginEngine is IMarginEngine {
     uint256 public constant LIQUIDATOR_REWARD = 2 * 10**15;
     /// @inheritdoc IMarginEngine
     IAMM public override amm;
+    /// @inheritdoc IAMMImmutables
+    address public override immutable underlyingToken;
+    /// @inheritdoc IAMMImmutables
+    uint256 public override immutable termStartTimestamp;
+    /// @inheritdoc IAMMImmutables
+    uint256 public override immutable termEndTimestamp;
+    /// @inheritdoc IAMMImmutables
+    IMarginCalculator public override immutable calculator;
+    /// @inheritdoc IAMMImmutables
+    IRateOracle public override immutable rateOracle;
+    /// @inheritdoc IAMMImmutables
+    bytes32 public override immutable rateOracleId;
+    /// @inheritdoc IAMMImmutables
+    address public override immutable factory;
+
     /// @inheritdoc IMarginEngine
     mapping(bytes32 => Position.Info) public override positions;
     /// @inheritdoc IMarginEngine
@@ -49,18 +65,21 @@ contract MarginEngine is IMarginEngine {
         address ammAddress;      
         (ammAddress) = IDeployer(msg.sender).marginEngineParameters();
         amm = IAMM(ammAddress);
+
+        // todo: AMM never changes. We should enforce this invariant (most simply, only allow it to be set once?), and once we do we can cache all AMM properties (underlyingToken, rateOracleId, termStartTimestamp, termEndTimestamp, ... ) indefinitely here to save gas and simplify code.
+        underlyingToken = amm.underlyingToken(); // immutable in AMM therefore safe to cache forever
+        factory = amm.factory(); // immutable in AMM therefore safe to cache forever
+        rateOracleId = amm.rateOracleId(); // immutable in AMM therefore safe to cache forever
+        termStartTimestamp = amm.termStartTimestamp(); // immutable in AMM therefore safe to cache forever
+        termEndTimestamp = amm.termEndTimestamp(); // immutable in AMM therefore safe to cache forever
+        calculator = amm.calculator(); // immutable in AMM therefore safe to cache forever
+        rateOracle = amm.rateOracle(); // immutable in AMM therefore safe to cache forever
     }
 
     // just use onlyFactory
     modifier onlyAMM () {
         require(msg.sender == address(amm));
         _;
-    }
-
-    
-    /// @inheritdoc IMarginEngine
-    function setAMM(address _ammAddress) external override {
-        amm = IAMM(_ammAddress);
     }
 
     /// Only the position/trade owner can update the position/trade margin
@@ -86,7 +105,7 @@ contract MarginEngine is IMarginEngine {
     }
 
     modifier onlyAfterMaturity () {
-        if (amm.termEndTimestamp() > Time.blockTimestampScaled()) {
+        if (termEndTimestamp > Time.blockTimestampScaled()) {
             revert CannotSettleBeforeMaturity();
         }
         _;
@@ -95,9 +114,9 @@ contract MarginEngine is IMarginEngine {
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
     function transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(_account, address(amm), uint256(_marginDelta));
+            IERC20Minimal(underlyingToken).transferFrom(_account, address(amm), uint256(_marginDelta));
         } else {
-            IERC20Minimal(amm.underlyingToken()).transferFrom(address(amm), _account, uint256(-_marginDelta));
+            IERC20Minimal(underlyingToken).transferFrom(address(amm), _account, uint256(-_marginDelta));
         }
     }
 
@@ -114,7 +133,7 @@ contract MarginEngine is IMarginEngine {
 
         int256 updatedMarginWouldBe = position.margin + marginDelta;
         
-        uint256 variableFactor = amm.rateOracle().variableFactor(false, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp());
+        uint256 variableFactor = rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp);
         
         // make sure 0,0 is fixed
         MarginEngineHelpers.checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, 0, 0, variableFactor, address(amm)); 
@@ -162,7 +181,7 @@ contract MarginEngine is IMarginEngine {
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(true, underlyingToken, termStartTimestamp, termEndTimestamp));
 
         position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMargin(settlementCashflow);
@@ -173,7 +192,7 @@ contract MarginEngine is IMarginEngine {
     function settleTrader(address recipient) onlyAfterMaturity external override onlyAMM {
 
         Trader.Info storage trader = traders.get(recipient);        
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.underlyingToken(), amm.termStartTimestamp(), amm.termEndTimestamp()));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(true, underlyingToken, termStartTimestamp, termEndTimestamp));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMargin(settlementCashflow);
@@ -194,25 +213,21 @@ contract MarginEngine is IMarginEngine {
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
 
-        address underlyingToken = amm.underlyingToken();
-        uint256 startTimestamp = amm.termStartTimestamp();
-        uint256 endTimestamp = amm.termEndTimestamp();
-        
-        bool isLiquidatable = amm.calculator().isLiquidatablePosition(
+        bool isLiquidatable = calculator.isLiquidatablePosition(
             IMarginCalculator.PositionMarginRequirementParams({
                 owner: params.owner,
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
                 isLM: true,
                 currentTick: tick,
-                termStartTimestamp: startTimestamp,
-                termEndTimestamp: endTimestamp,
+                termStartTimestamp: termStartTimestamp,
+                termEndTimestamp: termEndTimestamp,
                 liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: amm.rateOracle().variableFactor(false, underlyingToken, startTimestamp, endTimestamp),
-                rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(underlyingToken)
+                variableFactor: rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp),
+                rateOracleId: rateOracleId,
+                twapApy: rateOracle.getTwapApy(underlyingToken)
             }),
             position.margin
         );
@@ -227,7 +242,7 @@ contract MarginEngine is IMarginEngine {
 
         amm.burn(params.tickLower, params.tickUpper, position._liquidity); // burn all liquidity
 
-        IERC20Minimal(amm.underlyingToken()).transferFrom(address(amm ), msg.sender, liquidatorReward);
+        IERC20Minimal(underlyingToken).transferFrom(address(amm ), msg.sender, liquidatorReward);
         
     }
 
@@ -236,15 +251,15 @@ contract MarginEngine is IMarginEngine {
         
         Trader.Info storage trader = traders.get(traderAddress);
             
-        bool isLiquidatable = amm.calculator().isLiquidatableTrader(
+        bool isLiquidatable = calculator.isLiquidatableTrader(
             IMarginCalculator.TraderMarginRequirementParams({
                 fixedTokenBalance: trader.fixedTokenBalance,
                 variableTokenBalance: trader.variableTokenBalance,
-                termStartTimestamp: amm.termStartTimestamp(),
-                termEndTimestamp: amm.termEndTimestamp(),
+                termStartTimestamp: termStartTimestamp,
+                termEndTimestamp: termEndTimestamp,
                 isLM: true,
-                rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
+                rateOracleId: rateOracleId,
+                twapApy: rateOracle.getTwapApy(underlyingToken)
             }),
             trader.margin
         );
@@ -261,7 +276,7 @@ contract MarginEngine is IMarginEngine {
         
         UnwindTraderUnwindPosition.unwindTrader(address(amm), traderAddress, notional);
 
-        IERC20Minimal(amm.underlyingToken()).transferFrom(address(amm), msg.sender, liquidatorReward);
+        IERC20Minimal(underlyingToken).transferFrom(address(amm), msg.sender, liquidatorReward);
 
     }
 
@@ -274,29 +289,24 @@ contract MarginEngine is IMarginEngine {
         ) external override {
         
         Position.Info memory position = positions.get(recipient, tickLower, tickUpper);
-    
         uint128 amountTotal = amount + position._liquidity;
-        address underlyingToken = amm.underlyingToken();
-        uint256 startTimestamp = amm.termStartTimestamp();
-        uint256 endTimestamp = amm.termEndTimestamp();
         
         (, int24 tick,) = amm.vamm().slot0();
-        
-        int256 marginRequirement = int256(amm.calculator().getPositionMarginRequirement(
+        int256 marginRequirement = int256(calculator.getPositionMarginRequirement(
             IMarginCalculator.PositionMarginRequirementParams({
                 owner: recipient,
                 tickLower: tickLower,
                 tickUpper: tickUpper,
                 isLM: false,
                 currentTick: tick,
-                termStartTimestamp: startTimestamp,
-                termEndTimestamp: endTimestamp,
+                termStartTimestamp: termStartTimestamp,
+                termEndTimestamp: termEndTimestamp,
                 liquidity: amountTotal,
                 fixedTokenBalance: 0, // todo: should not be set to 0, fix
                 variableTokenBalance: 0, // todo: should not be set to 0, fix
-                variableFactor: amm.rateOracle().variableFactor(false, underlyingToken, startTimestamp, endTimestamp),
-                rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(underlyingToken)
+                variableFactor: rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp),
+                rateOracleId: rateOracleId,
+                twapApy: rateOracle.getTwapApy(underlyingToken)
             })
         ));
    
@@ -322,15 +332,15 @@ contract MarginEngine is IMarginEngine {
         Trader.Info storage trader = traders.get(recipient);
         trader.updateBalances(fixedTokenBalance, variableTokenBalance);
 
-        int256 marginRequirement = int256(amm.calculator().getTraderMarginRequirement(
+        int256 marginRequirement = int256(calculator.getTraderMarginRequirement(
             IMarginCalculator.TraderMarginRequirementParams({
                 fixedTokenBalance: trader.fixedTokenBalance,
                 variableTokenBalance: trader.variableTokenBalance,
-                termStartTimestamp:amm.termStartTimestamp(),
-                termEndTimestamp:amm.termEndTimestamp(),
+                termStartTimestamp:termStartTimestamp,
+                termEndTimestamp:termEndTimestamp,
                 isLM: false,
-                rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
+                rateOracleId: rateOracleId,
+                twapApy: rateOracle.getTwapApy(underlyingToken)
             })
         ));
 

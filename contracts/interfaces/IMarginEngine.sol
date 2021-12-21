@@ -5,12 +5,11 @@ import "./IAMM.sol";
 import "./IVAMM.sol";
 import "./IPositionStructs.sol";
 
-
 interface IMarginEngine is IPositionStructs {
     
     // view functions
     
-    /// @notice Returns the address of the IRS AMM linked to this Margin Engine
+    /// @notice The address of the IRS AMM linked to this Margin Engine
     /// @return Interface of the IRS AMM linked to this Margin Engine
     function amm() external view returns (IAMM);
     
@@ -55,11 +54,6 @@ interface IMarginEngine is IPositionStructs {
 
 
     // non-view functions
-    
-    /// @notice Updates the AMM of the Margin Engine
-    /// @dev Must be called by the factory
-    /// @param _ammAddress The new AMM of the Margin Engine
-    function setAMM(address _ammAddress) external;
     
     /// @notice Updates Position Margin
     /// @dev Must be called by the owner of the position (unless marginDelta is positive?)
