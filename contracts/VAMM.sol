@@ -257,7 +257,8 @@ contract VAMM is IVAMM {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override {
+  ) public override {
+    // public avoids using callees for tests (timeout issue in vamm.ts)
     // require(amount > 0);
     if (amount <= 0) {
       revert LiquidityDeltaMustBePositiveInMint(amount);
@@ -270,15 +271,6 @@ contract VAMM is IVAMM {
       amount
     );
 
-    // liquidityDelta is the liquidity of the position after the amount is deposited (convert to dev doc)
-    // modifyPosition(
-    //   ModifyPositionParams({
-    //     owner: recipient,
-    //     tickLower: tickLower,
-    //     tickUpper: tickUpper,
-    //     liquidityDelta: int256(uint256(amount)).toInt128()
-    //   })
-    // );
     updatePosition(
       ModifyPositionParams({
         owner: recipient,
@@ -290,21 +282,6 @@ contract VAMM is IVAMM {
 
     emit Mint(msg.sender, recipient, tickLower, tickUpper, amount);
   }
-
-  // removed to optimise for contract size
-  // function accountForProtocolFees(
-  //   uint256 stepFeeAmount,
-  //   uint256 cacheFeeProtocol,
-  //   uint256 stateProtocolFee
-  // ) internal pure returns (uint256, uint256) {
-  //   uint256 delta = PRBMathUD60x18.mul(stepFeeAmount, cacheFeeProtocol); // as a percentage of LP fees
-
-  //   stepFeeAmount = stepFeeAmount - delta;
-
-  //   stateProtocolFee = stateProtocolFee + delta;
-
-  //   return (stepFeeAmount, stateProtocolFee);
-  // }
 
   function swap(SwapParams memory params)
     external
@@ -402,11 +379,6 @@ contract VAMM is IVAMM {
 
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
-        // (step.feeAmount, state.protocolFee) = accountForProtocolFees(
-        //   step.feeAmount,
-        //   cache.feeProtocol,
-        //   state.protocolFee
-        // );
         uint256 delta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
         step.feeAmount = step.feeAmount - delta;
         state.protocolFee = state.protocolFee + delta;

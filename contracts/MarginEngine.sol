@@ -123,7 +123,10 @@ contract MarginEngine is IMarginEngine {
     }
     
     /// @inheritdoc IMarginEngine
-    function updateTraderMargin(address recipient, int256 marginDelta) external onlyAMM nonZeroDelta(marginDelta) override {
+    function updateTraderMargin(address recipient, int256 marginDelta) public nonZeroDelta(marginDelta) override {
+        // got rid of onlyAMM for now 
+
+        // make external?, impacts the tests
 
         if (recipient != msg.sender) {
             revert OnlyOwnerCanUpdatePosition();
