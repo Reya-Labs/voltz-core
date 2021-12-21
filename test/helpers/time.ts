@@ -5,8 +5,7 @@ import { BigNumber } from "ethers";
 
 // todo; what is ther difference between this and the network provider
 export const getCurrentTimestamp = async (provider: MockProvider) => {
-  const blockNumber = await provider.getBlockNumber();
-  const block = await provider.getBlock(blockNumber);
+  const block = await provider.getBlock("latest");
   return block.timestamp;
 };
 
