@@ -257,7 +257,8 @@ contract VAMM is IVAMM {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override {
+  ) public override {
+    // public avoids using callees for tests (timeout issue in vamm.ts)
     // require(amount > 0);
     if (amount <= 0) {
       revert LiquidityDeltaMustBePositiveInMint(amount);
@@ -270,15 +271,6 @@ contract VAMM is IVAMM {
       amount
     );
 
-    // liquidityDelta is the liquidity of the position after the amount is deposited (convert to dev doc)
-    // modifyPosition(
-    //   ModifyPositionParams({
-    //     owner: recipient,
-    //     tickLower: tickLower,
-    //     tickUpper: tickUpper,
-    //     liquidityDelta: int256(uint256(amount)).toInt128()
-    //   })
-    // );
     updatePosition(
       ModifyPositionParams({
         owner: recipient,

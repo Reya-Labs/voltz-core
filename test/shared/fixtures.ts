@@ -212,7 +212,15 @@ export const marginEngineFixture: Fixture<MarginEngineFixture> =
       }
     );
     const marginEngineTestFactory = await ethers.getContractFactory(
-      "TestMarginEngine"
+      "TestMarginEngine",
+      {
+        libraries: {
+          FixedAndVariableMath: fixedAndVariableMath.address,
+          Time: time.address,
+          MarginEngineHelpers: marginEngineHelpers.address,
+          UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
+        },
+      }
     );
     const testMarginEngineCalleeFactory = await ethers.getContractFactory(
       "TestMarginEngineCallee"
