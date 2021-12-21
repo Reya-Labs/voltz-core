@@ -105,23 +105,6 @@ async function unwindTraderUnwinPositionFixture() {
   return { unwindTraderUnwindPosition };
 }
 
-async function marginEngineHelpersFixture() {
-  const { time } = await timeFixture();
-
-  const MarginEngineHelpersFactory = await ethers.getContractFactory(
-    "MarginEngineHelpers",
-    {
-      libraries: {
-        Time: time.address,
-      },
-    }
-  );
-
-  const marginEngineHelpers = await MarginEngineHelpersFactory.deploy();
-
-  return { marginEngineHelpers };
-}
-
 async function timeFixture() {
   const TimeFactory = await ethers.getContractFactory("Time");
 
@@ -182,7 +165,6 @@ export const vammFixture: Fixture<VAMMFixture> =
     const { time } = await timeFixture();
     const { tick } = await tickFixture();
     const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
-    const { marginEngineHelpers } = await marginEngineHelpersFixture();
     const { unwindTraderUnwindPosition } =
       await unwindTraderUnwinPositionFixture();
     const { vammHelpers } = await vammHelpersFixture();
@@ -194,7 +176,6 @@ export const vammFixture: Fixture<VAMMFixture> =
           FixedAndVariableMath: fixedAndVariableMath.address,
           Tick: tick.address,
           Time: time.address,
-          MarginEngineHelpers: marginEngineHelpers.address,
           UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
           VAMMHelpers: vammHelpers.address,
         },
@@ -240,7 +221,6 @@ export const marginEngineFixture: Fixture<MarginEngineFixture> =
     const { time } = await timeFixture();
     const { tick } = await tickFixture();
     const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
-    const { marginEngineHelpers } = await marginEngineHelpersFixture();
     const { unwindTraderUnwindPosition } =
       await unwindTraderUnwinPositionFixture();
     const { vammHelpers } = await vammHelpersFixture();
@@ -252,7 +232,6 @@ export const marginEngineFixture: Fixture<MarginEngineFixture> =
           FixedAndVariableMath: fixedAndVariableMath.address,
           Tick: tick.address,
           Time: time.address,
-          MarginEngineHelpers: marginEngineHelpers.address,
           UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
           VAMMHelpers: vammHelpers.address,
         },
@@ -264,7 +243,6 @@ export const marginEngineFixture: Fixture<MarginEngineFixture> =
         libraries: {
           FixedAndVariableMath: fixedAndVariableMath.address,
           Time: time.address,
-          MarginEngineHelpers: marginEngineHelpers.address,
           UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
         },
       }
@@ -311,7 +289,6 @@ export const ammFixture: Fixture<AMMFixture> =
     const { time } = await timeFixture();
     const { tick } = await tickFixture();
     const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
-    const { marginEngineHelpers } = await marginEngineHelpersFixture();
     const { unwindTraderUnwindPosition } =
       await unwindTraderUnwinPositionFixture();
     const { vammHelpers } = await vammHelpersFixture();
@@ -323,7 +300,6 @@ export const ammFixture: Fixture<AMMFixture> =
           FixedAndVariableMath: fixedAndVariableMath.address,
           Tick: tick.address,
           Time: time.address,
-          MarginEngineHelpers: marginEngineHelpers.address,
           UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
           VAMMHelpers: vammHelpers.address,
         },
@@ -395,7 +371,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { time } = await timeFixture();
   const { tick } = await tickFixture();
   const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
-  const { marginEngineHelpers } = await marginEngineHelpersFixture();
   const { unwindTraderUnwindPosition } =
     await unwindTraderUnwinPositionFixture();
   const { vammHelpers } = await vammHelpersFixture();
@@ -421,7 +396,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
       FixedAndVariableMath: fixedAndVariableMath.address,
       Tick: tick.address,
       Time: time.address,
-      MarginEngineHelpers: marginEngineHelpers.address,
       UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
       VAMMHelpers: vammHelpers.address,
     },
@@ -454,7 +428,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
       libraries: {
         FixedAndVariableMath: fixedAndVariableMath.address,
         Time: time.address,
-        MarginEngineHelpers: marginEngineHelpers.address,
         UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
       },
     }

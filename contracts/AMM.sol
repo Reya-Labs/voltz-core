@@ -29,12 +29,6 @@ contract AMM is IAMM, Pausable {
   using LowGasSafeMath for uint256;
   using LowGasSafeMath for int256;
 
-  using Position for mapping(bytes32 => Position.Info);
-  using Position for Position.Info;
-
-  using Trader for mapping(bytes32 => Trader.Info);
-  using Trader for Trader.Info;
-
   address public override factory;
 
   address public immutable override underlyingToken;
