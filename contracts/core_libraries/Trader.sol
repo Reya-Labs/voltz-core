@@ -15,18 +15,6 @@ library Trader {
         bool isSettled;
     }
 
-    /// @notice Returns the Info struct of a trader, given an owner
-    /// @param self The mapping containing all user positions
-    /// @param owner The address of the position owner
-    /// @return trader The position info struct of the given owners' position
-    function get(mapping(bytes32 => Info) storage self, address owner)
-        internal
-        view
-        returns (Trader.Info storage trader)
-    {
-        trader = self[keccak256(abi.encodePacked(owner))];
-    }
-
     function updateMargin(Info storage self, int256 marginDelta) internal {
         self.margin = self.margin + marginDelta;
     }

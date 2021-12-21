@@ -32,8 +32,6 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
     
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
-
-    using Trader for mapping(bytes32 => Trader.Info);
     using Trader for Trader.Info;
 
     /// @dev LIQUIDATOR_REWARD is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
@@ -56,10 +54,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
     /// @inheritdoc IAMMImmutables
     address public override immutable factory;
 
+    mapping(bytes32 => Position.Info) internal  positions;
     /// @inheritdoc IMarginEngine
-    mapping(bytes32 => Position.Info) public override positions;
-    /// @inheritdoc IMarginEngine
-    mapping(bytes32 => Trader.Info) public override traders;
+    mapping(address => Trader.Info) public override traders;
 
     constructor() {  
         address ammAddress;      
@@ -111,6 +108,14 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
         _;
     }
 
+    /// @inheritdoc IMarginEngine
+    function getPosition(address owner,
+                         int24 tickLower,
+                         int24 tickUpper)
+        external override view returns (Position.Info memory position) {
+            return positions.get(owner, tickLower, tickUpper);
+    }
+
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
     function transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
@@ -153,7 +158,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
             revert OnlyOwnerCanUpdatePosition();
         }
         
-        Trader.Info storage trader = traders.get(recipient);
+        Trader.Info storage trader = traders[recipient];
 
         int256 updatedMarginWouldBe = trader.margin + marginDelta;
         
@@ -191,7 +196,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
     /// @inheritdoc IMarginEngine
     function settleTrader(address recipient) onlyAfterMaturity external override onlyAMM {
 
-        Trader.Info storage trader = traders.get(recipient);        
+        Trader.Info storage trader = traders[recipient];        
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(true, underlyingToken, termStartTimestamp, termEndTimestamp));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
@@ -249,7 +254,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
     /// @inheritdoc IMarginEngine
     function liquidateTrader(address traderAddress) external override {
         
-        Trader.Info storage trader = traders.get(traderAddress);
+        Trader.Info storage trader = traders[traderAddress];
             
         bool isLiquidatable = calculator.isLiquidatableTrader(
             IMarginCalculator.TraderMarginRequirementParams({
@@ -329,7 +334,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
 
     /// @inheritdoc IMarginEngine
     function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance) external override {
-        Trader.Info storage trader = traders.get(recipient);
+        Trader.Info storage trader = traders[recipient];
         trader.updateBalances(fixedTokenBalance, variableTokenBalance);
 
         int256 marginRequirement = int256(calculator.getTraderMarginRequirement(
