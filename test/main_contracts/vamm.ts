@@ -103,6 +103,11 @@ describe("VAMM", () => {
       console.log("Current Tick is", currentTick);
       expect(currentTick).to.eq(0);
     });
+
+    // it("check the rate for termStartTimestamp has been set", async () => {
+    //   const 
+    // })
+
   });
 
   describe("#initialize", async () => {
@@ -171,6 +176,7 @@ describe("VAMM", () => {
   // describe("#mint", () => {
   //   it("fails if not initialized", async () => {
   //     await expect(
+
   //       vammTest.mintTest(wallet.address, -tickSpacing, tickSpacing, 1)
   //     ).to.be.reverted;
   //   });

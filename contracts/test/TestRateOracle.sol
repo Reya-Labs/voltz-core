@@ -1,16 +1,12 @@
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
-
-import "../interfaces/rate_oracles/IAaveRateOracle.sol";
-import "../interfaces/aave/IAaveV2LendingPool.sol";
-import "../core_libraries/FixedAndVariableMath.sol";
-import "../utils/WayRayMath.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
+import "../interfaces/rate_oracles/IAaveRateOracle.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "../utils/WayRayMath.sol";
+import "hardhat/console.sol";
 
-
-contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
+// same as aave rate oracle for now
+contract TestRateOracle is BaseRateOracle, IAaveRateOracle {
 
     using SafeMath for uint256;
 
@@ -22,6 +18,21 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     constructor(IAaveV2LendingPool _aaveLendingPool, bytes32 _rateOracleId) BaseRateOracle(_rateOracleId) {
         aaveLendingPool = _aaveLendingPool;
+    }
+
+    function setTermStartTimestampRate(address underlying, uint256 termStartTimestamp) external {
+        // fees a bit hacky
+        uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
+        require(result != 0, "Oracle only supports active Aave-V2 assets");
+
+        // uint256 blockTimestampScaled = Time.blockTimestampScaled();
+
+        // add function that checks that termStartTimestamp is not too far from current timestamp
+        
+        rates[underlying][termStartTimestamp] = IRateOracle.Rate(true, termStartTimestamp, result);
+
+        mostRecentTimestamp = termStartTimestamp;
+
     }
 
     /// @notice Get the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
@@ -44,6 +55,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         
     }
     
+    function getTwapApy(address underlying) external view override(IRateOracle, BaseRateOracle) returns (uint256 twapApy) {
+        return 10**16; // temporary for testing purposes
+    }
+    
     /// @inheritdoc BaseRateOracle
     /// @dev Reverts if we have no data point for either timestamp
     function getApyFromTo(
@@ -52,7 +67,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 to
     ) internal view override(BaseRateOracle) returns (uint256 apyFromTo) {
 
-        require(from < to, 'Misordered dates');
+        require(from < to, "Misordered dates");
 
         uint256 rateFromTo = getRateFromTo(underlying, from, to);
         
@@ -84,7 +99,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         IRateOracle.Rate memory rateFrom = rates[underlying][from];
         IRateOracle.Rate memory rateTo = rates[underlying][to];
         require(rateFrom.isSet, "Oracle does not have rateFrom");
-        require(rateTo.isSet, "Oracle doesn not have rateTo");
+        require(rateTo.isSet, "Oracle does not have rateTo");
+        
         return
             WadRayMath.rayDiv(rateTo.rateValue, rateFrom.rateValue).sub(
                 WadRayMath.RAY
@@ -97,7 +113,11 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         IRateOracle.Rate memory rate;
         
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
+            console.log("Current scaled timestamp is", Time.blockTimestampScaled());
+            console.log("Term End Timestamp is ", termEndTimestamp);
+            
             // atMaturity is true. todo: assert this?
+            require(atMaturity); // add to AaveRateOracle
             rate = rates[underlyingToken][termEndTimestamp];
 
             if(!rate.isSet) {
@@ -114,6 +134,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             if (atMaturity) {
                 revert();
             } else {
+
                 rate = rates[underlyingToken][Time.blockTimestampScaled()];
 
                 if(!rate.isSet) {
@@ -128,3 +149,4 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         result = result / (10 ** (27 - 18)); // 18 decimals, AB: is this optimal?
     }
 }
+

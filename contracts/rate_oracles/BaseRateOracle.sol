@@ -81,8 +81,9 @@ abstract contract BaseRateOracle is IRateOracle {
     //  - ensure that the buffer of observations is large enough to span any active IRS.
     //
     // But there's still a question here about the buffer size, if we want to allow settlement of an IRS months or years after its expiry!
-    function getTwapApy(address underlying) external view override returns (uint256 twapApy) {
-
+    function getTwapApy(address underlying) external view virtual override returns (uint256 twapApy) {
+        
+        // AB: made this function virtual for tests
         // https://uniswap.org/whitepaper-v3.pdf
 
         // need logApy since the last observation

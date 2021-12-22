@@ -292,8 +292,8 @@ contract MarginEngine is IMarginEngine {
                 termStartTimestamp: startTimestamp,
                 termEndTimestamp: endTimestamp,
                 liquidity: amountTotal,
-                fixedTokenBalance: 0, // should not be set to 0!
-                variableTokenBalance: 0, // should not be set to 0!
+                fixedTokenBalance: 0, // todo: should not be set to 0, fix
+                variableTokenBalance: 0, // todo: should not be set to 0, fix
                 variableFactor: amm.rateOracle().variableFactor(false, underlyingToken, startTimestamp, endTimestamp),
                 rateOracleId: amm.rateOracleId(),
                 twapApy: amm.rateOracle().getTwapApy(underlyingToken)
