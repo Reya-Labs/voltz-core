@@ -64,6 +64,8 @@ library MarginEngineHelpers {
        ) internal view {
         
         IAMM amm = IAMM(ammAddress);
+
+        (, int24 tick, ) = amm.vamm().slot0();
             
         IMarginCalculator.PositionMarginRequirementParams memory marginReqParams = IMarginCalculator.PositionMarginRequirementParams(
             {
@@ -71,7 +73,7 @@ library MarginEngineHelpers {
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
                 isLM: false,
-                currentTick: amm.getSlot0().tick,
+                currentTick: tick,
                 termStartTimestamp: amm.termStartTimestamp(),
                 termEndTimestamp: amm.termEndTimestamp(),
                 liquidity: positionLiquidity,

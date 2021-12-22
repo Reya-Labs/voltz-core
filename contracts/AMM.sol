@@ -84,8 +84,7 @@ contract AMM is IAMM, Pausable {
   }
 
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
-  /// to a function before the pool is initialized. The reentrancy guard is required throughout the contract because
-  /// we use balance checks to determine the payment status of interactions such as mint, swap and flash.
+  /// to a function before the amm is initialized. The reentrancy guard is required throughout the contract.
   modifier lock() {
     require(unlocked, "LOK");
     unlocked = false;
@@ -93,16 +92,15 @@ contract AMM is IAMM, Pausable {
     unlocked = true;
   }
 
-  function getSlot0() external view override returns (IVAMM.Slot0 memory) {
-    (uint160 sqrtPriceX96, int24 tick, uint256 feeProtocol) = vamm.slot0();
-
-    return
-      IVAMM.Slot0({
-        sqrtPriceX96: sqrtPriceX96,
-        tick: tick,
-        feeProtocol: feeProtocol
-      });
-  }
+  // function getSlot0() external view override returns (IVAMM.Slot0 memory) {
+  //   (uint160 sqrtPriceX96, int24 tick, uint256 feeProtocol) = vamm.slot0();
+  //   return
+  //     IVAMM.Slot0({
+  //       sqrtPriceX96: sqrtPriceX96,
+  //       tick: tick,
+  //       feeProtocol: feeProtocol
+  //     });
+  // }
 
   function getVariableTokenGrowthGlobal()
     external
@@ -129,7 +127,7 @@ contract AMM is IAMM, Pausable {
     marginEngine = IMarginEngine(_marginEngine);
   }
 
-  function setUnlocked(bool _unlocked) external override onlyVAMM {
+  function setUnlocked(bool _unlocked) external override {
     unlocked = _unlocked;
   }
 

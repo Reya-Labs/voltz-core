@@ -11,7 +11,7 @@ import "../../core_libraries/Tick.sol";
 /// per transaction
 interface IAMMState {
 
-  function getSlot0() external view returns (IVAMM.Slot0 memory);
+  // function getSlot0() external view returns (IVAMM.Slot0 memory);
 
   function getVariableTokenGrowthGlobal() external view returns(int256);
 

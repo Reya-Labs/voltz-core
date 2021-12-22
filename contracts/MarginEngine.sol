@@ -51,13 +51,15 @@ contract MarginEngine is IMarginEngine {
         amm = IAMM(ammAddress);
     }
 
+    // just use onlyFactory
     modifier onlyAMM () {
         require(msg.sender == address(amm));
         _;
     }
 
+    
     /// @inheritdoc IMarginEngine
-    function setAMM(address _ammAddress) external onlyAMM override {
+    function setAMM(address _ammAddress) external override {
         amm = IAMM(_ammAddress);
     }
 
@@ -150,8 +152,10 @@ contract MarginEngine is IMarginEngine {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
 
+        (, int24 tick, ) = amm.vamm().slot0();
+        
         // AB: theoretically can directly call vamm from margin engine
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, amm.getSlot0().tick);
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
         
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
 
@@ -181,8 +185,10 @@ contract MarginEngine is IMarginEngine {
         Tick.checkTicks(params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
+        (, int24 tick, ) = amm.vamm().slot0();
+        
         // code duplication
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, amm.getSlot0().tick);
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
 
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
@@ -191,14 +197,14 @@ contract MarginEngine is IMarginEngine {
         address underlyingToken = amm.underlyingToken();
         uint256 startTimestamp = amm.termStartTimestamp();
         uint256 endTimestamp = amm.termEndTimestamp();
-
+        
         bool isLiquidatable = amm.calculator().isLiquidatablePosition(
             IMarginCalculator.PositionMarginRequirementParams({
                 owner: params.owner,
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
                 isLM: true,
-                currentTick: amm.getSlot0().tick,
+                currentTick: tick,
                 termStartTimestamp: startTimestamp,
                 termEndTimestamp: endTimestamp,
                 liquidity: position._liquidity,
@@ -274,13 +280,15 @@ contract MarginEngine is IMarginEngine {
         uint256 startTimestamp = amm.termStartTimestamp();
         uint256 endTimestamp = amm.termEndTimestamp();
         
+        (, int24 tick,) = amm.vamm().slot0();
+        
         int256 marginRequirement = int256(amm.calculator().getPositionMarginRequirement(
             IMarginCalculator.PositionMarginRequirementParams({
                 owner: recipient,
                 tickLower: tickLower,
                 tickUpper: tickUpper,
                 isLM: false,
-                currentTick: amm.getSlot0().tick,
+                currentTick: tick,
                 termStartTimestamp: startTimestamp,
                 termEndTimestamp: endTimestamp,
                 liquidity: amountTotal,

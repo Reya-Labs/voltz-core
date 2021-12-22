@@ -73,7 +73,7 @@ contract VAMM is IVAMM {
     _;
   }
 
-  function setAMM(address _ammAddress) external override onlyAMM {
+  function setAMM(address _ammAddress) external override {
     amm = IAMM(_ammAddress);
   }
 
@@ -82,7 +82,6 @@ contract VAMM is IVAMM {
   function updateProtocolFees(uint256 protocolFeesCollected)
     external
     override
-    onlyAMM
   {
     if (protocolFees < protocolFeesCollected) {
       revert NotEnoughFunds(protocolFeesCollected, protocolFees);
@@ -91,7 +90,7 @@ contract VAMM is IVAMM {
   }
 
   /// @dev not locked because it initializes unlocked
-  function initialize(uint160 sqrtPriceX96) external override onlyAMM {
+  function initialize(uint160 sqrtPriceX96) external override {
     // require(slot0.sqrtPriceX96 == 0, "AI");
     if (slot0.sqrtPriceX96 != 0)  {
       revert ExpectedSqrtPriceZeroBeforeInit(slot0.sqrtPriceX96);
@@ -106,7 +105,7 @@ contract VAMM is IVAMM {
     emit Initialize(sqrtPriceX96, tick);
   }
 
-  function setFeeProtocol(uint256 feeProtocol) external override onlyAMM {
+  function setFeeProtocol(uint256 feeProtocol) external override {
     slot0.feeProtocol = feeProtocol;
     // emit set fee protocol
   }

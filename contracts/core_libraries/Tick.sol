@@ -6,6 +6,8 @@ import "../utils/LowGasSafeMath.sol";
 import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
+import "hardhat/console.sol";
+
 
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
