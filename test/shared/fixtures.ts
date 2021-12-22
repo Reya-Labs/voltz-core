@@ -23,18 +23,17 @@ interface FactoryFixture {
 }
 
 async function marginCalculatorFixture() {
-
   const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
   const { time } = await timeFixture();
 
   const TestMarginCalculatorFactory = await ethers.getContractFactory(
-     "TestMarginCalculator",
-     {
-       libraries: {
+    "TestMarginCalculator",
+    {
+      libraries: {
         FixedAndVariableMath: fixedAndVariableMath.address,
-        Time: time.address
-       }
-     }
+        Time: time.address,
+      },
+    }
   );
   const testMarginCalculator = await TestMarginCalculatorFactory.deploy();
 
@@ -42,7 +41,6 @@ async function marginCalculatorFixture() {
 }
 
 async function rateOracleFixture() {
-
   const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
   const { time } = await timeFixture();
 
@@ -51,17 +49,18 @@ async function rateOracleFixture() {
     {
       libraries: {
         FixedAndVariableMath: fixedAndVariableMath.address,
-        Time: time.address
-      }
+        Time: time.address,
+      },
     }
   );
 
-  const testRateOracle = await TestRateOracleFactory.deploy(aave_lending_pool_addr, RATE_ORACLE_ID);
+  const testRateOracle = await TestRateOracleFactory.deploy(
+    aave_lending_pool_addr,
+    RATE_ORACLE_ID
+  );
 
   return { testRateOracle };
-
 }
-
 
 async function vammHelpersFixture() {
   const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
@@ -386,7 +385,10 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-  console.log("Test: Term Start Timestamp is: ", termStartTimestampBN.toString());
+  console.log(
+    "Test: Term Start Timestamp is: ",
+    termStartTimestampBN.toString()
+  );
   console.log("Test: Term End Timestamp is: ", termEndTimestampBN.toString());
 
   const { factory } = await factoryFixture();
@@ -399,10 +401,13 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { vammHelpers } = await vammHelpersFixture();
   const { testRateOracle } = await rateOracleFixture();
   const { testMarginCalculator } = await marginCalculatorFixture();
-  
+
   // set the rate for termStartTimestamp
-  await testRateOracle.setTermStartTimestampRate(mainnetConstants.tokens.USDC.address, termStartTimestampBN);
-  
+  await testRateOracle.setTermStartTimestampRate(
+    mainnetConstants.tokens.USDC.address,
+    termStartTimestampBN
+  );
+
   // add a mock rate oracle to the factory
   await factory.addRateOracle(RATE_ORACLE_ID, testRateOracle.address);
 
@@ -410,7 +415,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   await factory.setCalculator(testMarginCalculator.address);
 
   // set the rate for termStartTimestamp in the test rate oracle
-  
+
   const deployerTestFactory = await ethers.getContractFactory("TestDeployer", {
     libraries: {
       FixedAndVariableMath: fixedAndVariableMath.address,

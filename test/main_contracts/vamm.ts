@@ -105,9 +105,8 @@ describe("VAMM", () => {
     });
 
     // it("check the rate for termStartTimestamp has been set", async () => {
-    //   const 
+    //   const
     // })
-
   });
 
   describe("#initialize", async () => {
