@@ -17,7 +17,6 @@ import { mainnetConstants } from "../../scripts/helpers/constants";
 import { toBn } from "evm-bn";
 const { provider } = waffle;
 
-
 interface FactoryFixture {
   factory: Factory;
 }
@@ -318,39 +317,32 @@ export const ammFixture: Fixture<AMMFixture> =
     };
   };
 
-
-
-
 // one fixture for everything amm/vamm/marginEngine
 // the fixture needs to properly set everything
 // just use onlyFactory auth for all amm, vamm and margin engine
 // callees now work
 // convert the amm fixture into a composite one and use it for all the tests amm, vamm and margin engine
 
-
-
 interface MetaFixture {
-  factory: Factory,
-  ammTest: TestAMM,
-  vammTest: TestVAMM,
-  marginEngineTest: TestMarginEngine,
-  vammCalleeTest: TestVAMMCallee,
-  marginEngineCalleeTest: TestMarginEngineCallee
+  factory: Factory;
+  ammTest: TestAMM;
+  vammTest: TestVAMM;
+  marginEngineTest: TestMarginEngine;
+  vammCalleeTest: TestVAMMCallee;
+  marginEngineCalleeTest: TestMarginEngineCallee;
 }
 
-
-export const metaFixture = async function (
-): Promise<MetaFixture> {
+export const metaFixture = async function (): Promise<MetaFixture> {
   // deploy the amm
   // deploy the vamm
   // deploy the margin engine
   // set the margin engine in the amm, set the vamm in the amm
 
-  const termStartTimestamp: number = await getCurrentTimestamp(provider); 
-    const termEndTimestamp: number =
-      termStartTimestamp + consts.ONE_DAY.toNumber();
-    const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
-    const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+  const termStartTimestamp: number = await getCurrentTimestamp(provider);
+  const termEndTimestamp: number =
+    termStartTimestamp + consts.ONE_DAY.toNumber();
+  const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
+  const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
   const { factory } = await factoryFixture();
   const { time } = await timeFixture();
@@ -361,24 +353,21 @@ export const metaFixture = async function (
     await unwindTraderUnwinPositionFixture();
   const { vammHelpers } = await vammHelpersFixture();
 
-  const deployerTestFactory = await ethers.getContractFactory(
-    "TestDeployer",
-    {
-      libraries: {
-        FixedAndVariableMath: fixedAndVariableMath.address,
-        Tick: tick.address,
-        Time: time.address,
-        MarginEngineHelpers: marginEngineHelpers.address,
-        UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
-        VAMMHelpers: vammHelpers.address,
-      },
-    }
-  );
+  const deployerTestFactory = await ethers.getContractFactory("TestDeployer", {
+    libraries: {
+      FixedAndVariableMath: fixedAndVariableMath.address,
+      Tick: tick.address,
+      Time: time.address,
+      MarginEngineHelpers: marginEngineHelpers.address,
+      UnwindTraderUnwindPosition: unwindTraderUnwindPosition.address,
+      VAMMHelpers: vammHelpers.address,
+    },
+  });
 
   const ammTestFactory = await ethers.getContractFactory("TestAMM");
 
   // create the amm
-  
+
   const deployerTest = (await deployerTestFactory.deploy()) as TestDeployer;
   let tx = await deployerTest.deployAMM(
     factory.address,
@@ -393,7 +382,6 @@ export const metaFixture = async function (
   const ammAddress = receipt.events?.[0].args?.ammAddress as string;
   console.log("The AMM address is ", ammAddress);
   const ammTest = ammTestFactory.attach(ammAddress) as TestAMM;
-  
 
   // create the margin engine
 
@@ -414,7 +402,7 @@ export const metaFixture = async function (
   );
 
   const marginEngineCalleeTest =
-      (await testMarginEngineCalleeFactory.deploy()) as TestMarginEngineCallee;
+    (await testMarginEngineCalleeFactory.deploy()) as TestMarginEngineCallee;
 
   tx = await deployerTest.deployMarginEngine(
     // factory.address,
@@ -423,13 +411,15 @@ export const metaFixture = async function (
 
   receipt = await tx.wait();
 
-  const marginEngineAddress = receipt.events?.[0].args?.marginEngineAddress as string;
+  const marginEngineAddress = receipt.events?.[0].args
+    ?.marginEngineAddress as string;
 
-  const marginEngineTest = marginEngineTestFactory.attach(marginEngineAddress) as TestMarginEngine;
+  const marginEngineTest = marginEngineTestFactory.attach(
+    marginEngineAddress
+  ) as TestMarginEngine;
 
   // link the margin engine to the AMM
   await ammTest.setMarginEngine(marginEngineAddress);
-
 
   // create the vamm
   const vammTestFactory = await ethers.getContractFactory("TestVAMM", {
@@ -446,7 +436,7 @@ export const metaFixture = async function (
   );
 
   const vammCalleeTest =
-      (await testVAMMCalleeFactory.deploy()) as TestVAMMCallee;
+    (await testVAMMCalleeFactory.deploy()) as TestVAMMCallee;
 
   tx = await deployerTest.deployVAMM(
     // factory.address,
@@ -468,7 +458,6 @@ export const metaFixture = async function (
     vammTest,
     marginEngineTest,
     vammCalleeTest,
-    marginEngineCalleeTest
-  }
-
-}
+    marginEngineCalleeTest,
+  };
+};

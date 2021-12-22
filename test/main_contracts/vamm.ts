@@ -37,7 +37,6 @@ const createFixtureLoader = waffle.createFixtureLoader;
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
 
 describe("VAMM", () => {
-
   let wallet: Wallet, other: Wallet;
   let factory: Factory;
   let ammTest: TestAMM;
@@ -45,7 +44,7 @@ describe("VAMM", () => {
   let marginEngineTest: TestMarginEngine;
   let vammCalleeTest: TestVAMMCallee;
   let marginEngineCalleeTest: TestMarginEngineCallee;
-  
+
   // let swapToLowerPrice: SwapToPriceFunction;
   // let swapToHigherPrice: SwapToPriceFunction;
   // let swapExact0For1: SwapFunction;
@@ -66,8 +65,14 @@ describe("VAMM", () => {
   });
 
   beforeEach("deploy fixture", async () => {
-
-    ({ factory, ammTest, vammTest, marginEngineTest, vammCalleeTest, marginEngineCalleeTest } = await loadFixture(metaFixture));
+    ({
+      factory,
+      ammTest,
+      vammTest,
+      marginEngineTest,
+      vammCalleeTest,
+      marginEngineCalleeTest,
+    } = await loadFixture(metaFixture));
 
     minTick = getMinTick(TICK_SPACING);
     maxTick = getMaxTick(TICK_SPACING);
@@ -76,28 +81,29 @@ describe("VAMM", () => {
   });
 
   describe("#quickChecks", async () => {
-
     it("check underlying token of the amm set correctly", async () => {
       const underlyingToken: string = await ammTest.underlyingToken();
-      expect(underlyingToken.toLowerCase()).to.eq(mainnetConstants.tokens.USDC.address.toLowerCase());
+      expect(underlyingToken.toLowerCase()).to.eq(
+        mainnetConstants.tokens.USDC.address.toLowerCase()
+      );
       // await expect(ammTest.underlyingToken()).to.eq(mainnetConstants.tokens.USDC.address);
-    })
+    });
 
     it("check the margin engine can call the amm", async () => {
-      const underlyingToken: string = await marginEngineTest.getUnderlyingToken();
-      expect(underlyingToken.toLowerCase()).to.eq(mainnetConstants.tokens.USDC.address.toLowerCase());
-      
-    })
+      const underlyingToken: string =
+        await marginEngineTest.getUnderlyingToken();
+      expect(underlyingToken.toLowerCase()).to.eq(
+        mainnetConstants.tokens.USDC.address.toLowerCase()
+      );
+    });
 
     it("check the amm can call the vamm", async () => {
       // (, int24 tick,) = amm.vamm().slot0();
       const currentTick = await ammTest.testGetCurrentTickFromVAMM();
       console.log("Current Tick is", currentTick);
       expect(currentTick).to.eq(0);
-    })
-
-  })
-
+    });
+  });
 
   describe("#initialize", async () => {
     it("fails if already initialized", async () => {
@@ -128,28 +134,39 @@ describe("VAMM", () => {
   });
 
   describe("#mint", () => {
-    it('fails if not initialized', async () => {
-      await expect(vammCalleeTest.mintTest(vammTest.address, wallet.address, -tickSpacing, tickSpacing, 1)).to.be.reverted;
-    })
+    it("fails if not initialized", async () => {
+      await expect(
+        vammCalleeTest.mintTest(
+          vammTest.address,
+          wallet.address,
+          -tickSpacing,
+          tickSpacing,
+          1
+        )
+      ).to.be.reverted;
+    });
 
-    describe('after initialization', async () => {
-      
-      beforeEach('initialize the pool at price of 10:1', async () => {
-        await vammTest.initialize(encodeSqrtRatioX96(1, 10).toString())
-        await vammCalleeTest.mintTest(vammTest.address, wallet.address, minTick, maxTick, 3161)
-      })
+    describe("after initialization", async () => {
+      beforeEach("initialize the pool at price of 10:1", async () => {
+        await vammTest.initialize(encodeSqrtRatioX96(1, 10).toString());
+        await vammCalleeTest.mintTest(
+          vammTest.address,
+          wallet.address,
+          minTick,
+          maxTick,
+          3161
+        );
+      });
 
-      describe("failure cases", async () => {
-        
-        it('fails if tickLower greater than tickUpper', async () => {
-          await expect(vammCalleeTest.mintTest(vammTest.address, wallet.address, 1, 0, 1)).to.be.reverted
-        })
+      // describe("failure cases", async () => {
 
-      })
+      //   it('fails if tickLower greater than tickUpper', async () => {
+      //     await expect(vammCalleeTest.mintTest(vammTest.address, wallet.address, 1, 0, 1)).to.be.reverted
+      //   })
 
-
-    })
-  })
+      // })
+    });
+  });
 
   // describe("#mint", () => {
   //   it("fails if not initialized", async () => {
@@ -160,6 +177,4 @@ describe("VAMM", () => {
   //   // more tests in here
   //   // using callee results in a timeout for some reason, haven't been able to debug yet
   // });
-
-
 });
