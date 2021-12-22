@@ -2,15 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 import "../interfaces/IAMM.sol";
 import "../interfaces/IMarginEngine.sol";
 import "./Time.sol";
 
-
-
-// get rid of Typed PRB
 library MarginEngineHelpers {
 
     /// @notice Calculate the liquidator reward and the updated trader margin
@@ -21,27 +17,11 @@ library MarginEngineHelpers {
     /// @dev updatedMargin = traderMargin - liquidatorReward
     function calculateLiquidatorRewardAndUpdatedMargin(int256 traderMargin, uint256 liquidatorRewardAsProportionOfMargin) external pure returns (uint256 liquidatorReward, int256 updatedMargin) {
 
-        liquidatorReward = PRBMathUD60x18Typed.mul(
+        liquidatorReward = PRBMathUD60x18.mul(
+                                uint256(traderMargin),
+                                liquidatorRewardAsProportionOfMargin);
 
-            PRBMath.UD60x18({
-                value: uint256(traderMargin)
-            }),
-
-            PRBMath.UD60x18({
-                value: liquidatorRewardAsProportionOfMargin
-            })
-        ).value;
-
-        updatedMargin = PRBMathSD59x18Typed.sub(
-
-            PRBMath.SD59x18({
-                value: traderMargin
-            }),
-
-            PRBMath.SD59x18({
-                value: int256(liquidatorReward)
-            })
-        ).value;
+        updatedMargin = traderMargin - int256(liquidatorReward);
     }
 
     /// @notice Check if the position margin is above the Initial Margin Requirement

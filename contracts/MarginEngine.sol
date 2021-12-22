@@ -155,7 +155,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
         // make external?, impacts the tests
 
         if (recipient != msg.sender) {
-            revert OnlyOwnerCanUpdatePosition();
+            revert OnlyOwnerCanUpdatePosition(); // todo: remove recipient and just use msg.sender?
         }
         
         Trader.Info storage trader = traders[recipient];
