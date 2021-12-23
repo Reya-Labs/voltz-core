@@ -25,7 +25,7 @@ import "./core_libraries/UnwindTraderUnwindPosition.sol";
 
 import "./core_libraries/MarginEngineHelpers.sol";
 
-contract MarginEngine is IMarginEngine, IAMMImmutables {
+contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
@@ -141,7 +141,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
         uint256 variableFactor = rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp);
         
         // make sure 0,0 is fixed
-        MarginEngineHelpers.checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, 0, 0, variableFactor, address(amm)); 
+        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, 0, 0, variableFactor, address(amm)); 
 
         position.updateMargin(marginDelta);
 
@@ -162,7 +162,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
 
         int256 updatedMarginWouldBe = trader.margin + marginDelta;
         
-        MarginEngineHelpers.checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled, address(amm));
+        checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled, address(amm));
 
         trader.updateMargin(marginDelta);
 
@@ -273,7 +273,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables {
             revert CannotLiquidate();
         }
 
-        (uint256 liquidatorReward, int256 updatedMargin) = MarginEngineHelpers.calculateLiquidatorRewardAndUpdatedMargin(trader.margin, LIQUIDATOR_REWARD);
+        (uint256 liquidatorReward, int256 updatedMargin) = calculateLiquidatorRewardAndUpdatedMargin(trader.margin, LIQUIDATOR_REWARD);
 
         trader.updateMargin(updatedMargin);
 
