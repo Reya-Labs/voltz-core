@@ -5,7 +5,7 @@ import { BigNumber, BigNumberish, constants, Wallet } from "ethers";
 import { Factory } from "../../typechain/Factory";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { expect } from "../shared/expect";
-import { marginEngineFixture, ammFixture } from "../shared/fixtures";
+import { metaFixture } from "../shared/fixtures";
 // import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 import {
   getPositionKey,
@@ -47,15 +47,11 @@ describe("MarginEngine", () => {
   let marginEngineTest: TestMarginEngine;
   let marginEngineCalleeTest: TestMarginEngineCallee;
 
-  let tickSpacing: number;
-  let minTick: number;
-  let maxTick: number;
+  //   let tickSpacing: number;
+  //   let minTick: number;
+  //   let maxTick: number;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
-  let createMarginEngine: ThenArg<
-    ReturnType<typeof marginEngineFixture>
-  >["createMarginEngine"];
-  let createAMM: ThenArg<ReturnType<typeof ammFixture>>["createAMM"];
 
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
@@ -69,24 +65,24 @@ describe("MarginEngine", () => {
     const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-    ({ factory, createAMM } = await loadFixture(ammFixture));
+    ({ factory, marginEngineTest } = await loadFixture(metaFixture));
 
-    const amm = await createAMM(
-      mainnetConstants.tokens.USDC.address,
-      RATE_ORACLE_ID,
-      termStartTimestampBN,
-      termEndTimestampBN
-    );
+    // const amm = await createAMM(
+    //   mainnetConstants.tokens.USDC.address,
+    //   RATE_ORACLE_ID,
+    //   termStartTimestampBN,
+    //   termEndTimestampBN
+    // );
 
-    ({ factory, createMarginEngine, marginEngineCalleeTest } =
-      await loadFixture(marginEngineFixture));
+    // ({ factory, createMarginEngine, marginEngineCalleeTest } =
+    //   await loadFixture(marginEngineFixture));
 
-    marginEngineTest = await createMarginEngine(amm.address);
+    // marginEngineTest = await createMarginEngine(amm.address);
 
-    minTick = getMinTick(TICK_SPACING);
-    maxTick = getMaxTick(TICK_SPACING);
+    // minTick = getMinTick(TICK_SPACING);
+    // maxTick = getMaxTick(TICK_SPACING);
 
-    tickSpacing = TICK_SPACING;
+    // tickSpacing = TICK_SPACING;
   });
 
   describe("#updateTraderMargin", () => {
