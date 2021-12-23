@@ -81,20 +81,15 @@ describe("VAMM", () => {
   });
 
   describe("#quickChecks", async () => {
-    it("check underlying token of the amm set correctly", async () => {
-      const underlyingToken: string = await ammTest.underlyingToken();
-      expect(underlyingToken.toLowerCase()).to.eq(
-        mainnetConstants.tokens.USDC.address.toLowerCase()
-      );
+    it("check underlying token of the amm and marginEngine are set consistently", async () => {
+      const underlyingToken1 = await ammTest.underlyingToken();
+      const underlyingToken2 = await marginEngineTest.getUnderlyingToken();
+      expect(underlyingToken1).to.eq(underlyingToken2);
       // await expect(ammTest.underlyingToken()).to.eq(mainnetConstants.tokens.USDC.address);
     });
 
     it("check the margin engine can call the amm", async () => {
-      const underlyingToken: string =
-        await marginEngineTest.getUnderlyingToken();
-      expect(underlyingToken.toLowerCase()).to.eq(
-        mainnetConstants.tokens.USDC.address.toLowerCase()
-      );
+      // todo
     });
 
     it("check the amm can call the vamm", async () => {

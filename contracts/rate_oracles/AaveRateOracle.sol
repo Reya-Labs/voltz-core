@@ -58,11 +58,11 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         
         // @audit - should we use WadRayMath.rayToWad() (rounds up not down)
         rateFromTo =  rateFromTo / (10 ** (27 - 18)); // convert to wei
-        uint256 timeInSeconds = to - from; // @audit - this is the wimte in seconds wei
+        uint256 timeInSeconds = to - from; // @audit - this is the duration in seconds wei
 
         uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
 
-        // todo: fix the below, that's not how apy is calculated from the rate!
+        // todo: fix the below, that's not how apy is calculated from the rate! Need to account for compounding.
         apyFromTo = PRBMathUD60x18.mul(rateFromTo, timeInYears);
 
     }
