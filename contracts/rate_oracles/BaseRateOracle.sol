@@ -44,31 +44,6 @@ abstract contract BaseRateOracle is IRateOracle {
 
     }
 
-    function write(
-        Observation[65535] storage self,
-        uint16 index,
-        uint256 blockTimestamp,
-        uint256 logApy,
-        uint16 cardinality,
-        uint16 cardinalityNext
-    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
-
-
-
-    }
-
-    function observeSingle(
-        Observation[65535] storage self,
-        uint256 time,
-        uint256 secondsAgo,
-        uint256 logApy,
-        uint16 index,
-        uint16 cardinality
-    ) internal view returns (uint256 logApyCumulative) {
-
-        
-
-    }
 
     // override
     OracleVars public oracleVars;
@@ -120,10 +95,7 @@ abstract contract BaseRateOracle is IRateOracle {
     ) internal view virtual returns (uint256 apyFromTo);
     
     
-    function updateRate(address underlying) public virtual {
-
-    } 
-    
+    function updateRate(address underlying) public virtual;
 
 
 }
