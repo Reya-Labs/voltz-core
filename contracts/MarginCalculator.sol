@@ -45,7 +45,7 @@ contract MarginCalculator is IMarginCalculator{
     /// @dev Seconds in a year
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
-    // docs missing, only Factory, make this function external? 
+    // todo: docs missing, only Factory, make this function external? 
     function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) override public {
         // require statements to check the parameters and the rateOracleId passed into this function
         getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
@@ -83,6 +83,7 @@ contract MarginCalculator is IMarginCalculator{
 
         apyBoundVars.oneMinusTimeFactor = 10 ** 18 - apyBoundVars.timeFactor; // convert 10 ** 18 into a constant called ONE_WEI
 
+        // todo: avoid divide by zero
         apyBoundVars.k = PRBMathSD59x18.div(getMarginCalculatorParameters[rateOracleId].alpha, getMarginCalculatorParameters[rateOracleId].sigmaSquared);
 
         apyBoundVars.zeta = PRBMathSD59x18.div(

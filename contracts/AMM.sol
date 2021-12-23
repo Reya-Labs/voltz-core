@@ -211,8 +211,7 @@ contract AMM is IAMM, Pausable {
   {
     if (amount > 0) {
       vamm.updateProtocolFees(amount);
-      IERC20Minimal(underlyingToken).transferFrom(
-        address(this),
+      IERC20Minimal(underlyingToken).transfer(
         recipient,
         amount
       );

@@ -12,7 +12,19 @@ import { FixedAndVariableMath } from "../../typechain";
 import { consts } from "../helpers/constants";
 import { ethers, waffle } from "hardhat";
 import { getCurrentTimestamp } from "../helpers/time";
-import { RATE_ORACLE_ID } from "./utilities";
+import {
+  APY_UPPER_MULTIPLIER,
+  APY_LOWER_MULTIPLIER,
+  MIN_DELTA_LM,
+  MIN_DELTA_IM,
+  MAX_LEVERAGE,
+  SIGMA_SQUARED,
+  ALPHA,
+  BETA,
+  XI_UPPER,
+  XI_LOWER,
+  RATE_ORACLE_ID,
+} from "./utilities";
 import { mainnetConstants } from "../../scripts/helpers/constants";
 import { toBn } from "evm-bn";
 import { aave_lending_pool_addr } from "./constants";
@@ -40,7 +52,25 @@ async function marginCalculatorFixture() {
   return { testMarginCalculator };
 }
 
-async function rateOracleFixture() {
+async function mockERC20Fixture() {
+  const MockERC20Factory = await ethers.getContractFactory("ERC20Mock");
+
+  const token = await MockERC20Factory.deploy("Voltz USD", "VUSD", 6);
+
+  return { token };
+}
+
+async function mockAaveLendingPoolFixture() {
+  const MockAaveLendingPoolFactory = await ethers.getContractFactory(
+    "MockAaveLendingPool"
+  );
+
+  const aaveLendingPool = await MockAaveLendingPoolFactory.deploy();
+
+  return { aaveLendingPool };
+}
+
+async function rateOracleFixture(aaveLendingPoolAddress?: string) {
   const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
   const { time } = await timeFixture();
 
@@ -55,7 +85,7 @@ async function rateOracleFixture() {
   );
 
   const testRateOracle = await TestRateOracleFactory.deploy(
-    aave_lending_pool_addr,
+    aaveLendingPoolAddress ? aaveLendingPoolAddress : aave_lending_pool_addr,
     RATE_ORACLE_ID
   );
 
@@ -355,6 +385,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   // deploy the margin engine
   // set the margin engine in the amm, set the vamm in the amm
 
+  // todo: need dummy token so we can test token transfers
   const termStartTimestamp: number = await getCurrentTimestamp(provider);
   const termEndTimestamp: number =
     termStartTimestamp + consts.ONE_DAY.toNumber();
@@ -367,6 +398,15 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   );
   console.log("Test: Term End Timestamp is: ", termEndTimestampBN.toString());
 
+  // create a mock token and mint some to our wallet
+  const { token } = await mockERC20Fixture();
+
+  const { aaveLendingPool } = await mockAaveLendingPoolFixture();
+  await aaveLendingPool.setReserveNormalizedIncome(
+    token.address,
+    BigNumber.from(10).pow(27)
+  );
+
   const { factory } = await factoryFixture();
   const { time } = await timeFixture();
   const { tick } = await tickFixture();
@@ -374,13 +414,28 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { unwindTraderUnwindPosition } =
     await unwindTraderUnwinPositionFixture();
   const { vammHelpers } = await vammHelpersFixture();
-  const { testRateOracle } = await rateOracleFixture();
+  const { testRateOracle } = await rateOracleFixture(aaveLendingPool.address);
   const { testMarginCalculator } = await marginCalculatorFixture();
 
   // set the rate for termStartTimestamp
   await testRateOracle.setTermStartTimestampRate(
-    mainnetConstants.tokens.USDC.address,
+    token.address,
     termStartTimestampBN
+  );
+
+  // set the rate for sigmaSquared
+  await testMarginCalculator.setMarginCalculatorParametersTest(
+    RATE_ORACLE_ID,
+    APY_UPPER_MULTIPLIER,
+    APY_LOWER_MULTIPLIER,
+    MIN_DELTA_LM,
+    MIN_DELTA_IM,
+    MAX_LEVERAGE,
+    SIGMA_SQUARED,
+    ALPHA,
+    BETA,
+    XI_UPPER,
+    XI_LOWER
   );
 
   // add a mock rate oracle to the factory
@@ -408,7 +463,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const deployerTest = (await deployerTestFactory.deploy()) as TestDeployer;
   let tx = await deployerTest.deployAMM(
     factory.address,
-    mainnetConstants.tokens.USDC.address,
+    token.address,
     RATE_ORACLE_ID,
     termStartTimestampBN,
     termEndTimestampBN
@@ -453,6 +508,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const marginEngineTest = marginEngineTestFactory.attach(
     marginEngineAddress
   ) as TestMarginEngine;
+
+  // Grant an allowance to the MarginEngine
+  await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
 
   // link the margin engine to the AMM
   await ammTest.setMarginEngine(marginEngineAddress);
