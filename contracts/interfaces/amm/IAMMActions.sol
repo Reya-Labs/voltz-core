@@ -11,7 +11,7 @@ interface IAMMActions {
     function setUnlocked(bool _unlocked) external;
     // TypeError: Function overload clash during conversion to external types for arguments.
     function updatePositionMargin(IVAMM.ModifyPositionParams memory params, int256 marginDelta) external;
-    function updateTraderMargin(address recipient, int256 marginDelta) external;
+    function updateTraderMargin(int256 marginDelta) external;
     function settlePosition(IVAMM.ModifyPositionParams memory params) external;
     function settleTrader(address recipient) external;
     function liquidatePosition(IVAMM.ModifyPositionParams memory params) external;

@@ -88,7 +88,7 @@ describe("MarginEngine", () => {
   describe("#updateTraderMargin", () => {
     it("reverts if margin delta is zero", async () => {
       await expect(
-        marginEngineTest.updateTraderMarginTest(wallet.address, 0)
+        marginEngineTest.updateTraderMarginTest(0)
       ).to.be.revertedWith("InvalidMarginDelta");
     });
   });
@@ -150,7 +150,7 @@ describe("MarginEngine", () => {
       //     )}`
       //   );
 
-      await marginEngineTest.updateTraderMargin(wallet.address, 500);
+      await marginEngineTest.updateTraderMargin(500);
       const traderInfo = await marginEngineTest.traders(wallet.address);
 
       expect(traderInfo.margin).to.eq(500);

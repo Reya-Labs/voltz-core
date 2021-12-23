@@ -132,11 +132,11 @@ contract AMM is IAMM, Pausable {
     marginEngine.updatePositionMargin(params, marginDelta);
   }
 
-  function updateTraderMargin(address recipient, int256 marginDelta)
+  function updateTraderMargin(int256 marginDelta)
     external
     override
   {
-    marginEngine.updateTraderMargin(recipient, marginDelta);
+    marginEngine.updateTraderMargin(marginDelta);
   }
 
   function settlePosition(IMarginEngine.ModifyPositionParams memory params) // @todo: whenNotPaused? (trustlessness vs. can respond to bugs)
