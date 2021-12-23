@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/rate_oracles/IRateOracle.sol";
-import "../core_libraries/Oracle.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
@@ -15,6 +14,11 @@ abstract contract BaseRateOracle is IRateOracle {
     bytes32 public immutable override rateOracleId;
     uint256 public override secondsAgo;
 
+    struct Observation {
+        uint256 timestamp; /// In wei-seconds
+        uint256 rateValue; // In wei
+    }
+
     // should be controlled by the owner
     function setSecondsAgo(uint256 _secondsAgo) external override {
 
@@ -23,7 +27,6 @@ abstract contract BaseRateOracle is IRateOracle {
         // emit seconds ago set
     }
 
-    using Oracle for Oracle.Observation[65535];
     constructor(bytes32 _rateOracleId) {
         rateOracleId = _rateOracleId;
     }
@@ -41,20 +44,64 @@ abstract contract BaseRateOracle is IRateOracle {
 
     }
 
+    function write(
+        Observation[65535] storage self,
+        uint16 index,
+        uint256 blockTimestamp,
+        uint256 logApy,
+        uint16 cardinality,
+        uint16 cardinalityNext
+    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
+
+
+
+    }
+
+    function observeSingle(
+        Observation[65535] storage self,
+        uint256 time,
+        uint256 secondsAgo,
+        uint256 logApy,
+        uint16 index,
+        uint16 cardinality
+    ) internal view returns (uint256 logApyCumulative) {
+
+        
+
+    }
+
     // override
     OracleVars public oracleVars;
 
     // override
-    Oracle.Observation[65535] public observations;
+    Observation[65535] public observations;
     
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public virtual override returns(uint256 result);
 
 
+    function grow(
+        uint16 current,
+        uint16 next
+    ) internal returns (uint16) {
+        require(current > 0, "I");
+
+        // no-op if the passed next value isn't greater than the current next value
+        if (next <= current) return current;
+
+        // store in each slot to prevent fresh SSTOREs in swaps 
+        // this data will not be used because the initialized boolean is still false
+        for (uint16 i = current; i < next; i++) observations[i].timestamp = 1;
+
+        return next;
+
+    }
+
+    
     // add override, lock the amm when calling this function, noDelegateCall
     function increaseObservarionCardinalityNext(uint16 observationCardinalityNext) external {
         uint16 observationCardinalityNextOld = oracleVars.observationCardinalityNext; // for the event
 
-        uint16 observationCardinalityNextNew = observations.grow(observationCardinalityNextOld, observationCardinalityNext);
+        uint16 observationCardinalityNextNew = grow(observationCardinalityNextOld, observationCardinalityNext);
 
         oracleVars.observationCardinalityNext = observationCardinalityNextNew;
 
@@ -72,59 +119,11 @@ abstract contract BaseRateOracle is IRateOracle {
         uint256 to
     ) internal view virtual returns (uint256 apyFromTo);
     
-
-    // todo: can we use this TWAP approach for all oracle results, instead of the results array?
-    // Advantage of the TWAP approach is that it can calc rates for timestamps at which we do not have data
-    // about the exact APY. This would allow settlement at maturity time, even after the fact. Disadvantage may be
-    // extra complexity and gas cost. If we do go the TWAP route, we should:
-    //  - Rename it TWAAPY
-    //  - ensure that the buffer of observations is large enough to span any active IRS.
-    //
-    // But there's still a question here about the buffer size, if we want to allow settlement of an IRS months or years after its expiry!
-    function getTwapApy(address underlying) external view virtual override returns (uint256 twapApy) {
-        
-        // AB: made this function virtual for tests
-        // https://uniswap.org/whitepaper-v3.pdf
-
-        // need logApy since the last observation
-        Oracle.Observation memory last = observations[oracleVars.observationIndex];
-        
-        uint256 from = last.blockTimestamp;
-        uint256 to = Time.blockTimestampScaled();
-
-        uint256 apyFromTo = getApyFromTo(underlying, from, to);
-
-        uint256 logApy = PRBMathUD60x18.log10(apyFromTo);
-
-        uint256 aT1 = observations.observeSingle(to, secondsAgo, logApy, oracleVars.observationIndex, oracleVars.observationCardinality);
-        uint256 aT2 = observations.observeSingle(to, 0, logApy, oracleVars.observationIndex, oracleVars.observationCardinality); 
-        
-        uint256 logTwapApy = PRBMathUD60x18.div(aT2 - aT1, to - from);
-
-        twapApy = PRBMathUD60x18.powu(logTwapApy, 10);
-    }
-
     
-    function writeOrcleEntry(address underlying) external override {
+    function updateRate(address underlying) public virtual {
 
-        Oracle.Observation memory last = observations[oracleVars.observationIndex];
-        
-        // duplicate code
-        uint256 from = last.blockTimestamp;
-        uint256 to = Time.blockTimestampScaled();
-        
-        uint256 apyFromTo = getApyFromTo(underlying, from, to);
-        uint256 apyFromToLog = PRBMathUD60x18.log10(apyFromTo);
-
-        (oracleVars.observationIndex, oracleVars.observationCardinality) = observations.write(
-            oracleVars.observationIndex,
-            to,
-            apyFromToLog,
-            oracleVars.observationCardinality,
-            oracleVars.observationCardinalityNext
-        );
-
-    }
+    } 
+    
 
 
 }

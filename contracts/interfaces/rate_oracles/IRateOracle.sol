@@ -3,13 +3,6 @@
 pragma solidity ^0.8.0;
 
 interface IRateOracle {
-    
-    // todo either delete this and usee the TWAP everywhere, or move this struct defn to IAaveRateOracle so we can document it using Aave terminology
-    struct Rate {
-        bool isSet; // todo: remove cos non-zero timestamp is sufficient
-        uint256 timestamp; /// In wei-seconds
-        uint256 rateValue; /// in Ray. A return value of 1e27 (1 Ray) indicates no income since pool creation. A value of 2e27 indicates a 100% yield since pool creation. Etc.
-    }
 
      /**
      * @notice Gets the bytes32 ID of the rate oracle.

@@ -44,6 +44,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         
     }
     
+    function computeApyFromRate(uint256 rateFromTo, uint256 timeInYears) internal pure returns (uint256 apy) {
+        uint256 exponent = PRBMathUD60x18.div(10**18, timeInYears);
+        uint256 apyPlusOne = PRBMathUD60x18.pow((10**18 + rateFromTo), exponent);
+        apy = apyPlusOne - 10**18;
+    }
+    
     /// @inheritdoc BaseRateOracle
     /// @dev Reverts if we have no data point for either timestamp
     function getApyFromTo(
@@ -52,7 +58,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 to
     ) internal view override(BaseRateOracle) returns (uint256 apyFromTo) {
 
-        require(from < to, 'Misordered dates');
+        require(from < to, "Misordered dates");
 
         uint256 rateFromTo = getRateFromTo(underlying, from, to);
         
@@ -63,7 +69,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
 
         // todo: fix the below, that's not how apy is calculated from the rate!
-        apyFromTo = PRBMathUD60x18.mul(rateFromTo, timeInYears);
+        apyFromTo = computeApyFromRate(rateFromTo, timeInYears);
 
     }
     
