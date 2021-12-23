@@ -149,16 +149,11 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     }
     
     /// @inheritdoc IMarginEngine
-    function updateTraderMargin(address recipient, int256 marginDelta) public nonZeroDelta(marginDelta) override {
+    function updateTraderMargin(int256 marginDelta) public nonZeroDelta(marginDelta) override {
         // got rid of onlyAMM for now 
 
         // make external?, impacts the tests
-
-        if (recipient != msg.sender) {
-            revert OnlyOwnerCanUpdatePosition(); // todo: remove recipient and just use msg.sender?
-        }
-        
-        Trader.Info storage trader = traders[recipient];
+        Trader.Info storage trader = traders[msg.sender];
 
         int256 updatedMarginWouldBe = trader.margin + marginDelta;
         
@@ -166,7 +161,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
 
         trader.updateMargin(marginDelta);
 
-        transferMargin(recipient, marginDelta);
+        transferMargin(msg.sender, marginDelta);
     }
     
     /// @inheritdoc IMarginEngine

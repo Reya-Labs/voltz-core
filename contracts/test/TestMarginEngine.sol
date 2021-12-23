@@ -17,8 +17,8 @@ contract TestMarginEngine is MarginEngine {
     return amm.underlyingToken();
   }
 
-  function updateTraderMarginTest(address recipient, int256 marginDelta) external {
-    updateTraderMargin(recipient, marginDelta);
+  function updateTraderMarginTest(int256 marginDelta) external {
+    updateTraderMargin(marginDelta);
   }
 
 }
