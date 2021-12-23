@@ -12,7 +12,19 @@ import { FixedAndVariableMath } from "../../typechain";
 import { consts } from "../helpers/constants";
 import { ethers, waffle } from "hardhat";
 import { getCurrentTimestamp } from "../helpers/time";
-import { RATE_ORACLE_ID } from "./utilities";
+import {
+  APY_UPPER_MULTIPLIER,
+  APY_LOWER_MULTIPLIER,
+  MIN_DELTA_LM,
+  MIN_DELTA_IM,
+  MAX_LEVERAGE,
+  SIGMA_SQUARED,
+  ALPHA,
+  BETA,
+  XI_UPPER,
+  XI_LOWER,
+  RATE_ORACLE_ID,
+} from "./utilities";
 import { mainnetConstants } from "../../scripts/helpers/constants";
 import { toBn } from "evm-bn";
 import { aave_lending_pool_addr } from "./constants";
@@ -355,6 +367,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   // deploy the margin engine
   // set the margin engine in the amm, set the vamm in the amm
 
+  // todo: need dummy token so we can test token transfers
   const termStartTimestamp: number = await getCurrentTimestamp(provider);
   const termEndTimestamp: number =
     termStartTimestamp + consts.ONE_DAY.toNumber();
@@ -381,6 +394,21 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   await testRateOracle.setTermStartTimestampRate(
     mainnetConstants.tokens.USDC.address,
     termStartTimestampBN
+  );
+
+  // set the rate for sigmaSquared
+  await testMarginCalculator.setMarginCalculatorParametersTest(
+    RATE_ORACLE_ID,
+    APY_UPPER_MULTIPLIER,
+    APY_LOWER_MULTIPLIER,
+    MIN_DELTA_LM,
+    MIN_DELTA_IM,
+    MAX_LEVERAGE,
+    SIGMA_SQUARED,
+    ALPHA,
+    BETA,
+    XI_UPPER,
+    XI_LOWER
   );
 
   // add a mock rate oracle to the factory

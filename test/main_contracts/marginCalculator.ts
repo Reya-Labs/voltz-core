@@ -14,7 +14,7 @@ import {
 } from "../shared/utilities";
 import { FixedAndVariableMath } from "../../typechain/FixedAndVariableMath";
 
-import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
+import { TestMarginCalculator } from "../../typechain/TestMarginCalculator";
 import { getCurrentTimestamp, advanceTime } from "../helpers/time";
 
 import { getFixedTokenBalance } from "../core_libraries/fixedAndVariableMath";
@@ -420,7 +420,7 @@ function getMinimumMarginRequirement(
 
 describe("Margin Calculator", () => {
   let wallet: Wallet, other: Wallet;
-  let calculatorTest: MarginCalculatorTest;
+  let calculatorTest: TestMarginCalculator;
 
   const fixture = async () => {
     const timeFactory = await ethers.getContractFactory("Time");
@@ -440,7 +440,7 @@ describe("Margin Calculator", () => {
       (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMath;
 
     const marginCalculator = await ethers.getContractFactory(
-      "MarginCalculatorTest",
+      "TestMarginCalculator",
       {
         libraries: {
           FixedAndVariableMath: fixedAndVariableMath.address,
@@ -449,7 +449,7 @@ describe("Margin Calculator", () => {
       }
     );
 
-    return (await marginCalculator.deploy()) as MarginCalculatorTest;
+    return (await marginCalculator.deploy()) as TestMarginCalculator;
   };
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
