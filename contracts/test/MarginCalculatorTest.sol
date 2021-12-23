@@ -6,7 +6,13 @@ import "../interfaces/IMarginCalculator.sol";
 
 contract MarginCalculatorTest is MarginCalculator {
     
-    // view function
+    // view functions
+
+    function computeTimeFactorTest(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled) external returns(int256 timeFactor) {
+        
+        return computeTimeFactor(rateOracleId, termEndTimestampScaled, currentTimestampScaled);
+    
+    }
 
     function calculateExpectedAmountsTest(uint128 liquidity, int24 currentTick, int24 tickUpper, int24 tickLower) external pure returns (int256 amount1Up, int256 amount0Down) {
         
@@ -88,21 +94,17 @@ contract MarginCalculatorTest is MarginCalculator {
     
     function worstCaseVariableFactorAtMaturityTest(
         uint256 timeInSecondsFromStartToMaturity,
-        uint256 timeInSecondsFromNowToMaturity,
+        uint256 termEndTimestampScaled, 
+        uint256 currentTimestampScaled, 
         bool isFT,
         bool isLM,
         bytes32 rateOracleId,
         uint256 twapApy
         ) external view returns(uint256 variableFactor) {
 
-            return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, rateOracleId, twapApy);
+            return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, rateOracleId, twapApy);
     }
     
-    function getTimeFactorTest(bytes32 rateOracleId, uint256 timeInDays) external view returns (int256) {
-
-        return timeFactorTimeInDays[rateOracleId][timeInDays];
-
-    }
 
     function getMarginCalculatorParametersTest(bytes32 rateOracleId) external view returns (
         uint256 apyUpperMultiplier,
@@ -155,16 +157,10 @@ contract MarginCalculatorTest is MarginCalculator {
     }
 
 
-    function computeApyBoundTest(bytes32 rateOracleId, uint256 timeInSeconds, uint256 twapApy, bool isUpper) external view returns (uint256 apyBound) {
+    function computeApyBoundTest(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled, uint256 twapApy, bool isUpper) external view returns (uint256 apyBound) {
         
-        return computeApyBound(rateOracleId, timeInSeconds, twapApy, isUpper);
+        return computeApyBound(rateOracleId, termEndTimestampScaled, currentTimestampScaled, twapApy, isUpper);
     
-    }
-
-    // non_view functions
-
-    function setTimeFactorTest(bytes32 rateOracleId, uint256 timeInDays, int256 timeFactor) external {
-        setTimeFactor(rateOracleId, timeInDays, timeFactor);
     }
 
     function setMarginCalculatorParametersTest(

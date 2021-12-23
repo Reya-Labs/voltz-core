@@ -39,11 +39,9 @@ contract MarginCalculator is IMarginCalculator{
     // mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
 
 
-    // docs missing
+    // docs above
     mapping(bytes32 => MarginCalculatorParameters) internal getMarginCalculatorParameters;
 
-    /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
-    mapping(bytes32 => mapping(uint256 => int256)) internal timeFactorTimeInDays; // rateOralceId --> timeInSeconds --> timeFactor
     /// @dev Seconds in a year
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
@@ -53,47 +51,51 @@ contract MarginCalculator is IMarginCalculator{
         getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
     }
 
-    function setTimeFactor(bytes32 rateOracleId, uint256 timeInDays, int256 timeFactor) override public {
-        timeFactorTimeInDays[rateOracleId][timeInDays] = timeFactor;
+    /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
+    function computeTimeFactor(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled) internal view returns(int256 timeFactor) {
+        // todo: make sure to store the beta and not 4*beta
+        // check that current timestamp is smaller than the term end timestamp
+
+        int256 beta = getMarginCalculatorParameters[rateOracleId].beta;
+        
+        int256 scaledTime = PRBMathSD59x18.div((int256(termEndTimestampScaled) - int256(currentTimestampScaled)), int256(termEndTimestampScaled));
+
+        int256 expInput = PRBMathSD59x18.mul((-beta), scaledTime);
+
+        timeFactor = PRBMathSD59x18.exp(expInput);
+
     }
+
+
     
     /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
-    /// @param timeInSeconds Number of seconds from now until IRS AMM maturity
+    /// @param termEndTimestampScaled termEndTimestampScaled
+    /// @param currentTimestampScaled currentTimestampScaled
     /// @param twapApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @param isUpper isUpper = true ==> calculating the APY Upper Bound, otherwise APY Lower Bound
     /// @return apyBound APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
-    function computeApyBound(bytes32 rateOracleId, uint256 timeInSeconds, uint256 twapApy, bool isUpper) internal view returns (uint256 apyBound) {
+    function computeApyBound(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled, uint256 twapApy, bool isUpper) internal view returns (uint256 apyBound) {
         
         ApyBoundVars memory apyBoundVars;
 
-        // daily for now (check works correctly)
-        uint256 timeInDays = PRBMathUD60x18.div(timeInSeconds, 86400 * 10**18); // create a constant called ONE_DAY
+        apyBoundVars.timeFactor = computeTimeFactor(rateOracleId, termEndTimestampScaled, currentTimestampScaled);
 
-        uint256 timeInDaysFloor = PRBMathUD60x18.floor(timeInDays);
-
-        console.log("Contract: Time in Days Floor", timeInDaysFloor);
-
-        // apyBoundVars.timeFactor =  timeFactorTimeInDays[rateOracleId][timeInDaysFloor];
-        // PRBMath.SD59x18({value: timeFactor});
-        apyBoundVars.timeFactor = 10**17;
-
-        apyBoundVars.oneMinusTimeFactor = 10 ** 18 - apyBoundVars.timeFactor; // convert into a constant called ONE
+        apyBoundVars.oneMinusTimeFactor = 10 ** 18 - apyBoundVars.timeFactor; // convert 10 ** 18 into a constant called ONE_WEI
 
         apyBoundVars.k = PRBMathSD59x18.div(getMarginCalculatorParameters[rateOracleId].alpha, getMarginCalculatorParameters[rateOracleId].sigmaSquared);
 
         apyBoundVars.zeta = PRBMathSD59x18.div(
             PRBMathSD59x18.mul(getMarginCalculatorParameters[rateOracleId].sigmaSquared, apyBoundVars.oneMinusTimeFactor),
-            getMarginCalculatorParameters[rateOracleId].beta
+            PRBMathSD59x18.mul(getMarginCalculatorParameters[rateOracleId].beta, 4*10**18)
         );
         
         apyBoundVars.lambdaNum = PRBMathSD59x18.mul(
-            PRBMathSD59x18.mul(getMarginCalculatorParameters[rateOracleId].beta,
+            PRBMathSD59x18.mul( PRBMathSD59x18.mul(getMarginCalculatorParameters[rateOracleId].beta, 4*10**18),
                                     apyBoundVars.timeFactor),
             int256(twapApy));
-        // todo: fix, following the conversation with Mudit, decided to not use mapping and instead focus on just doing the exponential maths on-chain
-        // includes the line above that hardcodes the time factor
-        apyBoundVars.lambdaDen = PRBMathSD59x18.mul(getMarginCalculatorParameters[rateOracleId].beta, apyBoundVars.timeFactor); // check the time factor exists, if not have a fallback?
+        
+        apyBoundVars.lambdaDen = PRBMathSD59x18.mul(PRBMathSD59x18.mul(getMarginCalculatorParameters[rateOracleId].beta, 4*10**18), apyBoundVars.timeFactor); // check the time factor exists, if not have a fallback?
         apyBoundVars.lambda = PRBMathSD59x18.div(apyBoundVars.lambdaNum, apyBoundVars.lambdaDen);
 
         apyBoundVars.criticalValueMultiplier = PRBMathSD59x18.mul(
@@ -126,36 +128,36 @@ contract MarginCalculator is IMarginCalculator{
     
     /// @notice Calculates the Worst Case Variable Factor At Maturity
     /// @param timeInSecondsFromStartToMaturity Duration of a given IRS AMM (18 decimals)
-    /// @param timeInSecondsFromNowToMaturity Number of seconds from now to the maturity of a given IRS AMM (18 decimals)
+    /// @param termEndTimestampScaled termEndTimestampScaled
+    /// @param currentTimestampScaled currentTimestampScaled
     /// @param isFT isFT => we are dealing with a Fixed Taker (short) IRS position, otherwise it is a Variable Taker (long) IRS position
     /// @param isLM isLM => we are computing a Liquidation Margin otherwise computing an Initial Margin
     /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
     /// @param twapApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @return variableFactor The Worst Case Variable Factor At Maturity = APY Bound * accrualFactor(timeInYearsFromStartUntilMaturity) where APY Bound = APY Upper Bound for Fixed Takers and APY Lower Bound for Variable Takers
-    function worstCaseVariableFactorAtMaturity(uint256 timeInSecondsFromStartToMaturity, uint256 timeInSecondsFromNowToMaturity, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy ) internal view returns(uint256 variableFactor) {
+    function worstCaseVariableFactorAtMaturity(uint256 timeInSecondsFromStartToMaturity, uint256 termEndTimestampScaled, uint256 currentTimestampScaled, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy ) internal view returns(uint256 variableFactor) {
         
         uint256 timeInYearsFromStartUntilMaturity = FixedAndVariableMath.accrualFact(timeInSecondsFromStartToMaturity);
 
         if (isFT) {
 
             if (isLM) {
-                variableFactor = PRBMathUD60x18.mul(computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, true),
+                variableFactor = PRBMathUD60x18.mul(computeApyBound(rateOracleId, termEndTimestampScaled, currentTimestampScaled, twapApy, true),
                 timeInYearsFromStartUntilMaturity);
             } else {
                 variableFactor = PRBMathUD60x18.mul(
-                    PRBMathUD60x18.mul(computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, true), getMarginCalculatorParameters[rateOracleId].apyUpperMultiplier),
+                    PRBMathUD60x18.mul(computeApyBound(rateOracleId, termEndTimestampScaled, currentTimestampScaled, twapApy, true), getMarginCalculatorParameters[rateOracleId].apyUpperMultiplier),
                     timeInYearsFromStartUntilMaturity
                 );
             }
 
-
         } else {
             if (isLM) {
-                variableFactor = PRBMathUD60x18.mul(computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, false),
+                variableFactor = PRBMathUD60x18.mul(computeApyBound(rateOracleId, termEndTimestampScaled, currentTimestampScaled, twapApy, false),
                 timeInYearsFromStartUntilMaturity);
             } else {
                 variableFactor = PRBMathUD60x18.mul(
-                    PRBMathUD60x18.mul(computeApyBound(rateOracleId, timeInSecondsFromNowToMaturity, twapApy, false),                  getMarginCalculatorParameters[rateOracleId].apyLowerMultiplier),
+                    PRBMathUD60x18.mul(computeApyBound(rateOracleId, termEndTimestampScaled, currentTimestampScaled, twapApy, false),                  getMarginCalculatorParameters[rateOracleId].apyLowerMultiplier),
                     timeInYearsFromStartUntilMaturity);
             }
         }
@@ -219,11 +221,9 @@ contract MarginCalculator is IMarginCalculator{
 
         uint256 timeInSecondsFromStartToMaturity = params.termEndTimestamp - params.termStartTimestamp;
 
-        uint256 timeInSecondsFromNowToMaturity = params.termEndTimestamp - Time.blockTimestampScaled();
-
         int256 exp1 = PRBMathSD59x18.mul(params.fixedTokenBalance, int256(FixedAndVariableMath.fixedFactor(true, params.termStartTimestamp, params.termEndTimestamp)));
 
-        int256 exp2 = PRBMathSD59x18.mul(params.variableTokenBalance, int256(worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, params.variableTokenBalance < 0, params.isLM, params.rateOracleId, params.twapApy)));
+        int256 exp2 = PRBMathSD59x18.mul(params.variableTokenBalance, int256(worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, params.termEndTimestamp, Time.blockTimestampScaled(), params.variableTokenBalance < 0, params.isLM, params.rateOracleId, params.twapApy)));
 
         int256 modelMargin = exp1 + exp2;
 

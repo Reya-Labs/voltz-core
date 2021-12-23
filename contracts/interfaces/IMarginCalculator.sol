@@ -198,6 +198,4 @@ interface IMarginCalculator {
 
     function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) external;
 
-    function setTimeFactor(bytes32 rateOracleId, uint256 timeInDays, int256 timeFactor) external;
-
 }
