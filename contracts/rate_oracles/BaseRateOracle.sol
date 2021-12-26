@@ -12,9 +12,10 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 abstract contract BaseRateOracle is IRateOracle {
 
     bytes32 public immutable override rateOracleId;
+    address immutable underlying;
     uint256 public override secondsAgo;
 
-    struct Observation {
+    struct Rate {
         uint256 timestamp; /// In wei-seconds
         uint256 rateValue; // In wei
     }
@@ -25,22 +26,24 @@ abstract contract BaseRateOracle is IRateOracle {
         secondsAgo =  _secondsAgo;
 
         // emit seconds ago set
+        // specify the rate oracle id and the underlying address
     }
 
-    constructor(bytes32 _rateOracleId) {
+    constructor(bytes32 _rateOracleId, address _underlying) {
         rateOracleId = _rateOracleId;
+        underlying = _underlying;
     }
 
     struct OracleVars {
         
-        // the most-recently updated index of the observations array
-        uint16 observationIndex;
+        // the most-recently updated index of the Rates array
+        uint16 RateIndex;
 
-        // the current maximum number of observations that are being stored
-        uint16 observationCardinality;
+        // the current maximum number of Rates that are being stored
+        uint16 RateCardinality;
 
-        // the next maximum number of observations to store, triggered in observations.write 
-        uint16 observationCardinalityNext;
+        // the next maximum number of Rates to store, triggered in Rates.write 
+        uint16 RateCardinalityNext;
 
     }
 
@@ -49,7 +52,7 @@ abstract contract BaseRateOracle is IRateOracle {
     OracleVars public oracleVars;
 
     // override
-    Observation[65535] public observations;
+    Rate[65535] public Rates;
     
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public virtual override returns(uint256 result);
 
@@ -65,7 +68,7 @@ abstract contract BaseRateOracle is IRateOracle {
 
         // store in each slot to prevent fresh SSTOREs in swaps 
         // this data will not be used because the initialized boolean is still false
-        for (uint16 i = current; i < next; i++) observations[i].timestamp = 1;
+        for (uint16 i = current; i < next; i++) Rates[i].timestamp = 1;
 
         return next;
 
@@ -73,15 +76,15 @@ abstract contract BaseRateOracle is IRateOracle {
 
     
     // add override, lock the amm when calling this function, noDelegateCall
-    function increaseObservarionCardinalityNext(uint16 observationCardinalityNext) external {
-        uint16 observationCardinalityNextOld = oracleVars.observationCardinalityNext; // for the event
+    function increaseObservarionCardinalityNext(uint16 RateCardinalityNext) external {
+        uint16 RateCardinalityNextOld = oracleVars.RateCardinalityNext; // for the event
 
-        uint16 observationCardinalityNextNew = grow(observationCardinalityNextOld, observationCardinalityNext);
+        uint16 RateCardinalityNextNew = grow(RateCardinalityNextOld, RateCardinalityNext);
 
-        oracleVars.observationCardinalityNext = observationCardinalityNextNew;
+        oracleVars.RateCardinalityNext = RateCardinalityNextNew;
 
-        // if (observationCardinalityNextOld != observationCardinalityNextNew)
-            // emit IncreaseObservationCardinalityNext(observationCardinalityNextOld, observationCardinalityNextNew);
+        // if (RateCardinalityNextOld != RateCardinalityNextNew)
+            // emit IncreaseRateCardinalityNext(RateCardinalityNextOld, RateCardinalityNextNew);
     }
 
     /// @notice Calculates the observed APY returned by the underlying in a given period
@@ -95,7 +98,19 @@ abstract contract BaseRateOracle is IRateOracle {
     ) internal view virtual returns (uint256 apyFromTo);
     
     
-    function updateRate(address underlying) public virtual;
+    function writeRate(
+        uint16 index,
+        uint16 cardinality,
+        uint16 cardinalityNext
+    ) public virtual returns (uint16 indexUpdated, uint16 cardinalityUpdated);
+
+
+    function observeSingle(
+        uint256 currentTime,
+        uint256 queriedTime,
+        uint16 index,
+        uint16 cardinality
+    ) public virtual returns(Rate memory rate);
 
 
 }

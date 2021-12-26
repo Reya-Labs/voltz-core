@@ -23,8 +23,8 @@ pragma solidity ^0.8.0;
 //         result = Time.blockTimestampScaled();
 //     }
 
-//     function updateRateTest(address underlying, bool isStartRate) public {
-//         updateRate(underlying);
+//     function writeRateTest(address underlying, bool isStartRate) public {
+//         writeRate(underlying);
 
 //         if (isStartRate) {
 //             startRate = rates[underlying][Time.blockTimestampScaled()];

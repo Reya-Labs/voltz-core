@@ -8,7 +8,7 @@ interface IAaveRateOracle is IRateOracle {
 
     function aaveLendingPool() external returns (IAaveV2LendingPool);
 
-    function updateRate(address underlying) external;
+    function writeRate(address underlying) external;
 
     function getRateFromTo(
         address underlying,

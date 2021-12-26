@@ -42,7 +42,7 @@ contract TestRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     /// @notice Store the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
-    function updateRate(address underlying) public override {
+    function writeRate(address underlying) public override {
         
         uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
         require(result != 0, "Oracle only supports active Aave-V2 assets");
@@ -122,7 +122,7 @@ contract TestRateOracle is BaseRateOracle, IAaveRateOracle {
 
             if(!rate.isSet) {
                 if (termEndTimestamp == Time.blockTimestampScaled()) {
-                    updateRate(underlyingToken);
+                    writeRate(underlyingToken);
                 } else {
                     // @audit We are asking for rates up until an end timestamp for which we already know we have no data. We are going to revert What to do? Better to revert here explicity, or extrapolate? 
                 }    
@@ -138,7 +138,7 @@ contract TestRateOracle is BaseRateOracle, IAaveRateOracle {
                 rate = rates[underlyingToken][Time.blockTimestampScaled()];
 
                 if(!rate.isSet) {
-                    updateRate(underlyingToken);
+                    writeRate(underlyingToken);
                 }
 
                 result = getRateFromTo(underlyingToken, termStartTimestamp, Time.blockTimestampScaled());

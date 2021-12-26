@@ -130,10 +130,10 @@ set of virtual functions that all rate oracles need to adhere to.
 
 //                 //   // update the rate for term start and end timestamps
 //                 //   const termStartTimestamp: number = await getCurrentTimestamp(provider);
-//                 //   await rateOracleTest.updateRateTest(daiAddress, true)
+//                 //   await rateOracleTest.writeRateTest(daiAddress, true)
 //                 //   advanceTime(consts.ONE_MONTH)
 //                 //   const termEndTimestamp: number = await getCurrentTimestamp(provider);
-//                 //   await rateOracleTest.updateRateTest(daiAddress, false)
+//                 //   await rateOracleTest.writeRateTest(daiAddress, false)
 
 //                 //   // pull rates data after updates
 //                 //   // const rateTermStartTimestamp = await rateOracle.rates(daiAddress, toBn(termStartTimestamp.toString()))
@@ -154,11 +154,11 @@ set of virtual functions that all rate oracles need to adhere to.
 //                 //   let termStartTimestamp: number = await getCurrentTimestamp(provider);
 //                 //   // todo: find a more elegant solution
 //                 //   termStartTimestamp += 1
-//                 //   await rateOracleTest.updateRateTest(daiAddress, true)
+//                 //   await rateOracleTest.writeRateTest(daiAddress, true)
 //                 //   await advanceTime(consts.ONE_MONTH)
 //                 //   let termEndTimestamp: number = await getCurrentTimestamp(provider);
 //                 //   termEndTimestamp += 1
-//                 //   await rateOracleTest.updateRateTest(daiAddress, false)
+//                 //   await rateOracleTest.writeRateTest(daiAddress, false)
 
 //                 //   const rateTermStartTimestamp = await rateOracleTest.startRate()
 //                 //   const rateTermEndTimestamp = await rateOracleTest.endRate()
@@ -176,11 +176,11 @@ set of virtual functions that all rate oracles need to adhere to.
 //                 //   let termStartTimestamp: number = await getCurrentTimestamp(provider);
 //                 //   // todo: find a more elegant solution
 //                 //   termStartTimestamp += 1
-//                 //   await rateOracleTest.updateRateTest(daiAddress, true)
+//                 //   await rateOracleTest.writeRateTest(daiAddress, true)
 //                 //   await advanceTime(consts.ONE_MONTH)
 //                 //   let termEndTimestamp: number = await getCurrentTimestamp(provider);
 //                 //   termEndTimestamp += 1
-//                 //   await rateOracleTest.updateRateTest(daiAddress, false)
+//                 //   await rateOracleTest.writeRateTest(daiAddress, false)
 
 //                 //   const rateTermStartTimestamp = await rateOracleTest.rates(daiAddress, toBn(termStartTimestamp.toString()))
 //                 //   const rateTermEndTimestamp = await rateOracleTest.rates(daiAddress, toBn(termEndTimestamp.toString()))
@@ -200,11 +200,11 @@ set of virtual functions that all rate oracles need to adhere to.
 //                   let termStartTimestamp: number = await getCurrentTimestamp(provider);
 //                   // todo: find a more elegant solution
 //                   termStartTimestamp += 1
-//                   await rateOracleTest.updateRateTest(daiAddress, true)
+//                   await rateOracleTest.writeRateTest(daiAddress, true)
 //                   await advanceTime(consts.ONE_MONTH)
 //                   let termEndTimestamp: number = await getCurrentTimestamp(provider);
 //                   termEndTimestamp += 1
-//                   await rateOracleTest.updateRateTest(daiAddress, false)
+//                   await rateOracleTest.writeRateTest(daiAddress, false)
 
 //                   const rateTermStart = await rateOracleTest.rates(daiAddress, toBn(termStartTimestamp.toString()))
 //                   const rateTermEnd = await rateOracleTest.rates(daiAddress, toBn(termEndTimestamp.toString()))
@@ -224,10 +224,10 @@ set of virtual functions that all rate oracles need to adhere to.
 
 //                 //         // update the rate for term start and end timestamps
 //                 //         const termStartTimestamp: number = await getCurrentTimestamp(provider);
-//                 //         await rateOracle.updateRate(daiAddress)
+//                 //         await rateOracle.writeRate(daiAddress)
 //                 //         advanceTime(consts.ONE_MONTH)
 //                 //         const termEndTimestamp: number = await getCurrentTimestamp(provider);
-//                 //         await rateOracle.updateRate(daiAddress)
+//                 //         await rateOracle.writeRate(daiAddress)
 
 //                 //         // pull rates data after updates
 //                 //         const rateTermStartTimestamp = await rateOracle.rates(daiAddress, toBn(termStartTimestamp.toString()))
