@@ -166,11 +166,18 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     }
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override whenNotPaused {
+    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override whenNotPaused onlyAfterMaturity {
+
+        if (params.owner != msg.sender) {
+            revert OnlyOwnerCanUpdatePosition();
+        }
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
+
+        // @dev position can only be settled if it is burned
+        require(position.isBurned);
 
         (, int24 tick, ) = amm.vamm().slot0();
         
@@ -190,9 +197,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     }
     
     /// @inheritdoc IMarginEngine
-    function settleTrader(address recipient) onlyAfterMaturity external override whenNotPaused {
+    function settleTrader() external override whenNotPaused onlyAfterMaturity {
 
-        Trader.Info storage trader = traders[recipient];    
+        Trader.Info storage trader = traders[msg.sender];    
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.termStartTimestamp(), amm.termEndTimestamp()));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
@@ -200,7 +207,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     }
     
     /// @inheritdoc IMarginEngine
-    function liquidatePosition(ModifyPositionParams memory params) onlyAfterMaturity external override {
+    function liquidatePosition(ModifyPositionParams memory params) external override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
@@ -365,6 +372,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     ) external override returns(int256 _fixedTokenBalance, int256 _variableTokenBalance) {
         Position.Info memory positionMemory = positions.get(owner, tickLower, tickUpper);
 
+        // todo: can we bring UnwindTraderUnwindPosition in the MarginEngine?
         (_fixedTokenBalance, _variableTokenBalance) = UnwindTraderUnwindPosition.unwindPosition(
             address(amm),
             owner,

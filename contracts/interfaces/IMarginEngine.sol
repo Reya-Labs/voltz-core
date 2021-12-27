@@ -73,8 +73,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Can be called by anyone
     /// @dev A Trader cannot be settled before IRS AMM maturity
     /// @dev Steps to settle: calculate settlement cashflow based on the fixed and variable balances of the trader, update the fixed and variable balances to 0, update the margin to account for IRS settlement cashflow
-    /// @param recipient The address of the trader being settled
-    function settleTrader(address recipient) external;
+    function settleTrader() external;
 
     /// @notice Liquidate a Position
     /// @dev Steps to liquidate: update position's fixed and variable token balances to account for balances accumulated throughout the trades made since the last mint/burn/poke,

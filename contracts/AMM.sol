@@ -140,8 +140,8 @@ contract AMM is IAMM {
     marginEngine.settlePosition(params);
   }
 
-  function settleTrader(address recipient) external override { 
-    marginEngine.settleTrader(recipient);
+  function settleTrader() external override { 
+    marginEngine.settleTrader();
   }
 
   function liquidatePosition(IMarginEngine.ModifyPositionParams memory params)

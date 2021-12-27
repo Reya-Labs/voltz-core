@@ -13,7 +13,7 @@ interface IAMMActions {
     function updatePositionMargin(IVAMM.ModifyPositionParams memory params, int256 marginDelta) external;
     function updateTraderMargin(int256 marginDelta) external;
     function settlePosition(IVAMM.ModifyPositionParams memory params) external;
-    function settleTrader(address recipient) external;
+    function settleTrader() external;
     function liquidatePosition(IVAMM.ModifyPositionParams memory params) external;
     function liquidateTrader(address traderAddress) external;
     function burn(int24 tickLower, int24 tickUpper, uint128 amount) external;
