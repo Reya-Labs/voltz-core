@@ -210,7 +210,7 @@ contract VAMM is IVAMM {
       }
     }
 
-    amm.rateOracle().writeOrcleEntry(amm.underlyingToken());
+    amm.rateOracle().writeOracleEntry();
 
     if (params.liquidityDelta != 0) {
       if (
@@ -315,7 +315,7 @@ contract VAMM is IVAMM {
       protocolFee: 0
     });
 
-    amm.rateOracle().writeOrcleEntry(amm.underlyingToken());
+    amm.rateOracle().writeOracleEntry();
 
     // continue swapping as long as we haven't used the entire input/output and haven't reached the price (implied fixed rate) limit
     while (
@@ -387,7 +387,6 @@ contract VAMM is IVAMM {
       if (state.liquidity > 0) {
         uint256 variableFactor = amm.rateOracle().variableFactor(
           false,
-          amm.underlyingToken(),
           amm.termStartTimestamp(),
           amm.termEndTimestamp()
         );
@@ -485,7 +484,6 @@ contract VAMM is IVAMM {
         -int256(amount1),
         amm.rateOracle().variableFactor(
           false,
-          amm.underlyingToken(),
           amm.termStartTimestamp(),
           amm.termEndTimestamp()
         ),
@@ -499,7 +497,6 @@ contract VAMM is IVAMM {
         int256(amount1),
         amm.rateOracle().variableFactor(
           false,
-          amm.underlyingToken(),
           amm.termStartTimestamp(),
           amm.termEndTimestamp()
         ),

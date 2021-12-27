@@ -22,7 +22,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     /// @notice Get the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
     /// @return A return value of 1e27 (1 Ray) indicates no income since pool creation. A value of 2e27 indicates a 100% yield since pool creation. Etc.
-    function getReserveNormalizedIncome(address underlying) public view override returns(uint256){
+    function getReserveNormalizedIncome(address underlying) public view override(IAaveRateOracle) returns(uint256){
         return aaveLendingPool.getReserveNormalizedIncome(underlying);
     }
 
@@ -34,7 +34,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-        ) public override(BaseRateOracle) returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
+        ) public override(BaseRateOracle, IRateOracle) returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
 
         uint256 blockTimestamp = Time.blockTimestampScaled();
         
@@ -69,10 +69,9 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @inheritdoc BaseRateOracle
     /// @dev Reverts if we have no data point for either timestamp
     function getApyFromTo(
-        address underlying,
         uint256 from,
         uint256 to
-    ) internal view override(BaseRateOracle) returns (uint256 apyFromTo) {
+    ) internal override(BaseRateOracle) returns (uint256 apyFromTo) {
 
         require(from < to, "Misordered dates");
 
@@ -96,7 +95,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     function getRateFromTo(
         uint256 from,
         uint256 to
-    ) public view returns (uint256) {
+    ) public returns (uint256) {
         // note that we have to convert aave index into "floating rate" for
         // swap calculations, e.g. an index multiple of 1.04*10**27 corresponds to
         // 0.04*10**27 = 4*10*25
@@ -113,7 +112,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     /// @inheritdoc IRateOracle
-    function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public override(BaseRateOracle, IRateOracle) returns(uint256 result) {
+    function variableFactor(bool atMaturity, uint256 termStartTimestamp, uint256 termEndTimestamp) public override(BaseRateOracle, IRateOracle) returns(uint256 result) {
         
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
             require(atMaturity);
@@ -173,7 +172,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) private view returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
+    ) private returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
         
         // optimistically set before to the newest rate
         beforeOrAt = rates[index];
@@ -228,7 +227,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) public override(BaseRateOracle) returns(uint256 rateValue) {
+    ) public override(BaseRateOracle, IRateOracle) returns(uint256 rateValue) {
         
         if (currentTime == queriedTime) {
             Rate memory rate;
@@ -263,6 +262,24 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             rateValue = interpolateRateValue(beforeOrAt.rateValue, apyFromBeforeOrAtToAtOrAfter, queriedTime - beforeOrAt.timestamp);
 
         }
-
     }   
+
+
+    function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
+        (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
+            oracleVars.rateIndex,
+            oracleVars.rateCardinality,
+            oracleVars.rateCardinalityNext
+        );
+    }
+
+    function getHistoricalApy() external override(BaseRateOracle, IRateOracle) returns (uint256 historicalApy) {
+
+        uint256 to = Time.blockTimestampScaled();
+        uint256 from = to - secondsAgo;
+
+        return getApyFromTo(from, to);
+    }
+
+
 }
