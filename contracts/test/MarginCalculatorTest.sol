@@ -6,9 +6,11 @@ import "../interfaces/IMarginCalculator.sol";
 
 contract MarginCalculatorTest is MarginCalculator {
     
+    constructor (address _factory) MarginCalculator(_factory) {}
+    
     // view functions
 
-    function computeTimeFactorTest(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled) external returns(int256 timeFactor) {
+    function computeTimeFactorTest(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled) external view returns(int256 timeFactor) {
         
         return computeTimeFactor(rateOracleId, termEndTimestampScaled, currentTimestampScaled);
     

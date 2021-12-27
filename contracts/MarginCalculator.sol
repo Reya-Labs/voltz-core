@@ -11,6 +11,7 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "./core_libraries/Position.sol";
 import "hardhat/console.sol";
 import "./core_libraries/Tick.sol";
+import "./interfaces/IFactory.sol";
 
 
 /// @title Margin Calculator
@@ -38,6 +39,17 @@ contract MarginCalculator is IMarginCalculator{
     // /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
     // mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
 
+      // todo: add override
+    address immutable factory;
+
+    modifier onlyFactoryOwner() {
+        require(msg.sender == IFactory(factory).owner());
+        _;
+    }
+
+    constructor(address _factory) {
+        factory = _factory;
+    }
 
     // docs above
     mapping(bytes32 => MarginCalculatorParameters) internal getMarginCalculatorParameters;
@@ -46,7 +58,7 @@ contract MarginCalculator is IMarginCalculator{
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
     // todo: docs missing, only Factory, make this function external? 
-    function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) override public {
+    function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) override public onlyFactoryOwner {
         // require statements to check the parameters and the rateOracleId passed into this function
         getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
     }

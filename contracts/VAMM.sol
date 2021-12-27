@@ -47,10 +47,13 @@ contract VAMM is IVAMM, Pausable {
   
   uint256 public constant SECONDS_IN_DAY_WAD = 86400 * 10**18;
 
-  // modifier onlyFactoryOwner() {
-  //   require(msg.sender == IFactory(factory).owner());
-  //   _;
-  // }
+  // todo: add override
+  address immutable factory;
+
+  modifier onlyFactoryOwner() {
+    require(msg.sender == IFactory(factory).owner());
+    _;
+  }
 
   modifier checkCurrentTimestampTermEndTimestampDelta() {
     uint256 currentTimestamp = Time.blockTimestampScaled(); 
@@ -67,6 +70,7 @@ contract VAMM is IVAMM, Pausable {
     ) = IDeployer(msg.sender).vammParameters();
 
     amm = IAMM(_ammAddress);
+    factory = amm.factory();
   }
 
   Slot0 public override slot0;
@@ -89,10 +93,12 @@ contract VAMM is IVAMM, Pausable {
 
 
   /// @notice Updates internal accounting to reflect a collection of protocol fees. The actual transfer of fees must happen separately.
+  /// @dev can only be done via the collectProtocol function of AMM
   function updateProtocolFees(uint256 protocolFeesCollected)
     external
     override
   {
+    require(msg.sender==address(amm), "only AMM");
     if (protocolFees < protocolFeesCollected) {
       revert NotEnoughFunds(protocolFeesCollected, protocolFees);
     }
@@ -115,24 +121,24 @@ contract VAMM is IVAMM, Pausable {
     emit Initialize(sqrtPriceX96, tick);
   }
 
-  function setFeeProtocol(uint256 feeProtocol) external override {
+  function setFeeProtocol(uint256 feeProtocol) external override onlyFactoryOwner {
     slot0.feeProtocol = feeProtocol;
     // emit set fee protocol
   }
 
   // todo: add override, onlyFactory
-  function setTickSpacing(int24 _tickSpacing) external {
+  function setTickSpacing(int24 _tickSpacing) external onlyFactoryOwner {
     tickSpacing = _tickSpacing;
   }
 
 
   // todo: add override, onlyFactory
-  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external {
+  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external onlyFactoryOwner {
     maxLiquidityPerTick = _maxLiquidityPerTick;
   }
 
   // todo: add override, onlyFactory
-  function setFee(uint256 _fee) external {
+  function setFee(uint256 _fee) external onlyFactoryOwner {
     fee = _fee;
   }
 
