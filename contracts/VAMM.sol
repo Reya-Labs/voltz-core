@@ -44,6 +44,21 @@ contract VAMM is IVAMM, Pausable {
 
   mapping(int24 => Tick.Info) public override ticks;
   mapping(int16 => uint256) public override tickBitmap;
+  
+  uint256 public constant SECONDS_IN_DAY_WAD = 86400 * 10**18;
+
+  // modifier onlyFactoryOwner() {
+  //   require(msg.sender == IFactory(factory).owner());
+  //   _;
+  // }
+
+  modifier checkCurrentTimestampTermEndTimestampDelta() {
+    uint256 currentTimestamp = Time.blockTimestampScaled(); 
+    require(currentTimestamp < amm.termEndTimestamp());
+    uint256 timeDelta = amm.termEndTimestamp() - currentTimestamp;
+    require(timeDelta > SECONDS_IN_DAY_WAD);
+    _;
+  }
 
   constructor() Pausable() {
     address _ammAddress;
@@ -227,7 +242,7 @@ contract VAMM is IVAMM, Pausable {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) public override whenNotPaused {
+  ) public override whenNotPaused checkCurrentTimestampTermEndTimestampDelta {
     // public avoids using callees for tests (timeout issue in vamm.ts)
     // require(amount > 0);
     if (amount <= 0) {
@@ -257,6 +272,7 @@ contract VAMM is IVAMM, Pausable {
     external
     override
     whenNotPaused
+    checkCurrentTimestampTermEndTimestampDelta
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
   {
 
