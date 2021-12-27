@@ -311,6 +311,8 @@ contract VAMM is IVAMM, Pausable {
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
   {
 
+    SwapLocalVars memory swapLocalVars;
+    
     Slot0 memory slot0Start = slot0;
 
     VAMMHelpers.checksBeforeSwap(params, slot0Start, !unlocked);
@@ -361,7 +363,7 @@ contract VAMM is IVAMM, Pausable {
       // get the price for the next tick
       step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
 
-      uint256 timeToMaturityInSeconds = amm.termEndTimestamp() - Time.blockTimestampScaled();
+      // uint256 timeToMaturityInSeconds = amm.termEndTimestamp() - Time.blockTimestampScaled();
 
       // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
       (
@@ -381,7 +383,7 @@ contract VAMM is IVAMM, Pausable {
         state.liquidity,
         state.amountSpecifiedRemaining,
         fee,
-        timeToMaturityInSeconds
+        amm.termEndTimestamp() - Time.blockTimestampScaled()
       );
 
       if (params.amountSpecified > 0) {
@@ -400,9 +402,9 @@ contract VAMM is IVAMM, Pausable {
 
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
-        uint256 delta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
-        step.feeAmount = step.feeAmount - delta;
-        state.protocolFee = state.protocolFee + delta;
+        // uint256 delta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
+        step.feeAmount = step.feeAmount - (PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol));
+        state.protocolFee = state.protocolFee + (PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol));
       }
 
       // update global fee tracker
@@ -471,7 +473,7 @@ contract VAMM is IVAMM, Pausable {
       protocolFees = protocolFees + state.protocolFee;
     }
 
-    (int256 amount0Int, int256 amount1Int) = params.isFT ==
+    (swapLocalVars.amount0Int, swapLocalVars.amount1Int) = params.isFT ==
       params.amountSpecified > 0
       ? (
         params.amountSpecified - state.amountSpecifiedRemaining,
@@ -482,28 +484,28 @@ contract VAMM is IVAMM, Pausable {
         params.amountSpecified - state.amountSpecifiedRemaining
       );
 
-    uint256 amount0;
-    uint256 amount1;
+    swapLocalVars.amount0;
+    swapLocalVars.amount1;
 
-    if (amount0Int > 0) {
-      if (amount1Int >= 0) {
-        revert ExpectedOppositeSigns(amount0Int, amount1Int);
+    if (swapLocalVars.amount0Int > 0) {
+      if (swapLocalVars.amount1Int >= 0) {
+        revert ExpectedOppositeSigns(swapLocalVars.amount0Int, swapLocalVars.amount1Int);
       } 
-      amount0 = uint256(amount0Int);
-      amount1 = uint256(-amount1Int);
-    } else if (amount1Int > 0) {
-      if (amount0Int >= 0) {
-        revert ExpectedOppositeSigns(amount0Int, amount1Int);
+      swapLocalVars.amount0 = uint256(swapLocalVars.amount0Int);
+      swapLocalVars.amount1 = uint256(-swapLocalVars.amount1Int);
+    } else if (swapLocalVars.amount1Int > 0) {
+      if (swapLocalVars.amount0Int >= 0) {
+        revert ExpectedOppositeSigns(swapLocalVars.amount0Int, swapLocalVars.amount1Int);
       } 
-      amount0 = uint256(-amount0Int);
-      amount1 = uint256(amount1Int);
+      swapLocalVars.amount0 = uint256(-swapLocalVars.amount0Int);
+      swapLocalVars.amount1 = uint256(swapLocalVars.amount1Int);
     }
 
     if (params.isFT) {
-      _variableTokenDelta = -int256(amount1);
+      _variableTokenDelta = -int256(swapLocalVars.amount1);
       _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-        int256(amount0),
-        -int256(amount1),
+        int256(swapLocalVars.amount0),
+        -int256(swapLocalVars.amount1),
         amm.rateOracle().variableFactor(
           false,
           amm.termStartTimestamp(),
@@ -513,10 +515,10 @@ contract VAMM is IVAMM, Pausable {
         amm.termEndTimestamp()
       );
     } else {
-      _variableTokenDelta = int256(amount1);
+      _variableTokenDelta = int256(swapLocalVars.amount1);
       _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-        -int256(amount0),
-        int256(amount1),
+        -int256(swapLocalVars.amount0),
+        int256(swapLocalVars.amount1),
         amm.rateOracle().variableFactor(
           false,
           amm.termStartTimestamp(),
@@ -533,7 +535,8 @@ contract VAMM is IVAMM, Pausable {
       amm.marginEngine().updateTraderBalances(
         params.recipient,
         _fixedTokenDelta,
-        _variableTokenDelta
+        _variableTokenDelta,
+        params.isUnwind
       );
     }
 

@@ -72,6 +72,14 @@ interface IVAMM is IPositionStructs {
         uint256 feeProtocol;
     }
 
+    
+    struct SwapLocalVars {
+        int256 amount0Int;
+        int256 amount1Int;
+        uint256 amount0;
+        uint256 amount1;
+    }
+    
     // the top level state of the swap, the results of which are recorded in storage at the end
     struct SwapState {
         // the amount remaining to be swapped in/out of the input/output asset

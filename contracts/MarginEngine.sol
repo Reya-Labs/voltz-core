@@ -356,7 +356,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     }
 
     /// @inheritdoc IMarginEngine
-    function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance) external override {
+    function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, bool isUnwind) external override {
         Trader.Info storage trader = traders[recipient];
         trader.updateBalances(fixedTokenBalance, variableTokenBalance);
 
@@ -372,8 +372,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             })
         ));
 
-        // AB: revert if margin requirement is satisfied (unless it is a liquidation?)
-        if (marginRequirement > trader.margin) {
+        if (marginRequirement > trader.margin && !isUnwind) {
             revert MarginRequirementNotMet();
         }
     }

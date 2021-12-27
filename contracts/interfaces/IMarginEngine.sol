@@ -108,7 +108,7 @@ interface IMarginEngine is IPositionStructs {
     /// @param recipient The address of the trader who wishes to update their balances
     /// @param fixedTokenBalance Current fixed token balance of a trader
     /// @param variableTokenBalance Current variable token balance of a trader
-    function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance) external;
+    function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, bool isUnwind) external;
 
 
     /// @notice Unwind a position
