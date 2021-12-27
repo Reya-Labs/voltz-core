@@ -256,13 +256,13 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             revert CannotLiquidate();
         }
 
-        uint256 liquidatorReward = PRBMathUD60x18.mul(uint256(position.margin), liquidatorReward);
+        uint256 liquidatorRewardValue = PRBMathUD60x18.mul(uint256(position.margin), liquidatorReward);
 
         position.updateMargin(-int256(liquidatorReward));
 
         amm.burn(params.tickLower, params.tickUpper, position._liquidity); // burn all liquidity
 
-        IERC20Minimal(underlyingToken).transferFrom(address(amm ), msg.sender, liquidatorReward);
+        IERC20Minimal(underlyingToken).transferFrom(address(amm ), msg.sender, liquidatorRewardValue);
         
     }
 
@@ -288,7 +288,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             revert CannotLiquidate();
         }
 
-        (uint256 liquidatorReward, int256 updatedMargin) = calculateLiquidatorRewardAndUpdatedMargin(trader.margin, liquidatorReward);
+        (uint256 liquidatorRewardValue, int256 updatedMargin) = calculateLiquidatorRewardAndUpdatedMargin(trader.margin, liquidatorReward);
 
         trader.updateMargin(updatedMargin);
 
@@ -296,7 +296,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         
         UnwindTraderUnwindPosition.unwindTrader(address(amm), traderAddress, notional);
 
-        IERC20Minimal(underlyingToken).transferFrom(address(amm), msg.sender, liquidatorReward);
+        IERC20Minimal(underlyingToken).transferFrom(address(amm), msg.sender, liquidatorRewardValue);
 
     }
 

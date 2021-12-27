@@ -34,27 +34,14 @@ contract Factory is IFactory, Deployer {
   mapping(bytes32 => address) public override getRateOracleAddress;
 
   /// @inheritdoc IFactory
-  address public override treasury;
-
-  /// @inheritdoc IFactory
   address public override insuranceFund;
 
   /// @inheritdoc IFactory
   address public override calculator;
 
   constructor() {
-    // don't really need to set the treasury and the insurance fund at the construction
     owner = msg.sender;
     emit OwnerChanged(address(0), msg.sender);
-  }
-
-  /// @inheritdoc IFactory
-  function setTreasury(address _treasury) external override onlyOwner {
-    require(_treasury != address(0), "ZERO_ADDRESS");
-
-    emit TreasuaryChanged(_treasury);
-
-    treasury = _treasury;
   }
 
   /// @inheritdoc IFactory

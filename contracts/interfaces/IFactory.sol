@@ -10,10 +10,6 @@ interface IFactory {
   /// @param newOwner The owner after the owner was changed
   event OwnerChanged(address indexed oldOwner, address indexed newOwner);
 
-  /// @notice Emitted when treasury address is changed
-  /// @param newTreasury The new treasury address after it was changed by owner
-  event TreasuaryChanged(address indexed newTreasury);
-
   /// @notice Emitted when calculator address is changed
   /// @param newCalculator The new calculator address after it was changed by owner
   event CalculatorChanged(address indexed newCalculator);
@@ -39,11 +35,6 @@ interface IFactory {
   /// @dev Can be changed by the current owner via setOwner
   /// @return The address of the factory owner
   function owner() external view returns (address);
-
-  /// @notice Returns the current treasury of the factory (i.e. Voltz Treasury)
-  /// @dev Can be changed by the current owner via setTreasury
-  /// @return The address of the treasury
-  function treasury() external view returns (address);
 
 
   /// @notice Returns the current calculator of the factory
@@ -84,11 +75,6 @@ interface IFactory {
   /// @dev Must be called by the current owner
   /// @param _owner The new owner of the factory
   function setOwner(address _owner) external;
-  
-  /// @notice Updates the treasury of the factory
-  /// @dev Must be called by the current owner
-  /// @param _treasury The new treasury of the factory
-  function setTreasury(address _treasury) external;
 
   /// @notice Updates the calculator of the factory
   /// @dev Must be called by the current owner

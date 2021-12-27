@@ -81,13 +81,6 @@ describe('Factory', () => {
         
     // }
 
-    // describe('#setTreasury', async () => {
-    //     it('updates treasury address', async () => {
-    //         await factory.setTreasury('TEST_ADDRESS')
-    //         expect(await factory.treasury()).to.eq(other.address)
-    //     })
-    // })
-
     // describe('#setCalculator', async () => {
     //     it('updates calculator address', async () => {
     //         await factory.setCalculator(other.address)
