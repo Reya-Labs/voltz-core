@@ -10,8 +10,6 @@ import { toBn } from "evm-bn";
 import { getMaxLiquidityPerTick, TICK_SPACING } from "../shared/utilities";
 import { getMaxListeners } from "process";
 
-const BLOCK_TIMESTAMP = 1632249308;
-
 // UniswapV3 part, is it needed?
 const MaxUint128 = BigNumber.from(2).pow(128).sub(1);
 //const { constants } = ether
