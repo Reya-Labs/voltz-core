@@ -184,8 +184,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             } else {
                 // otherwise, we need to transform
                 // return (beforeOrAt, transform(beforeOrAt, target, logApy));
-                (uint16 indexUpdated, uint16 cardinalityUpdated) = writeRate(index, cardinality, cardinalityNext);
-                atOrAfter = rates[indexUpdated];
+                (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(index, cardinality, cardinalityNext);
+                atOrAfter = rates[oracleVars.rateIndex];
                 return (beforeOrAt, atOrAfter);
             }
         }
@@ -233,8 +233,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             Rate memory rate;
             rate = rates[index];
             if (rate.timestamp != currentTime) {
-                (uint16 indexUpdated, uint16 cardinalityUpdated) = writeRate(index, cardinality, cardinalityNext);
-                rate = rates[indexUpdated];
+                (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(index, cardinality, cardinalityNext);
+                rate = rates[oracleVars.rateIndex];
                 // check the rate was correctly updated (unit test)
                 rateValue = rate.rateValue;
             } else {
