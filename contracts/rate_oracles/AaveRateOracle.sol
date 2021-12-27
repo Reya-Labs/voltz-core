@@ -38,7 +38,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         uint256 blockTimestamp = Time.blockTimestampScaled();
         
-        Rate memory last = Rates[index];
+        Rate memory last = rates[index];
 
         // early return if we've already written an Rate this block
         if (last.timestamp == blockTimestamp) return (index, cardinality);
@@ -56,7 +56,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         require(result != 0, "Oracle only supports active Aave-V2 assets");
         
         // rates[underlying][blockTimestamp] = Rate(blockTimestamp, result);
-        Rates[indexUpdated] = Rate(blockTimestamp, result);
+        rates[indexUpdated] = Rate(blockTimestamp, result);
         
     }
     
@@ -103,11 +103,11 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         uint256 currentTime = Time.blockTimestampScaled();
         
-        Rate memory rateFrom = observeSingle(currentTime, from, oracleVars.RateIndex, oracleVars.RateCardinality);
-        Rate memory rateTo = observeSingle(currentTime, to, oracleVars.RateIndex, oracleVars.RateCardinality);
+        uint256 rateFrom = observeSingle(currentTime, from, oracleVars.rateIndex, oracleVars.rateCardinality, oracleVars.rateCardinalityNext);
+        uint256 rateTo = observeSingle(currentTime, to, oracleVars.rateIndex, oracleVars.rateCardinality, oracleVars.rateCardinalityNext);
 
         return
-            WadRayMath.rayDiv(rateTo.rateValue, rateFrom.rateValue).sub(
+            WadRayMath.rayDiv(rateTo, rateFrom).sub(
                 WadRayMath.RAY
             );
     }
@@ -127,6 +127,96 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
 
+    function binarySearch(
+        uint256 target,
+        uint16 index,
+        uint16 cardinality
+    ) private view returns (Rate memory beforeOrAt, Rate memory atOrAfter) { 
+        uint256 l = (index + 1) % cardinality; // oldest observation
+        uint256 r = l + cardinality - 1; // newest observation
+        uint256 i;
+
+        while (true) {
+            i = (l + r) / 2;
+            beforeOrAt = rates[i % cardinality];
+            
+            // we've landed on an uninitialized tick, keep searching higher (more recently)
+            if (beforeOrAt.timestamp == 0) {
+                l = i + 1;
+                continue;
+            }
+            
+            atOrAfter = rates[(i + 1) % cardinality];
+            
+            bool targetAtOrAfter = beforeOrAt.timestamp <= target;
+
+            // check if we've found the answer!
+            if (targetAtOrAfter && target <= atOrAfter.timestamp) break;
+
+            if (!targetAtOrAfter) r = i - 1;
+            else l = i + 1;
+        }
+
+    }
+
+    
+    /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    /// @dev Assumes there is at least 1 initialized observation.
+    /// Used by observeSingle() to compute the counterfactual liquidity index values as of a given block timestamp.
+    /// @param target The timestamp at which the reserved observation should be for
+    /// @param index The index of the observation that was most recently written to the observations array
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
+    /// @return atOrAfter The observation which occurred at, or after, the given timestamp
+    function getSurroundingRates(
+        uint256 target,
+        uint16 index,
+        uint16 cardinality,
+        uint16 cardinalityNext
+    ) private view returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
+        
+        // optimistically set before to the newest rate
+        beforeOrAt = rates[index];
+
+        if (beforeOrAt.timestamp <= target) {
+            if (beforeOrAt.timestamp == target) {
+                // if the newest observation eqauls target, we are in the same block, so we can ignore atOrAfter
+                return (beforeOrAt, atOrAfter);
+            } else {
+                // otherwise, we need to transform
+                // return (beforeOrAt, transform(beforeOrAt, target, logApy));
+                (uint16 indexUpdated, uint16 cardinalityUpdated) = writeRate(index, cardinality, cardinalityNext);
+                atOrAfter = rates[indexUpdated];
+                return (beforeOrAt, atOrAfter);
+            }
+        }
+
+        // set to the oldest observation
+        beforeOrAt = rates[(index + 1) % cardinality];
+        
+        if (beforeOrAt.timestamp == 0) {
+            beforeOrAt = rates[0];
+        }
+
+        require(beforeOrAt.timestamp <= target, "OLD");
+
+        // if we've reached this point, we have to binary search
+        return binarySearch(target, index, cardinality);
+
+    }
+
+
+    // time delta is in seconds
+    function interpolateRateValue(
+        uint256 beforeOrAtRateValue,
+        uint256 apyFromBeforeOrAtToAtOrAfter,
+        uint256 timeDeltaBeforeOrAtToQueriedTime
+    ) private view returns (uint256 rateValue) {
+        uint256 timeInYears = FixedAndVariableMath.accrualFact(timeDeltaBeforeOrAtToQueriedTime);
+        uint256 exp1 = PRBMathUD60x18.pow((10**18 + apyFromBeforeOrAtToAtOrAfter), timeInYears) - 10**18;
+        rateValue = PRBMathUD60x18.mul(beforeOrAtRateValue, exp1);
+    }
+    
     // gets the liquidity index
     /// @param currentTime The current block timestamp
     /// @param queriedTime Time to look back to
@@ -136,25 +226,43 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 currentTime,
         uint256 queriedTime,
         uint16 index,
-        uint16 cardinality
-    ) public override(BaseRateOracle) returns(Rate memory rate) {
+        uint16 cardinality,
+        uint16 cardinalityNext
+    ) public override(BaseRateOracle) returns(uint256 rateValue) {
         
         if (currentTime == queriedTime) {
-            rate = Rates[index];
+            Rate memory rate;
+            rate = rates[index];
             if (rate.timestamp != currentTime) {
-                // (uint16 indexUpdated, uint16 cardinalityUpdated) = writeRate(index, cardinality, )
-                // writeRate();
+                (uint16 indexUpdated, uint16 cardinalityUpdated) = writeRate(index, cardinality, cardinalityNext);
+                rate = rates[indexUpdated];
+                // check the rate was correctly updated (unit test)
+                rateValue = rate.rateValue;
+            } else {
+                rateValue = rate.rateValue;
             }
-            // check the rate was correctly updated (unit test)
         }
+        
+        (Rate memory beforeOrAt, Rate memory atOrAfter) = getSurroundingRates(queriedTime, index, cardinality, cardinalityNext);
 
+        if (queriedTime == beforeOrAt.timestamp) {
+            // we are at the left boundary
+            rateValue = beforeOrAt.rateValue;
+        } else if (queriedTime == atOrAfter.timestamp) {
+            // we are at the right boundary
+            rateValue =  atOrAfter.rateValue;
+        } else {
+            // we are in the middle
 
+            // find apy between beforeOrAt and atOrAfter
+            uint256 rateFromBeforeOrAtToAtOrAfter = WadRayMath.rayDiv(atOrAfter.rateValue, beforeOrAt.rateValue).sub(WadRayMath.RAY);
+            uint256 timeInYears = FixedAndVariableMath.accrualFact(atOrAfter.timestamp - beforeOrAt.timestamp);
+            uint256 apyFromBeforeOrAtToAtOrAfter = computeApyFromRate(rateFromBeforeOrAtToAtOrAfter, timeInYears);
 
+            // interpolate rateValue for queriedTime
+            rateValue = interpolateRateValue(beforeOrAt.rateValue, apyFromBeforeOrAtToAtOrAfter, queriedTime - beforeOrAt.timestamp);
 
-
-
-
-
+        }
 
     }   
 }

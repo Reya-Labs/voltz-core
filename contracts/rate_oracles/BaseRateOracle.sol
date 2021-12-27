@@ -14,6 +14,10 @@ abstract contract BaseRateOracle is IRateOracle {
     bytes32 public immutable override rateOracleId;
     address immutable underlying;
     uint256 public override secondsAgo;
+    // override
+    OracleVars public oracleVars;
+    // override
+    Rate[65535] public rates;
 
     struct Rate {
         uint256 timestamp; /// In wei-seconds
@@ -36,23 +40,16 @@ abstract contract BaseRateOracle is IRateOracle {
 
     struct OracleVars {
         
-        // the most-recently updated index of the Rates array
-        uint16 RateIndex;
+        // the most-recently updated index of the rates array
+        uint16 rateIndex;
 
-        // the current maximum number of Rates that are being stored
-        uint16 RateCardinality;
+        // the current maximum number of rates that are being stored
+        uint16 rateCardinality;
 
-        // the next maximum number of Rates to store, triggered in Rates.write 
-        uint16 RateCardinalityNext;
+        // the next maximum number of rates to store, triggered in rates.write 
+        uint16 rateCardinalityNext;
 
     }
-
-
-    // override
-    OracleVars public oracleVars;
-
-    // override
-    Rate[65535] public Rates;
     
     function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public virtual override returns(uint256 result);
 
@@ -68,7 +65,7 @@ abstract contract BaseRateOracle is IRateOracle {
 
         // store in each slot to prevent fresh SSTOREs in swaps 
         // this data will not be used because the initialized boolean is still false
-        for (uint16 i = current; i < next; i++) Rates[i].timestamp = 1;
+        for (uint16 i = current; i < next; i++) rates[i].timestamp = 1;
 
         return next;
 
@@ -76,15 +73,15 @@ abstract contract BaseRateOracle is IRateOracle {
 
     
     // add override, lock the amm when calling this function, noDelegateCall
-    function increaseObservarionCardinalityNext(uint16 RateCardinalityNext) external {
-        uint16 RateCardinalityNextOld = oracleVars.RateCardinalityNext; // for the event
+    function increaseObservarionCardinalityNext(uint16 rateCardinalityNext) external {
+        uint16 rateCardinalityNextOld = oracleVars.rateCardinalityNext; // for the event
 
-        uint16 RateCardinalityNextNew = grow(RateCardinalityNextOld, RateCardinalityNext);
+        uint16 rateCardinalityNextNew = grow(rateCardinalityNextOld, rateCardinalityNext);
 
-        oracleVars.RateCardinalityNext = RateCardinalityNextNew;
+        oracleVars.rateCardinalityNext = rateCardinalityNextNew;
 
-        // if (RateCardinalityNextOld != RateCardinalityNextNew)
-            // emit IncreaseRateCardinalityNext(RateCardinalityNextOld, RateCardinalityNextNew);
+        // if (rateCardinalityNextOld != rateCardinalityNextNew)
+            // emit IncreaserateCardinalityNext(rateCardinalityNextOld, rateCardinalityNextNew);
     }
 
     /// @notice Calculates the observed APY returned by the underlying in a given period
@@ -109,8 +106,9 @@ abstract contract BaseRateOracle is IRateOracle {
         uint256 currentTime,
         uint256 queriedTime,
         uint16 index,
-        uint16 cardinality
-    ) public virtual returns(Rate memory rate);
+        uint16 cardinality,
+        uint16 cardinalityNext
+    ) public virtual returns(uint256 rateValue);
 
 
 }
