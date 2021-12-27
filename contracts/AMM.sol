@@ -20,12 +20,10 @@ import "./interfaces/IFactory.sol";
 
 import "./core_libraries/FixedAndVariableMath.sol";
 
-import "@openzeppelin/contracts/security/Pausable.sol";
-
 import "./interfaces/IMarginEngine.sol";
 import "./interfaces/IVAMM.sol";
 
-contract AMM is IAMM, Pausable {
+contract AMM is IAMM {
   using LowGasSafeMath for uint256;
   using LowGasSafeMath for int256;
 
@@ -47,7 +45,7 @@ contract AMM is IAMM, Pausable {
   IMarginEngine public override marginEngine;
   bool public override unlocked;
 
-  constructor() Pausable() {
+  constructor() {
     (
       factory,
       underlyingToken,
@@ -139,21 +137,20 @@ contract AMM is IAMM, Pausable {
     marginEngine.updateTraderMargin(marginDelta);
   }
 
-  function settlePosition(IMarginEngine.ModifyPositionParams memory params) // @todo: whenNotPaused? (trustlessness vs. can respond to bugs)
+  function settlePosition(IMarginEngine.ModifyPositionParams memory params)
     external
     override
   {
     marginEngine.settlePosition(params);
   }
 
-  function settleTrader(address recipient) external override { // @todo: whenNotPaused? (trustlessness vs. can respond to bugs)
+  function settleTrader(address recipient) external override { 
     marginEngine.settleTrader(recipient);
   }
 
   function liquidatePosition(IMarginEngine.ModifyPositionParams memory params)
     external
     override
-    whenNotPaused
   {
     marginEngine.liquidatePosition(params);
   }
@@ -161,7 +158,6 @@ contract AMM is IAMM, Pausable {
   function liquidateTrader(address traderAddress)
     external
     override
-    whenNotPaused
   {
     marginEngine.liquidateTrader(traderAddress);
   }
@@ -179,14 +175,13 @@ contract AMM is IAMM, Pausable {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override whenNotPaused lock {
+  ) external override lock {
     vamm.mint(recipient, tickLower, tickUpper, amount);
   }
 
   function swap(IVAMM.SwapParams memory params)
     external
     override
-    whenNotPaused
     lock
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
   {

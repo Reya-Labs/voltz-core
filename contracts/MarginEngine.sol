@@ -24,8 +24,9 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "./core_libraries/UnwindTraderUnwindPosition.sol";
 
 import "./core_libraries/MarginEngineHelpers.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
-contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
+contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pausable {
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
@@ -59,7 +60,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     /// @inheritdoc IMarginEngine
     mapping(address => Trader.Info) public override traders;
 
-    constructor() {  
+    constructor() Pausable() {  
         address ammAddress;      
         (ammAddress) = IDeployer(msg.sender).marginEngineParameters();
         amm = IAMM(ammAddress);
@@ -165,7 +166,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     }
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override {
+    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override whenNotPaused {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
@@ -189,7 +190,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     }
     
     /// @inheritdoc IMarginEngine
-    function settleTrader(address recipient) onlyAfterMaturity external override {
+    function settleTrader(address recipient) onlyAfterMaturity external override whenNotPaused {
 
         Trader.Info storage trader = traders[recipient];    
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.termStartTimestamp(), amm.termEndTimestamp()));

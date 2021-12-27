@@ -25,9 +25,10 @@ import "./core_libraries/FixedAndVariableMath.sol";
 
 import "./core_libraries/UnwindTraderUnwindPosition.sol";
 import "./core_libraries/VAMMHelpers.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 
-contract VAMM is IVAMM {
+contract VAMM is IVAMM, Pausable {
   using LowGasSafeMath for uint256;
   using LowGasSafeMath for int256;
   using SafeCast for uint256;
@@ -44,7 +45,7 @@ contract VAMM is IVAMM {
   mapping(int24 => Tick.Info) public override ticks;
   mapping(int16 => uint256) public override tickBitmap;
 
-  constructor() {
+  constructor() Pausable() {
     address _ammAddress;
     (
       _ammAddress
@@ -108,7 +109,7 @@ contract VAMM is IVAMM {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override {
+  ) external override whenNotPaused {
     updatePosition(
       ModifyPositionParams({
         owner: msg.sender,
@@ -226,7 +227,7 @@ contract VAMM is IVAMM {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) public override {
+  ) public override whenNotPaused {
     // public avoids using callees for tests (timeout issue in vamm.ts)
     // require(amount > 0);
     if (amount <= 0) {
@@ -255,6 +256,7 @@ contract VAMM is IVAMM {
   function swap(SwapParams memory params)
     external
     override
+    whenNotPaused
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
   {
 
