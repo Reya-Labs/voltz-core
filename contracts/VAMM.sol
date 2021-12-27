@@ -220,31 +220,7 @@ contract VAMM is IVAMM {
       }
     }
   }
-
-  // function modifyPosition(ModifyPositionParams memory params) private {
-  //   Tick.checkTicks(params.tickLower, params.tickUpper);
-
-  //   Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
-
-  //   updatePosition(params);
-
-  //   amm.rateOracle().writeOrcleEntry(amm.underlyingToken());
-
-  //   if (params.liquidityDelta != 0) {
-  //     if (
-  //       (_slot0.tick >= params.tickLower) && (_slot0.tick < params.tickUpper)
-  //     ) {
-  //       // current tick is inside the passed range
-  //       uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
-
-  //       liquidity = LiquidityMath.addDelta(
-  //         liquidityBefore,
-  //         params.liquidityDelta
-  //       );
-  //     }
-  //   }
-  // }
-
+  
   function mint(
     address recipient,
     int24 tickLower,

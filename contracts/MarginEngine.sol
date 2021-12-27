@@ -288,10 +288,16 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
             uint128 amount
         ) external override {
         
-        Position.Info memory position = positions.get(recipient, tickLower, tickUpper);
+        Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
         uint128 amountTotal = amount + position._liquidity;
         
-        (, int24 tick,) = amm.vamm().slot0();
+        // duplicate code
+        (, int24 tick, ) = amm.vamm().slot0();
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
+        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
+        position.updateBalances(fixedTokenDelta, variableTokenDelta);
+        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
+
         int256 marginRequirement = int256(calculator.getPositionMarginRequirement(
             IMarginCalculator.PositionMarginRequirementParams({
                 owner: recipient,
@@ -302,8 +308,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
                 termStartTimestamp: termStartTimestamp,
                 termEndTimestamp: termEndTimestamp,
                 liquidity: amountTotal,
-                fixedTokenBalance: 0, // todo: should not be set to 0, fix
-                variableTokenBalance: 0, // todo: should not be set to 0, fix
+                fixedTokenBalance: position.fixedTokenBalance,
+                variableTokenBalance: position.variableTokenBalance, 
                 variableFactor: amm.rateOracle().variableFactor(false, termStartTimestamp, termEndTimestamp),
                 rateOracleId: amm.rateOracleId(),
                 historicalApy: amm.rateOracle().getHistoricalApy()
