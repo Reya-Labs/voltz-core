@@ -138,7 +138,11 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
 
         int256 updatedMarginWouldBe = position.margin + marginDelta;
         
+<<<<<<< HEAD
         uint256 variableFactor = rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp);
+=======
+        uint256 variableFactor = amm.rateOracle().variableFactor(false, amm.termStartTimestamp(), amm.termEndTimestamp());
+>>>>>>> rateOracleCompoundingAndInterpolation
         
         // make sure 0,0 is fixed
         checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, 0, 0, variableFactor, address(amm)); 
@@ -181,7 +185,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(true, underlyingToken, termStartTimestamp, termEndTimestamp));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.termStartTimestamp(), amm.termEndTimestamp()));
 
         position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMargin(settlementCashflow);
@@ -191,8 +195,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     /// @inheritdoc IMarginEngine
     function settleTrader(address recipient) onlyAfterMaturity external override onlyAMM {
 
-        Trader.Info storage trader = traders[recipient];        
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(true, underlyingToken, termStartTimestamp, termEndTimestamp));
+        Trader.Info storage trader = traders.get(recipient);        
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.termStartTimestamp(), amm.termEndTimestamp()));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMargin(settlementCashflow);
@@ -225,9 +229,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
                 liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp),
-                rateOracleId: rateOracleId,
-                twapApy: rateOracle.getTwapApy(underlyingToken)
+                variableFactor: amm.rateOracle().variableFactor(false, startTimestamp, endTimestamp),
+                rateOracleId: amm.rateOracleId(),
+                historicalApy: amm.rateOracle().getHistoricalApy()
             }),
             position.margin
         );
@@ -258,8 +262,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
                 termStartTimestamp: termStartTimestamp,
                 termEndTimestamp: termEndTimestamp,
                 isLM: true,
-                rateOracleId: rateOracleId,
-                twapApy: rateOracle.getTwapApy(underlyingToken)
+                rateOracleId: amm.rateOracleId(),
+                historicalApy: amm.rateOracle().getHistoricalApy()
             }),
             trader.margin
         );
@@ -304,9 +308,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
                 liquidity: amountTotal,
                 fixedTokenBalance: 0, // todo: should not be set to 0, fix
                 variableTokenBalance: 0, // todo: should not be set to 0, fix
-                variableFactor: rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp),
-                rateOracleId: rateOracleId,
-                twapApy: rateOracle.getTwapApy(underlyingToken)
+                variableFactor: amm.rateOracle().variableFactor(false, startTimestamp, endTimestamp),
+                rateOracleId: amm.rateOracleId(),
+                historicalApy: amm.rateOracle().getHistoricalApy()
             })
         ));
    
@@ -339,8 +343,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
                 termStartTimestamp:termStartTimestamp,
                 termEndTimestamp:termEndTimestamp,
                 isLM: false,
-                rateOracleId: rateOracleId,
-                twapApy: rateOracle.getTwapApy(underlyingToken)
+                rateOracleId: amm.rateOracleId(),
+                historicalApy: amm.rateOracle().getHistoricalApy()
             })
         ));
 

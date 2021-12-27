@@ -94,7 +94,7 @@
 //   variableTokenBalance: BigNumber,
 //   variableFactor: BigNumber,
 //   rateOracleId: string,
-//   twapApy: BigNumber,
+//   historicalApy: BigNumber,
 //   blockTimestampScaled: BigNumber
 // ) {
 //   // make sure that in here the variable factor is the accrued variable factor
@@ -151,7 +151,7 @@
 //     termEndTimestamp,
 //     isLM,
 //     rateOracleId,
-//     twapApy,
+//     historicalApy,
 //     blockTimestampScaled
 //   );
 
@@ -194,7 +194,7 @@
 //     termEndTimestamp,
 //     isLM,
 //     rateOracleId,
-//     twapApy,
+//     historicalApy,
 //     blockTimestampScaled
 //   );
 
@@ -216,7 +216,7 @@
 //   termEndTimestamp: BigNumber,
 //   isLM: boolean,
 //   rateOracleId: string,
-//   twapApy: BigNumber,
+//   historicalApy: BigNumber,
 //   blockTimestampScaled: BigNumber
 // ) {
 //   const isFT: boolean = variableTokenBalance < toBn("0");
@@ -246,7 +246,7 @@
 //       isFT,
 //       isLM,
 //       rateOracleId,
-//       twapApy
+//       historicalApy
 //     )
 //   );
 //   const modelMargin = add(exp1, exp2);
@@ -256,7 +256,7 @@
 //     termStartTimestamp,
 //     termEndTimestamp,
 //     isLM,
-//     twapApy
+//     historicalApy
 //   );
 
 //   var margin: BigNumber;
@@ -276,7 +276,7 @@
 //   isFT: boolean,
 //   isLM: boolean,
 //   rateOracleId: string,
-//   twapApy: BigNumber
+//   historicalApy: BigNumber
 // ): BigNumber {
 //   const timeInYearsFromStartUntilMaturity: BigNumber = accrualFact(
 //     timeInSecondsFromStartToMaturity
@@ -288,7 +288,7 @@
 //     apyBound = computeApyBound(
 //       rateOracleId,
 //       timeInSecondsFromNowToMaturity,
-//       twapApy,
+//       historicalApy,
 //       true
 //     );
 //     if (isLM) {
@@ -303,7 +303,7 @@
 //     apyBound = computeApyBound(
 //       rateOracleId,
 //       timeInSecondsFromNowToMaturity,
-//       twapApy,
+//       historicalApy,
 //       false
 //     );
 //     if (isLM) {
@@ -319,19 +319,19 @@
 //   return variableFactor;
 // }
 
-// // const expected = computeApyBound(RATE_ORACLE_ID, timeInSeconds, twapApy, isUpper);
+// // const expected = computeApyBound(RATE_ORACLE_ID, timeInSeconds, historicalApy, isUpper);
 
 // function computeApyBound(
 //   rateOracleId: string,
 //   timeInSeconds: BigNumber,
-//   twapApy: BigNumber,
+//   historicalApy: BigNumber,
 //   isUpper: boolean
 // ) {
 //   const timeFactor: BigNumber = DEFAULT_TIME_FACTOR;
 //   const oneMinusTimeFactor: BigNumber = sub(toBn("1"), timeFactor);
 //   const k: BigNumber = div(ALPHA, SIGMA_SQUARED);
 //   const zeta: BigNumber = div(mul(SIGMA_SQUARED, oneMinusTimeFactor), BETA);
-//   const lambdaNum: BigNumber = mul(mul(BETA, timeFactor), twapApy);
+//   const lambdaNum: BigNumber = mul(mul(BETA, timeFactor), historicalApy);
 //   const lambdaDen: BigNumber = mul(BETA, timeFactor);
 //   const lambda: BigNumber = div(lambdaNum, lambdaDen);
 //   const criticalValueMultiplier: BigNumber = mul(
@@ -362,9 +362,9 @@
 //   termStartTimestamp: BigNumber,
 //   termEndTimestamp: BigNumber,
 //   isLM: boolean,
-//   twapApy: BigNumber
+//   historicalApy: BigNumber
 // ) {
-//   // twapApy is not necessary for this calculation
+//   // historicalApy is not necessary for this calculation
 
 //   const timeInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp);
 //   const timeInYears: BigNumber = accrualFact(timeInSeconds);
@@ -547,7 +547,7 @@
 //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
 //       const isLM: boolean = true;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const expectedMinimumMarginRequirement: BigNumber =
 //         getMinimumMarginRequirement(
@@ -556,7 +556,7 @@
 //           termStartTimestampBN,
 //           termEndTimestampBN,
 //           isLM,
-//           twapApy
+//           historicalApy
 //         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
 //       const realisedMinimumMarginRequirement: BigNumber =
 //         await calculatorTest.getMinimumMarginRequirementTest(
@@ -566,7 +566,7 @@
 //           termEndTimestampBN,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         );
 //       // expect(realisedMinimumMarginRequirement).to.eq(expectedMinimumMarginRequirement);
 //       expect(realisedMinimumMarginRequirement).to.be.closeTo(
@@ -590,7 +590,7 @@
 //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
 //       const isLM: boolean = true;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const expectedMinimumMarginRequirement: BigNumber =
 //         getMinimumMarginRequirement(
@@ -599,7 +599,7 @@
 //           termStartTimestampBN,
 //           termEndTimestampBN,
 //           isLM,
-//           twapApy
+//           historicalApy
 //         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
 //       const realisedMinimumMarginRequirement: BigNumber =
 //         await calculatorTest.getMinimumMarginRequirementTest(
@@ -609,7 +609,7 @@
 //           termEndTimestampBN,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         );
 //       expect(realisedMinimumMarginRequirement).to.eq(
 //         expectedMinimumMarginRequirement
@@ -631,7 +631,7 @@
 //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
 //       const isLM: boolean = false;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const expectedMinimumMarginRequirement: BigNumber =
 //         getMinimumMarginRequirement(
@@ -640,7 +640,7 @@
 //           termStartTimestampBN,
 //           termEndTimestampBN,
 //           isLM,
-//           twapApy
+//           historicalApy
 //         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
 //       const realisedMinimumMarginRequirement: BigNumber =
 //         await calculatorTest.getMinimumMarginRequirementTest(
@@ -650,7 +650,7 @@
 //           termEndTimestampBN,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         );
 //       expect(realisedMinimumMarginRequirement).to.eq(
 //         expectedMinimumMarginRequirement
@@ -689,20 +689,20 @@
 //     // passes
 //     it("correctly computes the Upper APY Bound", async () => {
 //       const timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 //       const isUpper: boolean = true;
 
 //       const expected: BigNumber = computeApyBound(
 //         RATE_ORACLE_ID,
 //         timeInSeconds,
-//         twapApy,
+//         historicalApy,
 //         isUpper
 //       );
 //       expect(
 //         await calculatorTest.computeApyBoundTest(
 //           RATE_ORACLE_ID,
 //           timeInSeconds,
-//           twapApy,
+//           historicalApy,
 //           isUpper
 //         )
 //       ).to.be.closeTo(expected, 10000);
@@ -711,20 +711,20 @@
 //     // passes
 //     it("correctly computes the Lower APY Bound", async () => {
 //       const timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 //       const isUpper: boolean = false;
 
 //       const expected: BigNumber = computeApyBound(
 //         RATE_ORACLE_ID,
 //         timeInSeconds,
-//         twapApy,
+//         historicalApy,
 //         isUpper
 //       );
 //       expect(
 //         await calculatorTest.computeApyBoundTest(
 //           RATE_ORACLE_ID,
 //           timeInSeconds,
-//           twapApy,
+//           historicalApy,
 //           isUpper
 //         )
 //       ).to.be.closeTo(expected, 10000);
@@ -796,7 +796,7 @@
 //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
 //       const isLM: boolean = false;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const blockTimestampScaled: BigNumber = toBn(
 //         (termStartTimestamp + 1).toString()
@@ -809,7 +809,7 @@
 //         termEndTimestampBN,
 //         isLM,
 //         RATE_ORACLE_ID,
-//         twapApy,
+//         historicalApy,
 //         blockTimestampScaled
 //       );
 //       expect(
@@ -820,7 +820,7 @@
 //           termEndTimestampBN,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         )
 //       ).to.be.closeTo(expected, 10000);
 //     });
@@ -840,7 +840,7 @@
 //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
 //       const isLM: boolean = false;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const blockTimestampScaled: BigNumber = toBn(
 //         (termStartTimestamp + 1).toString()
@@ -853,7 +853,7 @@
 //         termEndTimestampBN,
 //         isLM,
 //         RATE_ORACLE_ID,
-//         twapApy,
+//         historicalApy,
 //         blockTimestampScaled
 //       );
 //       expect(
@@ -864,7 +864,7 @@
 //           termEndTimestampBN,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         )
 //       ).to.be.closeTo(expected, 10000);
 //     });
@@ -883,7 +883,7 @@
 //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
 //       const isLM: boolean = true;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const blockTimestampScaled: BigNumber = toBn(
 //         (termStartTimestamp + 1).toString()
@@ -896,7 +896,7 @@
 //         termEndTimestampBN,
 //         isLM,
 //         RATE_ORACLE_ID,
-//         twapApy,
+//         historicalApy,
 //         blockTimestampScaled
 //       );
 //       expect(
@@ -907,7 +907,7 @@
 //           termEndTimestampBN,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         )
 //       ).to.be.closeTo(expected, 10000);
 //     });
@@ -926,7 +926,7 @@
 //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
 //       const isLM: boolean = true;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const blockTimestampScaled: BigNumber = toBn(
 //         (termStartTimestamp + 1).toString()
@@ -939,7 +939,7 @@
 //         termEndTimestampBN,
 //         isLM,
 //         RATE_ORACLE_ID,
-//         twapApy,
+//         historicalApy,
 //         blockTimestampScaled
 //       );
 //       expect(
@@ -950,7 +950,7 @@
 //           termEndTimestampBN,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         )
 //       ).to.be.closeTo(expected, 10000);
 //     });
@@ -1003,7 +1003,7 @@
 //       );
 //       const isFT: boolean = true;
 //       const isLM: boolean = true;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const expected = worstCaseVariableFactorAtMaturity(
 //         timeInSecondsFromStartToMaturity,
@@ -1011,7 +1011,7 @@
 //         isFT,
 //         isLM,
 //         RATE_ORACLE_ID,
-//         twapApy
+//         historicalApy
 //       );
 //       expect(
 //         await calculatorTest.worstCaseVariableFactorAtMaturityTest(
@@ -1020,7 +1020,7 @@
 //           isFT,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         )
 //       ).to.be.closeTo(expected, 10000);
 //     });
@@ -1034,7 +1034,7 @@
 //       );
 //       const isFT: boolean = true;
 //       const isLM: boolean = false;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const expected = worstCaseVariableFactorAtMaturity(
 //         timeInSecondsFromStartToMaturity,
@@ -1042,7 +1042,7 @@
 //         isFT,
 //         isLM,
 //         RATE_ORACLE_ID,
-//         twapApy
+//         historicalApy
 //       );
 //       expect(
 //         await calculatorTest.worstCaseVariableFactorAtMaturityTest(
@@ -1051,7 +1051,7 @@
 //           isFT,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         )
 //       ).to.be.closeTo(expected, 10000);
 //     });
@@ -1065,7 +1065,7 @@
 //       );
 //       const isFT: boolean = false;
 //       const isLM: boolean = true;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const expected = worstCaseVariableFactorAtMaturity(
 //         timeInSecondsFromStartToMaturity,
@@ -1073,7 +1073,7 @@
 //         isFT,
 //         isLM,
 //         RATE_ORACLE_ID,
-//         twapApy
+//         historicalApy
 //       );
 //       expect(
 //         await calculatorTest.worstCaseVariableFactorAtMaturityTest(
@@ -1082,7 +1082,7 @@
 //           isFT,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         )
 //       ).to.be.closeTo(expected, 10000);
 //     });
@@ -1096,7 +1096,7 @@
 //       );
 //       const isFT: boolean = false;
 //       const isLM: boolean = false;
-//       const twapApy: BigNumber = toBn("0.02");
+//       const historicalApy: BigNumber = toBn("0.02");
 
 //       const expected = worstCaseVariableFactorAtMaturity(
 //         timeInSecondsFromStartToMaturity,
@@ -1104,7 +1104,7 @@
 //         isFT,
 //         isLM,
 //         RATE_ORACLE_ID,
-//         twapApy
+//         historicalApy
 //       );
 //       expect(
 //         await calculatorTest.worstCaseVariableFactorAtMaturityTest(
@@ -1113,7 +1113,7 @@
 //           isFT,
 //           isLM,
 //           RATE_ORACLE_ID,
-//           twapApy
+//           historicalApy
 //         )
 //       ).to.be.closeTo(expected, 10000);
 //     });
@@ -1186,7 +1186,7 @@
 //       const fixedTokenBalance: BigNumber = toBn("-3000");
 //       const variableTokenBalance: BigNumber = toBn("1000");
 //       const variableFactor: BigNumber = toBn("0.02");
-//       const twapApy: BigNumber = toBn("0.3");
+//       const historicalApy: BigNumber = toBn("0.3");
 //       const blockTimestampScaled: BigNumber = toBn(
 //         (termStartTimestamp + 1).toString()
 //       );
@@ -1231,7 +1231,7 @@
 //     //     const variableTokenBalance: BigNumber = toBn("1000");
 
 //     //     const variableFactor: BigNumber = toBn("0.02");
-//     //     const twapApy: BigNumber = toBn("0.3");
+//     //     const historicalApy: BigNumber = toBn("0.3");
 
 //     //     const blockTimestampScaled: BigNumber = toBn((termStartTimestamp+1).toString());
 
@@ -1247,7 +1247,7 @@
 //     //         variableTokenBalance,
 //     //         variableFactor,
 //     //         RATE_ORACLE_ID,
-//     //         twapApy,
+//     //         historicalApy,
 //     //         blockTimestampScaled
 //     //     );
 
@@ -1263,7 +1263,7 @@
 //     //         variableTokenBalance,
 //     //         variableFactor,
 //     //         RATE_ORACLE_ID,
-//     //         twapApy
+//     //         historicalApy
 //     //     );
 
 //     //     // let errorMargin: BigNumber;

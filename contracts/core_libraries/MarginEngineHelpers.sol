@@ -47,7 +47,7 @@ contract MarginEngineHelpers {
         int256 positionVariableTokenBalance,
         uint256 variableFactor,
         address ammAddress
-       ) internal view {
+       ) internal {
         
         IAMM amm = IAMM(ammAddress);
 
@@ -67,7 +67,7 @@ contract MarginEngineHelpers {
                 variableTokenBalance: positionVariableTokenBalance,
                 variableFactor: variableFactor,
                 rateOracleId: amm.rateOracleId(),
-                twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
+                historicalApy: amm.rateOracle().getHistoricalApy()
             }
         );
 
@@ -85,7 +85,7 @@ contract MarginEngineHelpers {
     /// @dev Trader's margin cannot be updated unless the trader is settled
     /// @dev If the current block timestamp is higher than the term end timestamp of the IRS AMM then the trader needs to be settled to be able to update their margin
     /// @dev If the AMM has already expired and the trader is settled then the trader can withdraw their margin
-    function checkTraderMarginCanBeUpdated(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, bool isTraderSettled, address ammAddress) public view {
+    function checkTraderMarginCanBeUpdated(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, bool isTraderSettled, address ammAddress) external {
 
         IAMM amm = IAMM(ammAddress);
 
@@ -117,7 +117,7 @@ contract MarginEngineHelpers {
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
         uint256 variableFactor,
-        address ammAddress) public view {
+        address ammAddress) external {
 
         IAMM amm = IAMM(ammAddress);
 
@@ -135,7 +135,7 @@ contract MarginEngineHelpers {
     /// @param updatedMarginWouldBe Amount of margin supporting the trader following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
     /// @param fixedTokenBalance Current fixed token balance of a trader
     /// @param variableTokenBalance Current variable token balance of a trader
-    function checkTraderMarginAboveRequirement(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, address ammAddress) internal view {
+    function checkTraderMarginAboveRequirement(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, address ammAddress) internal {
 
         IAMM amm = IAMM(ammAddress);
 
@@ -147,7 +147,7 @@ contract MarginEngineHelpers {
                     termEndTimestamp:amm.termEndTimestamp(),
                     isLM: false,
                     rateOracleId: amm.rateOracleId(),
-                    twapApy: amm.rateOracle().getTwapApy(amm.underlyingToken())
+                    historicalApy: amm.rateOracle().getHistoricalApy()
                 })
         ));                
 

@@ -73,7 +73,7 @@ interface IMarginCalculator {
         /// @dev A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
         bytes32 rateOracleId;
         /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
-        uint256 twapApy;
+        uint256 historicalApy;
     }
 
     struct PositionMarginRequirementParams {
@@ -103,7 +103,7 @@ interface IMarginCalculator {
         /// @dev A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
         bytes32 rateOracleId;
         /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
-        uint256 twapApy;
+        uint256 historicalApy;
     }
 
     struct MinimumMarginRequirementLocalVars {

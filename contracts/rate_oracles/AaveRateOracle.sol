@@ -14,117 +14,272 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     using SafeMath for uint256;
 
-    uint256 public mostRecentTimestamp;
-
-    mapping(address => mapping(uint256 => Rate)) public rates;
-    
     IAaveV2LendingPool public override aaveLendingPool;
 
-    constructor(IAaveV2LendingPool _aaveLendingPool, bytes32 _rateOracleId) BaseRateOracle(_rateOracleId) {
+    constructor(IAaveV2LendingPool _aaveLendingPool, bytes32 _rateOracleId, address underlying) BaseRateOracle(_rateOracleId, underlying) {
         aaveLendingPool = _aaveLendingPool;
     }
 
     /// @notice Get the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
     /// @return A return value of 1e27 (1 Ray) indicates no income since pool creation. A value of 2e27 indicates a 100% yield since pool creation. Etc.
-    function getReserveNormalizedIncome(address underlying) public view override returns(uint256){
+    function getReserveNormalizedIncome(address underlying) public view override(IAaveRateOracle) returns(uint256){
         return aaveLendingPool.getReserveNormalizedIncome(underlying);
     }
 
     /// @notice Store the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
-    function updateRate(address underlying) public override {
+    /// @param index The index of the Rate that was most recently written to the Rates array
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @param cardinalityNext The new length of the oracle array, independent of population
+    function writeRate(
+        uint16 index,
+        uint16 cardinality,
+        uint16 cardinalityNext
+        ) public override(BaseRateOracle, IRateOracle) returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
+
+        uint256 blockTimestamp = Time.blockTimestampScaled();
+        
+        Rate memory last = rates[index];
+
+        // early return if we've already written an Rate this block
+        if (last.timestamp == blockTimestamp) return (index, cardinality);
+
+        // if the conditions are right, we can bump the cardinality
+        if (cardinalityNext > cardinality && index == (cardinality - 1)) {
+            cardinalityUpdated = cardinalityNext;
+        } else {
+            cardinalityUpdated = cardinality;
+        }
+
+        indexUpdated = (index + 1) % cardinalityUpdated;
         
         uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
         require(result != 0, "Oracle only supports active Aave-V2 assets");
-
-        uint256 blockTimestampScaled = Time.blockTimestampScaled();
         
-        rates[underlying][blockTimestampScaled] = IRateOracle.Rate(true, blockTimestampScaled, result);
-
-        mostRecentTimestamp = blockTimestampScaled;
+        // rates[underlying][blockTimestamp] = Rate(blockTimestamp, result);
+        rates[indexUpdated] = Rate(blockTimestamp, result);
         
+    }
+    
+    function computeApyFromRate(uint256 rateFromTo, uint256 timeInYears) internal pure returns (uint256 apy) {
+        uint256 exponent = PRBMathUD60x18.div(10**18, timeInYears);
+        uint256 apyPlusOne = PRBMathUD60x18.pow((10**18 + rateFromTo), exponent);
+        apy = apyPlusOne - 10**18;
     }
     
     /// @inheritdoc BaseRateOracle
     /// @dev Reverts if we have no data point for either timestamp
     function getApyFromTo(
-        address underlying,
         uint256 from,
         uint256 to
-    ) internal view override(BaseRateOracle) returns (uint256 apyFromTo) {
+    ) internal override(BaseRateOracle) returns (uint256 apyFromTo) {
 
-        require(from < to, 'Misordered dates');
+        require(from < to, "Misordered dates");
 
-        uint256 rateFromTo = getRateFromTo(underlying, from, to);
-        
-        // @audit - should we use WadRayMath.rayToWad() (rounds up not down)
-        rateFromTo =  rateFromTo / (10 ** (27 - 18)); // convert to wei
-        uint256 timeInSeconds = to - from; // @audit - this is the duration in seconds wei
+        uint256 rateFromTo = getRateFromTo(from, to);
+
+        rateFromTo = WadRayMath.rayToWad(rateFromTo);
+
+        uint256 timeInSeconds = to - from; // @audit - this is the wimte in seconds wei
 
         uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
 
-        // todo: fix the below, that's not how apy is calculated from the rate! Need to account for compounding.
-        apyFromTo = PRBMathUD60x18.mul(rateFromTo, timeInYears);
+        apyFromTo = computeApyFromRate(rateFromTo, timeInYears);
 
     }
     
     /// @notice Calculates the observed interest returned by the underlying in a given period
     /// @dev Reverts if we have no data point for either timestamp
-    /// @param underlying The address of an underlying ERC20 token known to this Oracle (e.g. USDC not aaveUSDC)
     /// @param from The timestamp of the start of the period, in wei-seconds
     /// @param to The timestamp of the end of the period, in wei-seconds
     /// @return The "floating rate" expressed in Ray, e.g. 4% is encoded as 0.04*10**27 = 4*10*25
     function getRateFromTo(
-        address underlying,
         uint256 from,
         uint256 to
-    ) public view override returns (uint256) {
+    ) public returns (uint256) {
         // note that we have to convert aave index into "floating rate" for
         // swap calculations, e.g. an index multiple of 1.04*10**27 corresponds to
         // 0.04*10**27 = 4*10*25
-        IRateOracle.Rate memory rateFrom = rates[underlying][from];
-        IRateOracle.Rate memory rateTo = rates[underlying][to];
-        require(rateFrom.isSet, "Oracle does not have rateFrom");
-        require(rateTo.isSet, "Oracle doesn not have rateTo");
+
+        uint256 currentTime = Time.blockTimestampScaled();
+        
+        uint256 rateFrom = observeSingle(currentTime, from, oracleVars.rateIndex, oracleVars.rateCardinality, oracleVars.rateCardinalityNext);
+        uint256 rateTo = observeSingle(currentTime, to, oracleVars.rateIndex, oracleVars.rateCardinality, oracleVars.rateCardinalityNext);
+
         return
-            WadRayMath.rayDiv(rateTo.rateValue, rateFrom.rateValue).sub(
+            WadRayMath.rayDiv(rateTo, rateFrom).sub(
                 WadRayMath.RAY
             );
     }
 
     /// @inheritdoc IRateOracle
-    function variableFactor(bool atMaturity, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) public override(BaseRateOracle, IRateOracle) returns(uint256 result) {
-
-        IRateOracle.Rate memory rate;
+    function variableFactor(bool atMaturity, uint256 termStartTimestamp, uint256 termEndTimestamp) public override(BaseRateOracle, IRateOracle) returns(uint256 result) {
         
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
-            // atMaturity is true. todo: assert this?
-            rate = rates[underlyingToken][termEndTimestamp];
-
-            if(!rate.isSet) {
-                if (termEndTimestamp == Time.blockTimestampScaled()) {
-                    updateRate(underlyingToken);
-                } else {
-                    // @audit We are asking for rates up until an end timestamp for which we already know we have no data. We are going to revert What to do? Better to revert here explicity, or extrapolate? 
-                }    
-            }
-
-            result = getRateFromTo(underlyingToken, termStartTimestamp, termEndTimestamp);
-
+            require(atMaturity);
+            result = getRateFromTo(termStartTimestamp, termEndTimestamp);
         } else {
-            if (atMaturity) {
-                revert();
+            require(!atMaturity);
+            result = getRateFromTo(termStartTimestamp, Time.blockTimestampScaled());
+        }
+        
+        result = WadRayMath.rayToWad(result);
+    }
+
+
+    function binarySearch(
+        uint256 target,
+        uint16 index,
+        uint16 cardinality
+    ) private view returns (Rate memory beforeOrAt, Rate memory atOrAfter) { 
+        uint256 l = (index + 1) % cardinality; // oldest observation
+        uint256 r = l + cardinality - 1; // newest observation
+        uint256 i;
+
+        while (true) {
+            i = (l + r) / 2;
+            beforeOrAt = rates[i % cardinality];
+            
+            // we've landed on an uninitialized tick, keep searching higher (more recently)
+            if (beforeOrAt.timestamp == 0) {
+                l = i + 1;
+                continue;
+            }
+            
+            atOrAfter = rates[(i + 1) % cardinality];
+            
+            bool targetAtOrAfter = beforeOrAt.timestamp <= target;
+
+            // check if we've found the answer!
+            if (targetAtOrAfter && target <= atOrAfter.timestamp) break;
+
+            if (!targetAtOrAfter) r = i - 1;
+            else l = i + 1;
+        }
+
+    }
+
+    
+    /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    /// @dev Assumes there is at least 1 initialized observation.
+    /// Used by observeSingle() to compute the counterfactual liquidity index values as of a given block timestamp.
+    /// @param target The timestamp at which the reserved observation should be for
+    /// @param index The index of the observation that was most recently written to the observations array
+    /// @param cardinality The number of populated elements in the oracle array
+    /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
+    /// @return atOrAfter The observation which occurred at, or after, the given timestamp
+    function getSurroundingRates(
+        uint256 target,
+        uint16 index,
+        uint16 cardinality,
+        uint16 cardinalityNext
+    ) private returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
+        
+        // optimistically set before to the newest rate
+        beforeOrAt = rates[index];
+
+        if (beforeOrAt.timestamp <= target) {
+            if (beforeOrAt.timestamp == target) {
+                // if the newest observation eqauls target, we are in the same block, so we can ignore atOrAfter
+                return (beforeOrAt, atOrAfter);
             } else {
-                rate = rates[underlyingToken][Time.blockTimestampScaled()];
-
-                if(!rate.isSet) {
-                    updateRate(underlyingToken);
-                }
-
-                result = getRateFromTo(underlyingToken, termStartTimestamp, Time.blockTimestampScaled());
+                // otherwise, we need to transform
+                // return (beforeOrAt, transform(beforeOrAt, target, logApy));
+                (uint16 indexUpdated, uint16 cardinalityUpdated) = writeRate(index, cardinality, cardinalityNext);
+                atOrAfter = rates[indexUpdated];
+                return (beforeOrAt, atOrAfter);
             }
         }
 
-        // @audit - should we use WadRayMath.rayToWad() (rounds up not down)
-        result = result / (10 ** (27 - 18)); // 18 decimals, AB: is this optimal?
+        // set to the oldest observation
+        beforeOrAt = rates[(index + 1) % cardinality];
+        
+        if (beforeOrAt.timestamp == 0) {
+            beforeOrAt = rates[0];
+        }
+
+        require(beforeOrAt.timestamp <= target, "OLD");
+
+        // if we've reached this point, we have to binary search
+        return binarySearch(target, index, cardinality);
+
     }
+
+
+    // time delta is in seconds
+    function interpolateRateValue(
+        uint256 beforeOrAtRateValue,
+        uint256 apyFromBeforeOrAtToAtOrAfter,
+        uint256 timeDeltaBeforeOrAtToQueriedTime
+    ) private view returns (uint256 rateValue) {
+        uint256 timeInYears = FixedAndVariableMath.accrualFact(timeDeltaBeforeOrAtToQueriedTime);
+        uint256 exp1 = PRBMathUD60x18.pow((10**18 + apyFromBeforeOrAtToAtOrAfter), timeInYears) - 10**18;
+        rateValue = PRBMathUD60x18.mul(beforeOrAtRateValue, exp1);
+    }
+    
+    // gets the liquidity index
+    /// @param currentTime The current block timestamp
+    /// @param queriedTime Time to look back to
+    /// @param index The index of the Rate that was most recently written to the Rates array
+    /// @param cardinality The number of populated elements in the oracle array
+    function observeSingle(
+        uint256 currentTime,
+        uint256 queriedTime,
+        uint16 index,
+        uint16 cardinality,
+        uint16 cardinalityNext
+    ) public override(BaseRateOracle, IRateOracle) returns(uint256 rateValue) {
+        
+        if (currentTime == queriedTime) {
+            Rate memory rate;
+            rate = rates[index];
+            if (rate.timestamp != currentTime) {
+                (uint16 indexUpdated, uint16 cardinalityUpdated) = writeRate(index, cardinality, cardinalityNext);
+                rate = rates[indexUpdated];
+                // check the rate was correctly updated (unit test)
+                rateValue = rate.rateValue;
+            } else {
+                rateValue = rate.rateValue;
+            }
+        }
+        
+        (Rate memory beforeOrAt, Rate memory atOrAfter) = getSurroundingRates(queriedTime, index, cardinality, cardinalityNext);
+
+        if (queriedTime == beforeOrAt.timestamp) {
+            // we are at the left boundary
+            rateValue = beforeOrAt.rateValue;
+        } else if (queriedTime == atOrAfter.timestamp) {
+            // we are at the right boundary
+            rateValue =  atOrAfter.rateValue;
+        } else {
+            // we are in the middle
+
+            // find apy between beforeOrAt and atOrAfter
+            uint256 rateFromBeforeOrAtToAtOrAfter = WadRayMath.rayDiv(atOrAfter.rateValue, beforeOrAt.rateValue).sub(WadRayMath.RAY);
+            uint256 timeInYears = FixedAndVariableMath.accrualFact(atOrAfter.timestamp - beforeOrAt.timestamp);
+            uint256 apyFromBeforeOrAtToAtOrAfter = computeApyFromRate(rateFromBeforeOrAtToAtOrAfter, timeInYears);
+
+            // interpolate rateValue for queriedTime
+            rateValue = interpolateRateValue(beforeOrAt.rateValue, apyFromBeforeOrAtToAtOrAfter, queriedTime - beforeOrAt.timestamp);
+
+        }
+    }   
+
+
+    function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
+        (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
+            oracleVars.rateIndex,
+            oracleVars.rateCardinality,
+            oracleVars.rateCardinalityNext
+        );
+    }
+
+    function getHistoricalApy() external override(BaseRateOracle, IRateOracle) returns (uint256 historicalApy) {
+
+        uint256 to = Time.blockTimestampScaled();
+        uint256 from = to - secondsAgo;
+
+        return getApyFromTo(from, to);
+    }
+
+
 }

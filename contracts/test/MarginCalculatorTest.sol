@@ -48,7 +48,7 @@ contract MarginCalculatorTest is MarginCalculator {
         int256 variableTokenBalance,
         uint256 variableFactor,
         bytes32 rateOracleId,
-        uint256 twapApy
+        uint256 historicalApy
     ) external view returns (uint256 margin) {
 
         return positionMarginBetweenTicksHelper(PositionMarginRequirementParams({
@@ -64,7 +64,7 @@ contract MarginCalculatorTest is MarginCalculator {
             variableTokenBalance: variableTokenBalance,
             variableFactor: variableFactor,
             rateOracleId: rateOracleId,
-            twapApy: twapApy
+            historicalApy: historicalApy
         }));
 
     }
@@ -76,7 +76,7 @@ contract MarginCalculatorTest is MarginCalculator {
         uint256 termEndTimestamp,
         bool isLM,
         bytes32 rateOracleId,
-        uint256 twapApy
+        uint256 historicalApy
     ) external view returns(uint256 margin) {
 
         return getTraderMarginRequirement(TraderMarginRequirementParams({
@@ -86,7 +86,7 @@ contract MarginCalculatorTest is MarginCalculator {
             termEndTimestamp: termEndTimestamp,
             isLM: isLM,
             rateOracleId: rateOracleId,
-            twapApy: twapApy
+            historicalApy: historicalApy
         }));
         
     }
@@ -99,10 +99,10 @@ contract MarginCalculatorTest is MarginCalculator {
         bool isFT,
         bool isLM,
         bytes32 rateOracleId,
-        uint256 twapApy
+        uint256 historicalApy
         ) external view returns(uint256 variableFactor) {
 
-            return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, rateOracleId, twapApy);
+            return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, rateOracleId, historicalApy);
     }
     
 
@@ -141,7 +141,7 @@ contract MarginCalculatorTest is MarginCalculator {
             uint256 termEndTimestamp,
             bool isLM,
             bytes32 rateOracleId,
-            uint256 twapApy
+            uint256 historicalApy
         ) external view returns(uint256 margin) {
 
         return getMinimumMarginRequirement(IMarginCalculator.TraderMarginRequirementParams({
@@ -151,15 +151,15 @@ contract MarginCalculatorTest is MarginCalculator {
             termEndTimestamp: termEndTimestamp,
             isLM: isLM,
             rateOracleId: rateOracleId,
-            twapApy: twapApy
+            historicalApy: historicalApy
         }));
 
     }
 
 
-    function computeApyBoundTest(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled, uint256 twapApy, bool isUpper) external view returns (uint256 apyBound) {
+    function computeApyBoundTest(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled, uint256 historicalApy, bool isUpper) external view returns (uint256 apyBound) {
         
-        return computeApyBound(rateOracleId, termEndTimestampScaled, currentTimestampScaled, twapApy, isUpper);
+        return computeApyBound(rateOracleId, termEndTimestampScaled, currentTimestampScaled, historicalApy, isUpper);
     
     }
 
@@ -193,8 +193,8 @@ contract MarginCalculatorTest is MarginCalculator {
         }
 
 
-    // function worstCaseVariableFactorAtMaturityTest(uint256 timeInSecondsFromStartToMaturity, uint256 timeInSecondsFromNowToMaturity, bool isFT, bool isLM, bytes32 rateOracleId, uint256 twapApy) public view returns(uint256 variableFactor) {
-    //     return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, rateOracleId, twapApy);
+    // function worstCaseVariableFactorAtMaturityTest(uint256 timeInSecondsFromStartToMaturity, uint256 timeInSecondsFromNowToMaturity, bool isFT, bool isLM, bytes32 rateOracleId, uint256 historicalApy) public view returns(uint256 variableFactor) {
+    //     return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, rateOracleId, historicalApy);
     // }
 
 
