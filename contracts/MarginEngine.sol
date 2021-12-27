@@ -138,11 +138,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
 
         int256 updatedMarginWouldBe = position.margin + marginDelta;
         
-<<<<<<< HEAD
-        uint256 variableFactor = rateOracle.variableFactor(false, underlyingToken, termStartTimestamp, termEndTimestamp);
-=======
         uint256 variableFactor = amm.rateOracle().variableFactor(false, amm.termStartTimestamp(), amm.termEndTimestamp());
->>>>>>> rateOracleCompoundingAndInterpolation
         
         // make sure 0,0 is fixed
         checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, 0, 0, variableFactor, address(amm)); 
