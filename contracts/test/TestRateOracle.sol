@@ -56,7 +56,7 @@
         
 //     }
     
-//     function getTwapApy(address underlying) external view override(IRateOracle, BaseRateOracle) returns (uint256 historicalApy) {
+//     function gethistoricalApy(address underlying) external view override(IRateOracle, BaseRateOracle) returns (uint256 historicalApy) {
 //         return 10**16; // temporary for testing purposes
 //     }
     

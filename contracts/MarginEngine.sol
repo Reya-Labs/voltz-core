@@ -34,6 +34,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     using Position for Position.Info;
     using Trader for Trader.Info;
 
+
     /// @dev LIQUIDATOR_REWARD is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
     /// @dev following a successful liquidation that results in a trader/position unwind
     uint256 public constant LIQUIDATOR_REWARD = 2 * 10**15;
@@ -191,7 +192,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     /// @inheritdoc IMarginEngine
     function settleTrader(address recipient) onlyAfterMaturity external override onlyAMM {
 
-        Trader.Info storage trader = traders.get(recipient);        
+        Trader.Info storage trader = traders[recipient];    
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.termStartTimestamp(), amm.termEndTimestamp()));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
@@ -225,7 +226,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
                 liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: amm.rateOracle().variableFactor(false, startTimestamp, endTimestamp),
+                variableFactor: amm.rateOracle().variableFactor(false, termStartTimestamp, termEndTimestamp),
                 rateOracleId: amm.rateOracleId(),
                 historicalApy: amm.rateOracle().getHistoricalApy()
             }),
@@ -304,7 +305,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
                 liquidity: amountTotal,
                 fixedTokenBalance: 0, // todo: should not be set to 0, fix
                 variableTokenBalance: 0, // todo: should not be set to 0, fix
-                variableFactor: amm.rateOracle().variableFactor(false, startTimestamp, endTimestamp),
+                variableFactor: amm.rateOracle().variableFactor(false, termStartTimestamp, termEndTimestamp),
                 rateOracleId: amm.rateOracleId(),
                 historicalApy: amm.rateOracle().getHistoricalApy()
             })

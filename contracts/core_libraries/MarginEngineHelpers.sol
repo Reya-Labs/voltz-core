@@ -85,7 +85,7 @@ contract MarginEngineHelpers {
     /// @dev Trader's margin cannot be updated unless the trader is settled
     /// @dev If the current block timestamp is higher than the term end timestamp of the IRS AMM then the trader needs to be settled to be able to update their margin
     /// @dev If the AMM has already expired and the trader is settled then the trader can withdraw their margin
-    function checkTraderMarginCanBeUpdated(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, bool isTraderSettled, address ammAddress) external {
+    function checkTraderMarginCanBeUpdated(int256 updatedMarginWouldBe, int256 fixedTokenBalance, int256 variableTokenBalance, bool isTraderSettled, address ammAddress) public {
 
         IAMM amm = IAMM(ammAddress);
 
@@ -117,7 +117,7 @@ contract MarginEngineHelpers {
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
         uint256 variableFactor,
-        address ammAddress) external {
+        address ammAddress) public {
 
         IAMM amm = IAMM(ammAddress);
 

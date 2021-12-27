@@ -36,7 +36,7 @@ interface IMarginCalculator {
         int256 zeta;
         int256 lambdaNum;
         int256 lambdaDen;
-        /// @dev lambda = lambdaNum/lambdaDen = (beta*timeFactor)*twapAPY / (sigmaSquared*(1-timeFactor))
+        /// @dev lambda = lambdaNum/lambdaDen = (beta*timeFactor)*historicalApy / (sigmaSquared*(1-timeFactor))
         int256 lambda;
         /// @dev critical value from the normal distribution (refer to the litepaper, equations 12 and 13)
         int256 criticalValueMultiplier;
