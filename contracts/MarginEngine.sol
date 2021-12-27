@@ -135,11 +135,14 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
         
         uint256 variableFactor = amm.rateOracle().variableFactor(false, amm.termStartTimestamp(), amm.termEndTimestamp());
         
-        
-        
-        
-        // make sure 0,0 is fixed
-        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, 0, 0, variableFactor, address(amm)); 
+        // duplicate code (put into a function)
+        (, int24 tick, ) = amm.vamm().slot0();
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
+        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
+        position.updateBalances(fixedTokenDelta, variableTokenDelta);
+        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
+
+        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor, address(amm)); 
 
         position.updateMargin(marginDelta);
 
