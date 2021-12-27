@@ -19,6 +19,10 @@ library Trader {
         self.margin = self.margin + marginDelta;
     }
 
+    function settleTrader(Info storage self) internal  {
+        self.isSettled = true;
+    }
+
     function updateBalances(
         Info storage self,
         int256 fixedTokenBalanceDelta,

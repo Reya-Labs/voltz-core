@@ -9,12 +9,6 @@ import "./Time.sol";
 
 contract MarginEngineHelpers {
 
-    /// @notice Calculate block.timestamp to wei precision
-    /// @return Current timestamp in wei-seconds (1/1e18)
-    function blockTimestampScaled() public view returns (uint256) {
-        return block.timestamp * 10**18;
-    }
-
     /// @notice Calculate the liquidator reward and the updated trader margin
     /// @param traderMargin Current margin of the trader
     /// @return liquidatorReward Liquidator Reward as a proportion of the traderMargin
@@ -89,7 +83,7 @@ contract MarginEngineHelpers {
 
         IAMM amm = IAMM(ammAddress);
 
-        if (blockTimestampScaled() >= amm.termEndTimestamp()) {
+        if (Time.blockTimestampScaled() >= amm.termEndTimestamp()) {
             require(isTraderSettled, "Trader's margin cannot be updated unless the trader is settled");
 
             require(updatedMarginWouldBe>=0, "can't withdraw more than have");
@@ -113,6 +107,7 @@ contract MarginEngineHelpers {
         IMarginEngine.ModifyPositionParams memory params,
         int256 updatedMarginWouldBe,
         bool isPositionBurned,
+        bool isPositionSettled,
         uint128 positionLiquidity,
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
@@ -121,8 +116,9 @@ contract MarginEngineHelpers {
 
         IAMM amm = IAMM(ammAddress);
 
-        if (blockTimestampScaled() >= amm.termEndTimestamp()) {
+        if (Time.blockTimestampScaled() >= amm.termEndTimestamp()) {
             require(isPositionBurned);
+            require(isPositionSettled);
             require(updatedMarginWouldBe>=0, "can't withdraw more than have");
         } else {
             checkPositionMarginAboveRequirement(params, updatedMarginWouldBe, positionLiquidity, positionFixedTokenBalance, positionVariableTokenBalance, variableFactor, ammAddress);

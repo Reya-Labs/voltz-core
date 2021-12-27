@@ -58,7 +58,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     /// @inheritdoc IAMMImmutables
     address public override immutable factory;
 
-    mapping(bytes32 => Position.Info) internal  positions;
+    mapping(bytes32 => Position.Info) internal positions; // AB: why internal?
     /// @inheritdoc IMarginEngine
     mapping(address => Trader.Info) public override traders;
 
@@ -155,7 +155,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
 
-        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor, address(amm)); 
+        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor, address(amm)); 
 
         position.updateMargin(marginDelta);
 
@@ -205,7 +205,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMargin(settlementCashflow);
-
+        position.settlePosition();
     }
     
     /// @inheritdoc IMarginEngine
@@ -216,8 +216,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMargin(settlementCashflow);
+        trader.settleTrader();
     }
-    
+
     /// @inheritdoc IMarginEngine
     function liquidatePosition(ModifyPositionParams memory params) external override {
 

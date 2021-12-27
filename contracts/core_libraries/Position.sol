@@ -36,6 +36,9 @@ library Position {
     // has the position been already burned
     // a burned position can no longer support new IRS contracts but still needs to cover settlement cash-flows of on-going IRS contracts it entered
     bool isBurned;
+    
+    // is position settled
+    bool isSettled;
   }
 
   /// @notice Returns the Info struct of a position, given an owner and position boundaries
@@ -53,7 +56,10 @@ library Position {
     position = self[keccak256(abi.encodePacked(owner, tickLower, tickUpper))];
   }
 
-  
+  function settlePosition(Info storage self) internal  {
+        self.isSettled = true;
+  }
+
   /// @notice Updates the Info struct of a position by changing the amount of margin according to marginDelta
   /// @param self Position Info Struct of the Liquidity Provider
   /// @param marginDelta Change in the margin account of the position
