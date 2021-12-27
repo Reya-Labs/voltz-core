@@ -43,7 +43,7 @@ contract AMM is IAMM {
 
   IVAMM public override vamm;
   IMarginEngine public override marginEngine;
-  bool public override unlocked;
+  
 
   constructor() {
     (
@@ -68,16 +68,6 @@ contract AMM is IAMM {
   modifier onlyFactoryOwner() {
     require(msg.sender == IFactory(factory).owner());
     _;
-  }
-
-
-  /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
-  /// to a function before the amm is initialized. The reentrancy guard is required throughout the contract.
-  modifier lock() {
-    require(unlocked, "LOK");
-    unlocked = false;
-    _;
-    unlocked = true;
   }
 
   // function getSlot0() external view override returns (IVAMM.Slot0 memory) {
@@ -115,9 +105,9 @@ contract AMM is IAMM {
     marginEngine = IMarginEngine(_marginEngine);
   }
 
-  function setUnlocked(bool _unlocked) external override {
-    unlocked = _unlocked;
-  }
+  // function setUnlocked(bool _unlocked) external override {
+  //   unlocked = _unlocked;
+  // }
 
   function updatePositionMargin(
     IMarginEngine.ModifyPositionParams memory params,
@@ -162,7 +152,7 @@ contract AMM is IAMM {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override lock {
+  ) external override {
     vamm.burn(tickLower, tickUpper, amount);
   }
 
@@ -171,14 +161,13 @@ contract AMM is IAMM {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override lock {
+  ) external override {
     vamm.mint(recipient, tickLower, tickUpper, amount);
   }
 
   function swap(IVAMM.SwapParams memory params)
     external
     override
-    lock
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
   {
     (_fixedTokenDelta, _variableTokenDelta) = vamm.swap(params);
@@ -187,7 +176,6 @@ contract AMM is IAMM {
   function setFeeProtocol(uint256 feeProtocol)
     external
     override
-    lock
     onlyFactoryOwner
   {
     vamm.setFeeProtocol(feeProtocol);
@@ -196,7 +184,6 @@ contract AMM is IAMM {
   function collectProtocol(address recipient)
     external
     override
-    lock
     onlyFactoryOwner
     returns (uint256 amount)
   {

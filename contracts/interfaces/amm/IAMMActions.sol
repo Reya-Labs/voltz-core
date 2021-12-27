@@ -8,7 +8,6 @@ import "../IVAMM.sol";
 interface IAMMActions {
     function setVAMM(address _vAMMAddress) external;
     function setMarginEngine(address _marginEngine) external;
-    function setUnlocked(bool _unlocked) external;
     // TypeError: Function overload clash during conversion to external types for arguments.
     function updatePositionMargin(IVAMM.ModifyPositionParams memory params, int256 marginDelta) external;
     function updateTraderMargin(int256 marginDelta) external;

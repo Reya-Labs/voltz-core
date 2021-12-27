@@ -31,7 +31,6 @@ interface IAMMState {
 
     function vamm() external view returns (IVAMM);
     function marginEngine() external returns (IMarginEngine);
-    function unlocked() external returns (bool);
 
 
 }

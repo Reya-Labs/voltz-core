@@ -50,6 +50,18 @@ contract VAMM is IVAMM, Pausable {
   // todo: add override
   address immutable factory;
 
+  // todo: add override
+  bool public unlocked;
+
+  /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
+  /// to a function before the amm is initialized. The reentrancy guard is required throughout the contract.
+  modifier lock() {
+    require(unlocked, "LOK");
+    unlocked = false;
+    _;
+    unlocked = true;
+  }
+
   modifier onlyFactoryOwner() {
     require(msg.sender == IFactory(factory).owner());
     _;
@@ -116,12 +128,12 @@ contract VAMM is IVAMM, Pausable {
 
     slot0 = Slot0({ sqrtPriceX96: sqrtPriceX96, tick: tick, feeProtocol: 0 });
 
-    amm.setUnlocked(true);
+    unlocked = true;
 
     emit Initialize(sqrtPriceX96, tick);
   }
 
-  function setFeeProtocol(uint256 feeProtocol) external override onlyFactoryOwner {
+  function setFeeProtocol(uint256 feeProtocol) external override onlyFactoryOwner lock {
     slot0.feeProtocol = feeProtocol;
     // emit set fee protocol
   }
@@ -146,7 +158,7 @@ contract VAMM is IVAMM, Pausable {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override whenNotPaused {
+  ) external override whenNotPaused lock {
     updatePosition(
       ModifyPositionParams({
         owner: msg.sender,
@@ -192,7 +204,7 @@ contract VAMM is IVAMM, Pausable {
     }
   }
 
-  function updatePosition(ModifyPositionParams memory params) private {
+  function updatePosition(ModifyPositionParams memory params) private lock {
 
     Tick.checkTicks(params.tickLower, params.tickUpper);
 
@@ -264,7 +276,7 @@ contract VAMM is IVAMM, Pausable {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) public override whenNotPaused checkCurrentTimestampTermEndTimestampDelta {
+  ) public override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock {
     // public avoids using callees for tests (timeout issue in vamm.ts)
     // require(amount > 0);
     if (amount <= 0) {
@@ -295,15 +307,15 @@ contract VAMM is IVAMM, Pausable {
     override
     whenNotPaused
     checkCurrentTimestampTermEndTimestampDelta
+    lock
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
   {
 
     Slot0 memory slot0Start = slot0;
 
-    VAMMHelpers.checksBeforeSwap(params, slot0Start, !amm.unlocked());
+    VAMMHelpers.checksBeforeSwap(params, slot0Start, !unlocked);
 
-    // slot0.unlocked = false;
-    amm.setUnlocked(false);
+    unlocked = false;
 
     SwapCache memory cache = SwapCache({
       liquidityStart: liquidity,
@@ -533,8 +545,7 @@ contract VAMM is IVAMM, Pausable {
       state.tick
     );
 
-    // slot0.unlocked = true;
-    amm.setUnlocked(true);
+    unlocked = true;
   }
 
   function computePositionFixedAndVariableGrowthInside(
