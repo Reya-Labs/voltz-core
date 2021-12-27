@@ -310,7 +310,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         ) external override {
         
         Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
-        uint128 amountTotal = amount + position._liquidity;
+        
+        uint128 amountTotal = LiquidityMath.addDelta(position._liquidity, int128(amount));
         
         // duplicate code
         (, int24 tick, ) = amm.vamm().slot0();
