@@ -36,9 +36,11 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     using Trader for Trader.Info;
 
 
-    /// @dev LIQUIDATOR_REWARD is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
-    /// @dev following a successful liquidation that results in a trader/position unwind
-    uint256 public constant LIQUIDATOR_REWARD = 2 * 10**15;
+    /// @dev liquidatorReward is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
+    /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
+    // todo: add override
+    uint256 public liquidatorReward;
+
     /// @inheritdoc IMarginEngine
     IAMM public override amm;
     /// @inheritdoc IAMMImmutables
@@ -102,6 +104,16 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             revert CannotSettleBeforeMaturity();
         }
         _;
+    }
+
+    modifier onlyFactoryOwner() {
+        require(msg.sender == IFactory(factory).owner());
+        _;
+    }
+
+    // todo: override
+    function setLiquidatorReward(uint256 _liquidatorReward) external onlyFactoryOwner {
+        liquidatorReward = _liquidatorReward;
     }
 
     /// @inheritdoc IMarginEngine
@@ -244,7 +256,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             revert CannotLiquidate();
         }
 
-        uint256 liquidatorReward = PRBMathUD60x18.mul(uint256(position.margin), LIQUIDATOR_REWARD);
+        uint256 liquidatorReward = PRBMathUD60x18.mul(uint256(position.margin), liquidatorReward);
 
         position.updateMargin(-int256(liquidatorReward));
 
@@ -276,7 +288,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             revert CannotLiquidate();
         }
 
-        (uint256 liquidatorReward, int256 updatedMargin) = calculateLiquidatorRewardAndUpdatedMargin(trader.margin, LIQUIDATOR_REWARD);
+        (uint256 liquidatorReward, int256 updatedMargin) = calculateLiquidatorRewardAndUpdatedMargin(trader.margin, liquidatorReward);
 
         trader.updateMargin(updatedMargin);
 

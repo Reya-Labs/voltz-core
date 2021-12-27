@@ -19,7 +19,7 @@ contract MarginEngineHelpers {
     /// @param traderMargin Current margin of the trader
     /// @return liquidatorReward Liquidator Reward as a proportion of the traderMargin
     /// @return updatedMargin Trader margin net the liquidatorReward
-    /// @dev liquidatorReward = traderMargin * LIQUIDATOR_REWARD
+    /// @dev liquidatorReward = traderMargin * liquidatorReward
     /// @dev updatedMargin = traderMargin - liquidatorReward
     function calculateLiquidatorRewardAndUpdatedMargin(int256 traderMargin, uint256 liquidatorRewardAsProportionOfMargin) public pure returns (uint256 liquidatorReward, int256 updatedMargin) {
 

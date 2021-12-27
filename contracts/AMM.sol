@@ -70,16 +70,6 @@ contract AMM is IAMM {
     _;
   }
 
-  // function getSlot0() external view override returns (IVAMM.Slot0 memory) {
-  //   (uint160 sqrtPriceX96, int24 tick, uint256 feeProtocol) = vamm.slot0();
-  //   return
-  //     IVAMM.Slot0({
-  //       sqrtPriceX96: sqrtPriceX96,
-  //       tick: tick,
-  //       feeProtocol: feeProtocol
-  //     });
-  // }
-
   function getVariableTokenGrowthGlobal()
     external
     view
@@ -104,10 +94,6 @@ contract AMM is IAMM {
   {
     marginEngine = IMarginEngine(_marginEngine);
   }
-
-  // function setUnlocked(bool _unlocked) external override {
-  //   unlocked = _unlocked;
-  // }
 
   function updatePositionMargin(
     IMarginEngine.ModifyPositionParams memory params,

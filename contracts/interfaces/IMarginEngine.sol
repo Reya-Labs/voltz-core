@@ -79,7 +79,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Steps to liquidate: update position's fixed and variable token balances to account for balances accumulated throughout the trades made since the last mint/burn/poke,
     /// @dev Check if the position is liquidatable by calling the isLiquidatablePosition function of the calculator,
     /// @dev Check if the position is liquidatable by calling the isLiquidatablePosition function of the calculator, revert if that is not the case,
-    /// @dev Calculate the liquidation reward = current margin of the position * LIQUIDATOR_REWARD, subtract the liquidator reward from the position margin,
+    /// @dev Calculate the liquidation reward = current margin of the position * liquidatorReward, subtract the liquidator reward from the position margin,
     /// @dev Burn the position's liquidity ==> not going to enter into new IRS contracts until the AMM maturity, transfer the reward to the liquidator
     /// @param params necessary for the purposes of referencing the position being liquidated (owner, tickLower, tickUpper, _)
     function liquidatePosition(IPositionStructs.ModifyPositionParams memory params) external;
