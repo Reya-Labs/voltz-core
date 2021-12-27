@@ -74,12 +74,6 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
         rateOracle = amm.rateOracle(); // immutable in AMM therefore safe to cache forever
     }
 
-    // just use onlyFactory
-    modifier onlyAMM () {
-        require(msg.sender == address(amm));
-        _;
-    }
-
     /// Only the position/trade owner can update the position/trade margin
     error OnlyOwnerCanUpdatePosition();
 
@@ -127,7 +121,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     }
 
     /// @inheritdoc IMarginEngine
-    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external onlyAMM nonZeroDelta(marginDelta) override {
+    function updatePositionMargin(ModifyPositionParams memory params, int256 marginDelta) external nonZeroDelta(marginDelta) override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
@@ -141,6 +135,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
         
         uint256 variableFactor = amm.rateOracle().variableFactor(false, amm.termStartTimestamp(), amm.termEndTimestamp());
         
+        
+        
+        
         // make sure 0,0 is fixed
         checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position._liquidity, 0, 0, variableFactor, address(amm)); 
 
@@ -151,7 +148,6 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     
     /// @inheritdoc IMarginEngine
     function updateTraderMargin(int256 marginDelta) public nonZeroDelta(marginDelta) override {
-        // got rid of onlyAMM for now 
 
         // make external?, impacts the tests
         Trader.Info storage trader = traders[msg.sender];
@@ -166,7 +162,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     }
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override onlyAMM {
+    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
@@ -190,7 +186,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers {
     }
     
     /// @inheritdoc IMarginEngine
-    function settleTrader(address recipient) onlyAfterMaturity external override onlyAMM {
+    function settleTrader(address recipient) onlyAfterMaturity external override {
 
         Trader.Info storage trader = traders[recipient];    
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.termStartTimestamp(), amm.termEndTimestamp()));

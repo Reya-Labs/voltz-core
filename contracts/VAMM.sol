@@ -67,12 +67,6 @@ contract VAMM is IVAMM {
 
   IAMM public override amm;
 
-  modifier onlyAMM() {
-    require(address(amm) != address(0));
-    require(msg.sender == address(amm));
-    _;
-  }
-
   function setAMM(address _ammAddress) external override {
     amm = IAMM(_ammAddress);
   }
