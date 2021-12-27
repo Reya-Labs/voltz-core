@@ -9,7 +9,6 @@ import "../core_libraries/Position.sol";
 import "../core_libraries/Tick.sol";
 
 /// @title Utilities for unwinding traders (fixed / variable takers) and positions (LPs)
-/// @author Artur Begyan
 library UnwindTraderUnwindPosition {
   using Position for mapping(bytes32 => Position.Info);
   using Position for Position.Info;

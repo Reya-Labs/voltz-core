@@ -383,9 +383,18 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         int24 tickLower,
         int24 tickUpper
     ) external override returns(int256 _fixedTokenBalance, int256 _variableTokenBalance) {
+
+        // duplicate code
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        (, int24 tick, ) = amm.vamm().slot0();
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
+        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
+        position.updateBalances(fixedTokenDelta, variableTokenDelta);
+        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
+        
         Position.Info memory positionMemory = positions.get(owner, tickLower, tickUpper);
 
-        // todo: can we bring UnwindTraderUnwindPosition in the MarginEngine?
+        // can we bring UnwindTraderUnwindPosition in the MarginEngine?
         (_fixedTokenBalance, _variableTokenBalance) = UnwindTraderUnwindPosition.unwindPosition(
             address(amm),
             owner,
@@ -394,7 +403,6 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             positionMemory
         );
 
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
         position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
     }
 
