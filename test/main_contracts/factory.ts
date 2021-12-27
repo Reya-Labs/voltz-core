@@ -12,8 +12,7 @@ const { constants } = ethers
 const TEST_ADDRESS: [string] = [
     '0x1000000000000000000000000000000000000000',
   ]
-
-
+  
   const createFixtureLoader = waffle.createFixtureLoader
 
 describe('Factory', () => {
@@ -22,7 +21,7 @@ describe('Factory', () => {
     let factory: Factory
     // let poolBytecode: string
 
-    // Not sure if needed 
+    // makes the following into 
     let vAMMBytecode: string
     let MarginEngineBytecode: string
     let RateOracleAddressBytecode: string
@@ -70,45 +69,45 @@ describe('Factory', () => {
 
     // come back to the initialisation
 
-    async function createAndCheckVAMM(
-        address: Address
-    ){
-        const create = factory.createVAMM(factory.address)
+    // async function createAndCheckVAMM(
+    //     address: Address
+    // ){
+    //     const create = factory.createVAMM(factory.address)
 
-        await expect(create)
-            .to.emit(factory, 'vAMM created')
-            .withArgs(address)
-        await expect(factory.createVAMM('TEST_ADDRESS'))
+    //     await expect(create)
+    //         .to.emit(factory, 'vAMM created')
+    //         .withArgs(address)
+    //     await expect(factory.createVAMM('TEST_ADDRESS'))
         
-    }
+    // }
 
-    describe('#setTreasury', async () => {
-        it('updates treasury address', async () => {
-            await factory.setTreasury('TEST_ADDRESS')
-            expect(await factory.treasury()).to.eq(other.address)
-        })
-    })
+    // describe('#setTreasury', async () => {
+    //     it('updates treasury address', async () => {
+    //         await factory.setTreasury('TEST_ADDRESS')
+    //         expect(await factory.treasury()).to.eq(other.address)
+    //     })
+    // })
 
-    describe('#setCalculator', async () => {
-        it('updates calculator address', async () => {
-            await factory.setCalculator(other.address)
-            expect(await factory.calculator()).to.eq(other.address)
-        })
-    })
+    // describe('#setCalculator', async () => {
+    //     it('updates calculator address', async () => {
+    //         await factory.setCalculator(other.address)
+    //         expect(await factory.calculator()).to.eq(other.address)
+    //     })
+    // })
 
-    describe('#setInsuranceFund', async () => {
-        it('updates insurance fund address', async () => {
-            await factory.setInsuranceFund(other.address)
-            expect(await factory.insuranceFund()).to.eq(other.address)
-        })     
-    })
+    // describe('#setInsuranceFund', async () => {
+    //     it('updates insurance fund address', async () => {
+    //         await factory.setInsuranceFund(other.address)
+    //         expect(await factory.insuranceFund()).to.eq(other.address)
+    //     })     
+    // })
 
-    describe('#createVAMM', async () => {
-        it('succeeds in creation', async () => {
-            const VAMM = factory.createVAMM(other.address)
-            expect(VAMM).to.eq(TEST_ADDRESS)
-        })    
-    })
+    // describe('#createVAMM', async () => {
+    //     it('succeeds in creation', async () => {
+    //         const VAMM = factory.createVAMM(other.address)
+    //         expect(VAMM).to.eq(TEST_ADDRESS)
+    //     })    
+    // })
 
     // describe('#createMarginEngine', async () => {
     //     it('succeeds in creation', async () => {

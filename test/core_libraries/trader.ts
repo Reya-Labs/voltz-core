@@ -14,31 +14,39 @@ describe("Trader", () => {
 
         const traderTestFactory = await ethers.getContractFactory("TraderTest");
         traderTest = await traderTestFactory.deploy() as TraderTest;
+        return { traderTest };
     });
 
-    describe( '#updateMargin', async () => {
-        it('check if the Margin is updated', async () => {
-            const [owner] = await ethers.getSigners();
-        // the first await activates the struct
-        // const trader = await traderTest.setTrader(owner.address, toBn('0'), toBn('0'), toBn('0'), true);
-        // the second await fills the function
-            const updatedMargin = await traderTest.updateMargin(1);
-            expect(updatedMargin).to.eq(0);
-            });
-        });
+    // describe( '#get', async () => {
+    //     it('get the struct values', async () => {
+    //         await traderTest
+    //     })
+    // })
 
-    describe( "#updateBalances", async () => {
-        it("check if the Balance is updated", async () => {
-            const [owner] = await ethers.getSigners();
-            // await traderTest.setTrader(owner.address, toBn('0'), toBn('0'), toBn('0'), false);
-            const updated = await traderTest.updateBalances(0, 0);
-            // const {
-            //     margin,
-            //     fixedTokenBalance,
-            //     variableTokenBalance,
-            //     isSettled,
-            // } = await traderTest.traders(owner.address);
-            expect(updated).to.eq(0);
-        });
-    })
+    // describe( '#updateMargin', async () => {
+    //     it('check if the Margin is updated', async () => {
+    //         // const [owner] = await ethers.getSigners();
+    //     // the first await activates the struct
+    //     // const trader = await traderTest.setTrader(owner.address, toBn('0'), toBn('0'), toBn('0'), true);
+    //     // the second await fills the function
+    //         await traderTest.updateMargin(1);
+    //         expect(traderTest[margin]).to.eq(0);
+    //         });
+    //     });
+
+//     describe( "#updateBalances", async () => {
+//         it("check if the Balance is updated", async () => {
+//             // const [owner] = await ethers.getSigners();
+//             // await traderTest.setTrader(owner.address, toBn('0'), toBn('0'), toBn('0'), false);
+//             const updated = await traderTest.updateBalances(0, 0);
+//             // const {
+//             //     margin,
+//             //     fixedTokenBalance,
+//             //     variableTokenBalance,
+//             //     isSettled,
+//             // } = await traderTest.traders(owner.address);
+//             expect(updated, 'traderTest [updatedBalances]').to.eq(0);
+//         });
+//     })
 });
+
