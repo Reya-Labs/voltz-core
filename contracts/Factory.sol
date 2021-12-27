@@ -22,7 +22,7 @@ contract Factory is IFactory, Deployer {
   /// @inheritdoc IFactory
   mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address))))
     public
-    override getAMMMAp;
+    override getAMMMap;
   
   /// @inheritdoc IFactory
   mapping(address => address) public override getVAMMMap;
@@ -113,7 +113,7 @@ contract Factory is IFactory, Deployer {
   ) external override onlyOwner returns (address amm) {
     uint256 termStartTimestamp = Time.blockTimestampScaled();
     require(
-      getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
+      getAMMMap[rateOracleId][underlyingToken][termStartTimestamp][
         termEndTimestamp
       ] == address(0),
       "EXISTED_AMM"
@@ -127,7 +127,7 @@ contract Factory is IFactory, Deployer {
       termEndTimestamp
     );
 
-    getAMMMAp[rateOracleId][underlyingToken][termStartTimestamp][
+    getAMMMap[rateOracleId][underlyingToken][termStartTimestamp][
       termEndTimestamp
     ] = amm;
 

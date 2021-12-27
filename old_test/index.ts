@@ -75,7 +75,7 @@ describe("Factory", () => {
       feeAmount
     );
 
-    const ammAddress = await factory.getAMMMAp(
+    const ammAddress = await factory.getAMMMap(
       underlyingPool,
       termEndTimestamp,
       termStartTimestamp,

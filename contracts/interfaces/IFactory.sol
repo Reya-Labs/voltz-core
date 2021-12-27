@@ -30,7 +30,7 @@ interface IFactory {
   /// @notice Emitted when an AMM is successfully created
   /// @param ammAddress The new AMM's address
   /// @param tokenAddress The new AMM's token
-  /// @param rateOracleId The new AMM's rate oracle ID in Factory.getAMMMAp
+  /// @param rateOracleId The new AMM's rate oracle ID in Factory.getAMMMap
   /// @param termStartTimestamp The new AMM's term start timestamp in wei-seconds (ie the deployed block time)
   /// @param termEndTimestamp The new AMM's maturity date in wei-seconds
   event AMMCreated(address indexed ammAddress, address indexed tokenAddress, bytes32 indexed rateOracleId, uint256 termStartTimestamp, uint256 termEndTimestamp);
@@ -68,7 +68,7 @@ interface IFactory {
   /// @param termStartTimestamp The block.timestamp of amm inception
   /// @param termEndTimestamp The block.timestamp of amm maturity
   /// @return amm The amm address
-  function getAMMMAp(bytes32 rateOracleId, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns (address);
+  function getAMMMap(bytes32 rateOracleId, address underlyingToken, uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns (address);
 
   /// @notice Returns vAMM address for a given AMM address
   /// @param ammAddress The address of the AMM
