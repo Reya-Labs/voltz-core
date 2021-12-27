@@ -120,6 +120,22 @@ contract VAMM is IVAMM, Pausable {
     // emit set fee protocol
   }
 
+  // todo: add override, onlyFactory
+  function setTickSpacing(int24 _tickSpacing) external {
+    tickSpacing = _tickSpacing;
+  }
+
+
+  // todo: add override, onlyFactory
+  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external {
+    maxLiquidityPerTick = _maxLiquidityPerTick;
+  }
+
+  // todo: add override, onlyFactory
+  function setFee(uint256 _fee) external {
+    fee = _fee;
+  }
+
   function burn(
     int24 tickLower,
     int24 tickUpper,
