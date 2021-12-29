@@ -1,4 +1,4 @@
-import { BigNumber, Wallet} from "ethers";
+import { BigNumber, Wallet, Contract} from "ethers";
 import { ethers, network, waffle } from "hardhat";
 import { expect } from "chai";
 import { fixedFactor } from "../../shared/utilities";
@@ -16,7 +16,6 @@ describe('Aave Rate Oracle', () => {
   let wallet: Wallet, other: Wallet
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>
 
-  
   
   before('create fixture loader', async () => {
     ;[wallet, other] = await (ethers as any).getSigners()
@@ -172,7 +171,53 @@ describe('Aave Rate Oracle', () => {
   })
 
 
-  
+  describe("#getRateFromTo", async () => {
+
+    let testRateOracle: TestRateOracle;
+    let aaveLendingPoolContract: Contract;
+    let underlyingTokenAddress: string;
+    
+    beforeEach('deploy and initialize test oracle', async () => {
+      testRateOracle = await loadFixture(initializedOracleFixture);
+      const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
+      underlyingTokenAddress = await testRateOracle.underlying();
+      const aaveLendingPoolAbi = [
+        "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public"
+      ]
+      aaveLendingPoolContract = new Contract(aaveLendingPoolAddress, aaveLendingPoolAbi, provider).connect(wallet);
+    })
+
+    it("correctly sets aave lending pool normalized income", async () => {
+      await aaveLendingPoolContract.setReserveNormalizedIncome(underlyingTokenAddress, toBn("1.1"));
+      const normalizedIncome = await testRateOracle.testGetReserveNormalizedIncome();
+      expect(normalizedIncome).to.eq(toBn("1.1"));
+    })
+
+    it("correctly calculates rate from one timestamp to the next", async () => {
+
+      await testRateOracle.testGrow(4);
+      
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      const rateFromTimestamp = await getCurrentTimestamp(provider) + 1;
+      await testRateOracle.update();
+
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      // set new liquidity index value
+      await aaveLendingPoolContract.setReserveNormalizedIncome(underlyingTokenAddress, toBn("1.1"));
+      const rateToTimestamp = await getCurrentTimestamp(provider) + 1;
+      await testRateOracle.update();
+
+      await testRateOracle.testGetRateFromTo(toBn(rateFromTimestamp.toString()), toBn(rateToTimestamp.toString()));
+      const rateFromTo = await testRateOracle.latestRateFromTo();
+
+      const expectedRateFromTo = toBn("0.1");
+
+      expect(rateFromTo).to.eq(expectedRateFromTo);
+
+    })
+
+  })
 
 
 

@@ -88,8 +88,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         uint256 rateFromTo = getRateFromTo(from, to);
 
-        rateFromTo = WadRayMath.rayToWad(rateFromTo);
-
         uint256 timeInSeconds = to - from; // @audit - this is the wimte in seconds wei
 
         uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
@@ -115,11 +113,11 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         
         uint256 rateFrom = observeSingle(currentTime, from, oracleVars.rateIndex, oracleVars.rateCardinality, oracleVars.rateCardinalityNext);
         uint256 rateTo = observeSingle(currentTime, to, oracleVars.rateIndex, oracleVars.rateCardinality, oracleVars.rateCardinalityNext);
-
+        
         return
-            WadRayMath.rayDiv(rateTo, rateFrom).sub(
+            WadRayMath.rayToWad(WadRayMath.rayDiv(rateTo, rateFrom).sub(
                 WadRayMath.RAY
-            );
+            ));
     }
 
     /// @inheritdoc IRateOracle
@@ -132,8 +130,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             require(!atMaturity);
             result = getRateFromTo(termStartTimestamp, Time.blockTimestampScaled());
         }
-        
-        result = WadRayMath.rayToWad(result);
     }
 
 
