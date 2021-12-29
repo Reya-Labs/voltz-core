@@ -46,6 +46,29 @@ npx hardhat compile
 npx hardhat test
 ```
 
+### Linting
+
+We use [eslint](https://eslint.org/), [solhint](https://protofire.github.io/solhint/) and [prettier](https://prettier.io/) to handle linting.
+
+`package.json` contains a few scripts to help you with linting and formatting.
+
+The most important is `npm run check`, which will fix any formatting and linting issues and then run the entire codebase through the linter. You should always run this before merging any code into `main`.
+
+#### Linting
+
+* `npm run lint` - Lint the entire codebase.
+* `npm run lint:sol` - Lint Solidity files.
+* `npm run lint:ts` - Lint TypeScript files.
+* `npm run lint:sol:fix` - Fix Solidity files.
+* `npm run lint:ts:fix` - Fix TypeScript files.
+* `npm run lint:fix` - Fix linting errors across the entire codebase.
+
+#### Formatting
+
+* `npm run format` - Format the entire codebase.
+* `npm run format:sol` - Format Solidity files.
+* `npm run format:ts` - Format TypeScript files.
+
 ## Contracts
 
 We detail a few of the core contracts in the Voltz Protocol \[TODO].
