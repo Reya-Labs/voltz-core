@@ -13,6 +13,9 @@ import "hardhat/console.sol";
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     using SafeMath for uint256;
 
+    /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
+    error AavePoolGetReserveNormalizedIncomeReturnedZero();
+
     // IAaveV2LendingPool public override aaveLendingPool;
     address public override aaveLendingPool;
 
@@ -70,7 +73,9 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         uint256 result = IAaveV2LendingPool(aaveLendingPool)
             .getReserveNormalizedIncome(underlying);
-        require(result != 0, "Oracle only supports active Aave-V2 assets");
+        if (result == 0) {
+            revert AavePoolGetReserveNormalizedIncomeReturnedZero();
+        }
 
         // rates[underlying][blockTimestamp] = Rate(blockTimestamp, result);
         rates[indexUpdated] = Rate(blockTimestamp, result);
@@ -146,10 +151,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 termEndTimestamp
     ) public override(BaseRateOracle, IRateOracle) returns (uint256 result) {
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
-            require(atMaturity);
+            require(atMaturity, "Not at maturity");
             result = getRateFromTo(termStartTimestamp, termEndTimestamp);
         } else {
-            require(!atMaturity);
+            require(!atMaturity, "At maturity");
             result = getRateFromTo(
                 termStartTimestamp,
                 Time.blockTimestampScaled()
