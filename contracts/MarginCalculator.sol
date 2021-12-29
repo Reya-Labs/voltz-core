@@ -40,7 +40,7 @@ contract MarginCalculator is IMarginCalculator{
     // mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
 
       // todo: add override
-    address immutable factory;
+    address public immutable factory;
 
     modifier onlyFactoryOwner() {
         require(msg.sender == IFactory(factory).owner());
