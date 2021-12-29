@@ -8,8 +8,9 @@ import { consts } from "../../helpers/constants";
 import { TestRateOracle } from '../../../typechain/TestRateOracle';
 import { MockAaveLendingPool } from '../../../typechain/MockAaveLendingPool';
 import { rateOracleFixture, timeFixture, fixedAndVariableMathFixture, mockERC20Fixture, mockAaveLendingPoolFixture } from "../../shared/fixtures";
+import { getCurrentTimestamp } from "../../helpers/time";
 
-
+const { provider } = waffle;
 
 describe('Aave Rate Oracle', () => {
   let wallet: Wallet, other: Wallet
@@ -34,6 +35,12 @@ describe('Aave Rate Oracle', () => {
     console.log("Test TS: Aave normalized income is: ", await aaveLendingPool.getReserveNormalizedIncome(token.address));
     const { testRateOracle } = await rateOracleFixture(fixedAndVariableMath.address, time.address, token.address, aaveLendingPool.address);
 
+
+    await testRateOracle.initializeTestRateOracle({
+      tick: 0,
+      liquidity: 0
+    });
+
     return testRateOracle;
 
   }
@@ -44,10 +51,10 @@ describe('Aave Rate Oracle', () => {
     let testRateOracle: TestRateOracle;
     beforeEach('deploy and initialize test oracle', async () => {
       testRateOracle = await loadFixture(initializedOracleFixture);
-      await testRateOracle.initializeTestRateOracle({
-        tick: 1,
-        liquidity: 1
-      });
+      // await testRateOracle.initializeTestRateOracle({
+      //   tick: 1,
+      //   liquidity: 1
+      // });
     })
 
     it("aave lending pool set correctly", async () => {
@@ -61,10 +68,71 @@ describe('Aave Rate Oracle', () => {
       expect(rateCardinality).to.eq(1);
       expect(rateCardinalityNext).to.eq(1);
     })
+  })
+
+  describe('#grow', () => {
+    let testRateOracle: TestRateOracle;
+    
+    beforeEach('deploy and initialize test oracle', async () => {
+      testRateOracle = await loadFixture(initializedOracleFixture);
+      // await testRateOracle.initializeTestRateOracle({
+      //   tick: 1,
+      //   liquidity: 1
+      // });
+    })
+
+    
+    it("increases the cardinality next for the first call", async () => {
+      await testRateOracle.testGrow(5);
+      const [rateIndex, rateCardinality, rateCardinalityNext] = await testRateOracle.getOracleVars();
+      expect(rateIndex).to.eq(0);
+      expect(rateCardinality).to.eq(1);
+      expect(rateCardinalityNext).to.eq(5);
+    })
+
+
+    it("is no op if oracle is already gte that size", async () => {
+      await testRateOracle.testGrow(5);
+      await testRateOracle.testGrow(3);
+      const [rateIndex, rateCardinality, rateCardinalityNext] = await testRateOracle.getOracleVars();
+      expect(rateIndex).to.eq(0);
+      expect(rateCardinality).to.eq(1);
+      expect(rateCardinalityNext).to.eq(5);
+    })
+
+  })
+
+
+  describe('#write', () => {
+    let testRateOracle: TestRateOracle;
+    
+    beforeEach('deploy and initialize test oracle', async () => {
+      testRateOracle = await loadFixture(initializedOracleFixture);
+    })
+
+    it("single element array gets overwritten", async () => {
+      const currentTimestamp = await getCurrentTimestamp(provider);
+      await testRateOracle.update();
+      const [rateIndex, rateCardinality, rateCardinalityNext] = await testRateOracle.getOracleVars();
+      expect(rateIndex).to.eq(0);
+      const [rateTimestamp, rateValue] = await testRateOracle.getRate(0);
+      console.log(currentTimestamp);
+      console.log(rateTimestamp);
+      expect(rateValue).to.eq(toBn("1.0"));
+      expect(rateTimestamp).to.eq(toBn((currentTimestamp+1).toString()));
+    })
 
     
 
+
+
+
+    
+
+    
   })
+
+
 
 
 

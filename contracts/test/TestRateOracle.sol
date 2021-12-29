@@ -50,7 +50,19 @@ contract TestRateOracle is AaveRateOracle {
   function testGetReserveNormalizedIncome() external view returns(uint256){
     // console.log("Test Contract: Aave lending pool address is", aaveLendingPool);
     return getReserveNormalizedIncome(underlying);
+  }
 
+  function testGrow(uint16 _rateCardinalityNext) external {
+    oracleVars.rateCardinalityNext = grow(oracleVars.rateCardinalityNext, _rateCardinalityNext);
+  }
+
+  function update() external {
+    (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(oracleVars.rateIndex, oracleVars.rateCardinality, oracleVars.rateCardinalityNext);
+  }
+
+  function getRate(uint16 index) external view returns (uint256, uint256) {
+    Rate memory rate = rates[index];
+    return (rate.timestamp, rate.rateValue);
   }
 
 

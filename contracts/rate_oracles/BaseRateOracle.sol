@@ -40,15 +40,16 @@ abstract contract BaseRateOracle is IRateOracle {
     function grow(
         uint16 current,
         uint16 next
-    ) internal returns (uint16) {
+    ) internal pure returns (uint16) {
         require(current > 0, "I");
 
         // no-op if the passed next value isn't greater than the current next value
         if (next <= current) return current;
 
+        // AB: not sure we need to do this
         // store in each slot to prevent fresh SSTOREs in swaps 
         // this data will not be used because the initialized boolean is still false
-        for (uint16 i = current; i < next; i++) rates[i].timestamp = 1;
+        // for (uint16 i = current; i < next; i++) rates[i].timestamp = 1;
 
         return next;
 
