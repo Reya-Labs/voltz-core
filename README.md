@@ -55,6 +55,10 @@ We use [eslint](https://eslint.org/), [solhint](https://protofire.github.io/solh
 
 The most important is `npm run check`, which will fix any formatting and linting issues and then run the entire codebase through the linter. You should always run this before merging any code into `main`.
 
+By default, we install a pre-push hook to run `npm run check` before each push. If you need to override this, you can pass the `--no-verify` flag:
+
+    git push -u origin my-fancy-branch --no-verify
+
 #### Linting
 
 * `npm run lint` - Lint the entire codebase.
