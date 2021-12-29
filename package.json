@@ -71,5 +71,11 @@
     "format": "npm run format:sol && npm run format:ts",
     "format:sol": "npx prettier contracts/**/*.sol --write",
     "format:ts": "npx prettier '**/*.{json,js,ts,md}' --write",
+    "prepare": "husky install"
+  },
+  "husky": {
+    "hooks": {
+      "pre-push": "npm run check"
+    }
   }
 }
