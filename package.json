@@ -35,7 +35,6 @@
     "prettier": "^2.4.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "solhint": "^3.3.6",
-    "solhint-plugin-prettier": "0.0.5",
     "solidity-coverage": "^0.7.17",
     "ts-node": "^10.3.0",
     "typechain": "^5.2.0",
@@ -71,6 +70,9 @@
     "format": "npm run format:sol && npm run format:ts",
     "format:sol": "npx prettier contracts/**/*.sol --write",
     "format:ts": "npx prettier '**/*.{json,js,ts,md}' --write",
+    "format:sol:check": "npx prettier contracts/**/*.sol --check",
+    "format:ts:check": "npx prettier '**/*.{json,js,ts,md}' --check",
+    "format:check": "npm run format:sol:check && npm run format:ts:check",
     "prepare": "husky install"
   },
   "husky": {
