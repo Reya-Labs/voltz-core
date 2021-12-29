@@ -2,3 +2,7 @@ node_modules
 artifacts
 cache
 coverage
+old_test
+hardhat.config.js
+package-lock.json
+package.json

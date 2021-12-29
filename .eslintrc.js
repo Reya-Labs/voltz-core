@@ -21,6 +21,13 @@ module.exports = {
       { ignores: ["modules"] },
     ],
     camelcase: "off",
+    "no-unused-vars": [
+      "error",
+      {
+        varsIgnorePattern: "^_",
+        argsIgnorePattern: "^_",
+      },
+    ],
   },
   settings: {
     node: {
