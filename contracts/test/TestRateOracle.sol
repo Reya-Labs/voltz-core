@@ -14,6 +14,8 @@ contract TestRateOracle is AaveRateOracle {
   int24 public tick;
   uint128 public liquidity;
 
+  uint256 public latestObservedRateValue;
+
   // todo: rateOracleId should be a function of underlyingProtocol and underlyingToken?
   constructor(address aaveLendingPool, bytes32 rateOracleId, address underlying) AaveRateOracle(aaveLendingPool, rateOracleId, underlying) {
     
@@ -63,6 +65,11 @@ contract TestRateOracle is AaveRateOracle {
   function getRate(uint16 index) external view returns (uint256, uint256) {
     Rate memory rate = rates[index];
     return (rate.timestamp, rate.rateValue);
+  }
+
+  function testObserveSingle(uint256 queriedTime) external returns (uint256 rateValue) {
+    latestObservedRateValue = observeSingle(Time.blockTimestampScaled(), queriedTime, oracleVars.rateIndex, oracleVars.rateCardinality, oracleVars.rateCardinalityNext);
+    return latestObservedRateValue;
   }
 
 

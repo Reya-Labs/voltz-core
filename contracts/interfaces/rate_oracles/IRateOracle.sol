@@ -33,12 +33,16 @@ interface IRateOracle {
 
     function secondsAgo() external view returns (uint256);
 
+    function minSecondsSinceLastUpdate() external view returns (uint256);
+
     function underlying() external view returns (address);
 
 
     // non-view functions
 
     function setSecondsAgo(uint256 _secondsAgo) external;
+
+    function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external;
 
     function variableFactor(bool atMaturity, uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256 result);
 

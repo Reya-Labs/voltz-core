@@ -8,7 +8,7 @@ import { consts } from "../../helpers/constants";
 import { TestRateOracle } from '../../../typechain/TestRateOracle';
 import { MockAaveLendingPool } from '../../../typechain/MockAaveLendingPool';
 import { rateOracleFixture, timeFixture, fixedAndVariableMathFixture, mockERC20Fixture, mockAaveLendingPoolFixture } from "../../shared/fixtures";
-import { getCurrentTimestamp } from "../../helpers/time";
+import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 
 const { provider } = waffle;
 
@@ -24,7 +24,7 @@ describe('Aave Rate Oracle', () => {
   })
 
 
-  const initializedOracleFixture = async () => {
+  const oracleFixture = async () => {
     
     const { time } = await timeFixture();
     const { fixedAndVariableMath } = await fixedAndVariableMathFixture(time);
@@ -35,14 +35,21 @@ describe('Aave Rate Oracle', () => {
     console.log("Test TS: Aave normalized income is: ", await aaveLendingPool.getReserveNormalizedIncome(token.address));
     const { testRateOracle } = await rateOracleFixture(fixedAndVariableMath.address, time.address, token.address, aaveLendingPool.address);
 
+    await testRateOracle.setMinSecondsSinceLastUpdate(toBn("7200")); // two hours
+    await testRateOracle.setSecondsAgo("86400"); // one week
+ 
+    return testRateOracle;
 
+  }
+
+  const initializedOracleFixture = async () => {
+    const testRateOracle = await oracleFixture();
     await testRateOracle.initializeTestRateOracle({
       tick: 0,
       liquidity: 0
     });
 
     return testRateOracle;
-
   }
 
   
@@ -111,6 +118,7 @@ describe('Aave Rate Oracle', () => {
     })
 
     it("single element array gets overwritten", async () => {
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const currentTimestamp = await getCurrentTimestamp(provider);
       await testRateOracle.update();
       const [rateIndex, rateCardinality, rateCardinalityNext] = await testRateOracle.getOracleVars();
@@ -122,21 +130,49 @@ describe('Aave Rate Oracle', () => {
       expect(rateTimestamp).to.eq(toBn((currentTimestamp+1).toString()));
     })
 
-    
 
-
-
-
-    
-
+    it("grows cardinality if writing past", async () => {
+      await testRateOracle.testGrow(2);
+      await testRateOracle.testGrow(4);
+      let [rateIndex, rateCardinality, rateCardinalityNext] = await testRateOracle.getOracleVars();
+      expect(rateCardinality).to.eq(1);
+      console.log(await getCurrentTimestamp(provider));
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      console.log(await getCurrentTimestamp(provider));
+      await testRateOracle.update();
+      [rateIndex, rateCardinality, rateCardinalityNext] = await testRateOracle.getOracleVars();
+      expect(rateCardinality).to.eq(4);
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      const currentTimestamp = await getCurrentTimestamp(provider);
+      await testRateOracle.update();
+      [rateIndex, rateCardinality, rateCardinalityNext] = await testRateOracle.getOracleVars();
+      expect(rateIndex).to.eq(2);
+      expect(rateCardinality).to.eq(4);
+      const [rateTimestamp, rateValue] = await testRateOracle.getRate(2);
+      expect(rateValue).to.eq(toBn("1.0"));
+      expect(rateTimestamp).to.eq(toBn((currentTimestamp+1).toString()));
+    })
     
   })
 
 
+  describe("#observe", async () => {
+    let testRateOracle: TestRateOracle;
+    
+    beforeEach('deploy and initialize test oracle', async () => {
+      testRateOracle = await loadFixture(oracleFixture);
+    })
+
+    it("fails before initialize", async () => {
+      const currentTimestamp = await getCurrentTimestamp(provider);
+      const currentTimestampBN = toBn(currentTimestamp.toString());
+      await expect(testRateOracle.testObserveSingle(currentTimestampBN)).to.be.reverted;
+    })
+
+  })
 
 
-
-
+  
 
 
 

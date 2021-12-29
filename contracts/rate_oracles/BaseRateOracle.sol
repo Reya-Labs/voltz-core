@@ -14,6 +14,9 @@ abstract contract BaseRateOracle is IRateOracle {
     bytes32 public immutable override rateOracleId;
     address public immutable override underlying;
     uint256 public override secondsAgo;
+    uint256 public override minSecondsSinceLastUpdate; // AB: as long as this doesn't affect the termEndTimestamp rateValue too much
+    // AB: can have a different minSecondsSinceLastUpdate close to termEndTimestamp to have more granularity for settlement purposes
+
     // override
     OracleVars public oracleVars;
     // override
@@ -21,6 +24,7 @@ abstract contract BaseRateOracle is IRateOracle {
 
 
     // should be controlled by the owner
+    // todo: can only be done by the factory owner
     function setSecondsAgo(uint256 _secondsAgo) external override {
 
         secondsAgo =  _secondsAgo; // in wei
@@ -28,6 +32,15 @@ abstract contract BaseRateOracle is IRateOracle {
         // emit seconds ago set
         // unqiue for rate oracle id and the underlying address
     }
+
+    // todo: can only be done by the factory owner
+    function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external override {
+
+        minSecondsSinceLastUpdate =  _minSecondsSinceLastUpdate; // in wei
+
+        // emit
+    }
+
 
     constructor(bytes32 _rateOracleId, address _underlying) {
         rateOracleId = _rateOracleId;
