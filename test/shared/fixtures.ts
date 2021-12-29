@@ -1,5 +1,4 @@
 import { Factory } from "../../typechain/Factory";
-import { Fixture } from "ethereum-waffle";
 import { TestVAMM } from "../../typechain/TestVAMM";
 import { TestAMM } from "../../typechain/TestAMM";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
@@ -8,7 +7,7 @@ import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 // import { TestERC20 } from '../../typechain/TestERC20'
 import { TestDeployer } from "../../typechain/TestDeployer";
 import { BigNumber } from "@ethersproject/bignumber";
-import { FixedAndVariableMath, MockAaveLendingPool } from "../../typechain";
+import { FixedAndVariableMath } from "../../typechain";
 import { consts } from "../helpers/constants";
 import { ethers, waffle } from "hardhat";
 import { getCurrentTimestamp } from "../helpers/time";
@@ -26,15 +25,17 @@ import {
   RATE_ORACLE_ID,
 } from "./utilities";
 import { toBn } from "evm-bn";
-import { aave_lending_pool_addr } from "./constants";
 const { provider } = waffle;
 
 interface FactoryFixture {
   factory: Factory;
 }
 
-async function marginCalculatorFixture(fixedAndVariableMath: any, time: any, factory: any) {
-
+async function marginCalculatorFixture(
+  fixedAndVariableMath: any,
+  time: any,
+  factory: any
+) {
   // const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
   // const { time } = await timeFixture();
 
@@ -48,7 +49,9 @@ async function marginCalculatorFixture(fixedAndVariableMath: any, time: any, fac
     }
   );
 
-  const testMarginCalculator = await TestMarginCalculatorFactory.deploy(factory);
+  const testMarginCalculator = await TestMarginCalculatorFactory.deploy(
+    factory
+  );
 
   return { testMarginCalculator };
 }
@@ -71,19 +74,26 @@ export async function mockAaveLendingPoolFixture() {
   return { aaveLendingPool };
 }
 
-export async function rateOracleFixture(fixedAndVariableMathAddress: string, timeAddress: string, tokenAddress: string, aaveLendingPoolAddress: string) {
-
+export async function rateOracleFixture(
+  fixedAndVariableMathAddress: string,
+  timeAddress: string,
+  tokenAddress: string,
+  aaveLendingPoolAddress: string
+) {
   const TestRateOracleFactory = await ethers.getContractFactory(
     "TestRateOracle",
     {
       libraries: {
         FixedAndVariableMath: fixedAndVariableMathAddress,
-        Time: timeAddress
+        Time: timeAddress,
       },
     }
   );
 
-  console.log("Test TS: Aave lending pool address is: ", aaveLendingPoolAddress);
+  console.log(
+    "Test TS: Aave lending pool address is: ",
+    aaveLendingPoolAddress
+  );
 
   const testRateOracle = await TestRateOracleFactory.deploy(
     aaveLendingPoolAddress,
@@ -164,26 +174,28 @@ export async function fixedAndVariableMathFixture(time: any) {
 }
 
 async function factoryFixture(time: any): Promise<FactoryFixture> {
-
   const factoryFactory = await ethers.getContractFactory("Factory", {
     libraries: {
-      Time: time.address
+      Time: time.address,
     },
   });
   const factory = (await factoryFactory.deploy()) as Factory;
   return { factory };
 }
 
+// eslint-disable-next-line no-unused-vars
 interface VAMMFixture extends FactoryFixture {
   vammCalleeTest: TestVAMMCallee;
+  // eslint-disable-next-line no-unused-vars
   createVAMM(ammAddress: string): Promise<TestVAMM>;
 }
 
+// eslint-disable-next-line no-unused-vars
 interface MarginEngineFixture extends FactoryFixture {
   marginEngineCalleeTest: TestMarginEngineCallee;
+  // eslint-disable-next-line no-unused-vars
   createMarginEngine(ammAddress: string): Promise<TestMarginEngine>;
 }
-
 
 // one fixture for everything amm/vamm/marginEngine
 // the fixture needs to properly set everything
@@ -235,8 +247,17 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { unwindTraderUnwindPosition } =
     await unwindTraderUnwinPositionFixture();
   const { vammHelpers } = await vammHelpersFixture(fixedAndVariableMath);
-  const { testRateOracle } = await rateOracleFixture(fixedAndVariableMath.address, time.address, token.address, aaveLendingPool.address);
-  const { testMarginCalculator } = await marginCalculatorFixture(fixedAndVariableMath, time, factory);
+  const { testRateOracle } = await rateOracleFixture(
+    fixedAndVariableMath.address,
+    time.address,
+    token.address,
+    aaveLendingPool.address
+  );
+  const { testMarginCalculator } = await marginCalculatorFixture(
+    fixedAndVariableMath,
+    time,
+    factory
+  );
 
   // set the rate for termStartTimestamp
   // await testRateOracle.setTermStartTimestampRate(

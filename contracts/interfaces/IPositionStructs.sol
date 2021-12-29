@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 interface IPositionStructs {
-
     struct ModifyPositionParams {
         // the address that owns the position
         address owner;
@@ -13,5 +12,4 @@ interface IPositionStructs {
         // any change in liquidity
         int128 liquidityDelta;
     }
-
 }

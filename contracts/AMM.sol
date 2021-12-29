@@ -65,8 +65,13 @@ contract AMM is IAMM {
     calculator = IMarginCalculator(calculatorAddress);
   }
 
+  /// @dev Sender must be the Factory owner
+  error SenderNotFactoryOwner();
+
   modifier onlyFactoryOwner() {
-    require(msg.sender == IFactory(factory).owner());
+    if (msg.sender != IFactory(factory).owner()) {
+      revert SenderNotFactoryOwner();
+    }
     _;
   }
 

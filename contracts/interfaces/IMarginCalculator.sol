@@ -5,8 +5,7 @@ import "prb-math/contracts/PRBMathUD60x18Typed.sol";
 import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 
 interface IMarginCalculator {
-
-    // structs 
+    // structs
 
     // docs missing (collect them from MarginCalculator.sol old mappings)
     // TODO: below should all be SD59x18 or UD60x18 user defined types
@@ -24,7 +23,7 @@ interface IMarginCalculator {
         int256 xiLower;
     }
 
-// TODO: below should all be SD59x18 user defined types
+    // TODO: below should all be SD59x18 user defined types
     struct ApyBoundVars {
         /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
         int256 timeFactor;
@@ -107,9 +106,8 @@ interface IMarginCalculator {
     }
 
     struct MinimumMarginRequirementLocalVars {
-
-        /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure. 
-        /// @dev minDelta is different depending on whether we are calculating a Liquidation or an Initial Margin Requirement 
+        /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure.
+        /// @dev minDelta is different depending on whether we are calculating a Liquidation or an Initial Margin Requirement
         uint256 minDelta;
         /// @dev notional is the absolute value of the variable token balance
         uint256 notional;
@@ -122,7 +120,6 @@ interface IMarginCalculator {
         uint256 zeroLowerBoundMargin;
     }
 
-
     struct PositionMarginRequirementsVars {
         /// @dev virtual 1% fixed tokens supported by the position in a given tick range with a given amount of supplied liquidity
         /// @dev amount0 = SqrtPriceMath.getAmount0Delta(sqrtRatioAtLowerTick, sqrtRatioAtUpperTick, positionLiquidity)
@@ -130,9 +127,9 @@ interface IMarginCalculator {
         /// @dev virtual variable tokens supported by the position in a given tick range with a given amount of supplied liquidity
         /// @dev amount1 = SqrtPriceMath.getAmount1Delta(sqrtRatioAtLowerTick, sqrtRatioAtUpperTick, positionLiquidity)
         int256 amount1;
-        /// @dev the exepected variable token balance of a liquidity provider if the Voltz traders were to completely consume all of the variable liquidty offered by the LP in a given tick range 
+        /// @dev the exepected variable token balance of a liquidity provider if the Voltz traders were to completely consume all of the variable liquidty offered by the LP in a given tick range
         int256 expectedVariableTokenBalance;
-        /// @dev the exepected fixed token balance of a liquidity provider if the Voltz traders were to completely consume all of the fixed liquidty offered by the LP in a given tick range 
+        /// @dev the exepected fixed token balance of a liquidity provider if the Voltz traders were to completely consume all of the fixed liquidty offered by the LP in a given tick range
         int256 expectedFixedTokenBalance;
         /// @dev If the current tick is within the tick range boundaries of the position then amount0Up represents the amount0 delta following a trade that pushes the tick to the tickUpper of the position
         int256 amount0Up;
@@ -168,10 +165,10 @@ interface IMarginCalculator {
     /// @dev Also the minDelta is different for Liquidation and Initial Margin Requirements
     /// @dev where minDeltaIM > minDeltaLM
     /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
-    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens    
+    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
     function getMinimumMarginRequirement(
         TraderMarginRequirementParams memory params
-    ) external view returns(uint256 margin);
+    ) external view returns (uint256 margin);
 
     /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
     /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
@@ -180,12 +177,17 @@ interface IMarginCalculator {
         TraderMarginRequirementParams memory params
     ) external view returns (uint256 margin);
 
-    function getPositionMarginRequirement(PositionMarginRequirementParams memory params) external view returns (uint256 margin);
+    function getPositionMarginRequirement(
+        PositionMarginRequirementParams memory params
+    ) external view returns (uint256 margin);
 
     /// @notice Checks if a given position is liquidatable
     /// @dev In order for a position to be liquidatable its current margin needs to be lower than the position's liquidation margin requirement
     /// @return _isLiquidatable A boolean which suggests if a given position is liquidatable
-    function isLiquidatablePosition(PositionMarginRequirementParams memory params, int256 currentMargin) external view returns(bool _isLiquidatable);
+    function isLiquidatablePosition(
+        PositionMarginRequirementParams memory params,
+        int256 currentMargin
+    ) external view returns (bool _isLiquidatable);
 
     /// @notice Checks if a given trader is liquidatable
     /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
@@ -194,8 +196,10 @@ interface IMarginCalculator {
     function isLiquidatableTrader(
         TraderMarginRequirementParams memory params,
         int256 currentMargin
-    ) external view returns(bool isLiquidatable);
+    ) external view returns (bool isLiquidatable);
 
-    function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) external;
-
+    function setMarginCalculatorParameters(
+        MarginCalculatorParameters memory marginCalculatorParameters,
+        bytes32 rateOracleId
+    ) external;
 }

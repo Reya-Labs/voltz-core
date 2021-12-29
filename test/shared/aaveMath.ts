@@ -1,10 +1,10 @@
-// import BigNumber from 'bignumber.js';
 import { BigNumber as BigNumberJs } from "bignumber.js";
 
 export const RAY = new BigNumberJs(10).exponentiatedBy(27).toFixed();
 
 declare module "bignumber.js" {
   interface BigNumber {
+    // eslint-disable-next-line no-unused-vars
     rayDiv: (a: BigNumber) => BigNumber;
   }
 }

@@ -68,7 +68,7 @@ export const devConstants = {
 export const mainnetConstants = {
   common,
   misc: {
-    AAVE_V2_LENDING_POOL_ADDRESS: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9", //checked *1
+    AAVE_V2_LENDING_POOL_ADDRESS: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9", // checked *1
   },
   tokens: {
     USDT_AAVE: {

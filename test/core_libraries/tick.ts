@@ -3,16 +3,9 @@
 // import the TickTest type
 
 import { ethers } from "hardhat";
-import { BigNumber } from "ethers";
 import { TickTest } from "../../typechain/TickTest";
 import { expect } from "../shared/expect";
 import { toBn } from "evm-bn";
-import { getMaxLiquidityPerTick, TICK_SPACING } from "../shared/utilities";
-import { getMaxListeners } from "process";
-
-// UniswapV3 part, is it needed?
-const MaxUint128 = BigNumber.from(2).pow(128).sub(1);
-//const { constants } = ether
 
 describe("Tick", () => {
   let tickTest: TickTest;
@@ -117,14 +110,7 @@ describe("Tick", () => {
 
       await tickTest.cross(2, toBn("1000"), toBn("-2000"), toBn("10"));
 
-      const {
-        liquidityGross,
-        liquidityNet,
-        fixedTokenGrowthOutside,
-        variableTokenGrowthOutside,
-        feeGrowthOutside,
-        initialized,
-      } = await tickTest.ticks(2);
+      const { liquidityGross, liquidityNet } = await tickTest.ticks(2);
 
       expect(liquidityGross).to.eq(3);
       expect(liquidityNet).to.eq(4);

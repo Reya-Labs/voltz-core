@@ -65,7 +65,8 @@ library SqrtPriceMath {
             // in addition, we must check that the denominator does not underflow
             require(
                 (product = amount * sqrtPX96) / amount == sqrtPX96 &&
-                    numerator1 > product
+                    numerator1 > product,
+                "denominator underflows"
             );
             uint256 denominator = numerator1 - product;
             return
@@ -115,7 +116,7 @@ library SqrtPriceMath {
                     )
             );
 
-            require(sqrtPX96 > quotient);
+            require(sqrtPX96 > quotient, "starting px must be > quotient");
             // always fits 160 bits
             return uint160(sqrtPX96 - quotient);
         }
@@ -134,8 +135,8 @@ library SqrtPriceMath {
         uint256 amountIn,
         bool zeroForOne
     ) internal pure returns (uint160 sqrtQX96) {
-        require(sqrtPX96 > 0);
-        require(liquidity > 0);
+        require(sqrtPX96 > 0, "starting price must be > 0");
+        require(liquidity > 0, "liquidity must be > 0");
 
         // round to make sure that we don't pass the target price
         return
@@ -167,8 +168,8 @@ library SqrtPriceMath {
         uint256 amountOut,
         bool zeroForOne
     ) internal pure returns (uint160 sqrtQX96) {
-        require(sqrtPX96 > 0);
-        require(liquidity > 0);
+        require(sqrtPX96 > 0, "starting price must be > 0");
+        require(liquidity > 0, "liquidity must be > 0");
 
         // round to make sure that we pass the target price
         return
@@ -207,7 +208,7 @@ library SqrtPriceMath {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = sqrtRatioBX96 - sqrtRatioAX96;
 
-        require(sqrtRatioAX96 > 0);
+        require(sqrtRatioAX96 > 0, "sqrt price must be > 0");
 
         // test the effect of he unchecked blocks
         unchecked {

@@ -21,6 +21,7 @@ export const SECONDS_IN_YEAR: BigNumber = toBn("31536000");
 // export const BLOCK_TIMESTAMP: number = 1632249308;
 export const MaxUint128 = BigNumber.from(2).pow(128).sub(1);
 
+/* eslint-disable no-unused-vars */
 export type MintFunction = (
   recipient: string,
   tickLower: BigNumberish,
@@ -40,6 +41,7 @@ export type SwapFunction = (
   to: Wallet | string,
   sqrtPriceLimitX96?: BigNumberish
 ) => Promise<ContractTransaction>;
+/* eslint-enable no-unused-vars */
 
 export interface VAMMFunctions {
   mint: MintFunction;

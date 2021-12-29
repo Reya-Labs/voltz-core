@@ -48,7 +48,7 @@ contract VAMM is IVAMM, Pausable {
   uint256 public constant SECONDS_IN_DAY_WAD = 86400 * 10**18;
 
   // todo: add override
-  address immutable factory;
+  address public immutable factory;
 
   // todo: add override
   bool public unlocked;
@@ -63,15 +63,15 @@ contract VAMM is IVAMM, Pausable {
   }
 
   modifier onlyFactoryOwner() {
-    require(msg.sender == IFactory(factory).owner());
+    require(msg.sender == IFactory(factory).owner(), "only factory owner");
     _;
   }
 
   modifier checkCurrentTimestampTermEndTimestampDelta() {
     uint256 currentTimestamp = Time.blockTimestampScaled(); 
-    require(currentTimestamp < amm.termEndTimestamp());
+    require(currentTimestamp < amm.termEndTimestamp(), "amm hasn't reached maturity");
     uint256 timeDelta = amm.termEndTimestamp() - currentTimestamp;
-    require(timeDelta > SECONDS_IN_DAY_WAD);
+    require(timeDelta > SECONDS_IN_DAY_WAD, "amm must be 1 day past maturity");
     _;
   }
 

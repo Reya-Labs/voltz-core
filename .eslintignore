@@ -2,3 +2,8 @@ node_modules
 artifacts
 cache
 coverage
+old_test
+hardhat.config.ts
+package-lock.json
+package.json
+tsconfig.json

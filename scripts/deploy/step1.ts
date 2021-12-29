@@ -1,11 +1,8 @@
 import {
   Deployment,
-  validAddress,
-  deployWithName,
   getContractFromDeployment,
   getCreate2Address,
 } from "../helpers/deployHelpers";
-import { BigNumber as BN } from "ethers";
 import { utils } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
@@ -21,8 +18,8 @@ export async function step1(
   deployment: Deployment,
   consts: any
 ) {
-  let termStartTimestamp: number = await getCurrentTimestamp(provider);
-  let termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY;
+  const termStartTimestamp: number = await getCurrentTimestamp(provider);
+  const termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY;
 
   const factory: Factory = await getContractFromDeployment(
     hre,
@@ -35,11 +32,10 @@ export async function step1(
     toBn(termEndTimestamp.toString())
   );
 
-  let termStartTimestampBN = toBn((termStartTimestamp + 1).toString());
-  let termEndTimestampBN = toBn(termEndTimestamp.toString());
+  const termStartTimestampBN = toBn((termStartTimestamp + 1).toString());
+  const termEndTimestampBN = toBn(termEndTimestamp.toString());
 
-  let ammBytecode: string;
-  ammBytecode = (await ethers.getContractFactory("AMM")).bytecode;
+  const ammBytecode = (await ethers.getContractFactory("AMM")).bytecode;
   // const poolAddress = getCreate2Address(factory.address, TEST_ADDRESSES, FeeAmount.MEDIUM, poolBytecode)
   const ammAddress = getCreate2Address(
     factory.address,
@@ -49,7 +45,7 @@ export async function step1(
     termEndTimestampBN,
     ammBytecode
   );
-  deployment.contracts["AMM1"] = {
+  deployment.contracts.AMM1 = {
     address: ammAddress,
     tx: "", // don't need for the purposes of the deployment?
   };

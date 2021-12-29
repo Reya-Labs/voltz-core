@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+// solhint-disable no-inline-assembly
+
 pragma solidity ^0.8.0;
 
 /// @title Math library for computing sqrt prices from ticks and vice versa
@@ -147,6 +149,7 @@ library TickMath {
         if (msb >= 128) r = ratio >> (msb - 127);
         else r = ratio << (127 - msb);
 
+        // solhint-disable-next-line var-name-mixedcase
         int256 log_2 = (int256(msb) - 128) << 64;
 
         assembly {
@@ -233,6 +236,7 @@ library TickMath {
             log_2 := or(log_2, shl(50, f))
         }
 
+        // solhint-disable-next-line var-name-mixedcase
         int256 log_sqrt10001 = log_2 * 255738958999603826347141; // 128.128 number
 
         int24 tickLow = int24(

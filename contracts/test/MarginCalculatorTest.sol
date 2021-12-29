@@ -5,27 +5,38 @@ import "../MarginCalculator.sol";
 import "../interfaces/IMarginCalculator.sol";
 
 contract MarginCalculatorTest is MarginCalculator {
-    
-    constructor (address _factory) MarginCalculator(_factory) {}
-    
+    // solhint-disable-next-line no-empty-blocks
+    constructor(address _factory) MarginCalculator(_factory) {}
+
     // view functions
 
-    function computeTimeFactorTest(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled) external view returns(int256 timeFactor) {
-        
-        return computeTimeFactor(rateOracleId, termEndTimestampScaled, currentTimestampScaled);
-    
+    function computeTimeFactorTest(
+        bytes32 rateOracleId,
+        uint256 termEndTimestampScaled,
+        uint256 currentTimestampScaled
+    ) external view returns (int256 timeFactor) {
+        return
+            computeTimeFactor(
+                rateOracleId,
+                termEndTimestampScaled,
+                currentTimestampScaled
+            );
     }
 
-    function calculateExpectedAmountsTest(uint128 liquidity, int24 currentTick, int24 tickUpper, int24 tickLower) external pure returns (int256 amount1Up, int256 amount0Down) {
-        
+    function calculateExpectedAmountsTest(
+        uint128 liquidity,
+        int24 currentTick,
+        int24 tickUpper,
+        int24 tickLower
+    ) external pure returns (int256 amount1Up, int256 amount0Down) {
         // go through this again [ask Moody for elaboration]
-        
+
         // want this to be negative
-        
+
         amount1Up = SqrtPriceMath.getAmount1Delta(
             TickMath.getSqrtRatioAtTick(currentTick),
             TickMath.getSqrtRatioAtTick(tickUpper),
-            -int128(liquidity) 
+            -int128(liquidity)
         );
 
         // want this to be negative
@@ -35,9 +46,8 @@ contract MarginCalculatorTest is MarginCalculator {
             TickMath.getSqrtRatioAtTick(tickLower),
             -int128(liquidity)
         );
-        
     }
-    
+
     function positionMarginBetweenTicksHelperLMTest(
         int24 tickLower,
         int24 tickUpper,
@@ -52,23 +62,24 @@ contract MarginCalculatorTest is MarginCalculator {
         bytes32 rateOracleId,
         uint256 historicalApy
     ) external view returns (uint256 margin) {
-
-        return positionMarginBetweenTicksHelper(PositionMarginRequirementParams({
-            owner: address(0), // owner should not matter for the purposes of comouting position's margin
-            tickLower: tickLower,
-            tickUpper: tickUpper,
-            isLM: true,
-            currentTick: currentTick,
-            termStartTimestamp: termStartTimestamp,
-            termEndTimestamp: termEndTimestamp,
-            liquidity: liquidity,
-            fixedTokenBalance: fixedTokenBalance,
-            variableTokenBalance: variableTokenBalance,
-            variableFactor: variableFactor,
-            rateOracleId: rateOracleId,
-            historicalApy: historicalApy
-        }));
-
+        return
+            positionMarginBetweenTicksHelper(
+                PositionMarginRequirementParams({
+                    owner: address(0), // owner should not matter for the purposes of comouting position's margin
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    isLM: true,
+                    currentTick: currentTick,
+                    termStartTimestamp: termStartTimestamp,
+                    termEndTimestamp: termEndTimestamp,
+                    liquidity: liquidity,
+                    fixedTokenBalance: fixedTokenBalance,
+                    variableTokenBalance: variableTokenBalance,
+                    variableFactor: variableFactor,
+                    rateOracleId: rateOracleId,
+                    historicalApy: historicalApy
+                })
+            );
     }
 
     function getTraderMarginRequirementTest(
@@ -79,90 +90,113 @@ contract MarginCalculatorTest is MarginCalculator {
         bool isLM,
         bytes32 rateOracleId,
         uint256 historicalApy
-    ) external view returns(uint256 margin) {
-
-        return getTraderMarginRequirement(TraderMarginRequirementParams({
-            fixedTokenBalance: fixedTokenBalance,
-            variableTokenBalance: variableTokenBalance,
-            termStartTimestamp: termStartTimestamp,
-            termEndTimestamp: termEndTimestamp,
-            isLM: isLM,
-            rateOracleId: rateOracleId,
-            historicalApy: historicalApy
-        }));
-        
+    ) external view returns (uint256 margin) {
+        return
+            getTraderMarginRequirement(
+                TraderMarginRequirementParams({
+                    fixedTokenBalance: fixedTokenBalance,
+                    variableTokenBalance: variableTokenBalance,
+                    termStartTimestamp: termStartTimestamp,
+                    termEndTimestamp: termEndTimestamp,
+                    isLM: isLM,
+                    rateOracleId: rateOracleId,
+                    historicalApy: historicalApy
+                })
+            );
     }
-    
-    
+
     function worstCaseVariableFactorAtMaturityTest(
         uint256 timeInSecondsFromStartToMaturity,
-        uint256 termEndTimestampScaled, 
-        uint256 currentTimestampScaled, 
+        uint256 termEndTimestampScaled,
+        uint256 currentTimestampScaled,
         bool isFT,
         bool isLM,
         bytes32 rateOracleId,
         uint256 historicalApy
-        ) external view returns(uint256 variableFactor) {
-
-            return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, rateOracleId, historicalApy);
-    }
-    
-
-    function getMarginCalculatorParametersTest(bytes32 rateOracleId) external view returns (
-        uint256 apyUpperMultiplier,
-        uint256 apyLowerMultiplier,
-        uint256 minDeltaLM,
-        uint256 minDeltaIM,
-        uint256 maxLeverage,
-        int256 sigmaSquared,
-        int256 alpha,
-        int256 beta,
-        int256 xiUpper,
-        int256 xiLower) {
-
-            MarginCalculatorParameters memory marginCalculatorParameters = getMarginCalculatorParameters[rateOracleId];
-
-            apyUpperMultiplier = marginCalculatorParameters.apyUpperMultiplier;
-            apyLowerMultiplier = marginCalculatorParameters.apyLowerMultiplier;
-            minDeltaLM = marginCalculatorParameters.minDeltaLM;
-            minDeltaIM = marginCalculatorParameters.minDeltaIM;
-            maxLeverage = marginCalculatorParameters.maxLeverage;
-            sigmaSquared = marginCalculatorParameters.sigmaSquared;
-            alpha = marginCalculatorParameters.alpha;
-            beta = marginCalculatorParameters.beta;
-            xiUpper = marginCalculatorParameters.xiUpper;
-            xiLower = marginCalculatorParameters.xiLower;
-
+    ) external view returns (uint256 variableFactor) {
+        return
+            worstCaseVariableFactorAtMaturity(
+                timeInSecondsFromStartToMaturity,
+                termEndTimestampScaled,
+                currentTimestampScaled,
+                isFT,
+                isLM,
+                rateOracleId,
+                historicalApy
+            );
     }
 
+    function getMarginCalculatorParametersTest(bytes32 rateOracleId)
+        external
+        view
+        returns (
+            uint256 apyUpperMultiplier,
+            uint256 apyLowerMultiplier,
+            uint256 minDeltaLM,
+            uint256 minDeltaIM,
+            uint256 maxLeverage,
+            int256 sigmaSquared,
+            int256 alpha,
+            int256 beta,
+            int256 xiUpper,
+            int256 xiLower
+        )
+    {
+        MarginCalculatorParameters
+            memory marginCalculatorParameters = getMarginCalculatorParameters[
+                rateOracleId
+            ];
+
+        apyUpperMultiplier = marginCalculatorParameters.apyUpperMultiplier;
+        apyLowerMultiplier = marginCalculatorParameters.apyLowerMultiplier;
+        minDeltaLM = marginCalculatorParameters.minDeltaLM;
+        minDeltaIM = marginCalculatorParameters.minDeltaIM;
+        maxLeverage = marginCalculatorParameters.maxLeverage;
+        sigmaSquared = marginCalculatorParameters.sigmaSquared;
+        alpha = marginCalculatorParameters.alpha;
+        beta = marginCalculatorParameters.beta;
+        xiUpper = marginCalculatorParameters.xiUpper;
+        xiLower = marginCalculatorParameters.xiLower;
+    }
 
     function getMinimumMarginRequirementTest(
-            int256 fixedTokenBalance, 
-            int256 variableTokenBalance,
-            uint256 termStartTimestamp,
-            uint256 termEndTimestamp,
-            bool isLM,
-            bytes32 rateOracleId,
-            uint256 historicalApy
-        ) external view returns(uint256 margin) {
-
-        return getMinimumMarginRequirement(IMarginCalculator.TraderMarginRequirementParams({
-            fixedTokenBalance: fixedTokenBalance,
-            variableTokenBalance: variableTokenBalance,
-            termStartTimestamp: termStartTimestamp,
-            termEndTimestamp: termEndTimestamp,
-            isLM: isLM,
-            rateOracleId: rateOracleId,
-            historicalApy: historicalApy
-        }));
-
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp,
+        bool isLM,
+        bytes32 rateOracleId,
+        uint256 historicalApy
+    ) external view returns (uint256 margin) {
+        return
+            getMinimumMarginRequirement(
+                IMarginCalculator.TraderMarginRequirementParams({
+                    fixedTokenBalance: fixedTokenBalance,
+                    variableTokenBalance: variableTokenBalance,
+                    termStartTimestamp: termStartTimestamp,
+                    termEndTimestamp: termEndTimestamp,
+                    isLM: isLM,
+                    rateOracleId: rateOracleId,
+                    historicalApy: historicalApy
+                })
+            );
     }
 
-
-    function computeApyBoundTest(bytes32 rateOracleId, uint256 termEndTimestampScaled, uint256 currentTimestampScaled, uint256 historicalApy, bool isUpper) external view returns (uint256 apyBound) {
-        
-        return computeApyBound(rateOracleId, termEndTimestampScaled, currentTimestampScaled, historicalApy, isUpper);
-    
+    function computeApyBoundTest(
+        bytes32 rateOracleId,
+        uint256 termEndTimestampScaled,
+        uint256 currentTimestampScaled,
+        uint256 historicalApy,
+        bool isUpper
+    ) external view returns (uint256 apyBound) {
+        return
+            computeApyBound(
+                rateOracleId,
+                termEndTimestampScaled,
+                currentTimestampScaled,
+                historicalApy,
+                isUpper
+            );
     }
 
     function setMarginCalculatorParametersTest(
@@ -177,30 +211,29 @@ contract MarginCalculatorTest is MarginCalculator {
         int256 beta,
         int256 xiUpper,
         int256 xiLower
-        ) external {
-
-            setMarginCalculatorParameters(MarginCalculatorParameters(
-              apyUpperMultiplier,
-              apyLowerMultiplier,
-              minDeltaLM,
-              minDeltaIM,
-              maxLeverage,
-              sigmaSquared,
-              alpha,
-              beta,
-              xiUpper,
-              xiLower
+    ) external {
+        setMarginCalculatorParameters(
+            MarginCalculatorParameters(
+                apyUpperMultiplier,
+                apyLowerMultiplier,
+                minDeltaLM,
+                minDeltaIM,
+                maxLeverage,
+                sigmaSquared,
+                alpha,
+                beta,
+                xiUpper,
+                xiLower
             ),
-            rateOracleId);
-        }
-
+            rateOracleId
+        );
+    }
 
     // function worstCaseVariableFactorAtMaturityTest(uint256 timeInSecondsFromStartToMaturity, uint256 timeInSecondsFromNowToMaturity, bool isFT, bool isLM, bytes32 rateOracleId, uint256 historicalApy) public view returns(uint256 variableFactor) {
     //     return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, rateOracleId, historicalApy);
     // }
 
-
-    // function getTraderMarginRequirementTest(int256 fixedTokenBalance, 
+    // function getTraderMarginRequirementTest(int256 fixedTokenBalance,
     //     int256 variableTokenBalance, uint256 termStartTimestamp, uint256 termEndTimestamp, bool isLM) public view returns(uint256 margin) {
 
     //     IMarginCalculator.TraderMarginRequirementParams memory params;
@@ -213,5 +246,4 @@ contract MarginCalculatorTest is MarginCalculator {
     //     return getTraderMarginRequirement(params);
 
     // }
-
 }

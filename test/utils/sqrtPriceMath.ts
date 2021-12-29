@@ -1,6 +1,6 @@
 // uniswap
 
-import { BigNumber, constants } from "ethers";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { SqrtPriceMathTest } from "../../typechain/SqrtPriceMathTest";

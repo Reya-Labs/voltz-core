@@ -5,111 +5,93 @@ import {TestVAMM} from "./TestVAMM.sol";
 import {TestMarginEngine} from "./TestMarginEngine.sol";
 
 contract TestDeployer is IDeployer {
+    struct AMMParameters {
+        address factory;
+        address underlyingToken;
+        bytes32 rateOracleId;
+        uint256 termStartTimestamp;
+        uint256 termEndTimestamp;
+    }
 
-  struct AMMParameters {
-    address factory;
-    address underlyingToken;
-    bytes32 rateOracleId;
-    uint256 termStartTimestamp;
-    uint256 termEndTimestamp;
-  }
+    struct MarginEngineAndVAMMParameters {
+        address ammAddress;
+    }
 
-  struct MarginEngineAndVAMMParameters {
-    address ammAddress;
-  }
+    event VAMMDeployed(address vammAddress);
+    event AMMDeployed(address ammAddress);
+    event MarginEngineDeployed(address marginEngineAddress);
 
-  event VAMMDeployed(address vammAddress);
-  event AMMDeployed(address ammAddress);
-  event MarginEngineDeployed(address marginEngineAddress);
+    AMMParameters public override ammParameters;
+    MarginEngineAndVAMMParameters public override marginEngineParameters;
+    MarginEngineAndVAMMParameters public override vammParameters;
 
-  AMMParameters public override ammParameters;
-  MarginEngineAndVAMMParameters public override marginEngineParameters;
-  MarginEngineAndVAMMParameters public override vammParameters;
+    function deployVAMM(
+        // address factoryAddress,
+        address ammAddress
+    ) external returns (address vamm) {
+        vammParameters = MarginEngineAndVAMMParameters({
+            ammAddress: ammAddress
+        });
 
-  function deployVAMM(
-    // address factoryAddress,
-    address ammAddress
-  ) external returns (address vamm) {
-      
-    vammParameters = MarginEngineAndVAMMParameters({
-      ammAddress: ammAddress
-    });
+        vamm = address(new TestVAMM{salt: keccak256(abi.encode(ammAddress))}());
 
-    vamm = address(
-      new TestVAMM{
-        salt: keccak256(
-          abi.encode(
-            ammAddress
-          )
-        )
-      }()
-    );
+        emit VAMMDeployed(vamm);
 
-    emit VAMMDeployed(vamm);
-    
-    delete vammParameters;
-  
-  }
+        delete vammParameters;
+    }
 
-  function deployMarginEngine(
-    // address factoryAddress,
-    address ammAddress
-  ) external returns (address marginEngine) {
-      
-    marginEngineParameters = MarginEngineAndVAMMParameters({
-      ammAddress: ammAddress
-    });
+    function deployMarginEngine(
+        // address factoryAddress,
+        address ammAddress
+    ) external returns (address marginEngine) {
+        marginEngineParameters = MarginEngineAndVAMMParameters({
+            ammAddress: ammAddress
+        });
 
-    marginEngine = address(
-      new TestMarginEngine{
-        salt: keccak256(
-          // think don't need tickSpacing here
-          abi.encode(
-            ammAddress
-          )
-        )
-      }()
-    );
+        marginEngine = address(
+            new TestMarginEngine{
+                salt: keccak256(
+                    // think don't need tickSpacing here
+                    abi.encode(ammAddress)
+                )
+            }()
+        );
 
-    emit MarginEngineDeployed(marginEngine);
-    
-    delete marginEngineParameters;
-  
-  }
+        emit MarginEngineDeployed(marginEngine);
 
-  function deployAMM(
-    address factory,
-    address underlyingToken,
-    bytes32 rateOracleId,
-    uint256 termStartTimestamp,
-    uint256 termEndTimestamp
-  ) external returns (address amm) {
+        delete marginEngineParameters;
+    }
 
-    ammParameters = AMMParameters({
-      factory: factory,
-      underlyingToken: underlyingToken,
-      rateOracleId: rateOracleId,
-      termStartTimestamp: termStartTimestamp,
-      termEndTimestamp: termEndTimestamp
-    });
+    function deployAMM(
+        address factory,
+        address underlyingToken,
+        bytes32 rateOracleId,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp
+    ) external returns (address amm) {
+        ammParameters = AMMParameters({
+            factory: factory,
+            underlyingToken: underlyingToken,
+            rateOracleId: rateOracleId,
+            termStartTimestamp: termStartTimestamp,
+            termEndTimestamp: termEndTimestamp
+        });
 
-    amm = address(
-      new TestAMM{
-        salt: keccak256(
-          abi.encode(
-            rateOracleId,
-            underlyingToken, // redundunt since the rateOracleId incorporates the underlying token?
-            termStartTimestamp,
-            termEndTimestamp
-          )
-        )
-      }()
-    );
+        amm = address(
+            new TestAMM{
+                salt: keccak256(
+                    abi.encode(
+                        rateOracleId,
+                        underlyingToken, // redundunt since the rateOracleId incorporates the underlying token?
+                        termStartTimestamp,
+                        termEndTimestamp
+                    )
+                )
+            }()
+        );
 
-    emit AMMDeployed(amm);
+        emit AMMDeployed(amm);
 
-    delete ammParameters;
-  }
-
-
+        delete ammParameters;
+    }
 }

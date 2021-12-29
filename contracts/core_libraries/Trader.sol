@@ -19,7 +19,7 @@ library Trader {
         self.margin = self.margin + marginDelta;
     }
 
-    function settleTrader(Info storage self) internal  {
+    function settleTrader(Info storage self) internal {
         self.isSettled = true;
     }
 
@@ -30,9 +30,11 @@ library Trader {
     ) internal {
         Info memory _self = self;
 
-        int256 fixedTokenBalance = _self.fixedTokenBalance + fixedTokenBalanceDelta;
+        int256 fixedTokenBalance = _self.fixedTokenBalance +
+            fixedTokenBalanceDelta;
 
-        int256 variableTokenBalance = _self.variableTokenBalance + variableTokenBalanceDelta;
+        int256 variableTokenBalance = _self.variableTokenBalance +
+            variableTokenBalanceDelta;
 
         self.fixedTokenBalance = fixedTokenBalance;
         self.variableTokenBalance = variableTokenBalance;

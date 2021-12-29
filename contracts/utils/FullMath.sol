@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+// solhint-disable no-inline-assembly
+
 pragma solidity ^0.8.0;
 
 /// @title Contains 512-bit math functions
@@ -34,7 +36,7 @@ library FullMath {
 
             // Handle non-overflow cases, 256 by 256 division
             if (prod1 == 0) {
-                require(denominator > 0);
+                require(denominator > 0, "Division by zero");
                 assembly {
                     result := div(prod0, denominator)
                 }
@@ -43,7 +45,7 @@ library FullMath {
 
             // Make sure the result is less than 2**256.
             // Also prevents denominator == 0
-            require(denominator > prod1);
+            require(denominator > prod1, "overflow");
 
             ///////////////////////////////////////////////
             // 512 by 256 division.
@@ -123,7 +125,7 @@ library FullMath {
     ) internal pure returns (uint256 result) {
         result = mulDiv(a, b, denominator);
         if (mulmod(a, b, denominator) > 0) {
-            require(result < type(uint256).max);
+            require(result < type(uint256).max, "overflow");
             result++;
         }
     }

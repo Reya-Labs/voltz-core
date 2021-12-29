@@ -1,4 +1,4 @@
-import { waffle, network } from "hardhat";
+import { network } from "hardhat";
 import { assert } from "chai";
 import { MockProvider } from "ethereum-waffle";
 import { BigNumber } from "ethers";
@@ -57,7 +57,7 @@ export async function mineAllPendingTransactions() {
       "eth_getBlockByNumber",
       ["pending", false]
     );
-    if (pendingBlock.transactions.length == 0) break;
+    if (pendingBlock.transactions.length === 0) break;
     await mineBlock();
   }
 }

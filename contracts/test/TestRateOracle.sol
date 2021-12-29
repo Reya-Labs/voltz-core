@@ -7,7 +7,6 @@ import "../utils/WayRayMath.sol";
 import "hardhat/console.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 
-
 contract TestRateOracle is AaveRateOracle {
 
   // uint256 public time;

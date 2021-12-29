@@ -39,11 +39,16 @@ contract MarginCalculator is IMarginCalculator{
     // /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
     // mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
 
-      // todo: add override
-    address immutable factory;
+    /// @dev Must be the Factory owner
+    error NotFactoryOwner();
+
+    // todo: add override
+    address public immutable factory;
 
     modifier onlyFactoryOwner() {
-        require(msg.sender == IFactory(factory).owner());
+        if (msg.sender != IFactory(factory).owner()) {
+            revert NotFactoryOwner();
+        }
         _;
     }
 
@@ -392,7 +397,7 @@ contract MarginCalculator is IMarginCalculator{
         if (params.currentTick < params.tickLower) {
 
             if (params.variableTokenBalance > 0) {
-                revert(); // this should not be possible
+                revert("variable balance > 0"); // this should not be possible
             } else if (params.variableTokenBalance < 0) {
                 // means the trader deposited on the other side of the tick range
                 // the margin just covers the current balances of the position
@@ -436,7 +441,7 @@ contract MarginCalculator is IMarginCalculator{
         } else {
 
             if (params.variableTokenBalance < 0) {
-                revert(); // this should not be possible
+                revert("variable balance < 0"); // this should not be possible
             } else if (params.variableTokenBalance > 0) {
                 // means the trader deposited on the other side of the tick rang
                 // the margin just covers the current balances of the position

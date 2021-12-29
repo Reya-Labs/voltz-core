@@ -35,6 +35,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     using Position for Position.Info;
     using Trader for Trader.Info;
 
+    /// @dev Must be the Factory owner
+    error NotFactoryOwner();
 
     /// @dev liquidatorReward is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
     /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
@@ -107,7 +109,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     }
 
     modifier onlyFactoryOwner() {
-        require(msg.sender == IFactory(factory).owner());
+        if (msg.sender != IFactory(factory).owner()) {
+            revert NotFactoryOwner();
+        }
         _;
     }
 
@@ -178,7 +182,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     }
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override whenNotPaused onlyAfterMaturity {
+    function settlePosition(ModifyPositionParams memory params) external onlyAfterMaturity override whenNotPaused onlyAfterMaturity {
 
         if (params.owner != msg.sender) {
             revert OnlyOwnerCanUpdatePosition();
@@ -189,7 +193,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
 
         // @dev position can only be settled if it is burned
-        require(position.isBurned);
+        require(position.isBurned, "Position must be burned first");
 
         (, int24 tick, ) = amm.vamm().slot0();
         

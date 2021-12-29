@@ -61,12 +61,12 @@ By default, we install a pre-push hook to run `npm run check` before each push. 
 
 #### Linting
 
-* `npm run lint` - Lint the entire codebase.
-* `npm run lint:sol` - Lint Solidity files.
-* `npm run lint:ts` - Lint TypeScript files.
-* `npm run lint:sol:fix` - Fix Solidity files.
-* `npm run lint:ts:fix` - Fix TypeScript files.
-* `npm run lint:fix` - Fix linting errors across the entire codebase.
+- `npm run lint` - Lint the entire codebase.
+- `npm run lint:sol` - Lint Solidity files.
+- `npm run lint:ts` - Lint TypeScript files.
+- `npm run lint:sol:fix` - Fix Solidity files.
+- `npm run lint:ts:fix` - Fix TypeScript files.
+- `npm run lint:fix` - Fix linting errors across the entire codebase.
 
 #### Formatting
 
