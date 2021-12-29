@@ -95,4 +95,6 @@ abstract contract BaseRateOracle is IRateOracle {
 
     function getHistoricalApy() external override virtual returns (uint256 historicalApy);
 
+    function initialize() public override virtual;
+
 }

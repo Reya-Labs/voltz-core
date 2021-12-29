@@ -78,8 +78,6 @@ contract MarginCalculator is IMarginCalculator{
 
     }
 
-
-    
     /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
     /// @param termEndTimestampScaled termEndTimestampScaled
@@ -229,6 +227,10 @@ contract MarginCalculator is IMarginCalculator{
     function getTraderMarginRequirement(
         TraderMarginRequirementParams memory params
     ) public view override returns(uint256 margin) {
+
+        if (params.fixedTokenBalance >= 0 && params.variableTokenBalance >= 0) {
+            return 0;
+        }
     
         // bool isFT = params.variableTokenBalance < 0;
 
@@ -264,6 +266,8 @@ contract MarginCalculator is IMarginCalculator{
             // however, we are interested in the LP's who take the opposite side, so for them
             // amount0Up must be negative and amount1Up should be positive
 
+
+            // make sure the signs below are correct
             vars.amount0Up = SqrtPriceMath.getAmount0Delta(
                 TickMath.getSqrtRatioAtTick(params.currentTick),
                 TickMath.getSqrtRatioAtTick(params.tickUpper),
@@ -365,6 +369,10 @@ contract MarginCalculator is IMarginCalculator{
     /// @inheritdoc IMarginCalculator
     function getPositionMarginRequirement(PositionMarginRequirementParams memory params) public view override returns (uint256 margin) {
 
+        if (params.liquidity == 0) {
+            return 0;
+        }
+        
         PositionMarginRequirementsVars memory vars;
 
         vars.amount0 = SqrtPriceMath.getAmount0Delta(

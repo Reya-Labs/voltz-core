@@ -6,7 +6,7 @@ import "../rate_oracles/IRateOracle.sol";
 
 interface IAaveRateOracle is IRateOracle {
 
-    function aaveLendingPool() external returns (IAaveV2LendingPool);
+    function aaveLendingPool() external returns (address);
 
     function getReserveNormalizedIncome(address underlying) external view returns(uint256);
 

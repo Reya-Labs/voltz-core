@@ -8,22 +8,25 @@ import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WayRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
+import "hardhat/console.sol";
 
 
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     using SafeMath for uint256;
 
-    IAaveV2LendingPool public override aaveLendingPool;
+    // IAaveV2LendingPool public override aaveLendingPool;
+    address public override aaveLendingPool;
 
-    constructor(IAaveV2LendingPool _aaveLendingPool, bytes32 _rateOracleId, address underlying) BaseRateOracle(_rateOracleId, underlying) {
+    constructor(address _aaveLendingPool, bytes32 _rateOracleId, address underlying) BaseRateOracle(_rateOracleId, underlying) {
         aaveLendingPool = _aaveLendingPool;
+        // console.log("Test Contract: Aave lending pool address is: ", _aaveLendingPool);
     }
 
     /// @notice Get the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
     /// @return A return value of 1e27 (1 Ray) indicates no income since pool creation. A value of 2e27 indicates a 100% yield since pool creation. Etc.
-    function getReserveNormalizedIncome(address underlying) public view override(IAaveRateOracle) returns(uint256){
-        return aaveLendingPool.getReserveNormalizedIncome(underlying);
+    function getReserveNormalizedIncome(address underlying) public view override(IAaveRateOracle) returns(uint256) {
+        return IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying);
     }
 
     /// @notice Store the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
@@ -40,7 +43,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         
         Rate memory last = rates[index];
 
-        // early return if we've already written an Rate this block
+        // early return if we've already written a Rate in this block
         if (last.timestamp == blockTimestamp) return (index, cardinality);
 
         // if the conditions are right, we can bump the cardinality
@@ -52,7 +55,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         indexUpdated = (index + 1) % cardinalityUpdated;
         
-        uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
+        uint256 result = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying);
         require(result != 0, "Oracle only supports active Aave-V2 assets");
         
         // rates[underlying][blockTimestamp] = Rate(blockTimestamp, result);
@@ -210,7 +213,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 beforeOrAtRateValue,
         uint256 apyFromBeforeOrAtToAtOrAfter,
         uint256 timeDeltaBeforeOrAtToQueriedTime
-    ) private view returns (uint256 rateValue) {
+    ) private pure returns (uint256 rateValue) {
         uint256 timeInYears = FixedAndVariableMath.accrualFact(timeDeltaBeforeOrAtToQueriedTime);
         uint256 exp1 = PRBMathUD60x18.pow((10**18 + apyFromBeforeOrAtToAtOrAfter), timeInYears) - 10**18;
         rateValue = PRBMathUD60x18.mul(beforeOrAtRateValue, exp1);
@@ -279,6 +282,21 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 from = to - secondsAgo;
 
         return getApyFromTo(from, to);
+    }
+
+    function initialize() public override(BaseRateOracle, IRateOracle) {
+
+        oracleVars.rateCardinalityNext = 1;
+        oracleVars.rateCardinality = 1;
+
+        (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
+            oracleVars.rateIndex,
+            oracleVars.rateCardinality,
+            oracleVars.rateCardinalityNext
+        );
+
+        // oracleVars.rateIndex = 0, oracleVars.rateCardinality = 1
+        
     }
 
 

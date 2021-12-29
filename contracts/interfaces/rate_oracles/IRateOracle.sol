@@ -62,4 +62,6 @@ interface IRateOracle {
 
     function getHistoricalApy() external returns (uint256 historicalApy);
 
+    function initialize() external; 
+
 }
