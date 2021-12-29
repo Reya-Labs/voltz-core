@@ -106,6 +106,10 @@ contract TestRateOracle is AaveRateOracle {
 
   } 
 
+  function testComputeApyFromRate(uint256 rateFromTo, uint256 timeInYears) external pure returns (uint256) {
+    return computeApyFromRate(rateFromTo, timeInYears);
+  }
+
 
 
 

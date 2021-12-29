@@ -13,9 +13,15 @@ import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 const { provider } = waffle;
 
 
-// uint256 beforeOrAtRateValue,
-// uint256 apyFromBeforeOrAtToAtOrAfter,
-// uint256 timeDeltaBeforeOrAtToQueriedTime
+function computeApyFromRate(rateFromTo: BigNumber, timeInYears: BigNumber) {
+  
+  const exponent: BigNumber = div(toBn("1.0"), timeInYears);
+  const apyPlusOne: BigNumber = pow(add(toBn("1.0"), rateFromTo), exponent);
+  const apy: BigNumber = sub(apyPlusOne, toBn("1.0"));
+  return apy;
+
+}
+
 
 function interpolateRateValue(beforeOrAtRateValue: BigNumber, apyFromBeforeOrAtToAtOrAfter: BigNumber, timeDeltaBeforeOrAtToQueriedTime: BigNumber) {
 
@@ -395,6 +401,25 @@ describe('Aave Rate Oracle', () => {
     })
 
   })
+
+
+  describe("#computeApyFromRate", async () => {
+    let testRateOracle: TestRateOracle;
+
+    beforeEach('deploy and initialize test oracle', async () => {
+      testRateOracle = await loadFixture(initializedOracleFixture);
+    })
+
+    it("correctly computes apy", async () => {
+      const realizedApy = await testRateOracle.testComputeApyFromRate(toBn("0.1"), toBn("0.5"));
+      const expectedApy = computeApyFromRate(toBn("0.1"), toBn("0.5"));
+      expect(realizedApy).to.be.closeTo(expectedApy, 100);
+    })
+
+  })
+
+
+
 
 
 })
