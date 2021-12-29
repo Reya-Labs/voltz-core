@@ -178,7 +178,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     }
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(ModifyPositionParams memory params) onlyAfterMaturity external override whenNotPaused onlyAfterMaturity {
+    function settlePosition(ModifyPositionParams memory params) external onlyAfterMaturity override whenNotPaused onlyAfterMaturity {
 
         if (params.owner != msg.sender) {
             revert OnlyOwnerCanUpdatePosition();

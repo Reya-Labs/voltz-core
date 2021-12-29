@@ -164,17 +164,17 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality
     ) private view returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
-        uint256 l = (index + 1) % cardinality; // oldest observation
-        uint256 r = l + cardinality - 1; // newest observation
+        uint256 lhs = (index + 1) % cardinality; // oldest observation
+        uint256 rhs = lhs + cardinality - 1; // newest observation
         uint256 i;
 
         while (true) {
-            i = (l + r) / 2;
+            i = (lhs + rhs) / 2;
             beforeOrAt = rates[i % cardinality];
 
             // we've landed on an uninitialized tick, keep searching higher (more recently)
             if (beforeOrAt.timestamp == 0) {
-                l = i + 1;
+                lhs = i + 1;
                 continue;
             }
 
@@ -185,8 +185,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             // check if we've found the answer!
             if (targetAtOrAfter && target <= atOrAfter.timestamp) break;
 
-            if (!targetAtOrAfter) r = i - 1;
-            else l = i + 1;
+            if (!targetAtOrAfter) rhs = i - 1;
+            else lhs = i + 1;
         }
     }
 

@@ -5,6 +5,7 @@ import "../MarginCalculator.sol";
 import "../interfaces/IMarginCalculator.sol";
 
 contract TestMarginCalculator is MarginCalculator {
+    // solhint-disable-next-line no-empty-blocks
     constructor(address _factory) MarginCalculator(_factory) {}
 
     // view functions

@@ -48,7 +48,7 @@ contract VAMM is IVAMM, Pausable {
   uint256 public constant SECONDS_IN_DAY_WAD = 86400 * 10**18;
 
   // todo: add override
-  address immutable factory;
+  address public immutable factory;
 
   // todo: add override
   bool public unlocked;
