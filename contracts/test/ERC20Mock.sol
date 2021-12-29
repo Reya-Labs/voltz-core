@@ -639,8 +639,7 @@ contract ERC20 is Context, IERC20 {
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 amount
-    // solhint-disable-next-line no-empty-blocks
+        uint256 amount // solhint-disable-next-line no-empty-blocks
     ) internal virtual {}
 }
 
