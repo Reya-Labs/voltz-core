@@ -12,7 +12,7 @@ import { getMaxListeners } from "process";
 
 // UniswapV3 part, is it needed?
 const MaxUint128 = BigNumber.from(2).pow(128).sub(1);
-//const { constants } = ether
+// const { constants } = ether
 
 describe("Tick", () => {
   let tickTest: TickTest;

@@ -7,7 +7,7 @@ import "../core_libraries/Trader.sol";
 // contract TraderTest {
 //     Trader.Info public traders;
 //     using Trader for Trader.Info;
-    
+
 //     function updateMargin(int256 marginDelta) public {
 //         traders.updateMargin(marginDelta);
 //     }
@@ -28,8 +28,14 @@ contract TraderTest {
         trader.updateMargin(marginDelta);
     }
 
-    function updateBalances(int256 fixedTokenBalanceDelta, int256 variableTokenBalanceDelta) public {
-        trader.updateBalances(fixedTokenBalanceDelta, variableTokenBalanceDelta);
+    function updateBalances(
+        int256 fixedTokenBalanceDelta,
+        int256 variableTokenBalanceDelta
+    ) public {
+        trader.updateBalances(
+            fixedTokenBalanceDelta,
+            variableTokenBalanceDelta
+        );
     }
 
     // function setTrader(address traderAddress, int256 margin, int256 fixedTokenBalance, int256 variableTokenBalance, bool isSettled) external {
@@ -48,13 +54,13 @@ contract TraderTest {
     //     return trader.get(owner);
     // }
 
-//     function updateMargin(address traderAddress, int256 marginDelta) public {
-//         Trader.Info storage trader = traders.get(traderAddress);
-//         trader.updateMargin(marginDelta);
-//     }
+    //     function updateMargin(address traderAddress, int256 marginDelta) public {
+    //         Trader.Info storage trader = traders.get(traderAddress);
+    //         trader.updateMargin(marginDelta);
+    //     }
 
-//     function updateBalances(address traderAddress, int256 fixedTokenBalanceDelta, int256 variableTokenBalanceDelta) public {
-//         Trader.Info storage trader = traders.get(traderAddress);
-//         trader.updateBalances(fixedTokenBalanceDelta, variableTokenBalanceDelta);
-//     }
+    //     function updateBalances(address traderAddress, int256 fixedTokenBalanceDelta, int256 variableTokenBalanceDelta) public {
+    //         Trader.Info storage trader = traders.get(traderAddress);
+    //         trader.updateBalances(fixedTokenBalanceDelta, variableTokenBalanceDelta);
+    //     }
 }

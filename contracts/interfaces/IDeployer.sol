@@ -7,16 +7,13 @@ pragma solidity ^0.8.0;
 /// @dev This is used to avoid having constructor arguments in the pool contract, which results in the init code hash
 /// of the pool being constant allowing the CREATE2 address of the pool to be cheaply computed on-chain
 interface IDeployer {
-    
-    function vammParameters() external view returns(
-        address ammAddress
-    );
+    function vammParameters() external view returns (address ammAddress);
 
-    function marginEngineParameters() external view returns(
-        address ammAddress
-    );
-    
-    
+    function marginEngineParameters()
+        external
+        view
+        returns (address ammAddress);
+
     /// @notice Get the parameters to be used in constructing the pool, set transiently during pool creation.
     /// @dev Called by the pool constructor to fetch the parameters of the pool
     /// Returns factory The factory address
@@ -34,4 +31,4 @@ interface IDeployer {
             uint256 termStartTimestamp,
             uint256 termEndTimestamp
         );
-} 
+}

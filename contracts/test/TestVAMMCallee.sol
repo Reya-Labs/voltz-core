@@ -18,12 +18,7 @@ contract TestVAMMCallee {
         int24 tickUpper,
         uint128 amount
     ) external {
-        IVAMM(vamm).mint(
-            recipient,
-            tickLower,
-            tickUpper,
-            amount
-        );
+        IVAMM(vamm).mint(recipient, tickLower, tickUpper, amount);
     }
 
     function swapExact0For1(

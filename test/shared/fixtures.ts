@@ -33,8 +33,11 @@ interface FactoryFixture {
   factory: Factory;
 }
 
-async function marginCalculatorFixture(fixedAndVariableMath: any, time: any, factory: any) {
-
+async function marginCalculatorFixture(
+  fixedAndVariableMath: any,
+  time: any,
+  factory: any
+) {
   // const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
   // const { time } = await timeFixture();
 
@@ -48,7 +51,9 @@ async function marginCalculatorFixture(fixedAndVariableMath: any, time: any, fac
     }
   );
 
-  const testMarginCalculator = await TestMarginCalculatorFactory.deploy(factory);
+  const testMarginCalculator = await TestMarginCalculatorFactory.deploy(
+    factory
+  );
 
   return { testMarginCalculator };
 }
@@ -71,19 +76,26 @@ export async function mockAaveLendingPoolFixture() {
   return { aaveLendingPool };
 }
 
-export async function rateOracleFixture(fixedAndVariableMathAddress: string, timeAddress: string, tokenAddress: string, aaveLendingPoolAddress: string) {
-
+export async function rateOracleFixture(
+  fixedAndVariableMathAddress: string,
+  timeAddress: string,
+  tokenAddress: string,
+  aaveLendingPoolAddress: string
+) {
   const TestRateOracleFactory = await ethers.getContractFactory(
     "TestRateOracle",
     {
       libraries: {
         FixedAndVariableMath: fixedAndVariableMathAddress,
-        Time: timeAddress
+        Time: timeAddress,
       },
     }
   );
 
-  console.log("Test TS: Aave lending pool address is: ", aaveLendingPoolAddress);
+  console.log(
+    "Test TS: Aave lending pool address is: ",
+    aaveLendingPoolAddress
+  );
 
   const testRateOracle = await TestRateOracleFactory.deploy(
     aaveLendingPoolAddress,
@@ -164,10 +176,9 @@ export async function fixedAndVariableMathFixture(time: any) {
 }
 
 async function factoryFixture(time: any): Promise<FactoryFixture> {
-
   const factoryFactory = await ethers.getContractFactory("Factory", {
     libraries: {
-      Time: time.address
+      Time: time.address,
     },
   });
   const factory = (await factoryFactory.deploy()) as Factory;
@@ -183,7 +194,6 @@ interface MarginEngineFixture extends FactoryFixture {
   marginEngineCalleeTest: TestMarginEngineCallee;
   createMarginEngine(ammAddress: string): Promise<TestMarginEngine>;
 }
-
 
 // one fixture for everything amm/vamm/marginEngine
 // the fixture needs to properly set everything
@@ -235,8 +245,17 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { unwindTraderUnwindPosition } =
     await unwindTraderUnwinPositionFixture();
   const { vammHelpers } = await vammHelpersFixture(fixedAndVariableMath);
-  const { testRateOracle } = await rateOracleFixture(fixedAndVariableMath.address, time.address, token.address, aaveLendingPool.address);
-  const { testMarginCalculator } = await marginCalculatorFixture(fixedAndVariableMath, time, factory);
+  const { testRateOracle } = await rateOracleFixture(
+    fixedAndVariableMath.address,
+    time.address,
+    token.address,
+    aaveLendingPool.address
+  );
+  const { testMarginCalculator } = await marginCalculatorFixture(
+    fixedAndVariableMath,
+    time,
+    factory
+  );
 
   // set the rate for termStartTimestamp
   // await testRateOracle.setTermStartTimestampRate(

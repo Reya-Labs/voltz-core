@@ -13,16 +13,16 @@
 // const TEST_ADDRESS: [string] = [
 //     '0x1000000000000000000000000000000000000000',
 //   ]
-  
+
 //   const createFixtureLoader = waffle.createFixtureLoader
 
 // describe('Factory', () => {
 //     let wallet: Wallet, other: Wallet
-    
+
 //     let factory: Factory
 //     // let poolBytecode: string
 
-//     // makes the following into 
+//     // makes the following into
 //     let vAMMBytecode: string
 //     let MarginEngineBytecode: string
 //     let RateOracleAddressBytecode: string
@@ -38,7 +38,7 @@
 
 //         loadFixture = createFixtureLoader([wallet, other])
 //     })
-     
+
 //     before('load vAMM bytecode', async () => {
 //         vAMMBytecode = (await ethers.getContractFactory('VAMM')).bytecode
 //     })
@@ -79,7 +79,7 @@
 //     //         .to.emit(factory, 'vAMM created')
 //     //         .withArgs(address)
 //     //     await expect(factory.createVAMM('TEST_ADDRESS'))
-        
+
 //     // }
 
 //     // describe('#setCalculator', async () => {
@@ -93,14 +93,14 @@
 //     //     it('updates insurance fund address', async () => {
 //     //         await factory.setInsuranceFund(other.address)
 //     //         expect(await factory.insuranceFund()).to.eq(other.address)
-//     //     })     
+//     //     })
 //     // })
 
 //     // describe('#createVAMM', async () => {
 //     //     it('succeeds in creation', async () => {
 //     //         const VAMM = factory.createVAMM(other.address)
 //     //         expect(VAMM).to.eq(TEST_ADDRESS)
-//     //     })    
+//     //     })
 //     // })
 
 //     // describe('#createMarginEngine', async () => {

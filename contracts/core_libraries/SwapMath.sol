@@ -11,31 +11,26 @@ import "../core_libraries/FixedAndVariableMath.sol";
 /// @title Computes the result of a swap within ticks
 /// @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
 library SwapMath {
-    
-    function computeFeeAmount(uint256 notional, uint256 timeToMaturityInSeconds, uint256 feePercentage) internal pure returns(uint256 feeAmount) {
-        
-        uint256 timeInYears = FixedAndVariableMath.accrualFact(timeToMaturityInSeconds);
-        
-        feeAmount = PRBMathUD60x18Typed.mul(
+    function computeFeeAmount(
+        uint256 notional,
+        uint256 timeToMaturityInSeconds,
+        uint256 feePercentage
+    ) internal pure returns (uint256 feeAmount) {
+        uint256 timeInYears = FixedAndVariableMath.accrualFact(
+            timeToMaturityInSeconds
+        );
 
-                PRBMath.UD60x18({
-                    value: notional
-                }),
-
+        feeAmount = PRBMathUD60x18Typed
+            .mul(
+                PRBMath.UD60x18({value: notional}),
                 PRBMathUD60x18Typed.mul(
-                    
-                    PRBMath.UD60x18({
-                        value: feePercentage
-                    }),
-
-                    PRBMath.UD60x18({
-                        value: timeInYears
-                    })
+                    PRBMath.UD60x18({value: feePercentage}),
+                    PRBMath.UD60x18({value: timeInYears})
                 )
-
-            ).value;
+            )
+            .value;
     }
-    
+
     /// @notice Computes the result of swapping some amount in, or amount out, given the parameters of the swap
     /// @dev The fee, plus the amount in, will never exceed the amount remaining if the swap's `amountSpecified` is positive
     /// @param sqrtRatioCurrentX96 The current sqrt price of the pool
@@ -136,7 +131,6 @@ library SwapMath {
                 );
             // variable taker
             notional = amountOut;
-
         } else {
             amountIn = max && exactIn
                 ? amountIn
@@ -164,7 +158,10 @@ library SwapMath {
             amountOut = uint256(-amountRemaining);
         }
 
-        feeAmount = computeFeeAmount(notional, timeToMaturityInSeconds, feePercentage);
-    
+        feeAmount = computeFeeAmount(
+            notional,
+            timeToMaturityInSeconds,
+            feePercentage
+        );
     }
 }

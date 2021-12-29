@@ -11,4 +11,6 @@ import "./IVAMM.sol";
 /// @title The interface for a AMM
 /// @notice A Voltz amm
 /// @dev The pool interface is broken up into many smaller pieces
-interface IAMM is IAMMImmutables, IAMMState, IAMMOwnerActions, IAMMActions {}
+interface IAMM is IAMMImmutables, IAMMState, IAMMOwnerActions, IAMMActions {
+
+}

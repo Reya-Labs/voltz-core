@@ -4,8 +4,7 @@ import {
   deployWithName,
   getContractFromDeployment,
 } from "../helpers/deployHelpers";
-import { BigNumber as BN } from "ethers";
-import { utils } from "ethers";
+import { BigNumber as BN, utils } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
 
@@ -23,6 +22,6 @@ export async function step2(deployer: any, hre: any, deployment: Deployment) {
     deployment,
     "Factory"
   );
-  const ammAddress: string = deployment.contracts["AMM1"].address;
+  const ammAddress: string = deployment.contracts.AMM1.address;
   await factory.createMarginEngine(ammAddress);
 }

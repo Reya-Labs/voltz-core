@@ -5,7 +5,6 @@ import "./IAMM.sol";
 import "./IPositionStructs.sol";
 
 interface IVAMM is IPositionStructs {
-
     /// There are not enough funds available for the requested operation
     error NotEnoughFunds(uint256 requested, uint256 available);
 
@@ -52,7 +51,7 @@ interface IVAMM is IPositionStructs {
     );
 
     event Initialize(uint160 sqrtPriceX96, int24 tick);
-    
+
     struct SwapParams {
         address recipient;
         bool isFT; // equivalent to !zeroForOne
@@ -67,19 +66,17 @@ interface IVAMM is IPositionStructs {
         uint128 liquidityStart;
         // the timestamp of the current block
         uint256 blockTimestamp;
-
         // the protocol fee for the underlying token (is this a percentage amount?)
         uint256 feeProtocol;
     }
 
-    
     struct SwapLocalVars {
         int256 amount0Int;
         int256 amount1Int;
         uint256 amount0;
         uint256 amount1;
     }
-    
+
     // the top level state of the swap, the results of which are recorded in storage at the end
     struct SwapState {
         // the amount remaining to be swapped in/out of the input/output asset
@@ -90,14 +87,10 @@ interface IVAMM is IPositionStructs {
         uint160 sqrtPriceX96;
         // the tick associated with the current price
         int24 tick;
-
         int256 fixedTokenGrowthGlobal;
-
         int256 variableTokenGrowthGlobal;
-
         // the current liquidity in range
         uint128 liquidity;
-
         uint256 feeGrowthGlobal;
         // amount of input token paid as protocol fee
         uint256 protocolFee;
@@ -118,7 +111,6 @@ interface IVAMM is IPositionStructs {
         uint256 amountOut;
         // how much fee is being paid in (underlying token)
         uint256 feeAmount;
-
     }
 
     struct InitiateIRSParams {
@@ -128,19 +120,15 @@ interface IVAMM is IPositionStructs {
 
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
-
         int256 margin;
         bool settled;
     }
-    
+
     struct UpdatePositionVars {
-        
         bool flippedLower;
         bool flippedUpper;
-
         int256 fixedTokenGrowthInside;
         int256 variableTokenGrowthInside;
-
         uint256 feeGrowthInside;
     }
 
@@ -161,17 +149,16 @@ interface IVAMM is IPositionStructs {
     /// @return The max amount of liquidity per tick
     function maxLiquidityPerTick() external view returns (uint128);
 
-
     // state variables
 
     function slot0()
-    external
-    view
-    returns (
-      uint160 sqrtPriceX96,
-      int24 tick,
-      uint256 feeProtocol
-    );
+        external
+        view
+        returns (
+            uint160 sqrtPriceX96,
+            int24 tick,
+            uint256 feeProtocol
+        );
 
     function fixedTokenGrowthGlobal() external view returns (int256);
 
@@ -207,34 +194,42 @@ interface IVAMM is IPositionStructs {
         uint128 amount
     ) external;
 
-    function swap(
-        SwapParams memory params
-    ) external returns (int256 _fixedTokenDelta, int256 _variableTokenDelta);
+    function swap(SwapParams memory params)
+        external
+        returns (int256 _fixedTokenDelta, int256 _variableTokenDelta);
 
-  /// @notice Look up information about a specific tick in the amm
-  /// @param tick The tick to look up
-  /// @return liquidityGross the total amount of position liquidity that uses the amm either as tick lower or
-  /// tick upper,
-  /// liquidityNet how much liquidity changes when the amm price crosses the tick,
-  /// feeGrowthOutsideX128 the fee growth on the other side of the tick from the current tick in underlying Token
-  /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
-  /// compute snapshots.
-  function ticks(int24 tick)
-    external
-    view
-    returns (
-      uint128 liquidityGross,
-      int128 liquidityNet,
-      int256 fixedTokenGrowthOutside,
-      int256 variableTokenGrowthOutside,
-      uint256 feeGrowthOutside,
-      bool initialized
-    );
+    /// @notice Look up information about a specific tick in the amm
+    /// @param tick The tick to look up
+    /// @return liquidityGross the total amount of position liquidity that uses the amm either as tick lower or
+    /// tick upper,
+    /// liquidityNet how much liquidity changes when the amm price crosses the tick,
+    /// feeGrowthOutsideX128 the fee growth on the other side of the tick from the current tick in underlying Token
+    /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative and are used to
+    /// compute snapshots.
+    function ticks(int24 tick)
+        external
+        view
+        returns (
+            uint128 liquidityGross,
+            int128 liquidityNet,
+            int256 fixedTokenGrowthOutside,
+            int256 variableTokenGrowthOutside,
+            uint256 feeGrowthOutside,
+            bool initialized
+        );
 
-  /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
-  function tickBitmap(int16 wordPosition) external view returns (uint256);
+    /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
+    function tickBitmap(int16 wordPosition) external view returns (uint256);
 
-  function computePositionFixedAndVariableGrowthInside(int24 tickLower, int24 tickUpper, int24 currentTick)
-     external view returns(int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside);
-
+    function computePositionFixedAndVariableGrowthInside(
+        int24 tickLower,
+        int24 tickUpper,
+        int24 currentTick
+    )
+        external
+        view
+        returns (
+            int256 fixedTokenGrowthInside,
+            int256 variableTokenGrowthInside
+        );
 }
