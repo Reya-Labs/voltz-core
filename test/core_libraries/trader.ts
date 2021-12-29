@@ -1,16 +1,12 @@
-import { ethers, waffle } from "hardhat";
-import { BigNumber } from "ethers";
+import { ethers } from "hardhat";
 import { TraderTest } from "../../typechain/TraderTest";
-import { expect } from "../shared/expect";
-import { toBn } from "evm-bn";
-import { div, sub, mul, add } from "../shared/functions";
 
 describe("Trader", () => {
   let traderTest: TraderTest;
 
   beforeEach("debloy TraderTest", async () => {
     const traderFactory = await ethers.getContractFactory("Trader");
-    const trader = await traderFactory.deploy();
+    const _trader = await traderFactory.deploy();
 
     const traderTestFactory = await ethers.getContractFactory("TraderTest");
     traderTest = (await traderTestFactory.deploy()) as TraderTest;

@@ -1,13 +1,12 @@
 // hybrid of uniswap + new
-import { BigNumber, constants } from "ethers";
+import { BigNumber } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
 import { PositionTest } from "../../typechain/PositionTest";
-import { encodeSqrtRatioX96, expandTo18Decimals } from "../shared/utilities";
 import { toBn } from "../helpers/toBn";
-import { div, sub, mul, add } from "../shared/functions";
+import { sub, mul } from "../shared/functions";
 
-const { provider, loadFixture } = waffle;
+const { loadFixture } = waffle;
 
 interface PostitionTestFixture {
   positionTest: PositionTest;

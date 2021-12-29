@@ -7,7 +7,6 @@ import { FixedAndVariableMathTest } from "../../typechain/FixedAndVariableMathTe
 import { fixedFactor } from "../shared/utilities";
 import { toBn } from "evm-bn";
 import { div, sub, mul, add } from "../shared/functions";
-import { consts } from "../helpers/constants";
 
 // const SECONDS_IN_YEAR = toBn("31536000");
 const BLOCK_TIMESTAMP = 1632249308;

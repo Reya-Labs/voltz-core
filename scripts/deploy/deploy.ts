@@ -1,10 +1,12 @@
+/* eslint-disable no-process-exit */
+
 import hre from "hardhat";
 import fs from "fs";
 import path from "path";
 
 import { devConstants, mainnetConstants } from "../helpers/constants";
 
-import { deploy, Deployment, getDeployment } from "../helpers/deployHelpers";
+import { Deployment, getDeployment } from "../helpers/deployHelpers";
 import { step0 } from "./step0";
 import { step1 } from "./step1";
 import { step2 } from "./step2";
@@ -22,7 +24,7 @@ async function main() {
   console.log(`\n\tNetwork = ${network}, deployer = ${deployer.address}`);
   console.log(`\tDeployment's filePath = ${filePath}`);
 
-  if (network == "mainnet") {
+  if (network === "mainnet") {
     consts = mainnetConstants;
   } else {
     consts = devConstants;
@@ -42,7 +44,7 @@ async function main() {
     };
   }
 
-  if (process.env.RESET == "true") {
+  if (process.env.RESET === "true") {
     console.log(`\tRESETing, deploying a brand new instance of contracts`);
     deployment.step = -1;
   }

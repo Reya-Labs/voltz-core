@@ -1,6 +1,6 @@
 // template taken from https://github.com/pendle-finance/pendle-core/blob/master/scripts/helpers/deployHelpers.ts
 
-import { BigNumber, BigNumber as BN, utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 import fs from "fs";
 
 export interface DeployedContract {
@@ -17,12 +17,12 @@ export interface Deployment {
 }
 
 export function validAddress(variableName: string, address?: string): boolean {
-  if (address == null || address == undefined) {
+  if (address == null || address === undefined) {
     console.log(`\t\t[ERROR] ${variableName} is empty !`);
     return false;
   }
 
-  if (address.length != 42) {
+  if (address.length !== 42) {
     console.log(
       `\t\t[ERROR] ${variableName} is an invalid address = ${address}`
     );
@@ -61,7 +61,7 @@ export async function deployWithName(
   const contractFactory = await hre.ethers.getContractFactory(contractType);
   const contractObject = await contractFactory.deploy(...args);
   await contractObject.deployed();
-  if (contractName != "") {
+  if (contractName !== "") {
     deployment.contracts[contractName] = {
       address: contractObject.address,
       tx: contractObject.deployTransaction.hash,
@@ -82,6 +82,7 @@ export async function getContractFromDeployment(
   const contractAddress = deployment.contracts[contractName].address;
   if (!validAddress(contractName, contractAddress)) {
     console.log(`[Error] invalid contract address for ${contractName}`);
+    // eslint-disable-next-line no-process-exit
     process.exit(1);
   }
   return await contractFactory.attach(contractAddress);

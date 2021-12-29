@@ -1,11 +1,9 @@
 import {
   Deployment,
-  validAddress,
-  deployWithName,
   getContractFromDeployment,
   getCreate2Address,
 } from "../helpers/deployHelpers";
-import { BigNumber as BN, utils } from "ethers";
+import { utils } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
 
@@ -37,8 +35,7 @@ export async function step1(
   const termStartTimestampBN = toBn((termStartTimestamp + 1).toString());
   const termEndTimestampBN = toBn(termEndTimestamp.toString());
 
-  let ammBytecode: string;
-  ammBytecode = (await ethers.getContractFactory("AMM")).bytecode;
+  const ammBytecode = (await ethers.getContractFactory("AMM")).bytecode;
   // const poolAddress = getCreate2Address(factory.address, TEST_ADDRESSES, FeeAmount.MEDIUM, poolBytecode)
   const ammAddress = getCreate2Address(
     factory.address,

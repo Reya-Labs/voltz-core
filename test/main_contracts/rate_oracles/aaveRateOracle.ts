@@ -1,12 +1,8 @@
-import { BigNumber, Wallet } from "ethers";
-import { ethers, network, waffle } from "hardhat";
+import { Wallet } from "ethers";
+import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
-import { fixedFactor } from "../../shared/utilities";
 import { toBn } from "evm-bn";
-import { div, sub, mul, add } from "../../shared/functions";
-import { consts } from "../../helpers/constants";
 import { TestRateOracle } from "../../../typechain/TestRateOracle";
-import { MockAaveLendingPool } from "../../../typechain/MockAaveLendingPool";
 import {
   rateOracleFixture,
   timeFixture,
@@ -125,8 +121,7 @@ describe("Aave Rate Oracle", () => {
     it("single element array gets overwritten", async () => {
       const currentTimestamp = await getCurrentTimestamp(provider);
       await testRateOracle.update();
-      const [rateIndex, rateCardinality, rateCardinalityNext] =
-        await testRateOracle.getOracleVars();
+      const [rateIndex] = await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(0);
       const [rateTimestamp, rateValue] = await testRateOracle.getRate(0);
       console.log(currentTimestamp);

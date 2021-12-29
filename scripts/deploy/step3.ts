@@ -1,17 +1,9 @@
 import {
   Deployment,
-  validAddress,
-  deployWithName,
   getContractFromDeployment,
 } from "../helpers/deployHelpers";
-import { BigNumber as BN, utils } from "ethers";
-import { ethers, waffle } from "hardhat";
-import { toBn } from "evm-bn";
 
 import { Factory } from "../../typechain";
-import { getCurrentTimestamp } from "../../test/helpers/time";
-
-const { provider } = waffle;
 
 export async function step3(deployer: any, hre: any, deployment: Deployment) {
   // deploy the vAMM
