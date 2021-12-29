@@ -1,5 +1,4 @@
 import { Factory } from "../../typechain/Factory";
-import { Fixture } from "ethereum-waffle";
 import { TestVAMM } from "../../typechain/TestVAMM";
 import { TestAMM } from "../../typechain/TestAMM";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
@@ -8,7 +7,7 @@ import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 // import { TestERC20 } from '../../typechain/TestERC20'
 import { TestDeployer } from "../../typechain/TestDeployer";
 import { BigNumber } from "@ethersproject/bignumber";
-import { FixedAndVariableMath, MockAaveLendingPool } from "../../typechain";
+import { FixedAndVariableMath } from "../../typechain";
 import { consts } from "../helpers/constants";
 import { ethers, waffle } from "hardhat";
 import { getCurrentTimestamp } from "../helpers/time";
@@ -26,7 +25,6 @@ import {
   RATE_ORACLE_ID,
 } from "./utilities";
 import { toBn } from "evm-bn";
-import { aave_lending_pool_addr } from "./constants";
 const { provider } = waffle;
 
 interface FactoryFixture {
@@ -185,13 +183,17 @@ async function factoryFixture(time: any): Promise<FactoryFixture> {
   return { factory };
 }
 
+// eslint-disable-next-line no-unused-vars
 interface VAMMFixture extends FactoryFixture {
   vammCalleeTest: TestVAMMCallee;
+  // eslint-disable-next-line no-unused-vars
   createVAMM(ammAddress: string): Promise<TestVAMM>;
 }
 
+// eslint-disable-next-line no-unused-vars
 interface MarginEngineFixture extends FactoryFixture {
   marginEngineCalleeTest: TestMarginEngineCallee;
+  // eslint-disable-next-line no-unused-vars
   createMarginEngine(ammAddress: string): Promise<TestMarginEngine>;
 }
 

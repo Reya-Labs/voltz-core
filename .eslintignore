@@ -3,6 +3,7 @@ artifacts
 cache
 coverage
 old_test
-hardhat.config.js
+hardhat.config.ts
 package-lock.json
 package.json
+tsconfig.json
