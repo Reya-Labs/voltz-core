@@ -31,13 +31,14 @@ abstract contract BaseRateOracle is IRateOracle {
     }
 
     // todo: can only be done by the factory owner
-    function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external override {
-
-        minSecondsSinceLastUpdate =  _minSecondsSinceLastUpdate; // in wei
+    function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate)
+        external
+        override
+    {
+        minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate; // in wei
 
         // emit
     }
-
 
     constructor(bytes32 _rateOracleId, address _underlying) {
         rateOracleId = _rateOracleId;

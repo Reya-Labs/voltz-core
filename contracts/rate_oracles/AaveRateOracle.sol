@@ -58,15 +58,18 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         Rate memory last = rates[index];
 
         uint256 blockTimestamp = Time.blockTimestampScaled();
-        
+
         if (last.timestamp != 0) {
             uint256 timeDeltaSinceLastUpdate = blockTimestamp - last.timestamp;
             // console.log("Test Contract: timeDeltaSinceLastUpdate", timeDeltaSinceLastUpdate);
             // console.log("Test Contract: last.timestamp", last.timestamp);
             // console.log("Test Contract: blockTimestamp", blockTimestamp);
-            require(timeDeltaSinceLastUpdate > minSecondsSinceLastUpdate, "throttle updates");
+            require(
+                timeDeltaSinceLastUpdate > minSecondsSinceLastUpdate,
+                "throttle updates"
+            );
         }
-        
+
         // early return if we've already written a Rate in this block
         if (last.timestamp == blockTimestamp) return (index, cardinality);
 
