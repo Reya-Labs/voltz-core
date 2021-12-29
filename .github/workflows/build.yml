@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: Check formatting
-        run: npm run format-check
+        run: npm run lint
 
       - name: Compile contracts
         run: npm run compile
