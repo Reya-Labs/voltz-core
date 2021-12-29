@@ -70,9 +70,12 @@ By default, we install a pre-push hook to run `npm run check` before each push. 
 
 #### Formatting
 
-* `npm run format` - Format the entire codebase.
-* `npm run format:sol` - Format Solidity files.
-* `npm run format:ts` - Format TypeScript files.
+- `npm run format` - Format the entire codebase.
+- `npm run format:sol` - Format Solidity files.
+- `npm run format:ts` - Format TypeScript files.
+- `npm run format:sol:check` - Check the formatting of all Solidity files.
+- `npm run format:ts:check` - Check the formatting of all TypeScript files.
+- `npm run format:check` - Check the formatting of all files.
 
 ## Contracts
 
