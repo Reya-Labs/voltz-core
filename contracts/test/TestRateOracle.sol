@@ -17,6 +17,9 @@ contract TestRateOracle is AaveRateOracle {
   uint256 public latestObservedRateValue;
   uint256 public latestRateFromTo;
 
+  uint256 public latestBeforeOrAtRateValue;
+  uint256 public latestAfterOrAtRateValue;
+
   // todo: rateOracleId should be a function of underlyingProtocol and underlyingToken?
   constructor(address aaveLendingPool, bytes32 rateOracleId, address underlying) AaveRateOracle(aaveLendingPool, rateOracleId, underlying) {
     
@@ -88,9 +91,23 @@ contract TestRateOracle is AaveRateOracle {
 
   }
 
-  function testBinarySearch() external view returns (uint256 beforeOrAtRateValue, uint256 afterOrAtRateValue) {
-    (Rate memory beforeOrAt, Rate memory atOrAfter) = 
+  function testBinarySearch(uint256 target) external view returns (uint256 beforeOrAtRateValue, uint256 afterOrAtRateValue) {
+    (Rate memory beforeOrAt, Rate memory atOrAfter) = binarySearch(target, oracleVars.rateIndex, oracleVars.rateCardinality);
+    beforeOrAtRateValue = beforeOrAt.rateValue;
+    afterOrAtRateValue = atOrAfter.rateValue;
   }
+
+
+  function testGetSurroundingRates(uint256 target) external {
+
+    (Rate memory beforeOrAt, Rate memory atOrAfter) = getSurroundingRates(target, oracleVars.rateIndex, oracleVars.rateCardinality, oracleVars.rateCardinalityNext);
+
+    latestBeforeOrAtRateValue = beforeOrAt.rateValue;
+    latestAfterOrAtRateValue = atOrAfter.rateValue;
+
+  } 
+
+
 
 
 }

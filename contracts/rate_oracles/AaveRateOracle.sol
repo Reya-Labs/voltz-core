@@ -179,7 +179,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) private returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
+    ) internal returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
         
         // optimistically set before to the newest rate
         beforeOrAt = rates[index];
@@ -189,8 +189,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
                 // if the newest observation eqauls target, we are in the same block, so we can ignore atOrAfter
                 return (beforeOrAt, atOrAfter);
             } else {
-                // otherwise, we need to transform
-                // return (beforeOrAt, transform(beforeOrAt, target, logApy));
                 (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(index, cardinality, cardinalityNext);
                 atOrAfter = rates[oracleVars.rateIndex];
                 return (beforeOrAt, atOrAfter);

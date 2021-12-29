@@ -251,20 +251,139 @@ describe('Aave Rate Oracle', () => {
   })
 
 
-  // describe("#binarySearch", async () => {
-  //   let testRateOracle: TestRateOracle;
+  describe("#binarySearch", async () => {
+    let testRateOracle: TestRateOracle;
+    let aaveLendingPoolContract: Contract;
+    let underlyingTokenAddress: string;
 
-  //   beforeEach('deploy and initialize test oracle', async () => {
-  //     testRateOracle = await loadFixture(initializedOracleFixture);
-  //   })
+    beforeEach('deploy and initialize test oracle', async () => {
+      testRateOracle = await loadFixture(initializedOracleFixture);
 
-  //   it("binary search works as expected", async () => {
+      const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
+      underlyingTokenAddress = await testRateOracle.underlying();
+      const aaveLendingPoolAbi = [
+        "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public"
+      ]
+      aaveLendingPoolContract = new Contract(aaveLendingPoolAddress, aaveLendingPoolAbi, provider).connect(wallet);
+    })
 
-  //   })
+    it("binary search works as expected", async () => {
+      await testRateOracle.testGrow(4);
+
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      const beforeOrAtTimestamp = await getCurrentTimestamp(provider) + 1;
+      await testRateOracle.update();
+
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      // set new liquidity index value
+      await aaveLendingPoolContract.setReserveNormalizedIncome(underlyingTokenAddress, toBn("1.1"));
+      const afterOrAtTimestamp = await getCurrentTimestamp(provider) + 1;
+      await testRateOracle.update();
+
+      const targetTimestamp = div(add(toBn(beforeOrAtTimestamp.toString()), toBn(afterOrAtTimestamp.toString())), toBn("2.0"));
+
+      const [beforeOrAtRateValue, afterOrAtRateValue] = await testRateOracle.testBinarySearch(targetTimestamp);
+
+      expect(beforeOrAtRateValue).to.eq(toBn("1.0"));
+      expect(afterOrAtRateValue).to.eq(toBn("1.1"));
+
+    })
+
+    // other scenarios
+
+  })
 
 
+  describe("#getSurroundingRates", async () => {
+    let testRateOracle: TestRateOracle;
+    let aaveLendingPoolContract: Contract;
+    let underlyingTokenAddress: string;
 
-  // })
+    let beforeOrAtTimestamp: number;
+    let atOrAfterTimestamp: number;
+
+
+    beforeEach('deploy and initialize test oracle', async () => {
+      testRateOracle = await loadFixture(initializedOracleFixture);
+
+      const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
+      underlyingTokenAddress = await testRateOracle.underlying();
+      const aaveLendingPoolAbi = [
+        "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public"
+      ]
+      aaveLendingPoolContract = new Contract(aaveLendingPoolAddress, aaveLendingPoolAbi, provider).connect(wallet);
+
+      await testRateOracle.testGrow(6);
+
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      beforeOrAtTimestamp = await getCurrentTimestamp(provider) + 1;
+      await testRateOracle.update();
+
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      // set new liquidity index value
+      await aaveLendingPoolContract.setReserveNormalizedIncome(underlyingTokenAddress, toBn("1.1"));
+      atOrAfterTimestamp = await getCurrentTimestamp(provider) + 1;
+      await testRateOracle.update();
+    })
+
+    it("target is beforeOrAt", async () => {
+      
+      await testRateOracle.testGetSurroundingRates(toBn(beforeOrAtTimestamp.toString()));
+      
+      const realizedBeforeOrAtRateValue = await testRateOracle.latestBeforeOrAtRateValue();
+      const realizedAtOrAfterValue = await testRateOracle.latestAfterOrAtRateValue();
+      
+      console.log(realizedBeforeOrAtRateValue);
+      console.log(realizedAtOrAfterValue);
+
+      expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.0"));
+      expect(realizedAtOrAfterValue).to.eq(toBn("1.1"));
+
+    })
+
+    it("target is atOrAfter", async () => {
+      
+      await testRateOracle.testGetSurroundingRates(toBn(atOrAfterTimestamp.toString()));
+      
+      const realizedBeforeOrAtRateValue = await testRateOracle.latestBeforeOrAtRateValue();
+      const realizedAtOrAfterValue = await testRateOracle.latestAfterOrAtRateValue();
+      
+      console.log(realizedBeforeOrAtRateValue);
+      console.log(realizedAtOrAfterValue);
+
+      expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.1"));
+      expect(realizedAtOrAfterValue).to.eq(0);
+
+    })
+
+    it("target is in the middle", async () => {
+
+      const targetTimestamp = div(add(toBn(beforeOrAtTimestamp.toString()), toBn(atOrAfterTimestamp.toString())), toBn("2.0"));
+      
+      await testRateOracle.testGetSurroundingRates(targetTimestamp);
+      
+      const realizedBeforeOrAtRateValue = await testRateOracle.latestBeforeOrAtRateValue();
+      const realizedAtOrAfterValue = await testRateOracle.latestAfterOrAtRateValue();
+
+      // does binary search
+      
+      expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.0"));
+      expect(realizedAtOrAfterValue).to.eq(toBn("1.1"));
+
+    })
+
+    it("fails if target is too old", async () => {
+      
+      const targetTimestamp = toBn((beforeOrAtTimestamp-604800).toString()); // going back one week
+      
+      await expect(testRateOracle.testGetSurroundingRates(targetTimestamp)).to.be.reverted;
+
+    })
+
+  })
+
 
 
 
