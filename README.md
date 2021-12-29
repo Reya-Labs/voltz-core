@@ -32,6 +32,7 @@ We welcome and are extremely excited to support individuals and teams that wish 
 git clone https://github.com/voltzprotocol/voltz-core.git
 cd voltz-core
 npm install
+npx husky install
 ```
 
 ### Compile
