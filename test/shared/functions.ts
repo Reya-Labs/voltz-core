@@ -40,3 +40,9 @@ export function floor(x: EthersBigNumber): EthersBigNumber {
   const result: MathjsBigNumber = toMbn(x).floor();
   return toEbn(result);
 }
+
+
+export function pow(x: EthersBigNumber, y: EthersBigNumber): EthersBigNumber {
+  const result: MathjsBigNumber = toMbn(x).pow(toMbn(y));
+  return toEbn(result);
+}

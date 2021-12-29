@@ -78,5 +78,19 @@ contract TestRateOracle is AaveRateOracle {
     return latestRateFromTo;
   }
 
+  function testInterpolateRateValue(
+        uint256 beforeOrAtRateValue,
+        uint256 apyFromBeforeOrAtToAtOrAfter,
+        uint256 timeDeltaBeforeOrAtToQueriedTime
+  ) external pure returns (uint256) {
+
+    return interpolateRateValue(beforeOrAtRateValue, apyFromBeforeOrAtToAtOrAfter, timeDeltaBeforeOrAtToQueriedTime);
+
+  }
+
+  function testBinarySearch() external view returns (uint256 beforeOrAtRateValue, uint256 afterOrAtRateValue) {
+    (Rate memory beforeOrAt, Rate memory atOrAfter) = 
+  }
+
 
 }

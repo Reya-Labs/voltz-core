@@ -1,9 +1,9 @@
 import { BigNumber, Wallet, Contract} from "ethers";
 import { ethers, network, waffle } from "hardhat";
 import { expect } from "chai";
-import { fixedFactor } from "../../shared/utilities";
+import { accrualFact, fixedFactor } from "../../shared/utilities";
 import { toBn } from "evm-bn";
-import { div, sub, mul, add } from "../../shared/functions";
+import { div, sub, mul, add, pow } from "../../shared/functions";
 import { consts } from "../../helpers/constants";
 import { TestRateOracle } from '../../../typechain/TestRateOracle';
 import { MockAaveLendingPool } from '../../../typechain/MockAaveLendingPool';
@@ -11,6 +11,21 @@ import { rateOracleFixture, timeFixture, fixedAndVariableMathFixture, mockERC20F
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 
 const { provider } = waffle;
+
+
+// uint256 beforeOrAtRateValue,
+// uint256 apyFromBeforeOrAtToAtOrAfter,
+// uint256 timeDeltaBeforeOrAtToQueriedTime
+
+function interpolateRateValue(beforeOrAtRateValue: BigNumber, apyFromBeforeOrAtToAtOrAfter: BigNumber, timeDeltaBeforeOrAtToQueriedTime: BigNumber) {
+
+  const timeInYears = accrualFact(timeDeltaBeforeOrAtToQueriedTime);
+  const exp1 = sub(pow(add(toBn("1.0"), apyFromBeforeOrAtToAtOrAfter), timeInYears), toBn("1.0"));
+  const rateValue = mul(beforeOrAtRateValue, exp1)
+
+  return rateValue;
+
+}
 
 describe('Aave Rate Oracle', () => {
   let wallet: Wallet, other: Wallet
@@ -218,6 +233,38 @@ describe('Aave Rate Oracle', () => {
     })
 
   })
+
+
+  describe("#interpolateRateValue", async () => {
+    let testRateOracle: TestRateOracle;
+
+    beforeEach('deploy and initialize test oracle', async () => {
+      testRateOracle = await loadFixture(initializedOracleFixture);
+    })
+
+    it("correctly interpolates the rate value", async () => {
+      const realizedInterpolatedRateValue = await testRateOracle.testInterpolateRateValue(toBn("1.0"), toBn("0.1"), toBn("604800")); // one week
+      const expectedRateValue = interpolateRateValue(toBn("1.0"), toBn("0.1"), toBn("604800"))
+      expect(realizedInterpolatedRateValue).to.eq(expectedRateValue);
+    })    
+
+  })
+
+
+  // describe("#binarySearch", async () => {
+  //   let testRateOracle: TestRateOracle;
+
+  //   beforeEach('deploy and initialize test oracle', async () => {
+  //     testRateOracle = await loadFixture(initializedOracleFixture);
+  //   })
+
+  //   it("binary search works as expected", async () => {
+
+  //   })
+
+
+
+  // })
 
 
 

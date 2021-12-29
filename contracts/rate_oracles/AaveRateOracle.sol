@@ -137,7 +137,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 target,
         uint16 index,
         uint16 cardinality
-    ) private view returns (Rate memory beforeOrAt, Rate memory atOrAfter) { 
+    ) internal view returns (Rate memory beforeOrAt, Rate memory atOrAfter) { 
         uint256 l = (index + 1) % cardinality; // oldest observation
         uint256 r = l + cardinality - 1; // newest observation
         uint256 i;
@@ -217,7 +217,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 beforeOrAtRateValue,
         uint256 apyFromBeforeOrAtToAtOrAfter,
         uint256 timeDeltaBeforeOrAtToQueriedTime
-    ) private pure returns (uint256 rateValue) {
+    ) internal pure returns (uint256 rateValue) {
         uint256 timeInYears = FixedAndVariableMath.accrualFact(timeDeltaBeforeOrAtToQueriedTime);
         uint256 exp1 = PRBMathUD60x18.pow((10**18 + apyFromBeforeOrAtToAtOrAfter), timeInYears) - 10**18;
         rateValue = PRBMathUD60x18.mul(beforeOrAtRateValue, exp1);
