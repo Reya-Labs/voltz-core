@@ -12,4 +12,6 @@ import "./IVAMM.sol";
 /// @notice A Voltz amm
 /// @dev The pool interface is broken up into many smaller pieces
 // solhint-disable-next-line no-empty-blocks
-interface IAMM is IAMMImmutables, IAMMState, IAMMOwnerActions, IAMMActions { }
+interface IAMM is IAMMImmutables, IAMMState, IAMMOwnerActions, IAMMActions {
+
+}
