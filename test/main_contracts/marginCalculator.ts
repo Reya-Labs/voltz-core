@@ -500,149 +500,149 @@ describe("MarginCalculator", () => {
     });
   });
 
-  //   describe("getMinimumMarginRequirement (zeroLowerBound boolean is true)", async () => {
-  //     beforeEach("deploy calculator", async () => {
-  //       calculatorTest = await loadFixture(fixture);
-  //       await calculatorTest.setMarginCalculatorParametersTest(
-  //         RATE_ORACLE_ID,
-  //         APY_UPPER_MULTIPLIER,
-  //         APY_LOWER_MULTIPLIER,
-  //         MIN_DELTA_LM,
-  //         MIN_DELTA_IM,
-  //         MAX_LEVERAGE,
-  //         SIGMA_SQUARED,
-  //         ALPHA,
-  //         BETA,
-  //         XI_UPPER,
-  //         XI_LOWER
-  //       );
-  //     });
+  describe("getMinimumMarginRequirement (zeroLowerBound boolean is true)", async () => {
+    beforeEach("deploy calculator", async () => {
+      calculatorTest = await loadFixture(fixture);
+      await calculatorTest.setMarginCalculatorParametersTest(
+        RATE_ORACLE_ID,
+        APY_UPPER_MULTIPLIER,
+        APY_LOWER_MULTIPLIER,
+        MIN_DELTA_LM,
+        MIN_DELTA_IM,
+        MAX_LEVERAGE,
+        SIGMA_SQUARED,
+        ALPHA,
+        BETA,
+        XI_UPPER,
+        XI_LOWER
+      );
+    });
 
-  //     // passes
-  //     it("correctly calculates the minimum margin requirement: fixed taker, LM, FT", async () => {
-  //       const fixedTokenBalance: BigNumber = toBn("1000");
-  //       const variableTokenBalance: BigNumber = toBn("-3000");
+    // passes
+    it("correctly calculates the minimum margin requirement: fixed taker, LM, FT", async () => {
+      const fixedTokenBalance: BigNumber = toBn("1000");
+      const variableTokenBalance: BigNumber = toBn("-3000");
 
-  //       const termStartTimestamp: number = await getCurrentTimestamp(provider);
-  //       const termEndTimestamp: number =
-  //         termStartTimestamp + consts.ONE_DAY.toNumber();
+      const termStartTimestamp: number = await getCurrentTimestamp(provider);
+      const termEndTimestamp: number =
+        termStartTimestamp + consts.ONE_DAY.toNumber();
 
-  //       const termStartTimestampBN: BigNumber = toBn(
-  //         termStartTimestamp.toString()
-  //       );
-  //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+      const termStartTimestampBN: BigNumber = toBn(
+        termStartTimestamp.toString()
+      );
+      const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-  //       const isLM: boolean = true;
-  //       const historicalApy: BigNumber = toBn("0.02");
+      const isLM: boolean = true;
+      const historicalApy: BigNumber = toBn("0.02");
 
-  //       const expectedMinimumMarginRequirement: BigNumber =
-  //         getMinimumMarginRequirement(
-  //           fixedTokenBalance,
-  //           variableTokenBalance,
-  //           termStartTimestampBN,
-  //           termEndTimestampBN,
-  //           isLM,
-  //           historicalApy
-  //         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
-  //       const realisedMinimumMarginRequirement: BigNumber =
-  //         await calculatorTest.getMinimumMarginRequirementTest(
-  //           fixedTokenBalance,
-  //           variableTokenBalance,
-  //           termStartTimestampBN,
-  //           termEndTimestampBN,
-  //           isLM,
-  //           RATE_ORACLE_ID,
-  //           historicalApy
-  //         );
-  //       // expect(realisedMinimumMarginRequirement).to.eq(expectedMinimumMarginRequirement);
-  //       expect(realisedMinimumMarginRequirement).to.be.closeTo(
-  //         expectedMinimumMarginRequirement,
-  //         10000
-  //       );
-  //     });
+      const expectedMinimumMarginRequirement: BigNumber =
+        getMinimumMarginRequirement(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampBN,
+          termEndTimestampBN,
+          isLM,
+          historicalApy
+        ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
+      const realisedMinimumMarginRequirement: BigNumber =
+        await calculatorTest.getMinimumMarginRequirementTest(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampBN,
+          termEndTimestampBN,
+          isLM,
+          RATE_ORACLE_ID,
+          historicalApy
+        );
+      // expect(realisedMinimumMarginRequirement).to.eq(expectedMinimumMarginRequirement);
+      expect(realisedMinimumMarginRequirement).to.be.closeTo(
+        expectedMinimumMarginRequirement,
+        10000
+      );
+    });
 
-  //     // passes
-  //     it("correctly calculates the minimum margin requirement: fixed taker, LM, VT", async () => {
-  //       const fixedTokenBalance: BigNumber = toBn("-3000");
-  //       const variableTokenBalance: BigNumber = toBn("1000");
+    // passes
+    it("correctly calculates the minimum margin requirement: fixed taker, LM, VT", async () => {
+      const fixedTokenBalance: BigNumber = toBn("-3000");
+      const variableTokenBalance: BigNumber = toBn("1000");
 
-  //       const termStartTimestamp: number = await getCurrentTimestamp(provider);
-  //       const termEndTimestamp: number =
-  //         termStartTimestamp + consts.ONE_DAY.toNumber();
+      const termStartTimestamp: number = await getCurrentTimestamp(provider);
+      const termEndTimestamp: number =
+        termStartTimestamp + consts.ONE_DAY.toNumber();
 
-  //       const termStartTimestampBN: BigNumber = toBn(
-  //         termStartTimestamp.toString()
-  //       );
-  //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+      const termStartTimestampBN: BigNumber = toBn(
+        termStartTimestamp.toString()
+      );
+      const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-  //       const isLM: boolean = true;
-  //       const historicalApy: BigNumber = toBn("0.02");
+      const isLM: boolean = true;
+      const historicalApy: BigNumber = toBn("0.02");
 
-  //       const expectedMinimumMarginRequirement: BigNumber =
-  //         getMinimumMarginRequirement(
-  //           fixedTokenBalance,
-  //           variableTokenBalance,
-  //           termStartTimestampBN,
-  //           termEndTimestampBN,
-  //           isLM,
-  //           historicalApy
-  //         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
-  //       const realisedMinimumMarginRequirement: BigNumber =
-  //         await calculatorTest.getMinimumMarginRequirementTest(
-  //           fixedTokenBalance,
-  //           variableTokenBalance,
-  //           termStartTimestampBN,
-  //           termEndTimestampBN,
-  //           isLM,
-  //           RATE_ORACLE_ID,
-  //           historicalApy
-  //         );
-  //       expect(realisedMinimumMarginRequirement).to.eq(
-  //         expectedMinimumMarginRequirement
-  //       );
-  //     });
+      const expectedMinimumMarginRequirement: BigNumber =
+        getMinimumMarginRequirement(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampBN,
+          termEndTimestampBN,
+          isLM,
+          historicalApy
+        ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
+      const realisedMinimumMarginRequirement: BigNumber =
+        await calculatorTest.getMinimumMarginRequirementTest(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampBN,
+          termEndTimestampBN,
+          isLM,
+          RATE_ORACLE_ID,
+          historicalApy
+        );
+      expect(realisedMinimumMarginRequirement).to.eq(
+        expectedMinimumMarginRequirement
+      );
+    });
 
-  //     // passes
-  //     it("correctly calculates the minimum margin requirement: fixed taker, IM, VT", async () => {
-  //       const fixedTokenBalance: BigNumber = toBn("-3000");
-  //       const variableTokenBalance: BigNumber = toBn("1000");
+    // passes
+    it("correctly calculates the minimum margin requirement: fixed taker, IM, VT", async () => {
+      const fixedTokenBalance: BigNumber = toBn("-3000");
+      const variableTokenBalance: BigNumber = toBn("1000");
 
-  //       const termStartTimestamp: number = await getCurrentTimestamp(provider);
-  //       const termEndTimestamp: number =
-  //         termStartTimestamp + consts.ONE_DAY.toNumber();
+      const termStartTimestamp: number = await getCurrentTimestamp(provider);
+      const termEndTimestamp: number =
+        termStartTimestamp + consts.ONE_DAY.toNumber();
 
-  //       const termStartTimestampBN: BigNumber = toBn(
-  //         termStartTimestamp.toString()
-  //       );
-  //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+      const termStartTimestampBN: BigNumber = toBn(
+        termStartTimestamp.toString()
+      );
+      const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-  //       const isLM: boolean = false;
-  //       const historicalApy: BigNumber = toBn("0.02");
+      const isLM: boolean = false;
+      const historicalApy: BigNumber = toBn("0.02");
 
-  //       const expectedMinimumMarginRequirement: BigNumber =
-  //         getMinimumMarginRequirement(
-  //           fixedTokenBalance,
-  //           variableTokenBalance,
-  //           termStartTimestampBN,
-  //           termEndTimestampBN,
-  //           isLM,
-  //           historicalApy
-  //         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
-  //       const realisedMinimumMarginRequirement: BigNumber =
-  //         await calculatorTest.getMinimumMarginRequirementTest(
-  //           fixedTokenBalance,
-  //           variableTokenBalance,
-  //           termStartTimestampBN,
-  //           termEndTimestampBN,
-  //           isLM,
-  //           RATE_ORACLE_ID,
-  //           historicalApy
-  //         );
-  //       expect(realisedMinimumMarginRequirement).to.eq(
-  //         expectedMinimumMarginRequirement
-  //       );
-  //     });
-  //   });
+      const expectedMinimumMarginRequirement: BigNumber =
+        getMinimumMarginRequirement(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampBN,
+          termEndTimestampBN,
+          isLM,
+          historicalApy
+        ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
+      const realisedMinimumMarginRequirement: BigNumber =
+        await calculatorTest.getMinimumMarginRequirementTest(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampBN,
+          termEndTimestampBN,
+          isLM,
+          RATE_ORACLE_ID,
+          historicalApy
+        );
+      expect(realisedMinimumMarginRequirement).to.eq(
+        expectedMinimumMarginRequirement
+      );
+    });
+  });
 
   //   describe("#getApyBound", async () => {
   //     beforeEach("deploy calculator", async () => {
