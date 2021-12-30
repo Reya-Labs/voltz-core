@@ -82,209 +82,206 @@ async function calculateExpectedAmounts(
   return [amount1Up, amount0Down];
 }
 
-async function positionMarginBetweenTicksHelper(
-  tickLower: number,
-  tickUpper: number,
-  isLM: boolean,
-  currentTick: number,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  liquidity: BigNumber,
-  fixedTokenBalance: BigNumber,
-  variableTokenBalance: BigNumber,
-  variableFactor: BigNumber,
-  rateOracleId: string,
-  historicalApy: BigNumber,
-  blockTimestampScaled: BigNumber
-) {
-  // make sure that in here the variable factor is the accrued variable factor
-  // emphasise this in the docs
+// async function positionMarginBetweenTicksHelper(
+//   tickLower: number,
+//   tickUpper: number,
+//   isLM: boolean,
+//   currentTick: number,
+//   termStartTimestamp: BigNumber,
+//   termEndTimestamp: BigNumber,
+//   liquidity: BigNumber,
+//   fixedTokenBalance: BigNumber,
+//   variableTokenBalance: BigNumber,
+//   variableFactor: BigNumber,
+//   rateOracleId: string,
+//   historicalApy: BigNumber,
+//   blockTimestampScaled: BigNumber
+// ) {
+//   // make sure that in here the variable factor is the accrued variable factor
+//   // emphasise this in the docs
 
-  let sqrtRatioAtTickLower: BigNumber = MIN_SQRT_RATIO;
-  let sqrtRatioAtTickUpper: BigNumber = MAX_SQRT_RATIO;
-  let sqrtRatioAtTickCurrent: BigNumber = MAX_SQRT_RATIO;
+//   let sqrtRatioAtTickLower: BigNumber = MIN_SQRT_RATIO;
+//   let sqrtRatioAtTickUpper: BigNumber = MAX_SQRT_RATIO;
+//   let sqrtRatioAtTickCurrent: BigNumber = MAX_SQRT_RATIO;
 
-  if (currentTick == MIN_TICK) {
-    sqrtRatioAtTickCurrent = MIN_SQRT_RATIO;
-  }
+//   if (currentTick == MIN_TICK) {
+//     sqrtRatioAtTickCurrent = MIN_SQRT_RATIO;
+//   }
 
-  const sqrtPriceMathFactory = await ethers.getContractFactory(
-    "SqrtPriceMathTest"
-  );
-  const sqrtPriceMath = await sqrtPriceMathFactory.deploy();
+//   const sqrtPriceMathFactory = await ethers.getContractFactory(
+//     "SqrtPriceMathTest"
+//   );
+//   const sqrtPriceMath = await sqrtPriceMathFactory.deploy();
 
-  const amount0Up: BigNumber = await sqrtPriceMath.getAmount0Delta(
-    sqrtRatioAtTickCurrent,
-    sqrtRatioAtTickUpper,
-    liquidity,
-    true
-  );
+//   const amount0Up: BigNumber = await sqrtPriceMath.getAmount0Delta(
+//     sqrtRatioAtTickCurrent,
+//     sqrtRatioAtTickUpper,
+//     liquidity,
+//     true
+//   );
 
-  let amount1Up: BigNumber = await sqrtPriceMath.getAmount1Delta(
-    sqrtRatioAtTickCurrent,
-    sqrtRatioAtTickUpper,
-    liquidity,
-    true
-  );
+//   let amount1Up: BigNumber = await sqrtPriceMath.getAmount1Delta(
+//     sqrtRatioAtTickCurrent,
+//     sqrtRatioAtTickUpper,
+//     liquidity,
+//     true
+//   );
 
-  amount1Up = mul(amount1Up, toBn("-1.0"));
+//   amount1Up = mul(amount1Up, toBn("-1.0"));
 
-  const expectedVariableTokenBalanceAfterUp: BigNumber = add(
-    variableTokenBalance,
-    amount1Up
-  );
-  let fixedTokenBalanceAfterRebalancing: BigNumber = getFixedTokenBalance(
-    amount0Up,
-    amount1Up,
-    variableFactor,
-    termStartTimestamp,
-    termEndTimestamp
-  );
-  const expectedFixedTokenBalanceAfterUp: BigNumber = add(
-    fixedTokenBalance,
-    fixedTokenBalanceAfterRebalancing
-  );
-  const marginReqAfterUp: BigNumber = getTraderMarginRequirement(
-    expectedFixedTokenBalanceAfterUp,
-    expectedVariableTokenBalanceAfterUp,
-    termStartTimestamp,
-    termEndTimestamp,
-    isLM,
-    historicalApy,
-    blockTimestampScaled
-  );
+//   const expectedVariableTokenBalanceAfterUp: BigNumber = add(
+//     variableTokenBalance,
+//     amount1Up
+//   );
+//   let fixedTokenBalanceAfterRebalancing: BigNumber = getFixedTokenBalance(
+//     amount0Up,
+//     amount1Up,
+//     variableFactor,
+//     termStartTimestamp,
+//     termEndTimestamp
+//   );
+//   const expectedFixedTokenBalanceAfterUp: BigNumber = add(
+//     fixedTokenBalance,
+//     fixedTokenBalanceAfterRebalancing
+//   );
+//   const marginReqAfterUp: BigNumber = getTraderMarginRequirement(
+//     expectedFixedTokenBalanceAfterUp,
+//     expectedVariableTokenBalanceAfterUp,
+//     termStartTimestamp,
+//     termEndTimestamp,
+//     isLM,
+//     historicalApy,
+//     blockTimestampScaled
+//   );
 
-  // going down balanace delta
-  let amount0Down = await sqrtPriceMath.getAmount0Delta(
-    sqrtRatioAtTickLower,
-    sqrtRatioAtTickCurrent,
-    liquidity,
-    true
-  );
+//   // going down balanace delta
+//   let amount0Down = await sqrtPriceMath.getAmount0Delta(
+//     sqrtRatioAtTickLower,
+//     sqrtRatioAtTickCurrent,
+//     liquidity,
+//     true
+//   );
 
-  const amount1Down = await sqrtPriceMath.getAmount1Delta(
-    sqrtRatioAtTickLower,
-    sqrtRatioAtTickCurrent,
-    liquidity,
-    true
-  );
+//   const amount1Down = await sqrtPriceMath.getAmount1Delta(
+//     sqrtRatioAtTickLower,
+//     sqrtRatioAtTickCurrent,
+//     liquidity,
+//     true
+//   );
 
-  amount0Down = mul(amount0Down, toBn("-1.0"));
+//   amount0Down = mul(amount0Down, toBn("-1.0"));
 
-  const expectedVariableTokenBalanceAfterDown: BigNumber = add(
-    variableTokenBalance,
-    amount1Down
-  );
-  fixedTokenBalanceAfterRebalancing = getFixedTokenBalance(
-    amount0Down,
-    amount1Down,
-    variableFactor,
-    termStartTimestamp,
-    termEndTimestamp
-  );
-  const expectedFixedTokenBalanceAfterDown: BigNumber = add(
-    fixedTokenBalance,
-    fixedTokenBalanceAfterRebalancing
-  );
-  const marginReqAfterDown: BigNumber = getTraderMarginRequirement(
-    expectedFixedTokenBalanceAfterDown,
-    expectedVariableTokenBalanceAfterDown,
-    termStartTimestamp,
-    termEndTimestamp,
-    isLM,
-    historicalApy,
-    blockTimestampScaled
-  );
+//   const expectedVariableTokenBalanceAfterDown: BigNumber = add(
+//     variableTokenBalance,
+//     amount1Down
+//   );
+//   fixedTokenBalanceAfterRebalancing = getFixedTokenBalance(
+//     amount0Down,
+//     amount1Down,
+//     variableFactor,
+//     termStartTimestamp,
+//     termEndTimestamp
+//   );
+//   const expectedFixedTokenBalanceAfterDown: BigNumber = add(
+//     fixedTokenBalance,
+//     fixedTokenBalanceAfterRebalancing
+//   );
+//   const marginReqAfterDown: BigNumber = getTraderMarginRequirement(
+//     expectedFixedTokenBalanceAfterDown,
+//     expectedVariableTokenBalanceAfterDown,
+//     termStartTimestamp,
+//     termEndTimestamp,
+//     isLM,
+//     historicalApy,
+//     blockTimestampScaled
+//   );
 
-  let margin: BigNumber;
+//   let margin: BigNumber;
 
-  if (sub(marginReqAfterUp, marginReqAfterDown) > toBn("0")) {
-    margin = marginReqAfterUp;
-  } else {
-    margin = marginReqAfterDown;
-  }
+//   if (sub(marginReqAfterUp, marginReqAfterDown) > toBn("0")) {
+//     margin = marginReqAfterUp;
+//   } else {
+//     margin = marginReqAfterDown;
+//   }
 
-  return margin;
-}
+//   return margin;
+// }
 
-function getTraderMarginRequirement(
-  fixedTokenBalance: BigNumber,
-  variableTokenBalance: BigNumber,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  isLM: boolean,
-  historicalApy: BigNumber,
-  blockTimestampScaled: BigNumber
-) {
-  const isFT = false;
+// function getTraderMarginRequirement(
+//   fixedTokenBalance: BigNumber,
+//   variableTokenBalance: BigNumber,
+//   termStartTimestamp: BigNumber,
+//   termEndTimestamp: BigNumber,
+//   isLM: boolean,
+//   historicalApy: BigNumber,
+//   blockTimestampScaled: BigNumber
+// ) {
+//   const isFT = false;
 
-  const timeInSecondsFromStartToMaturity: BigNumber = sub(
-    termEndTimestamp,
-    termStartTimestamp
-  );
+//   const timeInSecondsFromStartToMaturity: BigNumber = sub(
+//     termEndTimestamp,
+//     termStartTimestamp
+//   );
 
-  const exp1 = mul(
-    fixedTokenBalance,
-    fixedFactor(
-      true,
-      termStartTimestamp,
-      termEndTimestamp,
-      blockTimestampScaled
-    )
-  );
+//   const exp1 = mul(
+//     fixedTokenBalance,
+//     fixedFactor(
+//       true,
+//       termStartTimestamp,
+//       termEndTimestamp,
+//       blockTimestampScaled
+//     )
+//   );
 
-  const exp2 = mul(
-    variableTokenBalance,
-    worstCaseVariableFactorAtMaturity(
-      timeInSecondsFromStartToMaturity,
-      blockTimestampScaled,
-      isFT,
-      isLM,
-      historicalApy
-    )
-  );
+//   const exp2 = mul(
+//     variableTokenBalance,
+//     worstCaseVariableFactorAtMaturity(
+//       timeInSecondsFromStartToMaturity,
+//       blockTimestampScaled,
+//       isFT,
+//       isLM,
+//       historicalApy
+//     )
+//   );
 
-  const modelMargin = add(exp1, exp2);
-  const minimumMargin = getMinimumMarginRequirement(
-    fixedTokenBalance,
-    variableTokenBalance,
-    termStartTimestamp,
-    termEndTimestamp,
-    isLM,
-    historicalApy
-  );
+//   const modelMargin = add(exp1, exp2);
+//   const minimumMargin = getMinimumMarginRequirement(
+//     fixedTokenBalance,
+//     variableTokenBalance,
+//     termStartTimestamp,
+//     termEndTimestamp,
+//     isLM,
+//     historicalApy
+//   );
 
-  let margin: BigNumber;
-  if (sub(modelMargin, minimumMargin) < toBn("0")) {
-    margin = minimumMargin;
-  } else {
-    margin = modelMargin;
-  }
+//   let margin: BigNumber;
+//   if (sub(modelMargin, minimumMargin) < toBn("0")) {
+//     margin = minimumMargin;
+//   } else {
+//     margin = modelMargin;
+//   }
 
-  return margin;
-}
+//   return margin;
+// }
 
 function worstCaseVariableFactorAtMaturity(
   timeInSecondsFromStartToMaturity: BigNumber,
-  currentTimeInSeconds: BigNumber,
+  termEndTimestampScaled: BigNumber,
+  currentTimestampScaled: BigNumber,
   isFT: boolean,
   isLM: boolean,
   historicalApy: BigNumber
 ): BigNumber {
+
   const timeInYearsFromStartUntilMaturity: BigNumber = accrualFact(
     timeInSecondsFromStartToMaturity
   );
 
-  const timeFactor = computeTimeFactor(
-    BETA,
-    timeInSecondsFromStartToMaturity,
-    currentTimeInSeconds
-  );
   let variableFactor: BigNumber;
   let apyBound: BigNumber;
 
   if (isFT) {
-    apyBound = computeApyBound(timeFactor, historicalApy, true);
+    apyBound = computeApyBound(termEndTimestampScaled, currentTimestampScaled, historicalApy, true);
     if (isLM) {
       variableFactor = mul(timeInYearsFromStartUntilMaturity, apyBound);
     } else {
@@ -293,8 +290,8 @@ function worstCaseVariableFactorAtMaturity(
         mul(apyBound, APY_UPPER_MULTIPLIER)
       );
     }
-  } else {
-    apyBound = computeApyBound(timeFactor, historicalApy, false);
+  } else {;
+    apyBound = computeApyBound(termEndTimestampScaled, currentTimestampScaled, historicalApy, false);
     if (isLM) {
       variableFactor = mul(timeInYearsFromStartUntilMaturity, apyBound);
     } else {
@@ -309,11 +306,13 @@ function worstCaseVariableFactorAtMaturity(
 }
 
 function computeApyBound(
-  timeFactor: BigNumber,
+  termEndTimestampScaled: BigNumber,
+  currentTimestampScaled: BigNumber,
   historicalApy: BigNumber,
   isUpper: boolean
 ) {
   const beta4 = mul(toBn("4.0"), BETA);
+  const timeFactor = computeTimeFactor(BETA, termEndTimestampScaled, currentTimestampScaled);
   const oneMinusTimeFactor: BigNumber = sub(toBn("1"), timeFactor);
   const k: BigNumber = div(ALPHA, SIGMA_SQUARED);
   const zeta: BigNumber = div(mul(SIGMA_SQUARED, oneMinusTimeFactor), beta4);
@@ -755,17 +754,12 @@ describe("MarginCalculator", () => {
 
       const currentTimestampScaled = toBn(currentTimestamp.toString());
 
-      const timeFactor = computeTimeFactor(
-        BETA,
-        termEndTimestampScaled,
-        currentTimestampScaled
-      );
-
       const historicalApy: BigNumber = toBn("0.02");
       const isUpper: boolean = true;
 
       const expected: BigNumber = computeApyBound(
-        timeFactor,
+        termEndTimestampScaled,
+        currentTimestampScaled,
         historicalApy,
         isUpper
       );
@@ -791,19 +785,12 @@ describe("MarginCalculator", () => {
 
       const currentTimestampScaled = toBn(currentTimestamp.toString());
 
-      const timeFactor = computeTimeFactor(
-        BETA,
-        termEndTimestampScaled,
-        currentTimestampScaled
-      );
-
-      console.log("The time factor is", timeFactor);
-
       const historicalApy: BigNumber = toBn("0.02");
       const isUpper: boolean = false;
 
       const expected: BigNumber = computeApyBound(
-        timeFactor,
+        termEndTimestampScaled,
+        currentTimestampScaled,
         historicalApy,
         isUpper
       );
@@ -878,8 +865,97 @@ describe("MarginCalculator", () => {
 
     it("correctly calculates the worst case variable factor at maturity FT, LM", async () => {
 
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp+604800).toString() // add a week
+      );
 
+      const currentTimestampScaled = toBn(currentTimestamp.toString());
+
+      const timeInSecondsFromStartToMaturityBN = toBn("1209600") // two weeks
+      const isFT = true;
+      const isLM = true;
+      const historicalApy = toBn("0.1");
+
+      const expected = worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturityBN, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, historicalApy)
+
+      const realized = await calculatorTest.worstCaseVariableFactorAtMaturityTest(timeInSecondsFromStartToMaturityBN, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, RATE_ORACLE_ID, historicalApy);
+
+      // expect(realized).to.eq(expected);
+      expect(realized).to.be.closeTo(expected, 100);
+
+    })
+
+    it("correctly calculates the worst case variable factor at maturity FT, IM", async () => {
+
+      const currentTimestamp = await getCurrentTimestamp(provider);
+
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp+604800).toString() // add a week
+      );
+
+      const currentTimestampScaled = toBn(currentTimestamp.toString());
+
+      const timeInSecondsFromStartToMaturityBN = toBn("1209600") // two weeks
+      const isFT = true;
+      const isLM = false;
+      const historicalApy = toBn("0.1");
+
+      const expected = worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturityBN, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, historicalApy)
+
+      const realized = await calculatorTest.worstCaseVariableFactorAtMaturityTest(timeInSecondsFromStartToMaturityBN, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, RATE_ORACLE_ID, historicalApy);
+
+      // expect(realized).to.eq(expected);
+      expect(realized).to.be.closeTo(expected, 100);
+
+    })
+
+    it("correctly calculates the worst case variable factor at maturity VT, LM", async () => {
+
+      const currentTimestamp = await getCurrentTimestamp(provider);
+
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp+604800).toString() // add a week
+      );
+
+      const currentTimestampScaled = toBn(currentTimestamp.toString());
+
+      const timeInSecondsFromStartToMaturityBN = toBn("1209600") // two weeks
+      const isFT = false;
+      const isLM = true;
+      const historicalApy = toBn("0.1");
+
+      const expected = worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturityBN, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, historicalApy)
+
+      const realized = await calculatorTest.worstCaseVariableFactorAtMaturityTest(timeInSecondsFromStartToMaturityBN, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, RATE_ORACLE_ID, historicalApy);
+
+      // expect(realized).to.eq(expected);
+      expect(realized).to.be.closeTo(expected, 100);
+
+    })
+
+    it("correctly calculates the worst case variable factor at maturity VT, IM", async () => {
+
+      const currentTimestamp = await getCurrentTimestamp(provider);
+
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp+604800).toString() // add a week
+      );
+
+      const currentTimestampScaled = toBn(currentTimestamp.toString());
+
+      const timeInSecondsFromStartToMaturityBN = toBn("1209600") // two weeks
+      const isFT = false;
+      const isLM = false;
+      const historicalApy = toBn("0.1");
+
+      const expected = worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturityBN, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, historicalApy)
+
+      const realized = await calculatorTest.worstCaseVariableFactorAtMaturityTest(timeInSecondsFromStartToMaturityBN, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, RATE_ORACLE_ID, historicalApy);
+
+      // expect(realized).to.eq(expected);
+      expect(realized).to.be.closeTo(expected, 100);
 
     })
 
