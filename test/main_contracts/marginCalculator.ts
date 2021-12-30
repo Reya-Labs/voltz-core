@@ -207,62 +207,64 @@ async function calculateExpectedAmounts(
 //   return margin;
 // }
 
-// function getTraderMarginRequirement(
-//   fixedTokenBalance: BigNumber,
-//   variableTokenBalance: BigNumber,
-//   termStartTimestamp: BigNumber,
-//   termEndTimestamp: BigNumber,
-//   isLM: boolean,
-//   historicalApy: BigNumber,
-//   blockTimestampScaled: BigNumber
-// ) {
-//   const isFT = false;
+function getTraderMarginRequirement(
+  fixedTokenBalance: BigNumber,
+  variableTokenBalance: BigNumber,
+  termStartTimestamp: BigNumber,
+  termEndTimestamp: BigNumber,
+  isLM: boolean,
+  historicalApy: BigNumber,
+  blockTimestampScaled: BigNumber
+) {
 
-//   const timeInSecondsFromStartToMaturity: BigNumber = sub(
-//     termEndTimestamp,
-//     termStartTimestamp
-//   );
+  if (fixedTokenBalance.gte(toBn("0")) && variableTokenBalance.gte(toBn("0"))) {
+    return toBn("0.0");
+  }
 
-//   const exp1 = mul(
-//     fixedTokenBalance,
-//     fixedFactor(
-//       true,
-//       termStartTimestamp,
-//       termEndTimestamp,
-//       blockTimestampScaled
-//     )
-//   );
+  let isFT = false;
+  if (fixedTokenBalance.gt(toBn("0"))) {
+    isFT = true;
+  }
 
-//   const exp2 = mul(
-//     variableTokenBalance,
-//     worstCaseVariableFactorAtMaturity(
-//       timeInSecondsFromStartToMaturity,
-//       blockTimestampScaled,
-//       isFT,
-//       isLM,
-//       historicalApy
-//     )
-//   );
+  const timeInSecondsFromStartToMaturity: BigNumber = sub(
+    termEndTimestamp,
+    termStartTimestamp
+  );
 
-//   const modelMargin = add(exp1, exp2);
-//   const minimumMargin = getMinimumMarginRequirement(
-//     fixedTokenBalance,
-//     variableTokenBalance,
-//     termStartTimestamp,
-//     termEndTimestamp,
-//     isLM,
-//     historicalApy
-//   );
+  const exp1 = mul(
+    fixedTokenBalance,
+    fixedFactor(
+      true,
+      termStartTimestamp,
+      termEndTimestamp,
+      blockTimestampScaled
+    )
+  );
 
-//   let margin: BigNumber;
-//   if (sub(modelMargin, minimumMargin) < toBn("0")) {
-//     margin = minimumMargin;
-//   } else {
-//     margin = modelMargin;
-//   }
+  const exp2 = mul(
+    variableTokenBalance,
+    worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, termEndTimestamp, blockTimestampScaled, isFT, isLM, historicalApy)
+  );
 
-//   return margin;
-// }
+  const modelMargin = add(exp1, exp2);
+  const minimumMargin = getMinimumMarginRequirement(
+    fixedTokenBalance,
+    variableTokenBalance,
+    termStartTimestamp,
+    termEndTimestamp,
+    isLM,
+    historicalApy
+  );
+
+  let margin: BigNumber;
+  if (sub(modelMargin, minimumMargin) < toBn("0")) {
+    margin = minimumMargin;
+  } else {
+    margin = modelMargin;
+  }
+
+  return margin;
+}
 
 function worstCaseVariableFactorAtMaturity(
   timeInSecondsFromStartToMaturity: BigNumber,
@@ -955,6 +957,139 @@ describe("MarginCalculator", () => {
       const realized = await calculatorTest.worstCaseVariableFactorAtMaturityTest(timeInSecondsFromStartToMaturityBN, termEndTimestampScaled, currentTimestampScaled, isFT, isLM, RATE_ORACLE_ID, historicalApy);
 
       // expect(realized).to.eq(expected);
+      expect(realized).to.be.closeTo(expected, 100);
+
+    })
+
+
+  })
+
+  describe("#getTraderMarginRequirement", async () => {
+    beforeEach("deploy calculator", async () => {
+      calculatorTest = await loadFixture(fixture);
+      await calculatorTest.setMarginCalculatorParametersTest(
+        RATE_ORACLE_ID,
+        APY_UPPER_MULTIPLIER,
+        APY_LOWER_MULTIPLIER,
+        MIN_DELTA_LM,
+        MIN_DELTA_IM,
+        MAX_LEVERAGE,
+        SIGMA_SQUARED,
+        ALPHA,
+        BETA,
+        XI_UPPER,
+        XI_LOWER,
+        T_MAX
+      );
+    });
+
+
+    it("correctly calculates the trader margin requirement: FT, LM", async () => {
+    
+      const fixedTokenBalance: BigNumber = toBn("1000");
+      const variableTokenBalance: BigNumber = toBn("-3000");
+
+      const currentTimestamp = await getCurrentTimestamp(provider) + 1;
+      const currentTimestampScaled = toBn(currentTimestamp.toString())
+      
+      const termStartTimestamp = currentTimestamp - 604800;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp+604800).toString() // add a week
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      const isFT = true;
+      const isLM = false;
+      const historicalApy = toBn("0.1");
+
+      const realized = await calculatorTest.getTraderMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestampScaled, termEndTimestampScaled, isLM, RATE_ORACLE_ID, historicalApy);
+
+      const expected = getTraderMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestampScaled, termEndTimestampScaled, isLM, historicalApy, currentTimestampScaled);
+        
+      expect(realized).to.be.closeTo(expected, 100);
+
+    })
+
+    it("correctly calculates the trader margin requirement: FT, IM", async () => {
+    
+      const fixedTokenBalance: BigNumber = toBn("1000");
+      const variableTokenBalance: BigNumber = toBn("-3000");
+
+      const currentTimestamp = await getCurrentTimestamp(provider) + 1;
+      const currentTimestampScaled = toBn(currentTimestamp.toString())
+      
+      const termStartTimestamp = currentTimestamp - 604800;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp+604800).toString() // add a week
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      const isLM = false;
+      const historicalApy = toBn("0.1");
+
+      const realized = await calculatorTest.getTraderMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestampScaled, termEndTimestampScaled, isLM, RATE_ORACLE_ID, historicalApy);
+
+      const expected = getTraderMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestampScaled, termEndTimestampScaled, isLM, historicalApy, currentTimestampScaled);
+        
+      expect(realized).to.be.closeTo(expected, 100);
+
+    })
+
+    it("correctly calculates the trader margin requirement: VT, LM", async () => {
+    
+      const fixedTokenBalance: BigNumber = toBn("-1000");
+      const variableTokenBalance: BigNumber = toBn("3000");
+
+      const currentTimestamp = await getCurrentTimestamp(provider) + 1;
+      const currentTimestampScaled = toBn(currentTimestamp.toString())
+      
+      const termStartTimestamp = currentTimestamp - 604800;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp+604800).toString() // add a week
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      const isLM = true;
+      const historicalApy = toBn("0.1");
+
+      const realized = await calculatorTest.getTraderMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestampScaled, termEndTimestampScaled, isLM, RATE_ORACLE_ID, historicalApy);
+
+      const expected = getTraderMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestampScaled, termEndTimestampScaled, isLM, historicalApy, currentTimestampScaled);
+        
+      expect(realized).to.be.closeTo(expected, 100);
+
+    })
+
+
+    it("correctly calculates the trader margin requirement: VT, IM", async () => {
+    
+      const fixedTokenBalance: BigNumber = toBn("-1000");
+      const variableTokenBalance: BigNumber = toBn("3000");
+
+      const currentTimestamp = await getCurrentTimestamp(provider) + 1;
+      const currentTimestampScaled = toBn(currentTimestamp.toString())
+      
+      const termStartTimestamp = currentTimestamp - 604800;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp+604800).toString() // add a week
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      const isLM = false;
+      const historicalApy = toBn("0.1");
+
+      const realized = await calculatorTest.getTraderMarginRequirementTest(fixedTokenBalance, variableTokenBalance, termStartTimestampScaled, termEndTimestampScaled, isLM, RATE_ORACLE_ID, historicalApy);
+
+      const expected = getTraderMarginRequirement(fixedTokenBalance, variableTokenBalance, termStartTimestampScaled, termEndTimestampScaled, isLM, historicalApy, currentTimestampScaled);
+        
       expect(realized).to.be.closeTo(expected, 100);
 
     })
