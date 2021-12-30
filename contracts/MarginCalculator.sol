@@ -18,27 +18,6 @@ import "./interfaces/IFactory.sol";
 contract MarginCalculator is IMarginCalculator {
   int256 public constant ONE_WEI = 10**18;
 
-  // /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
-  // mapping(bytes32 => PRBMath.UD60x18) internal getApyUpperMultiplier;
-  // /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
-  // mapping(bytes32 => PRBMath.UD60x18) internal getApyLowerMultiplier;
-  // /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Liquidation Margin Computation
-  // mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaLM;
-  // /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Initial Margin Computation
-  // mapping(bytes32 => PRBMath.UD60x18) internal getMinDeltaIM;
-  // /// @dev Maximum allowed leverage on Voltz Protocol where leverage = (notional traded in an IRS contract) / (margin in the account of an LP/FT/VT)
-  // mapping(bytes32 => PRBMath.UD60x18) internal getMaxLeverage;
-  // /// @dev The standard deviation that determines the volatility of the underlying pool APY
-  // mapping(bytes32 => PRBMath.SD59x18) internal getSigmaSquared;
-  // /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing alpha (from the litepaper), the contract stores 4*alpha
-  // mapping(bytes32 => PRBMath.SD59x18) internal getAlpha;
-  // /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing beta (from the litepaper), the contract stores 4*beta
-  // mapping(bytes32 => PRBMath.SD59x18) internal getBeta; // instead of storing beta, store 4*beta
-  // /// @dev Standard normal critical value used in the computation of the Upper APY Bound of the underlying pool
-  // mapping(bytes32 => PRBMath.SD59x18) internal getXiUpper;
-  // /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
-  // mapping(bytes32 => PRBMath.SD59x18) internal getXiLower;
-
   /// @dev Must be the Factory owner
   error NotFactoryOwner();
 
@@ -73,7 +52,7 @@ contract MarginCalculator is IMarginCalculator {
     getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
   }
 
-  /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
+  /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t_max) where t is the maturity timestamp, and t_max is the max number of seconds for the amm duration, s is the current timestamp and beta is a diffusion process parameter set via calibration
   function computeTimeFactor(
     bytes32 rateOracleId,
     uint256 termEndTimestampScaled,
@@ -90,10 +69,11 @@ contract MarginCalculator is IMarginCalculator {
     );
 
     int256 beta = getMarginCalculatorParameters[rateOracleId].beta;
+    int256 tMax = getMarginCalculatorParameters[rateOracleId].tMax;
 
     int256 scaledTime = PRBMathSD59x18.div(
       (int256(termEndTimestampScaled) - int256(currentTimestampScaled)),
-      int256(termEndTimestampScaled)
+      tMax
     );
 
     int256 expInput = PRBMathSD59x18.mul((-beta), scaledTime);

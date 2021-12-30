@@ -22,6 +22,7 @@ import {
   BETA,
   XI_UPPER,
   XI_LOWER,
+  T_MAX,
   RATE_ORACLE_ID,
 } from "./utilities";
 import { toBn } from "evm-bn";
@@ -277,7 +278,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     ALPHA,
     BETA,
     XI_UPPER,
-    XI_LOWER
+    XI_LOWER,
+    T_MAX
   );
 
   // add a mock rate oracle to the factory

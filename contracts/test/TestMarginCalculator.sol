@@ -210,7 +210,8 @@ contract TestMarginCalculator is MarginCalculator {
         int256 alpha,
         int256 beta,
         int256 xiUpper,
-        int256 xiLower
+        int256 xiLower,
+        int256 tMax
     ) external {
         setMarginCalculatorParameters(
             MarginCalculatorParameters(
@@ -223,7 +224,8 @@ contract TestMarginCalculator is MarginCalculator {
                 alpha,
                 beta,
                 xiUpper,
-                xiLower
+                xiLower,
+                tMax
             ),
             rateOracleId
         );

@@ -276,6 +276,7 @@ export const ALPHA: BigNumber = toBn("0.04");
 export const BETA: BigNumber = toBn("1.0");
 export const XI_UPPER: BigNumber = toBn("2.0");
 export const XI_LOWER: BigNumber = toBn("1.5");
+export const T_MAX: BigNumber = toBn("31536000"); // one year
 export const RATE_ORACLE_ID: string = utils.formatBytes32String("AaveV2"); // just aave for now
 export const DEFAULT_TIME_FACTOR: BigNumber = toBn("0.1");
 export const MIN_TICK: number = -887272;

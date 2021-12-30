@@ -139,7 +139,8 @@ contract MarginCalculatorTest is MarginCalculator {
             int256 alpha,
             int256 beta,
             int256 xiUpper,
-            int256 xiLower
+            int256 xiLower,
+            int256 tMax
         )
     {
         MarginCalculatorParameters
@@ -157,6 +158,7 @@ contract MarginCalculatorTest is MarginCalculator {
         beta = marginCalculatorParameters.beta;
         xiUpper = marginCalculatorParameters.xiUpper;
         xiLower = marginCalculatorParameters.xiLower;
+        tMax = marginCalculatorParameters.tMax;
     }
 
     function getMinimumMarginRequirementTest(
@@ -210,7 +212,8 @@ contract MarginCalculatorTest is MarginCalculator {
         int256 alpha,
         int256 beta,
         int256 xiUpper,
-        int256 xiLower
+        int256 xiLower,
+        int256 tMax
     ) external {
         setMarginCalculatorParameters(
             MarginCalculatorParameters(
@@ -223,7 +226,8 @@ contract MarginCalculatorTest is MarginCalculator {
                 alpha,
                 beta,
                 xiUpper,
-                xiLower
+                xiLower,
+                tMax
             ),
             rateOracleId
         );

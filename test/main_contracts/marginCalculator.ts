@@ -33,13 +33,12 @@ import {
   BETA,
   XI_UPPER,
   XI_LOWER,
+  T_MAX,
   RATE_ORACLE_ID,
   DEFAULT_TIME_FACTOR,
   MIN_TICK,
   MAX_TICK,
 } from "../shared/utilities";
-// import { floor } from "prb-math";
-// import { sqrt } from "../shared/sqrt";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
@@ -348,8 +347,11 @@ function computeTimeFactor(
   currentTimestampScaled: BigNumber
 ) {
   const remainingSeconds = sub(termEndTimestampScaled, currentTimestampScaled);
-  const scaledTime = div(remainingSeconds, termEndTimestampScaled);
-  const expInput = mul(mul(beta, toBn("-1")), scaledTime);
+  const scaledTime = div(remainingSeconds, T_MAX);
+  console.log("Scaled Time is: ", scaledTime.toString());
+  console.log("Remaining seconds is: ", remainingSeconds.toString());
+  const expInput = mul(mul(beta, toBn("-1.0")), scaledTime);
+  console.log("Exp input is : ", expInput.toString());
 
   return exp(expInput);
 }
@@ -482,7 +484,8 @@ describe("MarginCalculator", () => {
         ALPHA,
         BETA,
         XI_UPPER,
-        XI_LOWER
+        XI_LOWER,
+        T_MAX
       );
 
       const marginCalculatorParameters =
@@ -497,6 +500,7 @@ describe("MarginCalculator", () => {
       expect(marginCalculatorParameters[7]).to.eq(BETA);
       expect(marginCalculatorParameters[8]).to.eq(XI_UPPER);
       expect(marginCalculatorParameters[9]).to.eq(XI_LOWER);
+      expect(marginCalculatorParameters[10]).to.eq(T_MAX);
     });
   });
 
@@ -514,7 +518,8 @@ describe("MarginCalculator", () => {
         ALPHA,
         BETA,
         XI_UPPER,
-        XI_LOWER
+        XI_LOWER,
+        T_MAX
       );
     });
 
@@ -658,7 +663,8 @@ describe("MarginCalculator", () => {
         ALPHA,
         BETA,
         XI_UPPER,
-        XI_LOWER
+        XI_LOWER,
+        T_MAX
       );
     });
 
@@ -734,19 +740,20 @@ describe("MarginCalculator", () => {
         ALPHA,
         BETA,
         XI_UPPER,
-        XI_LOWER
+        XI_LOWER,
+        T_MAX
       );
     });
 
     // passes
     it("correctly computes the Upper APY Bound", async () => {
-      const currentTimestampScaled = toBn(
-        (await getCurrentTimestamp(provider)).toString()
-      );
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
       const termEndTimestampScaled = toBn(
-        currentTimestampScaled.toString()
-      ).add(consts.ONE_YEAR);
+        (currentTimestamp+604800).toString() // add a week
+      );
+
+      const currentTimestampScaled = toBn(currentTimestamp.toString());
 
       const timeFactor = computeTimeFactor(
         BETA,
@@ -776,19 +783,21 @@ describe("MarginCalculator", () => {
 
     // passes
     it("correctly computes the Lower APY Bound", async () => {
-      const currentTimestampScaled = toBn(
-        (await getCurrentTimestamp(provider)).toString()
-      );
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
       const termEndTimestampScaled = toBn(
-        currentTimestampScaled.toString()
-      ).add(consts.ONE_YEAR);
+        (currentTimestamp+604800).toString() // add a week
+      );
+
+      const currentTimestampScaled = toBn(currentTimestamp.toString());
 
       const timeFactor = computeTimeFactor(
         BETA,
         termEndTimestampScaled,
         currentTimestampScaled
       );
+
+      console.log("The time factor is", timeFactor);
 
       const historicalApy: BigNumber = toBn("0.02");
       const isUpper: boolean = false;
@@ -824,7 +833,8 @@ describe("MarginCalculator", () => {
         ALPHA,
         BETA,
         XI_UPPER,
-        XI_LOWER
+        XI_LOWER,
+        T_MAX
       );
     });
 
@@ -845,178 +855,6 @@ describe("MarginCalculator", () => {
       );
     });
 
-    // it("correctly calculates the trader margin requirement: VT, LM", async () => {
-    //   const fixedTokenBalance: BigNumber = toBn("-3000");
-    //   const variableTokenBalance: BigNumber = toBn("1000");
-
-    //   const termStartTimestamp: number = await getCurrentTimestamp(provider);
-    //   const termEndTimestamp: number =
-    //     termStartTimestamp + consts.ONE_DAY.toNumber();
-
-    //   const termStartTimestampBN: BigNumber = toBn(
-    //     termStartTimestamp.toString()
-    //   );
-    //   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
-
-    //   const isLM: boolean = false;
-    //   const historicalApy: BigNumber = toBn("0.02");
-
-    //   const blockTimestampScaled: BigNumber = toBn(
-    //     (termStartTimestamp + 1).toString()
-    //   );
-
-    //   const expected: BigNumber = getTraderMarginRequirement(
-    //     fixedTokenBalance,
-    //     variableTokenBalance,
-    //     termStartTimestampBN,
-    //     termEndTimestampBN,
-    //     isLM,
-    //     historicalApy,
-    //     blockTimestampScaled
-    //   );
-
-    //   expect(
-    //     await calculatorTest.getTraderMarginRequirementTest(
-    //       fixedTokenBalance,
-    //       variableTokenBalance,
-    //       termStartTimestampBN,
-    //       termEndTimestampBN,
-    //       isLM,
-    //       RATE_ORACLE_ID,
-    //       historicalApy
-    //     )
-    //   ).to.be.closeTo(expected, 10000);
-    // });
-
-    // passes
-    //   it("correctly calculates the trader margin requirement: FT, LM", async () => {
-    //     const fixedTokenBalance: BigNumber = toBn("1000");
-    //     const variableTokenBalance: BigNumber = toBn("-3000");
-
-    //     const termStartTimestamp: number = await getCurrentTimestamp(provider);
-    //     const termEndTimestamp: number =
-    //       termStartTimestamp + consts.ONE_DAY.toNumber();
-
-    //     const termStartTimestampBN: BigNumber = toBn(
-    //       termStartTimestamp.toString()
-    //     );
-    //     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
-
-    //     const isLM: boolean = false;
-    //     const historicalApy: BigNumber = toBn("0.02");
-
-    //     const blockTimestampScaled: BigNumber = toBn(
-    //       (termStartTimestamp + 1).toString()
-    //     );
-
-    //     const expected: BigNumber = getTraderMarginRequirement(
-    //       fixedTokenBalance,
-    //       variableTokenBalance,
-    //       termStartTimestampBN,
-    //       termEndTimestampBN,
-    //       isLM,
-    //       RATE_ORACLE_ID,
-    //       historicalApy,
-    //       blockTimestampScaled
-    //     );
-    //     expect(
-    //       await calculatorTest.getTraderMarginRequirementTest(
-    //         fixedTokenBalance,
-    //         variableTokenBalance,
-    //         termStartTimestampBN,
-    //         termEndTimestampBN,
-    //         isLM,
-    //         RATE_ORACLE_ID,
-    //         historicalApy
-    //       )
-    //     ).to.be.closeTo(expected, 10000);
-    //   });
-
-    //   it("correctly calculates the trader margin requirement: FT, IM", async () => {
-    //     const fixedTokenBalance: BigNumber = toBn("1000");
-    //     const variableTokenBalance: BigNumber = toBn("-3000");
-
-    //     const termStartTimestamp: number = await getCurrentTimestamp(provider);
-    //     const termEndTimestamp: number =
-    //       termStartTimestamp + consts.ONE_DAY.toNumber();
-
-    //     const termStartTimestampBN: BigNumber = toBn(
-    //       termStartTimestamp.toString()
-    //     );
-    //     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
-
-    //     const isLM: boolean = true;
-    //     const historicalApy: BigNumber = toBn("0.02");
-
-    //     const blockTimestampScaled: BigNumber = toBn(
-    //       (termStartTimestamp + 1).toString()
-    //     );
-
-    //     const expected: BigNumber = getTraderMarginRequirement(
-    //       fixedTokenBalance,
-    //       variableTokenBalance,
-    //       termStartTimestampBN,
-    //       termEndTimestampBN,
-    //       isLM,
-    //       RATE_ORACLE_ID,
-    //       historicalApy,
-    //       blockTimestampScaled
-    //     );
-    //     expect(
-    //       await calculatorTest.getTraderMarginRequirementTest(
-    //         fixedTokenBalance,
-    //         variableTokenBalance,
-    //         termStartTimestampBN,
-    //         termEndTimestampBN,
-    //         isLM,
-    //         RATE_ORACLE_ID,
-    //         historicalApy
-    //       )
-    //     ).to.be.closeTo(expected, 10000);
-    //   });
-
-    //   it("correctly calculates the trader margin requirement: VT, IM", async () => {
-    //     const fixedTokenBalance: BigNumber = toBn("-3000");
-    //     const variableTokenBalance: BigNumber = toBn("1000");
-
-    //     const termStartTimestamp: number = await getCurrentTimestamp(provider);
-    //     const termEndTimestamp: number =
-    //       termStartTimestamp + consts.ONE_DAY.toNumber();
-
-    //     const termStartTimestampBN: BigNumber = toBn(
-    //       termStartTimestamp.toString()
-    //     );
-    //     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
-
-    //     const isLM: boolean = true;
-    //     const historicalApy: BigNumber = toBn("0.02");
-
-    //     const blockTimestampScaled: BigNumber = toBn(
-    //       (termStartTimestamp + 1).toString()
-    //     );
-
-    //     const expected: BigNumber = getTraderMarginRequirement(
-    //       fixedTokenBalance,
-    //       variableTokenBalance,
-    //       termStartTimestampBN,
-    //       termEndTimestampBN,
-    //       isLM,
-    //       RATE_ORACLE_ID,
-    //       historicalApy,
-    //       blockTimestampScaled
-    //     );
-    //     expect(
-    //       await calculatorTest.getTraderMarginRequirementTest(
-    //         fixedTokenBalance,
-    //         variableTokenBalance,
-    //         termStartTimestampBN,
-    //         termEndTimestampBN,
-    //         isLM,
-    //         RATE_ORACLE_ID,
-    //         historicalApy
-    //       )
-    //     ).to.be.closeTo(expected, 10000);
-    //   });
   });
 
   describe("#worstCaseVariableFactorAtMaturity", async () => {
@@ -1033,307 +871,20 @@ describe("MarginCalculator", () => {
         ALPHA,
         BETA,
         XI_UPPER,
-        XI_LOWER
+        XI_LOWER,
+        T_MAX
       );
     });
 
+    it("correctly calculates the worst case variable factor at maturity FT, LM", async () => {
 
 
-    // it("correctly calculates the worst case variable factor at maturity, FT, LM", async () => {
-    //   const timeInSecondsFromStartToMaturity: BigNumber = toBn(
-    //     consts.ONE_YEAR.toString()
-    //   );
-    //   const timeInSecondsFromNowToMaturity: BigNumber = toBn(
-    //     consts.ONE_MONTH.toString()
-    //   );
-    //   const currentBlockTimestamp = toBn(
-    //     (await getCurrentTimestamp(provider)).toString()
-    //   );
-    //   const termEndTimestampScaled = add(
-    //     currentBlockTimestamp,
-    //     toBn(consts.ONE_MONTH.toString())
-    //   );
-    //   const isFT: boolean = true;
-    //   const isLM: boolean = true;
-    //   const historicalApy: BigNumber = toBn("0.02");
 
-    //   const expected = worstCaseVariableFactorAtMaturity(
-    //     timeInSecondsFromStartToMaturity,
-    //     timeInSecondsFromNowToMaturity,
-    //     isFT,
-    //     isLM,
-    //     historicalApy
-    //   );
 
-    //   expect(
-    //     await calculatorTest.worstCaseVariableFactorAtMaturityTest(
-    //       timeInSecondsFromStartToMaturity,
-    //       termEndTimestampScaled,
-    //       currentBlockTimestamp,
-    //       isFT,
-    //       isLM,
-    //       RATE_ORACLE_ID,
-    //       historicalApy
-    //     )
-    //   ).to.eq(expected);
-    // });
+    })
 
-    //     it("correctly calculates the worst case variable factor at maturity, FT, IM", async () => {
-    //       const timeInSecondsFromStartToMaturity: BigNumber = toBn(
-    //         consts.ONE_YEAR.toString()
-    //       );
-    //       const timeInSecondsFromNowToMaturity: BigNumber = toBn(
-    //         consts.ONE_MONTH.toString()
-    //       );
-    //       const isFT: boolean = true;
-    //       const isLM: boolean = false;
-    //       const historicalApy: BigNumber = toBn("0.02");
 
-    //       const expected = worstCaseVariableFactorAtMaturity(
-    //         timeInSecondsFromStartToMaturity,
-    //         timeInSecondsFromNowToMaturity,
-    //         isFT,
-    //         isLM,
-    //         RATE_ORACLE_ID,
-    //         historicalApy
-    //       );
-    //       expect(
-    //         await calculatorTest.worstCaseVariableFactorAtMaturityTest(
-    //           timeInSecondsFromStartToMaturity,
-    //           timeInSecondsFromNowToMaturity,
-    //           isFT,
-    //           isLM,
-    //           RATE_ORACLE_ID,
-    //           historicalApy
-    //         )
-    //       ).to.be.closeTo(expected, 10000);
-    //     });
+  })
 
-    //     it("correctly calculates the worst case variable factor at maturity, VT, LM", async () => {
-    //       const timeInSecondsFromStartToMaturity: BigNumber = toBn(
-    //         consts.ONE_YEAR.toString()
-    //       );
-    //       const timeInSecondsFromNowToMaturity: BigNumber = toBn(
-    //         consts.ONE_MONTH.toString()
-    //       );
-    //       const isFT: boolean = false;
-    //       const isLM: boolean = true;
-    //       const historicalApy: BigNumber = toBn("0.02");
 
-    //       const expected = worstCaseVariableFactorAtMaturity(
-    //         timeInSecondsFromStartToMaturity,
-    //         timeInSecondsFromNowToMaturity,
-    //         isFT,
-    //         isLM,
-    //         RATE_ORACLE_ID,
-    //         historicalApy
-    //       );
-    //       expect(
-    //         await calculatorTest.worstCaseVariableFactorAtMaturityTest(
-    //           timeInSecondsFromStartToMaturity,
-    //           timeInSecondsFromNowToMaturity,
-    //           isFT,
-    //           isLM,
-    //           RATE_ORACLE_ID,
-    //           historicalApy
-    //         )
-    //       ).to.be.closeTo(expected, 10000);
-    //     });
-
-    //     it("correctly calculates the worst case variable factor at maturity, VT, IM", async () => {
-    //       const timeInSecondsFromStartToMaturity: BigNumber = toBn(
-    //         consts.ONE_YEAR.toString()
-    //       );
-    //       const timeInSecondsFromNowToMaturity: BigNumber = toBn(
-    //         consts.ONE_MONTH.toString()
-    //       );
-    //       const isFT: boolean = false;
-    //       const isLM: boolean = false;
-    //       const historicalApy: BigNumber = toBn("0.02");
-
-    //       const expected = worstCaseVariableFactorAtMaturity(
-    //         timeInSecondsFromStartToMaturity,
-    //         timeInSecondsFromNowToMaturity,
-    //         isFT,
-    //         isLM,
-    //         RATE_ORACLE_ID,
-    //         historicalApy
-    //       );
-    //       expect(
-    //         await calculatorTest.worstCaseVariableFactorAtMaturityTest(
-    //           timeInSecondsFromStartToMaturity,
-    //           timeInSecondsFromNowToMaturity,
-    //           isFT,
-    //           isLM,
-    //           RATE_ORACLE_ID,
-    //           historicalApy
-    //         )
-    //       ).to.be.closeTo(expected, 10000);
-    //     });
-  });
-
-  //   describe("#positionMarginBetweenTicksHelper", async () => {
-  //     beforeEach("deploy calculator", async () => {
-  //       calculatorTest = await loadFixture(fixture);
-  //       await calculatorTest.setMarginCalculatorParametersTest(
-  //         RATE_ORACLE_ID,
-  //         APY_UPPER_MULTIPLIER,
-  //         APY_LOWER_MULTIPLIER,
-  //         MIN_DELTA_LM,
-  //         MIN_DELTA_IM,
-  //         MAX_LEVERAGE,
-  //         SIGMA_SQUARED,
-  //         ALPHA,
-  //         BETA,
-  //         XI_UPPER,
-  //         XI_LOWER
-  //       );
-
-  //       let timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
-  //       let timeInDaysFloor: BigNumber = floor(
-  //         div(timeInSeconds, toBn(consts.ONE_DAY.toString()))
-  //       );
-  //       await calculatorTest.setTimeFactorTest(
-  //         RATE_ORACLE_ID,
-  //         timeInDaysFloor,
-  //         DEFAULT_TIME_FACTOR
-  //       );
-
-  //       timeInSeconds = toBn(consts.ONE_MONTH.toString());
-  //       timeInDaysFloor = floor(
-  //         div(timeInSeconds, toBn(consts.ONE_DAY.toString()))
-  //       );
-
-  //       await calculatorTest.setTimeFactorTest(
-  //         RATE_ORACLE_ID,
-  //         timeInDaysFloor,
-  //         DEFAULT_TIME_FACTOR
-  //       );
-
-  //       timeInSeconds = toBn(consts.ONE_DAY.toString());
-  //       timeInDaysFloor = floor(
-  //         div(timeInSeconds, toBn(consts.ONE_DAY.toString()))
-  //       );
-
-  //       await calculatorTest.setTimeFactorTest(
-  //         RATE_ORACLE_ID,
-  //         timeInDaysFloor,
-  //         DEFAULT_TIME_FACTOR
-  //       );
-  //     });
-
-  //     // fails
-  //     it("correctly calculates intermediate variables", async () => {
-  //       const tickLower: number = MIN_TICK;
-  //       const tickUpper: number = MAX_TICK;
-  //       const currentTick: number = MAX_TICK;
-
-  //       const termStartTimestamp: number = await getCurrentTimestamp(provider);
-  //       const termEndTimestamp: number =
-  //         termStartTimestamp + consts.ONE_DAY.toNumber();
-  //       const termStartTimestampBN: BigNumber = toBn(
-  //         termStartTimestamp.toString()
-  //       );
-  //       const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
-  //       const liquidity: BigNumber = toBn("1");
-  //       const fixedTokenBalance: BigNumber = toBn("-3000");
-  //       const variableTokenBalance: BigNumber = toBn("1000");
-  //       const variableFactor: BigNumber = toBn("0.02");
-  //       const historicalApy: BigNumber = toBn("0.3");
-  //       const blockTimestampScaled: BigNumber = toBn(
-  //         (termStartTimestamp + 1).toString()
-  //       );
-
-  //       // async function calculateExpectedAmounts(
-  //       //     currentTick: number,
-  //       //     liquidity: BigNumber
-  //       // ) {
-
-  //       let [amount1Up, amount0Down] = await calculateExpectedAmounts(
-  //         currentTick,
-  //         liquidity
-  //       );
-  //       let returnedAmounts = await calculatorTest.calculateExpectedAmountsTest(
-  //         liquidity,
-  //         currentTick,
-  //         tickUpper,
-  //         tickLower
-  //       );
-
-  //       console.log(`Test: amoun1Up is ${amount1Up}`);
-  //       console.log(`Test: amount0Down is ${amount0Down}`);
-
-  //       expect(returnedAmounts[0]).to.be.closeTo(amount1Up, 10000);
-  //       expect(returnedAmounts[1]).to.be.closeTo(amount0Down, 10000);
-  //     });
-
-  //     // fails
-  //     // it("correctly calculates positionMarginBetweenTicks (current tick is max tick), LM, (MIN_TICK, MAX_TICK)", async () => {
-  //     //     const tickLower: number = MIN_TICK;
-  //     //     const tickUpper: number = MAX_TICK;
-  //     //     const isLM: boolean = true;
-  //     //     const currentTick: number = MAX_TICK;
-
-  //     //     const termStartTimestamp: number = await getCurrentTimestamp(provider);
-  //     //     const termEndTimestamp: number = termStartTimestamp + consts.ONE_DAY.toNumber();
-  //     //     const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
-  //     //     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
-  //     //     const liquidity: BigNumber = toBn("1");
-
-  //     //     const fixedTokenBalance: BigNumber = toBn("-3000");
-  //     //     const variableTokenBalance: BigNumber = toBn("1000");
-
-  //     //     const variableFactor: BigNumber = toBn("0.02");
-  //     //     const historicalApy: BigNumber = toBn("0.3");
-
-  //     //     const blockTimestampScaled: BigNumber = toBn((termStartTimestamp+1).toString());
-
-  //     //     const expected: BigNumber = await positionMarginBetweenTicksHelper(
-  //     //         tickLower,
-  //     //         tickUpper,
-  //     //         isLM,
-  //     //         currentTick,
-  //     //         termStartTimestampBN,
-  //     //         termEndTimestampBN,
-  //     //         liquidity,
-  //     //         fixedTokenBalance,
-  //     //         variableTokenBalance,
-  //     //         variableFactor,
-  //     //         RATE_ORACLE_ID,
-  //     //         historicalApy,
-  //     //         blockTimestampScaled
-  //     //     );
-
-  //     //     const realised: BigNumber = await calculatorTest.positionMarginBetweenTicksHelperLMTest(
-  //     //         tickLower,
-  //     //         tickUpper,
-  //     //         // isLM,
-  //     //         currentTick,
-  //     //         termStartTimestampBN,
-  //     //         termEndTimestampBN,
-  //     //         liquidity,
-  //     //         fixedTokenBalance,
-  //     //         variableTokenBalance,
-  //     //         variableFactor,
-  //     //         RATE_ORACLE_ID,
-  //     //         historicalApy
-  //     //     );
-
-  //     //     // let errorMargin: BigNumber;
-
-  //     //     // if (realised > expected) {
-  //     //     //     errorMargin = sub(realised, expected);
-  //     //     // } else {
-  //     //     //     errorMargin = sub(expected, realised);
-  //     //     // }
-
-  //     //     // errorMargin = floor(div(errorMargin, toBn("10.0")));
-
-  //     //     // console.log(`Test: Error Margin is ${errorMargin}`);
-
-  //     //     // expect(realised).to.be.closeTo(expected, ); // todo: huge margin or error, investigate further
-  //     //     // expect(errorMargin).to.be.eq(0);
-
-  //     // })
-  //   });
 });
