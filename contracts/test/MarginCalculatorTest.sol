@@ -48,10 +48,10 @@ contract MarginCalculatorTest is MarginCalculator {
         );
     }
 
-    function positionMarginBetweenTicksHelperLMTest(
+    function positionMarginBetweenTicksHelperTest(
         int24 tickLower,
         int24 tickUpper,
-        // bool isLM,
+        bool isLM,
         int24 currentTick,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp,
@@ -65,10 +65,10 @@ contract MarginCalculatorTest is MarginCalculator {
         return
             positionMarginBetweenTicksHelper(
                 PositionMarginRequirementParams({
-                    owner: address(0), // owner should not matter for the purposes of comouting position's margin
+                    owner: address(0), // owner should not matter for the purposes of computing position's margin
                     tickLower: tickLower,
                     tickUpper: tickUpper,
-                    isLM: true,
+                    isLM: isLM,
                     currentTick: currentTick,
                     termStartTimestamp: termStartTimestamp,
                     termEndTimestamp: termEndTimestamp,

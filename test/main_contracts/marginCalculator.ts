@@ -39,173 +39,131 @@ import {
   MIN_TICK,
   MAX_TICK,
 } from "../shared/utilities";
+import { TickMath } from "../shared/tickMath";
+import { SqrtPriceMath } from "../shared/sqrtPriceMath";
+import JSBI from 'jsbi'
+
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
 
-async function calculateExpectedAmounts(
+
+function positionMarginBetweenTicksHelper(
+  tickLower: number,
+  tickUpper: number,
+  isLM: boolean,
   currentTick: number,
-  liquidity: BigNumber
+  termStartTimestamp: BigNumber,
+  termEndTimestamp: BigNumber,
+  liquidity: JSBI,
+  fixedTokenBalance: BigNumber,
+  variableTokenBalance: BigNumber,
+  variableFactor: BigNumber,
+  historicalApy: BigNumber,
+  blockTimestampScaled: BigNumber
 ) {
-  let sqrtRatioAtTickLower: BigNumber = MIN_SQRT_RATIO;
-  let sqrtRatioAtTickUpper: BigNumber = MAX_SQRT_RATIO;
-  let sqrtRatioAtTickCurrent: BigNumber = MAX_SQRT_RATIO;
 
-  if (currentTick == MIN_TICK) {
-    sqrtRatioAtTickCurrent = MIN_SQRT_RATIO;
-  }
+  // make sure that in here the variable factor is the accrued variable factor
+  // emphasise this in the docs
 
-  const sqrtPriceMathFactory = await ethers.getContractFactory(
-    "SqrtPriceMathTest"
-  );
-  const sqrtPriceMath = await sqrtPriceMathFactory.deploy();
-
-  let amount1Up: BigNumber = await sqrtPriceMath.getAmount1Delta(
-    sqrtRatioAtTickCurrent,
-    sqrtRatioAtTickUpper,
+  let amount0UpJSBI = SqrtPriceMath.getAmount0Delta(
+    TickMath.getSqrtRatioAtTick(currentTick),
+    TickMath.getSqrtRatioAtTick(tickUpper),
     liquidity,
     true
   );
+
+  let amount1UpJSBI = SqrtPriceMath.getAmount1Delta(
+    TickMath.getSqrtRatioAtTick(currentTick),
+    TickMath.getSqrtRatioAtTick(tickUpper),
+    liquidity,
+    false
+  );
+
+  let amount0Up = BigNumber.from(amount0UpJSBI.toString());
+  let amount1Up = BigNumber.from(amount1UpJSBI.toString());
 
   amount1Up = mul(amount1Up, toBn("-1.0"));
 
-  // going down balanace delta
-  let amount0Down = await sqrtPriceMath.getAmount0Delta(
-    sqrtRatioAtTickLower,
-    sqrtRatioAtTickCurrent,
+  const expectedVariableTokenBalanceAfterUp: BigNumber = add(
+    variableTokenBalance,
+    amount1Up
+  );
+  let fixedTokenBalanceAfterRebalancing: BigNumber = getFixedTokenBalance(
+    amount0Up,
+    amount1Up,
+    variableFactor,
+    termStartTimestamp,
+    termEndTimestamp
+  );
+  const expectedFixedTokenBalanceAfterUp: BigNumber = add(
+    fixedTokenBalance,
+    fixedTokenBalanceAfterRebalancing
+  );
+  const marginReqAfterUp: BigNumber = getTraderMarginRequirement(
+    expectedFixedTokenBalanceAfterUp,
+    expectedVariableTokenBalanceAfterUp,
+    termStartTimestamp,
+    termEndTimestamp,
+    isLM,
+    historicalApy,
+    blockTimestampScaled
+  );
+
+  let amount0DownJSBI = SqrtPriceMath.getAmount0Delta(
+    TickMath.getSqrtRatioAtTick(currentTick),
+    TickMath.getSqrtRatioAtTick(tickLower),
+    liquidity,
+    false
+  );
+
+  let amount1DownJSBI = SqrtPriceMath.getAmount1Delta(
+    TickMath.getSqrtRatioAtTick(currentTick),
+    TickMath.getSqrtRatioAtTick(tickLower),
     liquidity,
     true
   );
 
+  let amount0Down = BigNumber.from(amount0DownJSBI.toString());
+  let amount1Down = BigNumber.from(amount1DownJSBI.toString());
+
   amount0Down = mul(amount0Down, toBn("-1.0"));
 
-  return [amount1Up, amount0Down];
+  const expectedVariableTokenBalanceAfterDown: BigNumber = add(
+    variableTokenBalance,
+    amount1Down
+  );
+  fixedTokenBalanceAfterRebalancing = getFixedTokenBalance(
+    amount0Down,
+    amount1Down,
+    variableFactor,
+    termStartTimestamp,
+    termEndTimestamp
+  );
+  const expectedFixedTokenBalanceAfterDown: BigNumber = add(
+    fixedTokenBalance,
+    fixedTokenBalanceAfterRebalancing
+  );
+  const marginReqAfterDown: BigNumber = getTraderMarginRequirement(
+    expectedFixedTokenBalanceAfterDown,
+    expectedVariableTokenBalanceAfterDown,
+    termStartTimestamp,
+    termEndTimestamp,
+    isLM,
+    historicalApy,
+    blockTimestampScaled
+  );
+
+  let margin: BigNumber;
+
+  if (sub(marginReqAfterUp, marginReqAfterDown) > toBn("0")) {
+    margin = marginReqAfterUp;
+  } else {
+    margin = marginReqAfterDown;
+  }
+
+  return margin;
 }
-
-// async function positionMarginBetweenTicksHelper(
-//   tickLower: number,
-//   tickUpper: number,
-//   isLM: boolean,
-//   currentTick: number,
-//   termStartTimestamp: BigNumber,
-//   termEndTimestamp: BigNumber,
-//   liquidity: BigNumber,
-//   fixedTokenBalance: BigNumber,
-//   variableTokenBalance: BigNumber,
-//   variableFactor: BigNumber,
-//   rateOracleId: string,
-//   historicalApy: BigNumber,
-//   blockTimestampScaled: BigNumber
-// ) {
-//   // make sure that in here the variable factor is the accrued variable factor
-//   // emphasise this in the docs
-
-//   let sqrtRatioAtTickLower: BigNumber = MIN_SQRT_RATIO;
-//   let sqrtRatioAtTickUpper: BigNumber = MAX_SQRT_RATIO;
-//   let sqrtRatioAtTickCurrent: BigNumber = MAX_SQRT_RATIO;
-
-//   if (currentTick == MIN_TICK) {
-//     sqrtRatioAtTickCurrent = MIN_SQRT_RATIO;
-//   }
-
-//   const sqrtPriceMathFactory = await ethers.getContractFactory(
-//     "SqrtPriceMathTest"
-//   );
-//   const sqrtPriceMath = await sqrtPriceMathFactory.deploy();
-
-//   const amount0Up: BigNumber = await sqrtPriceMath.getAmount0Delta(
-//     sqrtRatioAtTickCurrent,
-//     sqrtRatioAtTickUpper,
-//     liquidity,
-//     true
-//   );
-
-//   let amount1Up: BigNumber = await sqrtPriceMath.getAmount1Delta(
-//     sqrtRatioAtTickCurrent,
-//     sqrtRatioAtTickUpper,
-//     liquidity,
-//     true
-//   );
-
-//   amount1Up = mul(amount1Up, toBn("-1.0"));
-
-//   const expectedVariableTokenBalanceAfterUp: BigNumber = add(
-//     variableTokenBalance,
-//     amount1Up
-//   );
-//   let fixedTokenBalanceAfterRebalancing: BigNumber = getFixedTokenBalance(
-//     amount0Up,
-//     amount1Up,
-//     variableFactor,
-//     termStartTimestamp,
-//     termEndTimestamp
-//   );
-//   const expectedFixedTokenBalanceAfterUp: BigNumber = add(
-//     fixedTokenBalance,
-//     fixedTokenBalanceAfterRebalancing
-//   );
-//   const marginReqAfterUp: BigNumber = getTraderMarginRequirement(
-//     expectedFixedTokenBalanceAfterUp,
-//     expectedVariableTokenBalanceAfterUp,
-//     termStartTimestamp,
-//     termEndTimestamp,
-//     isLM,
-//     historicalApy,
-//     blockTimestampScaled
-//   );
-
-//   // going down balanace delta
-//   let amount0Down = await sqrtPriceMath.getAmount0Delta(
-//     sqrtRatioAtTickLower,
-//     sqrtRatioAtTickCurrent,
-//     liquidity,
-//     true
-//   );
-
-//   const amount1Down = await sqrtPriceMath.getAmount1Delta(
-//     sqrtRatioAtTickLower,
-//     sqrtRatioAtTickCurrent,
-//     liquidity,
-//     true
-//   );
-
-//   amount0Down = mul(amount0Down, toBn("-1.0"));
-
-//   const expectedVariableTokenBalanceAfterDown: BigNumber = add(
-//     variableTokenBalance,
-//     amount1Down
-//   );
-//   fixedTokenBalanceAfterRebalancing = getFixedTokenBalance(
-//     amount0Down,
-//     amount1Down,
-//     variableFactor,
-//     termStartTimestamp,
-//     termEndTimestamp
-//   );
-//   const expectedFixedTokenBalanceAfterDown: BigNumber = add(
-//     fixedTokenBalance,
-//     fixedTokenBalanceAfterRebalancing
-//   );
-//   const marginReqAfterDown: BigNumber = getTraderMarginRequirement(
-//     expectedFixedTokenBalanceAfterDown,
-//     expectedVariableTokenBalanceAfterDown,
-//     termStartTimestamp,
-//     termEndTimestamp,
-//     isLM,
-//     historicalApy,
-//     blockTimestampScaled
-//   );
-
-//   let margin: BigNumber;
-
-//   if (sub(marginReqAfterUp, marginReqAfterDown) > toBn("0")) {
-//     margin = marginReqAfterUp;
-//   } else {
-//     margin = marginReqAfterDown;
-//   }
-
-//   return margin;
-// }
 
 function getTraderMarginRequirement(
   fixedTokenBalance: BigNumber,
@@ -1094,6 +1052,63 @@ describe("MarginCalculator", () => {
 
     })
 
+
+  })
+
+
+  describe("#positionMarginBetweenTicksHelper", async () => {
+    beforeEach("deploy calculator", async () => {
+      calculatorTest = await loadFixture(fixture);
+      await calculatorTest.setMarginCalculatorParametersTest(
+        RATE_ORACLE_ID,
+        APY_UPPER_MULTIPLIER,
+        APY_LOWER_MULTIPLIER,
+        MIN_DELTA_LM,
+        MIN_DELTA_IM,
+        MAX_LEVERAGE,
+        SIGMA_SQUARED,
+        ALPHA,
+        BETA,
+        XI_UPPER,
+        XI_LOWER,
+        T_MAX
+      );
+    });
+
+
+    it("correctly calculates positionMarginBetweenTicks (current tick is 0), LM, (-1, 1)", async () => {
+
+      const tickLower: number = -1;
+      const tickUpper: number = 1;
+      const isLM: boolean = true;
+      const currentTick: number = 0;
+
+      const currentTimestamp = await getCurrentTimestamp(provider) + 1;
+      const currentTimestampScaled = toBn(currentTimestamp.toString())
+      
+      const termStartTimestamp = currentTimestamp - 604800;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp+604800).toString() // add a week
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      const fixedTokenBalance: BigNumber = toBn("-3000");
+      const variableTokenBalance: BigNumber = toBn("1000");
+
+      const variableFactor: BigNumber = toBn("0.02");
+      const historicalApy: BigNumber = toBn("0.3");
+      const liquidityBN: BigNumber = expandTo18Decimals(1);
+      const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
+
+      const realized = await calculatorTest.positionMarginBetweenTicksHelperTest(tickLower, tickUpper, isLM, currentTick, termStartTimestampScaled, termEndTimestampScaled, liquidityBN, fixedTokenBalance, variableTokenBalance, variableFactor, RATE_ORACLE_ID, historicalApy);
+
+      const expected = positionMarginBetweenTicksHelper(tickLower, tickUpper, isLM, currentTick, termStartTimestampScaled, termEndTimestampScaled, liquidityJSBI, fixedTokenBalance, variableTokenBalance, variableFactor, historicalApy, currentTimestampScaled);
+      
+      expect(realized).to.be.closeTo(expected, 10000);
+
+    })
 
   })
 

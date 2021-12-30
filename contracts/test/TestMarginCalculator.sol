@@ -51,7 +51,7 @@ contract TestMarginCalculator is MarginCalculator {
     function positionMarginBetweenTicksHelperLMTest(
         int24 tickLower,
         int24 tickUpper,
-        // bool isLM,
+        bool isLM,
         int24 currentTick,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp,
@@ -65,10 +65,10 @@ contract TestMarginCalculator is MarginCalculator {
         return
             positionMarginBetweenTicksHelper(
                 PositionMarginRequirementParams({
-                    owner: address(0), // owner should not matter for the purposes of comouting position's margin
+                    owner: address(0), // owner should not matter for the purposes of computing position's margin
                     tickLower: tickLower,
                     tickUpper: tickUpper,
-                    isLM: true,
+                    isLM: isLM,
                     currentTick: currentTick,
                     termStartTimestamp: termStartTimestamp,
                     termEndTimestamp: termEndTimestamp,
@@ -231,21 +231,5 @@ contract TestMarginCalculator is MarginCalculator {
         );
     }
 
-    // function worstCaseVariableFactorAtMaturityTest(uint256 timeInSecondsFromStartToMaturity, uint256 timeInSecondsFromNowToMaturity, bool isFT, bool isLM, bytes32 rateOracleId, uint256 historicalApy) public view returns(uint256 variableFactor) {
-    //     return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, rateOracleId, historicalApy);
-    // }
 
-    // function getTraderMarginRequirementTest(int256 fixedTokenBalance,
-    //     int256 variableTokenBalance, uint256 termStartTimestamp, uint256 termEndTimestamp, bool isLM) public view returns(uint256 margin) {
-
-    //     IMarginCalculator.TraderMarginRequirementParams memory params;
-    //     params.variableTokenBalance = variableTokenBalance;
-    //     params.fixedTokenBalance = fixedTokenBalance;
-    //     params.termStartTimestamp = termStartTimestamp;
-    //     params.termEndTimestamp = termEndTimestamp;
-    //     params.isLM = isLM;
-
-    //     return getTraderMarginRequirement(params);
-
-    // }
 }
