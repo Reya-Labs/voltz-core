@@ -117,6 +117,11 @@ contract MarginCalculator is IMarginCalculator {
   ) internal view returns (uint256 apyBound) {
     ApyBoundVars memory apyBoundVars;
 
+    int256 beta4 = PRBMathSD59x18.mul(
+      getMarginCalculatorParameters[rateOracleId].beta,
+      4 * ONE_WEI
+    );
+
     apyBoundVars.timeFactor = computeTimeFactor(
       rateOracleId,
       termEndTimestampScaled,
@@ -136,28 +141,19 @@ contract MarginCalculator is IMarginCalculator {
         getMarginCalculatorParameters[rateOracleId].sigmaSquared,
         apyBoundVars.oneMinusTimeFactor
       ),
-      PRBMathSD59x18.mul(
-        getMarginCalculatorParameters[rateOracleId].beta,
-        4 * ONE_WEI
-      )
+      beta4
     );
 
     apyBoundVars.lambdaNum = PRBMathSD59x18.mul(
       PRBMathSD59x18.mul(
-        PRBMathSD59x18.mul(
-          getMarginCalculatorParameters[rateOracleId].beta,
-          4 * ONE_WEI
-        ),
+        beta4,
         apyBoundVars.timeFactor
       ),
       int256(historicalApy)
     );
 
     apyBoundVars.lambdaDen = PRBMathSD59x18.mul(
-      PRBMathSD59x18.mul(
-        getMarginCalculatorParameters[rateOracleId].beta,
-        4 * ONE_WEI
-      ),
+      beta4,
       apyBoundVars.timeFactor
     ); // check the time factor exists, if not have a fallback?
     apyBoundVars.lambda = PRBMathSD59x18.div(
