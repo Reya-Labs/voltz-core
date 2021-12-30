@@ -1,5 +1,6 @@
 import type { BigNumber as EthersBigNumber } from "@ethersproject/bignumber";
 import type { BigNumber as MathjsBigNumber } from "mathjs";
+import { E } from "./constants";
 import { toMbn, toEbn } from "./helpers";
 import math from "./math";
 
@@ -41,8 +42,11 @@ export function floor(x: EthersBigNumber): EthersBigNumber {
   return toEbn(result);
 }
 
-
 export function pow(x: EthersBigNumber, y: EthersBigNumber): EthersBigNumber {
   const result: MathjsBigNumber = toMbn(x).pow(toMbn(y));
   return toEbn(result);
+}
+
+export function exp(x: EthersBigNumber): EthersBigNumber {
+  return pow(E, x);
 }

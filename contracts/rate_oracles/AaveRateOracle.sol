@@ -151,7 +151,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             oracleVars.rateCardinalityNext
         );
 
-        return WadRayMath.rayToWad(WadRayMath.rayDiv(rateTo, rateFrom).sub(WadRayMath.RAY));
+        return
+            WadRayMath.rayToWad(
+                WadRayMath.rayDiv(rateTo, rateFrom).sub(WadRayMath.RAY)
+            );
     }
 
     /// @inheritdoc IRateOracle
