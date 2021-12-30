@@ -82,6 +82,41 @@ contract MarginCalculatorTest is MarginCalculator {
             );
     }
 
+    function getPositionMarginRequirementTest(
+        int24 tickLower,
+        int24 tickUpper,
+        bool isLM,
+        int24 currentTick,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp,
+        uint128 liquidity,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 variableFactor,
+        bytes32 rateOracleId,
+        uint256 historicalApy
+    ) external view returns (uint256 margin) {
+        return
+            getPositionMarginRequirement(
+                PositionMarginRequirementParams({
+                    owner: address(0), // owner should not matter for the purposes of computing position's margin
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    isLM: isLM,
+                    currentTick: currentTick,
+                    termStartTimestamp: termStartTimestamp,
+                    termEndTimestamp: termEndTimestamp,
+                    liquidity: liquidity,
+                    fixedTokenBalance: fixedTokenBalance,
+                    variableTokenBalance: variableTokenBalance,
+                    variableFactor: variableFactor,
+                    rateOracleId: rateOracleId,
+                    historicalApy: historicalApy
+                })
+            );
+    }
+
+
     function getTraderMarginRequirementTest(
         int256 fixedTokenBalance,
         int256 variableTokenBalance,

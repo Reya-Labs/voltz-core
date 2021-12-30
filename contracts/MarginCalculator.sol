@@ -509,19 +509,7 @@ contract MarginCalculator is IMarginCalculator {
 
     PositionMarginRequirementsVars memory vars;
 
-    vars.amount0 = SqrtPriceMath.getAmount0Delta(
-      TickMath.getSqrtRatioAtTick(params.tickLower),
-      TickMath.getSqrtRatioAtTick(params.tickUpper),
-      int128(params.liquidity)
-    );
-
-    vars.amount1 = SqrtPriceMath.getAmount1Delta(
-      TickMath.getSqrtRatioAtTick(params.tickLower),
-      TickMath.getSqrtRatioAtTick(params.tickUpper),
-      int128(params.liquidity)
-    );
-
-    // fix amount signs and convert to uint256
+    // make sure amount values have correct signs
 
     if (params.currentTick < params.tickLower) {
       if (params.variableTokenBalance > 0) {
@@ -543,7 +531,20 @@ contract MarginCalculator is IMarginCalculator {
         );
       } else {
         // the variable token balance is 0
-        vars.expectedVariableTokenBalance = int256(vars.amount1);
+
+        vars.amount0 = SqrtPriceMath.getAmount0Delta(
+          TickMath.getSqrtRatioAtTick(params.tickLower),
+          TickMath.getSqrtRatioAtTick(params.tickUpper),
+          -int128(params.liquidity)
+        );
+
+        vars.amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(params.tickLower),
+          TickMath.getSqrtRatioAtTick(params.tickUpper),
+          int128(params.liquidity)
+        );
+
+        vars.expectedVariableTokenBalance = vars.amount1;
         vars.expectedFixedTokenBalance = FixedAndVariableMath
           .getFixedTokenBalance(
             vars.amount0,
@@ -566,13 +567,12 @@ contract MarginCalculator is IMarginCalculator {
         );
       }
     } else if (params.currentTick < params.tickUpper) {
-      // margin = positionMarginBetweenTicksHelper(params, vars); got rid of the vars and just initialise that struct directly in positionMarginBetweenTicksHelper
       margin = positionMarginBetweenTicksHelper(params);
     } else {
       if (params.variableTokenBalance < 0) {
         revert("variable balance < 0"); // this should not be possible
       } else if (params.variableTokenBalance > 0) {
-        // means the trader deposited on the other side of the tick rang
+        // means the trader deposited on the other side of the tick range
         // the margin just covers the current balances of the position
 
         margin = getTraderMarginRequirement(
@@ -588,7 +588,20 @@ contract MarginCalculator is IMarginCalculator {
         );
       } else {
         // the variable token balance is 0
-        vars.expectedVariableTokenBalance = -int256(vars.amount1);
+
+        vars.amount0 = SqrtPriceMath.getAmount0Delta(
+          TickMath.getSqrtRatioAtTick(params.tickLower),
+          TickMath.getSqrtRatioAtTick(params.tickUpper),
+          int128(params.liquidity)
+        );
+
+        vars.amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(params.tickLower),
+          TickMath.getSqrtRatioAtTick(params.tickUpper),
+          -int128(params.liquidity)
+        );
+
+        vars.expectedVariableTokenBalance = vars.amount1;
         vars.expectedFixedTokenBalance = FixedAndVariableMath
           .getFixedTokenBalance(
             vars.amount0,
