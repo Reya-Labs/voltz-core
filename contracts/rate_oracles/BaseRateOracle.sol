@@ -46,7 +46,6 @@ abstract contract BaseRateOracle is IRateOracle {
     }
 
     function variableFactor(
-        bool atMaturity,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
     ) public virtual override returns (uint256 result);

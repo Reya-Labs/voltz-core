@@ -410,7 +410,6 @@ contract VAMM is IVAMM, Pausable {
       // update global fee tracker
       if (state.liquidity > 0) {
         uint256 variableFactor = amm.rateOracle().variableFactor(
-          false,
           amm.termStartTimestamp(),
           amm.termEndTimestamp()
         );
@@ -507,7 +506,6 @@ contract VAMM is IVAMM, Pausable {
         int256(swapLocalVars.amount0),
         -int256(swapLocalVars.amount1),
         amm.rateOracle().variableFactor(
-          false,
           amm.termStartTimestamp(),
           amm.termEndTimestamp()
         ),
@@ -520,7 +518,6 @@ contract VAMM is IVAMM, Pausable {
         -int256(swapLocalVars.amount0),
         int256(swapLocalVars.amount1),
         amm.rateOracle().variableFactor(
-          false,
           amm.termStartTimestamp(),
           amm.termEndTimestamp()
         ),

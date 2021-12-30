@@ -150,7 +150,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         int256 updatedMarginWouldBe = position.margin + marginDelta;
         
-        uint256 variableFactor = amm.rateOracle().variableFactor(false, amm.termStartTimestamp(), amm.termEndTimestamp());
+        uint256 variableFactor = amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp());
         
         // duplicate code (put into a function)
         (, int24 tick, ) = amm.vamm().slot0();
@@ -205,7 +205,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.termStartTimestamp(), amm.termEndTimestamp()));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp()));
 
         position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMargin(settlementCashflow);
@@ -216,7 +216,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     function settleTrader() external override whenNotPaused onlyAfterMaturity {
 
         Trader.Info storage trader = traders[msg.sender];    
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(true, amm.termStartTimestamp(), amm.termEndTimestamp()));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp()));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMargin(settlementCashflow);
@@ -250,7 +250,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
                 liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: amm.rateOracle().variableFactor(false, termStartTimestamp, termEndTimestamp),
+                variableFactor: amm.rateOracle().variableFactor(termStartTimestamp, termEndTimestamp),
                 rateOracleId: amm.rateOracleId(),
                 historicalApy: amm.rateOracle().getHistoricalApy()
             }),
@@ -336,7 +336,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
                 liquidity: amountTotal,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance, 
-                variableFactor: amm.rateOracle().variableFactor(false, termStartTimestamp, termEndTimestamp),
+                variableFactor: amm.rateOracle().variableFactor(termStartTimestamp, termEndTimestamp),
                 rateOracleId: amm.rateOracleId(),
                 historicalApy: amm.rateOracle().getHistoricalApy()
             })

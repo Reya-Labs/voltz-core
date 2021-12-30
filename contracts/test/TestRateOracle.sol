@@ -19,6 +19,9 @@ contract TestRateOracle is AaveRateOracle {
   uint256 public latestBeforeOrAtRateValue;
   uint256 public latestAfterOrAtRateValue;
 
+  uint256 public latestVariableFactor;
+
+
   // todo: rateOracleId should be a function of underlyingProtocol and underlyingToken?
   constructor(address aaveLendingPool, bytes32 rateOracleId, address underlying) AaveRateOracle(aaveLendingPool, rateOracleId, underlying) {
     
@@ -110,6 +113,9 @@ contract TestRateOracle is AaveRateOracle {
     return computeApyFromRate(rateFromTo, timeInYears);
   }
 
+  function testVariableFactor(uint256 termStartTimestamp, uint256 termEndTimestamp) external {
+    latestVariableFactor = variableFactor(termStartTimestamp, termEndTimestamp);
+  }
 
 
 

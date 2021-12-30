@@ -44,7 +44,7 @@ interface IRateOracle {
 
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external;
 
-    function variableFactor(bool atMaturity, uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256 result);
+    function variableFactor(uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256 result);
 
     function increaseObservarionCardinalityNext(uint16 rateCardinalityNext) external;
 

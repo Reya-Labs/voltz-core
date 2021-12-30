@@ -155,15 +155,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     /// @inheritdoc IRateOracle
     function variableFactor(
-        bool atMaturity,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
     ) public override(BaseRateOracle, IRateOracle) returns (uint256 result) {
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
-            require(atMaturity, "Not at maturity");
             result = getRateFromTo(termStartTimestamp, termEndTimestamp);
         } else {
-            require(!atMaturity, "At maturity");
             result = getRateFromTo(
                 termStartTimestamp,
                 Time.blockTimestampScaled()
