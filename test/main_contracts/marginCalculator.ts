@@ -1,10 +1,10 @@
 // todo: fix given the recent changes made to the MarginCalculator timeFactor
-import { Wallet, BigNumber } from "ethers";
+import { Wallet, BigNumber, utils } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 import { MarginCalculator } from "../../typechain/MarginCalculator";
 import { toBn } from "evm-bn";
-import { div, sub, mul, add, sqrt, floor } from "../shared/functions";
+import { div, sub, mul, add, sqrt, floor, exp } from "../shared/functions";
 import { factoryFixture } from "../shared/fixtures";
 import {
   encodeSqrtRatioX96,
@@ -226,10 +226,6 @@ function getTraderMarginRequirement(
     termEndTimestamp,
     termStartTimestamp
   );
-  const timeInSecondsFromNowToMaturity: BigNumber = sub(
-    termEndTimestamp,
-    blockTimestampScaled
-  );
   const exp1 = mul(
     fixedTokenBalance,
     fixedFactor(
@@ -243,10 +239,9 @@ function getTraderMarginRequirement(
     variableTokenBalance,
     worstCaseVariableFactorAtMaturity(
       timeInSecondsFromStartToMaturity,
-      timeInSecondsFromNowToMaturity,
+      blockTimestampScaled,
       isFT,
       isLM,
-      rateOracleId,
       historicalApy
     )
   );
@@ -272,25 +267,25 @@ function getTraderMarginRequirement(
 
 function worstCaseVariableFactorAtMaturity(
   timeInSecondsFromStartToMaturity: BigNumber,
-  timeInSecondsFromNowToMaturity: BigNumber,
+  currentTimeInSeconds: BigNumber,
   isFT: boolean,
   isLM: boolean,
-  rateOracleId: string,
   historicalApy: BigNumber
 ): BigNumber {
   const timeInYearsFromStartUntilMaturity: BigNumber = accrualFact(
     timeInSecondsFromStartToMaturity
   );
+
+  const timeFactor = computeTimeFactor(
+    BETA,
+    timeInSecondsFromStartToMaturity,
+    currentTimeInSeconds
+  );
   let variableFactor: BigNumber;
   let apyBound: BigNumber;
 
   if (isFT) {
-    apyBound = computeApyBound(
-      rateOracleId,
-      timeInSecondsFromNowToMaturity,
-      historicalApy,
-      true
-    );
+    apyBound = computeApyBound(timeFactor, historicalApy, true);
     if (isLM) {
       variableFactor = mul(timeInYearsFromStartUntilMaturity, apyBound);
     } else {
@@ -300,12 +295,7 @@ function worstCaseVariableFactorAtMaturity(
       );
     }
   } else {
-    apyBound = computeApyBound(
-      rateOracleId,
-      timeInSecondsFromNowToMaturity,
-      historicalApy,
-      false
-    );
+    apyBound = computeApyBound(timeFactor, historicalApy, false);
     if (isLM) {
       variableFactor = mul(timeInYearsFromStartUntilMaturity, apyBound);
     } else {
@@ -319,15 +309,11 @@ function worstCaseVariableFactorAtMaturity(
   return variableFactor;
 }
 
-// const expected = computeApyBound(RATE_ORACLE_ID, timeInSeconds, historicalApy, isUpper);
-
 function computeApyBound(
-  rateOracleId: string,
-  timeInSeconds: BigNumber,
+  timeFactor: BigNumber,
   historicalApy: BigNumber,
   isUpper: boolean
 ) {
-  const timeFactor: BigNumber = DEFAULT_TIME_FACTOR;
   const oneMinusTimeFactor: BigNumber = sub(toBn("1"), timeFactor);
   const k: BigNumber = div(ALPHA, SIGMA_SQUARED);
   const zeta: BigNumber = div(mul(SIGMA_SQUARED, oneMinusTimeFactor), BETA);
@@ -353,6 +339,18 @@ function computeApyBound(
   }
 
   return apyBound;
+}
+
+function computeTimeFactor(
+  beta: BigNumber,
+  termEndTimestampScaled: BigNumber,
+  currentTimestampScaled: BigNumber
+) {
+  const remainingSeconds = sub(termEndTimestampScaled, currentTimestampScaled);
+  const scaledTime = div(remainingSeconds, termEndTimestampScaled);
+  const expInput = mul(beta.mul(-1), scaledTime);
+
+  return exp(expInput);
 }
 
 function getMinimumMarginRequirement(
@@ -644,6 +642,78 @@ describe("MarginCalculator", () => {
     });
   });
 
+  describe("#computeTimeFactor", async () => {
+    beforeEach("deploy calculator", async () => {
+      calculatorTest = await loadFixture(fixture);
+      await calculatorTest.setMarginCalculatorParametersTest(
+        RATE_ORACLE_ID,
+        APY_UPPER_MULTIPLIER,
+        APY_LOWER_MULTIPLIER,
+        MIN_DELTA_LM,
+        MIN_DELTA_IM,
+        MAX_LEVERAGE,
+        SIGMA_SQUARED,
+        ALPHA,
+        BETA,
+        XI_UPPER,
+        XI_LOWER
+      );
+    });
+
+    it("reverts if termEndTimestamp isn't > 0", async () => {
+      await expect(
+        calculatorTest.computeTimeFactorTest(
+          RATE_ORACLE_ID,
+          toBn("0"),
+          toBn("1")
+        )
+      ).to.be.revertedWith("termEndTimestamp must be > 0");
+    });
+
+    it("reverts if currentTimestamp is larger than termEndTimestamp", async () => {
+      await expect(
+        calculatorTest.computeTimeFactorTest(
+          RATE_ORACLE_ID,
+          toBn("1"),
+          toBn("2")
+        )
+      ).to.be.revertedWith("endTime must be > currentTime");
+    });
+
+    it("reverts if given invalid rateOracleId", async () => {
+      await expect(
+        calculatorTest.computeTimeFactorTest(
+          utils.formatBytes32String("unknownOracle"),
+          toBn("0"),
+          toBn("1")
+        )
+      ).to.be.revertedWith("termEndTimestamp must be > 0");
+    });
+
+    it("correctly computes the time factor", async () => {
+      const currentTimestampScaled = toBn(
+        (await getCurrentTimestamp(provider)).toString()
+      );
+      const termEndTimestampScaled = toBn(
+        currentTimestampScaled.toString()
+      ).add(consts.ONE_YEAR);
+
+      const expected = computeTimeFactor(
+        BETA,
+        termEndTimestampScaled,
+        currentTimestampScaled
+      );
+
+      expect(
+        await calculatorTest.computeTimeFactorTest(
+          RATE_ORACLE_ID,
+          termEndTimestampScaled,
+          currentTimestampScaled
+        )
+      ).to.eql(expected);
+    });
+  });
+
   //   describe("#getApyBound", async () => {
   //     beforeEach("deploy calculator", async () => {
   //       calculatorTest = await loadFixture(fixture);
@@ -660,61 +730,61 @@ describe("MarginCalculator", () => {
   //         XI_UPPER,
   //         XI_LOWER
   //       );
-
-  //       const timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
-  //       const timeInDaysFloor: BigNumber = floor(
-  //         div(timeInSeconds, toBn(consts.ONE_DAY.toString()))
-  //       );
-  //       await calculatorTest.setTimeFactorTest(
-  //         RATE_ORACLE_ID,
-  //         timeInDaysFloor,
-  //         DEFAULT_TIME_FACTOR
-  //       );
   //     });
 
-  //     // passes
-  //     it("correctly computes the Upper APY Bound", async () => {
-  //       const timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
-  //       const historicalApy: BigNumber = toBn("0.02");
-  //       const isUpper: boolean = true;
+  // passes
+  // it("correctly computes the Upper APY Bound", async () => {
+  //   const currentTimestampScaled = toBn(
+  //     (await getCurrentTimestamp(provider)).toString()
+  //   );
+  //   const termEndTimestampScaled = toBn(
+  //     currentTimestampScaled.toString()
+  //   ).add(consts.ONE_YEAR);
+  //   const timeFactor = computeTimeFactor(
+  //     BETA,
+  //     termEndTimestampScaled,
+  //     currentTimestampScaled
+  //   );
+  //   const historicalApy: BigNumber = toBn("0.02");
+  //   const isUpper: boolean = true;
 
-  //       const expected: BigNumber = computeApyBound(
-  //         RATE_ORACLE_ID,
-  //         timeInSeconds,
-  //         historicalApy,
-  //         isUpper
-  //       );
-  //       expect(
-  //         await calculatorTest.computeApyBoundTest(
-  //           RATE_ORACLE_ID,
-  //           timeInSeconds,
-  //           historicalApy,
-  //           isUpper
-  //         )
-  //       ).to.be.closeTo(expected, 10000);
-  //     });
+  //   const expected: BigNumber = computeApyBound(
+  //     timeFactor,
+  //     historicalApy,
+  //     isUpper
+  //   );
+  //   expect(
+  //     await calculatorTest.computeApyBoundTest(
+  //       RATE_ORACLE_ID,
+  //       termEndTimestampScaled,
+  //       currentTimestampScaled,
+  //       historicalApy,
+  //       isUpper
+  //     )
+  //   ).to.be.closeTo(expected, 10000);
+  // });
 
-  //     // passes
-  //     it("correctly computes the Lower APY Bound", async () => {
-  //       const timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
-  //       const historicalApy: BigNumber = toBn("0.02");
-  //       const isUpper: boolean = false;
+  // passes
+  // it("correctly computes the Lower APY Bound", async () => {
+  //   const timeInSeconds: BigNumber = toBn(consts.ONE_YEAR.toString());
+  //   const historicalApy: BigNumber = toBn("0.02");
+  //   const isUpper: boolean = false;
 
-  //       const expected: BigNumber = computeApyBound(
-  //         RATE_ORACLE_ID,
-  //         timeInSeconds,
-  //         historicalApy,
-  //         isUpper
-  //       );
-  //       expect(
-  //         await calculatorTest.computeApyBoundTest(
-  //           RATE_ORACLE_ID,
-  //           timeInSeconds,
-  //           historicalApy,
-  //           isUpper
-  //         )
-  //       ).to.be.closeTo(expected, 10000);
-  //     });
+  //   const expected: BigNumber = computeApyBound(
+  //     RATE_ORACLE_ID,
+  //     timeInSeconds,
+  //     historicalApy,
+  //     isUpper
+  //   );
+  //   expect(
+  //     await calculatorTest.computeApyBoundTest(
+  //       RATE_ORACLE_ID,
+  //       timeInSeconds,
+  //       historicalApy,
+  //       isUpper
+  //     )
+  //   ).to.be.closeTo(expected, 10000);
+  // });
   //   });
 
   //   describe("#getTraderMarginRequirement", async () => {

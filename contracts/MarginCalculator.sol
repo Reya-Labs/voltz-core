@@ -79,8 +79,15 @@ contract MarginCalculator is IMarginCalculator {
     uint256 termEndTimestampScaled,
     uint256 currentTimestampScaled
   ) internal view returns (int256 timeFactor) {
-    // todo: make sure to store the beta and not 4*beta
-    // check that current timestamp is smaller than the term end timestamp
+    require(termEndTimestampScaled > 0, "termEndTimestamp must be > 0");
+    require(
+      currentTimestampScaled <= termEndTimestampScaled,
+      "endTime must be > currentTime"
+    );
+    require(
+      getMarginCalculatorParameters[rateOracleId].beta != 0,
+      "parameters not set for oracle"
+    );
 
     int256 beta = getMarginCalculatorParameters[rateOracleId].beta;
 
