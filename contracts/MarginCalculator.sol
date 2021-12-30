@@ -348,8 +348,6 @@ contract MarginCalculator is IMarginCalculator {
       return 0;
     }
 
-    // bool isFT = params.variableTokenBalance < 0;
-
     uint256 timeInSecondsFromStartToMaturity = params.termEndTimestamp -
       params.termStartTimestamp;
 
