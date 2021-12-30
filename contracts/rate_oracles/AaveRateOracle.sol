@@ -64,6 +64,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             // console.log("Test Contract: timeDeltaSinceLastUpdate", timeDeltaSinceLastUpdate);
             // console.log("Test Contract: last.timestamp", last.timestamp);
             // console.log("Test Contract: blockTimestamp", blockTimestamp);
+            // writeRate should only be called via writeOracleEntry
             require(
                 timeDeltaSinceLastUpdate > minSecondsSinceLastUpdate,
                 "throttle updates"
@@ -88,7 +89,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             revert AavePoolGetReserveNormalizedIncomeReturnedZero();
         }
 
-        // rates[underlying][blockTimestamp] = Rate(blockTimestamp, result);
         rates[indexUpdated] = Rate(blockTimestamp, result);
     }
 
@@ -109,6 +109,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @dev Reverts if we have no data point for either timestamp
     function getApyFromTo(uint256 from, uint256 to)
         internal
+        view
         override(BaseRateOracle)
         returns (uint256 apyFromTo)
     {
@@ -128,7 +129,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @param from The timestamp of the start of the period, in wei-seconds
     /// @param to The timestamp of the end of the period, in wei-seconds
     /// @return The "floating rate" expressed in Ray, e.g. 4% is encoded as 0.04*10**27 = 4*10*25
-    function getRateFromTo(uint256 from, uint256 to) public returns (uint256) {
+    function getRateFromTo(uint256 from, uint256 to) public view returns (uint256) {
         // note that we have to convert aave index into "floating rate" for
         // swap calculations, e.g. an index multiple of 1.04*10**27 corresponds to
         // 0.04*10**27 = 4*10*25
@@ -157,7 +158,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     function variableFactor(
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
-    ) public override(BaseRateOracle, IRateOracle) returns (uint256 result) {
+    ) public view override(BaseRateOracle, IRateOracle) returns (uint256 result) {
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
             result = getRateFromTo(termStartTimestamp, termEndTimestamp);
         } else {
@@ -212,7 +213,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) internal returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
+    ) internal view returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
         
         // optimistically set before to the newest rate
         beforeOrAt = rates[index];
@@ -222,12 +223,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
                 // if the newest observation eqauls target, we are in the same block, so we can ignore atOrAfter
                 return (beforeOrAt, atOrAfter);
             } else {
-                (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
-                    index,
-                    cardinality,
-                    cardinalityNext
-                );
-                atOrAfter = rates[oracleVars.rateIndex];
+                atOrAfter = Rate({
+                    timestamp: Time.blockTimestampScaled(),
+                    rateValue: IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying)
+                });
                 return (beforeOrAt, atOrAfter);
             }
         }
@@ -272,19 +271,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) public override(BaseRateOracle, IRateOracle) returns (uint256 rateValue) {
+    ) public view override(BaseRateOracle, IRateOracle) returns (uint256 rateValue) {
         if (currentTime == queriedTime) {
             Rate memory rate;
             rate = rates[index];
             if (rate.timestamp != currentTime) {
-                (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
-                    index,
-                    cardinality,
-                    cardinalityNext
-                );
-                rate = rates[oracleVars.rateIndex];
-                // check the rate was correctly updated (unit test)
-                rateValue = rate.rateValue;
+                rateValue = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying);
             } else {
                 rateValue = rate.rateValue;
             }
@@ -336,7 +328,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     function getHistoricalApy()
-        external
+        public
+        view
         override(BaseRateOracle, IRateOracle)
         returns (uint256 historicalApy)
     {

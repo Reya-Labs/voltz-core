@@ -44,7 +44,7 @@ interface IRateOracle {
 
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external;
 
-    function variableFactor(uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256 result);
+    function variableFactor(uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns(uint256 result);
 
     function increaseObservarionCardinalityNext(uint16 rateCardinalityNext) external;
 
@@ -60,11 +60,11 @@ interface IRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) external returns(uint256 rateValue);
+    ) external view returns(uint256 rateValue);
 
     function writeOracleEntry() external;
 
-    function getHistoricalApy() external returns (uint256 historicalApy);
+    function getHistoricalApy() external view returns (uint256 historicalApy);
 
     function initialize() external; 
 

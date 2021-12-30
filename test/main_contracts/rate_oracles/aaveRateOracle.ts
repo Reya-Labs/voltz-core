@@ -74,7 +74,7 @@ describe('Aave Rate Oracle', () => {
     );
 
     await testRateOracle.setMinSecondsSinceLastUpdate(toBn("7200")); // two hours
-    await testRateOracle.setSecondsAgo("86400"); // one week
+    await testRateOracle.setSecondsAgo("86400"); // one day
 
     return testRateOracle;
   };
@@ -93,10 +93,6 @@ describe('Aave Rate Oracle', () => {
     let testRateOracle: TestRateOracle;
     beforeEach("deploy and initialize test oracle", async () => {
       testRateOracle = await loadFixture(initializedOracleFixture);
-      // await testRateOracle.initializeTestRateOracle({
-      //   tick: 1,
-      //   liquidity: 1
-      // });
     });
 
     it("aave lending pool set correctly", async () => {
@@ -497,11 +493,61 @@ describe('Aave Rate Oracle', () => {
     await expect(testRateOracle.testVariableFactor(termStartTimestampBN, termEndTimestampBN)).to.be.reverted;
   })
 
+})
+
+
+
+
+describe("#getHistoricalApy", async () => {
+
+  let testRateOracle: TestRateOracle;
+  let aaveLendingPoolContract: Contract;
+  let underlyingTokenAddress: string;
+
+  let firstTimestamp: number;
+  let secondTimestamp: number;
+
+
+  beforeEach('deploy and initialize test oracle', async () => {
+    testRateOracle = await loadFixture(initializedOracleFixture);
+
+    const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
+    underlyingTokenAddress = await testRateOracle.underlying();
+    const aaveLendingPoolAbi = [
+      "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+      "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public"
+    ]
+    aaveLendingPoolContract = new Contract(aaveLendingPoolAddress, aaveLendingPoolAbi, provider).connect(wallet);
+
+    await testRateOracle.testGrow(10);
+
+    await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+    firstTimestamp = await getCurrentTimestamp(provider) + 1;
+    await testRateOracle.update();
+
+    await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+    // set new liquidity index value
+    await aaveLendingPoolContract.setReserveNormalizedIncome(underlyingTokenAddress, toBn("1.1"));
+    secondTimestamp = await getCurrentTimestamp(provider) + 1;
+    await testRateOracle.update();
+
+  })
+
+
+  // todo: Error: VM Exception while processing transaction: reverted with reason string '50' (needs to be fixed)
+  // it("correctly computes historical apy", async () => {
+  //   // await testRateOracle.setSecondsAgo("86400"); // one day
+  //   await testRateOracle.testGetHistoricalApy();
+  //   const realizedHistoricalApy = await testRateOracle.latestHistoricalApy();
+  //   expect(realizedHistoricalApy).to.eq(0);
+
+  // })
+
+
 
 
 
 })
-
 
 
   

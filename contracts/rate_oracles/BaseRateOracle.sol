@@ -48,7 +48,7 @@ abstract contract BaseRateOracle is IRateOracle {
     function variableFactor(
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
-    ) public virtual override returns (uint256 result);
+    ) public view virtual override returns (uint256 result);
 
     function grow(uint16 current, uint16 next) internal pure returns (uint16) {
         require(current > 0, "I");
@@ -87,6 +87,7 @@ abstract contract BaseRateOracle is IRateOracle {
     /// @param to The timestamp of the end of the period, in wei-seconds
     function getApyFromTo(uint256 from, uint256 to)
         internal
+        view
         virtual
         returns (uint256 apyFromTo);
 
@@ -106,12 +107,13 @@ abstract contract BaseRateOracle is IRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) public virtual override returns (uint256 rateValue);
+    ) public view virtual override returns (uint256 rateValue);
 
     function writeOracleEntry() external virtual override;
 
     function getHistoricalApy()
         external
+        view
         virtual
         override
         returns (uint256 historicalApy);
