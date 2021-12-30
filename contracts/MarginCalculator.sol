@@ -62,9 +62,10 @@ contract MarginCalculator is IMarginCalculator{
     /// @dev Seconds in a year
     uint256 public constant SECONDS_IN_YEAR = 31536000 * 10**18;
 
-    // todo: docs missing, only Factory, make this function external? 
+    /// @notice Set the per-oracle MarginCalculatorParameters
+    /// @param marginCalculatorParameters the MarginCalculatorParameters to set
     function setMarginCalculatorParameters(MarginCalculatorParameters memory marginCalculatorParameters, bytes32 rateOracleId) override public onlyFactoryOwner {
-        // require statements to check the parameters and the rateOracleId passed into this function
+        // todo: require statements to check the parameters and the rateOracleId passed into this function
         getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
     }
 

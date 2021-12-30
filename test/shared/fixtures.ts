@@ -173,7 +173,7 @@ export async function fixedAndVariableMathFixture(time: any) {
   return { fixedAndVariableMath };
 }
 
-async function factoryFixture(time: any): Promise<FactoryFixture> {
+export async function factoryFixture(time: any): Promise<FactoryFixture> {
   const factoryFactory = await ethers.getContractFactory("Factory", {
     libraries: {
       Time: time.address,
