@@ -150,7 +150,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             oracleVars.rateCardinalityNext
         );
 
-        return WadRayMath.rayToWad(WadRayMath.rayDiv(rateTo, rateFrom).sub(WadRayMath.RAY));
+        return
+            WadRayMath.rayToWad(
+                WadRayMath.rayDiv(rateTo, rateFrom).sub(WadRayMath.RAY)
+            );
     }
 
     /// @inheritdoc IRateOracle
@@ -216,7 +219,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 cardinality,
         uint16 cardinalityNext
     ) internal returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
-        
         // optimistically set before to the newest rate
         beforeOrAt = rates[index];
 
