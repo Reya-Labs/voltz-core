@@ -62,13 +62,13 @@ describe("MarginEngine", () => {
 
   });
 
-  // describe("#updateTraderMargin", () => {
-  //   it("reverts if margin delta is zero", async () => {
-  //     await expect(
-  //       marginEngineTest.updateTraderMarginTest(0)
-  //     ).to.be.revertedWith("InvalidMarginDelta");
-  //   });
-  // });
+  describe("#updateTraderMargin", () => {
+    it("reverts if margin delta is zero", async () => {
+      await expect(
+        marginEngineTest.updateTraderMarginTest(0)
+      ).to.be.revertedWith("InvalidMarginDelta");
+    });
+  });
 
   describe("#traders", () => {
     it("returns empty trader by default", async () => {

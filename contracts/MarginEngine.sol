@@ -40,8 +40,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
     /// @dev liquidatorReward is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
     /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
-    // todo: add override
-    uint256 public liquidatorReward;
+    uint256 public override liquidatorReward;
 
     /// @inheritdoc IMarginEngine
     IAMM public override amm;
@@ -115,8 +114,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         _;
     }
 
-    // todo: override
-    function setLiquidatorReward(uint256 _liquidatorReward) external onlyFactoryOwner {
+    
+    function setLiquidatorReward(uint256 _liquidatorReward) external override onlyFactoryOwner {
         liquidatorReward = _liquidatorReward;
     }
 
@@ -146,18 +145,10 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             revert OnlyOwnerCanUpdatePosition();
         }
 
-        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
-
-        int256 updatedMarginWouldBe = position.margin + marginDelta;
-        
         uint256 variableFactor = amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp());
-        
-        // duplicate code (put into a function)
-        (, int24 tick, ) = amm.vamm().slot0();
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
-        position.updateBalances(fixedTokenDelta, variableTokenDelta);
-        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
+        updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
+        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
+        int256 updatedMarginWouldBe = position.margin + marginDelta;
 
         checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor, address(amm)); 
 
@@ -197,7 +188,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         (, int24 tick, ) = amm.vamm().slot0();
         
-        // AB: theoretically can directly call vamm from margin engine
+        // AB: todo: can directly call vamm from margin engine, needs to be cached in the constructor
         (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
         
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
@@ -227,16 +218,10 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     function liquidatePosition(ModifyPositionParams memory params) external override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
-        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
         (, int24 tick, ) = amm.vamm().slot0();
-        
-        // code duplication
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
-
-        position.updateBalances(fixedTokenDelta, variableTokenDelta);
-        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
+        updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
+        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
         bool isLiquidatable = calculator.isLiquidatablePosition(
             IMarginCalculator.PositionMarginRequirementParams({
@@ -313,17 +298,11 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             uint128 amount
         ) external override {
         
+        (, int24 tick, ) = amm.vamm().slot0();
+        updatePositionTokenBalances(recipient, tickLower, tickUpper);
         Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
-        
         uint128 amountTotal = LiquidityMath.addDelta(position._liquidity, int128(amount));
         
-        // duplicate code
-        (, int24 tick, ) = amm.vamm().slot0();
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
-        position.updateBalances(fixedTokenDelta, variableTokenDelta);
-        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
-
         int256 marginRequirement = int256(calculator.getPositionMarginRequirement(
             IMarginCalculator.PositionMarginRequirementParams({
                 owner: recipient,
@@ -381,6 +360,20 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         }
     }
 
+    function updatePositionTokenBalances(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper) internal {
+
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        (, int24 tick, ) = amm.vamm().slot0();
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
+        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
+        position.updateBalances(fixedTokenDelta, variableTokenDelta);
+        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
+
+    }
+    
     /// @inheritdoc IMarginEngine
     function unwindPosition(
         address owner,
@@ -388,14 +381,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         int24 tickUpper
     ) external override returns(int256 _fixedTokenBalance, int256 _variableTokenBalance) {
 
-        // duplicate code
+        updatePositionTokenBalances(owner, tickLower, tickUpper);
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        (, int24 tick, ) = amm.vamm().slot0();
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
-        position.updateBalances(fixedTokenDelta, variableTokenDelta);
-        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
-        
         Position.Info memory positionMemory = positions.get(owner, tickLower, tickUpper);
 
         // can we bring UnwindTraderUnwindPosition in the MarginEngine?

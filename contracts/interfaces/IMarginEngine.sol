@@ -9,6 +9,9 @@ import "../core_libraries/Position.sol";
 interface IMarginEngine is IPositionStructs {
     // view functions
 
+    
+    function liquidatorReward() external view returns (uint256);
+    
     /// @notice The address of the IRS AMM linked to this Margin Engine
     /// @return Interface of the IRS AMM linked to this Margin Engine
     function amm() external view returns (IAMM);
@@ -41,6 +44,8 @@ interface IMarginEngine is IPositionStructs {
         );
 
     // non-view functions
+
+    function setLiquidatorReward(uint256 _liquidatorReward) external;
 
     /// @notice Updates Position Margin
     /// @dev Must be called by the owner of the position (unless marginDelta is positive?)
