@@ -382,18 +382,24 @@ contract MarginCalculator is IMarginCalculator {
     // however, we are interested in the LP's who take the opposite side, so for them
     // amount0Up must be negative and amount1Up should be positive
 
+    require(params.currentTick < params.tickUpper, "currentTick<tickUpper");
+    require(params.currentTick >= params.tickLower, "currentTick >= tickLower");
+
     // make sure the signs below are correct
     vars.amount0Up = SqrtPriceMath.getAmount0Delta(
       TickMath.getSqrtRatioAtTick(params.currentTick),
       TickMath.getSqrtRatioAtTick(params.tickUpper),
-      int128(params.liquidity)
-    );
+      -int128(params.liquidity)
+    ); // should be negative
 
     vars.amount1Up = SqrtPriceMath.getAmount1Delta(
       TickMath.getSqrtRatioAtTick(params.currentTick),
       TickMath.getSqrtRatioAtTick(params.tickUpper),
-      -int128(params.liquidity)
-    );
+      int128(params.liquidity)
+    ); // should be positive
+
+    assert(vars.amount0Up <= 0);
+    assert(vars.amount1Up >= 0);
 
     vars.expectedVariableTokenBalanceAfterUp =
       params.variableTokenBalance +
@@ -430,14 +436,17 @@ contract MarginCalculator is IMarginCalculator {
     vars.amount0Down = SqrtPriceMath.getAmount0Delta(
       TickMath.getSqrtRatioAtTick(params.currentTick),
       TickMath.getSqrtRatioAtTick(params.tickLower),
-      -int128(params.liquidity)
+      int128(params.liquidity)
     );
 
     vars.amount1Down = SqrtPriceMath.getAmount1Delta(
       TickMath.getSqrtRatioAtTick(params.currentTick),
       TickMath.getSqrtRatioAtTick(params.tickLower),
-      int128(params.liquidity)
+      -int128(params.liquidity)
     );
+
+    assert(vars.amount0Down >= 0);
+    assert(vars.amount1Down <= 0);
 
     vars.expectedVariableTokenBalanceAfterDown =
       params.variableTokenBalance +
