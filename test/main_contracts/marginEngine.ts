@@ -275,6 +275,25 @@ describe("MarginEngine", () => {
     })
 
   })
+
+
+  describe("#updatePositionMargin", async () => {
+
+    let marginEngineTest: TestMarginEngine;
+    let factory: Factory;
+    let token: ERC20Mock;
+
+    beforeEach("deploy fixture", async () => {
+
+      ({ factory, token, marginEngineTest } = await loadFixture(metaFixture));
+      await token.mint(wallet.address, BigNumber.from(10).pow(27))
+      await token.approve(wallet.address, BigNumber.from(10).pow(27))
+  
+    });
+
+    // it(" ")
+
+  })
   
 
   

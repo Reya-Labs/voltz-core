@@ -487,7 +487,7 @@ describe("MarginCalculator", () => {
 
     const timeLibrary = await timeFactory.deploy();
 
-    const { factory } = await factoryFixture(timeLibrary);
+    const { factory } = await factoryFixture(timeLibrary.address);
 
     const fixedAndVariableMathFactory = await ethers.getContractFactory(
       "FixedAndVariableMath",

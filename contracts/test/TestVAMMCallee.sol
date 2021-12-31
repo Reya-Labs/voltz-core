@@ -11,6 +11,20 @@ import "../VAMM.sol";
 contract TestVAMMCallee {
     using SafeCast for uint256;
 
+    
+    
+    function computePositionFixedAndVariableGrowthInsideTest(
+        address vamm,
+        int24 tickLower,
+        int24 tickUpper,
+        int24 currentTick
+    ) external view returns (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) {
+        
+        return IVAMM(vamm).computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, currentTick);
+
+    }
+    
+    
     function mintTest(
         address vamm,
         address recipient,

@@ -563,7 +563,7 @@ contract VAMM is IVAMM, Pausable {
         tickLower: tickLower,
         tickUpper: tickUpper,
         tickCurrent: currentTick,
-        fixedTokenGrowthGlobal: variableTokenGrowthGlobal
+        fixedTokenGrowthGlobal: fixedTokenGrowthGlobal
       })
     );
 
