@@ -35,13 +35,13 @@ contract TickTest {
     }
 
     // DONE
-    function tickSpacingToMaxLiquidityPerTick(int24 tickSpacing)
-        public
-        pure
-        returns (uint128)
-    {
-        return Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing);
-    }
+    // function tickSpacingToMaxLiquidityPerTick(int24 tickSpacing)
+    //     public
+    //     pure
+    //     returns (uint128)
+    // {
+    //     return Tick.tickSpacingToMaxLiquidityPerTick(tickSpacing);
+    // }
 
     // DONE
     function getVariableTokenGrowthInside(
