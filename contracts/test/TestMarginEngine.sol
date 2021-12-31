@@ -95,5 +95,15 @@ contract TestMarginEngine is MarginEngine {
     }
 
 
+    function calculateLiquidatorRewardAndUpdatedMarginTest(
+        int256 traderMargin, // can also be position margin?
+        uint256 liquidatorRewardAsProportionOfMargin
+    ) public pure returns (uint256 liquidatorReward, int256 updatedMargin) {
+
+        return calculateLiquidatorRewardAndUpdatedMargin(traderMargin, liquidatorRewardAsProportionOfMargin);
+
+    }
+
+
     
 }

@@ -210,6 +210,33 @@ describe("MarginEngine", () => {
   })
 
 
+  describe("#calculateLiquidatorRewardAndUpdatedMargin", async () => {
+
+    let marginEngineTest: TestMarginEngine;
+    let factory: Factory;
+
+    beforeEach("deploy fixture", async () => {
+
+      ({ factory, marginEngineTest } = await loadFixture(metaFixture));
+  
+    });
+
+    it("calculateLiquidatorRewardAndUpdatedMargin is done correctly", async () => {
+
+      const traderMargin = toBn('1.0');
+      const liquidatorRewardAsProportionOfMargin = toBn('0.1');
+
+      const [realizedLiquidatorReward, realizedUpdatedMargin] = await marginEngineTest.calculateLiquidatorRewardAndUpdatedMarginTest(traderMargin, liquidatorRewardAsProportionOfMargin);
+
+      expect(realizedLiquidatorReward).to.eq(toBn("0.1"));
+      expect(realizedUpdatedMargin).to.eq(toBn("0.9"));
+    })
+
+
+
+  })
+
+
   
 
   
