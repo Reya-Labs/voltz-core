@@ -1056,7 +1056,7 @@ describe("MarginCalculator", () => {
 
       const termStartTimestampScaled = toBn(termStartTimestamp.toString());
 
-      const isFT = true;
+      // const isFT = true;
       const isLM = false;
       const historicalApy = toBn("0.1");
 
@@ -1351,7 +1351,6 @@ describe("MarginCalculator", () => {
   })
 
 
-  // AB: get back to this, fails for now
   describe("#getPositionMarginRequirement", async () => {
     beforeEach("deploy calculator", async () => {
       calculatorTest = await loadFixture(fixture);
@@ -1408,6 +1407,55 @@ describe("MarginCalculator", () => {
       expect(realized).to.be.closeTo(expected, 10000000000000);
 
     })
+
+  })
+
+
+  describe("#isLiquiisLiquidatableTrader", async () => {
+    beforeEach("deploy calculator", async () => {
+      calculatorTest = await loadFixture(fixture);
+      await calculatorTest.setMarginCalculatorParametersTest(
+        RATE_ORACLE_ID,
+        APY_UPPER_MULTIPLIER,
+        APY_LOWER_MULTIPLIER,
+        MIN_DELTA_LM,
+        MIN_DELTA_IM,
+        MAX_LEVERAGE,
+        SIGMA_SQUARED,
+        ALPHA,
+        BETA,
+        XI_UPPER,
+        XI_LOWER,
+        T_MAX
+      );
+    });
+
+
+    it("correctly checks for the fact the trader is liquidatable", async () => {
+      const fixedTokenBalance: BigNumber = toBn("1000");
+      const variableTokenBalance: BigNumber = toBn("-3000");
+
+      const currentTimestamp = await getCurrentTimestamp(provider) + 1;
+      const currentTimestampScaled = toBn(currentTimestamp.toString())
+      
+      const termStartTimestamp = currentTimestamp - 604800;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp+604800).toString() // add a week
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      // const isFT = true;
+      const isLM = false;
+      const historicalApy = toBn("0.1");
+      const currentMargin = toBn("0.0");
+
+      const realized = await calculatorTest.isLiquidatableTraderTest(fixedTokenBalance, variableTokenBalance, termStartTimestamp, termEndTimestampScaled, isLM, RATE_ORACLE_ID, historicalApy, currentMargin);
+      expect(realized).to.be.eq(true);
+
+    })
+
 
   })
 

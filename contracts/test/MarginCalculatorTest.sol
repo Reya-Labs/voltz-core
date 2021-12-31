@@ -268,21 +268,30 @@ contract MarginCalculatorTest is MarginCalculator {
         );
     }
 
-    // function worstCaseVariableFactorAtMaturityTest(uint256 timeInSecondsFromStartToMaturity, uint256 timeInSecondsFromNowToMaturity, bool isFT, bool isLM, bytes32 rateOracleId, uint256 historicalApy) public view returns(uint256 variableFactor) {
-    //     return worstCaseVariableFactorAtMaturity(timeInSecondsFromStartToMaturity, timeInSecondsFromNowToMaturity, isFT, isLM, rateOracleId, historicalApy);
-    // }
+    function isLiquidatableTraderTest(
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp,
+        bool isLM,
+        bytes32 rateOracleId,
+        uint256 historicalApy,
+        int256 currentMargin
+    ) external view returns (bool) {
 
-    // function getTraderMarginRequirementTest(int256 fixedTokenBalance,
-    //     int256 variableTokenBalance, uint256 termStartTimestamp, uint256 termEndTimestamp, bool isLM) public view returns(uint256 margin) {
+        return
+            isLiquidatableTrader(
+                TraderMarginRequirementParams({
+                    fixedTokenBalance: fixedTokenBalance,
+                    variableTokenBalance: variableTokenBalance,
+                    termStartTimestamp: termStartTimestamp,
+                    termEndTimestamp: termEndTimestamp,
+                    isLM: isLM,
+                    rateOracleId: rateOracleId,
+                    historicalApy: historicalApy
+                }),
+                currentMargin
+            );
 
-    //     IMarginCalculator.TraderMarginRequirementParams memory params;
-    //     params.variableTokenBalance = variableTokenBalance;
-    //     params.fixedTokenBalance = fixedTokenBalance;
-    //     params.termStartTimestamp = termStartTimestamp;
-    //     params.termEndTimestamp = termEndTimestamp;
-    //     params.isLM = isLM;
-
-    //     return getTraderMarginRequirement(params);
-
-    // }
+    }
 }
