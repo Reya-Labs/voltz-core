@@ -29,6 +29,8 @@ import { toBn } from "evm-bn";
 import { consts } from "../helpers/constants";
 import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 import { TestAMM } from "../../typechain/TestAMM";
+import { ERC20Mock } from "../../typechain";
+import { sub, add } from "../shared/functions";
 
 // const initialTraderInfo = {
 //   margin: BigNumber.from(0),
@@ -141,11 +143,6 @@ describe("MarginEngine", () => {
     })
 
     it("check trader margin can be updated", async () => {
-      // int256 updatedMarginWouldBe,
-      // int256 fixedTokenBalance,
-      // int256 variableTokenBalance,
-      // bool isTraderSettled,
-      // address ammAddress
 
       const updatedMarginWouldBe = toBn("0");
       const fixedTokenBalance = toBn("1000");
@@ -232,11 +229,52 @@ describe("MarginEngine", () => {
       expect(realizedUpdatedMargin).to.eq(toBn("0.9"));
     })
 
-
-
   })
 
 
+  describe("#updateTraderMargin", async () => {
+
+    let marginEngineTest: TestMarginEngine;
+    let factory: Factory;
+    let token: ERC20Mock;
+
+    beforeEach("deploy fixture", async () => {
+
+      ({ factory, token, marginEngineTest } = await loadFixture(metaFixture));
+      await token.mint(wallet.address, BigNumber.from(10).pow(27))
+      await token.approve(wallet.address, BigNumber.from(10).pow(27))
+  
+    });
+
+    it("check trader margin correctly updated", async () => {
+      await marginEngineTest.updateTraderMarginTest(toBn("10000000"));
+      // retrieve the trader info object
+      const traderInfo = await marginEngineTest.traders(wallet.address);
+      const traderMargin = traderInfo[0];
+      expect(traderMargin).to.eq(toBn("10000000"));
+    })
+
+    it("check token balance correctly updated", async () => {
+      
+      const oldTraderBalance = await token.balanceOf(wallet.address);
+      const ammAddress = await marginEngineTest.amm();
+      const oldAmmBalance = await token.balanceOf(ammAddress);
+      const marginDelta = toBn("10000000");
+      await marginEngineTest.updateTraderMarginTest(marginDelta);
+
+      const newTraderBalanceExpected = sub(oldTraderBalance, marginDelta);
+      const newAmmBalance = add(oldAmmBalance, marginDelta);
+      
+      const realizedTraderBalance = await token.balanceOf(wallet.address);
+      const realizedAmmbalance = await token.balanceOf(ammAddress);
+
+      expect(realizedTraderBalance).to.eq(newTraderBalanceExpected);
+      expect(realizedAmmbalance).to.eq(newAmmBalance);
+      
+      
+    })
+
+  })
   
 
   

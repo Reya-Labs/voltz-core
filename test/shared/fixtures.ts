@@ -7,7 +7,7 @@ import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 // import { TestERC20 } from '../../typechain/TestERC20'
 import { TestDeployer } from "../../typechain/TestDeployer";
 import { BigNumber } from "@ethersproject/bignumber";
-import { FixedAndVariableMath } from "../../typechain";
+import { ERC20Mock, FixedAndVariableMath } from "../../typechain";
 import { consts } from "../helpers/constants";
 import { ethers, waffle } from "hardhat";
 import { getCurrentTimestamp } from "../helpers/time";
@@ -185,6 +185,7 @@ interface MetaFixture {
   marginEngineTest: TestMarginEngine;
   vammCalleeTest: TestVAMMCallee;
   marginEngineCalleeTest: TestMarginEngineCallee;
+  token: ERC20Mock;
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
@@ -364,5 +365,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     marginEngineTest,
     vammCalleeTest,
     marginEngineCalleeTest,
+    token
   };
 };
