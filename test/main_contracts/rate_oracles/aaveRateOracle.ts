@@ -56,7 +56,7 @@ describe("Aave Rate Oracle", () => {
 
   const oracleFixture = async () => {
     const { time } = await timeFixture();
-    const { fixedAndVariableMath } = await fixedAndVariableMathFixture(time);
+    const { fixedAndVariableMath } = await fixedAndVariableMathFixture(time.address);
     const { token } = await mockERC20Fixture();
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
 

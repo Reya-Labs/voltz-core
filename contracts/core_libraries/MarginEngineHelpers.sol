@@ -58,7 +58,7 @@ contract MarginEngineHelpers {
         int256 positionVariableTokenBalance,
         uint256 variableFactor,
         address ammAddress
-    ) internal {
+    ) internal view {
         IAMM amm = IAMM(ammAddress);
 
         (, int24 tick, ) = amm.vamm().slot0();
@@ -105,7 +105,7 @@ contract MarginEngineHelpers {
         int256 variableTokenBalance,
         bool isTraderSettled,
         address ammAddress
-    ) public {
+    ) public view {
         IAMM amm = IAMM(ammAddress);
 
         if (Time.blockTimestampScaled() >= amm.termEndTimestamp()) {
@@ -144,7 +144,7 @@ contract MarginEngineHelpers {
         int256 positionVariableTokenBalance,
         uint256 variableFactor,
         address ammAddress
-    ) public {
+    ) public view {
         IAMM amm = IAMM(ammAddress);
 
         /// @dev If the AMM has reached maturity, the only reason why someone would want to update
@@ -184,7 +184,7 @@ contract MarginEngineHelpers {
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         address ammAddress
-    ) internal {
+    ) internal view {
         IAMM amm = IAMM(ammAddress);
 
         int256 traderMarginRequirement = int256(

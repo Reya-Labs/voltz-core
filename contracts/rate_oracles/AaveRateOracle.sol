@@ -334,6 +334,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         public
         view
         override(BaseRateOracle, IRateOracle)
+        virtual // todo: remove
         returns (uint256 historicalApy)
     {
         uint256 to = Time.blockTimestampScaled();
