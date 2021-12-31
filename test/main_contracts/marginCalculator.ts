@@ -1459,4 +1459,59 @@ describe("MarginCalculator", () => {
 
   })
 
+  describe("#isLiquiisLiquidatablePosition", async () => {
+    beforeEach("deploy calculator", async () => {
+      calculatorTest = await loadFixture(fixture);
+      await calculatorTest.setMarginCalculatorParametersTest(
+        RATE_ORACLE_ID,
+        APY_UPPER_MULTIPLIER,
+        APY_LOWER_MULTIPLIER,
+        MIN_DELTA_LM,
+        MIN_DELTA_IM,
+        MAX_LEVERAGE,
+        SIGMA_SQUARED,
+        ALPHA,
+        BETA,
+        XI_UPPER,
+        XI_LOWER,
+        T_MAX
+      );
+    });
+
+    it("correctly checks for the fact the position is liquidatable", async () => {
+
+      const tickLower: number = -1;
+      const tickUpper: number = 1;
+      const isLM: boolean = true;
+      const currentTick: number = 0;
+
+      const currentTimestamp = await getCurrentTimestamp(provider) + 1;
+      const currentTimestampScaled = toBn(currentTimestamp.toString())
+      
+      const termStartTimestamp = currentTimestamp - 604800;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp+604800).toString() // add a week
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      const fixedTokenBalance: BigNumber = toBn("-3000");
+      const variableTokenBalance: BigNumber = toBn("1000");
+
+      const variableFactor: BigNumber = toBn("0.02");
+      const historicalApy: BigNumber = toBn("0.3");
+      const liquidityBN: BigNumber = expandTo18Decimals(1);
+      const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
+      const currentMargin = toBn("0.0");
+
+      const realized = await calculatorTest.isLiquidatablePositionLMTest(tickLower, tickUpper, currentTick, termStartTimestampScaled, termEndTimestampScaled, liquidityBN, fixedTokenBalance, variableTokenBalance, variableFactor, RATE_ORACLE_ID, historicalApy, currentMargin);
+      
+      expect(realized).to.eq(true);
+
+    })
+
+
+  })
+
 });
