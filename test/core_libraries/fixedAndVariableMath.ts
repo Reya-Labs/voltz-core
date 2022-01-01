@@ -364,37 +364,24 @@ describe("FixedAndVariableMath", () => {
     const amount0: BigNumber = toBn("-1000");
     const amount1: BigNumber = toBn("1000");
     const accruedVariableFactor: BigNumber = toBn("2");
+    const termEndTimestamp: BigNumber = add(
+      toBn(BLOCK_TIMESTAMP.toString()),
+      ONE_YEAR_IN_SECONDS
+    );
 
-    it("reverts unless the end timestamp is after the start timestamp", async () => {
-      const beforeCurrentBlockTimestamp = sub(currentBlockTimestamp, toBn("1"));
-
+    it("reverts if the signs of amount0 and amount1 are the same", async () => {
       await expect(
         fixedAndVariableMathTest.getFixedTokenBalance(
           amount0,
-          amount1,
-          accruedVariableFactor,
-          currentBlockTimestamp,
-          currentBlockTimestamp
-        )
-      ).to.be.revertedWith("E<=S");
-
-      await expect(
-        fixedAndVariableMathTest.getFixedTokenBalance(
           amount0,
-          amount1,
           accruedVariableFactor,
           currentBlockTimestamp,
-          beforeCurrentBlockTimestamp
+          termEndTimestamp
         )
-      ).to.be.revertedWith("E<=S");
+      ).to.be.revertedWith("AmountSignsSame()");
     });
 
     it("correctly gets the fixed token balance", async () => {
-      const termEndTimestamp: BigNumber = add(
-        toBn(BLOCK_TIMESTAMP.toString()),
-        ONE_YEAR_IN_SECONDS
-      );
-
       const expected: BigNumber = getFixedTokenBalance(
         amount0,
         amount1,
