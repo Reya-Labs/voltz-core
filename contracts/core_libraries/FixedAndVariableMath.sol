@@ -5,6 +5,7 @@ import "prb-math/contracts/PRBMathSD59x18.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./Time.sol";
 
+
 /// @title A utility library for mathematics of fixed and variable token amounts.
 /// @author Artur Begyan
 library FixedAndVariableMath {
@@ -73,9 +74,9 @@ library FixedAndVariableMath {
     ) public view returns (uint256 fixedFactorValue) {
         require(termEndTimestamp > termStartTimestamp, "E<=S");
 
-        require(Time.blockTimestampScaled() >= termStartTimestamp, "B.T>=S");
+        require(Time.blockTimestampScaled() >= termStartTimestamp, "B.T>S");
 
-        require(Time.blockTimestampScaled() <= termEndTimestamp, "B.T>=S");
+        require(Time.blockTimestampScaled() <= termEndTimestamp, "B.T>S");
 
         uint256 timeInSeconds;
 
