@@ -1,7 +1,7 @@
-import JSBI from 'jsbi'
+import JSBI from "jsbi";
 
-export const ONE = JSBI.BigInt(1)
-export const ZERO = JSBI.BigInt(0)
+export const ONE = JSBI.BigInt(1);
+export const ZERO = JSBI.BigInt(0);
 
 export abstract class FullMath {
   /**
@@ -10,9 +10,10 @@ export abstract class FullMath {
   private constructor() {}
 
   public static mulDivRoundingUp(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
-    const product = JSBI.multiply(a, b)
-    let result = JSBI.divide(product, denominator)
-    if (JSBI.notEqual(JSBI.remainder(product, denominator), ZERO)) result = JSBI.add(result, ONE)
-    return result
+    const product = JSBI.multiply(a, b);
+    let result = JSBI.divide(product, denominator);
+    if (JSBI.notEqual(JSBI.remainder(product, denominator), ZERO))
+      result = JSBI.add(result, ONE);
+    return result;
   }
 }

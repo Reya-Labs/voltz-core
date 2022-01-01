@@ -13,16 +13,6 @@ import {
   fixedFactor,
   MIN_SQRT_RATIO,
   MAX_SQRT_RATIO,
-} from "../shared/utilities";
-import { FixedAndVariableMath } from "../../typechain/FixedAndVariableMath";
-
-import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
-import { getCurrentTimestamp, advanceTime } from "../helpers/time";
-
-import { getFixedTokenBalance } from "../core_libraries/fixedAndVariableMath";
-
-import { consts } from "../helpers/constants";
-import {
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
   MIN_DELTA_LM,
@@ -39,6 +29,14 @@ import {
   MIN_TICK,
   MAX_TICK,
 } from "../shared/utilities";
+import { FixedAndVariableMath } from "../../typechain/FixedAndVariableMath";
+
+import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
+import { getCurrentTimestamp, advanceTime } from "../helpers/time";
+
+import { getFixedTokenBalance } from "../core_libraries/fixedAndVariableMath";
+
+import { consts } from "../helpers/constants";
 import { TickMath } from "../shared/tickMath";
 import { SqrtPriceMath } from "../shared/sqrtPriceMath";
 import JSBI from "jsbi";
@@ -149,21 +147,21 @@ function getPositionMarginRequirement(
         blockTimestampScaled
       );
     } else {
-      let amount0JSBI = SqrtPriceMath.getAmount0Delta(
+      const amount0JSBI = SqrtPriceMath.getAmount0Delta(
         TickMath.getSqrtRatioAtTick(tickLower),
         TickMath.getSqrtRatioAtTick(tickUpper),
         liquidity,
         true
       );
 
-      let amount1JSBI = SqrtPriceMath.getAmount1Delta(
+      const amount1JSBI = SqrtPriceMath.getAmount1Delta(
         TickMath.getSqrtRatioAtTick(tickLower),
         TickMath.getSqrtRatioAtTick(tickUpper),
         liquidity,
         false
       );
 
-      let amount0 = BigNumber.from(amount0JSBI.toString());
+      const amount0 = BigNumber.from(amount0JSBI.toString());
       let amount1 = BigNumber.from(amount1JSBI.toString());
 
       amount1 = mul(amount1, toBn("-1.0"));
@@ -208,14 +206,14 @@ function positionMarginBetweenTicksHelper(
   // make sure that in here the variable factor is the accrued variable factor
   // emphasise this in the docs
 
-  let amount0UpJSBI = SqrtPriceMath.getAmount0Delta(
+  const amount0UpJSBI = SqrtPriceMath.getAmount0Delta(
     TickMath.getSqrtRatioAtTick(currentTick),
     TickMath.getSqrtRatioAtTick(tickUpper),
     liquidity,
     true
   );
 
-  let amount1UpJSBI = SqrtPriceMath.getAmount1Delta(
+  const amount1UpJSBI = SqrtPriceMath.getAmount1Delta(
     TickMath.getSqrtRatioAtTick(currentTick),
     TickMath.getSqrtRatioAtTick(tickUpper),
     liquidity,
@@ -223,7 +221,7 @@ function positionMarginBetweenTicksHelper(
   );
 
   let amount0Up = BigNumber.from(amount0UpJSBI.toString());
-  let amount1Up = BigNumber.from(amount1UpJSBI.toString());
+  const amount1Up = BigNumber.from(amount1UpJSBI.toString());
 
   amount0Up = mul(amount0Up, toBn("-1.0"));
 
@@ -253,21 +251,21 @@ function positionMarginBetweenTicksHelper(
     blockTimestampScaled
   );
 
-  let amount0DownJSBI = SqrtPriceMath.getAmount0Delta(
+  const amount0DownJSBI = SqrtPriceMath.getAmount0Delta(
     TickMath.getSqrtRatioAtTick(currentTick),
     TickMath.getSqrtRatioAtTick(tickLower),
     liquidity,
     false
   );
 
-  let amount1DownJSBI = SqrtPriceMath.getAmount1Delta(
+  const amount1DownJSBI = SqrtPriceMath.getAmount1Delta(
     TickMath.getSqrtRatioAtTick(currentTick),
     TickMath.getSqrtRatioAtTick(tickLower),
     liquidity,
     true
   );
 
-  let amount0Down = BigNumber.from(amount0DownJSBI.toString());
+  const amount0Down = BigNumber.from(amount0DownJSBI.toString());
   let amount1Down = BigNumber.from(amount1DownJSBI.toString());
 
   amount1Down = mul(amount1Down, toBn("-1.0"));
@@ -491,7 +489,7 @@ function getMinimumMarginRequirement(
   const timeInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp);
   const timeInYears: BigNumber = accrualFact(timeInSeconds);
   let minDelta: BigNumber;
-  var margin: BigNumber;
+  let margin: BigNumber;
   let notional: BigNumber;
 
   if (isLM) {

@@ -37,13 +37,12 @@ async function marginCalculatorFixture(
   timeAddress: string,
   factoryAddress: string
 ) {
-
   const TestMarginCalculatorFactory = await ethers.getContractFactory(
     "TestMarginCalculator",
     {
       libraries: {
         FixedAndVariableMath: fixedAndVariableMathAddress,
-        Time: timeAddress
+        Time: timeAddress,
       },
     }
   );
@@ -104,10 +103,9 @@ export async function rateOracleFixture(
 }
 
 async function vammHelpersFixture(fixedAndVariableMathAddress: string) {
-
   const VAMMHelpersFactory = await ethers.getContractFactory("VAMMHelpers", {
     libraries: {
-      FixedAndVariableMath: fixedAndVariableMathAddress
+      FixedAndVariableMath: fixedAndVariableMathAddress,
     },
   });
 
@@ -115,7 +113,6 @@ async function vammHelpersFixture(fixedAndVariableMathAddress: string) {
 
   return { vammHelpers };
 }
-
 
 async function tickFixture() {
   const TickFactory = await ethers.getContractFactory("Tick");
@@ -145,12 +142,11 @@ export async function timeFixture() {
 }
 
 export async function fixedAndVariableMathFixture(timeAddress: string) {
-
   const fixedAndVariableMathFactory = await ethers.getContractFactory(
     "FixedAndVariableMath",
     {
       libraries: {
-        Time: timeAddress
+        Time: timeAddress,
       },
     }
   );
@@ -161,16 +157,17 @@ export async function fixedAndVariableMathFixture(timeAddress: string) {
   return { fixedAndVariableMath };
 }
 
-export async function factoryFixture(timeAddress: string): Promise<FactoryFixture> {
+export async function factoryFixture(
+  timeAddress: string
+): Promise<FactoryFixture> {
   const factoryFactory = await ethers.getContractFactory("Factory", {
     libraries: {
-      Time: timeAddress
+      Time: timeAddress,
     },
   });
   const factory = (await factoryFactory.deploy()) as Factory;
   return { factory };
 }
-
 
 // one fixture for everything amm/vamm/marginEngine
 // the fixture needs to properly set everything
@@ -219,10 +216,14 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { time } = await timeFixture();
   const { factory } = await factoryFixture(time.address);
   const { tick } = await tickFixture();
-  const { fixedAndVariableMath } = await fixedAndVariableMathFixture(time.address);
+  const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
+    time.address
+  );
   const { unwindTraderUnwindPosition } =
     await unwindTraderUnwinPositionFixture();
-  const { vammHelpers } = await vammHelpersFixture(fixedAndVariableMath.address);
+  const { vammHelpers } = await vammHelpersFixture(
+    fixedAndVariableMath.address
+  );
   const { testRateOracle } = await rateOracleFixture(
     fixedAndVariableMath.address,
     time.address,
@@ -287,8 +288,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   console.log("The AMM address is ", ammAddress);
   const ammTest = ammTestFactory.attach(ammAddress) as TestAMM;
 
-  
-
   // create the margin engine
 
   const marginEngineTestFactory = await ethers.getContractFactory(
@@ -309,9 +308,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const marginEngineCalleeTest =
     (await testMarginEngineCalleeFactory.deploy()) as TestMarginEngineCallee;
 
-  tx = await deployerTest.deployMarginEngine(
-    ammAddress
-  );
+  tx = await deployerTest.deployMarginEngine(ammAddress);
 
   receipt = await tx.wait();
 
@@ -345,9 +342,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const vammCalleeTest =
     (await testVAMMCalleeFactory.deploy()) as TestVAMMCallee;
 
-  tx = await deployerTest.deployVAMM(
-    ammAddress
-  );
+  tx = await deployerTest.deployVAMM(ammAddress);
 
   receipt = await tx.wait();
 
@@ -365,6 +360,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     marginEngineTest,
     vammCalleeTest,
     marginEngineCalleeTest,
-    token
+    token,
   };
 };
