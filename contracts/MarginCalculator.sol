@@ -13,8 +13,6 @@ import "hardhat/console.sol";
 import "./core_libraries/Tick.sol";
 import "./interfaces/IFactory.sol";
 
-import "hardhat/console.sol";
-
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
 contract MarginCalculator is IMarginCalculator {
