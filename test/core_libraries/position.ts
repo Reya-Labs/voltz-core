@@ -5,6 +5,7 @@ import { expect } from "chai";
 import { PositionTest } from "../../typechain/PositionTest";
 import { toBn } from "../helpers/toBn";
 import { sub, mul } from "../shared/functions";
+import { calculateFixedAndVariableDelta } from "../shared/utilities";
 
 const { loadFixture } = waffle;
 
@@ -12,24 +13,6 @@ interface PostitionTestFixture {
   positionTest: PositionTest;
 }
 
-function calculateFixedAndVariableDelta(
-  fixedTokenGrowthInside: BigNumber,
-  variableTokenGrowthInside: BigNumber,
-  fixedTokenGrowthInsideLast: BigNumber,
-  variableTokenGrowthInsideLast: BigNumber,
-  liquidity: BigNumber
-) {
-  const fixedTokenBalance: BigNumber = mul(
-    sub(fixedTokenGrowthInside, fixedTokenGrowthInsideLast),
-    liquidity
-  );
-  const variableTokenBalance: BigNumber = mul(
-    sub(variableTokenGrowthInside, variableTokenGrowthInsideLast),
-    liquidity
-  );
-
-  return [fixedTokenBalance, variableTokenBalance];
-}
 
 describe("Position", () => {
   async function fixture(): Promise<PostitionTestFixture> {
@@ -120,7 +103,7 @@ describe("Position", () => {
         toBn("-30"),
         toBn("0"),
         toBn("0"),
-        toBn("10")
+        BigNumber.from(10)
       );
 
       expect(result[0]).to.eq(expectedResult[0]);

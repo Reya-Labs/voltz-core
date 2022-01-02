@@ -133,14 +133,16 @@ library Position {
 
         require(_self._liquidity > 0, "NP");
 
+        // liquidity is in wei already
+
         _fixedTokenDelta = PRBMathSD59x18.mul(
             fixedTokenGrowthInside - _self.fixedTokenGrowthInsideLast,
-            int256(uint256(_self._liquidity)) * 10**18
+            int256(uint256(_self._liquidity))
         );
 
         _variableTokenDelta = PRBMathSD59x18.mul(
             variableTokenGrowthInside - _self.variableTokenGrowthInsideLast,
-            int256(uint256(_self._liquidity)) * 10**18
+            int256(uint256(_self._liquidity))
         );
     }
 

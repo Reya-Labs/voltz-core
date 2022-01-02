@@ -20,6 +20,7 @@ import {
   encodeSqrtRatioX96,
   SwapToPriceFunction,
   mint,
+  calculateFixedAndVariableDelta,
 } from "../shared/utilities";
 import { mainnetConstants } from "../../scripts/helpers/constants";
 import { RATE_ORACLE_ID, getGrowthInside } from "../shared/utilities";
@@ -274,16 +275,86 @@ describe("MarginEngine", () => {
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
     let token: ERC20Mock;
+    let vammTest: TestVAMM;
+    let vammCalleeTest: TestVAMMCallee;
 
     beforeEach("deploy fixture", async () => {
 
-      ({ factory, token, marginEngineTest } = await loadFixture(metaFixture));
+      ({ factory, token, vammTest, vammCalleeTest, marginEngineTest } = await loadFixture(metaFixture));
       await token.mint(wallet.address, BigNumber.from(10).pow(27))
       await token.approve(wallet.address, BigNumber.from(10).pow(27))
+
+      await vammTest.setTickTest(-1, {
+        liquidityGross: 10,
+        liquidityNet: 20,
+        fixedTokenGrowthOutside: toBn("1.0"),
+        variableTokenGrowthOutside: toBn("-2.0"),
+        feeGrowthOutside: toBn("0.1"),
+        initialized: true
+      });
+
+      await vammTest.setTickTest(1, {
+        liquidityGross: 40,
+        liquidityNet: 30,
+        fixedTokenGrowthOutside: toBn("3.0"),
+        variableTokenGrowthOutside: toBn("-4.0"),
+        feeGrowthOutside: toBn("0.2"),
+        initialized: true
+      });
+
+      await vammTest.setFixedTokenGrowthGlobal(toBn("5.0"));
+      await vammTest.setVariableTokenGrowthGlobal(toBn("-7.0"));
   
     });
 
-    // it(" ")
+    it("correctly updates position margin (internal accounting)", async () => {
+      
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("1000.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false, false);
+      
+      await marginEngineTest.updatePositionMargin({
+        owner: wallet.address,
+        tickLower: -1,
+        tickUpper: 1,
+        liquidityDelta: 10,
+      }, toBn("1"));
+
+      const positionInfo = await marginEngineTest.getPosition(
+        wallet.address,
+        -1,
+        1
+      );
+
+      expect(positionInfo.margin).to.eq(toBn("1001"));
+    
+    })
+
+    it("check token balance correctly updated", async () => {
+
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("1000.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false, false);
+    
+      const oldPositionBalance = await token.balanceOf(wallet.address);
+      const ammAddress = await marginEngineTest.amm();
+      const oldAmmBalance = await token.balanceOf(ammAddress);
+      const marginDelta = toBn("1");
+      
+      await marginEngineTest.updatePositionMargin({
+        owner: wallet.address,
+        tickLower: -1,
+        tickUpper: 1,
+        liquidityDelta: 10,
+      }, marginDelta);
+
+      const newTraderBalanceExpected = sub(oldPositionBalance, marginDelta);
+      const newAmmBalance = add(oldAmmBalance, marginDelta);
+      
+      const realizedPositionBalance = await token.balanceOf(wallet.address);
+      const realizedAmmbalance = await token.balanceOf(ammAddress);
+
+      expect(realizedPositionBalance).to.eq(newTraderBalanceExpected);
+      expect(realizedAmmbalance).to.eq(newAmmBalance);
+      
+      
+    })
 
   })
 
@@ -346,6 +417,28 @@ describe("MarginEngine", () => {
 
       expect(positionInfo.fixedTokenGrowthInsideLast).to.eq(expectedFixedTokenGrowthInside);
       expect(positionInfo.variableTokenGrowthInsideLast).to.eq(expectedVariableTokenGrowthInside);
+
+    })
+
+    it("correctly updates position token balances (fixed and variable deltas)", async () => {
+
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("10.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false, false);
+
+      await marginEngineTest.updatePositionTokenBalancesTest(wallet.address, -1, 1);
+      
+      const expectedFixedTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("1.0"), toBn("3.0"), toBn("5.0"));
+      const expectedVariableTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("-2.0"), toBn("-4.0"), toBn("-7.0"));
+
+      const [expectedFixedTokenDelta, expectedVariableTokenDelta] = calculateFixedAndVariableDelta(expectedFixedTokenGrowthInside, expectedVariableTokenGrowthInside, toBn("0"), toBn("0"), BigNumber.from(1));
+
+      const positionInfo = await marginEngineTest.getPosition(
+        wallet.address,
+        -1,
+        1
+      );
+
+      expect(positionInfo.fixedTokenBalance).to.eq(expectedFixedTokenDelta);
+      expect(positionInfo.variableTokenBalance).to.eq(expectedVariableTokenDelta);
 
     })
 

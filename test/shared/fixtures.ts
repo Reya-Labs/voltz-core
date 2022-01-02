@@ -10,7 +10,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { ERC20Mock, FixedAndVariableMath } from "../../typechain";
 import { consts } from "../helpers/constants";
 import { ethers, waffle } from "hardhat";
-import { getCurrentTimestamp } from "../helpers/time";
+import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 import {
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
@@ -189,6 +189,39 @@ interface MetaFixture {
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
+  
+  // create a mock token and mint some to our wallet
+  const { token } = await mockERC20Fixture();
+
+  const { time } = await timeFixture();
+  const { factory } = await factoryFixture(time.address);
+  const { fixedAndVariableMath } = await fixedAndVariableMathFixture(time.address);
+  
+  const { aaveLendingPool } = await mockAaveLendingPoolFixture();
+  await aaveLendingPool.setReserveNormalizedIncome(
+    token.address,
+    BigNumber.from(10).pow(27)
+  );
+  
+  const { testRateOracle } = await rateOracleFixture(
+    fixedAndVariableMath.address,
+    time.address,
+    token.address,
+    aaveLendingPool.address
+  );
+
+  await testRateOracle.initializeTestRateOracle({
+    tick: 0,
+    liquidity: 0,
+  });
+
+  await testRateOracle.testGrow(10);
+  await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+  await testRateOracle.update();
+  await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+  await testRateOracle.update();
+  
+  
   // deploy the amm
   // deploy the vamm
   // deploy the margin engine
@@ -197,7 +230,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   // todo: need dummy token so we can test token transfers
   const termStartTimestamp: number = await getCurrentTimestamp(provider);
   const termEndTimestamp: number =
-    termStartTimestamp + consts.ONE_DAY.toNumber();
+    termStartTimestamp + consts.ONE_WEEK.toNumber();
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
@@ -207,28 +240,12 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   );
   console.log("Test: Term End Timestamp is: ", termEndTimestampBN.toString());
 
-  // create a mock token and mint some to our wallet
-  const { token } = await mockERC20Fixture();
-
-  const { aaveLendingPool } = await mockAaveLendingPoolFixture();
-  await aaveLendingPool.setReserveNormalizedIncome(
-    token.address,
-    BigNumber.from(10).pow(27)
-  );
-
-  const { time } = await timeFixture();
-  const { factory } = await factoryFixture(time.address);
   const { tick } = await tickFixture();
-  const { fixedAndVariableMath } = await fixedAndVariableMathFixture(time.address);
   const { unwindTraderUnwindPosition } =
     await unwindTraderUnwinPositionFixture();
   const { vammHelpers } = await vammHelpersFixture(fixedAndVariableMath.address);
-  const { testRateOracle } = await rateOracleFixture(
-    fixedAndVariableMath.address,
-    time.address,
-    token.address,
-    aaveLendingPool.address
-  );
+
+  
   const { testMarginCalculator } = await marginCalculatorFixture(
     fixedAndVariableMath.address,
     time.address,
