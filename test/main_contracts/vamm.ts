@@ -7,7 +7,7 @@ import { metaFixture } from "../shared/fixtures";
 import { TestVAMMCallee } from "../../typechain/TestVAMMCallee";
 import {
   getPositionKey,
-  getMaxTick,   
+  getMaxTick,
   getMinTick,
   TICK_SPACING,
   createVAMMMFunctions,
@@ -20,18 +20,20 @@ import {
   encodeSqrtRatioX96,
   SwapToPriceFunction,
   mint,
+  RATE_ORACLE_ID,
+  getGrowthInside
 } from "../shared/utilities";
 import { consts } from "../helpers/constants";
 // import { devConstants, mainnetConstants } from "../helpers/constants";
 import { mainnetConstants } from "../../scripts/helpers/constants";
-import { RATE_ORACLE_ID, getGrowthInside } from "../shared/utilities";
+// import { RATE_ORACLE_ID, getGrowthInside } from "../shared/utilities";
 import { getCurrentTimestamp } from "../helpers/time";
-const { provider } = waffle;
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 import { TestAMM } from "../../typechain/TestAMM";
 import { sub, add } from "../shared/functions";
+const { provider } = waffle;
 
 const createFixtureLoader = waffle.createFixtureLoader;
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
@@ -73,9 +75,7 @@ describe("VAMM", () => {
     tickSpacing = TICK_SPACING;
   });
 
-
   describe("#computePositionFixedAndVariableGrowthInside", async () => {
-
     beforeEach("set ticks", async () => {
       // todo make sure the default values set are sensible
       await vammTest.setTickTest(-1, {
@@ -84,7 +84,7 @@ describe("VAMM", () => {
         fixedTokenGrowthOutside: toBn("1.0"),
         variableTokenGrowthOutside: toBn("-2.0"),
         feeGrowthOutside: toBn("0.1"),
-        initialized: true
+        initialized: true,
       });
 
       await vammTest.setTickTest(1, {
@@ -93,33 +93,52 @@ describe("VAMM", () => {
         fixedTokenGrowthOutside: toBn("3.0"),
         variableTokenGrowthOutside: toBn("-4.0"),
         feeGrowthOutside: toBn("0.2"),
-        initialized: true
+        initialized: true,
       });
 
       await vammTest.setFixedTokenGrowthGlobal(toBn("5.0"));
       await vammTest.setVariableTokenGrowthGlobal(toBn("-7.0"));
-
-    })
-
+    });
 
     it("correctly computes position fixed and variable growth inside", async () => {
-      const realized = await vammCalleeTest.computePositionFixedAndVariableGrowthInsideTest(vammTest.address, -1, 1, 0);
+      const realized =
+        await vammCalleeTest.computePositionFixedAndVariableGrowthInsideTest(
+          vammTest.address,
+          -1,
+          1,
+          0
+        );
       const realizedFixedTokenGrowthInside = realized[0];
       const realizedVariableTokenGrowthInside = realized[1];
 
-      const expectedFixedTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("1.0"), toBn("3.0"), toBn("5.0"));
+      const expectedFixedTokenGrowthInside = getGrowthInside(
+        0,
+        -1,
+        1,
+        toBn("1.0"),
+        toBn("3.0"),
+        toBn("5.0")
+      );
       console.log("TESTTT: ", realizedFixedTokenGrowthInside.toString());
       console.log("TESTTT: ", realizedVariableTokenGrowthInside.toString());
-      expect(realizedFixedTokenGrowthInside).to.eq(expectedFixedTokenGrowthInside);
-      
-      const expectedVariableTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("-2.0"), toBn("-4.0"), toBn("-7.0"));
+      expect(realizedFixedTokenGrowthInside).to.eq(
+        expectedFixedTokenGrowthInside
+      );
 
-      expect(realizedVariableTokenGrowthInside).to.eq(expectedVariableTokenGrowthInside);
+      const expectedVariableTokenGrowthInside = getGrowthInside(
+        0,
+        -1,
+        1,
+        toBn("-2.0"),
+        toBn("-4.0"),
+        toBn("-7.0")
+      );
 
-
-    })
-
-  })
+      expect(realizedVariableTokenGrowthInside).to.eq(
+        expectedVariableTokenGrowthInside
+      );
+    });
+  });
 
   describe("#quickChecks", async () => {
     it("check underlying token of the amm and marginEngine are set consistently", async () => {

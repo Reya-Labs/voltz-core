@@ -25,13 +25,13 @@ import {
 import { mainnetConstants } from "../../scripts/helpers/constants";
 import { RATE_ORACLE_ID, getGrowthInside } from "../shared/utilities";
 import { getCurrentTimestamp } from "../helpers/time";
-const { provider } = waffle;
 import { toBn } from "evm-bn";
 import { consts } from "../helpers/constants";
 import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 import { TestAMM } from "../../typechain/TestAMM";
 import { ERC20Mock, TestVAMM, TestVAMMCallee } from "../../typechain";
 import { sub, add } from "../shared/functions";
+const { provider } = waffle;
 
 const createFixtureLoader = waffle.createFixtureLoader;
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
@@ -48,14 +48,11 @@ describe("MarginEngine", () => {
   });
 
   describe("#updateTraderMargin", () => {
-    
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
 
     beforeEach("deploy fixture", async () => {
-
       ({ factory, marginEngineTest } = await loadFixture(metaFixture));
-  
     });
 
     it("reverts if margin delta is zero", async () => {
@@ -63,19 +60,14 @@ describe("MarginEngine", () => {
         marginEngineTest.updateTraderMarginTest(0)
       ).to.be.revertedWith("InvalidMarginDelta");
     });
-
   });
 
   describe("#traders", () => {
-
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
 
     beforeEach("deploy fixture", async () => {
-      
-
       ({ factory, marginEngineTest } = await loadFixture(metaFixture));
-  
     });
 
     it("returns empty trader by default", async () => {
@@ -88,14 +80,11 @@ describe("MarginEngine", () => {
   });
 
   describe("#positions", () => {
-
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
 
     beforeEach("deploy fixture", async () => {
-
       ({ factory, marginEngineTest } = await loadFixture(metaFixture));
-  
     });
 
     it("returns empty position by default", async () => {
@@ -116,53 +105,57 @@ describe("MarginEngine", () => {
   });
 
   describe("#checkTraderMargin", async () => {
-
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
 
     beforeEach("deploy fixture", async () => {
-
       ({ factory, marginEngineTest } = await loadFixture(metaFixture));
-  
     });
-    
+
     it("check position margin above requirement", async () => {
       const updatedMarginWouldBe = toBn("0");
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
       const ammAddress = await marginEngineTest.amm();
 
-      await expect(marginEngineTest.checkTraderMarginAboveRequirementTest(updatedMarginWouldBe, fixedTokenBalance, variableTokenBalance, ammAddress)).to.be.reverted;
-    })
+      await expect(
+        marginEngineTest.checkTraderMarginAboveRequirementTest(
+          updatedMarginWouldBe,
+          fixedTokenBalance,
+          variableTokenBalance,
+          ammAddress
+        )
+      ).to.be.reverted;
+    });
 
     it("check trader margin can be updated", async () => {
-
       const updatedMarginWouldBe = toBn("0");
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
       const ammAddress = await marginEngineTest.amm();
       const isTraderSettled = false;
 
-      await expect(marginEngineTest.checkTraderMarginCanBeUpdated(updatedMarginWouldBe, fixedTokenBalance, variableTokenBalance, isTraderSettled, ammAddress)).to.be.reverted;      
-
-    })
-
+      await expect(
+        marginEngineTest.checkTraderMarginCanBeUpdated(
+          updatedMarginWouldBe,
+          fixedTokenBalance,
+          variableTokenBalance,
+          isTraderSettled,
+          ammAddress
+        )
+      ).to.be.reverted;
+    });
   });
 
-
   describe("#checkPositionMargin", async () => {
-
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
 
     beforeEach("deploy fixture", async () => {
-
       ({ factory, marginEngineTest } = await loadFixture(metaFixture));
-  
     });
 
     it("check position margin above requirement reverted", async () => {
-
       const owner = wallet.address;
       const tickLower = -1;
       const tickUpper = 1;
@@ -174,12 +167,23 @@ describe("MarginEngine", () => {
       const variableFactor = toBn("0.1");
       const ammAddress = await marginEngineTest.amm();
 
-      await expect(marginEngineTest.checkPositionMarginAboveRequirementTest(owner, tickLower, tickUpper, liquidityDelta, updatedMarginWouldBe, positionLiquidity, positionFixedTokenBalance, positionVariableTokenBalance, variableFactor, ammAddress)).to.be.reverted;
-    
-    })
+      await expect(
+        marginEngineTest.checkPositionMarginAboveRequirementTest(
+          owner,
+          tickLower,
+          tickUpper,
+          liquidityDelta,
+          updatedMarginWouldBe,
+          positionLiquidity,
+          positionFixedTokenBalance,
+          positionVariableTokenBalance,
+          variableFactor,
+          ammAddress
+        )
+      ).to.be.reverted;
+    });
 
     it("check position margin can be updated reverted", async () => {
-
       const owner = wallet.address;
       const tickLower = -1;
       const tickUpper = 1;
@@ -193,50 +197,57 @@ describe("MarginEngine", () => {
       const isPositionBurned = false;
       const isPositionSettled = false;
 
-      await expect(marginEngineTest.checkPositionMarginCanBeUpdatedTest(owner, tickLower, tickUpper, liquidityDelta, updatedMarginWouldBe, isPositionBurned, isPositionSettled, positionLiquidity, positionFixedTokenBalance, positionVariableTokenBalance, variableFactor, ammAddress)).to.be.reverted;
-    
-    })
-
-  })
-
+      await expect(
+        marginEngineTest.checkPositionMarginCanBeUpdatedTest(
+          owner,
+          tickLower,
+          tickUpper,
+          liquidityDelta,
+          updatedMarginWouldBe,
+          isPositionBurned,
+          isPositionSettled,
+          positionLiquidity,
+          positionFixedTokenBalance,
+          positionVariableTokenBalance,
+          variableFactor,
+          ammAddress
+        )
+      ).to.be.reverted;
+    });
+  });
 
   describe("#calculateLiquidatorRewardAndUpdatedMargin", async () => {
-
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
 
     beforeEach("deploy fixture", async () => {
-
       ({ factory, marginEngineTest } = await loadFixture(metaFixture));
-  
     });
 
     it("calculateLiquidatorRewardAndUpdatedMargin is done correctly", async () => {
+      const traderMargin = toBn("1.0");
+      const liquidatorRewardAsProportionOfMargin = toBn("0.1");
 
-      const traderMargin = toBn('1.0');
-      const liquidatorRewardAsProportionOfMargin = toBn('0.1');
-
-      const [realizedLiquidatorReward, realizedUpdatedMargin] = await marginEngineTest.calculateLiquidatorRewardAndUpdatedMarginTest(traderMargin, liquidatorRewardAsProportionOfMargin);
+      const [realizedLiquidatorReward, realizedUpdatedMargin] =
+        await marginEngineTest.calculateLiquidatorRewardAndUpdatedMarginTest(
+          traderMargin,
+          liquidatorRewardAsProportionOfMargin
+        );
 
       expect(realizedLiquidatorReward).to.eq(toBn("0.1"));
       expect(realizedUpdatedMargin).to.eq(toBn("0.9"));
-    })
-
-  })
-
+    });
+  });
 
   describe("#updateTraderMargin", async () => {
-
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
     let token: ERC20Mock;
 
     beforeEach("deploy fixture", async () => {
-
       ({ factory, token, marginEngineTest } = await loadFixture(metaFixture));
-      await token.mint(wallet.address, BigNumber.from(10).pow(27))
-      await token.approve(wallet.address, BigNumber.from(10).pow(27))
-  
+      await token.mint(wallet.address, BigNumber.from(10).pow(27));
+      await token.approve(wallet.address, BigNumber.from(10).pow(27));
     });
 
     it("check trader margin correctly updated", async () => {
@@ -245,10 +256,9 @@ describe("MarginEngine", () => {
       const traderInfo = await marginEngineTest.traders(wallet.address);
       const traderMargin = traderInfo[0];
       expect(traderMargin).to.eq(toBn("10000000"));
-    })
+    });
 
     it("check token balance correctly updated", async () => {
-      
       const oldTraderBalance = await token.balanceOf(wallet.address);
       const ammAddress = await marginEngineTest.amm();
       const oldAmmBalance = await token.balanceOf(ammAddress);
@@ -257,21 +267,16 @@ describe("MarginEngine", () => {
 
       const newTraderBalanceExpected = sub(oldTraderBalance, marginDelta);
       const newAmmBalance = add(oldAmmBalance, marginDelta);
-      
+
       const realizedTraderBalance = await token.balanceOf(wallet.address);
       const realizedAmmbalance = await token.balanceOf(ammAddress);
 
       expect(realizedTraderBalance).to.eq(newTraderBalanceExpected);
       expect(realizedAmmbalance).to.eq(newAmmBalance);
-      
-      
-    })
-
-  })
-
+    });
+  });
 
   describe("#updatePositionMargin", async () => {
-
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
     let token: ERC20Mock;

@@ -116,7 +116,6 @@ contract MarginCalculatorTest is MarginCalculator {
             );
     }
 
-
     function getTraderMarginRequirementTest(
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
@@ -278,7 +277,6 @@ contract MarginCalculatorTest is MarginCalculator {
         uint256 historicalApy,
         int256 currentMargin
     ) external view returns (bool) {
-
         return
             isLiquidatableTrader(
                 TraderMarginRequirementParams({
@@ -292,9 +290,7 @@ contract MarginCalculatorTest is MarginCalculator {
                 }),
                 currentMargin
             );
-
     }
-
 
     function isLiquidatablePositionLMTest(
         int24 tickLower,
@@ -311,7 +307,6 @@ contract MarginCalculatorTest is MarginCalculator {
         uint256 historicalApy,
         int256 currentMargin
     ) external view returns (bool) {
-
         return
             isLiquidatablePosition(
                 PositionMarginRequirementParams({
@@ -331,6 +326,5 @@ contract MarginCalculatorTest is MarginCalculator {
                 }),
                 currentMargin
             );
-
     }
 }

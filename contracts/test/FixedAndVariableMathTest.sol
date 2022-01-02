@@ -24,7 +24,7 @@ contract FixedAndVariableMathTest {
 
     function accrualFact(uint256 timeInSeconds)
         public
-        view
+        pure
         returns (uint256 timeInYears)
     {
         return FixedAndVariableMath.accrualFact(timeInSeconds);

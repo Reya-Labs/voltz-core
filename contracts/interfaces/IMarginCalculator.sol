@@ -6,7 +6,7 @@ import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 
 interface IMarginCalculator {
     // structs
-  
+
     // TODO: below should all be SD59x18 or UD60x18 user defined types
     /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
     /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity

@@ -26,20 +26,31 @@ contract TestMarginEngine is MarginEngine {
         int256 variableTokenBalance,
         bool isTraderSettled,
         address ammAddress // todo: redundunt?
-    ) external view {    
-        return checkTraderMarginCanBeUpdated(updatedMarginWouldBe, fixedTokenBalance, variableTokenBalance, isTraderSettled, ammAddress);
+    ) external view {
+        return
+            checkTraderMarginCanBeUpdated(
+                updatedMarginWouldBe,
+                fixedTokenBalance,
+                variableTokenBalance,
+                isTraderSettled,
+                ammAddress
+            );
     }
-
 
     function checkTraderMarginAboveRequirementTest(
         int256 updatedMarginWouldBe,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         address ammAddress
-    ) external view {    
-        return checkTraderMarginAboveRequirement(updatedMarginWouldBe, fixedTokenBalance, variableTokenBalance, ammAddress);
+    ) external view {
+        return
+            checkTraderMarginAboveRequirement(
+                updatedMarginWouldBe,
+                fixedTokenBalance,
+                variableTokenBalance,
+                ammAddress
+            );
     }
-
 
     function checkPositionMarginCanBeUpdatedTest(
         address owner,
@@ -55,16 +66,23 @@ contract TestMarginEngine is MarginEngine {
         uint256 variableFactor,
         address ammAddress
     ) public view {
-
-        return checkPositionMarginCanBeUpdated(ModifyPositionParams(
-            {
-                owner: owner,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                liquidityDelta: liquidityDelta
-            }
-        ), updatedMarginWouldBe, isPositionBurned, isPositionSettled, positionLiquidity, positionFixedTokenBalance, positionVariableTokenBalance, variableFactor, ammAddress);
-
+        return
+            checkPositionMarginCanBeUpdated(
+                ModifyPositionParams({
+                    owner: owner,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: liquidityDelta
+                }),
+                updatedMarginWouldBe,
+                isPositionBurned,
+                isPositionSettled,
+                positionLiquidity,
+                positionFixedTokenBalance,
+                positionVariableTokenBalance,
+                variableFactor,
+                ammAddress
+            );
     }
 
     function checkPositionMarginAboveRequirementTest(
@@ -79,26 +97,32 @@ contract TestMarginEngine is MarginEngine {
         uint256 variableFactor,
         address ammAddress
     ) public view {
-
-        return checkPositionMarginAboveRequirement(ModifyPositionParams(
-            {
-                owner: owner,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                liquidityDelta: liquidityDelta
-            }
-        ), updatedMarginWouldBe, positionLiquidity, positionFixedTokenBalance, positionVariableTokenBalance, variableFactor, ammAddress);
-
+        return
+            checkPositionMarginAboveRequirement(
+                ModifyPositionParams({
+                    owner: owner,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    liquidityDelta: liquidityDelta
+                }),
+                updatedMarginWouldBe,
+                positionLiquidity,
+                positionFixedTokenBalance,
+                positionVariableTokenBalance,
+                variableFactor,
+                ammAddress
+            );
     }
-
 
     function calculateLiquidatorRewardAndUpdatedMarginTest(
         int256 traderMargin, // can also be position margin?
         uint256 liquidatorRewardAsProportionOfMargin
     ) public pure returns (uint256 liquidatorReward, int256 updatedMargin) {
-
-        return calculateLiquidatorRewardAndUpdatedMargin(traderMargin, liquidatorRewardAsProportionOfMargin);
-
+        return
+            calculateLiquidatorRewardAndUpdatedMargin(
+                traderMargin,
+                liquidatorRewardAsProportionOfMargin
+            );
     }
 
 
