@@ -76,6 +76,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         termEndTimestamp = amm.termEndTimestamp(); // immutable in AMM therefore safe to cache forever
         calculator = amm.calculator(); // immutable in AMM therefore safe to cache forever
         rateOracle = amm.rateOracle(); // immutable in AMM therefore safe to cache forever
+
     }
 
     /// Only the position/trade owner can update the position/trade margin
@@ -185,6 +186,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         // @dev position can only be settled if it is burned
         require(position.isBurned, "Position must be burned first");
+        require(!position.isSettled, "Position must not be already settled");
 
         (, int24 tick, ) = amm.vamm().slot0();
         
@@ -206,7 +208,10 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     /// @inheritdoc IMarginEngine
     function settleTrader() external override whenNotPaused onlyAfterMaturity {
 
-        Trader.Info storage trader = traders[msg.sender];    
+        Trader.Info storage trader = traders[msg.sender];
+
+        require(!trader.isSettled, "not settled");
+
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp()));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);

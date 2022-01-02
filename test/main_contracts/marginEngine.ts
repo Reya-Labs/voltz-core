@@ -24,7 +24,7 @@ import {
 } from "../shared/utilities";
 import { mainnetConstants } from "../../scripts/helpers/constants";
 import { RATE_ORACLE_ID, getGrowthInside } from "../shared/utilities";
-import { getCurrentTimestamp } from "../helpers/time";
+import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 import { toBn } from "evm-bn";
 import { consts } from "../helpers/constants";
 import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
@@ -449,6 +449,47 @@ describe("MarginEngine", () => {
 
 
   })
+
+
+  describe("#settleTrader", () => {
+    let marginEngineTest: TestMarginEngine;
+    let factory: Factory;
+
+    beforeEach("deploy fixture", async () => {
+      ({ factory, marginEngineTest } = await loadFixture(metaFixture));
+    });
+
+    it("reverts before maturity", async () => {
+      await expect(marginEngineTest.settleTrader()).to.be.reverted;
+    })
+
+    it("correctly updates trader balances", async () => {
+      
+      await marginEngineTest.setTrader(wallet.address, toBn("100"), toBn("1000"), toBn("-2000"), false);
+
+      const traderInfoOld = await marginEngineTest.traders(wallet.address);
+      expect(traderInfoOld[1]).to.eq(toBn('1000'));
+      expect(traderInfoOld[2]).to.eq(toBn('-2000'));
+
+      await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
+      await marginEngineTest.settleTrader();
+      const traderInfo = await marginEngineTest.traders(wallet.address);
+
+      expect(traderInfo[1]).to.eq(toBn('0'));
+      expect(traderInfo[2]).to.eq(toBn('0'));
+
+      
+    })
+
+
+
+    
+  
+  
+  });
+
+
+
   
 
   

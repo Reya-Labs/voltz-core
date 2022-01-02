@@ -79,11 +79,9 @@ library FixedAndVariableMath {
 
         require(Time.blockTimestampScaled() >= termStartTimestamp, "B.T>S");
 
-        require(Time.blockTimestampScaled() <= termEndTimestamp, "B.T>S");
-
         uint256 timeInSeconds;
 
-        if (atMaturity) {
+        if (atMaturity || (Time.blockTimestampScaled() >= termEndTimestamp)) {
             timeInSeconds = termEndTimestamp - termStartTimestamp;
         } else {
             timeInSeconds = Time.blockTimestampScaled() - termStartTimestamp;
@@ -190,6 +188,10 @@ library FixedAndVariableMath {
         ) {
             revert AmountSignsSame();
         }
+
+        console.log("CONTRACT: termEndTimestamp: ", termEndTimestamp);
+        console.log("CONTRACT: termStartTimestamp: ", termStartTimestamp);
+        console.log(termEndTimestamp > termStartTimestamp);
 
         require(termEndTimestamp > termStartTimestamp, "E<=S");
 

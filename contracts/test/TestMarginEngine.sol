@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 import "../MarginEngine.sol";
 import "../core_libraries/Position.sol";
+import "../core_libraries/Trader.sol";
 
 contract TestMarginEngine is MarginEngine {
 
@@ -135,6 +136,22 @@ contract TestMarginEngine is MarginEngine {
     }
 
 
+    function setTrader(
+        address traderAddress,
+        int256 margin,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        bool isSettled
+    ) external {
+        traders[traderAddress] = Trader.Info({
+            margin: margin,
+            fixedTokenBalance: fixedTokenBalance,
+            variableTokenBalance: variableTokenBalance,
+            isSettled: isSettled
+        });
+    }
+    
+    
     function setPosition(
         address owner,
         int24 tickLower,
@@ -165,7 +182,6 @@ contract TestMarginEngine is MarginEngine {
             }
         );
     }
-
 
     
 }

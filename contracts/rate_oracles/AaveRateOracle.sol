@@ -155,10 +155,15 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             oracleVars.rateCardinalityNext
         );
 
-        return
+        if (rateTo > rateFrom) {
+            return
             WadRayMath.rayToWad(
                 WadRayMath.rayDiv(rateTo, rateFrom).sub(WadRayMath.RAY)
             );
+        } else {
+            return 0;
+        }
+          
     }
 
     /// @inheritdoc IRateOracle
@@ -232,7 +237,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         if (beforeOrAt.timestamp <= target) {
             if (beforeOrAt.timestamp == target) {
                 // if the newest observation eqauls target, we are in the same block, so we can ignore atOrAfter
-                return (beforeOrAt, atOrAfter);
+                return (beforeOrAt, atOrAfter); 
             } else {
                 atOrAfter = Rate({
                     timestamp: Time.blockTimestampScaled(),
@@ -315,11 +320,18 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             rateValue = atOrAfter.rateValue;
         } else {
             // we are in the middle
-
             // find apy between beforeOrAt and atOrAfter
-            uint256 rateFromBeforeOrAtToAtOrAfter = WadRayMath
+
+            uint256 rateFromBeforeOrAtToAtOrAfter;
+            
+            if (atOrAfter.rateValue > beforeOrAt.rateValue) {
+                // console.log("atOrAfter.rateValue", atOrAfter.rateValue);
+                // console.log("beforeOrAt.rateValue", beforeOrAt.rateValue);
+                rateFromBeforeOrAtToAtOrAfter = WadRayMath
                 .rayDiv(atOrAfter.rateValue, beforeOrAt.rateValue)
                 .sub(WadRayMath.RAY);
+            }
+
             uint256 timeInYears = FixedAndVariableMath.accrualFact(
                 atOrAfter.timestamp - beforeOrAt.timestamp
             );
