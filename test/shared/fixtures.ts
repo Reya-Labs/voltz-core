@@ -4,7 +4,6 @@ import { TestAMM } from "../../typechain/TestAMM";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { TestVAMMCallee } from "../../typechain/TestVAMMCallee";
 import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
-// import { TestERC20 } from '../../typechain/TestERC20'
 import { TestDeployer } from "../../typechain/TestDeployer";
 import { BigNumber } from "@ethersproject/bignumber";
 import { ERC20Mock, FixedAndVariableMath } from "../../typechain";
@@ -238,28 +237,11 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   console.log("Test: Term End Timestamp is: ", termEndTimestampBN.toString());
 
   const { tick } = await tickFixture();
-<<<<<<< HEAD
   const { unwindTraderUnwindPosition } =
     await unwindTraderUnwinPositionFixture();
   const { vammHelpers } = await vammHelpersFixture(fixedAndVariableMath.address);
 
   
-=======
-  const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
-    time.address
-  );
-  const { unwindTraderUnwindPosition } =
-    await unwindTraderUnwinPositionFixture();
-  const { vammHelpers } = await vammHelpersFixture(
-    fixedAndVariableMath.address
-  );
-  const { testRateOracle } = await rateOracleFixture(
-    fixedAndVariableMath.address,
-    time.address,
-    token.address,
-    aaveLendingPool.address
-  );
->>>>>>> 920873eb7db43611f1d7fe6377a7fdb443b627ff
   const { testMarginCalculator } = await marginCalculatorFixture(
     fixedAndVariableMath.address,
     time.address,
