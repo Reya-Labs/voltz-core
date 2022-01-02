@@ -22,22 +22,15 @@ import {
   mint,
 } from "../shared/utilities";
 import { mainnetConstants } from "../../scripts/helpers/constants";
-import { RATE_ORACLE_ID } from "../shared/utilities";
+import { RATE_ORACLE_ID, getGrowthInside } from "../shared/utilities";
 import { getCurrentTimestamp } from "../helpers/time";
 const { provider } = waffle;
 import { toBn } from "evm-bn";
 import { consts } from "../helpers/constants";
 import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 import { TestAMM } from "../../typechain/TestAMM";
-import { ERC20Mock } from "../../typechain";
+import { ERC20Mock, TestVAMM, TestVAMMCallee } from "../../typechain";
 import { sub, add } from "../shared/functions";
-
-// const initialTraderInfo = {
-//   margin: BigNumber.from(0),
-//   fixedTokenBalance: BigNumber.from(0),
-//   variableTokenBalance: BigNumber.from(0),
-//   isSettled: false,
-// };
 
 const createFixtureLoader = waffle.createFixtureLoader;
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
@@ -118,7 +111,6 @@ describe("MarginEngine", () => {
       expect(positionInfo.variableTokenBalance).to.eq(0);
       expect(positionInfo.feeGrowthInsideLast).to.eq(0);
       expect(positionInfo.isBurned).to.eq(false);
-      // expect(positionInfo.isBurned).to.eq(false);
     });
   });
 
@@ -292,6 +284,71 @@ describe("MarginEngine", () => {
     });
 
     // it(" ")
+
+  })
+
+  describe("#updatePositionTokenBalances", async () => {
+
+    let marginEngineTest: TestMarginEngine;
+    let factory: Factory;
+    let token: ERC20Mock;
+    let vammTest: TestVAMM;
+    let vammCalleeTest: TestVAMMCallee;
+    
+
+    beforeEach("deploy fixture", async () => {
+
+      ({ factory, token, marginEngineTest, vammTest, vammCalleeTest } = await loadFixture(metaFixture));
+      await token.mint(wallet.address, BigNumber.from(10).pow(27));
+      await token.approve(wallet.address, BigNumber.from(10).pow(27));
+
+      await vammTest.setTickTest(-1, {
+        liquidityGross: 10,
+        liquidityNet: 20,
+        fixedTokenGrowthOutside: toBn("1.0"),
+        variableTokenGrowthOutside: toBn("-2.0"),
+        feeGrowthOutside: toBn("0.1"),
+        initialized: true
+      });
+
+      await vammTest.setTickTest(1, {
+        liquidityGross: 40,
+        liquidityNet: 30,
+        fixedTokenGrowthOutside: toBn("3.0"),
+        variableTokenGrowthOutside: toBn("-4.0"),
+        feeGrowthOutside: toBn("0.2"),
+        initialized: true
+      });
+
+      await vammTest.setFixedTokenGrowthGlobal(toBn("5.0"));
+      await vammTest.setVariableTokenGrowthGlobal(toBn("-7.0"));
+  
+    });
+
+    it("updates position token balances (growth inside last) to be reverted if position liquidity is zero", async () => {
+      await expect(marginEngineTest.updatePositionTokenBalancesTest(wallet.address, -1, 1)).to.be.reverted;
+    })
+
+    it("correctly updates position token balances (growth inside last)", async () => {
+
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("10.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false, false);
+
+      await marginEngineTest.updatePositionTokenBalancesTest(wallet.address, -1, 1);
+      
+      const expectedFixedTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("1.0"), toBn("3.0"), toBn("5.0"));
+      const expectedVariableTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("-2.0"), toBn("-4.0"), toBn("-7.0"));
+
+      const positionInfo = await marginEngineTest.getPosition(
+        wallet.address,
+        -1,
+        1
+      );
+
+      expect(positionInfo.fixedTokenGrowthInsideLast).to.eq(expectedFixedTokenGrowthInside);
+      expect(positionInfo.variableTokenGrowthInsideLast).to.eq(expectedVariableTokenGrowthInside);
+
+    })
+
 
   })
   

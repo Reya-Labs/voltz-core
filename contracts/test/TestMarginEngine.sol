@@ -1,15 +1,12 @@
 pragma solidity ^0.8.0;
 
 import "../MarginEngine.sol";
+import "../core_libraries/Position.sol";
 
 contract TestMarginEngine is MarginEngine {
-    // maybe need a different constructor
-    // constructor() {
-    //       // address ammAddress;
-    //       // (ammAddress) = IDeployer(msg.sender).marginEngineParameters();
-    //       // amm = IAMM(ammAddress);
-    //       address ammAddress;
-    // }
+
+    using Position for mapping(bytes32 => Position.Info);
+    using Position for Position.Info;
 
     function getUnderlyingToken()
         external
@@ -102,6 +99,47 @@ contract TestMarginEngine is MarginEngine {
 
         return calculateLiquidatorRewardAndUpdatedMargin(traderMargin, liquidatorRewardAsProportionOfMargin);
 
+    }
+
+
+    function updatePositionTokenBalancesTest(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) external {
+        updatePositionTokenBalances(owner, tickLower, tickUpper);
+    }
+
+
+    function setPosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+
+        uint128 _liquidity,
+        int256 margin,
+        int256 fixedTokenGrowthInsideLast,
+        int256 variableTokenGrowthInsideLast,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 feeGrowthInsideLast,
+        bool isBurned,
+        bool isSettled
+    
+    ) external {
+        positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))] = Position.Info(
+            {
+                _liquidity: _liquidity,
+                margin: margin,
+                fixedTokenGrowthInsideLast: fixedTokenGrowthInsideLast,
+                variableTokenGrowthInsideLast: variableTokenGrowthInsideLast,
+                fixedTokenBalance: fixedTokenBalance,
+                variableTokenBalance: variableTokenBalance,
+                feeGrowthInsideLast: feeGrowthInsideLast,
+                isBurned: isBurned,
+                isSettled: isSettled
+            }
+        );
     }
 
 

@@ -12,7 +12,7 @@ import { TestVAMMCallee } from "../../typechain/TestVAMMCallee";
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
 import { sqrt } from "./sqrt";
-import { div, sub, mul } from "./functions";
+import { div, sub, mul, add } from "./functions";
 import { toBn } from "evm-bn";
 
 export const TICK_SPACING: number = 60;
@@ -281,3 +281,32 @@ export const RATE_ORACLE_ID: string = utils.formatBytes32String("AaveV2"); // ju
 export const DEFAULT_TIME_FACTOR: BigNumber = toBn("0.1");
 export const MIN_TICK: number = -887272;
 export const MAX_TICK: number = 887272;
+
+
+export function getGrowthInside(
+  tickCurrent: number,
+  tickLower: number,
+  tickUpper: number,
+  lowerGrowthOutside: BigNumber,
+  upperGrowthOutside: BigNumber,
+  growthGlobal: BigNumber
+) {
+
+  let fixedTokenGrowthBelow: BigNumber;
+  if (tickCurrent >= tickLower) {
+    fixedTokenGrowthBelow = lowerGrowthOutside;
+  } else {
+    fixedTokenGrowthBelow = sub(growthGlobal, lowerGrowthOutside);
+  }
+
+  let fixedTokenGrowthAbove: BigNumber;
+
+  if (tickCurrent < tickUpper) {
+    fixedTokenGrowthAbove = upperGrowthOutside;
+  } else {
+    fixedTokenGrowthAbove = sub(growthGlobal, upperGrowthOutside);
+  }
+
+  return sub(growthGlobal, add(fixedTokenGrowthBelow, fixedTokenGrowthAbove));
+
+}

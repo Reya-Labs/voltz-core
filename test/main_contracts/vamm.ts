@@ -24,7 +24,7 @@ import {
 import { consts } from "../helpers/constants";
 // import { devConstants, mainnetConstants } from "../helpers/constants";
 import { mainnetConstants } from "../../scripts/helpers/constants";
-import { RATE_ORACLE_ID } from "../shared/utilities";
+import { RATE_ORACLE_ID, getGrowthInside } from "../shared/utilities";
 import { getCurrentTimestamp } from "../helpers/time";
 const { provider } = waffle;
 import { toBn } from "evm-bn";
@@ -35,35 +35,6 @@ import { sub, add } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
-
-
-function getGrowthInside(
-  tickCurrent: number,
-  tickLower: number,
-  tickUpper: number,
-  lowerGrowthOutside: BigNumber,
-  upperGrowthOutside: BigNumber,
-  growthGlobal: BigNumber
-) {
-
-  let fixedTokenGrowthBelow: BigNumber;
-  if (tickCurrent >= tickLower) {
-    fixedTokenGrowthBelow = lowerGrowthOutside;
-  } else {
-    fixedTokenGrowthBelow = sub(growthGlobal, lowerGrowthOutside);
-  }
-
-  let fixedTokenGrowthAbove: BigNumber;
-
-  if (tickCurrent < tickUpper) {
-    fixedTokenGrowthAbove = upperGrowthOutside;
-  } else {
-    fixedTokenGrowthAbove = sub(growthGlobal, upperGrowthOutside);
-  }
-
-  return sub(growthGlobal, add(fixedTokenGrowthBelow, fixedTokenGrowthAbove));
-
-}
 
 
 describe("VAMM", () => {
