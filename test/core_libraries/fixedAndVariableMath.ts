@@ -4,7 +4,7 @@ import { BigNumber } from "ethers";
 import { ethers, network, waffle } from "hardhat";
 import { expect } from "chai";
 import { FixedAndVariableMathTest } from "../../typechain/FixedAndVariableMathTest";
-import { fixedFactor } from "../shared/utilities";
+import { fixedFactor, calculateSettlementCashflow } from "../shared/utilities";
 import { toBn } from "evm-bn";
 import { div, sub, mul, add } from "../shared/functions";
 import { getCurrentTimestamp } from "../helpers/time";
@@ -86,29 +86,6 @@ function getExcessBalance(
   );
 
   return excessBalance;
-}
-
-function calculateSettlementCashflow(
-  fixedTokenBalance: BigNumber,
-  variableTokenBalance: BigNumber,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  variableFactorToMaturity: BigNumber,
-  currentBlockTimestamp: BigNumber
-): BigNumber {
-  const fixedCashflow = mul(
-    fixedTokenBalance,
-    fixedFactor(
-      true,
-      termStartTimestamp,
-      termEndTimestamp,
-      currentBlockTimestamp
-    )
-  );
-
-  const variableCashflow = mul(variableTokenBalance, variableFactorToMaturity);
-
-  return add(fixedCashflow, variableCashflow);
 }
 
 describe("FixedAndVariableMath", () => {

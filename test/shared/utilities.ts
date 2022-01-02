@@ -234,12 +234,9 @@ export function fixedFactor(
 ): BigNumber {
   let timeInSeconds: BigNumber;
 
-  // const currentBlockTimestamp = toBn(BLOCK_TIMESTAMP.toString());
-
-  if (atMaturity) {
+  if (atMaturity || currentBlockTimestamp.gte(termEndTimestamp)) {
     timeInSeconds = sub(termEndTimestamp, termStartTimestamp);
   } else {
-    // timeInSeconds = sub(toBn(Math.floor(Date.now()/1000).toString()), termStartTimestamp)
     timeInSeconds = sub(currentBlockTimestamp, termStartTimestamp);
   }
 
@@ -327,4 +324,28 @@ export function calculateFixedAndVariableDelta(
   );
 
   return [fixedTokenBalance, variableTokenBalance];
+}
+
+
+export function calculateSettlementCashflow(
+  fixedTokenBalance: BigNumber,
+  variableTokenBalance: BigNumber,
+  termStartTimestamp: BigNumber,
+  termEndTimestamp: BigNumber,
+  variableFactorToMaturity: BigNumber,
+  currentBlockTimestamp: BigNumber
+): BigNumber {
+  const fixedCashflow = mul(
+    fixedTokenBalance,
+    fixedFactor(
+      true,
+      termStartTimestamp,
+      termEndTimestamp,
+      currentBlockTimestamp
+    )
+  );
+
+  const variableCashflow = mul(variableTokenBalance, variableFactorToMaturity);
+
+  return add(fixedCashflow, variableCashflow);
 }

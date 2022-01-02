@@ -21,6 +21,7 @@ import {
   SwapToPriceFunction,
   mint,
   calculateFixedAndVariableDelta,
+  calculateSettlementCashflow,
 } from "../shared/utilities";
 import { mainnetConstants } from "../../scripts/helpers/constants";
 import { RATE_ORACLE_ID, getGrowthInside } from "../shared/utilities";
@@ -454,9 +455,10 @@ describe("MarginEngine", () => {
   describe("#settleTrader", () => {
     let marginEngineTest: TestMarginEngine;
     let factory: Factory;
+    let ammTest: TestAMM;
 
     beforeEach("deploy fixture", async () => {
-      ({ factory, marginEngineTest } = await loadFixture(metaFixture));
+      ({ factory, marginEngineTest, ammTest } = await loadFixture(metaFixture));
     });
 
     it("reverts before maturity", async () => {
@@ -478,8 +480,32 @@ describe("MarginEngine", () => {
       expect(traderInfo[1]).to.eq(toBn('0'));
       expect(traderInfo[2]).to.eq(toBn('0'));
 
-      
     })
+
+
+    it("correctly updates trader margin", async () => {
+      await marginEngineTest.setTrader(wallet.address, toBn("100"), toBn("1000"), toBn("-2000"), false);
+      const traderInfoOld = await marginEngineTest.traders(wallet.address);
+      expect(traderInfoOld[0]).to.eq(toBn('100'));
+
+      await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
+      await marginEngineTest.settleTrader();
+      const traderInfo = await marginEngineTest.traders(wallet.address);
+
+      const termStartTimestamp = await ammTest.termStartTimestamp();
+      const termEndTimestamp = await ammTest.termEndTimestamp();
+
+      const currentBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
+
+      // is just the fixed cashflow since the variable factor hasn't changed
+      const expectedSettlementCashflow = calculateSettlementCashflow(toBn("1000"), toBn("-2000"), termStartTimestamp, termEndTimestamp, toBn("0"), toBn(currentBlockTimestamp.toString()));
+      const expectedUpdatedMargin = add(expectedSettlementCashflow, toBn("100"));
+
+      expect(traderInfo[0]).to.eq(expectedUpdatedMargin);
+
+    })
+
+
 
 
 
