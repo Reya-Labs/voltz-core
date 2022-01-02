@@ -502,6 +502,85 @@ describe("MarginEngine", () => {
       const expectedUpdatedMargin = add(expectedSettlementCashflow, toBn("100"));
 
       expect(traderInfo[0]).to.eq(expectedUpdatedMargin);
+      expect(traderInfo.isSettled).to.eq(true);
+
+    })
+
+  
+  });
+
+
+  describe("settle position", async () => {
+
+    let marginEngineTest: TestMarginEngine;
+    let factory: Factory;
+    let token: ERC20Mock;
+    let vammTest: TestVAMM;
+    let vammCalleeTest: TestVAMMCallee;
+    let ammTest: TestAMM;
+    
+
+    beforeEach("deploy fixture", async () => {
+
+      ({ factory, token, marginEngineTest, vammTest, vammCalleeTest, ammTest } = await loadFixture(metaFixture));
+      await token.mint(wallet.address, BigNumber.from(10).pow(27));
+      await token.approve(wallet.address, BigNumber.from(10).pow(27));
+
+      await vammTest.setTickTest(-1, {
+        liquidityGross: 10,
+        liquidityNet: 20,
+        fixedTokenGrowthOutside: toBn("1.0"),
+        variableTokenGrowthOutside: toBn("-2.0"),
+        feeGrowthOutside: toBn("0.1"),
+        initialized: true
+      });
+
+      await vammTest.setTickTest(1, {
+        liquidityGross: 40,
+        liquidityNet: 30,
+        fixedTokenGrowthOutside: toBn("3.0"),
+        variableTokenGrowthOutside: toBn("-4.0"),
+        feeGrowthOutside: toBn("0.2"),
+        initialized: true
+      });
+
+      await vammTest.setFixedTokenGrowthGlobal(toBn("5.0"));
+      await vammTest.setVariableTokenGrowthGlobal(toBn("-7.0"));
+  
+    });
+
+    it("correctly updates position margin", async () => {
+
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("1000.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), true, false);
+      
+      const expectedFixedTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("1.0"), toBn("3.0"), toBn("5.0"));
+      const expectedVariableTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("-2.0"), toBn("-4.0"), toBn("-7.0"));
+
+      const [expectedFixedTokenDelta, expectedVariableTokenDelta] = calculateFixedAndVariableDelta(expectedFixedTokenGrowthInside, expectedVariableTokenGrowthInside, toBn("0"), toBn("0"), BigNumber.from(1));
+
+      await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
+      await marginEngineTest.settlePosition({
+        owner: wallet.address,
+        tickLower: -1,
+        tickUpper: 1,
+        liquidityDelta: BigNumber.from(0) // does not matter for position settlements
+      });
+
+      const termStartTimestamp = await ammTest.termStartTimestamp();
+      const termEndTimestamp = await ammTest.termEndTimestamp();
+
+      const currentBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
+
+      const settlementCashflow = calculateSettlementCashflow(expectedFixedTokenDelta, expectedVariableTokenDelta, termStartTimestamp, termEndTimestamp, toBn("0"), toBn(currentBlockTimestamp.toString()));
+
+      const positionInfo = await marginEngineTest.getPosition(
+        wallet.address,
+        -1,
+        1
+      );
+
+      const expectedPositionMargin = add(toBn("1000"), settlementCashflow);
+      expect(positionInfo.margin).to.eq(expectedPositionMargin);
 
     })
 
@@ -509,10 +588,7 @@ describe("MarginEngine", () => {
 
 
 
-    
-  
-  
-  });
+  })
 
 
 

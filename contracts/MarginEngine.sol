@@ -190,7 +190,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         (, int24 tick, ) = amm.vamm().slot0();
         
-        // AB: todo: can directly call vamm from margin engine, needs to be cached in the constructor
+        // todo: can directly call vamm from margin engine, needs to be cached in the constructor
         (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
         
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
