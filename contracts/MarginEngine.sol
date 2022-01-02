@@ -151,7 +151,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
         int256 updatedMarginWouldBe = position.margin + marginDelta;
 
-        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position.isBurned, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor, address(amm)); 
+        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor, address(amm)); 
 
         position.updateMargin(marginDelta);
 
@@ -185,18 +185,16 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
 
         // @dev position can only be settled if it is burned
-        require(position.isBurned, "Position must be burned first");
+        require(position._liquidity==0, "Position must be fully burned first");
         require(!position.isSettled, "Position must not be already settled");
 
-        (, int24 tick, ) = amm.vamm().slot0();
-        
+        // if the position is already burned then don't need to do the below operations, position balances should be 
+        // (, int24 tick, ) = amm.vamm().slot0();
         // todo: can directly call vamm from margin engine, needs to be cached in the constructor
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
-        
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
-
-        position.updateBalances(fixedTokenDelta, variableTokenDelta);
-        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
+        // (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
+        // (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
+        // position.updateBalances(fixedTokenDelta, variableTokenDelta);
+        // position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
 
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp()));
 

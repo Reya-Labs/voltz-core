@@ -164,7 +164,7 @@ contract TestMarginEngine is MarginEngine {
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         uint256 feeGrowthInsideLast,
-        bool isBurned,
+        // bool isBurned,
         bool isSettled
     
     ) external {
@@ -177,7 +177,7 @@ contract TestMarginEngine is MarginEngine {
                 fixedTokenBalance: fixedTokenBalance,
                 variableTokenBalance: variableTokenBalance,
                 feeGrowthInsideLast: feeGrowthInsideLast,
-                isBurned: isBurned,
+                // isBurned: isBurned,
                 isSettled: isSettled
             }
         );

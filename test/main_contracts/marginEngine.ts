@@ -101,7 +101,7 @@ describe("MarginEngine", () => {
       expect(positionInfo.fixedTokenBalance).to.eq(0);
       expect(positionInfo.variableTokenBalance).to.eq(0);
       expect(positionInfo.feeGrowthInsideLast).to.eq(0);
-      expect(positionInfo.isBurned).to.eq(false);
+      // expect(positionInfo.isBurned).to.eq(false);
     });
   });
 
@@ -315,7 +315,7 @@ describe("MarginEngine", () => {
 
     it("correctly updates position margin (internal accounting)", async () => {
       
-      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("1000.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false, false);
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("1000.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false);
       
       await marginEngineTest.updatePositionMargin({
         owner: wallet.address,
@@ -336,7 +336,7 @@ describe("MarginEngine", () => {
 
     it("check token balance correctly updated", async () => {
 
-      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("1000.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false, false);
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("1000.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false);
     
       const oldPositionBalance = await token.balanceOf(wallet.address);
       const ammAddress = await marginEngineTest.amm();
@@ -402,13 +402,10 @@ describe("MarginEngine", () => {
   
     });
 
-    it("updates position token balances (growth inside last) to be reverted if position liquidity is zero", async () => {
-      await expect(marginEngineTest.updatePositionTokenBalancesTest(wallet.address, -1, 1)).to.be.reverted;
-    })
 
     it("correctly updates position token balances (growth inside last)", async () => {
 
-      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("10.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false, false);
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("10.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false);
 
       await marginEngineTest.updatePositionTokenBalancesTest(wallet.address, -1, 1);
       
@@ -428,7 +425,7 @@ describe("MarginEngine", () => {
 
     it("correctly updates position token balances (fixed and variable deltas)", async () => {
 
-      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("10.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false, false);
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("10.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), false);
 
       await marginEngineTest.updatePositionTokenBalancesTest(wallet.address, -1, 1);
       
@@ -551,13 +548,8 @@ describe("MarginEngine", () => {
 
     it("correctly updates position margin", async () => {
 
-      await marginEngineTest.setPosition(wallet.address, -1, 1, 1, toBn("1000.0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), toBn("0"), true, false);
+      await marginEngineTest.setPosition(wallet.address, -1, 1, 0, toBn("1000.0"), toBn("0"), toBn("0"), toBn("1000"), toBn("-2000"), toBn("0"), false);
       
-      const expectedFixedTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("1.0"), toBn("3.0"), toBn("5.0"));
-      const expectedVariableTokenGrowthInside = getGrowthInside(0, -1, 1, toBn("-2.0"), toBn("-4.0"), toBn("-7.0"));
-
-      const [expectedFixedTokenDelta, expectedVariableTokenDelta] = calculateFixedAndVariableDelta(expectedFixedTokenGrowthInside, expectedVariableTokenGrowthInside, toBn("0"), toBn("0"), BigNumber.from(1));
-
       await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
       await marginEngineTest.settlePosition({
         owner: wallet.address,
@@ -571,7 +563,7 @@ describe("MarginEngine", () => {
 
       const currentBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
 
-      const settlementCashflow = calculateSettlementCashflow(expectedFixedTokenDelta, expectedVariableTokenDelta, termStartTimestamp, termEndTimestamp, toBn("0"), toBn(currentBlockTimestamp.toString()));
+      const settlementCashflow = calculateSettlementCashflow(toBn("1000"), toBn("-2000"), termStartTimestamp, termEndTimestamp, toBn("0"), toBn(currentBlockTimestamp.toString()));
 
       const positionInfo = await marginEngineTest.getPosition(
         wallet.address,
@@ -581,8 +573,13 @@ describe("MarginEngine", () => {
 
       const expectedPositionMargin = add(toBn("1000"), settlementCashflow);
       expect(positionInfo.margin).to.eq(expectedPositionMargin);
+      expect(positionInfo.isSettled).to.eq(true);
+      expect(positionInfo.fixedTokenBalance).to.eq(toBn("0"));
+      expect(positionInfo.variableTokenBalance).to.eq(toBn("0"));
 
     })
+
+
 
 
 

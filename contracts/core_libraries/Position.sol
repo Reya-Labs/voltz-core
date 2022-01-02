@@ -35,7 +35,7 @@ library Position {
         uint256 feeGrowthInsideLast;
         // has the position been already burned
         // a burned position can no longer support new IRS contracts but still needs to cover settlement cash-flows of on-going IRS contracts it entered
-        bool isBurned;
+        // bool isBurned;, equivalent to having zero liquidity
         // is position settled
         bool isSettled;
     }
@@ -131,7 +131,7 @@ library Position {
     {
         Info memory _self = self;
 
-        require(_self._liquidity > 0, "NP");
+        // require(_self._liquidity > 0, "NP");
 
         // liquidity is in wei already
 
