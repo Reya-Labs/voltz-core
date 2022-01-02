@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathSD59x18.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./Time.sol";
+import "hardhat/console.sol";
 
 /// @title A utility library for mathematics of fixed and variable token amounts.
 /// @author Artur Begyan
@@ -182,8 +183,9 @@ library FixedAndVariableMath {
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
     ) public view returns (int256 fixedTokenBalance) {
+
         if (
-            !(((amount0 < 0 && amount1 > 0) || (amount0 > 0 && amount1 < 0)) ||
+            !(((amount0 <= 0 && amount1 >= 0) || (amount0 >= 0 && amount1 <= 0)) ||
                 (amount0 == 0 && amount1 == 0))
         ) {
             revert AmountSignsSame();
