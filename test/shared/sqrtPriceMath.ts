@@ -27,7 +27,7 @@ export abstract class SqrtPriceMath {
   /**
    * Cannot be constructed.
    */
-  private constructor() {}
+  // private constructor() {}
 
   public static getAmount0Delta(
     sqrtRatioAX96: JSBI,

@@ -79,9 +79,11 @@ abstract contract BaseRateOracle is IRateOracle {
         oracleVars.rateCardinalityNext = rateCardinalityNextNew;
 
         if (rateCardinalityNextOld != rateCardinalityNextNew) {
-            emit IncreaserateCardinalityNext(rateCardinalityNextOld, rateCardinalityNextNew);
+            emit IncreaserateCardinalityNext(
+                rateCardinalityNextOld,
+                rateCardinalityNextNew
+            );
         }
-        
     }
 
     /// @notice Calculates the observed APY returned by the underlying in a given period
@@ -107,8 +109,7 @@ abstract contract BaseRateOracle is IRateOracle {
         uint256 currentTime,
         uint256 queriedTime,
         uint16 index,
-        uint16 cardinality,
-        uint16 cardinalityNext
+        uint16 cardinality
     ) public view virtual override returns (uint256 rateValue);
 
     function writeOracleEntry() external virtual override;

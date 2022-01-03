@@ -277,7 +277,6 @@ export const DEFAULT_TIME_FACTOR: BigNumber = toBn("0.1");
 export const MIN_TICK: number = -887272;
 export const MAX_TICK: number = 887272;
 
-
 export function getGrowthInside(
   tickCurrent: number,
   tickLower: number,
@@ -286,7 +285,6 @@ export function getGrowthInside(
   upperGrowthOutside: BigNumber,
   growthGlobal: BigNumber
 ) {
-
   let fixedTokenGrowthBelow: BigNumber;
   if (tickCurrent >= tickLower) {
     fixedTokenGrowthBelow = lowerGrowthOutside;
@@ -303,9 +301,7 @@ export function getGrowthInside(
   }
 
   return sub(growthGlobal, add(fixedTokenGrowthBelow, fixedTokenGrowthAbove));
-
 }
-
 
 export function calculateFixedAndVariableDelta(
   fixedTokenGrowthInside: BigNumber,
@@ -325,7 +321,6 @@ export function calculateFixedAndVariableDelta(
 
   return [fixedTokenBalance, variableTokenBalance];
 }
-
 
 export function calculateSettlementCashflow(
   fixedTokenBalance: BigNumber,

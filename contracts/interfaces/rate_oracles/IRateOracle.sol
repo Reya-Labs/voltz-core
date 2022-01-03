@@ -68,8 +68,7 @@ interface IRateOracle {
         uint256 currentTime,
         uint256 queriedTime,
         uint16 index,
-        uint16 cardinality,
-        uint16 cardinalityNext
+        uint16 cardinality
     ) external view returns(uint256 rateValue);
 
     function writeOracleEntry() external;

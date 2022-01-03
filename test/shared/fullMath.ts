@@ -7,7 +7,7 @@ export abstract class FullMath {
   /**
    * Cannot be constructed.
    */
-  private constructor() {}
+  // private constructor() {}
 
   public static mulDivRoundingUp(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
     const product = JSBI.multiply(a, b);

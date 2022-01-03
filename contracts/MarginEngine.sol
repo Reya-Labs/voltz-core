@@ -185,8 +185,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
 
         // @dev position can only be settled if it is burned
-        require(position._liquidity==0, "Position must be fully burned first");
-        require(!position.isSettled, "Position must not be already settled");
+        require(position._liquidity==0, "fully burned");
+        require(!position.isSettled, "already settled");
 
         // if the position is already burned then don't need to do the below operations, position balances should be 
         // (, int24 tick, ) = amm.vamm().slot0();

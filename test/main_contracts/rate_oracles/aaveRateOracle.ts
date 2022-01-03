@@ -1,12 +1,10 @@
 import { BigNumber, Wallet, Contract } from "ethers";
-import { ethers, network, waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
-import { accrualFact, fixedFactor } from "../../shared/utilities";
+import { accrualFact } from "../../shared/utilities";
 import { toBn } from "evm-bn";
 import { div, sub, mul, add, pow } from "../../shared/functions";
-import { consts } from "../../helpers/constants";
 import { TestRateOracle } from "../../../typechain/TestRateOracle";
-import { MockAaveLendingPool } from "../../../typechain/MockAaveLendingPool";
 import {
   rateOracleFixture,
   timeFixture,
@@ -568,9 +566,6 @@ describe("Aave Rate Oracle", () => {
     let aaveLendingPoolContract: Contract;
     let underlyingTokenAddress: string;
 
-    let firstTimestamp: number;
-    let secondTimestamp: number;
-
     beforeEach("deploy and initialize test oracle", async () => {
       testRateOracle = await loadFixture(initializedOracleFixture);
 
@@ -589,7 +584,6 @@ describe("Aave Rate Oracle", () => {
       await testRateOracle.testGrow(10);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-      firstTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testRateOracle.update();
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
@@ -598,7 +592,6 @@ describe("Aave Rate Oracle", () => {
         underlyingTokenAddress,
         toBn("1.1")
       );
-      secondTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testRateOracle.update();
     });
 

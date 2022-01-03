@@ -4,7 +4,6 @@ import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
 import { PositionTest } from "../../typechain/PositionTest";
 import { toBn } from "../helpers/toBn";
-import { sub, mul } from "../shared/functions";
 import { calculateFixedAndVariableDelta } from "../shared/utilities";
 
 const { loadFixture } = waffle;
@@ -12,7 +11,6 @@ const { loadFixture } = waffle;
 interface PostitionTestFixture {
   positionTest: PositionTest;
 }
-
 
 describe("Position", () => {
   async function fixture(): Promise<PostitionTestFixture> {

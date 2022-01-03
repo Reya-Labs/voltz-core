@@ -2,17 +2,13 @@
 import { Wallet, BigNumber, utils } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
-import { MarginCalculator } from "../../typechain/MarginCalculator";
 import { toBn } from "evm-bn";
-import { div, sub, mul, add, sqrt, floor, exp } from "../shared/functions";
+import { div, sub, mul, add, sqrt, exp } from "../shared/functions";
 import { factoryFixture } from "../shared/fixtures";
 import {
-  encodeSqrtRatioX96,
   expandTo18Decimals,
   accrualFact,
   fixedFactor,
-  MIN_SQRT_RATIO,
-  MAX_SQRT_RATIO,
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
   MIN_DELTA_LM,
@@ -25,14 +21,11 @@ import {
   XI_LOWER,
   T_MAX,
   RATE_ORACLE_ID,
-  DEFAULT_TIME_FACTOR,
-  MIN_TICK,
-  MAX_TICK,
 } from "../shared/utilities";
 import { FixedAndVariableMath } from "../../typechain/FixedAndVariableMath";
 
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
-import { getCurrentTimestamp, advanceTime } from "../helpers/time";
+import { getCurrentTimestamp } from "../helpers/time";
 
 import { getFixedTokenBalance } from "../core_libraries/fixedAndVariableMath";
 
@@ -358,8 +351,7 @@ function getTraderMarginRequirement(
     variableTokenBalance,
     termStartTimestamp,
     termEndTimestamp,
-    isLM,
-    historicalApy
+    isLM
   );
 
   let margin: BigNumber;
@@ -481,11 +473,8 @@ function getMinimumMarginRequirement(
   variableTokenBalance: BigNumber,
   termStartTimestamp: BigNumber,
   termEndTimestamp: BigNumber,
-  isLM: boolean,
-  historicalApy: BigNumber
+  isLM: boolean
 ) {
-  // historicalApy is not necessary for this calculation
-
   const timeInSeconds: BigNumber = sub(termEndTimestamp, termStartTimestamp);
   const timeInYears: BigNumber = accrualFact(timeInSeconds);
   let minDelta: BigNumber;
@@ -665,8 +654,7 @@ describe("MarginCalculator", () => {
           variableTokenBalance,
           termStartTimestampBN,
           termEndTimestampBN,
-          isLM,
-          historicalApy
+          isLM
         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
       const realisedMinimumMarginRequirement: BigNumber =
         await calculatorTest.getMinimumMarginRequirementTest(
@@ -708,8 +696,7 @@ describe("MarginCalculator", () => {
           variableTokenBalance,
           termStartTimestampBN,
           termEndTimestampBN,
-          isLM,
-          historicalApy
+          isLM
         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
       const realisedMinimumMarginRequirement: BigNumber =
         await calculatorTest.getMinimumMarginRequirementTest(
@@ -749,8 +736,7 @@ describe("MarginCalculator", () => {
           variableTokenBalance,
           termStartTimestampBN,
           termEndTimestampBN,
-          isLM,
-          historicalApy
+          isLM
         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
       const realisedMinimumMarginRequirement: BigNumber =
         await calculatorTest.getMinimumMarginRequirementTest(
@@ -1011,7 +997,6 @@ describe("MarginCalculator", () => {
           historicalApy
         );
 
-      // expect(realized).to.eq(expected);
       expect(realized).to.be.closeTo(expected, 100);
     });
 
@@ -1087,7 +1072,6 @@ describe("MarginCalculator", () => {
           historicalApy
         );
 
-      // expect(realized).to.eq(expected);
       expect(realized).to.be.closeTo(expected, 100);
     });
 
@@ -1163,8 +1147,6 @@ describe("MarginCalculator", () => {
       );
 
       const termStartTimestampScaled = toBn(termStartTimestamp.toString());
-
-      // const isFT = true;
       const isLM = false;
       const historicalApy = toBn("0.1");
 
@@ -1521,7 +1503,6 @@ describe("MarginCalculator", () => {
       const currentTick: number = -10;
 
       const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
 
       const termStartTimestamp = currentTimestamp - 604800;
 
@@ -1537,9 +1518,7 @@ describe("MarginCalculator", () => {
       const variableFactor: BigNumber = toBn("0.02");
       const historicalApy: BigNumber = toBn("0.3");
       const liquidityBN: BigNumber = expandTo18Decimals(1);
-      const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
 
-      // const realized = await calculatorTest.positionMarginBetweenTicksHelperTest(tickLower, tickUpper, isLM, currentTick, termStartTimestampScaled, termEndTimestampScaled, liquidityBN, fixedTokenBalance, variableTokenBalance, variableFactor, RATE_ORACLE_ID, historicalApy);
       await expect(
         calculatorTest.positionMarginBetweenTicksHelperTest(
           tickLower,
@@ -1556,10 +1535,6 @@ describe("MarginCalculator", () => {
           historicalApy
         )
       ).to.be.revertedWith("currentTick >= tickLower");
-
-      // const expected = positionMarginBetweenTicksHelper(tickLower, tickUpper, isLM, currentTick, termStartTimestampScaled, termEndTimestampScaled, liquidityJSBI, fixedTokenBalance, variableTokenBalance, variableFactor, historicalApy, currentTimestampScaled);
-
-      // expect(realized).to.be.closeTo(expected, 10000);
     });
 
     it("reverts positionMarginBetweenTicks (current tick is -10), IM, (-1, 1)", async () => {
@@ -1569,7 +1544,6 @@ describe("MarginCalculator", () => {
       const currentTick: number = -10;
 
       const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
 
       const termStartTimestamp = currentTimestamp - 604800;
 
@@ -1585,7 +1559,6 @@ describe("MarginCalculator", () => {
       const variableFactor: BigNumber = toBn("0.02");
       const historicalApy: BigNumber = toBn("0.3");
       const liquidityBN: BigNumber = expandTo18Decimals(1);
-      const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
 
       await expect(
         calculatorTest.positionMarginBetweenTicksHelperTest(
@@ -1603,10 +1576,6 @@ describe("MarginCalculator", () => {
           historicalApy
         )
       ).to.be.revertedWith("currentTick >= tickLower");
-
-      // const expected = positionMarginBetweenTicksHelper(tickLower, tickUpper, isLM, currentTick, termStartTimestampScaled, termEndTimestampScaled, liquidityJSBI, fixedTokenBalance, variableTokenBalance, variableFactor, historicalApy, currentTimestampScaled);
-
-      // expect(realized).to.be.closeTo(expected, 10000000); // error delta is higher
     });
   });
 
@@ -1716,7 +1685,6 @@ describe("MarginCalculator", () => {
       const variableTokenBalance: BigNumber = toBn("-3000");
 
       const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
 
       const termStartTimestamp = currentTimestamp - 604800;
 
@@ -1724,9 +1692,6 @@ describe("MarginCalculator", () => {
         (termStartTimestamp + 604800).toString() // add a week
       );
 
-      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
-
-      // const isFT = true;
       const isLM = false;
       const historicalApy = toBn("0.1");
       const currentMargin = toBn("0.0");
@@ -1767,11 +1732,9 @@ describe("MarginCalculator", () => {
     it("correctly checks for the fact the position is liquidatable", async () => {
       const tickLower: number = -1;
       const tickUpper: number = 1;
-      const isLM: boolean = true;
       const currentTick: number = 0;
 
       const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
 
       const termStartTimestamp = currentTimestamp - 604800;
 
@@ -1787,7 +1750,6 @@ describe("MarginCalculator", () => {
       const variableFactor: BigNumber = toBn("0.02");
       const historicalApy: BigNumber = toBn("0.3");
       const liquidityBN: BigNumber = expandTo18Decimals(1);
-      const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
       const currentMargin = toBn("0.0");
 
       const realized = await calculatorTest.isLiquidatablePositionLMTest(

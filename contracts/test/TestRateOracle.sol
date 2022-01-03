@@ -108,8 +108,7 @@ contract TestRateOracle is AaveRateOracle {
             Time.blockTimestampScaled(),
             queriedTime,
             oracleVars.rateIndex,
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
+            oracleVars.rateCardinality
         );
         return latestObservedRateValue;
     }
@@ -153,8 +152,7 @@ contract TestRateOracle is AaveRateOracle {
         (Rate memory beforeOrAt, Rate memory atOrAfter) = getSurroundingRates(
             target,
             oracleVars.rateIndex,
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
+            oracleVars.rateCardinality
         );
 
         latestBeforeOrAtRateValue = beforeOrAt.rateValue;

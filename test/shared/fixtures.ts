@@ -187,20 +187,21 @@ interface MetaFixture {
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
-  
   // create a mock token and mint some to our wallet
   const { token } = await mockERC20Fixture();
 
   const { time } = await timeFixture();
   const { factory } = await factoryFixture(time.address);
-  const { fixedAndVariableMath } = await fixedAndVariableMathFixture(time.address);
-  
+  const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
+    time.address
+  );
+
   const { aaveLendingPool } = await mockAaveLendingPoolFixture();
   await aaveLendingPool.setReserveNormalizedIncome(
     token.address,
     BigNumber.from(10).pow(27)
   );
-  
+
   const { testRateOracle } = await rateOracleFixture(
     fixedAndVariableMath.address,
     time.address,
@@ -218,8 +219,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   await testRateOracle.update();
   await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
   await testRateOracle.update();
-  
-  
+
   // deploy the amm
   // deploy the vamm
   // deploy the margin engine
@@ -241,9 +241,10 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { tick } = await tickFixture();
   const { unwindTraderUnwindPosition } =
     await unwindTraderUnwinPositionFixture();
-  const { vammHelpers } = await vammHelpersFixture(fixedAndVariableMath.address);
+  const { vammHelpers } = await vammHelpersFixture(
+    fixedAndVariableMath.address
+  );
 
-  
   const { testMarginCalculator } = await marginCalculatorFixture(
     fixedAndVariableMath.address,
     time.address,
@@ -335,7 +336,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
 
   // Grant an allowance to the MarginEngine
   await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
-  
 
   // link the margin engine to the AMM
   await ammTest.setMarginEngine(marginEngineAddress);
@@ -370,10 +370,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(TICK_SPACING));
   vammTest.setTickSpacing(TICK_SPACING);
 
-  
   // Grant allowance to the vamm
   await token.approve(vammTest.address, BigNumber.from(10).pow(27));
-    
 
   // Grant allowance to the amm
   await token.approve(ammTest.address, BigNumber.from(10).pow(27));

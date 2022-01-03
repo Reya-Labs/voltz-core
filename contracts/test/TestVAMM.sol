@@ -18,6 +18,4 @@ contract TestVAMM is VAMM {
     function setTickTest(int24 tick, Tick.Info memory info) external {
         ticks[tick] = info;
     }
-
-
 }

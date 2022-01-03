@@ -181,9 +181,9 @@ library FixedAndVariableMath {
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
     ) public view returns (int256 fixedTokenBalance) {
-
         if (
-            !(((amount0 <= 0 && amount1 >= 0) || (amount0 >= 0 && amount1 <= 0)) ||
+            !(((amount0 <= 0 && amount1 >= 0) ||
+                (amount0 >= 0 && amount1 <= 0)) ||
                 (amount0 == 0 && amount1 == 0))
         ) {
             revert AmountSignsSame();

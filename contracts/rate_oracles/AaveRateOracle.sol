@@ -144,26 +144,23 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             currentTime,
             from,
             oracleVars.rateIndex,
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
+            oracleVars.rateCardinality
         );
         uint256 rateTo = observeSingle(
             currentTime,
             to,
             oracleVars.rateIndex,
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
+            oracleVars.rateCardinality
         );
 
         if (rateTo > rateFrom) {
             return
-            WadRayMath.rayToWad(
-                WadRayMath.rayDiv(rateTo, rateFrom).sub(WadRayMath.RAY)
-            );
+                WadRayMath.rayToWad(
+                    WadRayMath.rayDiv(rateTo, rateFrom).sub(WadRayMath.RAY)
+                );
         } else {
             return 0;
         }
-          
     }
 
     /// @inheritdoc IRateOracle
@@ -228,8 +225,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     function getSurroundingRates(
         uint256 target,
         uint16 index,
-        uint16 cardinality,
-        uint16 cardinalityNext
+        uint16 cardinality
     ) internal view returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
         // optimistically set before to the newest rate
         beforeOrAt = rates[index];
@@ -237,7 +233,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         if (beforeOrAt.timestamp <= target) {
             if (beforeOrAt.timestamp == target) {
                 // if the newest observation eqauls target, we are in the same block, so we can ignore atOrAfter
-                return (beforeOrAt, atOrAfter); 
+                return (beforeOrAt, atOrAfter);
             } else {
                 atOrAfter = Rate({
                     timestamp: Time.blockTimestampScaled(),
@@ -286,8 +282,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 currentTime,
         uint256 queriedTime,
         uint16 index,
-        uint16 cardinality,
-        uint16 cardinalityNext
+        uint16 cardinality
     )
         public
         view
@@ -308,8 +303,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         (Rate memory beforeOrAt, Rate memory atOrAfter) = getSurroundingRates(
             queriedTime,
             index,
-            cardinality,
-            cardinalityNext
+            cardinality
         );
 
         if (queriedTime == beforeOrAt.timestamp) {
@@ -323,13 +317,13 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             // find apy between beforeOrAt and atOrAfter
 
             uint256 rateFromBeforeOrAtToAtOrAfter;
-            
+
             if (atOrAfter.rateValue > beforeOrAt.rateValue) {
                 // console.log("atOrAfter.rateValue", atOrAfter.rateValue);
                 // console.log("beforeOrAt.rateValue", beforeOrAt.rateValue);
                 rateFromBeforeOrAtToAtOrAfter = WadRayMath
-                .rayDiv(atOrAfter.rateValue, beforeOrAt.rateValue)
-                .sub(WadRayMath.RAY);
+                    .rayDiv(atOrAfter.rateValue, beforeOrAt.rateValue)
+                    .sub(WadRayMath.RAY);
             }
 
             uint256 timeInYears = FixedAndVariableMath.accrualFact(

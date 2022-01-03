@@ -5,7 +5,6 @@ import "../core_libraries/Position.sol";
 import "../core_libraries/Trader.sol";
 
 contract TestMarginEngine is MarginEngine {
-
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
 
@@ -126,7 +125,6 @@ contract TestMarginEngine is MarginEngine {
             );
     }
 
-
     function updatePositionTokenBalancesTest(
         address owner,
         int24 tickLower,
@@ -134,7 +132,6 @@ contract TestMarginEngine is MarginEngine {
     ) external {
         updatePositionTokenBalances(owner, tickLower, tickUpper);
     }
-
 
     function setTrader(
         address traderAddress,
@@ -150,13 +147,11 @@ contract TestMarginEngine is MarginEngine {
             isSettled: isSettled
         });
     }
-    
-    
+
     function setPosition(
         address owner,
         int24 tickLower,
         int24 tickUpper,
-
         uint128 _liquidity,
         int256 margin,
         int256 fixedTokenGrowthInsideLast,
@@ -164,24 +159,19 @@ contract TestMarginEngine is MarginEngine {
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         uint256 feeGrowthInsideLast,
-        // bool isBurned,
         bool isSettled
-    
     ) external {
-        positions[keccak256(abi.encodePacked(owner, tickLower, tickUpper))] = Position.Info(
-            {
-                _liquidity: _liquidity,
-                margin: margin,
-                fixedTokenGrowthInsideLast: fixedTokenGrowthInsideLast,
-                variableTokenGrowthInsideLast: variableTokenGrowthInsideLast,
-                fixedTokenBalance: fixedTokenBalance,
-                variableTokenBalance: variableTokenBalance,
-                feeGrowthInsideLast: feeGrowthInsideLast,
-                // isBurned: isBurned,
-                isSettled: isSettled
-            }
-        );
+        positions[
+            keccak256(abi.encodePacked(owner, tickLower, tickUpper))
+        ] = Position.Info({
+            _liquidity: _liquidity,
+            margin: margin,
+            fixedTokenGrowthInsideLast: fixedTokenGrowthInsideLast,
+            variableTokenGrowthInsideLast: variableTokenGrowthInsideLast,
+            fixedTokenBalance: fixedTokenBalance,
+            variableTokenBalance: variableTokenBalance,
+            feeGrowthInsideLast: feeGrowthInsideLast,
+            isSettled: isSettled
+        });
     }
-
-    
 }
