@@ -10,10 +10,6 @@ This repository contains the smart contracts that power Voltz Protocol. Over tim
 
 We would love to see how you can build and improve upon what we've built here at Voltz.
 
-## How it works
-
-All supporting documentation of Voltz Protocol can be accessed [here](https://github.com/voltzprotocol/voltz-core/tree/main/docs).
-
 ## Code Contributions
 
 We welcome and are extremely excited to support individuals and teams that wish to contribute to the Voltz core contracts. If you wish to propose changes to the current codebase, make sure you do it in accordance with the contribution guidelines. Before starting to work on major contributions make sure to discuss them with the Voltz community and the core team to make sure they are in alignment with our roadmap and long-term vision. In case you have any questions or just want to have a discussion feel free to jump into the dev channel of our [discord](https://discord.com/invite/KVWtUGRumk).
@@ -77,6 +73,3 @@ By default, we install a pre-push hook to run `npm run check` before each push. 
 - `npm run format:ts:check` - Check the formatting of all TypeScript files.
 - `npm run format:check` - Check the formatting of all files.
 
-## Contracts
-
-We detail a few of the core contracts in the Voltz Protocol \[TODO].

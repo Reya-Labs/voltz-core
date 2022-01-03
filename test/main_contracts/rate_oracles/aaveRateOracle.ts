@@ -11,6 +11,7 @@ import {
   fixedAndVariableMathFixture,
   mockERC20Fixture,
   mockAaveLendingPoolFixture,
+  factoryFixture,
 } from "../../shared/fixtures";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 
@@ -59,6 +60,7 @@ describe("Aave Rate Oracle", () => {
     );
     const { token } = await mockERC20Fixture();
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
+    const { factory } = await factoryFixture(time.address);
 
     console.log(
       "Test TS: Aave lending pool address is: ",
@@ -76,7 +78,8 @@ describe("Aave Rate Oracle", () => {
       fixedAndVariableMath.address,
       time.address,
       token.address,
-      aaveLendingPool.address
+      aaveLendingPool.address,
+      factory.address
     );
 
     await testRateOracle.setMinSecondsSinceLastUpdate(toBn("7200")); // two hours
@@ -595,7 +598,7 @@ describe("Aave Rate Oracle", () => {
       await testRateOracle.update();
     });
 
-    // todo: Error: VM Exception while processing transaction: reverted with reason string '50' (needs to be fixed)
+    // Error: VM Exception while processing transaction: reverted with reason string '50' (needs to be fixed)
     // it("correctly computes historical apy", async () => {
     //   // await testRateOracle.setSecondsAgo("86400"); // one day
     //   await testRateOracle.testGetHistoricalApy();

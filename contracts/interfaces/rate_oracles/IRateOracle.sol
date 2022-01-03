@@ -47,6 +47,18 @@ interface IRateOracle {
 
     function underlying() external view returns (address);
 
+    function factory() external view returns (address);
+
+    function rates(uint256 index) external view returns(
+        uint256 timestamp,
+        uint256 rateValue
+    );
+
+    function oracleVars() external view returns (
+        uint16 rateIndex,
+        uint16 rateCardinality,
+        uint16 rateCardinalityNext
+    );
 
     // non-view functions
 

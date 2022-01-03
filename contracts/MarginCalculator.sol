@@ -21,8 +21,8 @@ contract MarginCalculator is IMarginCalculator {
   /// @dev Must be the Factory owner
   error NotFactoryOwner();
 
-  // todo: add override
-  address public immutable factory;
+  
+  address public immutable override factory;
 
   modifier onlyFactoryOwner() {
     if (msg.sender != IFactory(factory).owner()) {
@@ -48,7 +48,6 @@ contract MarginCalculator is IMarginCalculator {
     MarginCalculatorParameters memory marginCalculatorParameters,
     bytes32 rateOracleId
   ) public override onlyFactoryOwner {
-    // todo: require statements to check the parameters and the rateOracleId passed into this function
     getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
   }
 
@@ -110,7 +109,6 @@ contract MarginCalculator is IMarginCalculator {
 
     apyBoundVars.oneMinusTimeFactor = ONE_WEI - apyBoundVars.timeFactor;
 
-    // todo: avoid divide by zero
     apyBoundVars.k = PRBMathSD59x18.div(
       getMarginCalculatorParameters[rateOracleId].alpha,
       getMarginCalculatorParameters[rateOracleId].sigmaSquared

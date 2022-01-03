@@ -62,8 +62,8 @@ export const devConstants = {
   },
 };
 
-// todo: export const kovanConstants
-// todo: export const goerliConstants
+// export const kovanConstants
+// export const goerliConstants
 
 export const mainnetConstants = {
   common,

@@ -22,10 +22,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     constructor(
         address _aaveLendingPool,
         bytes32 _rateOracleId,
-        address underlying
-    ) BaseRateOracle(_rateOracleId, underlying) {
+        address underlying,
+        address factory
+    ) BaseRateOracle(_rateOracleId, underlying, factory) {
         aaveLendingPool = _aaveLendingPool;
-        // console.log("Test Contract: Aave lending pool address is: ", _aaveLendingPool);
     }
 
     /// @notice Get the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
@@ -357,10 +357,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         virtual
         override(
             BaseRateOracle,
-            IRateOracle // todo: remove
+            IRateOracle
         )
         returns (uint256 historicalApy)
     {
+        // should not be virtual (had to do this for the tests)
+
         uint256 to = Time.blockTimestampScaled();
         uint256 from = to - secondsAgo;
 

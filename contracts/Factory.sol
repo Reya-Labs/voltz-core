@@ -98,7 +98,6 @@ contract Factory is IFactory, Deployer {
     bytes32 rateOracleId,
     uint256 termEndTimestamp
   ) external override onlyOwner returns (address amm) {
-    // todo: termStartTimestamp is set in here --> can write oracle entry so have liquidity index for termStartTimestamp
     uint256 termStartTimestamp = Time.blockTimestampScaled(); 
     require(
       getAMMMap[rateOracleId][underlyingToken][termStartTimestamp][

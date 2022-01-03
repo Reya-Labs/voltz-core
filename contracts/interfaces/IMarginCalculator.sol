@@ -7,7 +7,7 @@ import "prb-math/contracts/PRBMathSD59x18Typed.sol";
 interface IMarginCalculator {
     // structs
 
-    // TODO: below should all be SD59x18 or UD60x18 user defined types
+    // below should all be SD59x18 or UD60x18 user defined types?
     /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
     /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
     /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Liquidation Margin Computation
@@ -33,7 +33,6 @@ interface IMarginCalculator {
         int256 tMax;
     }
 
-    // TODO: below should all be SD59x18 user defined types
     struct ApyBoundVars {
         /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
         int256 timeFactor;
@@ -166,6 +165,8 @@ interface IMarginCalculator {
     }
 
     // view functions
+
+    function factory() external returns (address);
 
     /// @notice Returns the Minimum Margin Requirement
     /// @dev As a safety measure, Voltz Protocol also computes the minimum margin requirement for FTs and VTs.

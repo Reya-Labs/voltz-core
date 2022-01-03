@@ -17,4 +17,4 @@ export async function step3(deployer: any, hre: any, deployment: Deployment) {
   await factory.createVAMM(ammAddress);
 }
 
-// todo: need steps which properly initialise critical protocol parameters
+// need steps which properly initialise critical protocol parameters

@@ -77,7 +77,8 @@ export async function rateOracleFixture(
   fixedAndVariableMathAddress: string,
   timeAddress: string,
   tokenAddress: string,
-  aaveLendingPoolAddress: string
+  aaveLendingPoolAddress: string,
+  factoryAddress: string
 ) {
   const TestRateOracleFactory = await ethers.getContractFactory(
     "TestRateOracle",
@@ -97,7 +98,8 @@ export async function rateOracleFixture(
   const testRateOracle = await TestRateOracleFactory.deploy(
     aaveLendingPoolAddress,
     RATE_ORACLE_ID,
-    tokenAddress
+    tokenAddress,
+    factoryAddress
   );
 
   return { testRateOracle };
@@ -206,7 +208,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     fixedAndVariableMath.address,
     time.address,
     token.address,
-    aaveLendingPool.address
+    aaveLendingPool.address,
+    factory.address
   );
 
   await testRateOracle.initializeTestRateOracle({
@@ -225,7 +228,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   // deploy the margin engine
   // set the margin engine in the amm, set the vamm in the amm
 
-  // todo: need dummy token so we can test token transfers
   const termStartTimestamp: number = await getCurrentTimestamp(provider);
   const termEndTimestamp: number =
     termStartTimestamp + consts.ONE_WEEK.toNumber();

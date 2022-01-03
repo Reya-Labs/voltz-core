@@ -68,7 +68,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         (ammAddress) = IDeployer(msg.sender).marginEngineParameters();
         amm = IAMM(ammAddress);
 
-        // todo: AMM never changes. We should enforce this invariant (most simply, only allow it to be set once?), and once we do we can cache all AMM properties (underlyingToken, rateOracleId, termStartTimestamp, termEndTimestamp, ... ) indefinitely here to save gas and simplify code.
+        // AMM never changes. We should enforce this invariant (most simply, only allow it to be set once?), and once we do we can cache all AMM properties (underlyingToken, rateOracleId, termStartTimestamp, termEndTimestamp, ... ) indefinitely here to save gas and simplify code.
         underlyingToken = amm.underlyingToken(); // immutable in AMM therefore safe to cache forever
         factory = amm.factory(); // immutable in AMM therefore safe to cache forever
         rateOracleId = amm.rateOracleId(); // immutable in AMM therefore safe to cache forever
@@ -184,17 +184,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
 
-        // @dev position can only be settled if it is burned
+        // @dev position can only be settled if it is burned and not settled
         require(position._liquidity==0, "fully burned");
         require(!position.isSettled, "already settled");
-
-        // if the position is already burned then don't need to do the below operations, position balances should be 
-        // (, int24 tick, ) = amm.vamm().slot0();
-        // todo: can directly call vamm from margin engine, needs to be cached in the constructor
-        // (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(params.tickLower, params.tickUpper, tick);
-        // (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
-        // position.updateBalances(fixedTokenDelta, variableTokenDelta);
-        // position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
 
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp()));
 

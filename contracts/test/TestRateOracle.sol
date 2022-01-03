@@ -22,16 +22,18 @@ contract TestRateOracle is AaveRateOracle {
 
     uint256 public latestHistoricalApy;
 
-    // todo: rateOracleId should be a function of underlyingProtocol and underlyingToken?
+    // rateOracleId should be a function of underlyingProtocol and underlyingToken?
     constructor(
         address aaveLendingPool,
         bytes32 rateOracleId,
-        address underlying
-    ) AaveRateOracle(aaveLendingPool, rateOracleId, underlying) {
-        // todo: if not done manually, doesn't work for some reason
+        address underlying,
+        address factory
+    ) AaveRateOracle(aaveLendingPool, rateOracleId, underlying, factory) {
+        // if not done manually, doesn't work for some reason
         aaveLendingPool = aaveLendingPool;
         rateOracleId = rateOracleId;
         underlying = underlying;
+        factory = factory;
 
         // console.log("Test Contract: Aave lending pool address is: ", aaveLendingPool);
         // // console.log("Test Contract: Rate Oracle ID is: ", rateOracleId);
@@ -181,8 +183,8 @@ contract TestRateOracle is AaveRateOracle {
     //   latestHistoricalApy = getHistoricalApy();
     // }
 
-    // todo: temporary until fixed
-    function getHistoricalApy() public view override returns (uint256) {
+    // temporary until fixed
+    function getHistoricalApy() public pure override returns (uint256) {
         return 10**17;
     }
 }

@@ -25,7 +25,7 @@ contract TestMarginEngine is MarginEngine {
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         bool isTraderSettled,
-        address ammAddress // todo: redundunt?
+        address ammAddress // redundunt?
     ) external view {
         return
             checkTraderMarginCanBeUpdated(

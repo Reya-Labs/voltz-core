@@ -100,7 +100,7 @@ export function createVAMMMFunctions({
   ): Promise<ContractTransaction> {
     const exactInput = amountOut === 0;
 
-    // todo: make sure this is correct (isFT vs. !isFT)
+    // make sure this is correct (isFT vs. !isFT)
     const method = isFT
       ? exactInput
         ? vammCalleeTest.swapExact1For0
@@ -261,7 +261,7 @@ export function getPositionKey(
 }
 
 // below numbers are arbitrary for now, move into another file
-export const APY_UPPER_MULTIPLIER: BigNumber = toBn("1.5"); // todo: use Neil's toBn implementation
+export const APY_UPPER_MULTIPLIER: BigNumber = toBn("1.5"); // use Cyclop's toBn implementation
 export const APY_LOWER_MULTIPLIER: BigNumber = toBn("0.7");
 export const MIN_DELTA_LM: BigNumber = toBn("0.03");
 export const MIN_DELTA_IM: BigNumber = toBn("0.06");

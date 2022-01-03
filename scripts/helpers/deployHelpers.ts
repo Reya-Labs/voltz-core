@@ -118,7 +118,7 @@ export function getDeployment(filePath: string): Deployment {
   return existingDeploymentJson as Deployment;
 }
 
-// todo: adapt to AMM
+// adapt to AMM
 export function getCreate2Address(
   factoryAddress: string,
   rateOracleId: string,

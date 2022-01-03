@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/rate_oracles/IRateOracle.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
+import "../interfaces/IFactory.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
@@ -17,32 +18,43 @@ abstract contract BaseRateOracle is IRateOracle {
     // AB: can have a different minSecondsSinceLastUpdate close to termEndTimestamp to have more granularity for settlement purposes
 
     // override
-    OracleVars public oracleVars;
-    // override
-    Rate[65535] public rates;
+    OracleVars public override oracleVars;
+    Rate[65535] public override rates;
+    
+    address public immutable override factory;
 
-    // should be controlled by the owner
-    // todo: can only be done by the factory owner
-    function setSecondsAgo(uint256 _secondsAgo) external override {
+    /// @dev Must be the Factory owner
+    error NotFactoryOwner();
+    
+    modifier onlyFactoryOwner() {
+        if (msg.sender != IFactory(factory).owner()) {
+        revert NotFactoryOwner();
+        }
+        _;
+    }
+
+
+    function setSecondsAgo(uint256 _secondsAgo) external override onlyFactoryOwner {
         secondsAgo = _secondsAgo; // in wei
 
         // emit seconds ago set
         // unqiue for rate oracle id and the underlying address
     }
 
-    // todo: can only be done by the factory owner
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate)
         external
         override
+        onlyFactoryOwner
     {
         minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate; // in wei
 
-        // emit
+        // emit 
     }
 
-    constructor(bytes32 _rateOracleId, address _underlying) {
+    constructor(bytes32 _rateOracleId, address _underlying, address _factory) {
         rateOracleId = _rateOracleId;
         underlying = _underlying;
+        factory = _factory;
     }
 
     function variableFactor(

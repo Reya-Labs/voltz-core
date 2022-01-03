@@ -52,7 +52,7 @@ describe("VAMM", () => {
 
   describe("#computePositionFixedAndVariableGrowthInside", async () => {
     beforeEach("set ticks", async () => {
-      // todo make sure the default values set are sensible
+      // make sure the default values set are sensible
       await vammTest.setTickTest(-1, {
         liquidityGross: 10,
         liquidityNet: 20,
@@ -123,12 +123,11 @@ describe("VAMM", () => {
       // await expect(ammTest.underlyingToken()).to.eq(mainnetConstants.tokens.USDC.address);
     });
 
-    it("check the margin engine can call the amm", async () => {
-      // todo
-    });
+    // it("check the margin engine can call the amm", async () => {
+      
+    // });
 
     it("check the amm can call the vamm", async () => {
-      // (, int24 tick,) = amm.vamm().slot0();
       const currentTick = await ammTest.testGetCurrentTickFromVAMM();
       console.log("Current Tick is", currentTick);
       expect(currentTick).to.eq(0);

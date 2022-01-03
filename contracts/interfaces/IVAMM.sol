@@ -136,6 +136,10 @@ interface IVAMM is IPositionStructs {
 
     function fee() external view returns (uint256);
 
+    function unlocked() external view returns (bool);
+
+    function factory() external view returns (address);
+
     /// @notice The vamm tick spacing
     /// @dev Ticks can only be used at multiples of this value, minimum of 1 and always positive
     /// e.g.: a tickSpacing of 3 means ticks can be initialized every 3rd tick, i.e., ..., -6, -3, 0, 3, 6, ...
@@ -176,6 +180,12 @@ interface IVAMM is IPositionStructs {
     function setAMM(address _ammAddress) external;
 
     function setFeeProtocol(uint256 feeProtocol) external;
+
+    function setTickSpacing(int24 _tickSpacing) external;
+
+    function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external;
+
+    function setFee(uint256 _fee) external;
 
     function updateProtocolFees(uint256 protocolFeesCollected) external;
 

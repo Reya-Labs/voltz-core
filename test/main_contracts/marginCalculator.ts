@@ -1,4 +1,3 @@
-// todo: fix given the recent changes made to the MarginCalculator timeFactor
 import { Wallet, BigNumber, utils } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";

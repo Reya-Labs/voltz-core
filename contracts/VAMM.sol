@@ -47,11 +47,9 @@ contract VAMM is IVAMM, Pausable {
   
   uint256 public constant SECONDS_IN_DAY_WAD = 86400 * 10**18;
 
-  // todo: add override
-  address public immutable factory;
+  address public immutable override factory;
 
-  // todo: add override
-  bool public unlocked;
+  bool public override unlocked;
 
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the amm is initialized. The reentrancy guard is required throughout the contract.
@@ -138,19 +136,15 @@ contract VAMM is IVAMM, Pausable {
     // emit set fee protocol
   }
 
-  // todo: add override, onlyFactory
-  function setTickSpacing(int24 _tickSpacing) external onlyFactoryOwner {
+  function setTickSpacing(int24 _tickSpacing) external override onlyFactoryOwner {
     tickSpacing = _tickSpacing;
   }
 
-
-  // todo: add override, onlyFactory
-  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external onlyFactoryOwner {
+  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external override onlyFactoryOwner {
     maxLiquidityPerTick = _maxLiquidityPerTick;
   }
 
-  // todo: add override, onlyFactory
-  function setFee(uint256 _fee) external onlyFactoryOwner {
+  function setFee(uint256 _fee) external override onlyFactoryOwner {
     fee = _fee;
   }
 
