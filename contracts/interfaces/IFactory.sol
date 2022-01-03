@@ -14,9 +14,6 @@ interface IFactory {
     /// @param newCalculator The new calculator address after it was changed by owner
     event CalculatorChanged(address indexed newCalculator);
 
-    /// @notice Emitted when insurance fund address is changed
-    /// @param newInsuranceFund The new insurance fund address after it was changed by owner
-    event InsuranceFundChanged(address indexed newInsuranceFund);
 
     /// @notice Emmited when Rate Oracle Address is changed
     /// @param rateOracleId The rate oracle Id
@@ -49,11 +46,6 @@ interface IFactory {
     /// @dev Can be changed by the current owner via setCalculator
     /// @return The address of the calculator
     function calculator() external view returns (address);
-
-    /// @notice Returns the current insurance fund of the factory (i.e. Voltz Insurance/Incentives Engine)
-    /// @dev Can be changed by the current owner via setInsuranceFund
-    /// @return The address of the Incentives Engine
-    function insuranceFund() external view returns (address);
 
     /// @notice Returns the address of the Rate Oracle Contract
     /// @param rateOracleId The bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
@@ -98,12 +90,6 @@ interface IFactory {
     /// @dev Must be called by the current owner
     /// @param _calculator The new calculator of the factory
     function setCalculator(address _calculator) external;
-
-    // rename IF to IE?
-    /// @notice Updates the Incentives Engine of the factory
-    /// @dev Must be called by the current owner
-    /// @param _insuranceFund The new Incentives Engine of the factory
-    function setInsuranceFund(address _insuranceFund) external;
 
     /// @notice Creates an amm for a given underlying token (e.g. USDC), rateOracleId, and termEndTimestamp
     /// @param underlyingToken The underlying token (e.g. USDC) behind a given yield-bearing pool (e.g. AAve v2 aUSDC)

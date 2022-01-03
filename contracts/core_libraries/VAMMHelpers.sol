@@ -13,16 +13,13 @@ library VAMMHelpers {
         IVAMM.SwapParams memory params,
         IVAMM.Slot0 memory slot0Start,
         bool isAMMLocked
-    ) external {
-        // require(params.amountSpecified != 0, "AS");
+    ) external pure {
         if (params.amountSpecified == 0) {
             revert IVAMM.IRSNotionalAmountSpecifiedMustBeNonZero(
                 params.amountSpecified
             );
         }
 
-        // require(amm.unlocked(), "LOK");
-        // if (!amm.unlocked()) {
         if (isAMMLocked) {
             revert IVAMM.CanOnlyTradeIfUnlocked(!isAMMLocked);
         }

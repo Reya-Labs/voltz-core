@@ -87,13 +87,6 @@
 //     //     })
 //     // })
 
-//     // describe('#setInsuranceFund', async () => {
-//     //     it('updates insurance fund address', async () => {
-//     //         await factory.setInsuranceFund(other.address)
-//     //         expect(await factory.insuranceFund()).to.eq(other.address)
-//     //     })
-//     // })
-
 //     // describe('#createVAMM', async () => {
 //     //     it('succeeds in creation', async () => {
 //     //         const VAMM = factory.createVAMM(other.address)

@@ -34,9 +34,6 @@ contract Factory is IFactory, Deployer {
   mapping(bytes32 => address) public override getRateOracleAddress;
 
   /// @inheritdoc IFactory
-  address public override insuranceFund;
-
-  /// @inheritdoc IFactory
   address public override calculator;
 
   constructor() {
@@ -51,15 +48,6 @@ contract Factory is IFactory, Deployer {
     emit CalculatorChanged(_calculator);
 
     calculator = _calculator;
-  }
-
-  /// @inheritdoc IFactory
-  function setInsuranceFund(address _insuranceFund) external override onlyOwner {
-    require(_insuranceFund != address(0), "ZERO_ADDRESS");
-
-    emit InsuranceFundChanged(_insuranceFund);
-
-    insuranceFund = _insuranceFund;
   }
 
   /// @inheritdoc IFactory

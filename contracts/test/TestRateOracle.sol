@@ -8,7 +8,6 @@ import "hardhat/console.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 
 contract TestRateOracle is AaveRateOracle {
-    // uint256 public time;
     int24 public tick;
     uint128 public liquidity;
 
