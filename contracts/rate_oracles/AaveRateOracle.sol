@@ -355,10 +355,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         public
         view
         virtual
-        override(
-            BaseRateOracle,
-            IRateOracle
-        )
+        override(BaseRateOracle, IRateOracle)
         returns (uint256 historicalApy)
     {
         // should not be virtual (had to do this for the tests)

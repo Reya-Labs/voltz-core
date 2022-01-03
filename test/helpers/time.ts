@@ -3,7 +3,6 @@ import { assert } from "chai";
 import { MockProvider } from "ethereum-waffle";
 import { BigNumber } from "ethers";
 
-
 export const getCurrentTimestamp = async (provider: MockProvider) => {
   const block = await provider.getBlock("latest");
   return block.timestamp;

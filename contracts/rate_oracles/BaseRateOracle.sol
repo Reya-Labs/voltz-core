@@ -20,21 +20,24 @@ abstract contract BaseRateOracle is IRateOracle {
     // override
     OracleVars public override oracleVars;
     Rate[65535] public override rates;
-    
+
     address public immutable override factory;
 
     /// @dev Must be the Factory owner
     error NotFactoryOwner();
-    
+
     modifier onlyFactoryOwner() {
         if (msg.sender != IFactory(factory).owner()) {
-        revert NotFactoryOwner();
+            revert NotFactoryOwner();
         }
         _;
     }
 
-
-    function setSecondsAgo(uint256 _secondsAgo) external override onlyFactoryOwner {
+    function setSecondsAgo(uint256 _secondsAgo)
+        external
+        override
+        onlyFactoryOwner
+    {
         secondsAgo = _secondsAgo; // in wei
 
         // emit seconds ago set
@@ -48,10 +51,14 @@ abstract contract BaseRateOracle is IRateOracle {
     {
         minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate; // in wei
 
-        // emit 
+        // emit
     }
 
-    constructor(bytes32 _rateOracleId, address _underlying, address _factory) {
+    constructor(
+        bytes32 _rateOracleId,
+        address _underlying,
+        address _factory
+    ) {
         rateOracleId = _rateOracleId;
         underlying = _underlying;
         factory = _factory;
