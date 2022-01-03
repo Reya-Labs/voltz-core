@@ -97,7 +97,7 @@ contract VAMM is IVAMM, Pausable {
 
   IAMM public override amm;
 
-  function setAMM(address _ammAddress) external override {
+  function setAMM(address _ammAddress) external onlyFactoryOwner override {
     amm = IAMM(_ammAddress);
   }
 
@@ -117,7 +117,6 @@ contract VAMM is IVAMM, Pausable {
 
   /// @dev not locked because it initializes unlocked
   function initialize(uint160 sqrtPriceX96) external override {
-    // require(slot0.sqrtPriceX96 == 0, "AI");
     if (slot0.sqrtPriceX96 != 0)  {
       revert ExpectedSqrtPriceZeroBeforeInit(slot0.sqrtPriceX96);
     }
@@ -272,7 +271,6 @@ contract VAMM is IVAMM, Pausable {
     uint128 amount
   ) public override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock {
     // public avoids using callees for tests (timeout issue in vamm.ts)
-    // require(amount > 0);
     if (amount <= 0) {
       revert LiquidityDeltaMustBePositiveInMint(amount);
     }
@@ -319,8 +317,6 @@ contract VAMM is IVAMM, Pausable {
       feeProtocol: slot0.feeProtocol
     });
 
-    // bool exactInput = params.amountSpecified > 0;
-
     SwapState memory state = SwapState({
       amountSpecifiedRemaining: params.amountSpecified,
       amountCalculated: 0,
@@ -356,8 +352,6 @@ contract VAMM is IVAMM, Pausable {
 
       // get the price for the next tick
       step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
-
-      // uint256 timeToMaturityInSeconds = amm.termEndTimestamp() - Time.blockTimestampScaled();
 
       // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
       (

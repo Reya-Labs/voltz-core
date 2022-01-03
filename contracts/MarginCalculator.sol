@@ -35,7 +35,6 @@ contract MarginCalculator is IMarginCalculator {
     factory = _factory;
   }
 
-  // docs above
   mapping(bytes32 => MarginCalculatorParameters)
     internal getMarginCalculatorParameters;
 

@@ -14,7 +14,8 @@ abstract contract BaseRateOracle is IRateOracle {
     bytes32 public immutable override rateOracleId;
     address public immutable override underlying;
     uint256 public override secondsAgo;
-    uint256 public override minSecondsSinceLastUpdate; // AB: as long as this doesn't affect the termEndTimestamp rateValue too much
+    uint256 public override minSecondsSinceLastUpdate; 
+    // AB: as long as this doesn't affect the termEndTimestamp rateValue too much
     // AB: can have a different minSecondsSinceLastUpdate close to termEndTimestamp to have more granularity for settlement purposes
 
     // override
@@ -74,11 +75,6 @@ abstract contract BaseRateOracle is IRateOracle {
 
         // no-op if the passed next value isn't greater than the current next value
         if (next <= current) return current;
-
-        // AB: not sure we need to do this
-        // store in each slot to prevent fresh SSTOREs in swaps
-        // this data will not be used because the initialized boolean is still false
-        // for (uint16 i = current; i < next; i++) rates[i].timestamp = 1;
 
         return next;
     }
