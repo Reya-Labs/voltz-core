@@ -204,21 +204,22 @@ describe("FixedAndVariableMath", () => {
       ).to.be.revertedWith("B.T>S");
     });
 
-    it("reverts unless the end timestamp is in the future", async () => {
-      const beforeCurrentBlockTimestamp = sub(currentBlockTimestamp, toBn("1"));
-      const beforeBeforeCurrentBlockTimestamp = sub(
-        beforeCurrentBlockTimestamp,
-        toBn("1")
-      );
+    // no longer the case
+    // it("reverts unless the end timestamp is in the future", async () => {
+    //   const beforeCurrentBlockTimestamp = sub(currentBlockTimestamp, toBn("1"));
+    //   const beforeBeforeCurrentBlockTimestamp = sub(
+    //     beforeCurrentBlockTimestamp,
+    //     toBn("1")
+    //   );
 
-      await expect(
-        fixedAndVariableMathTest.fixedFactorTest(
-          false,
-          beforeBeforeCurrentBlockTimestamp,
-          beforeCurrentBlockTimestamp
-        )
-      ).to.be.revertedWith("B.T>S");
-    });
+    //   await expect(
+    //     fixedAndVariableMathTest.fixedFactorTest(
+    //       false,
+    //       beforeBeforeCurrentBlockTimestamp,
+    //       beforeCurrentBlockTimestamp
+    //     )
+    //   ).to.be.revertedWith("B.T>S");
+    // });
 
     it(`returns the correct fixed factor at maturity`, async () => {
       const termEndTimestamp = add(currentBlockTimestamp, ONE_YEAR_IN_SECONDS); // one year in seconds

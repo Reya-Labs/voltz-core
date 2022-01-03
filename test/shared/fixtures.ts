@@ -23,6 +23,8 @@ import {
   XI_LOWER,
   T_MAX,
   RATE_ORACLE_ID,
+  getMaxLiquidityPerTick,
+  TICK_SPACING,
 } from "./utilities";
 import { toBn } from "evm-bn";
 const { provider } = waffle;
@@ -333,6 +335,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
 
   // Grant an allowance to the MarginEngine
   await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
+  
 
   // link the margin engine to the AMM
   await ammTest.setMarginEngine(marginEngineAddress);
@@ -361,6 +364,19 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const vammAddress = receipt.events?.[0].args?.vammAddress as string;
 
   const vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
+
+  // set key vamm parameters
+  vammTest.setFee(toBn("0.03"));
+  vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(TICK_SPACING));
+  vammTest.setTickSpacing(TICK_SPACING);
+
+  
+  // Grant allowance to the vamm
+  await token.approve(vammTest.address, BigNumber.from(10).pow(27));
+    
+
+  // Grant allowance to the amm
+  await token.approve(ammTest.address, BigNumber.from(10).pow(27));
 
   // link the vamm to the amm
   await ammTest.setVAMM(vammAddress);

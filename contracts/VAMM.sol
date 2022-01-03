@@ -204,7 +204,7 @@ contract VAMM is IVAMM, Pausable {
     }
   }
 
-  function updatePosition(ModifyPositionParams memory params) private lock {
+  function updatePosition(ModifyPositionParams memory params) private {
 
     Tick.checkTicks(params.tickLower, params.tickUpper);
 

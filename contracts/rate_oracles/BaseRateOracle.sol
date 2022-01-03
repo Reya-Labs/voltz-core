@@ -78,8 +78,10 @@ abstract contract BaseRateOracle is IRateOracle {
 
         oracleVars.rateCardinalityNext = rateCardinalityNextNew;
 
-        // if (rateCardinalityNextOld != rateCardinalityNextNew)
-        // emit IncreaserateCardinalityNext(rateCardinalityNextOld, rateCardinalityNextNew);
+        if (rateCardinalityNextOld != rateCardinalityNextNew) {
+            emit IncreaserateCardinalityNext(rateCardinalityNextOld, rateCardinalityNextNew);
+        }
+        
     }
 
     /// @notice Calculates the observed APY returned by the underlying in a given period
