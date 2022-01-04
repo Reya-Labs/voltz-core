@@ -191,7 +191,6 @@ interface MetaFixture {
 export const metaFixture = async function (): Promise<MetaFixture> {
   // create a mock token and mint some to our wallet
   const { token } = await mockERC20Fixture();
-
   const { time } = await timeFixture();
   const { factory } = await factoryFixture(time.address);
   const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
@@ -368,9 +367,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
 
   // set key vamm parameters
-  vammTest.setFee(toBn("0.03"));
-  vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(TICK_SPACING));
-  vammTest.setTickSpacing(TICK_SPACING);
+  await vammTest.setFee(toBn("0.03"));
+  await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(TICK_SPACING));
+  await vammTest.setTickSpacing(TICK_SPACING);
 
   // Grant allowance to the vamm
   await token.approve(vammTest.address, BigNumber.from(10).pow(27));
