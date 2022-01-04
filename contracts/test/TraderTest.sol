@@ -8,7 +8,6 @@ contract TraderTest {
     Trader.Info public trader;
     using Trader for Trader.Info;
 
-
     function updateMargin(int256 marginDelta) public {
         trader.updateMargin(marginDelta);
     }
@@ -22,5 +21,4 @@ contract TraderTest {
             variableTokenBalanceDelta
         );
     }
-
 }

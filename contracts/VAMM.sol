@@ -52,7 +52,7 @@ contract VAMM is IVAMM, Pausable {
   bool public override unlocked;
 
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
-  /// to a function before the amm is initialized. The reentrancy guard is required throughout the contract.
+  /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
   modifier lock() {
     require(unlocked, "LOK");
     unlocked = false;
@@ -60,11 +60,13 @@ contract VAMM is IVAMM, Pausable {
     unlocked = true;
   }
 
+  /// @dev Modifier that ensures that critical actions in the contract can only be done by the top-level factory owner
   modifier onlyFactoryOwner() {
     require(msg.sender == IFactory(factory).owner(), "only factory owner");
     _;
   }
 
+  /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
     uint256 currentTimestamp = Time.blockTimestampScaled(); 
     require(currentTimestamp < amm.termEndTimestamp(), "amm hasn't reached maturity");
@@ -83,7 +85,7 @@ contract VAMM is IVAMM, Pausable {
     factory = amm.factory();
   }
 
-  Slot0 public override slot0;
+  VAMMVars public override vammVars;
 
   int256 public override fixedTokenGrowthGlobal;
 
@@ -102,8 +104,6 @@ contract VAMM is IVAMM, Pausable {
   }
 
 
-  /// @notice Updates internal accounting to reflect a collection of protocol fees. The actual transfer of fees must happen separately.
-  /// @dev can only be done via the collectProtocol function of AMM
   function updateProtocolFees(uint256 protocolFeesCollected)
     external
     override
@@ -117,13 +117,13 @@ contract VAMM is IVAMM, Pausable {
 
   /// @dev not locked because it initializes unlocked
   function initialize(uint160 sqrtPriceX96) external override {
-    if (slot0.sqrtPriceX96 != 0)  {
-      revert ExpectedSqrtPriceZeroBeforeInit(slot0.sqrtPriceX96);
+    if (vammVars.sqrtPriceX96 != 0)  {
+      revert ExpectedSqrtPriceZeroBeforeInit(vammVars.sqrtPriceX96);
     }
 
     int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
-    slot0 = Slot0({ sqrtPriceX96: sqrtPriceX96, tick: tick, feeProtocol: 0 });
+    vammVars = VAMMVars({ sqrtPriceX96: sqrtPriceX96, tick: tick, feeProtocol: 0 });
 
     unlocked = true;
 
@@ -131,7 +131,7 @@ contract VAMM is IVAMM, Pausable {
   }
 
   function setFeeProtocol(uint256 feeProtocol) external override onlyFactoryOwner lock {
-    slot0.feeProtocol = feeProtocol;
+    vammVars.feeProtocol = feeProtocol;
     // emit set fee protocol
   }
 
@@ -170,7 +170,7 @@ contract VAMM is IVAMM, Pausable {
   {
     flippedLower = ticks.update(
       params.tickLower,
-      slot0.tick,
+      vammVars.tick,
       params.liquidityDelta,
       fixedTokenGrowthGlobal,
       variableTokenGrowthGlobal,
@@ -180,7 +180,7 @@ contract VAMM is IVAMM, Pausable {
     );
     flippedUpper = ticks.update(
       params.tickUpper,
-      slot0.tick,
+      vammVars.tick,
       params.liquidityDelta,
       fixedTokenGrowthGlobal,
       variableTokenGrowthGlobal,
@@ -201,12 +201,12 @@ contract VAMM is IVAMM, Pausable {
 
     Tick.checkTicks(params.tickLower, params.tickUpper);
 
-    Slot0 memory _slot0 = slot0; // SLOAD for gas optimization
+    VAMMVars memory _vammVars = vammVars; // SLOAD for gas optimization
 
     UpdatePositionVars memory vars;
 
+    /// @dev update the ticks if necessary
     if (params.liquidityDelta != 0) {
-      // update the ticks if necessary
       (vars.flippedLower, vars.flippedUpper) = flipTicks(params);
     }
 
@@ -214,7 +214,7 @@ contract VAMM is IVAMM, Pausable {
       Tick.FixedTokenGrowthInsideParams({
         tickLower: params.tickLower,
         tickUpper: params.tickUpper,
-        tickCurrent: slot0.tick,
+        tickCurrent: vammVars.tick,
         fixedTokenGrowthGlobal: fixedTokenGrowthGlobal
       })
     );
@@ -223,7 +223,7 @@ contract VAMM is IVAMM, Pausable {
       Tick.VariableTokenGrowthInsideParams({
         tickLower: params.tickLower,
         tickUpper: params.tickUpper,
-        tickCurrent: slot0.tick,
+        tickCurrent: vammVars.tick,
         variableTokenGrowthGlobal: variableTokenGrowthGlobal
       })
     );
@@ -231,7 +231,7 @@ contract VAMM is IVAMM, Pausable {
     vars.feeGrowthInside = ticks.getFeeGrowthInside(
       params.tickLower,
       params.tickUpper,
-      slot0.tick,
+      vammVars.tick,
       feeGrowthGlobal
     );
 
@@ -251,7 +251,7 @@ contract VAMM is IVAMM, Pausable {
 
     if (params.liquidityDelta != 0) {
       if (
-        (_slot0.tick >= params.tickLower) && (_slot0.tick < params.tickUpper)
+        (_vammVars.tick >= params.tickLower) && (_vammVars.tick < params.tickUpper)
       ) {
         // current tick is inside the passed range
         uint128 liquidityBefore = liquidity; // SLOAD for gas optimization
@@ -305,23 +305,23 @@ contract VAMM is IVAMM, Pausable {
 
     SwapLocalVars memory swapLocalVars;
     
-    Slot0 memory slot0Start = slot0;
+    VAMMVars memory vammVarsStart = vammVars;
 
-    VAMMHelpers.checksBeforeSwap(params, slot0Start, !unlocked);
+    VAMMHelpers.checksBeforeSwap(params, vammVarsStart, !unlocked);
 
     unlocked = false;
 
     SwapCache memory cache = SwapCache({
       liquidityStart: liquidity,
       blockTimestamp: Time.blockTimestampScaled(),
-      feeProtocol: slot0.feeProtocol
+      feeProtocol: vammVars.feeProtocol
     });
 
     SwapState memory state = SwapState({
       amountSpecifiedRemaining: params.amountSpecified,
       amountCalculated: 0,
-      sqrtPriceX96: slot0Start.sqrtPriceX96,
-      tick: slot0Start.tick,
+      sqrtPriceX96: vammVarsStart.sqrtPriceX96,
+      tick: vammVarsStart.tick,
       liquidity: cache.liquidityStart,
       fixedTokenGrowthGlobal: fixedTokenGrowthGlobal,
       variableTokenGrowthGlobal: variableTokenGrowthGlobal,
@@ -443,11 +443,11 @@ contract VAMM is IVAMM, Pausable {
       }
     }
 
-    if (state.tick != slot0Start.tick) {
-      slot0.sqrtPriceX96 = state.sqrtPriceX96;
-      slot0.tick = state.tick;
+    if (state.tick != vammVarsStart.tick) {
+      vammVars.sqrtPriceX96 = state.sqrtPriceX96;
+      vammVars.tick = state.tick;
     } else {
-      slot0.sqrtPriceX96 = state.sqrtPriceX96;
+      vammVars.sqrtPriceX96 = state.sqrtPriceX96;
     }
 
     // update liquidity if it changed

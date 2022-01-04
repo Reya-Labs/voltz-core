@@ -160,7 +160,7 @@ describe("VAMM", () => {
 
     it("can be initialized at MIN_SQRT_RATIO", async () => {
       await vammTest.initialize(MIN_SQRT_RATIO);
-      expect((await vammTest.slot0()).tick).to.eq(getMinTick(1));
+      expect((await vammTest.vammVars()).tick).to.eq(getMinTick(1));
     });
   });
 
@@ -267,7 +267,7 @@ describe("VAMM", () => {
 
       describe("success cases", async () => {
         it("initial tick", async () => {
-          expect((await vammTest.slot0()).tick).to.eq(-23028);
+          expect((await vammTest.vammVars()).tick).to.eq(-23028);
         });
 
         it("adds liquidity to liquidityGross", async () => {
