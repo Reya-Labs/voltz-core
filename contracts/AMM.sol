@@ -167,7 +167,6 @@ contract AMM is IAMM {
   function setFeeProtocol(uint256 feeProtocol)
     external
     override
-    onlyFactoryOwner
   {
     vamm.setFeeProtocol(feeProtocol);
   }

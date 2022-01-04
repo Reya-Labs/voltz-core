@@ -11,7 +11,8 @@ import "./core_libraries/FixedAndVariableMath.sol";
 /// @title Voltz Factory Contract
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
 contract Factory is IFactory, Deployer {
-  modifier onlyOwner {
+  
+  modifier onlyFactoryOwner {
     require(msg.sender == owner, "NOT_OWNER");
     _;
   }
@@ -42,7 +43,7 @@ contract Factory is IFactory, Deployer {
   }
 
   /// @inheritdoc IFactory
-  function setCalculator(address _calculator) external override onlyOwner {
+  function setCalculator(address _calculator) external override onlyFactoryOwner {
     require(_calculator != address(0), "ZERO_ADDRESS");
 
     emit CalculatorChanged(_calculator);
@@ -54,7 +55,7 @@ contract Factory is IFactory, Deployer {
   function createVAMM(address ammAddress)
     external
     override
-    onlyOwner
+    onlyFactoryOwner
     returns (address vamm)
   {
     require(ammAddress != address(0), "ZERO_ADDRESS");
@@ -69,7 +70,7 @@ contract Factory is IFactory, Deployer {
   function createMarginEngine(address ammAddress)
     external
     override
-    onlyOwner
+    onlyFactoryOwner
     returns (address marginEngine)
   {
     require(ammAddress != address(0), "ZERO_ADDRESS");
@@ -85,7 +86,7 @@ contract Factory is IFactory, Deployer {
     address underlyingToken,
     bytes32 rateOracleId,
     uint256 termEndTimestamp
-  ) external override onlyOwner returns (address amm) {
+  ) external override onlyFactoryOwner returns (address amm) {
     uint256 termStartTimestamp = Time.blockTimestampScaled(); 
     require(
       getAMMMap[rateOracleId][underlyingToken][termStartTimestamp][
@@ -116,7 +117,7 @@ contract Factory is IFactory, Deployer {
   }
 
   /// @inheritdoc IFactory
-  function setOwner(address _owner) external override onlyOwner {
+  function setOwner(address _owner) external override onlyFactoryOwner {
     emit OwnerChanged(owner, _owner);
     owner = _owner;
   }
@@ -125,7 +126,7 @@ contract Factory is IFactory, Deployer {
   function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress)
     external
     override
-    onlyOwner
+    onlyFactoryOwner
   {
     require(_rateOracleId != bytes32(0), "ZERO_BYTES");
     require(_rateOracleAddress != address(0), "ZERO_ADDRESS");

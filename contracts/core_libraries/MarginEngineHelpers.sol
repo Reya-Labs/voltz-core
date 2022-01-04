@@ -61,7 +61,7 @@ contract MarginEngineHelpers {
     ) internal view {
         IAMM amm = IAMM(ammAddress);
 
-        (, int24 tick, ) = amm.vamm().slot0();
+        (, int24 tick, ) = amm.vamm().vammVars();
 
         IMarginCalculator.PositionMarginRequirementParams
             memory marginReqParams = IMarginCalculator

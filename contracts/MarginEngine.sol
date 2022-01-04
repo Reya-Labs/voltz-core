@@ -214,7 +214,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        (, int24 tick, ) = amm.vamm().slot0();
+        (, int24 tick, ) = amm.vamm().vammVars();
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
@@ -293,7 +293,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             uint128 amount
         ) external override {
         
-        (, int24 tick, ) = amm.vamm().slot0();
+        (, int24 tick, ) = amm.vamm().vammVars();
         updatePositionTokenBalances(recipient, tickLower, tickUpper);
         Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
         uint128 amountTotal = LiquidityMath.addDelta(position._liquidity, int128(amount));
@@ -361,7 +361,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         int24 tickUpper) internal {
 
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        (, int24 tick, ) = amm.vamm().slot0();
+        (, int24 tick, ) = amm.vamm().vammVars();
         (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
         position.updateBalances(fixedTokenDelta, variableTokenDelta);

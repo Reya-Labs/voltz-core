@@ -11,7 +11,7 @@ import "../utils/TickMath.sol";
 library VAMMHelpers {
     function checksBeforeSwap(
         IVAMM.SwapParams memory params,
-        IVAMM.Slot0 memory slot0Start,
+        IVAMM.VAMMVars memory vammVarsStart,
         bool isAMMLocked
     ) external pure {
         if (params.amountSpecified == 0) {
@@ -26,9 +26,9 @@ library VAMMHelpers {
 
         require(
             params.isFT
-                ? params.sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 &&
+                ? params.sqrtPriceLimitX96 > vammVarsStart.sqrtPriceX96 &&
                     params.sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
-                : params.sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 &&
+                : params.sqrtPriceLimitX96 < vammVarsStart.sqrtPriceX96 &&
                     params.sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO,
             "SPL"
         );
