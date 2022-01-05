@@ -15,10 +15,6 @@ abstract contract BaseRateOracle is IRateOracle {
     address public immutable override underlying;
     uint256 public override secondsAgo;
     uint256 public override minSecondsSinceLastUpdate;
-    // AB: as long as this doesn't affect the termEndTimestamp rateValue too much
-    // AB: can have a different minSecondsSinceLastUpdate close to termEndTimestamp to have more granularity for settlement purposes
-
-    // override
     OracleVars public override oracleVars;
     Rate[65535] public override rates;
 

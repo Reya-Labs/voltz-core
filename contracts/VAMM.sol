@@ -196,7 +196,8 @@ contract VAMM is IVAMM, Pausable {
       tickBitmap.flipTick(params.tickUpper, tickSpacing);
     }
   }
-
+  
+  
   function updatePosition(ModifyPositionParams memory params) private {
 
     Tick.checkTicks(params.tickLower, params.tickUpper);
@@ -264,6 +265,7 @@ contract VAMM is IVAMM, Pausable {
     }
   }
   
+  /// @inheritdoc IVAMM
   function mint(
     address recipient,
     int24 tickLower,
@@ -294,6 +296,7 @@ contract VAMM is IVAMM, Pausable {
     emit Mint(msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
+  /// @inheritdoc IVAMM
   function swap(SwapParams memory params)
     external
     override
@@ -536,6 +539,7 @@ contract VAMM is IVAMM, Pausable {
     unlocked = true;
   }
 
+  /// @inheritdoc IVAMM
   function computePositionFixedAndVariableGrowthInside(
     int24 tickLower,
     int24 tickUpper,
