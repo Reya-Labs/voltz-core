@@ -10,21 +10,20 @@ import "../interfaces/IFactory.sol";
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
 abstract contract BaseRateOracle is IRateOracle {
-    
     /// @inheritdoc IRateOracle
     bytes32 public immutable override rateOracleId;
-    
+
     /// @inheritdoc IRateOracle
     address public immutable override underlying;
-    
+
     /// @inheritdoc IRateOracle
     uint256 public override secondsAgo;
     /// @inheritdoc IRateOracle
     uint256 public override minSecondsSinceLastUpdate;
-    
+
     /// @inheritdoc IRateOracle
     OracleVars public override oracleVars;
-    
+
     /// @inheritdoc IRateOracle
     Rate[65535] public override rates;
 
@@ -80,7 +79,6 @@ abstract contract BaseRateOracle is IRateOracle {
         uint256 termEndTimestamp
     ) public view virtual override returns (uint256 result);
 
-    
     /// @notice Prepares the rates array to store up to `next` rates
     /// @param current The current next cardinality of the oracle array
     /// @param next The proposed next cardinality which will be populated in the rates array
@@ -121,6 +119,7 @@ abstract contract BaseRateOracle is IRateOracle {
     /// @notice Calculates the observed APY returned by the rate oracle in a given period
     /// @param from The timestamp of the start of the period, in wei-seconds
     /// @param to The timestamp of the end of the period, in wei-seconds
+    /// @dev Reverts if we have no data point for either timestamp
     function getApyFromTo(uint256 from, uint256 to)
         internal
         view
@@ -156,7 +155,7 @@ abstract contract BaseRateOracle is IRateOracle {
         virtual
         override
         returns (uint256 historicalApy);
-    
+
     /// @inheritdoc IRateOracle
     function initialize() public virtual override;
 }

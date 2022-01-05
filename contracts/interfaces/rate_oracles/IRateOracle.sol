@@ -10,6 +10,7 @@ pragma solidity ^0.8.0;
 interface IRateOracle {
     
     // events
+    
     /// @notice Emitted by the rate oracle for increases to the number of observations that can be stored
     /// @param observationCardinalityNextOld The previous value of the next observation cardinality
     /// @param observationCardinalityNextNew The updated value of the next observation cardinality

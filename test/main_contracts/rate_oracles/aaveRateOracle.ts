@@ -103,7 +103,7 @@ describe("Aave Rate Oracle", () => {
     beforeEach("deploy and initialize test oracle", async () => {
       testRateOracle = await loadFixture(initializedOracleFixture);
     });
-    
+
     // it("aave lending pool set correctly", async () => {
     //   const normalizedIncome =
     //     await testRateOracle.testGetReserveNormalizedIncome();
