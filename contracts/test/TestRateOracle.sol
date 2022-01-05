@@ -76,11 +76,6 @@ contract TestRateOracle is AaveRateOracle {
         );
     }
 
-    function testGetReserveNormalizedIncome() external view returns (uint256) {
-        // console.log("Test Contract: Aave lending pool address is", aaveLendingPool);
-        return getReserveNormalizedIncome(underlying);
-    }
-
     function testGrow(uint16 _rateCardinalityNext) external {
         oracleVars.rateCardinalityNext = grow(
             oracleVars.rateCardinalityNext,

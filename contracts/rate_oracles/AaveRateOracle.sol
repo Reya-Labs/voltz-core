@@ -16,7 +16,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
     error AavePoolGetReserveNormalizedIncomeReturnedZero();
 
-    // IAaveV2LendingPool public override aaveLendingPool;
     address public override aaveLendingPool;
 
     constructor(
@@ -26,20 +25,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         address factory
     ) BaseRateOracle(_rateOracleId, underlying, factory) {
         aaveLendingPool = _aaveLendingPool;
-    }
-
-    /// @notice Get the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
-    /// @return A return value of 1e27 (1 Ray) indicates no income since pool creation. A value of 2e27 indicates a 100% yield since pool creation. Etc.
-    function getReserveNormalizedIncome(address underlying)
-        public
-        view
-        override(IAaveRateOracle)
-        returns (uint256)
-    {
-        return
-            IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(
-                underlying
-            );
     }
 
     /// @notice Store the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
@@ -87,6 +72,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         rates[indexUpdated] = Rate(blockTimestamp, result);
     }
+
 
     function computeApyFromRate(uint256 rateFromTo, uint256 timeInYears)
         internal
