@@ -16,6 +16,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
     error AavePoolGetReserveNormalizedIncomeReturnedZero();
 
+    /// @inheritdoc IAaveRateOracle
     address public override aaveLendingPool;
 
     constructor(
@@ -74,6 +75,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
 
+    /// @notice Computes the APY based on the un-annualised rateFromTo value and timeInYears (in wei)
+    /// @param rateFromTo Un-annualised rate (in wei)
+    /// @param timeInYears Time in years for the period for which we want to calculate the apy (in wei)
+    /// @return apy APY for a given rateFromTo and timeInYears 
     function computeApyFromRate(uint256 rateFromTo, uint256 timeInYears)
         internal
         pure
@@ -87,8 +92,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         apy = apyPlusOne - 10**18;
     }
 
+    
     /// @inheritdoc BaseRateOracle
-    /// @dev Reverts if we have no data point for either timestamp
     function getApyFromTo(uint256 from, uint256 to)
         internal
         view
@@ -165,6 +170,16 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         }
     }
 
+
+    /// @notice Fetches the rates beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied.
+    /// The result may be the same rate, or adjacent rates.
+    /// @dev The answer must be contained in the array, used when the target is located within the stored observation
+    /// boundaries: older than the most recent observation and younger, or the same age as, the oldest observation
+    /// @param target The timestamp (in wei seconds) at which the reserved rate should be for
+    /// @param index The index of the rate that was most recently written to the rates array
+    /// @param cardinality The number of populated elements in the rates array
+    /// @return beforeOrAt The rate recorded before, or at, the target
+    /// @return atOrAfter The rate recorded at, or after, the target
     function binarySearch(
         uint256 target,
         uint16 index,
@@ -239,6 +254,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         return binarySearch(target, index, cardinality);
     }
 
+    
     // time delta is in seconds
     function interpolateRateValue(
         uint256 beforeOrAtRateValue,
