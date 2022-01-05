@@ -18,6 +18,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     /// @inheritdoc IAaveRateOracle
     address public override aaveLendingPool;
+    
+    uint256 public constant ONE_WEI = 10**18;
 
     constructor(
         address _aaveLendingPool,
@@ -84,12 +86,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         pure
         returns (uint256 apy)
     {
-        uint256 exponent = PRBMathUD60x18.div(10**18, timeInYears);
+        uint256 exponent = PRBMathUD60x18.div(ONE_WEI, timeInYears);
         uint256 apyPlusOne = PRBMathUD60x18.pow(
-            (10**18 + rateFromTo),
+            (ONE_WEI + rateFromTo),
             exponent
         );
-        apy = apyPlusOne - 10**18;
+        apy = apyPlusOne - ONE_WEI;
     }
 
     
@@ -211,14 +213,14 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         }
     }
 
-    /// @notice Fetches the observations beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
+    /// @notice Fetches the rates beforeOrAt and atOrAfter a given target, i.e. where [beforeOrAt, atOrAfter] is satisfied
     /// @dev Assumes there is at least 1 initialized observation.
     /// Used by observeSingle() to compute the counterfactual liquidity index values as of a given block timestamp.
     /// @param target The timestamp at which the reserved observation should be for
     /// @param index The index of the observation that was most recently written to the observations array
     /// @param cardinality The number of populated elements in the oracle array
-    /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
-    /// @return atOrAfter The observation which occurred at, or after, the given timestamp
+    /// @return beforeOrAt The rate which occurred at, or before, the given timestamp
+    /// @return atOrAfter The rate which occurred at, or after, the given timestamp
     function getSurroundingRates(
         uint256 target,
         uint16 index,
@@ -255,7 +257,16 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     
-    // time delta is in seconds
+    /// @notice Calculates the interpolated (counterfactual) rate value
+    /// @param beforeOrAtRateValue  Rate Value (in ray) before the timestamp for which we want to calculate the counterfactual rate value
+    /// @param apyFromBeforeOrAtToAtOrAfter Apy in the period between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
+    /// @param timeDeltaBeforeOrAtToQueriedTime Time Delta (in wei seconds) between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
+    /// @return rateValue Counterfactual (interpolated) rate value in ray
+    /// @dev Given [beforeOrAt, atOrAfter] where the timestamp for which the counterfactual is calculated is within that range (but does not touch any of the bounds)
+    /// @dev We can calculate the apy for [beforeOrAt, atOrAfter] --> refer to this value as apyFromBeforeOrAtToAtOrAfter
+    /// @dev Then we want a counterfactual rate value which results in apy_before_after if the apy is calculated between [beforeOrAt, timestampForCounterfactual]
+    /// @dev Hence (1+rateValueWei/beforeOrAtRateValueWei)^(1/timeInYears) = apyFromBeforeOrAtToAtOrAfter
+    /// @dev Hence rateValueWei = beforeOrAtRateValueWei * (1+apyFromBeforeOrAtToAtOrAfter)^timeInYears - 1)
     function interpolateRateValue(
         uint256 beforeOrAtRateValue,
         uint256 apyFromBeforeOrAtToAtOrAfter,
@@ -265,17 +276,16 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             timeDeltaBeforeOrAtToQueriedTime
         );
         uint256 exp1 = PRBMathUD60x18.pow(
-            (10**18 + apyFromBeforeOrAtToAtOrAfter),
+            (ONE_WEI + apyFromBeforeOrAtToAtOrAfter),
             timeInYears
-        ) - 10**18;
-        rateValue = PRBMathUD60x18.mul(beforeOrAtRateValue, exp1);
+        ) - ONE_WEI;
+
+        uint256 beforeOrAtRateValueWei = WadRayMath.rayToWad(beforeOrAtRateValue);
+        uint256 rateValueWei = PRBMathUD60x18.mul(beforeOrAtRateValueWei, exp1);
+        rateValue = WadRayMath.wadToRay(rateValueWei);
     }
 
-    // gets the liquidity index
-    /// @param currentTime The current block timestamp
-    /// @param queriedTime Time to look back to
-    /// @param index The index of the Rate that was most recently written to the Rates array
-    /// @param cardinality The number of populated elements in the oracle array
+    /// @inheritdoc IRateOracle
     function observeSingle(
         uint256 currentTime,
         uint256 queriedTime,
@@ -347,6 +357,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         );
     }
 
+    /// @inheritdoc IRateOracle
     function getHistoricalApy()
         public
         view
@@ -362,6 +373,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         return getApyFromTo(from, to);
     }
 
+    /// @inheritdoc IRateOracle
     function initialize() public override(BaseRateOracle, IRateOracle) {
         oracleVars.rateCardinalityNext = 1;
         oracleVars.rateCardinality = 1;
