@@ -9,13 +9,23 @@ import "../interfaces/IFactory.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
-
 abstract contract BaseRateOracle is IRateOracle {
+    
+    /// @inheritdoc IRateOracle
     bytes32 public immutable override rateOracleId;
+    
+    /// @inheritdoc IRateOracle
     address public immutable override underlying;
+    
+    /// @inheritdoc IRateOracle
     uint256 public override secondsAgo;
+    /// @inheritdoc IRateOracle
     uint256 public override minSecondsSinceLastUpdate;
+    
+    /// @inheritdoc IRateOracle
     OracleVars public override oracleVars;
+    
+    /// @inheritdoc IRateOracle
     Rate[65535] public override rates;
 
     address public immutable override factory;
@@ -23,6 +33,7 @@ abstract contract BaseRateOracle is IRateOracle {
     /// @dev Must be the Factory owner
     error NotFactoryOwner();
 
+    /// @dev Modifier that ensures a given function can only be called by the top-level factory owner
     modifier onlyFactoryOwner() {
         if (msg.sender != IFactory(factory).owner()) {
             revert NotFactoryOwner();
@@ -30,6 +41,7 @@ abstract contract BaseRateOracle is IRateOracle {
         _;
     }
 
+    /// @inheritdoc IRateOracle
     function setSecondsAgo(uint256 _secondsAgo)
         external
         override
@@ -41,6 +53,7 @@ abstract contract BaseRateOracle is IRateOracle {
         // unqiue for rate oracle id and the underlying address
     }
 
+    /// @inheritdoc IRateOracle
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate)
         external
         override
@@ -61,11 +74,17 @@ abstract contract BaseRateOracle is IRateOracle {
         factory = _factory;
     }
 
+    /// @inheritdoc IRateOracle
     function variableFactor(
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
     ) public view virtual override returns (uint256 result);
 
+    
+    /// @notice Prepares the rates array to store up to `next` rates
+    /// @param current The current next cardinality of the oracle array
+    /// @param next The proposed next cardinality which will be populated in the rates array
+    /// @return next The next cardinality which will be populated in the rates array
     function grow(uint16 current, uint16 next) internal pure returns (uint16) {
         require(current > 0, "I");
 
@@ -75,7 +94,9 @@ abstract contract BaseRateOracle is IRateOracle {
         return next;
     }
 
-    // add override, lock the amm when calling this function, noDelegateCall
+    // AB: lock the amm when calling this function?
+    // AB: rename to increaseRateCardinalityNext
+    /// @inheritdoc IRateOracle
     function increaseObservarionCardinalityNext(uint16 rateCardinalityNext)
         external
         override
@@ -97,7 +118,7 @@ abstract contract BaseRateOracle is IRateOracle {
         }
     }
 
-    /// @notice Calculates the observed APY returned by the underlying in a given period
+    /// @notice Calculates the observed APY returned by the rate oracle in a given period
     /// @param from The timestamp of the start of the period, in wei-seconds
     /// @param to The timestamp of the end of the period, in wei-seconds
     function getApyFromTo(uint256 from, uint256 to)
@@ -106,6 +127,7 @@ abstract contract BaseRateOracle is IRateOracle {
         virtual
         returns (uint256 apyFromTo);
 
+    /// @inheritdoc IRateOracle
     function writeRate(
         uint16 index,
         uint16 cardinality,
@@ -116,6 +138,7 @@ abstract contract BaseRateOracle is IRateOracle {
         override
         returns (uint16 indexUpdated, uint16 cardinalityUpdated);
 
+    /// @inheritdoc IRateOracle
     function observeSingle(
         uint256 currentTime,
         uint256 queriedTime,
@@ -123,14 +146,17 @@ abstract contract BaseRateOracle is IRateOracle {
         uint16 cardinality
     ) public view virtual override returns (uint256 rateValue);
 
+    /// @inheritdoc IRateOracle
     function writeOracleEntry() external virtual override;
 
+    /// @inheritdoc IRateOracle
     function getHistoricalApy()
         external
         view
         virtual
         override
         returns (uint256 historicalApy);
-
+    
+    /// @inheritdoc IRateOracle
     function initialize() public virtual override;
 }

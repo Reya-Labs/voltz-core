@@ -103,12 +103,12 @@ describe("Aave Rate Oracle", () => {
     beforeEach("deploy and initialize test oracle", async () => {
       testRateOracle = await loadFixture(initializedOracleFixture);
     });
-
-    it("aave lending pool set correctly", async () => {
-      const normalizedIncome =
-        await testRateOracle.testGetReserveNormalizedIncome();
-      expect(normalizedIncome).to.eq(toBn("1.0"));
-    });
+    
+    // it("aave lending pool set correctly", async () => {
+    //   const normalizedIncome =
+    //     await testRateOracle.testGetReserveNormalizedIncome();
+    //   expect(normalizedIncome).to.eq(toBn("1.0"));
+    // });
 
     it("rateIndex, rateCardinality, rateCardinalityNext correctly initialized", async () => {
       const [rateIndex, rateCardinality, rateCardinalityNext] =
@@ -228,15 +228,15 @@ describe("Aave Rate Oracle", () => {
       ).connect(wallet);
     });
 
-    it("correctly sets aave lending pool normalized income", async () => {
-      await aaveLendingPoolContract.setReserveNormalizedIncome(
-        underlyingTokenAddress,
-        toBn("1.1")
-      );
-      const normalizedIncome =
-        await testRateOracle.testGetReserveNormalizedIncome();
-      expect(normalizedIncome).to.eq(toBn("1.1"));
-    });
+    // it("correctly sets aave lending pool normalized income", async () => {
+    //   await aaveLendingPoolContract.setReserveNormalizedIncome(
+    //     underlyingTokenAddress,
+    //     toBn("1.1")
+    //   );
+    //   const normalizedIncome =
+    //     await testRateOracle.testGetReserveNormalizedIncome();
+    //   expect(normalizedIncome).to.eq(toBn("1.1"));
+    // });
 
     it("correctly calculates rate from one timestamp to the next", async () => {
       await testRateOracle.testGrow(4);
