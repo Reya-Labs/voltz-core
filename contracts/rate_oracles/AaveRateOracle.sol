@@ -61,10 +61,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         if (last.timestamp != 0) {
             uint256 timeDeltaSinceLastUpdate = blockTimestamp - last.timestamp;
-            // console.log("Test Contract: timeDeltaSinceLastUpdate", timeDeltaSinceLastUpdate);
-            // console.log("Test Contract: last.timestamp", last.timestamp);
-            // console.log("Test Contract: blockTimestamp", blockTimestamp);
-            // writeRate should only be called via writeOracleEntry
             require(
                 timeDeltaSinceLastUpdate > minSecondsSinceLastUpdate,
                 "throttle updates"
@@ -319,8 +315,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             uint256 rateFromBeforeOrAtToAtOrAfter;
 
             if (atOrAfter.rateValue > beforeOrAt.rateValue) {
-                // console.log("atOrAfter.rateValue", atOrAfter.rateValue);
-                // console.log("beforeOrAt.rateValue", beforeOrAt.rateValue);
                 rateFromBeforeOrAtToAtOrAfter = WadRayMath
                     .rayDiv(atOrAfter.rateValue, beforeOrAt.rateValue)
                     .sub(WadRayMath.RAY);
@@ -375,7 +369,5 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
         );
-
-        // oracleVars.rateIndex = 0, oracleVars.rateCardinality = 1
     }
 }
