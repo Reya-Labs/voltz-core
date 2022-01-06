@@ -33,7 +33,7 @@ interface FactoryFixture {
   factory: Factory;
 }
 
-async function marginCalculatorFixture(
+export async function marginCalculatorFixture(
   fixedAndVariableMathAddress: string,
   timeAddress: string,
   factoryAddress: string
