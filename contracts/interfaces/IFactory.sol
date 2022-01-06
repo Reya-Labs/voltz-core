@@ -14,7 +14,6 @@ interface IFactory {
     /// @param newCalculator The new calculator address after it was changed by owner
     event CalculatorChanged(address indexed newCalculator);
 
-
     /// @notice Emmited when Rate Oracle Address is changed
     /// @param rateOracleId The rate oracle Id
     /// @param newOracleAddress The rate oracle address given its Id
