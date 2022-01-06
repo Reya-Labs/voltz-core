@@ -15,6 +15,15 @@ import { sqrt } from "./sqrt";
 import { div, sub, mul, add } from "./functions";
 import { toBn } from "evm-bn";
 
+export const ZERO_ADDRESS: string =
+  "0x0000000000000000000000000000000000000000";
+
+export const ZERO_BYTES: string =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+export const INVALID_ORACLE_ID: string =
+  "0x0000000000000000000000000000000000000000000000000000000000000001";
+
 export const TICK_SPACING: number = 60;
 
 export const SECONDS_IN_YEAR: BigNumber = toBn("31536000");
