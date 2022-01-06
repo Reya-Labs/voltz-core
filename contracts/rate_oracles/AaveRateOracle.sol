@@ -18,7 +18,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     /// @inheritdoc IAaveRateOracle
     address public override aaveLendingPool;
-    
+
     uint256 public constant ONE_WEI = 10**18;
 
     constructor(
@@ -76,11 +76,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         rates[indexUpdated] = Rate(blockTimestamp, result);
     }
 
-
     /// @notice Computes the APY based on the un-annualised rateFromTo value and timeInYears (in wei)
     /// @param rateFromTo Un-annualised rate (in wei)
     /// @param timeInYears Time in years for the period for which we want to calculate the apy (in wei)
-    /// @return apy APY for a given rateFromTo and timeInYears 
+    /// @return apy APY for a given rateFromTo and timeInYears
     function computeApyFromRate(uint256 rateFromTo, uint256 timeInYears)
         internal
         pure
@@ -94,7 +93,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         apy = apyPlusOne - ONE_WEI;
     }
 
-    
     /// @inheritdoc BaseRateOracle
     function getApyFromTo(uint256 from, uint256 to)
         internal
@@ -171,7 +169,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             );
         }
     }
-
 
     /// @notice Fetches the rates beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied.
     /// The result may be the same rate, or adjacent rates.
@@ -256,7 +253,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         return binarySearch(target, index, cardinality);
     }
 
-    
     /// @notice Calculates the interpolated (counterfactual) rate value
     /// @param beforeOrAtRateValue  Rate Value (in ray) before the timestamp for which we want to calculate the counterfactual rate value
     /// @param apyFromBeforeOrAtToAtOrAfter Apy in the period between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
@@ -280,7 +276,9 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             timeInYears
         ) - ONE_WEI;
 
-        uint256 beforeOrAtRateValueWei = WadRayMath.rayToWad(beforeOrAtRateValue);
+        uint256 beforeOrAtRateValueWei = WadRayMath.rayToWad(
+            beforeOrAtRateValue
+        );
         uint256 rateValueWei = PRBMathUD60x18.mul(beforeOrAtRateValueWei, exp1);
         rateValue = WadRayMath.wadToRay(rateValueWei);
     }
