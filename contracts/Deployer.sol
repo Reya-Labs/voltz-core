@@ -33,7 +33,7 @@ contract Deployer is IDeployer {
     });
 
     marginEngine = address(
-      new AMM{
+      new MarginEngine{
         salt: keccak256(
           abi.encode(
             ammAddress
@@ -55,9 +55,8 @@ contract Deployer is IDeployer {
     });
 
     vamm = address(
-      new AMM{
+      new VAMM{
         salt: keccak256(
-          // think don't need tickSpacing here
           abi.encode(
             ammAddress
           )

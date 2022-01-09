@@ -12,9 +12,10 @@ import {
   fixedAndVariableMathFixture,
   mockERC20Fixture,
   mockAaveLendingPoolFixture,
-  factoryFixture,
+  metaFixture,
 } from "../../shared/fixtures";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
+import { Factory } from "../../../typechain";
 
 const { provider } = waffle;
 
@@ -44,15 +45,12 @@ function computeApyFromRate(rateFromTo: BigNumber, timeInYears: BigNumber) {
 describe("Aave Rate Oracle", () => {
   let wallet: Wallet, other: Wallet;
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>;
+  let factory: Factory;
 
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = waffle.createFixtureLoader([wallet, other]);
-  });
-
-  before("create fixture loader", async () => {
-    [wallet, other] = await (ethers as any).getSigners();
-    loadFixture = waffle.createFixtureLoader([wallet, other]);
+    ({ factory } = await loadFixture(metaFixture));
   });
 
   const oracleFixture = async () => {
@@ -62,7 +60,6 @@ describe("Aave Rate Oracle", () => {
     );
     const { token } = await mockERC20Fixture();
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
-    const { factory } = await factoryFixture(time.address);
 
     console.log(
       "Test TS: Aave lending pool address is: ",
