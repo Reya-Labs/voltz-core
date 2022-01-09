@@ -173,9 +173,9 @@ contract TestRateOracle is AaveRateOracle {
         );
     }
 
-    // function testGetHistoricalApy() external {
-    //   latestHistoricalApy = getHistoricalApy();
-    // }
+    function testGetHistoricalApy() external {
+        latestHistoricalApy = getHistoricalApy();
+    }
 
     // temporary until fixed
     function getHistoricalApy() public pure override returns (uint256) {

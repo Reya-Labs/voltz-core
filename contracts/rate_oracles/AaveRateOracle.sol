@@ -10,6 +10,11 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 import "hardhat/console.sol";
 
+// @audit at a super-high level, I still wonder whether we are using a sledgehammer to crack a nut. E.g. we perhaps do not desperately need the lookup window to be *exactly* 2592000 seconds, but would settle for anything approximating a month? If true, we could probably have a much simpler - and perhaps more performant - system that just notes the liquidityIndex (say) weekly and avoids the need for binary search etc. On balance I'm probably inclined to stick with this current approach because while it may be a sledgehammer it's a reliable and well used one - but it feels worth mentioning this concern, and if nothing else revisiting this decision if/when we want to optimise the gas cost of trading with this system.
+
+// @audit architecturally, it may be neater and eventually more reusable to have a lot of the logic for reading and writing to the Rates array in a separate library, akin to Uniswap's Oracle library. If we choose NOT to go that route, then probably some of the code below can be simplified to read things like index directly from oracleVars, rather than as passed-in parameters.
+
+// @audit current split of IRateOracle vs. BaseRateOracle vs. AaveRateOracle is not very neat. E.g. the Aaave semantics are mentioned in at least one of the other interfaces, but they should be agostic to all ikmplementations. If we have no plans to support anything other than Aave in V1, it might be neatest and most understandable just to revert to a single Oracle implementation, perhaps with the logic for dealing with the Rates array, and related concers, isolated to an separate Oracle library - just like Uniswap does
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     using SafeMath for uint256;
 
@@ -47,6 +52,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         uint256 blockTimestamp = Time.blockTimestampScaled();
 
+        // @audit - because we try to write rates on every position update, I think this throttle is throttling the whole system and not jus the oracle! What we probably want to do is to make this function a *no-op* unless >= `minSecondsSinceLastUpdate` has elapsed since the last update.
+        // @audit - also, with any reasonable cardinality of oracle this is going to be add expense to postion operation updates, beause we're not front-loading the cost of the store operations (see comments elsewhere). We should probablt front load them if we keep this approach.
         if (last.timestamp != 0) {
             uint256 timeDeltaSinceLastUpdate = blockTimestamp - last.timestamp;
             require(
@@ -56,6 +63,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         }
 
         // early return if we've already written a Rate in this block
+        // @audit - move this above the throttling code or we'll never actually make use of it
         if (last.timestamp == blockTimestamp) return (index, cardinality);
 
         // if the conditions are right, we can bump the cardinality
@@ -104,7 +112,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         uint256 rateFromTo = getRateFromTo(from, to);
 
-        uint256 timeInSeconds = to - from; // @audit - this is the wimte in seconds wei
+        uint256 timeInSeconds = to - from; // @audit - Wad suffix if still appropriate
 
         uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
 
@@ -220,7 +228,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @return atOrAfter The rate which occurred at, or after, the given timestamp
     function getSurroundingRates(
         uint256 target,
-        uint16 index,
+        uint16 index, //
         uint16 cardinality
     ) internal view returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
         // optimistically set before to the newest rate
@@ -285,10 +293,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     /// @inheritdoc IRateOracle
     function observeSingle(
-        uint256 currentTime,
+        uint256 currentTime, // @audit not sure why this is a param. Perhaps for gas efficiency to save us gettign the timestamp multiple times? Probably makes more sense if it's an internal function.
         uint256 queriedTime,
-        uint16 index,
-        uint16 cardinality
+        uint16 index, // @audit again, probably makes more sense for an internal function. For external we should look this up ratehr than trust the input.
+        uint16 cardinality // @audit again, probably makes more sense for an internal function. For external we should look this up ratehr than trust the input. // @audit could this be internal?
     )
         public
         view
@@ -299,6 +307,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             Rate memory rate;
             rate = rates[index];
             if (rate.timestamp != currentTime) {
+                // @audit I can have this function return the current liquidity index for any value of `queriedTime`, by passing `currentTime` = `queriedTime`. Even if this function were internal we should document that more clearly, but if the function must be public that feels like dangerous behaviour.
                 rateValue = IAaveV2LendingPool(aaveLendingPool)
                     .getReserveNormalizedIncome(underlying);
             } else {
@@ -327,7 +336,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             if (atOrAfter.rateValue > beforeOrAt.rateValue) {
                 rateFromBeforeOrAtToAtOrAfter = WadRayMath
                     .rayDiv(atOrAfter.rateValue, beforeOrAt.rateValue)
-                    .sub(WadRayMath.RAY);
+                    .sub(WadRayMath.RAY); // @audit - why do we take away 1? Looks like it's more useful to the functions below if we keep 5% = 1.05 rather than 5% = 0.05?
+                // @audit - more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
             }
 
             uint256 timeInYears = FixedAndVariableMath.accrualFact(
@@ -372,6 +382,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     /// @inheritdoc IRateOracle
+    // @audit - need to step this being called more than once, or at least only allow that sort of "reset" from an authorised account!?
     function initialize() public override(BaseRateOracle, IRateOracle) {
         oracleVars.rateCardinalityNext = 1;
         oracleVars.rateCardinality = 1;
@@ -381,5 +392,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
         );
+
+        // @audit - should consider growing the cardinality here as well, cos 1 isn't very useful. If we don't do it here we must rememebr to script that.
     }
 }
