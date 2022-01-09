@@ -15,23 +15,23 @@ interface IFactory {
     event CalculatorChanged(address indexed newCalculator);
 
     /// @notice Emmited when Rate Oracle Address is changed
-    /// @param rateOracleId The rate oracle Id
+    /// @param rateOracleAddress The rate oracle Id
     /// @param newOracleAddress The rate oracle address given its Id
     event RateOracleAdded(
-        bytes32 indexed rateOracleId,
+        address indexed rateOracleAddress,
         address newOracleAddress
     );
 
     /// @notice Emitted when an AMM is successfully created
     /// @param ammAddress The new AMM's address
     /// @param tokenAddress The new AMM's token
-    /// @param rateOracleId The new AMM's rate oracle ID in Factory.getAMMMap
+    /// @param rateOracleAddress The new AMM's rate oracle ID in Factory.getAMMMap
     /// @param termStartTimestamp The new AMM's term start timestamp in wei-seconds (ie the deployed block time)
     /// @param termEndTimestamp The new AMM's maturity date in wei-seconds
     event AMMCreated(
         address indexed ammAddress,
         address indexed tokenAddress,
-        bytes32 indexed rateOracleId,
+        address indexed rateOracleAddress,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
     );
@@ -46,22 +46,14 @@ interface IFactory {
     /// @return The address of the calculator
     function calculator() external view returns (address);
 
-    /// @notice Returns the address of the Rate Oracle Contract
-    /// @param rateOracleId The bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
-    /// @return The address of the Rate Oracle Contract
-    function getRateOracleAddress(bytes32 rateOracleId)
-        external
-        view
-        returns (address);
-
-    /// @notice Returns the amm address for a given rateOracleId, underlyingToken, termStartTimestamp, termEndTimestamp
-    /// @param rateOracleId The bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
+    /// @notice Returns the amm address for a given rateOracleAddress, underlyingToken, termStartTimestamp, termEndTimestamp
+    /// @param rateOracleAddress The bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
     /// @param underlyingToken The underlying token (e.g. USDC) behind a given yield-bearing pool (e.g. AAve v2 aUSDC)
     /// @param termStartTimestamp The block.timestamp of amm inception
     /// @param termEndTimestamp The block.timestamp of amm maturity
     /// @return amm The amm address
     function getAMMMap(
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         address underlyingToken,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
@@ -90,14 +82,14 @@ interface IFactory {
     /// @param _calculator The new calculator of the factory
     function setCalculator(address _calculator) external;
 
-    /// @notice Creates an amm for a given underlying token (e.g. USDC), rateOracleId, and termEndTimestamp
+    /// @notice Creates an amm for a given underlying token (e.g. USDC), rateOracleAddress, and termEndTimestamp
     /// @param underlyingToken The underlying token (e.g. USDC) behind a given yield-bearing pool (e.g. AAve v2 aUSDC)
-    /// @param rateOracleId A bytes32 string which links to the correct underlying yield protocol (e.g. Aave v2 or Compound)
-    /// @dev The call will revert if the amm already exists, underlying token is invalid, the rateOracleId is invalid or the termEndTimeStamp is invalid
+    /// @param rateOracleAddress A bytes32 string which links to the correct underlying yield protocol (e.g. Aave v2 or Compound)
+    /// @dev The call will revert if the amm already exists, underlying token is invalid, the rateOracleAddress is invalid or the termEndTimeStamp is invalid
     /// @return amm The address of the newly created amm
     function createAMM(
         address underlyingToken,
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 termEndTimestamp
     ) external returns (address amm);
 
@@ -114,11 +106,4 @@ interface IFactory {
     function createMarginEngine(address ammAddress)
         external
         returns (address marginEngine);
-
-    /// @notice Adds a new Rate Oracle to the mapping getRateOracleAddress
-    /// @param _rateOracleId A bytes32 string which links to the correct underlying yield protocol (e.g. Aave v2 or Compound)
-    /// @param _rateOracleAddress Address of the Rate Oracle linked (e.g. Aave v2 Lending Pool)
-    /// @dev The call will revert if the _rateOracleId is invalid, if the _rateOracleAddress is invalid, rate oracle with that address has the given id, key/value already exist in the mapping
-    function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress)
-        external;
 }

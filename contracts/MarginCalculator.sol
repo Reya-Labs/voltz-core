@@ -35,7 +35,7 @@ contract MarginCalculator is IMarginCalculator {
     factory = _factory;
   }
 
-  mapping(bytes32 => MarginCalculatorParameters)
+  mapping(address => MarginCalculatorParameters)
     internal getMarginCalculatorParameters;
 
   /// @dev Seconds in a year
@@ -45,14 +45,14 @@ contract MarginCalculator is IMarginCalculator {
   /// @param marginCalculatorParameters the MarginCalculatorParameters to set
   function setMarginCalculatorParameters(
     MarginCalculatorParameters memory marginCalculatorParameters,
-    bytes32 rateOracleId
+    address rateOracleAddress
   ) public override onlyFactoryOwner {
-    getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
+    getMarginCalculatorParameters[rateOracleAddress] = marginCalculatorParameters;
   }
 
   /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t_max) where t is the maturity timestamp, and t_max is the max number of seconds for the amm duration, s is the current timestamp and beta is a diffusion process parameter set via calibration
   function computeTimeFactor(
-    bytes32 rateOracleId,
+    address rateOracleAddress,
     uint256 termEndTimestampScaled,
     uint256 currentTimestampScaled
   ) internal view returns (int256 timeFactor) {
@@ -62,12 +62,12 @@ contract MarginCalculator is IMarginCalculator {
       "endTime must be > currentTime"
     );
     require(
-      getMarginCalculatorParameters[rateOracleId].beta != 0,
+      getMarginCalculatorParameters[rateOracleAddress].beta != 0,
       "parameters not set for oracle"
     );
 
-    int256 beta = getMarginCalculatorParameters[rateOracleId].beta;
-    int256 tMax = getMarginCalculatorParameters[rateOracleId].tMax;
+    int256 beta = getMarginCalculatorParameters[rateOracleAddress].beta;
+    int256 tMax = getMarginCalculatorParameters[rateOracleAddress].tMax;
 
     int256 scaledTime = PRBMathSD59x18.div(
       (int256(termEndTimestampScaled) - int256(currentTimestampScaled)),
@@ -80,14 +80,14 @@ contract MarginCalculator is IMarginCalculator {
   }
 
   /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
-  /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
+  /// @param rateOracleAddress A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
   /// @param termEndTimestampScaled termEndTimestampScaled
   /// @param currentTimestampScaled currentTimestampScaled
   /// @param historicalApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
   /// @param isUpper isUpper = true ==> calculating the APY Upper Bound, otherwise APY Lower Bound
   /// @return apyBound APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
   function computeApyBound(
-    bytes32 rateOracleId,
+    address rateOracleAddress,
     uint256 termEndTimestampScaled,
     uint256 currentTimestampScaled,
     uint256 historicalApy,
@@ -96,12 +96,12 @@ contract MarginCalculator is IMarginCalculator {
     ApyBoundVars memory apyBoundVars;
 
     int256 beta4 = PRBMathSD59x18.mul(
-      getMarginCalculatorParameters[rateOracleId].beta,
+      getMarginCalculatorParameters[rateOracleAddress].beta,
       4 * ONE_WEI
     );
 
     apyBoundVars.timeFactor = computeTimeFactor(
-      rateOracleId,
+      rateOracleAddress,
       termEndTimestampScaled,
       currentTimestampScaled
     );
@@ -109,13 +109,13 @@ contract MarginCalculator is IMarginCalculator {
     apyBoundVars.oneMinusTimeFactor = ONE_WEI - apyBoundVars.timeFactor;
 
     apyBoundVars.k = PRBMathSD59x18.div(
-      getMarginCalculatorParameters[rateOracleId].alpha,
-      getMarginCalculatorParameters[rateOracleId].sigmaSquared
+      getMarginCalculatorParameters[rateOracleAddress].alpha,
+      getMarginCalculatorParameters[rateOracleAddress].sigmaSquared
     );
 
     apyBoundVars.zeta = PRBMathSD59x18.div(
       PRBMathSD59x18.mul(
-        getMarginCalculatorParameters[rateOracleId].sigmaSquared,
+        getMarginCalculatorParameters[rateOracleAddress].sigmaSquared,
         apyBoundVars.oneMinusTimeFactor
       ),
       beta4
@@ -147,12 +147,12 @@ contract MarginCalculator is IMarginCalculator {
 
     if (isUpper) {
       apyBoundVars.criticalValue = PRBMathSD59x18.mul(
-        getMarginCalculatorParameters[rateOracleId].xiUpper,
+        getMarginCalculatorParameters[rateOracleAddress].xiUpper,
         PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplier)
       );
     } else {
       apyBoundVars.criticalValue = PRBMathSD59x18.mul(
-        getMarginCalculatorParameters[rateOracleId].xiLower,
+        getMarginCalculatorParameters[rateOracleAddress].xiLower,
         PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplier)
       );
     }
@@ -175,7 +175,7 @@ contract MarginCalculator is IMarginCalculator {
   /// @param currentTimestampScaled currentTimestampScaled
   /// @param isFT isFT => we are dealing with a Fixed Taker (short) IRS position, otherwise it is a Variable Taker (long) IRS position
   /// @param isLM isLM => we are computing a Liquidation Margin otherwise computing an Initial Margin
-  /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
+  /// @param rateOracleAddress A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
   /// @param historicalApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
   /// @return variableFactor The Worst Case Variable Factor At Maturity = APY Bound * accrualFactor(timeInYearsFromStartUntilMaturity) where APY Bound = APY Upper Bound for Fixed Takers and APY Lower Bound for Variable Takers
   function worstCaseVariableFactorAtMaturity(
@@ -184,7 +184,7 @@ contract MarginCalculator is IMarginCalculator {
     uint256 currentTimestampScaled,
     bool isFT,
     bool isLM,
-    bytes32 rateOracleId,
+    address rateOracleAddress,
     uint256 historicalApy
   ) internal view returns (uint256 variableFactor) {
     uint256 timeInYearsFromStartUntilMaturity = FixedAndVariableMath
@@ -194,7 +194,7 @@ contract MarginCalculator is IMarginCalculator {
       if (isLM) {
         variableFactor = PRBMathUD60x18.mul(
           computeApyBound(
-            rateOracleId,
+            rateOracleAddress,
             termEndTimestampScaled,
             currentTimestampScaled,
             historicalApy,
@@ -206,13 +206,13 @@ contract MarginCalculator is IMarginCalculator {
         variableFactor = PRBMathUD60x18.mul(
           PRBMathUD60x18.mul(
             computeApyBound(
-              rateOracleId,
+              rateOracleAddress,
               termEndTimestampScaled,
               currentTimestampScaled,
               historicalApy,
               true
             ),
-            getMarginCalculatorParameters[rateOracleId].apyUpperMultiplier
+            getMarginCalculatorParameters[rateOracleAddress].apyUpperMultiplier
           ),
           timeInYearsFromStartUntilMaturity
         );
@@ -221,7 +221,7 @@ contract MarginCalculator is IMarginCalculator {
       if (isLM) {
         variableFactor = PRBMathUD60x18.mul(
           computeApyBound(
-            rateOracleId,
+            rateOracleAddress,
             termEndTimestampScaled,
             currentTimestampScaled,
             historicalApy,
@@ -233,13 +233,13 @@ contract MarginCalculator is IMarginCalculator {
         variableFactor = PRBMathUD60x18.mul(
           PRBMathUD60x18.mul(
             computeApyBound(
-              rateOracleId,
+              rateOracleAddress,
               termEndTimestampScaled,
               currentTimestampScaled,
               historicalApy,
               false
             ),
-            getMarginCalculatorParameters[rateOracleId].apyLowerMultiplier
+            getMarginCalculatorParameters[rateOracleAddress].apyLowerMultiplier
           ),
           timeInYearsFromStartUntilMaturity
         );
@@ -259,11 +259,11 @@ contract MarginCalculator is IMarginCalculator {
 
     if (params.isLM) {
       vars.minDelta = uint256(
-        getMarginCalculatorParameters[params.rateOracleId].minDeltaLM
+        getMarginCalculatorParameters[params.rateOracleAddress].minDeltaLM
       );
     } else {
       vars.minDelta = uint256(
-        getMarginCalculatorParameters[params.rateOracleId].minDeltaIM
+        getMarginCalculatorParameters[params.rateOracleAddress].minDeltaIM
       );
     }
 
@@ -296,24 +296,21 @@ contract MarginCalculator is IMarginCalculator {
         PRBMathUD60x18.mul(vars.minDelta, vars.timeInYears)
       );
 
-      console.log("Zero Lower Bound Margin: ", vars.zeroLowerBoundMargin);
-      console.log("Margin before ZLB correction: ", margin);
-
       if (margin > vars.zeroLowerBoundMargin) {
         margin = vars.zeroLowerBoundMargin;
       }
 
-      console.log(
-        "Contract: The fixed factor is",
-        FixedAndVariableMath.fixedFactor(
-          true,
-          params.termStartTimestamp,
-          params.termEndTimestamp
-        )
-      );
-      console.log("Contract: The time in years is", vars.timeInYears);
-      console.log("Contract: The notional is", vars.notional);
-      console.log("Contract: The margin is", margin);
+      // console.log(
+      //   "Contract: The fixed factor is",
+      //   FixedAndVariableMath.fixedFactor(
+      //     true,
+      //     params.termStartTimestamp,
+      //     params.termEndTimestamp
+      //   )
+      // );
+      // console.log("Contract: The time in years is", vars.timeInYears);
+      // console.log("Contract: The notional is", vars.notional);
+      // console.log("Contract: The margin is", margin);
     }
   }
 
@@ -348,7 +345,7 @@ contract MarginCalculator is IMarginCalculator {
           Time.blockTimestampScaled(),
           params.variableTokenBalance < 0,
           params.isLM,
-          params.rateOracleId,
+          params.rateOracleAddress,
           params.historicalApy
         )
       )
@@ -419,7 +416,7 @@ contract MarginCalculator is IMarginCalculator {
         termStartTimestamp: params.termStartTimestamp,
         termEndTimestamp: params.termEndTimestamp,
         isLM: params.isLM,
-        rateOracleId: params.rateOracleId,
+        rateOracleAddress: params.rateOracleAddress,
         historicalApy: params.historicalApy
       })
     );
@@ -466,7 +463,7 @@ contract MarginCalculator is IMarginCalculator {
         termStartTimestamp: params.termStartTimestamp,
         termEndTimestamp: params.termEndTimestamp,
         isLM: params.isLM,
-        rateOracleId: params.rateOracleId,
+        rateOracleAddress: params.rateOracleAddress,
         historicalApy: params.historicalApy
       })
     );
@@ -531,7 +528,7 @@ contract MarginCalculator is IMarginCalculator {
             termStartTimestamp: params.termStartTimestamp,
             termEndTimestamp: params.termEndTimestamp,
             isLM: params.isLM,
-            rateOracleId: params.rateOracleId,
+            rateOracleAddress: params.rateOracleAddress,
             historicalApy: params.historicalApy
           })
         );
@@ -567,7 +564,7 @@ contract MarginCalculator is IMarginCalculator {
             termStartTimestamp: params.termStartTimestamp,
             termEndTimestamp: params.termEndTimestamp,
             isLM: params.isLM,
-            rateOracleId: params.rateOracleId,
+            rateOracleAddress: params.rateOracleAddress,
             historicalApy: params.historicalApy
           })
         );
@@ -588,7 +585,7 @@ contract MarginCalculator is IMarginCalculator {
             termStartTimestamp: params.termStartTimestamp,
             termEndTimestamp: params.termEndTimestamp,
             isLM: params.isLM,
-            rateOracleId: params.rateOracleId,
+            rateOracleAddress: params.rateOracleAddress,
             historicalApy: params.historicalApy
           })
         );
@@ -624,7 +621,7 @@ contract MarginCalculator is IMarginCalculator {
             termStartTimestamp: params.termStartTimestamp,
             termEndTimestamp: params.termEndTimestamp,
             isLM: params.isLM,
-            rateOracleId: params.rateOracleId,
+            rateOracleAddress: params.rateOracleAddress,
             historicalApy: params.historicalApy
           })
         );

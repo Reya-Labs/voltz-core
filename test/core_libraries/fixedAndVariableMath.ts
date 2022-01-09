@@ -94,15 +94,10 @@ describe("FixedAndVariableMath", () => {
   before(async () => {
     await network.provider.send("evm_setNextBlockTimestamp", [BLOCK_TIMESTAMP]);
 
-    const timeFactory = await ethers.getContractFactory("Time");
-    const timeLibrary = await timeFactory.deploy();
-
     const fixedAndVariableMathFactory = await ethers.getContractFactory(
       "FixedAndVariableMath",
       {
-        libraries: {
-          Time: timeLibrary.address,
-        },
+        libraries: {},
       }
     );
 
@@ -112,7 +107,6 @@ describe("FixedAndVariableMath", () => {
       {
         libraries: {
           FixedAndVariableMath: fixedAndVariableMath.address,
-          Time: timeLibrary.address,
         },
       }
     );

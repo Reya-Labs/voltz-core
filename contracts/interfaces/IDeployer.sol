@@ -27,7 +27,7 @@ interface IDeployer {
         returns (
             address factory,
             address underlyingToken,
-            bytes32 rateOracleId,
+            address rateOracleAddress,
             uint256 termStartTimestamp,
             uint256 termEndTimestamp
         );

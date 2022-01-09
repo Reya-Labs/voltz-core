@@ -59,6 +59,50 @@ describe("MarginEngine", () => {
     });
   });
 
+  // describe("#getHistoricalApy", async () => {
+  //   let testRateOracle: TestRateOracle;
+  //   let aaveLendingPoolContract: Contract;
+  //   let underlyingTokenAddress: string;
+
+  //   beforeEach("deploy and initialize test oracle", async () => {
+  //     testRateOracle = await loadFixture(initializedOracleFixture);
+
+  //     const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
+  //     underlyingTokenAddress = await testRateOracle.underlying();
+  //     const aaveLendingPoolAbi = [
+  //       "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+  //       "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
+  //     ];
+  //     aaveLendingPoolContract = new Contract(
+  //       aaveLendingPoolAddress,
+  //       aaveLendingPoolAbi,
+  //       provider
+  //     ).connect(wallet);
+
+  //     await testRateOracle.testGrow(10);
+
+  //     await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+  //     await testRateOracle.writeOracleEntry();
+
+  //     await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+  //     // set new liquidity index value
+  //     await aaveLendingPoolContract.setReserveNormalizedIncome(
+  //       underlyingTokenAddress,
+  //       toBn("1.1")
+  //     );
+  //     await testRateOracle.writeOracleEntry();
+  //   });
+
+  //   // Error: VM Exception while processing transaction: reverted with reason string '50' (needs to be fixed)
+  //   // it("correctly computes historical apy", async () => {
+  //   //   // await testRateOracle.setSecondsAgo("86400"); // one day
+  //   //   await testRateOracle.testGetHistoricalApy();
+  //   //   const realizedHistoricalApy = await testRateOracle.latestHistoricalApy();
+  //   //   expect(realizedHistoricalApy).to.eq(0);
+
+  //   // })
+  // });
+
   describe("#positions", () => {
     let marginEngineTest: TestMarginEngine;
 
@@ -93,14 +137,12 @@ describe("MarginEngine", () => {
       const updatedMarginWouldBe = toBn("0");
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
-      const ammAddress = await marginEngineTest.amm();
 
       await expect(
         marginEngineTest.checkTraderMarginAboveRequirementTest(
           updatedMarginWouldBe,
           fixedTokenBalance,
-          variableTokenBalance,
-          ammAddress
+          variableTokenBalance
         )
       ).to.be.reverted;
     });
@@ -109,7 +151,6 @@ describe("MarginEngine", () => {
       const updatedMarginWouldBe = toBn("0");
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
-      const ammAddress = await marginEngineTest.amm();
       const isTraderSettled = false;
 
       await expect(
@@ -117,8 +158,7 @@ describe("MarginEngine", () => {
           updatedMarginWouldBe,
           fixedTokenBalance,
           variableTokenBalance,
-          isTraderSettled,
-          ammAddress
+          isTraderSettled
         )
       ).to.be.reverted;
     });
@@ -141,7 +181,6 @@ describe("MarginEngine", () => {
       const positionFixedTokenBalance = toBn("0");
       const positionVariableTokenBalance = toBn("0");
       const variableFactor = toBn("0.1");
-      const ammAddress = await marginEngineTest.amm();
 
       await expect(
         marginEngineTest.checkPositionMarginAboveRequirementTest(
@@ -153,8 +192,7 @@ describe("MarginEngine", () => {
           positionLiquidity,
           positionFixedTokenBalance,
           positionVariableTokenBalance,
-          variableFactor,
-          ammAddress
+          variableFactor
         )
       ).to.be.reverted;
     });
@@ -169,7 +207,6 @@ describe("MarginEngine", () => {
       const positionFixedTokenBalance = toBn("0");
       const positionVariableTokenBalance = toBn("0");
       const variableFactor = toBn("0.1");
-      const ammAddress = await marginEngineTest.amm();
       const isPositionBurned = false;
       const isPositionSettled = false;
 
@@ -185,8 +222,7 @@ describe("MarginEngine", () => {
           positionLiquidity,
           positionFixedTokenBalance,
           positionVariableTokenBalance,
-          variableFactor,
-          ammAddress
+          variableFactor
         )
       ).to.be.reverted;
     });
@@ -225,9 +261,12 @@ describe("MarginEngine", () => {
     });
 
     it("check trader margin correctly updated", async () => {
+      console.log("CR1");
       await marginEngineTest.updateTraderMarginTest(toBn("10000000"));
+      console.log("CR2");
       // retrieve the trader info object
       const traderInfo = await marginEngineTest.traders(wallet.address);
+      console.log("CR3");
       const traderMargin = traderInfo[0];
       expect(traderMargin).to.eq(toBn("10000000"));
     });

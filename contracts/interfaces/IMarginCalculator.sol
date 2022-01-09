@@ -79,7 +79,7 @@ interface IMarginCalculator {
         /// @dev isLM = true => Liquidation Margin is calculated, isLM = false => Initial Margin is calculated
         bool isLM;
         /// @dev A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
-        bytes32 rateOracleId;
+        address rateOracleAddress;
         /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
         uint256 historicalApy;
     }
@@ -109,7 +109,7 @@ interface IMarginCalculator {
         /// @dev Variable Factor is the variable rate from the IRS AMM initiation and until IRS AMM maturity (when computing margin requirements)
         uint256 variableFactor;
         /// @dev A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
-        bytes32 rateOracleId;
+        address rateOracleAddress;
         /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
         uint256 historicalApy;
     }
@@ -211,6 +211,6 @@ interface IMarginCalculator {
 
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory marginCalculatorParameters,
-        bytes32 rateOracleId
+        address rateOracleAddress
     ) external;
 }
