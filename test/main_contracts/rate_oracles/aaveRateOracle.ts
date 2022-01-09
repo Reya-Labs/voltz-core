@@ -8,7 +8,6 @@ import { div, sub, add, pow } from "../../shared/functions";
 import { TestRateOracle } from "../../../typechain/TestRateOracle";
 import {
   rateOracleFixture,
-  timeFixture,
   fixedAndVariableMathFixture,
   mockERC20Fixture,
   mockAaveLendingPoolFixture,
@@ -54,10 +53,7 @@ describe("Aave Rate Oracle", () => {
   });
 
   const oracleFixture = async () => {
-    const { time } = await timeFixture();
-    const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
-      time.address
-    );
+    const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
     const { token } = await mockERC20Fixture();
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
 
@@ -75,25 +71,17 @@ describe("Aave Rate Oracle", () => {
     );
     const { testRateOracle } = await rateOracleFixture(
       fixedAndVariableMath.address,
-      time.address,
       token.address,
       aaveLendingPool.address,
       factory.address
     );
 
-    await testRateOracle.setMinSecondsSinceLastUpdate(toBn("7200")); // two hours
-    await testRateOracle.setSecondsAgo("86400"); // one day
-
+    await testRateOracle.setMinSecondsSinceLastUpdate(7200); // two hours
     return testRateOracle;
   };
 
   const initializedOracleFixture = async () => {
     const testRateOracle = await oracleFixture();
-    await testRateOracle.initializeTestRateOracle({
-      tick: 0,
-      liquidity: 0,
-    });
-
     return testRateOracle;
   };
 
@@ -159,14 +147,14 @@ describe("Aave Rate Oracle", () => {
     it("single element array gets overwritten", async () => {
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const currentTimestamp = await getCurrentTimestamp(provider);
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
       const [rateIndex] = await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(0);
       const [rateTimestamp, rateValue] = await testRateOracle.getRate(0);
-      console.log(currentTimestamp);
-      console.log(rateTimestamp);
+      console.log(`currentTimestamp: ${currentTimestamp}`);
+      console.log(`rateTimestamp: ${rateTimestamp.valueOf()}`);
       expect(rateValue).to.eq(toBn("1.0"));
-      expect(rateTimestamp).to.eq(toBn((currentTimestamp + 1).toString()));
+      expect(rateTimestamp).to.eq(currentTimestamp + 1);
     });
 
     it("grows cardinality if writing past", async () => {
@@ -177,33 +165,18 @@ describe("Aave Rate Oracle", () => {
       console.log(await getCurrentTimestamp(provider));
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       console.log(await getCurrentTimestamp(provider));
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
       [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
       expect(rateCardinality).to.eq(4);
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const currentTimestamp = await getCurrentTimestamp(provider);
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
       [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(2);
       expect(rateCardinality).to.eq(4);
       const [rateTimestamp, rateValue] = await testRateOracle.getRate(2);
       expect(rateValue).to.eq(toBn("1.0"));
-      expect(rateTimestamp).to.eq(toBn((currentTimestamp + 1).toString()));
-    });
-  });
-
-  describe("#observe", async () => {
-    let testRateOracle: TestRateOracle;
-
-    beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(oracleFixture);
-    });
-
-    it("fails before initialize", async () => {
-      const currentTimestamp = await getCurrentTimestamp(provider);
-      const currentTimestampBN = toBn(currentTimestamp.toString());
-      await expect(testRateOracle.testObserveSingle(currentTimestampBN)).to.be
-        .reverted;
+      expect(rateTimestamp).to.eq(currentTimestamp + 1);
     });
   });
 
@@ -242,7 +215,7 @@ describe("Aave Rate Oracle", () => {
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const rateFromTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // set new liquidity index value
@@ -251,11 +224,11 @@ describe("Aave Rate Oracle", () => {
         toBn("1.1")
       );
       const rateToTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
 
       await testRateOracle.testGetRateFromTo(
-        toBn(rateFromTimestamp.toString()),
-        toBn(rateToTimestamp.toString())
+        rateFromTimestamp,
+        rateToTimestamp
       );
       const rateFromTo = await testRateOracle.latestRateFromTo();
 
@@ -315,7 +288,7 @@ describe("Aave Rate Oracle", () => {
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const beforeOrAtTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // set new liquidity index value
@@ -324,21 +297,16 @@ describe("Aave Rate Oracle", () => {
         toBn("1.1")
       );
       const afterOrAtTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
 
-      const targetTimestamp = div(
-        add(
-          toBn(beforeOrAtTimestamp.toString()),
-          toBn(afterOrAtTimestamp.toString())
-        ),
-        toBn("2.0")
+      const targetTimestamp = Math.floor(
+        (beforeOrAtTimestamp + afterOrAtTimestamp) / 2
       );
 
       const [beforeOrAtRateValue, afterOrAtRateValue] =
-        await testRateOracle.testBinarySearch(targetTimestamp);
-
-      expect(beforeOrAtRateValue).to.eq(toBn("1.0"));
-      expect(afterOrAtRateValue).to.eq(toBn("1.1"));
+        await testRateOracle.binarySearch(targetTimestamp);
+      expect(beforeOrAtRateValue.observedValue).to.eq(toBn("1.0"));
+      expect(afterOrAtRateValue.observedValue).to.eq(toBn("1.1"));
     });
 
     // other scenarios
@@ -371,7 +339,7 @@ describe("Aave Rate Oracle", () => {
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       beforeOrAtTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // set new liquidity index value
@@ -380,13 +348,11 @@ describe("Aave Rate Oracle", () => {
         toBn("1.1")
       );
       atOrAfterTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
     });
 
     it("target is beforeOrAt", async () => {
-      await testRateOracle.testGetSurroundingRates(
-        toBn(beforeOrAtTimestamp.toString())
-      );
+      await testRateOracle.testGetSurroundingRates(beforeOrAtTimestamp);
 
       const realizedBeforeOrAtRateValue =
         await testRateOracle.latestBeforeOrAtRateValue();
@@ -401,9 +367,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("target is atOrAfter", async () => {
-      await testRateOracle.testGetSurroundingRates(
-        toBn(atOrAfterTimestamp.toString())
-      );
+      await testRateOracle.testGetSurroundingRates(atOrAfterTimestamp);
 
       const realizedBeforeOrAtRateValue =
         await testRateOracle.latestBeforeOrAtRateValue();
@@ -418,12 +382,8 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("target is in the middle", async () => {
-      const targetTimestamp = div(
-        add(
-          toBn(beforeOrAtTimestamp.toString()),
-          toBn(atOrAfterTimestamp.toString())
-        ),
-        toBn("2.0")
+      const targetTimestamp = Math.floor(
+        (beforeOrAtTimestamp + atOrAfterTimestamp) / 2
       );
 
       await testRateOracle.testGetSurroundingRates(targetTimestamp);
@@ -440,7 +400,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("fails if target is too old", async () => {
-      const targetTimestamp = toBn((beforeOrAtTimestamp - 604800).toString()); // going back one week
+      const targetTimestamp = beforeOrAtTimestamp - 604800; // going back one week
 
       await expect(testRateOracle.testGetSurroundingRates(targetTimestamp)).to
         .be.reverted;
@@ -491,7 +451,7 @@ describe("Aave Rate Oracle", () => {
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       firstTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // set new liquidity index value
@@ -500,19 +460,17 @@ describe("Aave Rate Oracle", () => {
         toBn("1.1")
       );
       secondTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await testRateOracle.update();
+      await testRateOracle.writeOracleEntry();
     });
 
     it("calculate variable factor at maturity", async () => {
       const termStartTimestampBN = toBn(firstTimestamp.toString());
       const termEndTimestampBN = toBn(secondTimestamp.toString());
-      await testRateOracle.testVariableFactor(
+      const realizedVariableFactor = await testRateOracle.variableFactor(
         termStartTimestampBN,
         termEndTimestampBN
       );
       const expectedVariableFactor = toBn("0.1");
-      const realizedVariableFactor =
-        await testRateOracle.latestVariableFactor();
       expect(realizedVariableFactor).to.eq(expectedVariableFactor);
     });
 
@@ -520,13 +478,11 @@ describe("Aave Rate Oracle", () => {
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const termStartTimestampBN = toBn(firstTimestamp.toString());
       const termEndTimestampBN = toBn(secondTimestamp.toString());
-      await testRateOracle.testVariableFactor(
+      const realizedVariableFactor = await testRateOracle.variableFactor(
         termStartTimestampBN,
         termEndTimestampBN
       );
       const expectedVariableFactor = toBn("0.1");
-      const realizedVariableFactor =
-        await testRateOracle.latestVariableFactor();
       expect(realizedVariableFactor).to.eq(expectedVariableFactor);
     });
 
@@ -540,14 +496,12 @@ describe("Aave Rate Oracle", () => {
       const termStartTimestampBN = toBn(firstTimestamp.toString());
       const termEndTimestampBN = toBn((secondTimestamp + 604800).toString());
 
-      await testRateOracle.testVariableFactor(
+      const realizedVariableFactor = await testRateOracle.variableFactor(
         termStartTimestampBN,
         termEndTimestampBN
       );
 
       const expectedVariableFactor = toBn("0.2");
-      const realizedVariableFactor =
-        await testRateOracle.latestVariableFactor();
       expect(realizedVariableFactor).to.eq(expectedVariableFactor);
     });
 
@@ -556,55 +510,8 @@ describe("Aave Rate Oracle", () => {
       const termEndTimestampBN = toBn((secondTimestamp + 604800).toString());
 
       await expect(
-        testRateOracle.testVariableFactor(
-          termStartTimestampBN,
-          termEndTimestampBN
-        )
+        testRateOracle.variableFactor(termStartTimestampBN, termEndTimestampBN)
       ).to.be.reverted;
     });
-  });
-
-  describe("#getHistoricalApy", async () => {
-    let testRateOracle: TestRateOracle;
-    let aaveLendingPoolContract: Contract;
-    let underlyingTokenAddress: string;
-
-    beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
-
-      const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
-      underlyingTokenAddress = await testRateOracle.underlying();
-      const aaveLendingPoolAbi = [
-        "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
-        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
-      ];
-      aaveLendingPoolContract = new Contract(
-        aaveLendingPoolAddress,
-        aaveLendingPoolAbi,
-        provider
-      ).connect(wallet);
-
-      await testRateOracle.testGrow(10);
-
-      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-      await testRateOracle.update();
-
-      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-      // set new liquidity index value
-      await aaveLendingPoolContract.setReserveNormalizedIncome(
-        underlyingTokenAddress,
-        toBn("1.1")
-      );
-      await testRateOracle.update();
-    });
-
-    // Error: VM Exception while processing transaction: reverted with reason string '50' (needs to be fixed)
-    // it("correctly computes historical apy", async () => {
-    //   // await testRateOracle.setSecondsAgo("86400"); // one day
-    //   await testRateOracle.testGetHistoricalApy();
-    //   const realizedHistoricalApy = await testRateOracle.latestHistoricalApy();
-    //   expect(realizedHistoricalApy).to.eq(0);
-
-    // })
   });
 });

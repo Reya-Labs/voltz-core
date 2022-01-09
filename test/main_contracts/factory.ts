@@ -3,11 +3,9 @@ import { BigNumber, Wallet } from "ethers";
 import { Factory } from "../../typechain/Factory";
 import { expect } from "../shared/expect";
 import {
-  timeFixture,
   metaFixture,
   fixedAndVariableMathFixture,
   marginCalculatorFixture,
-  rateOracleFixture,
   mockAaveLendingPoolFixture,
 } from "../shared/fixtures";
 import { getCurrentTimestamp } from "../helpers/time";
@@ -15,19 +13,11 @@ import { toBn } from "evm-bn";
 import { consts } from "../helpers/constants";
 import {
   ERC20Mock,
-  FixedAndVariableMath,
   MockAaveLendingPool,
   TestRateOracle,
-  Time,
 } from "../../typechain";
-import {
-  RATE_ORACLE_ID,
-  INVALID_ORACLE_ID,
-  ZERO_ADDRESS,
-  ZERO_BYTES,
-} from "../shared/utilities";
+import { ZERO_ADDRESS } from "../shared/utilities";
 const { provider } = waffle;
-
 const createFixtureLoader = waffle.createFixtureLoader;
 
 describe("Factory", () => {
@@ -68,14 +58,10 @@ describe("Factory", () => {
 
     it("check calculator", async () => {
       // create new calculator
-      const { time } = await timeFixture();
-      const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
-        time.address
-      );
+      const { fixedAndVariableMath } = await fixedAndVariableMathFixture();
 
       const { testMarginCalculator } = await marginCalculatorFixture(
         fixedAndVariableMath.address,
-        time.address,
         factory.address
       );
 
@@ -98,9 +84,10 @@ describe("Factory", () => {
     let termStartTimestamp: number;
     let termEndTimestamp: number;
     let termEndTimestampBN: BigNumber;
+    let testRateOracle: TestRateOracle;
 
     beforeEach("deploy fixture", async () => {
-      ({ factory, token } = await loadFixture(metaFixture));
+      ({ factory, token, testRateOracle } = await loadFixture(metaFixture));
       termStartTimestamp = await getCurrentTimestamp(provider);
       termEndTimestamp = termStartTimestamp + consts.ONE_WEEK.toNumber();
       termEndTimestampBN = toBn(termEndTimestamp.toString());
@@ -110,7 +97,7 @@ describe("Factory", () => {
       await expect(
         factory
           .connect(other)
-          .createAMM(token.address, RATE_ORACLE_ID, termEndTimestampBN)
+          .createAMM(token.address, testRateOracle.address, termEndTimestampBN)
       ).to.be.revertedWith("NOT_OWNER");
     });
 
@@ -118,7 +105,7 @@ describe("Factory", () => {
       // create AMM
       const tx = await factory.createAMM(
         token.address,
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         termEndTimestampBN
       );
       const receipt = await tx.wait();
@@ -152,7 +139,7 @@ describe("Factory", () => {
   //     });
 
   //     it("checkCreateVAMM", async () => {
-  //         let tx_amm = await factory.createAMM(token.address, RATE_ORACLE_ID, termEndTimestampBN);
+  //         let tx_amm = await factory.createAMM(token.address, testRateOracle.address, termEndTimestampBN);
   //         let receipt_amm = await tx_amm.wait();
   //         const ammAddress = receipt_amm.events?.[0].args?.ammAddress as string;
   //         console.log("AMM address:", ammAddress);
@@ -195,7 +182,7 @@ describe("Factory", () => {
   //     });
 
   //     it("checkcreateMarginEngine", async () => {
-  //         let tx_amm = await factory.createAMM(token.address, RATE_ORACLE_ID, termEndTimestampBN);
+  //         let tx_amm = await factory.createAMM(token.address, testRateOracle.address, termEndTimestampBN);
   //         let receipt_amm = await tx_amm.wait();
   //         const ammAddress = receipt_amm.events?.[0].args?.ammAddress as string;
   //         console.log("AMM address:", ammAddress);
@@ -210,58 +197,16 @@ describe("Factory", () => {
   // });
 
   describe("#addRateOracle", () => {
-    let factory: Factory;
-    let fixedAndVariableMath: FixedAndVariableMath;
     let token: ERC20Mock;
-    let time: Time;
     let aaveLendingPool: MockAaveLendingPool;
-    let testRateOracle: TestRateOracle;
 
     beforeEach("deploy fixture", async () => {
-      ({ time } = await loadFixture(timeFixture));
-      ({ fixedAndVariableMath } = await fixedAndVariableMathFixture(
-        time.address
-      ));
-      ({ factory, token } = await loadFixture(metaFixture));
+      ({ token } = await loadFixture(metaFixture));
       ({ aaveLendingPool } = await mockAaveLendingPoolFixture());
       await aaveLendingPool.setReserveNormalizedIncome(
         token.address,
         BigNumber.from(10).pow(27)
       );
-
-      ({ testRateOracle } = await rateOracleFixture(
-        fixedAndVariableMath.address,
-        time.address,
-        token.address,
-        aaveLendingPool.address,
-        factory.address
-      ));
-    });
-
-    it("checkOwnerPrivelege", async () => {
-      await expect(
-        factory
-          .connect(other)
-          .addRateOracle(RATE_ORACLE_ID, testRateOracle.address)
-      ).to.be.revertedWith("NOT_OWNER");
-    });
-
-    it("checkZeroBytes", async () => {
-      await expect(
-        factory.addRateOracle(ZERO_BYTES, testRateOracle.address)
-      ).to.be.revertedWith("ZERO_BYTES");
-    });
-
-    it("checkInvalidOracleID", async () => {
-      await expect(
-        factory.addRateOracle(INVALID_ORACLE_ID, testRateOracle.address)
-      ).to.be.revertedWith("INVALID_ID");
-    });
-
-    it("checkExistedID", async () => {
-      await expect(
-        factory.addRateOracle(RATE_ORACLE_ID, testRateOracle.address)
-      ).to.be.revertedWith("EXISTED_ID");
     });
   });
 });

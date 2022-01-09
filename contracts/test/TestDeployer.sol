@@ -8,7 +8,7 @@ contract TestDeployer is IDeployer {
     struct AMMParameters {
         address factory;
         address underlyingToken;
-        bytes32 rateOracleId;
+        address rateOracleAddress;
         uint256 termStartTimestamp;
         uint256 termEndTimestamp;
     }
@@ -65,14 +65,14 @@ contract TestDeployer is IDeployer {
     function deployAMM(
         address factory,
         address underlyingToken,
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
     ) external returns (address amm) {
         ammParameters = AMMParameters({
             factory: factory,
             underlyingToken: underlyingToken,
-            rateOracleId: rateOracleId,
+            rateOracleAddress: rateOracleAddress,
             termStartTimestamp: termStartTimestamp,
             termEndTimestamp: termEndTimestamp
         });
@@ -81,8 +81,8 @@ contract TestDeployer is IDeployer {
             new TestAMM{
                 salt: keccak256(
                     abi.encode(
-                        rateOracleId,
-                        underlyingToken, // redundunt since the rateOracleId incorporates the underlying token?
+                        rateOracleAddress,
+                        underlyingToken, // redundunt since the rateOracleAddress incorporates the underlying token?
                         termStartTimestamp,
                         termEndTimestamp
                     )

@@ -189,9 +189,9 @@ library FixedAndVariableMath {
             revert AmountSignsSame();
         }
 
-        console.log("CONTRACT: termEndTimestamp: ", termEndTimestamp);
-        console.log("CONTRACT: termStartTimestamp: ", termStartTimestamp);
-        console.log(termEndTimestamp > termStartTimestamp);
+        // console.log("CONTRACT: termEndTimestamp: ", termEndTimestamp);
+        // console.log("CONTRACT: termStartTimestamp: ", termStartTimestamp);
+        // console.log(termEndTimestamp > termStartTimestamp);
 
         require(termEndTimestamp > termStartTimestamp, "E<=S");
 

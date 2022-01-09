@@ -13,7 +13,7 @@ contract Deployer is IDeployer {
   struct AMMParameters {
     address factory;
     address underlyingToken;
-    bytes32 rateOracleId;
+    address rateOracleAddress;
     uint256 termStartTimestamp;
     uint256 termEndTimestamp;
   }
@@ -70,12 +70,12 @@ contract Deployer is IDeployer {
   /// clearing it after deploying the amm.
   /// @param factory The contract address of the Voltz factory
   /// @param underlyingToken The contract address of the token in the underlying pool
-  /// @param rateOracleId rate oracle id
+  /// @param rateOracleAddress rate oracle address
   /// @param termEndTimestamp Number of days between the inception of the pool and its maturity
   function deployAMM(
     address factory,
     address underlyingToken,
-    bytes32 rateOracleId,
+    address rateOracleAddress,
     uint256 termStartTimestamp,
     uint256 termEndTimestamp
   ) internal returns (address amm) {
@@ -83,7 +83,7 @@ contract Deployer is IDeployer {
     ammParameters = AMMParameters({
       factory: factory,
       underlyingToken: underlyingToken,
-      rateOracleId: rateOracleId,
+      rateOracleAddress: rateOracleAddress,
       termStartTimestamp: termStartTimestamp,
       termEndTimestamp: termEndTimestamp
     });
@@ -92,8 +92,8 @@ contract Deployer is IDeployer {
       new AMM{
         salt: keccak256(
           abi.encode(
-            rateOracleId,
-            underlyingToken, // redundunt since the rateOracleId incorporates the underlying token?
+            rateOracleAddress,
+            underlyingToken, // redundunt since the rateOracleAddress incorporates the underlying token?
             termStartTimestamp,
             termEndTimestamp
           )
