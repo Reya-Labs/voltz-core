@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
 import { div, sub, mul, add, sqrt, exp } from "../shared/functions";
-import { factoryFixture } from "../shared/fixtures";
+import { metaFixture } from "../shared/fixtures";
 import {
   expandTo18Decimals,
   accrualFact,
@@ -21,7 +21,6 @@ import {
   T_MAX,
   RATE_ORACLE_ID,
 } from "../shared/utilities";
-import { FixedAndVariableMath } from "../../typechain/FixedAndVariableMath";
 
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import { getCurrentTimestamp } from "../helpers/time";
@@ -531,41 +530,7 @@ describe("MarginCalculator", () => {
   // - Setup
 
   let wallet: Wallet, other: Wallet;
-  let calculatorTest: MarginCalculatorTest;
-
-  const fixture = async () => {
-    const timeFactory = await ethers.getContractFactory("Time");
-
-    const timeLibrary = await timeFactory.deploy();
-
-    const { factory } = await factoryFixture(timeLibrary.address);
-
-    const fixedAndVariableMathFactory = await ethers.getContractFactory(
-      "FixedAndVariableMath",
-      {
-        libraries: {
-          Time: timeLibrary.address,
-        },
-      }
-    );
-
-    const fixedAndVariableMath =
-      (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMath;
-
-    const marginCalculator = await ethers.getContractFactory(
-      "MarginCalculatorTest",
-      {
-        libraries: {
-          FixedAndVariableMath: fixedAndVariableMath.address,
-          Time: timeLibrary.address,
-        },
-      }
-    );
-
-    return (await marginCalculator.deploy(
-      factory.address
-    )) as MarginCalculatorTest;
-  };
+  let testMarginCalculator: MarginCalculatorTest;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
   before("create fixture loader", async () => {
@@ -576,11 +541,11 @@ describe("MarginCalculator", () => {
 
   describe("MarginCalculator Parameters", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
     });
 
     it("correctly sets the Margin Calculator Parameters", async () => {
-      await calculatorTest.setMarginCalculatorParametersTest(
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -596,7 +561,9 @@ describe("MarginCalculator", () => {
       );
 
       const marginCalculatorParameters =
-        await calculatorTest.getMarginCalculatorParametersTest(RATE_ORACLE_ID);
+        await testMarginCalculator.getMarginCalculatorParametersTest(
+          RATE_ORACLE_ID
+        );
       expect(marginCalculatorParameters[0]).to.eq(APY_UPPER_MULTIPLIER);
       expect(marginCalculatorParameters[1]).to.eq(APY_LOWER_MULTIPLIER);
       expect(marginCalculatorParameters[2]).to.eq(MIN_DELTA_LM);
@@ -613,8 +580,8 @@ describe("MarginCalculator", () => {
 
   describe("getMinimumMarginRequirement (zeroLowerBound boolean is true)", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -656,7 +623,7 @@ describe("MarginCalculator", () => {
           isLM
         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
       const realisedMinimumMarginRequirement: BigNumber =
-        await calculatorTest.getMinimumMarginRequirementTest(
+        await testMarginCalculator.getMinimumMarginRequirementTest(
           fixedTokenBalance,
           variableTokenBalance,
           termStartTimestampBN,
@@ -698,7 +665,7 @@ describe("MarginCalculator", () => {
           isLM
         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
       const realisedMinimumMarginRequirement: BigNumber =
-        await calculatorTest.getMinimumMarginRequirementTest(
+        await testMarginCalculator.getMinimumMarginRequirementTest(
           fixedTokenBalance,
           variableTokenBalance,
           termStartTimestampBN,
@@ -738,7 +705,7 @@ describe("MarginCalculator", () => {
           isLM
         ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
       const realisedMinimumMarginRequirement: BigNumber =
-        await calculatorTest.getMinimumMarginRequirementTest(
+        await testMarginCalculator.getMinimumMarginRequirementTest(
           fixedTokenBalance,
           variableTokenBalance,
           termStartTimestampBN,
@@ -755,8 +722,8 @@ describe("MarginCalculator", () => {
 
   describe("#computeTimeFactor", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -774,7 +741,7 @@ describe("MarginCalculator", () => {
 
     it("reverts if termEndTimestamp isn't > 0", async () => {
       await expect(
-        calculatorTest.computeTimeFactorTest(
+        testMarginCalculator.computeTimeFactorTest(
           RATE_ORACLE_ID,
           toBn("0"),
           toBn("1")
@@ -784,7 +751,7 @@ describe("MarginCalculator", () => {
 
     it("reverts if currentTimestamp is larger than termEndTimestamp", async () => {
       await expect(
-        calculatorTest.computeTimeFactorTest(
+        testMarginCalculator.computeTimeFactorTest(
           RATE_ORACLE_ID,
           toBn("1"),
           toBn("2")
@@ -794,7 +761,7 @@ describe("MarginCalculator", () => {
 
     it("reverts if given invalid rateOracleId", async () => {
       await expect(
-        calculatorTest.computeTimeFactorTest(
+        testMarginCalculator.computeTimeFactorTest(
           utils.formatBytes32String("unknownOracle"),
           toBn("0"),
           toBn("1")
@@ -815,7 +782,7 @@ describe("MarginCalculator", () => {
         toBn(currentTimestamp.toString())
       );
 
-      const realized = await calculatorTest.computeTimeFactorTest(
+      const realized = await testMarginCalculator.computeTimeFactorTest(
         RATE_ORACLE_ID,
         termEndTimestampScaled,
         toBn(currentTimestamp.toString())
@@ -827,8 +794,8 @@ describe("MarginCalculator", () => {
 
   describe("#computeApyBound", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -865,7 +832,7 @@ describe("MarginCalculator", () => {
       );
 
       expect(
-        await calculatorTest.computeApyBoundTest(
+        await testMarginCalculator.computeApyBoundTest(
           RATE_ORACLE_ID,
           termEndTimestampScaled,
           currentTimestampScaled,
@@ -895,7 +862,7 @@ describe("MarginCalculator", () => {
         isUpper
       );
       expect(
-        await calculatorTest.computeApyBoundTest(
+        await testMarginCalculator.computeApyBoundTest(
           RATE_ORACLE_ID,
           termEndTimestampScaled,
           currentTimestampScaled,
@@ -908,8 +875,8 @@ describe("MarginCalculator", () => {
 
   describe("#getTraderMarginRequirement", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -930,7 +897,7 @@ describe("MarginCalculator", () => {
       const variableTokenBalance: BigNumber = toBn("1000");
 
       expect(
-        await calculatorTest.getTraderMarginRequirementTest(
+        await testMarginCalculator.getTraderMarginRequirementTest(
           fixedTokenBalance,
           variableTokenBalance,
           toBn("0"),
@@ -945,8 +912,8 @@ describe("MarginCalculator", () => {
 
   describe("#worstCaseVariableFactorAtMaturity", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -986,7 +953,7 @@ describe("MarginCalculator", () => {
       );
 
       const realized =
-        await calculatorTest.worstCaseVariableFactorAtMaturityTest(
+        await testMarginCalculator.worstCaseVariableFactorAtMaturityTest(
           timeInSecondsFromStartToMaturityBN,
           termEndTimestampScaled,
           currentTimestampScaled,
@@ -1023,7 +990,7 @@ describe("MarginCalculator", () => {
       );
 
       const realized =
-        await calculatorTest.worstCaseVariableFactorAtMaturityTest(
+        await testMarginCalculator.worstCaseVariableFactorAtMaturityTest(
           timeInSecondsFromStartToMaturityBN,
           termEndTimestampScaled,
           currentTimestampScaled,
@@ -1061,7 +1028,7 @@ describe("MarginCalculator", () => {
       );
 
       const realized =
-        await calculatorTest.worstCaseVariableFactorAtMaturityTest(
+        await testMarginCalculator.worstCaseVariableFactorAtMaturityTest(
           timeInSecondsFromStartToMaturityBN,
           termEndTimestampScaled,
           currentTimestampScaled,
@@ -1098,7 +1065,7 @@ describe("MarginCalculator", () => {
       );
 
       const realized =
-        await calculatorTest.worstCaseVariableFactorAtMaturityTest(
+        await testMarginCalculator.worstCaseVariableFactorAtMaturityTest(
           timeInSecondsFromStartToMaturityBN,
           termEndTimestampScaled,
           currentTimestampScaled,
@@ -1115,8 +1082,8 @@ describe("MarginCalculator", () => {
 
   describe("#getTraderMarginRequirement", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -1149,15 +1116,16 @@ describe("MarginCalculator", () => {
       const isLM = false;
       const historicalApy = toBn("0.1");
 
-      const realized = await calculatorTest.getTraderMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        termStartTimestampScaled,
-        termEndTimestampScaled,
-        isLM,
-        RATE_ORACLE_ID,
-        historicalApy
-      );
+      const realized =
+        await testMarginCalculator.getTraderMarginRequirementTest(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampScaled,
+          termEndTimestampScaled,
+          isLM,
+          RATE_ORACLE_ID,
+          historicalApy
+        );
 
       const expected = getTraderMarginRequirement(
         fixedTokenBalance,
@@ -1190,15 +1158,16 @@ describe("MarginCalculator", () => {
       const isLM = false;
       const historicalApy = toBn("0.1");
 
-      const realized = await calculatorTest.getTraderMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        termStartTimestampScaled,
-        termEndTimestampScaled,
-        isLM,
-        RATE_ORACLE_ID,
-        historicalApy
-      );
+      const realized =
+        await testMarginCalculator.getTraderMarginRequirementTest(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampScaled,
+          termEndTimestampScaled,
+          isLM,
+          RATE_ORACLE_ID,
+          historicalApy
+        );
 
       const expected = getTraderMarginRequirement(
         fixedTokenBalance,
@@ -1231,15 +1200,16 @@ describe("MarginCalculator", () => {
       const isLM = true;
       const historicalApy = toBn("0.1");
 
-      const realized = await calculatorTest.getTraderMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        termStartTimestampScaled,
-        termEndTimestampScaled,
-        isLM,
-        RATE_ORACLE_ID,
-        historicalApy
-      );
+      const realized =
+        await testMarginCalculator.getTraderMarginRequirementTest(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampScaled,
+          termEndTimestampScaled,
+          isLM,
+          RATE_ORACLE_ID,
+          historicalApy
+        );
 
       const expected = getTraderMarginRequirement(
         fixedTokenBalance,
@@ -1272,15 +1242,16 @@ describe("MarginCalculator", () => {
       const isLM = false;
       const historicalApy = toBn("0.1");
 
-      const realized = await calculatorTest.getTraderMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        termStartTimestampScaled,
-        termEndTimestampScaled,
-        isLM,
-        RATE_ORACLE_ID,
-        historicalApy
-      );
+      const realized =
+        await testMarginCalculator.getTraderMarginRequirementTest(
+          fixedTokenBalance,
+          variableTokenBalance,
+          termStartTimestampScaled,
+          termEndTimestampScaled,
+          isLM,
+          RATE_ORACLE_ID,
+          historicalApy
+        );
 
       const expected = getTraderMarginRequirement(
         fixedTokenBalance,
@@ -1298,8 +1269,8 @@ describe("MarginCalculator", () => {
 
   describe("#positionMarginBetweenTicksHelper", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -1341,7 +1312,7 @@ describe("MarginCalculator", () => {
       const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
 
       const realized =
-        await calculatorTest.positionMarginBetweenTicksHelperTest(
+        await testMarginCalculator.positionMarginBetweenTicksHelperTest(
           tickLower,
           tickUpper,
           isLM,
@@ -1403,7 +1374,7 @@ describe("MarginCalculator", () => {
       const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
 
       const realized =
-        await calculatorTest.positionMarginBetweenTicksHelperTest(
+        await testMarginCalculator.positionMarginBetweenTicksHelperTest(
           tickLower,
           tickUpper,
           isLM,
@@ -1462,7 +1433,7 @@ describe("MarginCalculator", () => {
       const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
 
       const realized =
-        await calculatorTest.positionMarginBetweenTicksHelperTest(
+        await testMarginCalculator.positionMarginBetweenTicksHelperTest(
           tickLower,
           tickUpper,
           isLM,
@@ -1519,7 +1490,7 @@ describe("MarginCalculator", () => {
       const liquidityBN: BigNumber = expandTo18Decimals(1);
 
       await expect(
-        calculatorTest.positionMarginBetweenTicksHelperTest(
+        testMarginCalculator.positionMarginBetweenTicksHelperTest(
           tickLower,
           tickUpper,
           isLM,
@@ -1560,7 +1531,7 @@ describe("MarginCalculator", () => {
       const liquidityBN: BigNumber = expandTo18Decimals(1);
 
       await expect(
-        calculatorTest.positionMarginBetweenTicksHelperTest(
+        testMarginCalculator.positionMarginBetweenTicksHelperTest(
           tickLower,
           tickUpper,
           isLM,
@@ -1580,8 +1551,8 @@ describe("MarginCalculator", () => {
 
   describe("#getPositionMarginRequirement", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -1622,20 +1593,21 @@ describe("MarginCalculator", () => {
       const liquidityBN: BigNumber = expandTo18Decimals(1);
       const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
 
-      const realized = await calculatorTest.getPositionMarginRequirementTest(
-        tickLower,
-        tickUpper,
-        isLM,
-        currentTick,
-        termStartTimestampScaled,
-        termEndTimestampScaled,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        variableFactor,
-        RATE_ORACLE_ID,
-        historicalApy
-      );
+      const realized =
+        await testMarginCalculator.getPositionMarginRequirementTest(
+          tickLower,
+          tickUpper,
+          isLM,
+          currentTick,
+          termStartTimestampScaled,
+          termEndTimestampScaled,
+          liquidityBN,
+          fixedTokenBalance,
+          variableTokenBalance,
+          variableFactor,
+          RATE_ORACLE_ID,
+          historicalApy
+        );
 
       console.log("Realised is: ", realized.toString());
 
@@ -1662,8 +1634,8 @@ describe("MarginCalculator", () => {
 
   describe("#isLiquiisLiquidatableTrader", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -1695,7 +1667,7 @@ describe("MarginCalculator", () => {
       const historicalApy = toBn("0.1");
       const currentMargin = toBn("0.0");
 
-      const realized = await calculatorTest.isLiquidatableTraderTest(
+      const realized = await testMarginCalculator.isLiquidatableTraderTest(
         fixedTokenBalance,
         variableTokenBalance,
         termStartTimestamp,
@@ -1711,8 +1683,8 @@ describe("MarginCalculator", () => {
 
   describe("#isLiquiisLiquidatablePosition", async () => {
     beforeEach("deploy calculator", async () => {
-      calculatorTest = await loadFixture(fixture);
-      await calculatorTest.setMarginCalculatorParametersTest(
+      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      await testMarginCalculator.setMarginCalculatorParametersTest(
         RATE_ORACLE_ID,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
@@ -1751,7 +1723,7 @@ describe("MarginCalculator", () => {
       const liquidityBN: BigNumber = expandTo18Decimals(1);
       const currentMargin = toBn("0.0");
 
-      const realized = await calculatorTest.isLiquidatablePositionLMTest(
+      const realized = await testMarginCalculator.isLiquidatablePositionLMTest(
         tickLower,
         tickUpper,
         currentTick,

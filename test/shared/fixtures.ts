@@ -6,7 +6,11 @@ import { TestVAMMCallee } from "../../typechain/TestVAMMCallee";
 import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 import { TestDeployer } from "../../typechain/TestDeployer";
 import { BigNumber } from "@ethersproject/bignumber";
-import { ERC20Mock, FixedAndVariableMath } from "../../typechain";
+import {
+  ERC20Mock,
+  FixedAndVariableMath,
+  MarginCalculatorTest,
+} from "../../typechain";
 import { consts } from "../helpers/constants";
 import { ethers, waffle } from "hardhat";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
@@ -39,7 +43,7 @@ export async function marginCalculatorFixture(
   factoryAddress: string
 ) {
   const TestMarginCalculatorFactory = await ethers.getContractFactory(
-    "TestMarginCalculator",
+    "MarginCalculatorTest",
     {
       libraries: {
         FixedAndVariableMath: fixedAndVariableMathAddress,
@@ -161,11 +165,19 @@ export async function fixedAndVariableMathFixture(timeAddress: string) {
 }
 
 export async function factoryFixture(
-  timeAddress: string
+  timeAddress: string,
+  fixedAndVariableMathAddress: string,
+  tickAddress: string,
+  unwindTraderUnwindPositionAddress: string,
+  vammHelpersAddress: string
 ): Promise<FactoryFixture> {
   const factoryFactory = await ethers.getContractFactory("Factory", {
     libraries: {
       Time: timeAddress,
+      FixedAndVariableMath: fixedAndVariableMathAddress,
+      Tick: tickAddress,
+      UnwindTraderUnwindPosition: unwindTraderUnwindPositionAddress,
+      VAMMHelpers: vammHelpersAddress,
     },
   });
   const factory = (await factoryFactory.deploy()) as Factory;
@@ -186,15 +198,28 @@ interface MetaFixture {
   vammCalleeTest: TestVAMMCallee;
   marginEngineCalleeTest: TestMarginEngineCallee;
   token: ERC20Mock;
+  testMarginCalculator: MarginCalculatorTest;
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
   // create a mock token and mint some to our wallet
   const { token } = await mockERC20Fixture();
   const { time } = await timeFixture();
-  const { factory } = await factoryFixture(time.address);
+  const { tick } = await tickFixture();
+  const { unwindTraderUnwindPosition } =
+    await unwindTraderUnwinPositionFixture();
   const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
     time.address
+  );
+  const { vammHelpers } = await vammHelpersFixture(
+    fixedAndVariableMath.address
+  );
+  const { factory } = await factoryFixture(
+    time.address,
+    fixedAndVariableMath.address,
+    tick.address,
+    unwindTraderUnwindPosition.address,
+    vammHelpers.address
   );
 
   const { aaveLendingPool } = await mockAaveLendingPoolFixture();
@@ -238,13 +263,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termStartTimestampBN.toString()
   );
   console.log("Test: Term End Timestamp is: ", termEndTimestampBN.toString());
-
-  const { tick } = await tickFixture();
-  const { unwindTraderUnwindPosition } =
-    await unwindTraderUnwinPositionFixture();
-  const { vammHelpers } = await vammHelpersFixture(
-    fixedAndVariableMath.address
-  );
 
   const { testMarginCalculator } = await marginCalculatorFixture(
     fixedAndVariableMath.address,
@@ -388,5 +406,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     vammCalleeTest,
     marginEngineCalleeTest,
     token,
+    testMarginCalculator,
   };
 };
