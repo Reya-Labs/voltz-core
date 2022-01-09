@@ -31,7 +31,7 @@ contract AMM is IAMM {
 
   address public immutable override underlyingToken;
 
-  bytes32 public override rateOracleId;
+  address public override rateOracleAddress;
 
   uint256 public immutable override termStartTimestamp;
 
@@ -49,14 +49,10 @@ contract AMM is IAMM {
     (
       factory,
       underlyingToken,
-      rateOracleId,
+      rateOracleAddress,
       termStartTimestamp,
       termEndTimestamp
     ) = IDeployer(msg.sender).ammParameters();
-
-    address rateOracleAddress = IFactory(factory).getRateOracleAddress(
-      rateOracleId
-    );
 
     rateOracle = IRateOracle(rateOracleAddress);
 

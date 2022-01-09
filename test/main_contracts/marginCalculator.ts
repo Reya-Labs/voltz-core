@@ -1,4 +1,4 @@
-import { Wallet, BigNumber, utils } from "ethers";
+import { Wallet, BigNumber } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
@@ -19,7 +19,6 @@ import {
   XI_UPPER,
   XI_LOWER,
   T_MAX,
-  RATE_ORACLE_ID,
 } from "../shared/utilities";
 
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
@@ -31,6 +30,7 @@ import { consts } from "../helpers/constants";
 import { TickMath } from "../shared/tickMath";
 import { SqrtPriceMath } from "../shared/sqrtPriceMath";
 import JSBI from "jsbi";
+import { TestRateOracle } from "../../typechain/TestRateOracle";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
@@ -531,6 +531,7 @@ describe("MarginCalculator", () => {
 
   let wallet: Wallet, other: Wallet;
   let testMarginCalculator: MarginCalculatorTest;
+  let testRateOracle: TestRateOracle;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
   before("create fixture loader", async () => {
@@ -541,12 +542,14 @@ describe("MarginCalculator", () => {
 
   describe("MarginCalculator Parameters", async () => {
     beforeEach("deploy calculator", async () => {
-      ({ testMarginCalculator } = await loadFixture(metaFixture));
+      ({ testMarginCalculator, testRateOracle } = await loadFixture(
+        metaFixture
+      ));
     });
 
     it("correctly sets the Margin Calculator Parameters", async () => {
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -562,7 +565,7 @@ describe("MarginCalculator", () => {
 
       const marginCalculatorParameters =
         await testMarginCalculator.getMarginCalculatorParametersTest(
-          RATE_ORACLE_ID
+          testRateOracle.address
         );
       expect(marginCalculatorParameters[0]).to.eq(APY_UPPER_MULTIPLIER);
       expect(marginCalculatorParameters[1]).to.eq(APY_LOWER_MULTIPLIER);
@@ -582,7 +585,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -621,7 +624,7 @@ describe("MarginCalculator", () => {
           termStartTimestampBN,
           termEndTimestampBN,
           isLM
-        ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
+        ); // does not need the testRateOracle.address, can directly fetch the parameters represented as constants
       const realisedMinimumMarginRequirement: BigNumber =
         await testMarginCalculator.getMinimumMarginRequirementTest(
           fixedTokenBalance,
@@ -629,7 +632,7 @@ describe("MarginCalculator", () => {
           termStartTimestampBN,
           termEndTimestampBN,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
       // expect(realisedMinimumMarginRequirement).to.eq(expectedMinimumMarginRequirement);
@@ -663,7 +666,7 @@ describe("MarginCalculator", () => {
           termStartTimestampBN,
           termEndTimestampBN,
           isLM
-        ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
+        ); // does not need the testRateOracle.address, can directly fetch the parameters represented as constants
       const realisedMinimumMarginRequirement: BigNumber =
         await testMarginCalculator.getMinimumMarginRequirementTest(
           fixedTokenBalance,
@@ -671,7 +674,7 @@ describe("MarginCalculator", () => {
           termStartTimestampBN,
           termEndTimestampBN,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
       expect(realisedMinimumMarginRequirement).to.eq(
@@ -703,7 +706,7 @@ describe("MarginCalculator", () => {
           termStartTimestampBN,
           termEndTimestampBN,
           isLM
-        ); // does not need the RATE_ORACLE_ID, can directly fetch the parameters represented as constants
+        ); // does not need the testRateOracle.address, can directly fetch the parameters represented as constants
       const realisedMinimumMarginRequirement: BigNumber =
         await testMarginCalculator.getMinimumMarginRequirementTest(
           fixedTokenBalance,
@@ -711,7 +714,7 @@ describe("MarginCalculator", () => {
           termStartTimestampBN,
           termEndTimestampBN,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
       expect(realisedMinimumMarginRequirement).to.eq(
@@ -724,7 +727,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -742,7 +745,7 @@ describe("MarginCalculator", () => {
     it("reverts if termEndTimestamp isn't > 0", async () => {
       await expect(
         testMarginCalculator.computeTimeFactorTest(
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           toBn("0"),
           toBn("1")
         )
@@ -752,21 +755,11 @@ describe("MarginCalculator", () => {
     it("reverts if currentTimestamp is larger than termEndTimestamp", async () => {
       await expect(
         testMarginCalculator.computeTimeFactorTest(
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           toBn("1"),
           toBn("2")
         )
       ).to.be.revertedWith("endTime must be > currentTime");
-    });
-
-    it("reverts if given invalid rateOracleId", async () => {
-      await expect(
-        testMarginCalculator.computeTimeFactorTest(
-          utils.formatBytes32String("unknownOracle"),
-          toBn("0"),
-          toBn("1")
-        )
-      ).to.be.revertedWith("termEndTimestamp must be > 0");
     });
 
     it("correctly computes the time factor", async () => {
@@ -783,7 +776,7 @@ describe("MarginCalculator", () => {
       );
 
       const realized = await testMarginCalculator.computeTimeFactorTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         termEndTimestampScaled,
         toBn(currentTimestamp.toString())
       );
@@ -796,7 +789,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -833,7 +826,7 @@ describe("MarginCalculator", () => {
 
       expect(
         await testMarginCalculator.computeApyBoundTest(
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           termEndTimestampScaled,
           currentTimestampScaled,
           historicalApy,
@@ -863,7 +856,7 @@ describe("MarginCalculator", () => {
       );
       expect(
         await testMarginCalculator.computeApyBoundTest(
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           termEndTimestampScaled,
           currentTimestampScaled,
           historicalApy,
@@ -877,7 +870,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -903,7 +896,7 @@ describe("MarginCalculator", () => {
           toBn("0"),
           toBn("0"),
           false,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           toBn("0.1")
         )
       );
@@ -914,7 +907,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -959,7 +952,7 @@ describe("MarginCalculator", () => {
           currentTimestampScaled,
           isFT,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -996,7 +989,7 @@ describe("MarginCalculator", () => {
           currentTimestampScaled,
           isFT,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1034,7 +1027,7 @@ describe("MarginCalculator", () => {
           currentTimestampScaled,
           isFT,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1071,7 +1064,7 @@ describe("MarginCalculator", () => {
           currentTimestampScaled,
           isFT,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1084,7 +1077,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -1123,7 +1116,7 @@ describe("MarginCalculator", () => {
           termStartTimestampScaled,
           termEndTimestampScaled,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1165,7 +1158,7 @@ describe("MarginCalculator", () => {
           termStartTimestampScaled,
           termEndTimestampScaled,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1207,7 +1200,7 @@ describe("MarginCalculator", () => {
           termStartTimestampScaled,
           termEndTimestampScaled,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1249,7 +1242,7 @@ describe("MarginCalculator", () => {
           termStartTimestampScaled,
           termEndTimestampScaled,
           isLM,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1271,7 +1264,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -1323,7 +1316,7 @@ describe("MarginCalculator", () => {
           fixedTokenBalance,
           variableTokenBalance,
           variableFactor,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1385,7 +1378,7 @@ describe("MarginCalculator", () => {
           fixedTokenBalance,
           variableTokenBalance,
           variableFactor,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1444,7 +1437,7 @@ describe("MarginCalculator", () => {
           fixedTokenBalance,
           variableTokenBalance,
           variableFactor,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1501,7 +1494,7 @@ describe("MarginCalculator", () => {
           fixedTokenBalance,
           variableTokenBalance,
           variableFactor,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         )
       ).to.be.revertedWith("currentTick >= tickLower");
@@ -1542,7 +1535,7 @@ describe("MarginCalculator", () => {
           fixedTokenBalance,
           variableTokenBalance,
           variableFactor,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         )
       ).to.be.revertedWith("currentTick >= tickLower");
@@ -1553,7 +1546,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -1605,7 +1598,7 @@ describe("MarginCalculator", () => {
           fixedTokenBalance,
           variableTokenBalance,
           variableFactor,
-          RATE_ORACLE_ID,
+          testRateOracle.address,
           historicalApy
         );
 
@@ -1636,7 +1629,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -1673,7 +1666,7 @@ describe("MarginCalculator", () => {
         termStartTimestamp,
         termEndTimestampScaled,
         isLM,
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         historicalApy,
         currentMargin
       );
@@ -1685,7 +1678,7 @@ describe("MarginCalculator", () => {
     beforeEach("deploy calculator", async () => {
       ({ testMarginCalculator } = await loadFixture(metaFixture));
       await testMarginCalculator.setMarginCalculatorParametersTest(
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         APY_UPPER_MULTIPLIER,
         APY_LOWER_MULTIPLIER,
         MIN_DELTA_LM,
@@ -1733,7 +1726,7 @@ describe("MarginCalculator", () => {
         fixedTokenBalance,
         variableTokenBalance,
         variableFactor,
-        RATE_ORACLE_ID,
+        testRateOracle.address,
         historicalApy,
         currentMargin
       );

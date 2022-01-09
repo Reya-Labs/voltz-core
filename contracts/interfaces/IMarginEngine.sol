@@ -26,6 +26,19 @@ interface IMarginEngine is IPositionStructs {
         int24 tickUpper
     ) external view returns (Position.Info memory position);
 
+    /// @notice Gets the look-back window size that's used to request the historical APY from the rate Oracle
+    /// @dev The historical APY of the Rate Oracle is necessary for MarginEngine computations
+    /// @dev The look-back window is seconds from the current timestamp
+    /// @dev This value is only settable by the the Factory owner and may be unique for each MarginEngine
+    /// @dev When setting secondAgo, the setter needs to take into consideration the underlying volatility of the APYs in the reference yield-bearing pool (e.g. Aave v2 USDC)
+    /// @return secondsAgo in seconds
+    function secondsAgo() external view returns (uint256); // @audit suffix with Wad, and move this to MarginEngine so that it can be different for different IRS durations
+
+    /// @notice Sets secondsAgo: The look-back window size used to calculate the historical APY for margin purposes
+    /// @param _secondsAgo the duration of the lookback window in seconds
+    /// @dev Can only be set by the Factory Owner
+    function setSecondsAgo(uint256 _secondsAgo) external;
+
     /// @notice Returns the information about a trader by the trader's key
     /// @param key The wallet address of the trader
     /// @return margin Margin (in terms of the underlying tokens) in the trader's Voltz account

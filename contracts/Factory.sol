@@ -21,7 +21,7 @@ contract Factory is IFactory, Deployer {
   address public override owner;
 
   /// @inheritdoc IFactory
-  mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address))))
+  mapping(address => mapping(address => mapping(uint256 => mapping(uint256 => address))))
     public
     override getAMMMap;
   
@@ -30,9 +30,6 @@ contract Factory is IFactory, Deployer {
 
   /// @inheritdoc IFactory
   mapping(address => address) public override getMarginEngineMap;
-
-  /// @inheritdoc IFactory
-  mapping(bytes32 => address) public override getRateOracleAddress;
 
   /// @inheritdoc IFactory
   address public override calculator;
@@ -84,12 +81,12 @@ contract Factory is IFactory, Deployer {
   /// @inheritdoc IFactory
   function createAMM(
     address underlyingToken,
-    bytes32 rateOracleId,
+    address rateOracleAddress,
     uint256 termEndTimestamp
   ) external override onlyFactoryOwner returns (address amm) {
     uint256 termStartTimestamp = Time.blockTimestampScaled(); 
     require(
-      getAMMMap[rateOracleId][underlyingToken][termStartTimestamp][
+      getAMMMap[rateOracleAddress][underlyingToken][termStartTimestamp][
         termEndTimestamp
       ] == address(0),
       "EXISTED_AMM"
@@ -98,19 +95,19 @@ contract Factory is IFactory, Deployer {
     amm = deployAMM(
       address(this),
       underlyingToken,
-      rateOracleId,
+      rateOracleAddress,
       termStartTimestamp,
       termEndTimestamp
     );
 
-    getAMMMap[rateOracleId][underlyingToken][termStartTimestamp][
+    getAMMMap[rateOracleAddress][underlyingToken][termStartTimestamp][
       termEndTimestamp
     ] = amm;
 
     emit AMMCreated(
       amm,
       underlyingToken,
-      rateOracleId,
+      rateOracleAddress,
       termStartTimestamp,
       termEndTimestamp
     );
@@ -120,24 +117,5 @@ contract Factory is IFactory, Deployer {
   function setOwner(address _owner) external override onlyFactoryOwner {
     emit OwnerChanged(owner, _owner);
     owner = _owner;
-  }
-
-  /// @inheritdoc IFactory
-  function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress)
-    external
-    override
-    onlyFactoryOwner
-  {
-    require(_rateOracleId != bytes32(0), "ZERO_BYTES");
-    require(_rateOracleAddress != address(0), "ZERO_ADDRESS");
-    require(
-      _rateOracleId == IRateOracle(_rateOracleAddress).rateOracleId(),
-      "INVALID_ID"
-    );
-    require(getRateOracleAddress[_rateOracleId] == address(0), "EXISTED_ID");
-
-    emit RateOracleAdded(_rateOracleId, _rateOracleAddress);
-
-    getRateOracleAddress[_rateOracleId] = _rateOracleAddress;
   }
 }

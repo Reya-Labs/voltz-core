@@ -16,7 +16,7 @@ interface IAMMImmutables {
     // /// @return The underlying pool token address
     function underlyingToken() external view returns (address);
 
-    function rateOracleId() external view returns (bytes32);
+    function rateOracleAddress() external view returns (address);
 
     function termStartTimestamp() external view returns (uint256);
     function termEndTimestamp() external view returns (uint256);

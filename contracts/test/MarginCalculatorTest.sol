@@ -11,13 +11,13 @@ contract MarginCalculatorTest is MarginCalculator {
     // view functions
 
     function computeTimeFactorTest(
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 termEndTimestampScaled,
         uint256 currentTimestampScaled
     ) external view returns (int256 timeFactor) {
         return
             computeTimeFactor(
-                rateOracleId,
+                rateOracleAddress,
                 termEndTimestampScaled,
                 currentTimestampScaled
             );
@@ -59,7 +59,7 @@ contract MarginCalculatorTest is MarginCalculator {
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         uint256 variableFactor,
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 historicalApy
     ) external view returns (uint256 margin) {
         return
@@ -76,7 +76,7 @@ contract MarginCalculatorTest is MarginCalculator {
                     fixedTokenBalance: fixedTokenBalance,
                     variableTokenBalance: variableTokenBalance,
                     variableFactor: variableFactor,
-                    rateOracleId: rateOracleId,
+                    rateOracleAddress: rateOracleAddress,
                     historicalApy: historicalApy
                 })
             );
@@ -93,7 +93,7 @@ contract MarginCalculatorTest is MarginCalculator {
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         uint256 variableFactor,
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 historicalApy
     ) external view returns (uint256 margin) {
         return
@@ -110,7 +110,7 @@ contract MarginCalculatorTest is MarginCalculator {
                     fixedTokenBalance: fixedTokenBalance,
                     variableTokenBalance: variableTokenBalance,
                     variableFactor: variableFactor,
-                    rateOracleId: rateOracleId,
+                    rateOracleAddress: rateOracleAddress,
                     historicalApy: historicalApy
                 })
             );
@@ -122,7 +122,7 @@ contract MarginCalculatorTest is MarginCalculator {
         uint256 termStartTimestamp,
         uint256 termEndTimestamp,
         bool isLM,
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 historicalApy
     ) external view returns (uint256 margin) {
         return
@@ -133,7 +133,7 @@ contract MarginCalculatorTest is MarginCalculator {
                     termStartTimestamp: termStartTimestamp,
                     termEndTimestamp: termEndTimestamp,
                     isLM: isLM,
-                    rateOracleId: rateOracleId,
+                    rateOracleAddress: rateOracleAddress,
                     historicalApy: historicalApy
                 })
             );
@@ -145,7 +145,7 @@ contract MarginCalculatorTest is MarginCalculator {
         uint256 currentTimestampScaled,
         bool isFT,
         bool isLM,
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 historicalApy
     ) external view returns (uint256 variableFactor) {
         return
@@ -155,12 +155,12 @@ contract MarginCalculatorTest is MarginCalculator {
                 currentTimestampScaled,
                 isFT,
                 isLM,
-                rateOracleId,
+                rateOracleAddress,
                 historicalApy
             );
     }
 
-    function getMarginCalculatorParametersTest(bytes32 rateOracleId)
+    function getMarginCalculatorParametersTest(address rateOracleAddress)
         external
         view
         returns (
@@ -179,7 +179,7 @@ contract MarginCalculatorTest is MarginCalculator {
     {
         MarginCalculatorParameters
             memory marginCalculatorParameters = getMarginCalculatorParameters[
-                rateOracleId
+                rateOracleAddress
             ];
 
         apyUpperMultiplier = marginCalculatorParameters.apyUpperMultiplier;
@@ -201,7 +201,7 @@ contract MarginCalculatorTest is MarginCalculator {
         uint256 termStartTimestamp,
         uint256 termEndTimestamp,
         bool isLM,
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 historicalApy
     ) external view returns (uint256 margin) {
         return
@@ -212,14 +212,14 @@ contract MarginCalculatorTest is MarginCalculator {
                     termStartTimestamp: termStartTimestamp,
                     termEndTimestamp: termEndTimestamp,
                     isLM: isLM,
-                    rateOracleId: rateOracleId,
+                    rateOracleAddress: rateOracleAddress,
                     historicalApy: historicalApy
                 })
             );
     }
 
     function computeApyBoundTest(
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 termEndTimestampScaled,
         uint256 currentTimestampScaled,
         uint256 historicalApy,
@@ -227,7 +227,7 @@ contract MarginCalculatorTest is MarginCalculator {
     ) external view returns (uint256 apyBound) {
         return
             computeApyBound(
-                rateOracleId,
+                rateOracleAddress,
                 termEndTimestampScaled,
                 currentTimestampScaled,
                 historicalApy,
@@ -236,7 +236,7 @@ contract MarginCalculatorTest is MarginCalculator {
     }
 
     function setMarginCalculatorParametersTest(
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 apyUpperMultiplier,
         uint256 apyLowerMultiplier,
         uint256 minDeltaLM,
@@ -263,7 +263,7 @@ contract MarginCalculatorTest is MarginCalculator {
                 xiLower,
                 tMax
             ),
-            rateOracleId
+            rateOracleAddress
         );
     }
 
@@ -273,7 +273,7 @@ contract MarginCalculatorTest is MarginCalculator {
         uint256 termStartTimestamp,
         uint256 termEndTimestamp,
         bool isLM,
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 historicalApy,
         int256 currentMargin
     ) external view returns (bool) {
@@ -285,7 +285,7 @@ contract MarginCalculatorTest is MarginCalculator {
                     termStartTimestamp: termStartTimestamp,
                     termEndTimestamp: termEndTimestamp,
                     isLM: isLM,
-                    rateOracleId: rateOracleId,
+                    rateOracleAddress: rateOracleAddress,
                     historicalApy: historicalApy
                 }),
                 currentMargin
@@ -303,7 +303,7 @@ contract MarginCalculatorTest is MarginCalculator {
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         uint256 variableFactor,
-        bytes32 rateOracleId,
+        address rateOracleAddress,
         uint256 historicalApy,
         int256 currentMargin
     ) external view returns (bool) {
@@ -321,7 +321,7 @@ contract MarginCalculatorTest is MarginCalculator {
                     fixedTokenBalance: fixedTokenBalance,
                     variableTokenBalance: variableTokenBalance,
                     variableFactor: variableFactor,
-                    rateOracleId: rateOracleId,
+                    rateOracleAddress: rateOracleAddress,
                     historicalApy: historicalApy
                 }),
                 currentMargin
