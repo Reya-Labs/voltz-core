@@ -173,6 +173,7 @@ contract AMM is IAMM {
     onlyFactoryOwner
     returns (uint256 amount)
   {
+  /// @audit: amount not set
     if (amount > 0) {
       vamm.updateProtocolFees(amount);
       IERC20Minimal(underlyingToken).transfer(
