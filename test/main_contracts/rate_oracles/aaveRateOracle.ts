@@ -458,13 +458,10 @@ describe("Aave Rate Oracle", () => {
       );
       const expectedApy = computeApyFromRate(toBn("0.1"), toBn("0.5"));
       expect(realizedApy).to.be.closeTo(expectedApy, 100);
-    })
-
-  })
-
+    });
+  });
 
   describe("#variableFactor", async () => {
-
     let testRateOracle: TestRateOracle;
     let aaveLendingPoolContract: Contract;
     let underlyingTokenAddress: string;
@@ -472,132 +469,144 @@ describe("Aave Rate Oracle", () => {
     let firstTimestamp: number;
     let secondTimestamp: number;
 
-
-    beforeEach('deploy and initialize test oracle', async () => {
+    beforeEach("deploy and initialize test oracle", async () => {
       testRateOracle = await loadFixture(initializedOracleFixture);
 
       const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
       underlyingTokenAddress = await testRateOracle.underlying();
       const aaveLendingPoolAbi = [
         "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
-        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public"
-      ]
-      aaveLendingPoolContract = new Contract(aaveLendingPoolAddress, aaveLendingPoolAbi, provider).connect(wallet);
+        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
+      ];
+      aaveLendingPoolContract = new Contract(
+        aaveLendingPoolAddress,
+        aaveLendingPoolAbi,
+        provider
+      ).connect(wallet);
 
       await testRateOracle.testGrow(10);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-      firstTimestamp = await getCurrentTimestamp(provider) + 1;
+      firstTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testRateOracle.update();
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // set new liquidity index value
-      await aaveLendingPoolContract.setReserveNormalizedIncome(underlyingTokenAddress, toBn("1.1"));
-      secondTimestamp = await getCurrentTimestamp(provider) + 1;
+      await aaveLendingPoolContract.setReserveNormalizedIncome(
+        underlyingTokenAddress,
+        toBn("1.1")
+      );
+      secondTimestamp = (await getCurrentTimestamp(provider)) + 1;
+      await testRateOracle.update();
+    });
+
+    it("calculate variable factor at maturity", async () => {
+      const termStartTimestampBN = toBn(firstTimestamp.toString());
+      const termEndTimestampBN = toBn(secondTimestamp.toString());
+      await testRateOracle.testVariableFactor(
+        termStartTimestampBN,
+        termEndTimestampBN
+      );
+      const expectedVariableFactor = toBn("0.1");
+      const realizedVariableFactor =
+        await testRateOracle.latestVariableFactor();
+      expect(realizedVariableFactor).to.eq(expectedVariableFactor);
+    });
+
+    it("calculate variable factor after maturity", async () => {
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      const termStartTimestampBN = toBn(firstTimestamp.toString());
+      const termEndTimestampBN = toBn(secondTimestamp.toString());
+      await testRateOracle.testVariableFactor(
+        termStartTimestampBN,
+        termEndTimestampBN
+      );
+      const expectedVariableFactor = toBn("0.1");
+      const realizedVariableFactor =
+        await testRateOracle.latestVariableFactor();
+      expect(realizedVariableFactor).to.eq(expectedVariableFactor);
+    });
+
+    it("calculates variable factor before maturity", async () => {
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      await aaveLendingPoolContract.setReserveNormalizedIncome(
+        underlyingTokenAddress,
+        toBn("1.2")
+      );
+
+      const termStartTimestampBN = toBn(firstTimestamp.toString());
+      const termEndTimestampBN = toBn((secondTimestamp + 604800).toString());
+
+      await testRateOracle.testVariableFactor(
+        termStartTimestampBN,
+        termEndTimestampBN
+      );
+
+      const expectedVariableFactor = toBn("0.2");
+      const realizedVariableFactor =
+        await testRateOracle.latestVariableFactor();
+      expect(realizedVariableFactor).to.eq(expectedVariableFactor);
+    });
+
+    it("reverts if termStartTimestamp is too old", async () => {
+      const termStartTimestampBN = toBn((firstTimestamp - 1).toString());
+      const termEndTimestampBN = toBn((secondTimestamp + 604800).toString());
+
+      await expect(
+        testRateOracle.testVariableFactor(
+          termStartTimestampBN,
+          termEndTimestampBN
+        )
+      ).to.be.reverted;
+    });
+  });
+
+  describe("#getHistoricalApy", async () => {
+    let testRateOracle: TestRateOracle;
+    let aaveLendingPoolContract: Contract;
+    let underlyingTokenAddress: string;
+
+    let firstTimestamp: number;
+    let secondTimestamp: number;
+
+    beforeEach("deploy and initialize test oracle", async () => {
+      testRateOracle = await loadFixture(initializedOracleFixture);
+
+      const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
+      underlyingTokenAddress = await testRateOracle.underlying();
+      const aaveLendingPoolAbi = [
+        "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
+      ];
+      aaveLendingPoolContract = new Contract(
+        aaveLendingPoolAddress,
+        aaveLendingPoolAbi,
+        provider
+      ).connect(wallet);
+
+      await testRateOracle.testGrow(10);
+
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      firstTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testRateOracle.update();
 
-  })
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      // set new liquidity index value
+      await aaveLendingPoolContract.setReserveNormalizedIncome(
+        underlyingTokenAddress,
+        toBn("1.1")
+      );
+      secondTimestamp = (await getCurrentTimestamp(provider)) + 1;
+      await testRateOracle.update();
+    });
 
-  it("calculate variable factor at maturity", async () => {
-    const termStartTimestampBN = toBn(firstTimestamp.toString());
-    const termEndTimestampBN = toBn(secondTimestamp.toString());
-    await testRateOracle.testVariableFactor(termStartTimestampBN, termEndTimestampBN);
-    const expectedVariableFactor = toBn("0.1");
-    const realizedVariableFactor = await testRateOracle.latestVariableFactor();
-    expect(realizedVariableFactor).to.eq(expectedVariableFactor);
-  })
+    // todo: Error: VM Exception while processing transaction: reverted with reason string '50' (needs to be fixed)
+    // it("correctly computes historical apy", async () => {
+    //   // await testRateOracle.setSecondsAgo("86400"); // one day
+    //   await testRateOracle.testGetHistoricalApy();
+    //   const realizedHistoricalApy = await testRateOracle.latestHistoricalApy();
+    //   expect(realizedHistoricalApy).to.eq(0);
 
-  it("calculate variable factor after maturity", async () => {
-    await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-    const termStartTimestampBN = toBn(firstTimestamp.toString());
-    const termEndTimestampBN = toBn(secondTimestamp.toString());
-    await testRateOracle.testVariableFactor(termStartTimestampBN, termEndTimestampBN);
-    const expectedVariableFactor = toBn("0.1");
-    const realizedVariableFactor = await testRateOracle.latestVariableFactor();
-    expect(realizedVariableFactor).to.eq(expectedVariableFactor);
-  })
-
-  it("calculates variable factor before maturity", async () => {
-
-    await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-    await aaveLendingPoolContract.setReserveNormalizedIncome(underlyingTokenAddress, toBn("1.2"));
-
-
-    const termStartTimestampBN = toBn(firstTimestamp.toString());
-    const termEndTimestampBN = toBn((secondTimestamp+604800).toString());
-
-    await testRateOracle.testVariableFactor(termStartTimestampBN, termEndTimestampBN);
-
-    const expectedVariableFactor = toBn("0.2");
-    const realizedVariableFactor = await testRateOracle.latestVariableFactor();
-    expect(realizedVariableFactor).to.eq(expectedVariableFactor);
-
-  })
-
-  it("reverts if termStartTimestamp is too old", async () => {
-    const termStartTimestampBN = toBn((firstTimestamp-1).toString());
-    const termEndTimestampBN = toBn((secondTimestamp+604800).toString());
-
-    await expect(testRateOracle.testVariableFactor(termStartTimestampBN, termEndTimestampBN)).to.be.reverted;
-  })
-
-})
-
-
-
-
-describe("#getHistoricalApy", async () => {
-
-  let testRateOracle: TestRateOracle;
-  let aaveLendingPoolContract: Contract;
-  let underlyingTokenAddress: string;
-
-  let firstTimestamp: number;
-  let secondTimestamp: number;
-
-
-  beforeEach('deploy and initialize test oracle', async () => {
-    testRateOracle = await loadFixture(initializedOracleFixture);
-
-    const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
-    underlyingTokenAddress = await testRateOracle.underlying();
-    const aaveLendingPoolAbi = [
-      "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
-      "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public"
-    ]
-    aaveLendingPoolContract = new Contract(aaveLendingPoolAddress, aaveLendingPoolAbi, provider).connect(wallet);
-
-    await testRateOracle.testGrow(10);
-
-    await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-    firstTimestamp = await getCurrentTimestamp(provider) + 1;
-    await testRateOracle.update();
-
-    await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-    // set new liquidity index value
-    await aaveLendingPoolContract.setReserveNormalizedIncome(underlyingTokenAddress, toBn("1.1"));
-    secondTimestamp = await getCurrentTimestamp(provider) + 1;
-    await testRateOracle.update();
-
-  })
-
-
-  // todo: Error: VM Exception while processing transaction: reverted with reason string '50' (needs to be fixed)
-  // it("correctly computes historical apy", async () => {
-  //   // await testRateOracle.setSecondsAgo("86400"); // one day
-  //   await testRateOracle.testGetHistoricalApy();
-  //   const realizedHistoricalApy = await testRateOracle.latestHistoricalApy();
-  //   expect(realizedHistoricalApy).to.eq(0);
-
-  // })
-
-})
-
-})
-
-
-
-
-
-
-
+    // })
+  });
+});
