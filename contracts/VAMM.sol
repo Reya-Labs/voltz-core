@@ -69,8 +69,10 @@ contract VAMM is IVAMM, Pausable {
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
     uint256 currentTimestamp = Time.blockTimestampScaled(); 
+    /// @audit shouldn't the error be "amm has reached maturity"?
     require(currentTimestamp < amm.termEndTimestamp(), "amm hasn't reached maturity");
     uint256 timeDelta = amm.termEndTimestamp() - currentTimestamp;
+    /// @audit shouldn't the error be "amm must be 1 day before maturity"?
     require(timeDelta > SECONDS_IN_DAY_WAD, "amm must be 1 day past maturity");
     _;
   }

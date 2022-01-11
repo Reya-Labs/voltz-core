@@ -2,7 +2,7 @@ import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { TestVAMM } from "../../typechain/TestVAMM";
 import { expect } from "../shared/expect";
-import { metaFixture } from "../shared/fixtures";
+import { metaFixture, timeFixture } from "../shared/fixtures";
 import { TestVAMMCallee } from "../../typechain/TestVAMMCallee";
 import {
   getMaxTick,
@@ -12,11 +12,25 @@ import {
   MIN_SQRT_RATIO,
   encodeSqrtRatioX96,
   getGrowthInside,
+  RATE_ORACLE_ID,
+  getMaxLiquidityPerTick,
 } from "../shared/utilities";
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { TestAMM } from "../../typechain/TestAMM";
-import { ERC20Mock } from "../../typechain";
+import { ERC20Mock, Factory, Time } from "../../typechain";
+import { time } from "console";
+import {
+  advanceTime,
+  advanceTimeAndBlock,
+  getCurrentTimestamp,
+  mineBlock,
+} from "../helpers/time";
+import { consts } from "../helpers/constants";
+import { sub } from "../shared/functions";
+import { LargeNumberLike } from "crypto";
+
+const { provider } = waffle;
 
 const createFixtureLoader = waffle.createFixtureLoader;
 // type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
@@ -25,6 +39,7 @@ describe("VAMM", () => {
   let wallet: Wallet, other: Wallet;
   let ammTest: TestAMM;
   let vammTest: TestVAMM;
+  let factory: Factory;
   let marginEngineTest: TestMarginEngine;
   let vammCalleeTest: TestVAMMCallee;
   let token: ERC20Mock;
@@ -41,7 +56,7 @@ describe("VAMM", () => {
   });
 
   beforeEach("deploy fixture", async () => {
-    ({ ammTest, vammTest, marginEngineTest, vammCalleeTest, token } =
+    ({ ammTest, vammTest, marginEngineTest, vammCalleeTest, token, factory } =
       await loadFixture(metaFixture));
 
     minTick = getMinTick(TICK_SPACING);
@@ -352,4 +367,142 @@ describe("VAMM", () => {
       });
     });
   });
+
+  describe("#checkCurrentTimestampTermEndTimestampDelta", () => {
+    it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
+      advanceTimeAndBlock(
+        sub(sub(consts.ONE_WEEK, consts.ONE_DAY), consts.ONE_DAY),
+        1
+      );
+      await expect(vammTest.checkMaturityDuration()).to.not.be.reverted;
+    });
+
+    it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
+      advanceTimeAndBlock(sub(consts.ONE_WEEK, consts.ONE_DAY), 1);
+      await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
+        "amm must be 1 day past maturity"
+      );
+    });
+
+    it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
+      advanceTimeAndBlock(consts.ONE_WEEK, 1);
+      await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
+        "amm hasn't reached maturity"
+      );
+    });
+  });
+
+  describe("#checkSetAMM", () => {
+    it("check setAMM", async () => {
+      const termStartTimestamp = await getCurrentTimestamp(provider);
+      const termEndTimestamp = termStartTimestamp + consts.ONE_WEEK.toNumber();
+      const termEndTimestampBN = toBn(termEndTimestamp.toString());
+      const tx_amm = await factory.createAMM(
+        token.address,
+        RATE_ORACLE_ID,
+        termEndTimestampBN
+      );
+      const receipt_amm = await tx_amm.wait();
+      const ammAddress = receipt_amm.events?.[0].args?.ammAddress as string;
+
+      expect(await vammTest.getAMMAddress()).to.not.be.equal(ammAddress);
+      await expect(vammTest.setAMM(ammAddress)).to.not.be.reverted;
+      expect(await vammTest.getAMMAddress()).to.be.equal(ammAddress);
+    });
+  });
+
+  describe("#updateProtocolFees", () => {
+    it("check AMM privilege ", async () => {
+      await expect(vammTest.updateProtocolFees(toBn("1"))).to.be.revertedWith(
+        "only AMM"
+      );
+    });
+
+    it("check not enough Protocol Fees", async () => {
+      await vammTest.initialize(encodeSqrtRatioX96(1, 10).toString());
+      await vammTest.setTestProtocolFees(toBn("3"));
+      expect(await vammTest.protocolFees()).to.be.equal(toBn("3"));
+      await expect(ammTest.redirectVAMMUpdateProtocolFees(toBn("4"))).to.be.reverted;
+    });
+
+    it("check updateProtocolFees", async () => {
+      await vammTest.initialize(encodeSqrtRatioX96(1, 10).toString());
+      await vammTest.setTestProtocolFees(toBn("5"));
+      expect(await vammTest.protocolFees()).to.be.equal(toBn("5"));
+      await expect(ammTest.redirectVAMMUpdateProtocolFees(toBn("4"))).to.not.be
+        .reverted;
+      expect(await vammTest.protocolFees()).to.be.equal(toBn("1"));
+    });
+  });
+
+  describe("#setFeeProtocol", () => {
+    it("check owner privilege ", async () => {
+      await expect(vammTest.connect(other).setFeeProtocol(toBn("0.03"))).to.be.revertedWith(
+        "only factory owner"
+      );
+    });
+
+    it("check setFeeProtocol", async () => {
+      await vammTest.initialize(encodeSqrtRatioX96(1, 10).toString());
+      expect((await vammTest.vammVars()).feeProtocol).to.be.equal(toBn("0"));
+      await expect(vammTest.setFeeProtocol(toBn("0.03"))).to.not.be.reverted;
+      expect((await vammTest.vammVars()).feeProtocol).to.be.equal(toBn("0.03"));
+    });
+  });
+
+  describe("#setTickSpacing", () => {
+
+    it("check owner privilege ", async () => {
+      await expect(vammTest.connect(other).setTickSpacing(100)).to.be.revertedWith(
+        "only factory owner"
+      );
+    });
+
+    it("check setTickSpacing", async () => {
+      expect(await vammTest.tickSpacing()).to.be.equal(TICK_SPACING);
+      await expect(vammTest.setTickSpacing(100)).to.not.be.reverted;
+      expect(await vammTest.tickSpacing()).to.be.equal(100);
+    });
+  });
+
+  describe("#setMaxLiquidityPerTick", () => {
+
+    it("check owner privilege ", async () => {
+      await expect(vammTest.connect(other).setMaxLiquidityPerTick(getMaxLiquidityPerTick(100))).to.be.revertedWith(
+        "only factory owner"
+      );
+    });
+
+    it("check setMaxLiquidityPerTick", async () => {
+      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(getMaxLiquidityPerTick(TICK_SPACING));
+      await expect(vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100))).to.not.be.reverted;
+      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(getMaxLiquidityPerTick(100));
+    });
+  });
+
+  describe("#setFee", () => {
+
+    it("check owner privilege ", async () => {
+      await expect(vammTest.connect(other).setFee(toBn("0.05"))).to.be.revertedWith(
+        "only factory owner"
+      );
+    });
+
+    it("check setTickSpacing", async () => {
+      expect(await vammTest.fee()).to.be.equal(toBn("0.03"));
+      await expect(vammTest.setFee(toBn("0.05"))).to.not.be.reverted;
+      expect(await vammTest.fee()).to.be.equal(toBn("0.05"));
+    });
+  });
+
+  // TODO: check after testing updatePosition() and MarginEngine.unwindPosition()
+  // describe("#burn", () => {
+  //   it("check burn", async () => {
+  //     await vammTest.initialize(encodeSqrtRatioX96(1, 10).toString());
+  //     await vammTest.burn(0, 2, toBn("10"));
+  //   });
+  // });
+
+  
+
 });

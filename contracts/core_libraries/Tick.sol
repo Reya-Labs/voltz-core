@@ -64,6 +64,7 @@ library Tick {
             feeGrowthAbove = feeGrowthGlobal - upper.feeGrowthOutside;
         }
 
+        /// @dev can't this value be negative? (at this moment it's uint256)
         feeGrowthInside = feeGrowthGlobal - (feeGrowthBelow + feeGrowthAbove);
     }
 
@@ -194,6 +195,8 @@ library Tick {
 
             info.initialized = true;
         }
+
+        /// @audit shouldn't we unintialize the tick if liquidityGrossAfter = 0?
 
         info.liquidityGross = liquidityGrossAfter;
 

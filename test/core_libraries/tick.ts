@@ -8,6 +8,8 @@ import { ethers } from "hardhat";
 import { TickTest } from "../../typechain/TickTest";
 import { expect } from "../shared/expect";
 import { toBn } from "evm-bn";
+import { TickMath } from "../shared/tickMath";
+import { MAX_TICK, MIN_TICK, TICK_SPACING } from "../shared/utilities";
 
 describe("Tick", () => {
   let tickTest: TickTest;
@@ -28,14 +30,17 @@ describe("Tick", () => {
   // Needs Test cases
   describe("#checkTicks", () => {
     it("returns checks of both ticks", async () => {
-      expect(tickTest.checkTicks(3, 2)).to.be.revertedWith("TLU");
+      await expect(tickTest.checkTicks(TickMath.MIN_TICK - 1, 3)).to.be.revertedWith("TLM");
+      await expect(tickTest.checkTicks(2, TickMath.MAX_TICK + 1)).to.be.revertedWith("TUM");
+      await expect(tickTest.checkTicks(3, 2)).to.be.revertedWith("TLU");
+      await expect(tickTest.checkTicks(2, 3)).to.not.be.revertedWith
     });
   });
 
-  // Needs Test cases
+
   // getFeeGrowthInside
   describe("#getFeeGrowthInside", () => {
-    it("returns all for two unitialised ticks if tick inside", async () => {
+    beforeEach("initialize some ticks", async() => {
       await tickTest.setTick(2, {
         liquidityGross: 3,
         liquidityNet: 4,
@@ -44,9 +49,37 @@ describe("Tick", () => {
         feeGrowthOutside: toBn("10"),
         initialized: true,
       });
-      const feeGrowthInside = await tickTest.getFeeGrowthIntside(0, 0, 0, 0);
+      await tickTest.setTick(4, {
+        liquidityGross: 6,
+        liquidityNet: 8,
+        fixedTokenGrowthOutside: toBn("200"),
+        variableTokenGrowthOutside: toBn("-200"),
+        feeGrowthOutside: toBn("20"),
+        initialized: true,
+      });
+    });
+
+    it("two unitialized ticks", async () => {
+      const feeGrowthInside = await tickTest.getFeeGrowthInside(0, 0, 0, 0);
       expect(feeGrowthInside).to.eq(0);
     });
+
+    it("between two initialized ticks", async () => {
+      const feeGrowthInside = await tickTest.getFeeGrowthInside(2, 4, 3, toBn("50"));
+      expect(feeGrowthInside).to.equal(toBn("20"));
+    });
+
+    it("after two initialized ticks", async () => {
+      const feeGrowthInside = await tickTest.getFeeGrowthInside(2, 4, 6, toBn("50"));
+      expect(feeGrowthInside).to.equal(toBn("10"));
+    });
+
+    // TODO: re-check this test after resolving Tick.sol:67
+    // it("before two initialized ticks", async () => {
+    //   const feeGrowthInside = await tickTest.getFeeGrowthInside(2, 4, 0, toBn("50"));
+    //   console.log(feeGrowthInside.toBigInt().toString());
+    //   expect(feeGrowthInside).to.equal(toBn("-10"));
+    // });
   });
 
   // AB get back to this
@@ -60,9 +93,8 @@ describe("Tick", () => {
   //     })
   // })
 
-  // Needs Test cases
   describe("#getVariableTokenGrowthInside", () => {
-    it("test for variable token growth", async () => {
+    beforeEach("initialize some ticks", async() => {
       await tickTest.setTick(2, {
         liquidityGross: 3,
         liquidityNet: 4,
@@ -71,15 +103,43 @@ describe("Tick", () => {
         feeGrowthOutside: toBn("10"),
         initialized: true,
       });
+      await tickTest.setTick(4, {
+        liquidityGross: 6,
+        liquidityNet: 8,
+        fixedTokenGrowthOutside: toBn("200"),
+        variableTokenGrowthOutside: toBn("-200"),
+        feeGrowthOutside: toBn("20"),
+        initialized: true,
+      });
+    });
+
+    it("two unitialized ticks", async () => {
       const variableTokenGrowthInside =
         await tickTest.getVariableTokenGrowthInside(0, 0, 0, 0);
       expect(variableTokenGrowthInside).to.eq(0);
     });
+
+    it("between two initialized ticks", async () => {
+      const variableTokenGrowthInside =
+        await tickTest.getVariableTokenGrowthInside(2, 4, 3, toBn("300"));
+      expect(variableTokenGrowthInside).to.eq(toBn("600"));
+    });
+
+    it("after two initialized ticks", async () => {
+      const variableTokenGrowthInside =
+        await tickTest.getVariableTokenGrowthInside(2, 4, 6, toBn("300"));
+      expect(variableTokenGrowthInside).to.eq(toBn("-100"));
+    });
+
+    it("before two initialized ticks", async () => {
+      const variableTokenGrowthInside =
+        await tickTest.getVariableTokenGrowthInside(2, 4, 0, toBn("300"));
+      expect(variableTokenGrowthInside).to.eq(toBn("100"));
+    });
   });
 
-  // Needs Test cases
   describe("#getFixedTokenGrowthInside", () => {
-    it("test for fixed token growth", async () => {
+    beforeEach("initialize some ticks", async() => {
       await tickTest.setTick(2, {
         liquidityGross: 3,
         liquidityNet: 4,
@@ -88,17 +148,41 @@ describe("Tick", () => {
         feeGrowthOutside: toBn("10"),
         initialized: true,
       });
-      const fixedTokenGrowthInside = await tickTest.getFixedTokenGrowthInside(
-        0,
-        0,
-        0,
-        0
-      );
+      await tickTest.setTick(4, {
+        liquidityGross: 6,
+        liquidityNet: 8,
+        fixedTokenGrowthOutside: toBn("200"),
+        variableTokenGrowthOutside: toBn("-200"),
+        feeGrowthOutside: toBn("20"),
+        initialized: true,
+      });
+    });
+
+    it("two unitialized ticks", async () => {
+      const fixedTokenGrowthInside =
+        await tickTest.getFixedTokenGrowthInside(0, 0, 0, 0);
       expect(fixedTokenGrowthInside).to.eq(0);
+    });
+
+    it("between two initialized ticks", async () => {
+      const fixedTokenGrowthInside =
+        await tickTest.getFixedTokenGrowthInside(2, 4, 3, toBn("300"));
+      expect(fixedTokenGrowthInside).to.eq(toBn("0"));
+    });
+
+    it("after two initialized ticks", async () => {
+      const fixedTokenGrowthInside =
+        await tickTest.getFixedTokenGrowthInside(2, 4, 6, toBn("300"));
+      expect(fixedTokenGrowthInside).to.eq(toBn("100"));
+    });
+
+    it("before two initialized ticks", async () => {
+      const fixedTokenGrowthInside =
+        await tickTest.getFixedTokenGrowthInside(2, 4, 0, toBn("300"));
+      expect(fixedTokenGrowthInside).to.eq(toBn("-100"));
     });
   });
 
-  // Needs Test cases
   describe("#cross", () => {
     it("flips the growth variables", async () => {
       await tickTest.setTick(2, {
@@ -112,21 +196,42 @@ describe("Tick", () => {
 
       await tickTest.cross(2, toBn("1000"), toBn("-2000"), toBn("10"));
 
-      const { liquidityGross, liquidityNet } = await tickTest.ticks(2);
+      const { feeGrowthOutside, liquidityGross, liquidityNet, fixedTokenGrowthOutside, variableTokenGrowthOutside } = await tickTest.ticks(2);
 
       expect(liquidityGross).to.eq(3);
       expect(liquidityNet).to.eq(4);
+      expect(fixedTokenGrowthOutside).to.eq(toBn("900"));
+      expect(variableTokenGrowthOutside).to.eq(toBn("-1900"));
+      expect(feeGrowthOutside).to.eq(toBn("0"));
     });
   });
 
-  // Needs Test cases
-  // callStatic ?
-  // describe('#update', async () => {
-  //     it('does not flip from nonzero to greater nonzero', async () => {
-  //         await tickTest.update(0, 0, 1, toBn("1000"), toBn("-2000"), toBn("10"), false, 3)
-  //         expect(await tickTest.callStatic.update(0, 0, 1, toBn("1000"), toBn("-2000"),  toBn("10"), false, 3)).to.eq(false)
-  //     })
-  // })
+  describe('#update', async () => {
+    beforeEach("initialize tick", async() => {
+      await tickTest.setTick(2, {
+        liquidityGross: toBn("3"),
+        liquidityNet: toBn("4"),
+        fixedTokenGrowthOutside: toBn("100"),
+        variableTokenGrowthOutside: toBn("-100"),
+        feeGrowthOutside: toBn("10"),
+        initialized: true,
+      });
+    });
+
+      it('does not flip from nonzero to greater nonzero', async () => {
+        expect(await tickTest.callStatic.update(2, 0, toBn("1"), toBn("1000"), toBn("-2000"),  toBn("10"), false, toBn("10"))).to.eq(false);
+      });
+
+      it('flips from zero to nonzero', async () => {
+        expect(await tickTest.callStatic.update(0, 0, toBn("1"), toBn("1000"), toBn("-2000"),  toBn("10"), false, toBn("10"))).to.eq(true);
+      });
+
+      it('flips from nonzero to zero', async () => {
+        expect(await tickTest.callStatic.update(2, 0, toBn("-3"), toBn("1000"), toBn("-2000"),  toBn("10"), false, toBn("10"))).to.eq(true);
+      });
+
+      // TODO: to continue here
+  })
 
   // Needs Test cases
   describe("#clear", async () => {

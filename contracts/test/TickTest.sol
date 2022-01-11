@@ -19,7 +19,7 @@ contract TickTest {
     }
 
     // DONE
-    function getFeeGrowthIntside(
+    function getFeeGrowthInside(
         int24 tickLower,
         int24 tickUpper,
         int24 tickCurrent,
