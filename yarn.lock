@@ -6024,7 +6024,7 @@ hardhat-gas-reporter@^1.0.4:
     eth-gas-reporter "^0.2.24"
     sha1 "^1.1.1"
 
-hardhat-prettier@0.0.1:
+hardhat-prettier@^0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/hardhat-prettier/-/hardhat-prettier-0.0.1.tgz#6ddd1e775edaa66aeb119433e8866a3e6e787f3a"
   integrity sha512-OisNbM2L/+hOPAC5AtPnaa4stH/6Js8bf2Zuhkj4uKzFo0uKu2hZjTupwZ67uDvQNVGJrzNwRBmOaZu2GO3PAA==
