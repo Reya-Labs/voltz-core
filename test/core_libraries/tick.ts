@@ -9,7 +9,6 @@ import { TickTest } from "../../typechain/TickTest";
 import { expect } from "../shared/expect";
 import { toBn } from "evm-bn";
 import { TickMath } from "../shared/tickMath";
-import { MAX_TICK, MIN_TICK, TICK_SPACING } from "../shared/utilities";
 
 describe("Tick", () => {
   let tickTest: TickTest;
@@ -30,17 +29,20 @@ describe("Tick", () => {
   // Needs Test cases
   describe("#checkTicks", () => {
     it("returns checks of both ticks", async () => {
-      await expect(tickTest.checkTicks(TickMath.MIN_TICK - 1, 3)).to.be.revertedWith("TLM");
-      await expect(tickTest.checkTicks(2, TickMath.MAX_TICK + 1)).to.be.revertedWith("TUM");
+      await expect(
+        tickTest.checkTicks(TickMath.MIN_TICK - 1, 3)
+      ).to.be.revertedWith("TLM");
+      await expect(
+        tickTest.checkTicks(2, TickMath.MAX_TICK + 1)
+      ).to.be.revertedWith("TUM");
       await expect(tickTest.checkTicks(3, 2)).to.be.revertedWith("TLU");
-      await expect(tickTest.checkTicks(2, 3)).to.not.be.revertedWith
+      await expect(tickTest.checkTicks(2, 3)).to.not.be.revertedWith;
     });
   });
 
-
   // getFeeGrowthInside
   describe("#getFeeGrowthInside", () => {
-    beforeEach("initialize some ticks", async() => {
+    beforeEach("initialize some ticks", async () => {
       await tickTest.setTick(2, {
         liquidityGross: 3,
         liquidityNet: 4,
@@ -65,12 +67,22 @@ describe("Tick", () => {
     });
 
     it("between two initialized ticks", async () => {
-      const feeGrowthInside = await tickTest.getFeeGrowthInside(2, 4, 3, toBn("50"));
+      const feeGrowthInside = await tickTest.getFeeGrowthInside(
+        2,
+        4,
+        3,
+        toBn("50")
+      );
       expect(feeGrowthInside).to.equal(toBn("20"));
     });
 
     it("after two initialized ticks", async () => {
-      const feeGrowthInside = await tickTest.getFeeGrowthInside(2, 4, 6, toBn("50"));
+      const feeGrowthInside = await tickTest.getFeeGrowthInside(
+        2,
+        4,
+        6,
+        toBn("50")
+      );
       expect(feeGrowthInside).to.equal(toBn("10"));
     });
 
@@ -94,7 +106,7 @@ describe("Tick", () => {
   // })
 
   describe("#getVariableTokenGrowthInside", () => {
-    beforeEach("initialize some ticks", async() => {
+    beforeEach("initialize some ticks", async () => {
       await tickTest.setTick(2, {
         liquidityGross: 3,
         liquidityNet: 4,
@@ -139,7 +151,7 @@ describe("Tick", () => {
   });
 
   describe("#getFixedTokenGrowthInside", () => {
-    beforeEach("initialize some ticks", async() => {
+    beforeEach("initialize some ticks", async () => {
       await tickTest.setTick(2, {
         liquidityGross: 3,
         liquidityNet: 4,
@@ -159,26 +171,42 @@ describe("Tick", () => {
     });
 
     it("two unitialized ticks", async () => {
-      const fixedTokenGrowthInside =
-        await tickTest.getFixedTokenGrowthInside(0, 0, 0, 0);
+      const fixedTokenGrowthInside = await tickTest.getFixedTokenGrowthInside(
+        0,
+        0,
+        0,
+        0
+      );
       expect(fixedTokenGrowthInside).to.eq(0);
     });
 
     it("between two initialized ticks", async () => {
-      const fixedTokenGrowthInside =
-        await tickTest.getFixedTokenGrowthInside(2, 4, 3, toBn("300"));
+      const fixedTokenGrowthInside = await tickTest.getFixedTokenGrowthInside(
+        2,
+        4,
+        3,
+        toBn("300")
+      );
       expect(fixedTokenGrowthInside).to.eq(toBn("0"));
     });
 
     it("after two initialized ticks", async () => {
-      const fixedTokenGrowthInside =
-        await tickTest.getFixedTokenGrowthInside(2, 4, 6, toBn("300"));
+      const fixedTokenGrowthInside = await tickTest.getFixedTokenGrowthInside(
+        2,
+        4,
+        6,
+        toBn("300")
+      );
       expect(fixedTokenGrowthInside).to.eq(toBn("100"));
     });
 
     it("before two initialized ticks", async () => {
-      const fixedTokenGrowthInside =
-        await tickTest.getFixedTokenGrowthInside(2, 4, 0, toBn("300"));
+      const fixedTokenGrowthInside = await tickTest.getFixedTokenGrowthInside(
+        2,
+        4,
+        0,
+        toBn("300")
+      );
       expect(fixedTokenGrowthInside).to.eq(toBn("-100"));
     });
   });
@@ -196,7 +224,13 @@ describe("Tick", () => {
 
       await tickTest.cross(2, toBn("1000"), toBn("-2000"), toBn("10"));
 
-      const { feeGrowthOutside, liquidityGross, liquidityNet, fixedTokenGrowthOutside, variableTokenGrowthOutside } = await tickTest.ticks(2);
+      const {
+        feeGrowthOutside,
+        liquidityGross,
+        liquidityNet,
+        fixedTokenGrowthOutside,
+        variableTokenGrowthOutside,
+      } = await tickTest.ticks(2);
 
       expect(liquidityGross).to.eq(3);
       expect(liquidityNet).to.eq(4);
@@ -206,8 +240,8 @@ describe("Tick", () => {
     });
   });
 
-  describe('#update', async () => {
-    beforeEach("initialize tick", async() => {
+  describe("#update", async () => {
+    beforeEach("initialize tick", async () => {
       await tickTest.setTick(2, {
         liquidityGross: toBn("3"),
         liquidityNet: toBn("4"),
@@ -218,20 +252,53 @@ describe("Tick", () => {
       });
     });
 
-      it('does not flip from nonzero to greater nonzero', async () => {
-        expect(await tickTest.callStatic.update(2, 0, toBn("1"), toBn("1000"), toBn("-2000"),  toBn("10"), false, toBn("10"))).to.eq(false);
-      });
+    it("does not flip from nonzero to greater nonzero", async () => {
+      expect(
+        await tickTest.callStatic.update(
+          2,
+          0,
+          toBn("1"),
+          toBn("1000"),
+          toBn("-2000"),
+          toBn("10"),
+          false,
+          toBn("10")
+        )
+      ).to.eq(false);
+    });
 
-      it('flips from zero to nonzero', async () => {
-        expect(await tickTest.callStatic.update(0, 0, toBn("1"), toBn("1000"), toBn("-2000"),  toBn("10"), false, toBn("10"))).to.eq(true);
-      });
+    it("flips from zero to nonzero", async () => {
+      expect(
+        await tickTest.callStatic.update(
+          0,
+          0,
+          toBn("1"),
+          toBn("1000"),
+          toBn("-2000"),
+          toBn("10"),
+          false,
+          toBn("10")
+        )
+      ).to.eq(true);
+    });
 
-      it('flips from nonzero to zero', async () => {
-        expect(await tickTest.callStatic.update(2, 0, toBn("-3"), toBn("1000"), toBn("-2000"),  toBn("10"), false, toBn("10"))).to.eq(true);
-      });
+    it("flips from nonzero to zero", async () => {
+      expect(
+        await tickTest.callStatic.update(
+          2,
+          0,
+          toBn("-3"),
+          toBn("1000"),
+          toBn("-2000"),
+          toBn("10"),
+          false,
+          toBn("10")
+        )
+      ).to.eq(true);
+    });
 
-      // TODO: to continue here
-  })
+    // TODO: to continue here
+  });
 
   // Needs Test cases
   describe("#clear", async () => {
