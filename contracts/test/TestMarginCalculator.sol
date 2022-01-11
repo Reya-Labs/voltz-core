@@ -230,6 +230,4 @@ contract TestMarginCalculator is MarginCalculator {
             rateOracleId
         );
     }
-
-
 }

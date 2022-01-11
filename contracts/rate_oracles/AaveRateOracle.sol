@@ -129,7 +129,11 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @param from The timestamp of the start of the period, in wei-seconds
     /// @param to The timestamp of the end of the period, in wei-seconds
     /// @return The "floating rate" expressed in Ray, e.g. 4% is encoded as 0.04*10**27 = 4*10*25
-    function getRateFromTo(uint256 from, uint256 to) public view returns (uint256) {
+    function getRateFromTo(uint256 from, uint256 to)
+        public
+        view
+        returns (uint256)
+    {
         // note that we have to convert aave index into "floating rate" for
         // swap calculations, e.g. an index multiple of 1.04*10**27 corresponds to
         // 0.04*10**27 = 4*10*25
@@ -161,7 +165,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     function variableFactor(
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
-    ) public view override(BaseRateOracle, IRateOracle) returns (uint256 result) {
+    )
+        public
+        view
+        override(BaseRateOracle, IRateOracle)
+        returns (uint256 result)
+    {
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
             result = getRateFromTo(termStartTimestamp, termEndTimestamp);
         } else {
@@ -217,7 +226,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 cardinality,
         uint16 cardinalityNext
     ) internal view returns (Rate memory beforeOrAt, Rate memory atOrAfter) {
-        
         // optimistically set before to the newest rate
         beforeOrAt = rates[index];
 
@@ -228,7 +236,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             } else {
                 atOrAfter = Rate({
                     timestamp: Time.blockTimestampScaled(),
-                    rateValue: IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying)
+                    rateValue: IAaveV2LendingPool(aaveLendingPool)
+                        .getReserveNormalizedIncome(underlying)
                 });
                 return (beforeOrAt, atOrAfter);
             }
@@ -274,12 +283,18 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) public view override(BaseRateOracle, IRateOracle) returns (uint256 rateValue) {
+    )
+        public
+        view
+        override(BaseRateOracle, IRateOracle)
+        returns (uint256 rateValue)
+    {
         if (currentTime == queriedTime) {
             Rate memory rate;
             rate = rates[index];
             if (rate.timestamp != currentTime) {
-                rateValue = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying);
+                rateValue = IAaveV2LendingPool(aaveLendingPool)
+                    .getReserveNormalizedIncome(underlying);
             } else {
                 rateValue = rate.rateValue;
             }
