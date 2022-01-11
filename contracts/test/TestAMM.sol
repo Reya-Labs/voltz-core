@@ -16,7 +16,7 @@ contract TestAMM is AMM {
         return tick;
     }
 
-    /// @dev vamm.updateProtocolFees can be called exclusively from the attached AMM 
+    /// @dev vamm.updateProtocolFees can be called exclusively from the attached AMM
     /// @dev and, for testing purposes, we use this function just to redirect the call from the AMM
     function redirectVAMMUpdateProtocolFees(uint256 amount) external {
         vamm.updateProtocolFees(amount);

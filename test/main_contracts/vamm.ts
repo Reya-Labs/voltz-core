@@ -2,7 +2,7 @@ import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { TestVAMM } from "../../typechain/TestVAMM";
 import { expect } from "../shared/expect";
-import { metaFixture, timeFixture } from "../shared/fixtures";
+import { metaFixture } from "../shared/fixtures";
 import { TestVAMMCallee } from "../../typechain/TestVAMMCallee";
 import {
   getMaxTick,
@@ -18,17 +18,10 @@ import {
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { TestAMM } from "../../typechain/TestAMM";
-import { ERC20Mock, Factory, Time } from "../../typechain";
-import { time } from "console";
-import {
-  advanceTime,
-  advanceTimeAndBlock,
-  getCurrentTimestamp,
-  mineBlock,
-} from "../helpers/time";
+import { ERC20Mock, Factory } from "../../typechain";
+import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 import { consts } from "../helpers/constants";
 import { sub } from "../shared/functions";
-import { LargeNumberLike } from "crypto";
 
 const { provider } = waffle;
 
@@ -422,7 +415,8 @@ describe("VAMM", () => {
       await vammTest.initialize(encodeSqrtRatioX96(1, 10).toString());
       await vammTest.setTestProtocolFees(toBn("3"));
       expect(await vammTest.protocolFees()).to.be.equal(toBn("3"));
-      await expect(ammTest.redirectVAMMUpdateProtocolFees(toBn("4"))).to.be.reverted;
+      await expect(ammTest.redirectVAMMUpdateProtocolFees(toBn("4"))).to.be
+        .reverted;
     });
 
     it("check updateProtocolFees", async () => {
@@ -437,9 +431,9 @@ describe("VAMM", () => {
 
   describe("#setFeeProtocol", () => {
     it("check owner privilege ", async () => {
-      await expect(vammTest.connect(other).setFeeProtocol(toBn("0.03"))).to.be.revertedWith(
-        "only factory owner"
-      );
+      await expect(
+        vammTest.connect(other).setFeeProtocol(toBn("0.03"))
+      ).to.be.revertedWith("only factory owner");
     });
 
     it("check setFeeProtocol", async () => {
@@ -451,11 +445,10 @@ describe("VAMM", () => {
   });
 
   describe("#setTickSpacing", () => {
-
     it("check owner privilege ", async () => {
-      await expect(vammTest.connect(other).setTickSpacing(100)).to.be.revertedWith(
-        "only factory owner"
-      );
+      await expect(
+        vammTest.connect(other).setTickSpacing(100)
+      ).to.be.revertedWith("only factory owner");
     });
 
     it("check setTickSpacing", async () => {
@@ -466,26 +459,31 @@ describe("VAMM", () => {
   });
 
   describe("#setMaxLiquidityPerTick", () => {
-
     it("check owner privilege ", async () => {
-      await expect(vammTest.connect(other).setMaxLiquidityPerTick(getMaxLiquidityPerTick(100))).to.be.revertedWith(
-        "only factory owner"
-      );
+      await expect(
+        vammTest
+          .connect(other)
+          .setMaxLiquidityPerTick(getMaxLiquidityPerTick(100))
+      ).to.be.revertedWith("only factory owner");
     });
 
     it("check setMaxLiquidityPerTick", async () => {
-      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(getMaxLiquidityPerTick(TICK_SPACING));
-      await expect(vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100))).to.not.be.reverted;
-      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(getMaxLiquidityPerTick(100));
+      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(
+        getMaxLiquidityPerTick(TICK_SPACING)
+      );
+      await expect(vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100)))
+        .to.not.be.reverted;
+      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(
+        getMaxLiquidityPerTick(100)
+      );
     });
   });
 
   describe("#setFee", () => {
-
     it("check owner privilege ", async () => {
-      await expect(vammTest.connect(other).setFee(toBn("0.05"))).to.be.revertedWith(
-        "only factory owner"
-      );
+      await expect(
+        vammTest.connect(other).setFee(toBn("0.05"))
+      ).to.be.revertedWith("only factory owner");
     });
 
     it("check setTickSpacing", async () => {
@@ -502,7 +500,4 @@ describe("VAMM", () => {
   //     await vammTest.burn(0, 2, toBn("10"));
   //   });
   // });
-
-  
-
 });
