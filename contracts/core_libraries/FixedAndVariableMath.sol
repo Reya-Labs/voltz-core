@@ -7,7 +7,6 @@ import "./Time.sol";
 import "hardhat/console.sol";
 
 /// @title A utility library for mathematics of fixed and variable token amounts.
-/// @author Artur Begyan
 library FixedAndVariableMath {
     /// @notice Number of wei-seconds in a year
     /// @dev Ignoring leap years since we're only using it to calculate the eventual APY rate
@@ -30,7 +29,7 @@ library FixedAndVariableMath {
         uint256 termStartTimestamp,
         uint256 termEndTimestamp,
         uint256 variableFactorToMaturity
-    ) external view returns (int256 cashflow) {
+    ) internal view returns (int256 cashflow) {
         int256 fixedCashflow = PRBMathSD59x18.mul(
             fixedTokenBalance,
             int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
@@ -51,7 +50,7 @@ library FixedAndVariableMath {
     /// #if_succeeds $result > 0;
     /// #if_succeeds old(timeInSeconds) > 0;
     function accrualFact(uint256 timeInSecondsAsWad)
-        public
+        internal
         pure
         returns (uint256 timeInYears)
     {
@@ -74,7 +73,7 @@ library FixedAndVariableMath {
         bool atMaturity,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
-    ) public view returns (uint256 fixedFactorValue) {
+    ) internal view returns (uint256 fixedFactorValue) {
         require(termEndTimestamp > termStartTimestamp, "E<=S");
 
         require(Time.blockTimestampScaled() >= termStartTimestamp, "B.T>S");
@@ -180,7 +179,7 @@ library FixedAndVariableMath {
         uint256 accruedVariableFactor,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
-    ) public view returns (int256 fixedTokenBalance) {
+    ) internal view returns (int256 fixedTokenBalance) {
         if (
             !(((amount0 <= 0 && amount1 >= 0) ||
                 (amount0 >= 0 && amount1 <= 0)) ||

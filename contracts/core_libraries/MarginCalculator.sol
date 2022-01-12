@@ -4,70 +4,176 @@ pragma solidity ^0.8.0;
 
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
-import "./utils/TickMath.sol";
-import "./utils/SqrtPriceMath.sol";
-import "./interfaces/IMarginCalculator.sol";
-import "./core_libraries/FixedAndVariableMath.sol";
-import "./core_libraries/Position.sol";
+import "../utils/TickMath.sol";
+import "../utils/SqrtPriceMath.sol";
+import "./FixedAndVariableMath.sol";
+import "./Position.sol";
 import "hardhat/console.sol";
-import "./core_libraries/Tick.sol";
-import "./interfaces/IFactory.sol";
+import "./Tick.sol";
+import "../interfaces/IFactory.sol";
+import "../interfaces/IMarginEngine.sol";
+
 
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
-contract MarginCalculator is IMarginCalculator {
-  int256 public constant ONE_WEI = 10**18;
+library MarginCalculator {
 
-  /// @dev Must be the Factory owner
-  error NotFactoryOwner();
+      // structs
 
-  
-  address public immutable override factory;
-
-  modifier onlyFactoryOwner() {
-    if (msg.sender != IFactory(factory).owner()) {
-      revert NotFactoryOwner();
+    struct ApyBoundVars {
+        /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
+        int256 timeFactor;
+        /// @dev 1 - timeFactor
+        int256 oneMinusTimeFactor;
+        /// @dev k = (alpha/sigmaSquared)
+        int256 k;
+        /// @dev zeta = (sigmaSquared*(1-timeFactor))/beta
+        int256 zeta;
+        int256 lambdaNum;
+        int256 lambdaDen;
+        /// @dev lambda = lambdaNum/lambdaDen = (beta*timeFactor)*historicalApy / (sigmaSquared*(1-timeFactor))
+        int256 lambda;
+        /// @dev critical value from the normal distribution (refer to the litepaper, equations 12 and 13)
+        int256 criticalValueMultiplier;
+        /// @dev critical value = sqrt(2(k+2*lambda))
+        int256 criticalValue;
     }
-    _;
-  }
 
-  constructor(address _factory) {
-    factory = _factory;
-  }
+    struct LPMarginParams {
+        /// @dev sqrtRatioLower sqrt(y/x) where y/x is the lowest ratio of virtual variable to fixed tokens in the vAMM at which the LP's position is active
+        uint160 sqrtRatioLower;
+        /// @dev sqrtRatioUpper sqrt(y/x) where y/x is the highest ratio of virtual variable to fixed tokens in the vAMM at which the LP's position is active
+        uint160 sqrtRatioUpper;
+        /// @dev isLM = true => Liquidation Margin is calculated, isLM = false => Initial Margin is calculated
+        bool isLM;
+        /// @dev total liquidity deposited by a position
+        uint128 liquidity;
+        /// @dev timestamp of the IRS AMM initiation (18 decimals)
+        uint256 termStartTimestamp;
+        /// @dev timestamp of the IRS AMM maturity (18 decimals)
+        uint256 termEndTimestamp;
+    }
 
-  mapping(bytes32 => MarginCalculatorParameters)
-    internal getMarginCalculatorParameters;
+    struct TraderMarginRequirementParams {
+        /// @dev current fixedToken balance of a given trader
+        int256 fixedTokenBalance;
+        /// @dev current variableToken balance of a given trader
+        int256 variableTokenBalance;
+        /// @dev timestamp of the IRS AMM initiation (18 decimals)
+        uint256 termStartTimestamp;
+        /// @dev timestamp of the IRS AMM maturity (18 decimals)
+        uint256 termEndTimestamp;
+        /// @dev isLM = true => Liquidation Margin is calculated, isLM = false => Initial Margin is calculated
+        bool isLM;
+        /// @dev A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
+        bytes32 rateOracleId;
+        /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
+        uint256 historicalApy;
+    }
+
+    struct PositionMarginRequirementParams {
+        /// @dev Position owner
+        address owner;
+        /// @dev The lower tick of the position
+        int24 tickLower;
+        /// @dev The upper tick of the position
+        int24 tickUpper;
+        /// @dev isLM = true => Liquidation Margin is calculated, isLM = false => Initial Margin is calculated
+        bool isLM;
+        /// @dev Current tick in the Virtual Automated Market Maker
+        int24 currentTick;
+        /// @dev Timestamp of the IRS AMM initiation (18 decimals)
+        uint256 termStartTimestamp;
+        /// @dev Timestamp of the IRS AMM maturity (18 decimals)
+        uint256 termEndTimestamp;
+        /// @dev Amount of active liquidity of a position
+        uint128 liquidity;
+        /// @dev Curren Fixed Token Balance of a position
+        /// @dev In order for this value to be up to date, the Position needs to first check what the fixedTokenGrowthInside is within their tick range and then calculate accrued fixedToken flows since the last check
+        int256 fixedTokenBalance;
+        /// @dev Curren Variabe Token Balance of a position
+        int256 variableTokenBalance;
+        /// @dev Variable Factor is the variable rate from the IRS AMM initiation and until IRS AMM maturity (when computing margin requirements)
+        uint256 variableFactor;
+        /// @dev A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
+        bytes32 rateOracleId;
+        /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
+        uint256 historicalApy;
+    }
+
+    struct MinimumMarginRequirementLocalVars {
+        /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure.
+        /// @dev minDelta is different depending on whether we are calculating a Liquidation or an Initial Margin Requirement
+        uint256 minDelta;
+        /// @dev notional is the absolute value of the variable token balance
+        uint256 notional;
+        /// @dev timeInSeconds = termEndTimestamp - termStartTimestamp of the IRS AMM
+        uint256 timeInSeconds;
+        /// @dev timeInYears = timeInSeconds / SECONDS_IN_YEAR (where SECONDS_IN_YEAR=31536000)
+        uint256 timeInYears;
+        /// @dev Only relevant for Variable Takers, since the worst case scenario for them if the variable rates are at the zero lower bound, assuming the APY in the underlying yield-bearing pool can never be negative
+        /// @dev zeroLowerBoundMargin = abs(fixedTokenBalance) * timeInYears * 1%
+        uint256 zeroLowerBoundMargin;
+    }
+
+    struct PositionMarginRequirementsVars {
+        /// @dev virtual 1% fixed tokens supported by the position in a given tick range with a given amount of supplied liquidity
+        /// @dev amount0 = SqrtPriceMath.getAmount0Delta(sqrtRatioAtLowerTick, sqrtRatioAtUpperTick, positionLiquidity)
+        int256 amount0;
+        /// @dev virtual variable tokens supported by the position in a given tick range with a given amount of supplied liquidity
+        /// @dev amount1 = SqrtPriceMath.getAmount1Delta(sqrtRatioAtLowerTick, sqrtRatioAtUpperTick, positionLiquidity)
+        int256 amount1;
+        /// @dev the exepected variable token balance of a liquidity provider if the Voltz traders were to completely consume all of the variable liquidty offered by the LP in a given tick range
+        int256 expectedVariableTokenBalance;
+        /// @dev the exepected fixed token balance of a liquidity provider if the Voltz traders were to completely consume all of the fixed liquidty offered by the LP in a given tick range
+        int256 expectedFixedTokenBalance;
+        /// @dev If the current tick is within the tick range boundaries of the position then amount0Up represents the amount0 delta following a trade that pushes the tick to the tickUpper of the position
+        int256 amount0Up;
+        /// @dev If the current tick is within the tick range boundaries of the position then amount1Up represents the amount1 delta following a trade that pushes the tick to the tickUpper of the position
+        int256 amount1Up;
+        /// @dev If the current tick is within the tick range boundaries of the position then amount0Down represents the amount0 delta following a trade that pushes the tick to the tickLower of the position
+        int256 amount0Down;
+        /// @dev If the current tick is within the tick range boundaries of the position then amount1Down represents the amount1 delta following a trade that pushes the tick to the tickLower of the position
+        int256 amount1Down;
+        /// @dev If the current tick is within the tick range boundaries of the position then expectedVariableTokenBalanceAfterUp is the the exepected variable token balance of a liquidity provider if the Voltz traders were to trade and push the tick to the tickUpper of the position
+        int256 expectedVariableTokenBalanceAfterUp;
+        /// @dev If the current tick is within the tick range boundaries of the position then expectedFixedTokenBalanceAfterUp is the the exepected fixed token balance of a liquidity provider if the Voltz traders were to trade and push the tick to the tickUpper of the position
+        int256 expectedFixedTokenBalanceAfterUp;
+        /// @dev If the current tick is within the tick range boundaries of the position then expectedVariableTokenBalanceAfterDown is the the exepected variable token balance of a liquidity provider if the Voltz traders were to trade and push the tick to the tickLower of the position
+        int256 expectedVariableTokenBalanceAfterDown;
+        /// @dev If the current tick is within the tick range boundaries of the position then expectedFixedTokenBalanceAfterDown is the the exepected variable token balance of a liquidity provider if the Voltz traders were to trade and push the tick to the tickLower of the position
+        int256 expectedFixedTokenBalanceAfterDown;
+        /// @dev If the current tick is within the tick range boundaries of the position then marginReqAfterUp is the margin requirement (either liquidation or initial) if the traders were to push the tick to the tickUpper of the position
+        uint256 marginReqAfterUp;
+        /// @dev If the current tick is within the tick range boundaries of the position then marginReqAfterDown is the margin requirement (either liquidation or initial) if the traders were to push the tick to the tickLower of the position
+        uint256 marginReqAfterDown;
+        /// @dev Liquidation or Initial Margin Requirement of a Position
+        int256 margin;
+    }
+  
+  int256 public constant ONE_WEI = 10**18;
 
   /// @dev Seconds in a year
   int256 public constant SECONDS_IN_YEAR = 31536000 * ONE_WEI;
 
-  /// @notice Set the per-oracle MarginCalculatorParameters
-  /// @param marginCalculatorParameters the MarginCalculatorParameters to set
-  function setMarginCalculatorParameters(
-    MarginCalculatorParameters memory marginCalculatorParameters,
-    bytes32 rateOracleId
-  ) public override onlyFactoryOwner {
-    getMarginCalculatorParameters[rateOracleId] = marginCalculatorParameters;
-  }
-
   /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t_max) where t is the maturity timestamp, and t_max is the max number of seconds for the amm duration, s is the current timestamp and beta is a diffusion process parameter set via calibration
   function computeTimeFactor(
-    bytes32 rateOracleId,
     uint256 termEndTimestampScaled,
-    uint256 currentTimestampScaled
-  ) internal view returns (int256 timeFactor) {
+    uint256 currentTimestampScaled,
+    IMarginEngine.MarginCalculatorParameters memory _marginCalculatorParameters
+  ) internal pure returns (int256 timeFactor) {
     require(termEndTimestampScaled > 0, "termEndTimestamp must be > 0");
     require(
       currentTimestampScaled <= termEndTimestampScaled,
       "endTime must be > currentTime"
     );
     require(
-      getMarginCalculatorParameters[rateOracleId].beta != 0,
+      _marginCalculatorParameters.beta != 0,
       "parameters not set for oracle"
     );
 
-    int256 beta = getMarginCalculatorParameters[rateOracleId].beta;
-    int256 tMax = getMarginCalculatorParameters[rateOracleId].tMax;
+    int256 beta = _marginCalculatorParameters.beta;
+    int256 tMax = _marginCalculatorParameters.tMax;
 
     int256 scaledTime = PRBMathSD59x18.div(
       (int256(termEndTimestampScaled) - int256(currentTimestampScaled)),
@@ -91,31 +197,32 @@ contract MarginCalculator is IMarginCalculator {
     uint256 termEndTimestampScaled,
     uint256 currentTimestampScaled,
     uint256 historicalApy,
-    bool isUpper
+    bool isUpper,
+    IMarginEngine.MarginCalculatorParameters memory _marginCalculatorParameters
   ) internal view returns (uint256 apyBound) {
     ApyBoundVars memory apyBoundVars;
 
     int256 beta4 = PRBMathSD59x18.mul(
-      getMarginCalculatorParameters[rateOracleId].beta,
+      _marginCalculatorParameters.beta,
       4 * ONE_WEI
     );
 
     apyBoundVars.timeFactor = computeTimeFactor(
-      rateOracleId,
       termEndTimestampScaled,
-      currentTimestampScaled
+      currentTimestampScaled,
+      _marginCalculatorParameters
     );
 
     apyBoundVars.oneMinusTimeFactor = ONE_WEI - apyBoundVars.timeFactor;
 
     apyBoundVars.k = PRBMathSD59x18.div(
-      getMarginCalculatorParameters[rateOracleId].alpha,
-      getMarginCalculatorParameters[rateOracleId].sigmaSquared
+      _marginCalculatorParameters.alpha,
+      _marginCalculatorParameters.sigmaSquared
     );
 
     apyBoundVars.zeta = PRBMathSD59x18.div(
       PRBMathSD59x18.mul(
-        getMarginCalculatorParameters[rateOracleId].sigmaSquared,
+        _marginCalculatorParameters.sigmaSquared,
         apyBoundVars.oneMinusTimeFactor
       ),
       beta4
@@ -147,12 +254,12 @@ contract MarginCalculator is IMarginCalculator {
 
     if (isUpper) {
       apyBoundVars.criticalValue = PRBMathSD59x18.mul(
-        getMarginCalculatorParameters[rateOracleId].xiUpper,
+        _marginCalculatorParameters.xiUpper,
         PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplier)
       );
     } else {
       apyBoundVars.criticalValue = PRBMathSD59x18.mul(
-        getMarginCalculatorParameters[rateOracleId].xiLower,
+        _marginCalculatorParameters.xiLower,
         PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplier)
       );
     }
@@ -185,7 +292,8 @@ contract MarginCalculator is IMarginCalculator {
     bool isFT,
     bool isLM,
     bytes32 rateOracleId,
-    uint256 historicalApy
+    uint256 historicalApy,
+    IMarginEngine.MarginCalculatorParameters memory _marginCalculatorParameters
   ) internal view returns (uint256 variableFactor) {
     uint256 timeInYearsFromStartUntilMaturity = FixedAndVariableMath
       .accrualFact(timeInSecondsFromStartToMaturity);
@@ -198,7 +306,8 @@ contract MarginCalculator is IMarginCalculator {
             termEndTimestampScaled,
             currentTimestampScaled,
             historicalApy,
-            true
+            true,
+            _marginCalculatorParameters
           ),
           timeInYearsFromStartUntilMaturity
         );
@@ -210,9 +319,10 @@ contract MarginCalculator is IMarginCalculator {
               termEndTimestampScaled,
               currentTimestampScaled,
               historicalApy,
-              true
+              true,
+              _marginCalculatorParameters
             ),
-            getMarginCalculatorParameters[rateOracleId].apyUpperMultiplier
+            _marginCalculatorParameters.apyUpperMultiplier
           ),
           timeInYearsFromStartUntilMaturity
         );
@@ -225,7 +335,8 @@ contract MarginCalculator is IMarginCalculator {
             termEndTimestampScaled,
             currentTimestampScaled,
             historicalApy,
-            false
+            false,
+            _marginCalculatorParameters
           ),
           timeInYearsFromStartUntilMaturity
         );
@@ -237,9 +348,10 @@ contract MarginCalculator is IMarginCalculator {
               termEndTimestampScaled,
               currentTimestampScaled,
               historicalApy,
-              false
+              false,
+              _marginCalculatorParameters
             ),
-            getMarginCalculatorParameters[rateOracleId].apyLowerMultiplier
+            _marginCalculatorParameters.apyLowerMultiplier
           ),
           timeInYearsFromStartUntilMaturity
         );
@@ -247,10 +359,11 @@ contract MarginCalculator is IMarginCalculator {
     }
   }
 
-  /// @inheritdoc IMarginCalculator
+
   function getMinimumMarginRequirement(
-    TraderMarginRequirementParams memory params
-  ) public view override returns (uint256 margin) {
+    TraderMarginRequirementParams memory params,
+    IMarginEngine.MarginCalculatorParameters memory _marginCalculatorParameters
+  ) internal view returns (uint256 margin) {
     MinimumMarginRequirementLocalVars memory vars;
 
     vars.timeInSeconds = params.termEndTimestamp - params.termStartTimestamp;
@@ -259,11 +372,11 @@ contract MarginCalculator is IMarginCalculator {
 
     if (params.isLM) {
       vars.minDelta = uint256(
-        getMarginCalculatorParameters[params.rateOracleId].minDeltaLM
+        _marginCalculatorParameters.minDeltaLM
       );
     } else {
       vars.minDelta = uint256(
-        getMarginCalculatorParameters[params.rateOracleId].minDeltaIM
+        _marginCalculatorParameters.minDeltaIM
       );
     }
 
@@ -317,10 +430,11 @@ contract MarginCalculator is IMarginCalculator {
     }
   }
 
-  /// @inheritdoc IMarginCalculator
+
   function getTraderMarginRequirement(
-    TraderMarginRequirementParams memory params
-  ) public view override returns (uint256 margin) {
+    TraderMarginRequirementParams memory params,
+    IMarginEngine.MarginCalculatorParameters memory _marginCalculatorParameters
+  ) internal view returns (uint256 margin) {
     if (params.fixedTokenBalance >= 0 && params.variableTokenBalance >= 0) {
       return 0;
     }
@@ -349,14 +463,15 @@ contract MarginCalculator is IMarginCalculator {
           params.variableTokenBalance < 0,
           params.isLM,
           params.rateOracleId,
-          params.historicalApy
+          params.historicalApy,
+          _marginCalculatorParameters
         )
       )
     );
 
     int256 modelMargin = exp1 + exp2;
 
-    int256 minimumMargin = int256(getMinimumMarginRequirement(params));
+    int256 minimumMargin = int256(getMinimumMarginRequirement(params, _marginCalculatorParameters));
     if (modelMargin < minimumMargin) {
       margin = uint256(minimumMargin);
     } else {
@@ -369,7 +484,8 @@ contract MarginCalculator is IMarginCalculator {
   /// @dev vars Intermediate Values necessary for the purposes of the computation of the Position Margin Requirement
   /// @return margin Either Liquidation or Initial Margin Requirement of a given position in terms of the underlying tokens
   function positionMarginBetweenTicksHelper(
-    PositionMarginRequirementParams memory params
+    PositionMarginRequirementParams memory params,
+    IMarginEngine.MarginCalculatorParameters memory _marginCalculatorParameters
   ) internal view returns (uint256 margin) {
     PositionMarginRequirementsVars memory vars;
 
@@ -421,7 +537,7 @@ contract MarginCalculator is IMarginCalculator {
         isLM: params.isLM,
         rateOracleId: params.rateOracleId,
         historicalApy: params.historicalApy
-      })
+      }), _marginCalculatorParameters
     );
 
     // going down balance delta --> the trader is giving up fixed and is receiving variable (the trader is a Variable Taker)
@@ -468,7 +584,7 @@ contract MarginCalculator is IMarginCalculator {
         isLM: params.isLM,
         rateOracleId: params.rateOracleId,
         historicalApy: params.historicalApy
-      })
+      }), _marginCalculatorParameters
     );
 
     if (vars.marginReqAfterUp > vars.marginReqAfterDown) {
@@ -478,12 +594,13 @@ contract MarginCalculator is IMarginCalculator {
     }
   }
 
-  /// @inheritdoc IMarginCalculator
+  
   function isLiquidatablePosition(
     PositionMarginRequirementParams memory params,
-    int256 currentMargin
-  ) public view override returns (bool _isLiquidatable) {
-    uint256 marginRequirement = getPositionMarginRequirement(params);
+    int256 currentMargin,
+    IMarginEngine.MarginCalculatorParameters memory _marginCalculatorParameters
+  ) internal view returns (bool _isLiquidatable) {
+    uint256 marginRequirement = getPositionMarginRequirement(params, _marginCalculatorParameters);
     if (currentMargin < int256(marginRequirement)) {
       _isLiquidatable = true;
     } else {
@@ -491,12 +608,13 @@ contract MarginCalculator is IMarginCalculator {
     }
   }
 
-  /// @inheritdoc IMarginCalculator
+  
   function isLiquidatableTrader(
     TraderMarginRequirementParams memory params,
-    int256 currentMargin
-  ) public view override returns (bool isLiquidatable) {
-    uint256 marginRequirement = getTraderMarginRequirement(params);
+    int256 currentMargin,
+    IMarginEngine.MarginCalculatorParameters memory _marginCalculatorParameters
+  ) internal view returns (bool isLiquidatable) {
+    uint256 marginRequirement = getTraderMarginRequirement(params, _marginCalculatorParameters);
 
     if (currentMargin < int256(marginRequirement)) {
       isLiquidatable = true;
@@ -505,10 +623,11 @@ contract MarginCalculator is IMarginCalculator {
     }
   }
 
-  /// @inheritdoc IMarginCalculator
+  
   function getPositionMarginRequirement(
-    PositionMarginRequirementParams memory params
-  ) public view override returns (uint256 margin) {
+    PositionMarginRequirementParams memory params,
+    IMarginEngine.MarginCalculatorParameters memory _marginCalculatorParameters
+  ) internal view returns (uint256 margin) {
     if (params.liquidity == 0) {
       return 0;
     }
@@ -533,7 +652,7 @@ contract MarginCalculator is IMarginCalculator {
             isLM: params.isLM,
             rateOracleId: params.rateOracleId,
             historicalApy: params.historicalApy
-          })
+          }), _marginCalculatorParameters
         );
       } else {
         // the variable token balance is 0
@@ -569,11 +688,11 @@ contract MarginCalculator is IMarginCalculator {
             isLM: params.isLM,
             rateOracleId: params.rateOracleId,
             historicalApy: params.historicalApy
-          })
+          }), _marginCalculatorParameters
         );
       }
     } else if (params.currentTick < params.tickUpper) {
-      margin = positionMarginBetweenTicksHelper(params);
+      margin = positionMarginBetweenTicksHelper(params, _marginCalculatorParameters);
     } else {
       if (params.variableTokenBalance < 0) {
         revert("variable balance < 0"); // this should not be possible
@@ -590,7 +709,7 @@ contract MarginCalculator is IMarginCalculator {
             isLM: params.isLM,
             rateOracleId: params.rateOracleId,
             historicalApy: params.historicalApy
-          })
+          }), _marginCalculatorParameters
         );
       } else {
         // the variable token balance is 0
@@ -626,9 +745,62 @@ contract MarginCalculator is IMarginCalculator {
             isLM: params.isLM,
             rateOracleId: params.rateOracleId,
             historicalApy: params.historicalApy
-          })
+          }), _marginCalculatorParameters
         );
       }
     }
   }
 }
+
+
+  // todo: accomodate the docs
+ // keep for now to migrate the docs
+    // // view functions
+
+    // function factory() external returns (address);
+
+    // /// @notice Returns the Minimum Margin Requirement
+    // /// @dev As a safety measure, Voltz Protocol also computes the minimum margin requirement for FTs and VTs.
+    // /// @dev This ensures the protocol has a cap on the amount of leverage FTs and VTs can take
+    // /// @dev Minimum Margin = abs(varaibleTokenBalance) * minDelta * t
+    // /// @dev minDelta is a parameter that is set separately for FTs and VTs and it is free to vary depending on the underlying rates pool
+    // /// @dev Also the minDelta is different for Liquidation and Initial Margin Requirements
+    // /// @dev where minDeltaIM > minDeltaLM
+    // /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
+    // /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
+    // function getMinimumMarginRequirement(
+    //     TraderMarginRequirementParams memory params
+    // ) external view returns (uint256 margin);
+
+    // /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
+    // /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
+    // /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
+    // function getTraderMarginRequirement(
+    //     TraderMarginRequirementParams memory params
+    // ) external view returns (uint256 margin);
+
+    // function getPositionMarginRequirement(
+    //     PositionMarginRequirementParams memory params
+    // ) external view returns (uint256 margin);
+
+    // /// @notice Checks if a given position is liquidatable
+    // /// @dev In order for a position to be liquidatable its current margin needs to be lower than the position's liquidation margin requirement
+    // /// @return _isLiquidatable A boolean which suggests if a given position is liquidatable
+    // function isLiquidatablePosition(
+    //     PositionMarginRequirementParams memory params,
+    //     int256 currentMargin
+    // ) external view returns (bool _isLiquidatable);
+
+    // /// @notice Checks if a given trader is liquidatable
+    // /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
+    // /// @param currentMargin Current margin of a trader in terms of the underlying tokens (18 decimals)
+    // /// @return isLiquidatable A boolean which suggests if a given trader is liquidatable
+    // function isLiquidatableTrader(
+    //     TraderMarginRequirementParams memory params,
+    //     int256 currentMargin
+    // ) external view returns (bool isLiquidatable);
+
+    // function setMarginCalculatorParameters(
+    //     IMarginEngine.MarginCalculatorParameters memory marginCalculatorParameters,
+    //     bytes32 rateOracleId
+    // ) external;

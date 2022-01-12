@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import "./IAMM.sol";
+import "./IMarginEngine.sol";
 import "./IPositionStructs.sol";
 
 interface IVAMM is IPositionStructs {
@@ -207,10 +207,10 @@ interface IVAMM is IPositionStructs {
 
     /// @notice The parent AMM of the vamm
     /// @return Parent AMM of the vamm
-    function amm() external view returns (IAMM);
+    function marginEngine() external view returns (IMarginEngine);
 
     /// @notice Function that sets the parent AMM of the vamm
-    function setAMM(address _ammAddress) external;
+    function setMarginEngine(address _marginEngineAddress) external;
 
     /// @notice Function that sets the feeProtocol of the vamm
     function setFeeProtocol(uint256 feeProtocol) external;

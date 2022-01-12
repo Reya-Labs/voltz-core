@@ -1,19 +1,82 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import "./IAMM.sol";
 import "./IVAMM.sol";
 import "./IPositionStructs.sol";
 import "../core_libraries/Position.sol";
+import "./rate_oracles/IRateOracle.sol";
 
 interface IMarginEngine is IPositionStructs {
+
+    // structs
+    // below should all be SD59x18 or UD60x18 user defined types?
+    /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
+    /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
+    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Liquidation Margin Computation
+    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Initial Margin Computation
+    /// @dev Maximum allowed leverage on Voltz Protocol where leverage = (notional traded in an IRS contract) / (margin in the account of an LP/FT/VT)
+    /// @dev The standard deviation that determines the volatility of the underlying pool APY
+    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing alpha (from the litepaper)
+    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing beta (from the litepaper)
+    /// @dev Standard normal critical value used in the computation of the Upper APY Bound of the underlying pool
+    /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
+
+    struct MarginCalculatorParameters {
+        uint256 apyUpperMultiplier;
+        uint256 apyLowerMultiplier;
+        uint256 minDeltaLM;
+        uint256 minDeltaIM;
+        uint256 maxLeverage;
+        int256 sigmaSquared;
+        int256 alpha;
+        int256 beta;
+        int256 xiUpper;
+        int256 xiLower;
+        int256 tMax;
+    }
+
+    // immutables
+
+    /// @notice The contract that deployed the amm, which must adhere to the Factory interface
+    /// @return The contract address
+    function factory() external view returns (address);
+
+    // /// @notice The address of the underlying (non-yield bearing) pool token - e.g. USDC
+    // /// @return The underlying pool token address
+    function underlyingToken() external view returns (address);
+
+    function rateOracleId() external view returns (bytes32);
+
+    function termStartTimestamp() external view returns (uint256);
+    function termEndTimestamp() external view returns (uint256);
+
+    function rateOracle() external view returns (IRateOracle);
+    
+    // errors
+
+    /// @dev No need to unwind a net zero position
+    error PositionNetZero();
+    
+    /// @dev Cannot have less margin than the minimum requirement
+    error MarginLessThanMinimum();
+
+    /// @dev Trader's margin cannot be updated unless the trader is settled
+    error TraderNotSettled();
+
+    /// @dev We can't withdraw more margin than we have
+    error WithdrawalExceedsCurrentMargin();
+
+    /// @dev Position must be burned after AMM has reached maturity
+    error PositionNotBurned();
+
+    /// @dev Position must be settled after AMM has reached maturity
+    error PositionNotSettled();
+    
     // view functions
 
     function liquidatorReward() external view returns (uint256);
 
-    /// @notice The address of the IRS AMM linked to this Margin Engine
-    /// @return Interface of the IRS AMM linked to this Margin Engine
-    function amm() external view returns (IAMM);
+    function vamm() external view returns (IVAMM);
 
     /// @notice Returns the information about a position by the position's key
     /// @param owner The address of the position owner
@@ -147,4 +210,8 @@ interface IMarginEngine is IPositionStructs {
         int24 tickUpper,
         uint128 amount
     ) external;
+
+    function collectProtocol(address recipient, uint256 amount) external;
+
+    function setVAMM(address _vAMMAddress) external;
 }

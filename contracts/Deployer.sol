@@ -4,13 +4,11 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IDeployer.sol";
 import "./VAMM.sol";
-import "./AMM.sol";
 import "./MarginEngine.sol";
-import "./core_libraries/FixedAndVariableMath.sol";
 
 contract Deployer is IDeployer {
   
-  struct AMMParameters {
+  struct MarginEngineParameters {
     address factory;
     address underlyingToken;
     bytes32 rateOracleId;
@@ -18,69 +16,22 @@ contract Deployer is IDeployer {
     uint256 termEndTimestamp;
   }
 
-  struct MarginEngineAndVAMMParameters {
-    address ammAddress;
+  struct VAMMParameters {
+    address marginEngineAddress;
   }
 
+  MarginEngineParameters public override marginEngineParameters;
+  VAMMParameters public override vammParameters;
 
-  AMMParameters public override ammParameters;
-  MarginEngineAndVAMMParameters public override marginEngineParameters;
-  MarginEngineAndVAMMParameters public override vammParameters;
-
-  function deployMarginEngine(address ammAddress) internal returns (address marginEngine) {
-    marginEngineParameters = MarginEngineAndVAMMParameters({
-      ammAddress: ammAddress
-    });
-
-    marginEngine = address(
-      new MarginEngine{
-        salt: keccak256(
-          abi.encode(
-            ammAddress
-          )
-        )
-      }()
-    );
-
-    delete marginEngineParameters;
-
-  }
-  
-  function deployVAMM(
-    address ammAddress
-  ) internal returns (address vamm) {
-    
-    vammParameters = MarginEngineAndVAMMParameters({
-      ammAddress: ammAddress
-    });
-
-    vamm = address(
-      new VAMM{
-        salt: keccak256(
-          abi.encode(
-            ammAddress
-          )
-        )
-      }()
-    );
-    delete vammParameters;
-  }
-  
-  /// @dev Deploys an amm with the given parameters by transiently setting the parameters storage slot and then
-  /// clearing it after deploying the amm.
-  /// @param factory The contract address of the Voltz factory
-  /// @param underlyingToken The contract address of the token in the underlying pool
-  /// @param rateOracleId rate oracle id
-  /// @param termEndTimestamp Number of days between the inception of the pool and its maturity
-  function deployAMM(
+  function deployMarginEngine(
     address factory,
     address underlyingToken,
     bytes32 rateOracleId,
     uint256 termStartTimestamp,
     uint256 termEndTimestamp
-  ) internal returns (address amm) {
-
-    ammParameters = AMMParameters({
+    ) internal returns (address marginEngine) {
+    
+    marginEngineParameters = MarginEngineParameters({
       factory: factory,
       underlyingToken: underlyingToken,
       rateOracleId: rateOracleId,
@@ -88,8 +39,8 @@ contract Deployer is IDeployer {
       termEndTimestamp: termEndTimestamp
     });
 
-    amm = address(
-      new AMM{
+    marginEngine = address(
+      new MarginEngine{
         salt: keccak256(
           abi.encode(
             rateOracleId,
@@ -100,6 +51,29 @@ contract Deployer is IDeployer {
         )
       }()
     );
-    delete ammParameters;
+
+    delete marginEngineParameters;
+
   }
+  
+  function deployVAMM(
+    address marginEngineAddress
+  ) internal returns (address vamm) {
+    
+    vammParameters = VAMMParameters({
+      marginEngineAddress: marginEngineAddress
+    });
+
+    vamm = address(
+      new VAMM{
+        salt: keccak256(
+          abi.encode(
+            marginEngineAddress
+          )
+        )
+      }()
+    );
+    delete vammParameters;
+  }
+  
 }

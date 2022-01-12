@@ -5,8 +5,6 @@ pragma solidity ^0.8.0;
 import "./interfaces/IFactory.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./Deployer.sol";
-import "./VAMM.sol";
-import "./core_libraries/FixedAndVariableMath.sol";
 
 /// @title Voltz Factory Contract
 /// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
@@ -23,13 +21,10 @@ contract Factory is IFactory, Deployer {
   /// @inheritdoc IFactory
   mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address))))
     public
-    override getAMMMap;
+    override getMarginEngineMap;
   
   /// @inheritdoc IFactory
   mapping(address => address) public override getVAMMMap;
-
-  /// @inheritdoc IFactory
-  mapping(address => address) public override getMarginEngineMap;
 
   /// @inheritdoc IFactory
   mapping(bytes32 => address) public override getRateOracleAddress;
@@ -52,68 +47,48 @@ contract Factory is IFactory, Deployer {
   }
 
   /// @inheritdoc IFactory
-  function createVAMM(address ammAddress)
+  function createVAMM(address marginEngineAddress)
     external
     override
     onlyFactoryOwner
     returns (address vamm)
   {
-    require(ammAddress != address(0), "ZERO_ADDRESS");
-    require(getVAMMMap[ammAddress] == address(0), "EXISTED_VAMM");
+    require(marginEngineAddress != address(0), "ZERO_ADDRESS");
+    require(getVAMMMap[marginEngineAddress] == address(0), "EXISTED_VAMM");
 
-    vamm = deployVAMM(ammAddress);
+    vamm = deployVAMM(marginEngineAddress);
 
     return vamm;
   }
 
   /// @inheritdoc IFactory
-  function createMarginEngine(address ammAddress)
+  function createMarginEngine(
+    address underlyingToken,
+    bytes32 rateOracleId,
+    uint256 termEndTimestamp)
     external
     override
     onlyFactoryOwner
     returns (address marginEngine)
   {
-    require(ammAddress != address(0), "ZERO_ADDRESS");
-    require(getMarginEngineMap[ammAddress] == address(0), "EXISTED_MargineEngine");
-
-    marginEngine = deployMarginEngine(ammAddress);
-
-    return marginEngine;
-  }
-
-  /// @inheritdoc IFactory
-  function createAMM(
-    address underlyingToken,
-    bytes32 rateOracleId,
-    uint256 termEndTimestamp
-  ) external override onlyFactoryOwner returns (address amm) {
     uint256 termStartTimestamp = Time.blockTimestampScaled(); 
     require(
-      getAMMMap[rateOracleId][underlyingToken][termStartTimestamp][
+      getMarginEngineMap[rateOracleId][underlyingToken][termStartTimestamp][
         termEndTimestamp
       ] == address(0),
       "EXISTED_AMM"
     );
 
-    amm = deployAMM(
+    marginEngine = deployMarginEngine(
       address(this),
       underlyingToken,
       rateOracleId,
       termStartTimestamp,
-      termEndTimestamp
-    );
+      termEndTimestamp);
 
-    getAMMMap[rateOracleId][underlyingToken][termStartTimestamp][
-      termEndTimestamp
-    ] = amm;
+    // emit margin engine created
 
-    emit AMMCreated(
-      amm,
-      underlyingToken,
-      rateOracleId,
-      termStartTimestamp,
-      termEndTimestamp
-    );
+    return marginEngine;
   }
 
   /// @inheritdoc IFactory

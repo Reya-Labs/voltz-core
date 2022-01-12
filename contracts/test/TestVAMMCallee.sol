@@ -57,7 +57,7 @@ contract TestVAMMCallee {
             isTrader: true
         });
 
-        IAMM(vamm).swap(params);
+        IVAMM(vamm).swap(params);
     }
 
     function swap0ForExact1(
@@ -75,7 +75,7 @@ contract TestVAMMCallee {
             isTrader: true
         });
 
-        IAMM(vamm).swap(params);
+        IVAMM(vamm).swap(params);
     }
 
     function swapExact1For0(
@@ -93,7 +93,7 @@ contract TestVAMMCallee {
             isTrader: true
         });
 
-        IAMM(vamm).swap(params);
+        IVAMM(vamm).swap(params);
     }
 
     function swap1ForExact0(
@@ -128,7 +128,7 @@ contract TestVAMMCallee {
             isTrader: true
         });
 
-        IAMM(vamm).swap(params);
+        IVAMM(vamm).swap(params);
     }
 
     function swapToHigherSqrtPrice(
@@ -145,6 +145,6 @@ contract TestVAMMCallee {
             isTrader: true
         });
 
-        IAMM(vamm).swap(params);
+        IVAMM(vamm).swap(params);
     }
 }

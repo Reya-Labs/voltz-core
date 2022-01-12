@@ -3,16 +3,13 @@
 pragma solidity ^0.8.0;
 import "./core_libraries/Tick.sol";
 import "./interfaces/IMarginEngine.sol";
-import "./interfaces/IAMM.sol";
 import "./interfaces/IVAMM.sol";
 import "./core_libraries/Position.sol";
 import "./core_libraries/Trader.sol";
+import "./core_libraries/MarginCalculator.sol";
 
 import "./utils/SafeCast.sol";
 import "./utils/LowGasSafeMath.sol";
-
-import "./interfaces/IMarginCalculator.sol";
-import "./interfaces/amm/IAMMImmutables.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IFactory.sol";
@@ -20,13 +17,12 @@ import "./interfaces/IDeployer.sol";
 
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
-
-import "./core_libraries/UnwindTraderUnwindPosition.sol";
-
-import "./core_libraries/MarginEngineHelpers.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 
-contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pausable {
+contract MarginEngine is IMarginEngine, Pausable {
+    using LowGasSafeMath for uint256;
+    using LowGasSafeMath for int256;
+    
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
@@ -41,41 +37,42 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     /// @dev liquidatorReward is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
     /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
     uint256 public override liquidatorReward;
-
     /// @inheritdoc IMarginEngine
-    IAMM public override amm;
-    /// @inheritdoc IAMMImmutables
     address public override immutable underlyingToken;
-    /// @inheritdoc IAMMImmutables
+    /// @inheritdoc IMarginEngine
     uint256 public override immutable termStartTimestamp;
-    /// @inheritdoc IAMMImmutables
+    /// @inheritdoc IMarginEngine
     uint256 public override immutable termEndTimestamp;
-    /// @inheritdoc IAMMImmutables
-    IMarginCalculator public override immutable calculator;
-    /// @inheritdoc IAMMImmutables
+    /// @inheritdoc IMarginEngine
     IRateOracle public override immutable rateOracle;
-    /// @inheritdoc IAMMImmutables
-    bytes32 public override immutable rateOracleId;
-    /// @inheritdoc IAMMImmutables
-    address public override immutable factory;
+    /// @inheritdoc IMarginEngine
+    bytes32 public override rateOracleId;
+    /// @inheritdoc IMarginEngine
+    address public override factory;
 
-    mapping(bytes32 => Position.Info) internal positions; // AB: why internal?
+    mapping(bytes32 => Position.Info) internal positions;
     /// @inheritdoc IMarginEngine
     mapping(address => Trader.Info) public override traders;
 
-    constructor() Pausable() {  
-        address ammAddress;      
-        (ammAddress) = IDeployer(msg.sender).marginEngineParameters();
-        amm = IAMM(ammAddress);
+    IVAMM public override vamm;
 
-        // AMM never changes. We should enforce this invariant (most simply, only allow it to be set once?), and once we do we can cache all AMM properties (underlyingToken, rateOracleId, termStartTimestamp, termEndTimestamp, ... ) indefinitely here to save gas and simplify code.
-        underlyingToken = amm.underlyingToken(); // immutable in AMM therefore safe to cache forever
-        factory = amm.factory(); // immutable in AMM therefore safe to cache forever
-        rateOracleId = amm.rateOracleId(); // immutable in AMM therefore safe to cache forever
-        termStartTimestamp = amm.termStartTimestamp(); // immutable in AMM therefore safe to cache forever
-        termEndTimestamp = amm.termEndTimestamp(); // immutable in AMM therefore safe to cache forever
-        calculator = amm.calculator(); // immutable in AMM therefore safe to cache forever
-        rateOracle = amm.rateOracle(); // immutable in AMM therefore safe to cache forever
+    MarginCalculatorParameters internal marginCalculatorParameters;
+
+    constructor() Pausable() {  
+
+        (
+            factory,
+            underlyingToken,
+            rateOracleId,
+            termStartTimestamp,
+            termEndTimestamp
+        ) = IDeployer(msg.sender).marginEngineParameters();
+
+        address rateOracleAddress = IFactory(factory).getRateOracleAddress(
+            rateOracleId
+        );
+
+        rateOracle = IRateOracle(rateOracleAddress);
 
     }
 
@@ -115,6 +112,36 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         _;
     }
 
+    // todo: add override
+    /// @notice Set the per-oracle MarginCalculatorParameters
+    /// @param _marginCalculatorParameters the MarginCalculatorParameters to set
+    function setMarginCalculatorParameters(
+        MarginCalculatorParameters memory _marginCalculatorParameters
+    ) external onlyFactoryOwner {
+        marginCalculatorParameters = _marginCalculatorParameters;
+    }
+
+    function setVAMM(address _vAMMAddress) external override onlyFactoryOwner {
+        vamm = IVAMM(_vAMMAddress);
+    }
+
+    
+    function collectProtocol(address recipient, uint256 amount)
+        external
+        override
+        onlyFactoryOwner{
+
+        if (amount > 0) {
+            
+            vamm.updateProtocolFees(amount);
+            IERC20Minimal(underlyingToken).transfer(
+                recipient,
+                amount
+            );
+        }
+
+        // emit collect protocol event
+    }
     
     function setLiquidatorReward(uint256 _liquidatorReward) external override onlyFactoryOwner {
         liquidatorReward = _liquidatorReward;
@@ -131,9 +158,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
     function transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
-            IERC20Minimal(underlyingToken).transferFrom(_account, address(amm), uint256(_marginDelta));
+            IERC20Minimal(underlyingToken).transferFrom(_account, address(this), uint256(_marginDelta));
         } else {
-            IERC20Minimal(underlyingToken).transferFrom(address(amm), _account, uint256(-_marginDelta));
+            IERC20Minimal(underlyingToken).transferFrom(address(this), _account, uint256(-_marginDelta));
         }
     }
 
@@ -146,12 +173,12 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             revert OnlyOwnerCanUpdatePosition();
         }
 
-        uint256 variableFactor = amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp());
+        uint256 variableFactor = rateOracle.variableFactor(termStartTimestamp, termEndTimestamp);
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
         int256 updatedMarginWouldBe = position.margin + marginDelta;
 
-        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor, address(amm)); 
+        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor); 
 
         position.updateMargin(marginDelta);
 
@@ -166,7 +193,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         int256 updatedMarginWouldBe = trader.margin + marginDelta;
         
-        checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled, address(amm));
+        checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled);
 
         trader.updateMargin(marginDelta);
 
@@ -188,7 +215,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         require(position._liquidity==0, "fully burned");
         require(!position.isSettled, "already settled");
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp()));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(termStartTimestamp, termEndTimestamp));
 
         position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMargin(settlementCashflow);
@@ -202,7 +229,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         require(!trader.isSettled, "not settled");
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, amm.termStartTimestamp(), amm.termEndTimestamp(), amm.rateOracle().variableFactor(amm.termStartTimestamp(), amm.termEndTimestamp()));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(termStartTimestamp, termEndTimestamp));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMargin(settlementCashflow);
@@ -214,12 +241,12 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        (, int24 tick, ) = amm.vamm().vammVars();
+        (, int24 tick, ) = vamm.vammVars();
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
-        bool isLiquidatable = calculator.isLiquidatablePosition(
-            IMarginCalculator.PositionMarginRequirementParams({
+        bool isLiquidatable = MarginCalculator.isLiquidatablePosition(
+            MarginCalculator.PositionMarginRequirementParams({
                 owner: params.owner,
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
@@ -230,11 +257,12 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
                 liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: amm.rateOracle().variableFactor(termStartTimestamp, termEndTimestamp),
-                rateOracleId: amm.rateOracleId(),
-                historicalApy: amm.rateOracle().getHistoricalApy()
+                variableFactor: rateOracle.variableFactor(termStartTimestamp, termEndTimestamp),
+                rateOracleId: rateOracleId,
+                historicalApy: rateOracle.getHistoricalApy()
             }),
-            position.margin
+            position.margin,
+            marginCalculatorParameters
         );
 
         if (!isLiquidatable) {
@@ -245,9 +273,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         position.updateMargin(-int256(liquidatorReward));
 
-        amm.burn(params.tickLower, params.tickUpper, position._liquidity); // burn all liquidity
+        vamm.burn(params.tickLower, params.tickUpper, position._liquidity); // burn all liquidity
 
-        IERC20Minimal(underlyingToken).transferFrom(address(amm ), msg.sender, liquidatorRewardValue);
+        IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, liquidatorRewardValue);
         
     }
 
@@ -256,17 +284,18 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         
         Trader.Info storage trader = traders[traderAddress];
             
-        bool isLiquidatable = calculator.isLiquidatableTrader(
-            IMarginCalculator.TraderMarginRequirementParams({
+        bool isLiquidatable = MarginCalculator.isLiquidatableTrader(
+            MarginCalculator.TraderMarginRequirementParams({
                 fixedTokenBalance: trader.fixedTokenBalance,
                 variableTokenBalance: trader.variableTokenBalance,
                 termStartTimestamp: termStartTimestamp,
                 termEndTimestamp: termEndTimestamp,
                 isLM: true,
-                rateOracleId: amm.rateOracleId(),
-                historicalApy: amm.rateOracle().getHistoricalApy()
+                rateOracleId: rateOracleId,
+                historicalApy: rateOracle.getHistoricalApy()
             }),
-            trader.margin
+            trader.margin,
+            marginCalculatorParameters
         );
 
         if (!isLiquidatable) {
@@ -279,9 +308,9 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
 
         int256 notional = trader.variableTokenBalance > 0 ? trader.variableTokenBalance : -trader.variableTokenBalance;
         
-        UnwindTraderUnwindPosition.unwindTrader(address(amm), traderAddress, notional);
+        unwindTrader(traderAddress, notional);
 
-        IERC20Minimal(underlyingToken).transferFrom(address(amm), msg.sender, liquidatorRewardValue);
+        IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, liquidatorRewardValue);
 
     }
 
@@ -293,13 +322,13 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
             uint128 amount
         ) external override {
         
-        (, int24 tick, ) = amm.vamm().vammVars();
+        (, int24 tick, ) = vamm.vammVars();
         updatePositionTokenBalances(recipient, tickLower, tickUpper);
         Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
         uint128 amountTotal = LiquidityMath.addDelta(position._liquidity, int128(amount));
         
-        int256 marginRequirement = int256(calculator.getPositionMarginRequirement(
-            IMarginCalculator.PositionMarginRequirementParams({
+        int256 marginRequirement = int256(MarginCalculator.getPositionMarginRequirement(
+            MarginCalculator.PositionMarginRequirementParams({
                 owner: recipient,
                 tickLower: tickLower,
                 tickUpper: tickUpper,
@@ -310,10 +339,10 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
                 liquidity: amountTotal,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance, 
-                variableFactor: amm.rateOracle().variableFactor(termStartTimestamp, termEndTimestamp),
-                rateOracleId: amm.rateOracleId(),
-                historicalApy: amm.rateOracle().getHistoricalApy()
-            })
+                variableFactor: rateOracle.variableFactor(termStartTimestamp, termEndTimestamp),
+                rateOracleId: rateOracleId,
+                historicalApy: rateOracle.getHistoricalApy()
+            }), marginCalculatorParameters
         ));
    
         if (marginRequirement > position.margin) {
@@ -338,16 +367,16 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         Trader.Info storage trader = traders[recipient];
         trader.updateBalances(fixedTokenBalance, variableTokenBalance);
 
-        int256 marginRequirement = int256(calculator.getTraderMarginRequirement(
-            IMarginCalculator.TraderMarginRequirementParams({
+        int256 marginRequirement = int256(MarginCalculator.getTraderMarginRequirement(
+            MarginCalculator.TraderMarginRequirementParams({
                 fixedTokenBalance: trader.fixedTokenBalance,
                 variableTokenBalance: trader.variableTokenBalance,
                 termStartTimestamp:termStartTimestamp,
                 termEndTimestamp:termEndTimestamp,
                 isLM: false,
-                rateOracleId: amm.rateOracleId(),
-                historicalApy: amm.rateOracle().getHistoricalApy()
-            })
+                rateOracleId: rateOracleId,
+                historicalApy: rateOracle.getHistoricalApy()
+            }), marginCalculatorParameters
         ));
 
         if (marginRequirement > trader.margin && !isUnwind) {
@@ -361,8 +390,8 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         int24 tickUpper) internal {
 
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        (, int24 tick, ) = amm.vamm().vammVars();
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = amm.vamm().computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
+        (, int24 tick, ) = vamm.vammVars();
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = vamm.computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
@@ -381,8 +410,7 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         Position.Info memory positionMemory = positions.get(owner, tickLower, tickUpper);
 
         // can we bring UnwindTraderUnwindPosition in the MarginEngine?
-        (_fixedTokenBalance, _variableTokenBalance) = UnwindTraderUnwindPosition.unwindPosition(
-            address(amm),
+        (_fixedTokenBalance, _variableTokenBalance) = unwindPosition(
             owner,
             tickLower,
             tickUpper,
@@ -390,6 +418,277 @@ contract MarginEngine is IMarginEngine, IAMMImmutables, MarginEngineHelpers, Pau
         );
 
         position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
+    }
+
+
+
+    /// @notice Calculate the liquidator reward and the updated trader margin
+    /// @param traderMargin Current margin of the trader
+    /// @return liquidatorReward Liquidator Reward as a proportion of the traderMargin
+    /// @return updatedMargin Trader margin net the liquidatorReward
+    /// @dev liquidatorReward = traderMargin * liquidatorReward
+    /// @dev updatedMargin = traderMargin - liquidatorReward
+    function calculateLiquidatorRewardAndUpdatedMargin(
+        int256 traderMargin,
+        uint256 liquidatorRewardAsProportionOfMargin
+    ) public pure returns (uint256 liquidatorReward, int256 updatedMargin) {
+        liquidatorReward = PRBMathUD60x18.mul(
+            uint256(traderMargin),
+            liquidatorRewardAsProportionOfMargin
+        );
+
+        updatedMargin = traderMargin - int256(liquidatorReward);
+    }
+
+    /// @notice Check if the position margin is above the Initial Margin Requirement
+    /// @dev Reverts if position's margin is below the requirement
+    /// @param params Position owner, position tickLower, position tickUpper, _
+    /// @param updatedMarginWouldBe Amount of margin supporting the position following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
+    /// @param positionLiquidity Current liquidity supplied by the position
+    /// @param positionFixedTokenBalance Fixed token balance of a position since the last mint/burn/poke
+    /// @param positionVariableTokenBalance Variable token balance of a position since the last mint/burn/poke
+    /// @param variableFactor Accrued Variable Factor, i.e. the variable APY of the underlying yield-bearing pool since the inception of the IRS AMM until now
+    /// @dev multiplied by (time in seconds since IRS AMM inception / number of seconds in a year)
+    function checkPositionMarginAboveRequirement(
+        IMarginEngine.ModifyPositionParams memory params,
+        int256 updatedMarginWouldBe,
+        uint128 positionLiquidity,
+        int256 positionFixedTokenBalance,
+        int256 positionVariableTokenBalance,
+        uint256 variableFactor
+    ) internal view {
+
+        (, int24 tick, ) = vamm.vammVars();
+
+        MarginCalculator.PositionMarginRequirementParams
+            memory marginReqParams = MarginCalculator
+                .PositionMarginRequirementParams({
+                    owner: params.owner,
+                    tickLower: params.tickLower,
+                    tickUpper: params.tickUpper,
+                    isLM: false,
+                    currentTick: tick,
+                    termStartTimestamp: termStartTimestamp,
+                    termEndTimestamp: termEndTimestamp,
+                    liquidity: positionLiquidity,
+                    fixedTokenBalance: positionFixedTokenBalance,
+                    variableTokenBalance: positionVariableTokenBalance,
+                    variableFactor: variableFactor,
+                    rateOracleId: rateOracleId,
+                    historicalApy: rateOracle.getHistoricalApy()
+                });
+
+        int256 positionMarginRequirement = int256(
+            MarginCalculator.getPositionMarginRequirement(marginReqParams, marginCalculatorParameters)
+        );
+
+        if (updatedMarginWouldBe <= positionMarginRequirement) {
+            revert MarginLessThanMinimum();
+        }
+    }
+
+    /// @notice Check if the trader margin is above the Initial Margin Requirement
+    /// @dev Reverts if trader's margin is below the requirement
+    /// @param updatedMarginWouldBe Amount of margin supporting the trader following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
+    /// @param fixedTokenBalance Current fixed token balance of a trader
+    /// @param variableTokenBalance Current variable token balance of a trader
+    /// @param isTraderSettled Is the Trader settled, i.e. has the trader settled their IRS cashflows post IRS AMM maturity
+    /// @dev Trader's margin cannot be updated unless the trader is settled
+    /// @dev If the current block timestamp is higher than the term end timestamp of the IRS AMM then the trader needs to be settled to be able to update their margin
+    /// @dev If the AMM has already expired and the trader is settled then the trader can withdraw their margin
+    function checkTraderMarginCanBeUpdated(
+        int256 updatedMarginWouldBe,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        bool isTraderSettled
+    ) public view {
+
+        if (Time.blockTimestampScaled() >= termEndTimestamp) {
+            if (!isTraderSettled) {
+                revert TraderNotSettled();
+            }
+            if (updatedMarginWouldBe < 0) {
+                revert WithdrawalExceedsCurrentMargin();
+            }
+        } else {
+            checkTraderMarginAboveRequirement(
+                updatedMarginWouldBe,
+                fixedTokenBalance,
+                variableTokenBalance
+            );
+        }
+    }
+
+    /// @notice Check if the position margin can be updated
+    /// @param params Position owner, position tickLower, position tickUpper, _
+    /// @param updatedMarginWouldBe Amount of margin supporting the position following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
+    /// @param isPositionBurned The precise definition of a burn position is a position which has zero active liquidity in the vAMM and has settled the IRS cashflows post AMM maturity
+    /// @param positionLiquidity Current liquidity supplied by the position
+    /// @param positionFixedTokenBalance Fixed token balance of a position since the last mint/burn/poke
+    /// @param positionVariableTokenBalance Variable token balance of a position since the last mint/burn/poke
+    /// @param variableFactor Accrued Variable Factor, i.e. the variable APY of the underlying yield-bearing pool since the inception of the IRS AMM until now
+    /// @dev If the current timestamp is higher than the maturity timestamp of the AMM, then the position needs to be burned (detailed definition above)
+    function checkPositionMarginCanBeUpdated(
+        IMarginEngine.ModifyPositionParams memory params,
+        int256 updatedMarginWouldBe,
+        bool isPositionBurned,
+        bool isPositionSettled,
+        uint128 positionLiquidity,
+        int256 positionFixedTokenBalance,
+        int256 positionVariableTokenBalance,
+        uint256 variableFactor
+    ) public view {
+
+        /// @dev If the AMM has reached maturity, the only reason why someone would want to update
+        // their margin is to withdraw it completely. If so, the position needs to be both burned
+        // and settled.
+
+        if (Time.blockTimestampScaled() >= termEndTimestamp) {
+            if (!isPositionBurned) {
+                revert PositionNotBurned();
+            }
+            if (!isPositionSettled) {
+                revert PositionNotSettled();
+            }
+            if (updatedMarginWouldBe < 0) {
+                revert WithdrawalExceedsCurrentMargin();
+            }
+        }
+
+        checkPositionMarginAboveRequirement(
+            params,
+            updatedMarginWouldBe,
+            positionLiquidity,
+            positionFixedTokenBalance,
+            positionVariableTokenBalance,
+            variableFactor
+        );
+    }
+
+    /// @notice Check if the trader margin is above the Initial Margin Requirement
+    /// @dev Reverts if trader's margin is below the requirement
+    /// @param updatedMarginWouldBe Amount of margin supporting the trader following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
+    /// @param fixedTokenBalance Current fixed token balance of a trader
+    /// @param variableTokenBalance Current variable token balance of a trader
+    function checkTraderMarginAboveRequirement(
+        int256 updatedMarginWouldBe,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance
+    ) internal view {
+
+        int256 traderMarginRequirement = int256(
+            MarginCalculator.getTraderMarginRequirement(
+                MarginCalculator.TraderMarginRequirementParams({
+                    fixedTokenBalance: fixedTokenBalance,
+                    variableTokenBalance: variableTokenBalance,
+                    termStartTimestamp: termStartTimestamp,
+                    termEndTimestamp: termEndTimestamp,
+                    isLM: false,
+                    rateOracleId: rateOracleId,
+                    historicalApy: rateOracle.getHistoricalApy()
+                }), marginCalculatorParameters
+            )
+        );
+
+        if (updatedMarginWouldBe <= traderMarginRequirement) {
+            revert MarginLessThanMinimum();
+        }
+    }
+
+    /// @notice Unwind a trader in a given market
+    /// @param traderAddress The address of the trader to unwind
+    /// @param notional The number of tokens to unwind (the opposite of the trade, so positive – variable tokens – for fixed takers, and negative – fixed tokens - for variable takers, such that fixed tokens + variable tokens = 0)
+    function unwindTrader(
+        address traderAddress,
+        int256 notional
+    ) internal {
+
+        bool isFT = notional > 0;
+
+        if (isFT) {
+            // get into a VT swap
+            // notional is positive
+            IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                recipient: traderAddress,
+                isFT: !isFT,
+                amountSpecified: -notional,
+                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
+                isUnwind: true,
+                isTrader: true
+            });
+
+            vamm.swap(params);
+        } else {
+            // get into an FT swap
+            // notional is negative
+
+            IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                recipient: traderAddress,
+                isFT: isFT,
+                amountSpecified: notional,
+                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
+                isUnwind: true,
+                isTrader: true
+            });
+
+            vamm.swap(params);
+        }
+    }
+
+    /// @notice Unwind an LP position for a given tick range
+    /// @param owner The address of the LP to unwind
+    /// @param tickLower The lower bound of the tick range, inclusive
+    /// @param tickUpper The upper bound of the tick range, inclusive
+    /// @param position The corresponding Position.Info struct that represents the position
+    /// @return _fixedTokenBalance The remaining fixed token balance
+    /// @return _variableTokenBalance The remaining variable token balance
+    function unwindPosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        Position.Info memory position
+    )
+        internal
+        returns (int256 _fixedTokenBalance, int256 _variableTokenBalance)
+    {
+        Tick.checkTicks(tickLower, tickUpper);
+
+        if (position.variableTokenBalance == 0) {
+            revert PositionNetZero();
+        }
+
+        // initiate a swap
+        bool isFT = position.fixedTokenBalance > 0;
+
+        if (isFT) {
+            // get into a VT swap
+            // variableTokenBalance is negative
+
+            IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                recipient: owner,
+                isFT: !isFT,
+                amountSpecified: position.variableTokenBalance, // check the sign
+                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
+                isUnwind: true,
+                isTrader: false
+            });
+
+            (_fixedTokenBalance, _variableTokenBalance) = vamm.swap(params); // check the outputs are correct
+        } else {
+            // get into an FT swap
+            // variableTokenBalance is positive
+
+            IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                recipient: owner,
+                isFT: isFT,
+                amountSpecified: position.variableTokenBalance,
+                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
+                isUnwind: true,
+                isTrader: false
+            });
+
+            (_fixedTokenBalance, _variableTokenBalance) = vamm.swap(params);
+        }
     }
 
 }

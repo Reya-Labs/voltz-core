@@ -13,7 +13,7 @@ contract TestMarginEngine is MarginEngine {
         view
         returns (address underlyingToken)
     {
-        return amm.underlyingToken();
+        return underlyingToken;
     }
 
     function updateTraderMarginTest(int256 marginDelta) external {
@@ -24,31 +24,27 @@ contract TestMarginEngine is MarginEngine {
         int256 updatedMarginWouldBe,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        bool isTraderSettled,
-        address ammAddress // redundunt?
+        bool isTraderSettled
     ) external view {
         return
             checkTraderMarginCanBeUpdated(
                 updatedMarginWouldBe,
                 fixedTokenBalance,
                 variableTokenBalance,
-                isTraderSettled,
-                ammAddress
+                isTraderSettled
             );
     }
 
     function checkTraderMarginAboveRequirementTest(
         int256 updatedMarginWouldBe,
         int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        address ammAddress
+        int256 variableTokenBalance
     ) external view {
         return
             checkTraderMarginAboveRequirement(
                 updatedMarginWouldBe,
                 fixedTokenBalance,
-                variableTokenBalance,
-                ammAddress
+                variableTokenBalance
             );
     }
 
@@ -63,8 +59,7 @@ contract TestMarginEngine is MarginEngine {
         uint128 positionLiquidity,
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
-        uint256 variableFactor,
-        address ammAddress
+        uint256 variableFactor
     ) public view {
         return
             checkPositionMarginCanBeUpdated(
@@ -80,8 +75,7 @@ contract TestMarginEngine is MarginEngine {
                 positionLiquidity,
                 positionFixedTokenBalance,
                 positionVariableTokenBalance,
-                variableFactor,
-                ammAddress
+                variableFactor
             );
     }
 
@@ -94,8 +88,7 @@ contract TestMarginEngine is MarginEngine {
         uint128 positionLiquidity,
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
-        uint256 variableFactor,
-        address ammAddress
+        uint256 variableFactor
     ) public view {
         return
             checkPositionMarginAboveRequirement(
@@ -109,8 +102,7 @@ contract TestMarginEngine is MarginEngine {
                 positionLiquidity,
                 positionFixedTokenBalance,
                 positionVariableTokenBalance,
-                variableFactor,
-                ammAddress
+                variableFactor
             );
     }
 
