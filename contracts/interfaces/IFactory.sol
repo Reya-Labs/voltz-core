@@ -70,7 +70,10 @@ interface IFactory {
     /// @notice Returns vAMM address for a given AMM address
     /// @param marginEngineAddress The address of the AMM
     /// @return vAMM The vAMM address
-    function getVAMMMap(address marginEngineAddress) external view returns (address);
+    function getVAMMMap(address marginEngineAddress)
+        external
+        view
+        returns (address);
 
     /// @notice Updates the owner of the factory
     /// @dev Must be called by the current owner
@@ -97,7 +100,9 @@ interface IFactory {
     /// @param marginEngineAddress The parent AMM of the VAMM
     /// @dev The call will revert if the VAMM already exists, amm is invalid
     /// @return vamm The address of the newly created VAMM
-    function createVAMM(address marginEngineAddress) external returns (address vamm);
+    function createVAMM(address marginEngineAddress)
+        external
+        returns (address vamm);
 
     /// @notice Adds a new Rate Oracle to the mapping getRateOracleAddress
     /// @param _rateOracleId A bytes32 string which links to the correct underlying yield protocol (e.g. Aave v2 or Compound)

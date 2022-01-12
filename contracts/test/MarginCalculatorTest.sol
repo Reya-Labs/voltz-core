@@ -1,4 +1,4 @@
-// // SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 
 // todo: fix given that now MarginCalculator is a library
 

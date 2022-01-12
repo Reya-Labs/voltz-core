@@ -7,7 +7,6 @@ import "../core_libraries/Position.sol";
 import "./rate_oracles/IRateOracle.sol";
 
 interface IMarginEngine is IPositionStructs {
-
     // structs
     // below should all be SD59x18 or UD60x18 user defined types?
     /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
@@ -48,15 +47,16 @@ interface IMarginEngine is IPositionStructs {
     function rateOracleId() external view returns (bytes32);
 
     function termStartTimestamp() external view returns (uint256);
+
     function termEndTimestamp() external view returns (uint256);
 
     function rateOracle() external view returns (IRateOracle);
-    
+
     // errors
 
     /// @dev No need to unwind a net zero position
     error PositionNetZero();
-    
+
     /// @dev Cannot have less margin than the minimum requirement
     error MarginLessThanMinimum();
 
@@ -71,7 +71,7 @@ interface IMarginEngine is IPositionStructs {
 
     /// @dev Position must be settled after AMM has reached maturity
     error PositionNotSettled();
-    
+
     // view functions
 
     function liquidatorReward() external view returns (uint256);
