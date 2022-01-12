@@ -18,7 +18,11 @@ We welcome and are extremely excited to support individuals and teams that wish 
 
 ### Getting Started
 
-[Install Npm](https://nodejs.org/en/download/)
+[Install npm](https://nodejs.org/en/download/)
+
+[Install npx](https://www.npmjs.com/package/npx)
+
+[Install yarn](https://classic.yarnpkg.com/lang/en/docs/install)
 
 [Install and Setup Hardhat](https://hardhat.org)
 
@@ -27,20 +31,13 @@ We welcome and are extremely excited to support individuals and teams that wish 
 ```
 git clone https://github.com/voltzprotocol/voltz-core.git
 cd voltz-core
-npm install
-npx husky install
-```
-
-### Compile
-
-```
-npx hardhat compile
+make install
 ```
 
 ### Test
 
 ```
-npx hardhat test
+make test
 ```
 
 ### Linting
@@ -49,26 +46,34 @@ We use [eslint](https://eslint.org/), [solhint](https://protofire.github.io/solh
 
 `package.json` contains a few scripts to help you with linting and formatting.
 
-The most important is `npm run check`, which will fix any formatting and linting issues and then run the entire codebase through the linter. You should always run this before merging any code into `main`.
+The most important is `make fix`, which will fix any formatting and linting issues and then run the entire codebase through the linter. You should always run this before merging any code into `main`.
 
-By default, we install a pre-push hook to run `npm run check` before each push. If you need to override this, you can pass the `--no-verify` flag:
+By default, we install a pre-push hook to run `make fix` before each push. If you need to override this, you can pass the `--no-verify` flag:
 
     git push -u origin my-fancy-branch --no-verify
 
 #### Linting
 
-- `npm run lint` - Lint the entire codebase.
-- `npm run lint:sol` - Lint Solidity files.
-- `npm run lint:ts` - Lint TypeScript files.
-- `npm run lint:sol:fix` - Fix Solidity files.
-- `npm run lint:ts:fix` - Fix TypeScript files.
-- `npm run lint:fix` - Fix linting errors across the entire codebase.
+- `yarn lint` - Lint the entire codebase.
+- `yarn lint:sol` - Lint Solidity files.
+- `yarn lint:ts` - Lint TypeScript files.
+- `yarn lint:other` - Lint JSON, JS, and Markdown files.
+- `yarn lint:sol:fix` - Fix Solidity files.
+- `yarn lint:ts:fix` - Fix TypeScript files.
+- `yarn lint:other:fix` - Fix JSON, JS, and Markdown files.
+- `yarn lint:fix` - Fix linting errors across the entire codebase.
 
 #### Formatting
 
-- `npm run format` - Format the entire codebase.
-- `npm run format:sol` - Format Solidity files.
-- `npm run format:ts` - Format TypeScript files.
-- `npm run format:sol:check` - Check the formatting of all Solidity files.
-- `npm run format:ts:check` - Check the formatting of all TypeScript files.
-- `npm run format:check` - Check the formatting of all files.
+- `yarn format` - Format the entire codebase.
+- `yarn format:sol` - Format Solidity files.
+- `yarn format:ts` - Format TypeScript files.
+- `yarn format:other` - Format JSON, JS, and Markdown files.
+- `yarn format:sol:check` - Check the formatting of all Solidity files.
+- `yarn format:ts:check` - Check the formatting of all TypeScript files.
+- `yarn format:other:check` - Check the formatting of all JSON, JS, and Markdown files.
+- `yarn format:check` - Check the formatting of all files.
+
+## Contracts
+
+We detail a few of the core contracts in the Voltz Protocol \[TODO].
