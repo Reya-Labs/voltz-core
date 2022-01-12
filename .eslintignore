@@ -4,6 +4,6 @@ cache
 coverage
 old_test
 hardhat.config.ts
-package-lock.json
+yarn.lock
 package.json
 tsconfig.json
