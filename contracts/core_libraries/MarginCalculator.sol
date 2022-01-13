@@ -601,7 +601,6 @@ library MarginCalculator {
         }
     }
 
-
     /// @notice Checks if a given trader is liquidatable
     /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
     /// @param currentMargin Current margin of a trader in terms of the underlying tokens (18 decimals)

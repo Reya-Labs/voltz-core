@@ -307,8 +307,14 @@ contract MarginEngine is IMarginEngine, Pausable {
         if (!isLiquidatable) {
             revert CannotLiquidate();
         }
+        
+        uint256 liquidatorRewardValue = PRBMathUD60x18.mul(
+            uint256(trader.margin),
+            liquidatorReward
+        );
 
-        (uint256 liquidatorRewardValue, int256 updatedMargin) = calculateLiquidatorRewardAndUpdatedMargin(trader.margin, liquidatorReward);
+        int256 updatedMargin = trader.margin - int256(liquidatorRewardValue);
+
 
         trader.updateMargin(updatedMargin);
 
@@ -459,26 +465,6 @@ contract MarginEngine is IMarginEngine, Pausable {
         }
 
         position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
-    }
-
-
-
-    /// @notice Calculate the liquidator reward and the updated trader margin
-    /// @param traderMargin Current margin of the trader
-    /// @return liquidatorReward Liquidator Reward as a proportion of the traderMargin
-    /// @return updatedMargin Trader margin net the liquidatorReward
-    /// @dev liquidatorReward = traderMargin * liquidatorReward
-    /// @dev updatedMargin = traderMargin - liquidatorReward
-    function calculateLiquidatorRewardAndUpdatedMargin(
-        int256 traderMargin,
-        uint256 liquidatorRewardAsProportionOfMargin
-    ) public pure returns (uint256 liquidatorReward, int256 updatedMargin) {
-        liquidatorReward = PRBMathUD60x18.mul(
-            uint256(traderMargin),
-            liquidatorRewardAsProportionOfMargin
-        );
-
-        updatedMargin = traderMargin - int256(liquidatorReward);
     }
 
     /// @notice Check if the position margin is above the Initial Margin Requirement
