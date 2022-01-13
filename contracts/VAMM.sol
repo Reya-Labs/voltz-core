@@ -289,6 +289,7 @@ contract VAMM is IVAMM, Pausable {
     emit Mint(msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
+
   /// @inheritdoc IVAMM
   function swap(SwapParams memory params)
     external
@@ -298,20 +299,35 @@ contract VAMM is IVAMM, Pausable {
     lock
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
   {
+    /// @audit might be helpful to have a higher level function (initiateIRS) which then calls swap
 
     SwapLocalVars memory swapLocalVars;
     
     VAMMVars memory vammVarsStart = vammVars;
 
-    checksBeforeSwap(params, vammVarsStart, !unlocked);
+    checksBeforeSwap(params, vammVarsStart);
+
+    /// @dev lock the vamm while the swap is taking place
 
     unlocked = false;
 
+
+    /// @audit use uint32 for blockTimestamp (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L132)
+    /// @audit feeProtocol can be represented in a more efficient way (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L69)
+    // Uniswap implementation: feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4), where in our case isFT == !zeroForOne
     SwapCache memory cache = SwapCache({
       liquidityStart: liquidity,
       blockTimestamp: Time.blockTimestampScaled(),
       feeProtocol: vammVars.feeProtocol
     });
+
+    /// @dev amountSpecified = The amount of the swap, which implicitly configures the swap as exact input (positive), or exact output (negative)
+    /// @dev Both FTs and VTs care about the notional of their IRS contract, the notional is the absolute amount of variableTokens traded
+    /// @dev Hence, if an FT wishes to trade x notional, amountSpecified needs to be an exact input (in terms of the variableTokens they provide), hence amountSpecified needs to be positive
+    /// @audit add revert statement if isFT and amountSpecified is not positive
+    /// @dev Also, if a VT wishes to trade x notional, amountSpecified needs to be an exact output (in terms of the variableTokens they receive), hence amountSpecified needs to be negative 
+    /// @audit add revert statement if isFT and amountSpecified is not positive
+    /// @dev amountCalculated is the amount already swapped out/in of the output (variable taker) / input (fixed taker) asset
 
     SwapState memory state = SwapState({
       amountSpecifiedRemaining: params.amountSpecified,
@@ -325,6 +341,8 @@ contract VAMM is IVAMM, Pausable {
       protocolFee: 0
     });
 
+    /// @dev write an entry to the rate oracle (given no throttling), should be a no-op
+
     marginEngine.rateOracle().writeOracleEntry();
 
     // continue swapping as long as we haven't used the entire input/output and haven't reached the price (implied fixed rate) limit
@@ -336,8 +354,12 @@ contract VAMM is IVAMM, Pausable {
 
       step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
+
+      /// @dev if isFT (fixed taker) (moving right to left), the nextInitializedTick should be more than or equal to the current tick
+      /// @dev if !isFT (variable taker) (moving left to right), the nextInitializedTick should be less than or equal to the current tick
+      /// @audit add an assert statement that checks for the above two conditions
       (step.tickNext, step.initialized) = tickBitmap
-        .nextInitializedTickWithinOneWord(state.tick, tickSpacing, params.isFT);
+        .nextInitializedTickWithinOneWord(state.tick, tickSpacing, !params.isFT);
 
       // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
       if (step.tickNext < TickMath.MIN_TICK) {
@@ -467,6 +489,7 @@ contract VAMM is IVAMM, Pausable {
         params.amountSpecified - state.amountSpecifiedRemaining
       );
 
+    /// feels redundunt
     swapLocalVars.amount0;
     swapLocalVars.amount1;
 
@@ -563,19 +586,24 @@ contract VAMM is IVAMM, Pausable {
   }
 
   function checksBeforeSwap(
-      IVAMM.SwapParams memory params,
-      IVAMM.VAMMVars memory vammVarsStart,
-      bool isAMMLocked
-  ) internal pure {
+      SwapParams memory params,
+      VAMMVars memory vammVarsStart
+  ) internal view {
+      
       if (params.amountSpecified == 0) {
-          revert IVAMM.IRSNotionalAmountSpecifiedMustBeNonZero(
+          revert IRSNotionalAmountSpecifiedMustBeNonZero(
               params.amountSpecified
           );
       }
 
-      if (isAMMLocked) {
-          revert IVAMM.CanOnlyTradeIfUnlocked(!isAMMLocked);
+      if (!unlocked) {
+          revert CanOnlyTradeIfUnlocked(unlocked);
       }
+
+      /// @dev if a trader is an FT, they consume fixed in return for variable
+      /// @dev Movement from right to left along the VAMM, hence the sqrtPriceLimitX96 needs to be higher than the current sqrtPriceX96, but lower than the MAX_SQRT_RATIO
+      /// @dev if a trader is a VT, they consume variable in return for fixed
+      /// @dev Movement from left to right along the VAMM, hence the sqrtPriceLimitX96 needs to be lower than the current sqrtPriceX96, but higher than the MIN_SQRT_RATIO
 
       require(
           params.isFT
