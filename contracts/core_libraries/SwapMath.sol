@@ -20,8 +20,10 @@ library SwapMath {
             timeToMaturityInSeconds
         );
 
-        feeAmount = PRBMathUD60x18.mul(notional, PRBMathUD60x18.mul(feePercentage, timeInYears));
-
+        feeAmount = PRBMathUD60x18.mul(
+            notional,
+            PRBMathUD60x18.mul(feePercentage, timeInYears)
+        );
     }
 
     /// @notice Computes the result of swapping some amount in, or amount out, given the parameters of the swap
