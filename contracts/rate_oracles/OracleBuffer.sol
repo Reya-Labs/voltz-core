@@ -9,14 +9,14 @@ pragma solidity ^0.8.0;
 /// Observations are overwritten when the full length of the oracle array is populated.
 /// The most recent observation is available, independent of the length of the oracle array, by passing 0 to observe()
 library OracleBuffer {
+    uint256 private constant MAX_UINT216 = 2**216 - 1;
+
+    /// @dev An Observation fits in one storage slot, keeping gas costs down and allowing `grow()` to pre-pay for gas
     struct Observation {
-        // @audit - compress into one storage slot. E.g. timestamp in seconds (not secondsWad) as a uint32 (safe till 2106) or uint40 (safe "forever"), and a uint216/uint208 for rateValue. Note that Uniswap Oracle's `lte` function can help to make timestamps truncated to uint32 safe even beyond 2106, but on its own it's not sufficient and we'd need to look carefully at all arithmatic involving timestamps.
+        // The timesamp in seconds. uint32 allows tiemstamps up to the year 2105. Future versions may wish to use uint40.
         uint32 blockTimestamp;
-        /// @dev In case of Aave the rate value is in Ray
-        /// @dev The rate value is obtained by calling IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying);
-        // @audit - may be pragmatic to leave this here, but ideally this semantics description should probably move to the aaveRateOracle or its interface
-        /// @dev where aaveLendingPool is the address of the Aave Lending Pool contract and underlying is the underlying token of the Rate Oracle
-        uint256 observedValue;
+        /// @dev Even if observedVale is a decimal with 27 decimal places, this still allows decimal values up to 1.053122916685572e+38
+        uint216 observedValue;
         bool initialized;
     }
 
@@ -30,15 +30,15 @@ library OracleBuffer {
         pure
         returns (Observation memory)
     {
+        require(observedValue <= MAX_UINT216, ">216");
         return
             Observation({
                 blockTimestamp: blockTimestamp,
-                observedValue: observedValue,
+                observedValue: uint216(observedValue),
                 initialized: true
             });
     }
 
-    // @audit todo: move to AaveRateOracle?
     /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array
     /// @param self The stored oracle array
     /// @param time The time of the oracle initialization, via block.timestamp truncated to uint32

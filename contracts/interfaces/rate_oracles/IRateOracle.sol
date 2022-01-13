@@ -2,9 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-
-// @audit High-level comment - there are some functions here that perhaps do not need to be part ofthe interface because we only expect to use them internally. This doesn't mean that we hide the functions (it's generally good to make functions public where it's safe to do so), but a smaller interface containing only the functions that callers will need may be better.
-
 /// @dev The RateOracle is used for two purposes on the Voltz Protocol
 /// @dev Settlement: in order to be able to settle IRS positions after the termEndTimestamp of a given AMM
 /// @dev Margin Engine Computations: getHistoricalApy of the Rate Oracle is a quantity used in the MarginCalculator
