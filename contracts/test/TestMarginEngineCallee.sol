@@ -3,9 +3,9 @@ import "../MarginEngine.sol";
 import "../interfaces/IMarginEngine.sol";
 
 contract TestMarginEngineCallee {
-    function updateTraderMarginTest(address marginEngine, int256 marginDelta)
-        external
-    {
-        IMarginEngine(marginEngine).updateTraderMargin(marginDelta);
-    }
+    // function updateTraderMarginTest(address marginEngine, int256 marginDelta)
+    //     external
+    // {
+    //     IMarginEngine(marginEngine).updateTraderMargin(marginDelta);
+    // }
 }

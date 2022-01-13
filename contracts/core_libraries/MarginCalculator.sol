@@ -8,7 +8,6 @@ import "../utils/TickMath.sol";
 import "../utils/SqrtPriceMath.sol";
 import "./FixedAndVariableMath.sol";
 import "./Position.sol";
-import "hardhat/console.sol";
 import "./Tick.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
@@ -63,8 +62,6 @@ library MarginCalculator {
         uint256 termEndTimestamp;
         /// @dev isLM = true => Liquidation Margin is calculated, isLM = false => Initial Margin is calculated
         bool isLM;
-        /// @dev A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
-        bytes32 rateOracleId;
         /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
         uint256 historicalApy;
     }
@@ -93,8 +90,6 @@ library MarginCalculator {
         int256 variableTokenBalance;
         /// @dev Variable Factor is the variable rate from the IRS AMM initiation and until IRS AMM maturity (when computing margin requirements)
         uint256 variableFactor;
-        /// @dev A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
-        bytes32 rateOracleId;
         /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
         uint256 historicalApy;
     }
@@ -185,14 +180,12 @@ library MarginCalculator {
     }
 
     /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
-    /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
     /// @param termEndTimestampScaled termEndTimestampScaled
     /// @param currentTimestampScaled currentTimestampScaled
     /// @param historicalApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @param isUpper isUpper = true ==> calculating the APY Upper Bound, otherwise APY Lower Bound
     /// @return apyBound APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
     function computeApyBound(
-        bytes32 rateOracleId,
         uint256 termEndTimestampScaled,
         uint256 currentTimestampScaled,
         uint256 historicalApy,
@@ -280,7 +273,6 @@ library MarginCalculator {
     /// @param currentTimestampScaled currentTimestampScaled
     /// @param isFT isFT => we are dealing with a Fixed Taker (short) IRS position, otherwise it is a Variable Taker (long) IRS position
     /// @param isLM isLM => we are computing a Liquidation Margin otherwise computing an Initial Margin
-    /// @param rateOracleId A bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
     /// @param historicalApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @return variableFactor The Worst Case Variable Factor At Maturity = APY Bound * accrualFactor(timeInYearsFromStartUntilMaturity) where APY Bound = APY Upper Bound for Fixed Takers and APY Lower Bound for Variable Takers
     function worstCaseVariableFactorAtMaturity(
@@ -289,7 +281,6 @@ library MarginCalculator {
         uint256 currentTimestampScaled,
         bool isFT,
         bool isLM,
-        bytes32 rateOracleId,
         uint256 historicalApy,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
@@ -301,7 +292,6 @@ library MarginCalculator {
             if (isLM) {
                 variableFactor = PRBMathUD60x18.mul(
                     computeApyBound(
-                        rateOracleId,
                         termEndTimestampScaled,
                         currentTimestampScaled,
                         historicalApy,
@@ -314,7 +304,6 @@ library MarginCalculator {
                 variableFactor = PRBMathUD60x18.mul(
                     PRBMathUD60x18.mul(
                         computeApyBound(
-                            rateOracleId,
                             termEndTimestampScaled,
                             currentTimestampScaled,
                             historicalApy,
@@ -330,7 +319,6 @@ library MarginCalculator {
             if (isLM) {
                 variableFactor = PRBMathUD60x18.mul(
                     computeApyBound(
-                        rateOracleId,
                         termEndTimestampScaled,
                         currentTimestampScaled,
                         historicalApy,
@@ -343,7 +331,6 @@ library MarginCalculator {
                 variableFactor = PRBMathUD60x18.mul(
                     PRBMathUD60x18.mul(
                         computeApyBound(
-                            rateOracleId,
                             termEndTimestampScaled,
                             currentTimestampScaled,
                             historicalApy,
@@ -358,6 +345,15 @@ library MarginCalculator {
         }
     }
 
+    /// @notice Returns the Minimum Margin Requirement
+    /// @dev As a safety measure, Voltz Protocol also computes the minimum margin requirement for FTs and VTs.
+    /// @dev This ensures the protocol has a cap on the amount of leverage FTs and VTs can take
+    /// @dev Minimum Margin = abs(varaibleTokenBalance) * minDelta * t
+    /// @dev minDelta is a parameter that is set separately for FTs and VTs and it is free to vary depending on the underlying rates pool
+    /// @dev Also the minDelta is different for Liquidation and Initial Margin Requirements
+    /// @dev where minDeltaIM > minDeltaLM
+    /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
+    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
     function getMinimumMarginRequirement(
         TraderMarginRequirementParams memory params,
         IMarginEngine.MarginCalculatorParameters
@@ -406,27 +402,15 @@ library MarginCalculator {
                 PRBMathUD60x18.mul(vars.minDelta, vars.timeInYears)
             );
 
-            console.log("Zero Lower Bound Margin: ", vars.zeroLowerBoundMargin);
-            console.log("Margin before ZLB correction: ", margin);
-
             if (margin > vars.zeroLowerBoundMargin) {
                 margin = vars.zeroLowerBoundMargin;
             }
-
-            console.log(
-                "Contract: The fixed factor is",
-                FixedAndVariableMath.fixedFactor(
-                    true,
-                    params.termStartTimestamp,
-                    params.termEndTimestamp
-                )
-            );
-            console.log("Contract: The time in years is", vars.timeInYears);
-            console.log("Contract: The notional is", vars.notional);
-            console.log("Contract: The margin is", margin);
         }
     }
 
+    /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
+    /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
+    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
     function getTraderMarginRequirement(
         TraderMarginRequirementParams memory params,
         IMarginEngine.MarginCalculatorParameters
@@ -459,7 +443,6 @@ library MarginCalculator {
                     Time.blockTimestampScaled(),
                     params.variableTokenBalance < 0,
                     params.isLM,
-                    params.rateOracleId,
                     params.historicalApy,
                     _marginCalculatorParameters
                 )
@@ -538,7 +521,6 @@ library MarginCalculator {
                 termStartTimestamp: params.termStartTimestamp,
                 termEndTimestamp: params.termEndTimestamp,
                 isLM: params.isLM,
-                rateOracleId: params.rateOracleId,
                 historicalApy: params.historicalApy
             }),
             _marginCalculatorParameters
@@ -587,7 +569,6 @@ library MarginCalculator {
                 termStartTimestamp: params.termStartTimestamp,
                 termEndTimestamp: params.termEndTimestamp,
                 isLM: params.isLM,
-                rateOracleId: params.rateOracleId,
                 historicalApy: params.historicalApy
             }),
             _marginCalculatorParameters
@@ -600,6 +581,9 @@ library MarginCalculator {
         }
     }
 
+    /// @notice Checks if a given position is liquidatable
+    /// @dev In order for a position to be liquidatable its current margin needs to be lower than the position's liquidation margin requirement
+    /// @return _isLiquidatable A boolean which suggests if a given position is liquidatable
     function isLiquidatablePosition(
         PositionMarginRequirementParams memory params,
         int256 currentMargin,
@@ -617,6 +601,11 @@ library MarginCalculator {
         }
     }
 
+
+    /// @notice Checks if a given trader is liquidatable
+    /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
+    /// @param currentMargin Current margin of a trader in terms of the underlying tokens (18 decimals)
+    /// @return isLiquidatable A boolean which suggests if a given trader is liquidatable
     function isLiquidatableTrader(
         TraderMarginRequirementParams memory params,
         int256 currentMargin,
@@ -662,7 +651,6 @@ library MarginCalculator {
                         termStartTimestamp: params.termStartTimestamp,
                         termEndTimestamp: params.termEndTimestamp,
                         isLM: params.isLM,
-                        rateOracleId: params.rateOracleId,
                         historicalApy: params.historicalApy
                     }),
                     _marginCalculatorParameters
@@ -699,7 +687,6 @@ library MarginCalculator {
                         termStartTimestamp: params.termStartTimestamp,
                         termEndTimestamp: params.termEndTimestamp,
                         isLM: params.isLM,
-                        rateOracleId: params.rateOracleId,
                         historicalApy: params.historicalApy
                     }),
                     _marginCalculatorParameters
@@ -724,7 +711,6 @@ library MarginCalculator {
                         termStartTimestamp: params.termStartTimestamp,
                         termEndTimestamp: params.termEndTimestamp,
                         isLM: params.isLM,
-                        rateOracleId: params.rateOracleId,
                         historicalApy: params.historicalApy
                     }),
                     _marginCalculatorParameters
@@ -761,7 +747,6 @@ library MarginCalculator {
                         termStartTimestamp: params.termStartTimestamp,
                         termEndTimestamp: params.termEndTimestamp,
                         isLM: params.isLM,
-                        rateOracleId: params.rateOracleId,
                         historicalApy: params.historicalApy
                     }),
                     _marginCalculatorParameters
@@ -770,55 +755,3 @@ library MarginCalculator {
         }
     }
 }
-
-// todo: accomodate the docs
-// keep for now to migrate the docs
-// // view functions
-
-// function factory() external returns (address);
-
-// /// @notice Returns the Minimum Margin Requirement
-// /// @dev As a safety measure, Voltz Protocol also computes the minimum margin requirement for FTs and VTs.
-// /// @dev This ensures the protocol has a cap on the amount of leverage FTs and VTs can take
-// /// @dev Minimum Margin = abs(varaibleTokenBalance) * minDelta * t
-// /// @dev minDelta is a parameter that is set separately for FTs and VTs and it is free to vary depending on the underlying rates pool
-// /// @dev Also the minDelta is different for Liquidation and Initial Margin Requirements
-// /// @dev where minDeltaIM > minDeltaLM
-// /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
-// /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
-// function getMinimumMarginRequirement(
-//     TraderMarginRequirementParams memory params
-// ) external view returns (uint256 margin);
-
-// /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
-// /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
-// /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
-// function getTraderMarginRequirement(
-//     TraderMarginRequirementParams memory params
-// ) external view returns (uint256 margin);
-
-// function getPositionMarginRequirement(
-//     PositionMarginRequirementParams memory params
-// ) external view returns (uint256 margin);
-
-// /// @notice Checks if a given position is liquidatable
-// /// @dev In order for a position to be liquidatable its current margin needs to be lower than the position's liquidation margin requirement
-// /// @return _isLiquidatable A boolean which suggests if a given position is liquidatable
-// function isLiquidatablePosition(
-//     PositionMarginRequirementParams memory params,
-//     int256 currentMargin
-// ) external view returns (bool _isLiquidatable);
-
-// /// @notice Checks if a given trader is liquidatable
-// /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
-// /// @param currentMargin Current margin of a trader in terms of the underlying tokens (18 decimals)
-// /// @return isLiquidatable A boolean which suggests if a given trader is liquidatable
-// function isLiquidatableTrader(
-//     TraderMarginRequirementParams memory params,
-//     int256 currentMargin
-// ) external view returns (bool isLiquidatable);
-
-// function setMarginCalculatorParameters(
-//     IMarginEngine.MarginCalculatorParameters memory marginCalculatorParameters,
-//     bytes32 rateOracleId
-// ) external;

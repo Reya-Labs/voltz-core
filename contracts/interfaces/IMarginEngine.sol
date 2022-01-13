@@ -121,7 +121,7 @@ interface IMarginEngine is IPositionStructs {
     /// @notice Updates the sender's Trader Margin
     /// @dev Must be called by the trader address
     /// @param marginDelta Determines the updated margin of the trader where the updated margin = current margin + marginDelta
-    function updateTraderMargin(int256 marginDelta) external;
+    function updateTraderMargin(address traderAddress, int256 marginDelta) external;
 
     /// @notice Settles a Position
     /// @dev Can be called by anyone

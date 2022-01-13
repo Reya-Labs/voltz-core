@@ -132,7 +132,7 @@ contract MarginEngine is IMarginEngine, Pausable {
         onlyFactoryOwner{
 
         if (amount > 0) {
-            
+            /// @dev if the amount exceeds the available balances, vamm.updateProtocolFees(amount) should be reverted as intended
             vamm.updateProtocolFees(amount);
             IERC20Minimal(underlyingToken).transfer(
                 recipient,
@@ -169,10 +169,12 @@ contract MarginEngine is IMarginEngine, Pausable {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        if (params.owner != msg.sender) {
-            revert OnlyOwnerCanUpdatePosition();
+        if (marginDelta < 0) {
+            if (params.owner != msg.sender) {
+                revert OnlyOwnerCanUpdatePosition();
+            }
         }
-
+        
         uint256 variableFactor = rateOracle.variableFactor(termStartTimestamp, termEndTimestamp);
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
@@ -186,10 +188,16 @@ contract MarginEngine is IMarginEngine, Pausable {
     }
     
     /// @inheritdoc IMarginEngine
-    function updateTraderMargin(int256 marginDelta) public nonZeroDelta(marginDelta) override {
+    function updateTraderMargin(address traderAddress, int256 marginDelta) external nonZeroDelta(marginDelta) override {
+        // used to be public, should now impact the tests
+        
+        if (marginDelta < 0) {
+            if (traderAddress != msg.sender) {
+                revert OnlyOwnerCanUpdatePosition();
+            }
+        }
 
-        // make external?, impacts the tests
-        Trader.Info storage trader = traders[msg.sender];
+        Trader.Info storage trader = traders[traderAddress];
 
         int256 updatedMarginWouldBe = trader.margin + marginDelta;
         
@@ -258,7 +266,6 @@ contract MarginEngine is IMarginEngine, Pausable {
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
                 variableFactor: rateOracle.variableFactor(termStartTimestamp, termEndTimestamp),
-                rateOracleId: rateOracleId,
                 historicalApy: rateOracle.getHistoricalApy()
             }),
             position.margin,
@@ -291,7 +298,6 @@ contract MarginEngine is IMarginEngine, Pausable {
                 termStartTimestamp: termStartTimestamp,
                 termEndTimestamp: termEndTimestamp,
                 isLM: true,
-                rateOracleId: rateOracleId,
                 historicalApy: rateOracle.getHistoricalApy()
             }),
             trader.margin,
@@ -340,7 +346,6 @@ contract MarginEngine is IMarginEngine, Pausable {
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance, 
                 variableFactor: rateOracle.variableFactor(termStartTimestamp, termEndTimestamp),
-                rateOracleId: rateOracleId,
                 historicalApy: rateOracle.getHistoricalApy()
             }), marginCalculatorParameters
         ));
@@ -364,6 +369,10 @@ contract MarginEngine is IMarginEngine, Pausable {
 
     /// @inheritdoc IMarginEngine
     function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, bool isUnwind) external override {
+
+        /// @dev this function can only be called by the vamm following a swap    
+        require(msg.sender==address(vamm), "only vamm");
+        
         Trader.Info storage trader = traders[recipient];
         trader.updateBalances(fixedTokenBalance, variableTokenBalance);
 
@@ -374,7 +383,6 @@ contract MarginEngine is IMarginEngine, Pausable {
                 termStartTimestamp:termStartTimestamp,
                 termEndTimestamp:termEndTimestamp,
                 isLM: false,
-                rateOracleId: rateOracleId,
                 historicalApy: rateOracle.getHistoricalApy()
             }), marginCalculatorParameters
         ));
@@ -405,17 +413,50 @@ contract MarginEngine is IMarginEngine, Pausable {
         int24 tickUpper
     ) external override returns(int256 _fixedTokenBalance, int256 _variableTokenBalance) {
 
+        /// @dev this function can only be called by the vamm following a swap    
+        require(msg.sender==address(vamm), "only vamm");
+
         updatePositionTokenBalances(owner, tickLower, tickUpper);
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        Position.Info memory positionMemory = positions.get(owner, tickLower, tickUpper);
 
-        // can we bring UnwindTraderUnwindPosition in the MarginEngine?
-        (_fixedTokenBalance, _variableTokenBalance) = unwindPosition(
-            owner,
-            tickLower,
-            tickUpper,
-            positionMemory
-        );
+        Tick.checkTicks(tickLower, tickUpper);
+
+        if (position.variableTokenBalance == 0) {
+            revert PositionNetZero();
+        }
+
+        // initiate a swap
+        bool isFT = position.fixedTokenBalance > 0;
+
+        if (isFT) {
+            // get into a VT swap
+            // variableTokenBalance is negative
+
+            IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                recipient: owner,
+                isFT: !isFT,
+                amountSpecified: position.variableTokenBalance, // check the sign
+                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
+                isUnwind: true,
+                isTrader: false
+            });
+
+            (_fixedTokenBalance, _variableTokenBalance) = vamm.swap(params); // check the outputs are correct
+        } else {
+            // get into an FT swap
+            // variableTokenBalance is positive
+
+            IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                recipient: owner,
+                isFT: isFT,
+                amountSpecified: position.variableTokenBalance,
+                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
+                isUnwind: true,
+                isTrader: false
+            });
+
+            (_fixedTokenBalance, _variableTokenBalance) = vamm.swap(params);
+        }
 
         position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
     }
@@ -474,7 +515,6 @@ contract MarginEngine is IMarginEngine, Pausable {
                     fixedTokenBalance: positionFixedTokenBalance,
                     variableTokenBalance: positionVariableTokenBalance,
                     variableFactor: variableFactor,
-                    rateOracleId: rateOracleId,
                     historicalApy: rateOracle.getHistoricalApy()
                 });
 
@@ -584,7 +624,6 @@ contract MarginEngine is IMarginEngine, Pausable {
                     termStartTimestamp: termStartTimestamp,
                     termEndTimestamp: termEndTimestamp,
                     isLM: false,
-                    rateOracleId: rateOracleId,
                     historicalApy: rateOracle.getHistoricalApy()
                 }), marginCalculatorParameters
             )
@@ -632,62 +671,6 @@ contract MarginEngine is IMarginEngine, Pausable {
             });
 
             vamm.swap(params);
-        }
-    }
-
-    /// @notice Unwind an LP position for a given tick range
-    /// @param owner The address of the LP to unwind
-    /// @param tickLower The lower bound of the tick range, inclusive
-    /// @param tickUpper The upper bound of the tick range, inclusive
-    /// @param position The corresponding Position.Info struct that represents the position
-    /// @return _fixedTokenBalance The remaining fixed token balance
-    /// @return _variableTokenBalance The remaining variable token balance
-    function unwindPosition(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
-        Position.Info memory position
-    )
-        internal
-        returns (int256 _fixedTokenBalance, int256 _variableTokenBalance)
-    {
-        Tick.checkTicks(tickLower, tickUpper);
-
-        if (position.variableTokenBalance == 0) {
-            revert PositionNetZero();
-        }
-
-        // initiate a swap
-        bool isFT = position.fixedTokenBalance > 0;
-
-        if (isFT) {
-            // get into a VT swap
-            // variableTokenBalance is negative
-
-            IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                recipient: owner,
-                isFT: !isFT,
-                amountSpecified: position.variableTokenBalance, // check the sign
-                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
-                isUnwind: true,
-                isTrader: false
-            });
-
-            (_fixedTokenBalance, _variableTokenBalance) = vamm.swap(params); // check the outputs are correct
-        } else {
-            // get into an FT swap
-            // variableTokenBalance is positive
-
-            IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                recipient: owner,
-                isFT: isFT,
-                amountSpecified: position.variableTokenBalance,
-                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
-                isUnwind: true,
-                isTrader: false
-            });
-
-            (_fixedTokenBalance, _variableTokenBalance) = vamm.swap(params);
         }
     }
 
