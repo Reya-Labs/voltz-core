@@ -167,7 +167,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             OracleBuffer.Observation memory beforeOrAt,
             OracleBuffer.Observation memory atOrAfter
         ) = observations.getSurroundingObservations(
-                currentTime,
                 queriedTime,
                 currentValue,
                 index,

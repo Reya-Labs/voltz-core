@@ -38,9 +38,15 @@ interface IRateOracle {
 
     /// @notice Gets the variable factor between termStartTimestamp and termEndTimestamp
     /// @return result The variable factor
-    /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp);
+    /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). Term end timestamps are cached for quick retrieval later.
     /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
-    function variableFactor(uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns(uint256 result);
+    function variableFactor(uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256 result);
+
+    /// @notice Gets the variable factor between termStartTimestamp and termEndTimestamp
+    /// @return result The variable factor
+    /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). No caching takes place.
+    /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
+    function variableFactorNoCache(uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns(uint256 result);
 
     /// @notice Calculates the observed interest returned by the underlying in a given period
     /// @dev Reverts if we have no data point for either timestamp

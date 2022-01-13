@@ -466,7 +466,7 @@ describe("Aave Rate Oracle", () => {
     it("calculate variable factor at maturity", async () => {
       const termStartTimestampBN = toBn(firstTimestamp.toString());
       const termEndTimestampBN = toBn(secondTimestamp.toString());
-      const realizedVariableFactor = await testRateOracle.variableFactor(
+      const realizedVariableFactor = await testRateOracle.variableFactorNoCache(
         termStartTimestampBN,
         termEndTimestampBN
       );
@@ -478,7 +478,7 @@ describe("Aave Rate Oracle", () => {
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const termStartTimestampBN = toBn(firstTimestamp.toString());
       const termEndTimestampBN = toBn(secondTimestamp.toString());
-      const realizedVariableFactor = await testRateOracle.variableFactor(
+      const realizedVariableFactor = await testRateOracle.variableFactorNoCache(
         termStartTimestampBN,
         termEndTimestampBN
       );
@@ -496,7 +496,7 @@ describe("Aave Rate Oracle", () => {
       const termStartTimestampBN = toBn(firstTimestamp.toString());
       const termEndTimestampBN = toBn((secondTimestamp + 604800).toString());
 
-      const realizedVariableFactor = await testRateOracle.variableFactor(
+      const realizedVariableFactor = await testRateOracle.variableFactorNoCache(
         termStartTimestampBN,
         termEndTimestampBN
       );
@@ -510,7 +510,10 @@ describe("Aave Rate Oracle", () => {
       const termEndTimestampBN = toBn((secondTimestamp + 604800).toString());
 
       await expect(
-        testRateOracle.variableFactor(termStartTimestampBN, termEndTimestampBN)
+        testRateOracle.variableFactorNoCache(
+          termStartTimestampBN,
+          termEndTimestampBN
+        )
       ).to.be.reverted;
     });
   });

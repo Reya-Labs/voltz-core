@@ -121,7 +121,6 @@ contract TestRateOracle is AaveRateOracle {
     {
         return
             observations.binarySearch(
-                Time.blockTimestampTruncated(),
                 target,
                 oracleVars.rateIndex,
                 oracleVars.rateCardinality
@@ -135,7 +134,6 @@ contract TestRateOracle is AaveRateOracle {
             OracleBuffer.Observation memory beforeOrAt,
             OracleBuffer.Observation memory atOrAfter
         ) = observations.getSurroundingObservations(
-                Time.blockTimestampTruncated(),
                 target,
                 currentValue,
                 oracleVars.rateIndex,
