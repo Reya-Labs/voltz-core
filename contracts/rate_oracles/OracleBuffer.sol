@@ -108,26 +108,6 @@ library OracleBuffer {
         return next;
     }
 
-    /// @notice comparator for 32-bit timestamps, that continues to work beyond 7 Feb 2106 (timestamp = max(uint32))
-    /// @dev safe for 0 or 1 overflows, a and b _must_ be chronologically before or equal to time
-    /// @param time A timestamp truncated to 32 bits
-    /// @param a A comparison timestamp from which to determine the relative position of `time`
-    /// @param b From which to determine the relative position of `time`
-    /// @return bool Whether `a` is chronologically <= `b`
-    function lte(
-        uint32 time,
-        uint32 a,
-        uint32 b
-    ) private pure returns (bool) {
-        // if there hasn't been overflow, no need to adjust
-        if (a <= time && b <= time) return a <= b;
-
-        uint256 aAdjusted = a > time ? a : a + 2**32;
-        uint256 bAdjusted = b > time ? b : b + 2**32;
-
-        return aAdjusted <= bAdjusted;
-    }
-
     /// @notice Fetches the observations beforeOrAt and atOrAfter a target, i.e. where [beforeOrAt, atOrAfter] is satisfied.
     /// The result may be the same observation, or adjacent observations.
     /// @dev The answer must be contained in the array, used when the target is located within the stored observation
@@ -166,11 +146,10 @@ library OracleBuffer {
 
             atOrAfter = self[(i + 1) % cardinality];
 
-            bool targetAtOrAfter = lte(time, beforeOrAt.blockTimestamp, target);
+            bool targetAtOrAfter = beforeOrAt.blockTimestamp <= target;
 
             // check if we've found the answer!
-            if (targetAtOrAfter && lte(time, target, atOrAfter.blockTimestamp))
-                break;
+            if (targetAtOrAfter && target <= atOrAfter.blockTimestamp) break;
 
             if (!targetAtOrAfter) r = i - 1;
             else l = i + 1;
@@ -204,7 +183,7 @@ library OracleBuffer {
         beforeOrAt = self[index];
 
         // if the target is chronologically at or after the newest observation, we can early return
-        if (lte(time, beforeOrAt.blockTimestamp, target)) {
+        if (beforeOrAt.blockTimestamp <= target) {
             if (beforeOrAt.blockTimestamp == target) {
                 // if newest observation equals target, we're in the same block, so we can ignore atOrAfter
                 return (beforeOrAt, atOrAfter);
@@ -219,7 +198,7 @@ library OracleBuffer {
         if (!beforeOrAt.initialized) beforeOrAt = self[0];
 
         // ensure that the target is chronologically at or after the oldest observation
-        require(lte(time, beforeOrAt.blockTimestamp, target), "OLD");
+        require(beforeOrAt.blockTimestamp <= target, "OLD");
 
         // if we've reached this point, we have to binary search
         return binarySearch(self, time, target, index, cardinality);

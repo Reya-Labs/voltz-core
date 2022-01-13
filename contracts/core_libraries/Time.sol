@@ -12,10 +12,9 @@ library Time {
         return block.timestamp * 10**18;
     }
 
-    /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32.
-    // @audit - may be desirable to define as virtual in a contract, instead of in a library, so that it can be overriden in tests
+    /// @dev Returns the block timestamp truncated to 32 bits, checking for overflow.
     function blockTimestampTruncated() internal view returns (uint32) {
-        return timestampAsUint32(block.timestamp); // truncation is desired
+        return timestampAsUint32(block.timestamp);
     }
 
     function timestampAsUint32(uint256 _timestamp)
