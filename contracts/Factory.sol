@@ -29,21 +29,9 @@ contract Factory is IFactory, Deployer {
   /// @inheritdoc IFactory
   mapping(bytes32 => address) public override getRateOracleAddress;
 
-  /// @inheritdoc IFactory
-  address public override calculator;
-
   constructor() {
     owner = msg.sender;
     emit OwnerChanged(address(0), msg.sender);
-  }
-
-  /// @inheritdoc IFactory
-  function setCalculator(address _calculator) external override onlyFactoryOwner {
-    require(_calculator != address(0), "ZERO_ADDRESS");
-
-    emit CalculatorChanged(_calculator);
-
-    calculator = _calculator;
   }
 
   /// @inheritdoc IFactory

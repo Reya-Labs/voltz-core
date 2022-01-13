@@ -10,10 +10,6 @@ interface IFactory {
     /// @param newOwner The owner after the owner was changed
     event OwnerChanged(address indexed oldOwner, address indexed newOwner);
 
-    /// @notice Emitted when calculator address is changed
-    /// @param newCalculator The new calculator address after it was changed by owner
-    event CalculatorChanged(address indexed newCalculator);
-
     /// @notice Emmited when Rate Oracle Address is changed
     /// @param rateOracleId The rate oracle Id
     /// @param newOracleAddress The rate oracle address given its Id
@@ -40,11 +36,6 @@ interface IFactory {
     /// @dev Can be changed by the current owner via setOwner
     /// @return The address of the factory owner
     function owner() external view returns (address);
-
-    /// @notice Returns the current calculator of the factory
-    /// @dev Can be changed by the current owner via setCalculator
-    /// @return The address of the calculator
-    function calculator() external view returns (address);
 
     /// @notice Returns the address of the Rate Oracle Contract
     /// @param rateOracleId The bytes32 string which is a unique identifier for each rateOracle (e.g. AaveV2)
@@ -79,11 +70,6 @@ interface IFactory {
     /// @dev Must be called by the current owner
     /// @param _owner The new owner of the factory
     function setOwner(address _owner) external;
-
-    /// @notice Updates the calculator of the factory
-    /// @dev Must be called by the current owner
-    /// @param _calculator The new calculator of the factory
-    function setCalculator(address _calculator) external;
 
     /// @notice Creates an amm for a given underlying token (e.g. USDC), rateOracleId, and termEndTimestamp
     /// @param underlyingToken The underlying token (e.g. USDC) behind a given yield-bearing pool (e.g. AAve v2 aUSDC)
