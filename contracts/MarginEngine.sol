@@ -50,6 +50,8 @@ contract MarginEngine is IMarginEngine, Pausable {
     /// @inheritdoc IMarginEngine
     address public override factory;
 
+    address public override fcm; // full collateralisation module
+
     mapping(bytes32 => Position.Info) internal positions;
     /// @inheritdoc IMarginEngine
     mapping(address => Trader.Info) public override traders;
@@ -112,7 +114,7 @@ contract MarginEngine is IMarginEngine, Pausable {
         _;
     }
 
-    // todo: add override
+    // add override
     /// @notice Set the per-oracle MarginCalculatorParameters
     /// @param _marginCalculatorParameters the MarginCalculatorParameters to set
     function setMarginCalculatorParameters(
@@ -125,7 +127,10 @@ contract MarginEngine is IMarginEngine, Pausable {
         vamm = IVAMM(_vAMMAddress);
     }
 
-    
+    function setFCM(address _fcm) external override onlyFactoryOwner {
+        fcm = _fcm;
+    }
+
     function collectProtocol(address recipient, uint256 amount)
         external
         override
@@ -288,6 +293,8 @@ contract MarginEngine is IMarginEngine, Pausable {
 
     /// @inheritdoc IMarginEngine
     function liquidateTrader(address traderAddress) external override {
+
+        require(traderAddress!=fcm, "not FCM");
         
         Trader.Info storage trader = traders[traderAddress];
             
@@ -527,7 +534,7 @@ contract MarginEngine is IMarginEngine, Pausable {
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         bool isTraderSettled
-    ) public view {
+    ) internal view {
 
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
             if (!isTraderSettled) {
@@ -563,7 +570,7 @@ contract MarginEngine is IMarginEngine, Pausable {
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
         uint256 variableFactor
-    ) public view {
+    ) internal view {
 
         /// @dev If the AMM has reached maturity, the only reason why someone would want to update
         // their margin is to withdraw it completely. If so, the position needs to be both burned

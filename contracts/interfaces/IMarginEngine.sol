@@ -40,6 +40,8 @@ interface IMarginEngine is IPositionStructs {
     /// @return The contract address
     function factory() external view returns (address);
 
+    function fcm() external view returns (address);
+
     // /// @notice The address of the underlying (non-yield bearing) pool token - e.g. USDC
     // /// @return The underlying pool token address
     function underlyingToken() external view returns (address);
@@ -215,4 +217,6 @@ interface IMarginEngine is IPositionStructs {
     function collectProtocol(address recipient, uint256 amount) external;
 
     function setVAMM(address _vAMMAddress) external;
+
+    function setFCM(address _fcm) external;
 }
