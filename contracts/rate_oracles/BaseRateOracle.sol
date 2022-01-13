@@ -42,7 +42,6 @@ abstract contract BaseRateOracle is IRateOracle {
     error NotFactoryOwner();
 
     /// @dev Modifier that ensures a given function can only be called by the top-level factory owner
-    // @audit - don't love this auth pattern - potentially gas inefficient to call out to the factory and get its owner all the time, and also relatively easy to change or renounce the factory ownership without realising that this affects other contracts. We should think about our plans for ownership and auth and see if there's not a better approach, but if we stick with having the owner of all contracts in one place we should consider giving it a more descriptive name like systemAdmin or systemOwner.
     modifier onlyFactoryOwner() {
         if (msg.sender != IFactory(factory).owner()) {
             revert NotFactoryOwner();
@@ -65,20 +64,6 @@ abstract contract BaseRateOracle is IRateOracle {
         underlying = _underlying;
         factory = _factory;
     }
-
-    // /// @notice Prepares the rates array to store up to `next` rates
-    // /// @param current The current next cardinality of the oracle array
-    // /// @param next The proposed next cardinality which will be populated in the rates array
-    // /// @return next The next cardinality which will be populated in the rates array
-    // // @audit - this doesn't seem to do anything useful? In the uniswap implementation it is used to pay the gas required for writing non-zero values to storage slots, but we're not doing that here. We probably should do it here, in this function, but if we choose not to then this function should probably just be deleted or merged with increaseObservarionCardinalityNext
-    // function grow(uint16 current, uint16 next) internal pure returns (uint16) {
-    //     require(current > 0, "I");
-
-    //     // no-op if the passed next value isn't greater than the current next value
-    //     if (next <= current) return current;
-
-    //     return next;
-    // }
 
     // AB: lock the amm when calling this function?
     // AB: rename to increaseRateCardinalityNext
@@ -172,17 +157,6 @@ abstract contract BaseRateOracle is IRateOracle {
             );
         }
     }
-
-    // @audit - not needed?
-    // function writeRate(
-    //     uint16 index,
-    //     uint16 cardinality,
-    //     uint16 cardinalityNext
-    // )
-    //     internal
-    //     virtual
-    //     override
-    //     returns (uint16 indexUpdated, uint16 cardinalityUpdated);
 
     /// @inheritdoc IRateOracle
     function writeOracleEntry() external virtual override;
