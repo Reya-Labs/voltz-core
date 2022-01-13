@@ -130,6 +130,8 @@ interface IVAMM is IPositionStructs {
         uint256 amountOut;
         /// @dev how much fee is being paid in (underlying token)
         uint256 feeAmount;
+        /// @dev ...
+        uint256 feeProtocolDelta;
     }
 
     struct UpdatePositionVars {

@@ -372,6 +372,8 @@ contract VAMM is IVAMM, Pausable {
       step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
 
       // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
+      /// @dev for a Fixed Taker (isFT) if the sqrtPriceNextX96 is larger than the limit, then the target price passed into computeSwapStep is sqrtPriceLimitX96
+      /// @dev for a Variable Taker (!isFT) if the sqrtPriceNextX96 is lower than the limit, then the target price passed into computeSwapStep is sqrtPriceLimitX96
       (
         state.sqrtPriceX96,
         step.amountIn,
@@ -380,7 +382,7 @@ contract VAMM is IVAMM, Pausable {
       ) = SwapMath.computeSwapStep(
         state.sqrtPriceX96,
         (
-          params.isFT
+          !params.isFT
             ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
             : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
         )
@@ -408,9 +410,9 @@ contract VAMM is IVAMM, Pausable {
 
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
-        // uint256 delta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
-        step.feeAmount = step.feeAmount - (PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol));
-        state.protocolFee = state.protocolFee + (PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol));
+        step.feeProtocolDelta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
+        step.feeAmount = step.feeAmount - step.feeProtocolDelta;
+        state.protocolFee = state.protocolFee + step.feeProtocolDelta;
       }
 
       // update global fee tracker
