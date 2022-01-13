@@ -113,7 +113,6 @@ library OracleBuffer {
     /// @dev The answer must be contained in the array, used when the target is located within the stored observation
     /// boundaries: older than the most recent observation and younger, or the same age as, the oldest observation
     /// @param self The stored oracle array
-    /// @param time The current block.timestamp, used for comparing uint32 times in a way that is robust to wrapping
     /// @param target The timestamp at which the reserved observation should be for
     /// @param index The index of the observation that was most recently written to the observations array
     /// @param cardinality The number of populated elements in the oracle array
@@ -121,7 +120,6 @@ library OracleBuffer {
     /// @return atOrAfter The observation recorded at, or after, the target
     function binarySearch(
         Observation[65535] storage self,
-        uint32 time,
         uint32 target,
         uint16 index,
         uint16 cardinality
@@ -160,7 +158,6 @@ library OracleBuffer {
     /// @dev Assumes there is at least 1 initialized observation.
     /// Used by observeSingle() to compute the counterfactual accumulator values as of a given block timestamp.
     /// @param self The stored oracle array
-    /// @param time The current block.timestamp, truncated to uint32. Used to ensure safe comparison of trucated timestamps even after 2106.
     /// @param target The timestamp at which the reserved observation should be for. Must be chronologically before time.
     /// @param currentValue The current observed value if we were writing a new observation now (semantics may differ for different types of rate oracle)
     /// @param index The index of the observation that was most recently written to the observations array
@@ -169,7 +166,6 @@ library OracleBuffer {
     /// @return atOrAfter The observation which occurred at, or after, the given timestamp
     function getSurroundingObservations(
         Observation[65535] storage self,
-        uint32 time,
         uint32 target,
         uint256 currentValue,
         uint16 index,
@@ -201,6 +197,6 @@ library OracleBuffer {
         require(beforeOrAt.blockTimestamp <= target, "OLD");
 
         // if we've reached this point, we have to binary search
-        return binarySearch(self, time, target, index, cardinality);
+        return binarySearch(self, target, index, cardinality);
     }
 }

@@ -15,6 +15,8 @@ abstract contract BaseRateOracle is IRateOracle {
 
     uint256 public constant ONE_WEI = 10**18;
 
+    /// @notice a cache of settlement rates for interest rate swaps associated with this rate oracle, indexed by start time and then end time
+    mapping(uint32 => mapping(uint32 => uint256)) public settlementRateCache;
     struct OracleVars {
         /// @dev the most-recently updated index of the rates array
         uint16 rateIndex;
@@ -139,23 +141,62 @@ abstract contract BaseRateOracle is IRateOracle {
     function variableFactor(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public view override(IRateOracle) returns (uint256 result) {
-        uint256 termStartTimestamp = PRBMathUD60x18.toUint(
-            termStartTimestampInWeiSeconds
-        );
-        uint256 termEndTimestamp = PRBMathUD60x18.toUint(
+    ) public override(IRateOracle) returns (uint256 result) {
+        bool cacheable;
+        (result, cacheable) = _variableFactor(
+            termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds
         );
 
+        if (cacheable) {
+            uint32 termStartTimestamp = Time.timestampAsUint32(
+                PRBMathUD60x18.toUint(termStartTimestampInWeiSeconds)
+            );
+            uint32 termEndTimestamp = Time.timestampAsUint32(
+                PRBMathUD60x18.toUint(termEndTimestampInWeiSeconds)
+            );
+
+            settlementRateCache[termStartTimestamp][termEndTimestamp] = result;
+        }
+
+        return result;
+    }
+
+    /// @inheritdoc IRateOracle
+    function variableFactorNoCache(
+        uint256 termStartTimestampInWeiSeconds,
+        uint256 termEndTimestampInWeiSeconds
+    ) public view override(IRateOracle) returns (uint256 result) {
+        (result, ) = _variableFactor(
+            termStartTimestampInWeiSeconds,
+            termEndTimestampInWeiSeconds
+        );
+    }
+
+    function _variableFactor(
+        uint256 termStartTimestampInWeiSeconds,
+        uint256 termEndTimestampInWeiSeconds
+    ) private view returns (uint256 result, bool cacheable) {
+        uint32 termStartTimestamp = Time.timestampAsUint32(
+            PRBMathUD60x18.toUint(termStartTimestampInWeiSeconds)
+        );
+        uint32 termEndTimestamp = Time.timestampAsUint32(
+            PRBMathUD60x18.toUint(termEndTimestampInWeiSeconds)
+        );
+
         require(termStartTimestamp > 0 && termEndTimestamp > 0, "UNITS");
-        if (Time.blockTimestampTruncated() >= termEndTimestamp) {
+        if (settlementRateCache[termStartTimestamp][termEndTimestamp] != 0) {
+            result = settlementRateCache[termStartTimestamp][termEndTimestamp];
+        } else if (Time.blockTimestampTruncated() >= termEndTimestamp) {
             result = getRateFromTo(termStartTimestamp, termEndTimestamp);
+            cacheable = true;
         } else {
             result = getRateFromTo(
                 termStartTimestamp,
                 Time.blockTimestampTruncated()
             );
         }
+        return (result, cacheable);
     }
 
     /// @inheritdoc IRateOracle
