@@ -194,7 +194,6 @@ contract MarginEngine is IMarginEngine, Pausable {
     
     /// @inheritdoc IMarginEngine
     function updateTraderMargin(address traderAddress, int256 marginDelta) external nonZeroDelta(marginDelta) override {
-        // used to be public, should now impact the tests
         
         if (marginDelta < 0) {
             if (traderAddress != msg.sender) {
@@ -370,6 +369,10 @@ contract MarginEngine is IMarginEngine, Pausable {
 
     /// @inheritdoc IMarginEngine
     function updatePosition(IVAMM.ModifyPositionParams memory params, IVAMM.UpdatePositionVars memory vars) external override {
+
+        /// @dev this function can only be called by the vamm following a swap    
+        require(msg.sender==address(vamm), "only vamm");        
+
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
         position.updateLiquidity(params.liquidityDelta);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
