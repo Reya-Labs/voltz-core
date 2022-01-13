@@ -1,10 +1,13 @@
 {
   "name": "@voltz/voltz-core",
+  "version": "1.0.0",
   "description": "Core contracts for the Voltz Protocol",
   "types": "typechain",
   "license": "MIT",
   "files": [
     "contracts/**/*",
+    "typechain/**/*",
+    "artifacts/**/*",
     "developer-resources/**/*",
     "scripts/**/*",
     "test/**/*",
@@ -121,8 +124,6 @@
         "@semantic-release/git",
         {
           "assets": [
-            "typechain",
-            "artifacts",
             "package.json"
           ],
           "message": "chore: Release ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
