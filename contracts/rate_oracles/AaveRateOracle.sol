@@ -142,10 +142,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     function observeSingle(
-        uint32 currentTime, // @audit not sure why this is a param. Perhaps for gas efficiency to save us gettign the timestamp multiple times? Probably makes more sense if it's an internal function.
+        uint32 currentTime,
         uint32 queriedTime,
-        uint16 index, // @audit again, probably makes more sense for an internal function. For external we should look this up ratehr than trust the input.
-        uint16 cardinality // @audit again, probably makes more sense for an internal function. For external we should look this up ratehr than trust the input. // @audit could this be internal?
+        uint16 index,
+        uint16 cardinality
     ) internal view returns (uint256 rateValue) {
         require(currentTime >= queriedTime, "OOO");
 
@@ -153,7 +153,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             OracleBuffer.Observation memory rate;
             rate = observations[index];
             if (rate.blockTimestamp != currentTime) {
-                // @audit I can have this function return the current liquidity index for any value of `queriedTime`, by passing `currentTime` = `queriedTime`. Even if this function were internal we should document that more clearly, but if the function must be public that feels like dangerous behaviour.
                 rateValue = IAaveV2LendingPool(aaveLendingPool)
                     .getReserveNormalizedIncome(underlying);
             } else {
@@ -190,7 +189,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
                 rateFromBeforeOrAtToAtOrAfter = WadRayMath
                     .rayDiv(atOrAfter.observedValue, beforeOrAt.observedValue)
-                    .sub(WadRayMath.RAY); // @audit - why do we take away 1? Looks like it's more useful to the functions below if we keep 5% = 1.05 rather than 5% = 0.05?
+                    .sub(WadRayMath.RAY);
                 // @audit - more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
             }
 
@@ -213,6 +212,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
+        // In the case of Aave, the values we write are obtained by calling IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying)
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,
