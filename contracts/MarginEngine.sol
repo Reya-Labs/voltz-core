@@ -65,7 +65,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
 
     constructor() Pausable() {  
 
-        deployer = msg.sender; /// @audit this is presumably the factory
+        deployer = msg.sender; /// this is presumably the factory
 
     }
 
@@ -199,6 +199,18 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         transferMargin(params.owner, marginDelta);
     }
     
+
+    function updateTraderMarginAfterUnwind(address traderAddress, int256 marginDelta) external nonZeroDelta(marginDelta) override {
+        
+        /// @dev this function can only be called by the vamm following a swap induced by an unwind
+        require(msg.sender==vammAddress, "only vamm");        
+
+        // accounts for fees
+        require(marginDelta < 0, "MD<0");
+        Trader.Info storage trader = traders[traderAddress];
+        trader.updateMargin(marginDelta);
+    }
+
     /// @inheritdoc IMarginEngine
     function updateTraderMargin(address traderAddress, int256 marginDelta) external nonZeroDelta(marginDelta) override {
         
@@ -353,6 +365,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
 
     }
 
+
     /// @inheritdoc IMarginEngine
     function checkPositionMarginRequirementSatisfied(
             address recipient,
@@ -448,7 +461,11 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         address owner,
         int24 tickLower,
         int24 tickUpper
-    ) external override returns(int256 _fixedTokenBalance, int256 _variableTokenBalance) {
+    ) external override {
+        
+        int256 _fixedTokenBalance;
+        int256 _variableTokenBalance;
+        uint256 _cumulativeFeeincurred;
 
         /// @dev this function can only be called by the vamm following a swap    
         require(msg.sender==vammAddress, "only vamm");
@@ -478,7 +495,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
                 isTrader: false
             });
 
-            (_fixedTokenBalance, _variableTokenBalance) = IVAMM(vammAddress).swap(params); // check the outputs are correct
+            (_fixedTokenBalance, _variableTokenBalance, _cumulativeFeeincurred) = IVAMM(vammAddress).swap(params); // check the outputs are correct
         } else {
             // get into an FT swap
             // variableTokenBalance is positive
@@ -492,9 +509,10 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
                 isTrader: false
             });
 
-            (_fixedTokenBalance, _variableTokenBalance) = IVAMM(vammAddress).swap(params);
+            (_fixedTokenBalance, _variableTokenBalance, _cumulativeFeeincurred) = IVAMM(vammAddress).swap(params);
         }
 
+        position.updateMargin(-int256(_cumulativeFeeincurred));
         position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
     }
 

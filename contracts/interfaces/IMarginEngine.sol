@@ -133,6 +133,11 @@ interface IMarginEngine is IPositionStructs {
     function updateTraderMargin(address traderAddress, int256 marginDelta)
         external;
 
+    function updateTraderMarginAfterUnwind(
+        address traderAddress,
+        int256 marginDelta
+    ) external;
+
     /// @notice Settles a Position
     /// @dev Can be called by anyone
     /// @dev A position cannot be settled before maturity
@@ -210,9 +215,7 @@ interface IMarginEngine is IPositionStructs {
         address owner,
         int24 tickLower,
         int24 tickUpper
-    )
-        external
-        returns (int256 _fixedTokenBalance, int256 _variableTokenBalance);
+    ) external;
 
     function checkPositionMarginRequirementSatisfied(
         address recipient,

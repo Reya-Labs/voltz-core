@@ -257,8 +257,10 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) public override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock {
-    // public avoids using callees for tests (timeout issue in vamm.ts)
+  ) external override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock {
+    
+    /// might be helpful to have a higher level peripheral function for minting a given amount given a certain amount of notional an LP wants to support
+    
     if (amount <= 0) {
       revert LiquidityDeltaMustBePositiveInMint(amount);
     }
@@ -290,9 +292,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
     whenNotPaused
     checkCurrentTimestampTermEndTimestampDelta
     lock
-    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
+    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 cumulativeFeeIncurred)
   {
-    /// @audit might be helpful to have a higher level function (initiateIRS) which then calls swap
+    /// might be helpful to have a higher level peripheral function (initiateIRS) which then calls swap
 
     SwapLocalVars memory swapLocalVars;
     
@@ -300,13 +302,22 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
 
     checksBeforeSwap(params, vammVarsStart);
 
+    if (params.isFT) {
+      require(params.amountSpecified > 0, "AS>0");
+    } else {
+      require(params.amountSpecified < 0, "AS<0");
+    }
+
+    if (params.isUnwind) {
+      require(msg.sender==marginEngineAddress, "only ME induce unwind");
+    }
+
     /// @dev lock the vamm while the swap is taking place
 
     unlocked = false;
 
-
-    /// @audit use uint32 for blockTimestamp (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L132)
-    /// @audit feeProtocol can be represented in a more efficient way (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L69)
+    /// suggestion: use uint32 for blockTimestamp (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L132)
+    /// suggestion: feeProtocol can be represented in a more efficient way (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L69)
     // Uniswap implementation: feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4), where in our case isFT == !zeroForOne
     SwapCache memory cache = SwapCache({
       liquidityStart: liquidity,
@@ -317,10 +328,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
     /// @dev amountSpecified = The amount of the swap, which implicitly configures the swap as exact input (positive), or exact output (negative)
     /// @dev Both FTs and VTs care about the notional of their IRS contract, the notional is the absolute amount of variableTokens traded
     /// @dev Hence, if an FT wishes to trade x notional, amountSpecified needs to be an exact input (in terms of the variableTokens they provide), hence amountSpecified needs to be positive
-    /// @audit add revert statement if isFT and amountSpecified is not positive
     /// @dev Also, if a VT wishes to trade x notional, amountSpecified needs to be an exact output (in terms of the variableTokens they receive), hence amountSpecified needs to be negative 
-    /// @audit add revert statement if isFT and amountSpecified is not positive
     /// @dev amountCalculated is the amount already swapped out/in of the output (variable taker) / input (fixed taker) asset
+    /// @dev amountSpecified should always be in terms of the variable tokens
 
     SwapState memory state = SwapState({
       amountSpecifiedRemaining: params.amountSpecified,
@@ -331,7 +341,8 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       fixedTokenGrowthGlobal: fixedTokenGrowthGlobal,
       variableTokenGrowthGlobal: variableTokenGrowthGlobal,
       feeGrowthGlobal: feeGrowthGlobal,
-      protocolFee: 0
+      protocolFee: 0,
+      cumulativeFeeIncurred: 0
     });
 
     /// @dev write an entry to the rate oracle (given no throttling), should be a no-op
@@ -350,7 +361,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
 
       /// @dev if isFT (fixed taker) (moving right to left), the nextInitializedTick should be more than or equal to the current tick
       /// @dev if !isFT (variable taker) (moving left to right), the nextInitializedTick should be less than or equal to the current tick
-      /// @audit add an assert statement that checks for the above two conditions
+      /// add a test for the statement that checks for the above two conditions
       (step.tickNext, step.initialized) = tickBitmap
         .nextInitializedTickWithinOneWord(state.tick, tickSpacing, !params.isFT);
 
@@ -388,20 +399,25 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       );
 
       if (params.amountSpecified > 0) {
+        // is a Fixed Taker
         // exact input
-        /// @audit prb math is not used in here
-        state.amountSpecifiedRemaining -= (step.amountIn).toInt256();
+        /// prb math is not used in here (following v3 logic)
+        state.amountSpecifiedRemaining -= (step.amountIn).toInt256(); // this value is positive
         state.amountCalculated = state.amountCalculated.sub(
           (step.amountOut).toInt256()
-        );
+        ); // this value is negative
       } else {
-        /// @audit prb math is not used in here
-        state.amountSpecifiedRemaining += step.amountOut.toInt256();
+        // is a VariableTaker
+        /// prb math is not used in here (following v3 logic)
+        state.amountSpecifiedRemaining += step.amountOut.toInt256(); // this value is negative
         state.amountCalculated = state.amountCalculated.add(
           (step.amountIn).toInt256()
-        );
+        ); // this value is positive
       }
 
+      // update cumulative fee incurred while initiating an interest rate swap
+      state.cumulativeFeeIncurred = state.cumulativeFeeIncurred + step.feeAmount;
+      
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
         step.feeProtocolDelta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
@@ -440,8 +456,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
             state.feeGrowthGlobal
           );
 
-          /// @audit moving rightward?
-          // if we're moving leftward, we interpret liquidityNet as the opposite sign
+          // if we're moving rightward (along the virtual amm), we interpret liquidityNet as the opposite sign
           // safe because liquidityNet cannot be type(int128).min
           if (!params.isFT) liquidityNet = -liquidityNet;
 
@@ -477,36 +492,12 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       protocolFees = protocolFees + state.protocolFee;
     }
 
-    /// @audit add revert statement if isFT and amountSpecified is not positive
-    /// @dev Also, if a VT wishes to trade x notional, amountSpecified needs to be an exact output (in terms of the variableTokens they receive), hence amountSpecified needs to be negative 
-    /// @audit add revert statement if isFT and amountSpecified is not positive
-    (swapLocalVars.amount0Int, swapLocalVars.amount1Int) = params.isFT ==
-      params.amountSpecified > 0
-      ? (
-        params.amountSpecified - state.amountSpecifiedRemaining,
-        state.amountCalculated
-      )
-      : (
-        state.amountCalculated,
-        params.amountSpecified - state.amountSpecifiedRemaining
-      );
-
-    /// feels redundunt
-    swapLocalVars.amount0;
-    swapLocalVars.amount1;
-
-    if (swapLocalVars.amount0Int > 0) {
-      if (swapLocalVars.amount1Int >= 0) {
-        revert ExpectedOppositeSigns(swapLocalVars.amount0Int, swapLocalVars.amount1Int);
-      } 
-      swapLocalVars.amount0 = uint256(swapLocalVars.amount0Int);
-      swapLocalVars.amount1 = uint256(-swapLocalVars.amount1Int);
-    } else if (swapLocalVars.amount1Int > 0) {
-      if (swapLocalVars.amount0Int >= 0) {
-        revert ExpectedOppositeSigns(swapLocalVars.amount0Int, swapLocalVars.amount1Int);
-      } 
-      swapLocalVars.amount0 = uint256(-swapLocalVars.amount0Int);
-      swapLocalVars.amount1 = uint256(swapLocalVars.amount1Int);
+    if (params.isFT) {
+      swapLocalVars.amount0 = uint256(-state.amountCalculated);
+      swapLocalVars.amount1 = uint256(params.amountSpecified - state.amountSpecifiedRemaining);
+    } else {
+      swapLocalVars.amount0 = uint256(state.amountCalculated);
+      swapLocalVars.amount1 = uint256(-(params.amountSpecified - state.amountSpecifiedRemaining));
     }
 
     if (params.isFT) {
@@ -535,14 +526,25 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       );
     }
 
-    // if this is not the case then it is a position unwind induced swap triggered by a position liquidation  which is handled in the position unwind function
+    // if this is not the case then it is a position unwind induced swap triggered by a position liquidation which is handled in the position unwind function
     if (params.isTrader) {
+
+      if (params.isUnwind) {
+        IMarginEngine(marginEngineAddress).updateTraderMarginAfterUnwind(params.recipient, -int256(state.cumulativeFeeIncurred));
+      } else {
+        IMarginEngine(marginEngineAddress).updateTraderMargin(
+          params.recipient,
+          -int256(state.cumulativeFeeIncurred)
+        );
+      }
+
       IMarginEngine(marginEngineAddress).updateTraderBalances(
         params.recipient,
         _fixedTokenDelta,
         _variableTokenDelta,
         params.isUnwind
       );
+      
     }
 
     emit Swap(

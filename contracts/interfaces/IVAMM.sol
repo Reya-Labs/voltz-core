@@ -83,13 +83,8 @@ interface IVAMM is IPositionStructs {
     }
 
     struct SwapLocalVars {
-        /// @dev fixed token amount traded by a trader within a given tick range
-        int256 amount0Int;
-        /// @dev variable token amount traded by a trader within a given tick range
-        int256 amount1Int;
-        /// @dev absolute value of amount0Int (must be non-negative)
+        // AB: add docs
         uint256 amount0;
-        /// @dev absolute value of amount1Int (must be non-negative)
         uint256 amount1;
     }
 
@@ -113,6 +108,8 @@ interface IVAMM is IPositionStructs {
         uint256 feeGrowthGlobal;
         /// @dev amount of underlying token paid as protocol fee
         uint256 protocolFee;
+        /// @dev cumulative fee incurred while initiating a swap
+        uint256 cumulativeFeeIncurred;
     }
 
     struct StepComputations {
@@ -249,9 +246,14 @@ interface IVAMM is IPositionStructs {
     /// @param params SwapParams necessary to initiate an Interest Rate Swap
     /// @return _fixedTokenDelta Fixed Token Delta
     /// @return _variableTokenDelta Variable Token Delta
+    /// @return _cumulativeFeeIncurred Cumulative Fee Incurred
     function swap(SwapParams memory params)
         external
-        returns (int256 _fixedTokenDelta, int256 _variableTokenDelta);
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred
+        );
 
     /// @notice Look up information about a specific tick in the amm
     /// @param tick The tick to look up
