@@ -21,10 +21,9 @@ contract TestRateOracle is AaveRateOracle {
     uint256 public latestAfterOrAtRateValue;
 
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
-    constructor(
-        address aaveLendingPool,
-        address underlying
-    ) AaveRateOracle(aaveLendingPool, underlying) {
+    constructor(address aaveLendingPool, address underlying)
+        AaveRateOracle(aaveLendingPool, underlying)
+    {
         // if not done manually, doesn't work for some reason
         aaveLendingPool = aaveLendingPool;
         underlying = underlying;

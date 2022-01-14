@@ -155,7 +155,7 @@ library FixedAndVariableMath {
             amount1,
             int256(accruedVariableFactor)
         );
-        
+
         /// @dev cashflows accrued since the inception of the IRS AMM
 
         accruedValues.excessBalance =
