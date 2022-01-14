@@ -1,5 +1,6 @@
 pragma solidity ^0.8.0;
 import "../rate_oracles/BaseRateOracle.sol";
+import "../rate_oracles/OracleBuffer.sol";
 import "../rate_oracles/AaveRateOracle.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -8,6 +9,8 @@ import "hardhat/console.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 
 contract TestRateOracle is AaveRateOracle {
+    using OracleBuffer for OracleBuffer.Observation[65535];
+
     int24 public tick;
     uint128 public liquidity;
 
@@ -17,47 +20,17 @@ contract TestRateOracle is AaveRateOracle {
     uint256 public latestBeforeOrAtRateValue;
     uint256 public latestAfterOrAtRateValue;
 
-    uint256 public latestVariableFactor;
-
-    uint256 public latestHistoricalApy;
-
-    // rateOracleId should be a function of underlyingProtocol and underlyingToken?
+    // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
     constructor(
         address aaveLendingPool,
-        bytes32 rateOracleId,
-        address underlying,
-        address factory
-    ) AaveRateOracle(aaveLendingPool, rateOracleId, underlying, factory) {
+        address underlying
+    ) AaveRateOracle(aaveLendingPool, underlying) {
         // if not done manually, doesn't work for some reason
         aaveLendingPool = aaveLendingPool;
-        rateOracleId = rateOracleId;
         underlying = underlying;
-        factory = factory;
 
         // console.log("Test Contract: Aave lending pool address is: ", aaveLendingPool);
-        // // console.log("Test Contract: Rate Oracle ID is: ", rateOracleId);
         // console.log("Test Contract: Underlying is: ", underlying);
-    }
-
-    struct InitializeParams {
-        // uint256 time;
-        int24 tick;
-        uint128 liquidity;
-    }
-
-    function initializeTestRateOracle(InitializeParams calldata params)
-        external
-    {
-        require(oracleVars.rateCardinality == 0, "already initialized");
-        tick = params.tick;
-        liquidity = params.liquidity;
-        initialize();
-        console.log(
-            "Test Contracts: ",
-            oracleVars.rateIndex,
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
-        );
     }
 
     function getOracleVars()
@@ -77,31 +50,23 @@ contract TestRateOracle is AaveRateOracle {
     }
 
     function testGrow(uint16 _rateCardinalityNext) external {
-        oracleVars.rateCardinalityNext = grow(
+        oracleVars.rateCardinalityNext = observations.grow(
             oracleVars.rateCardinalityNext,
             _rateCardinalityNext
         );
     }
 
-    function update() external {
-        (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
-            oracleVars.rateIndex,
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
-        );
-    }
-
     function getRate(uint16 index) external view returns (uint256, uint256) {
-        Rate memory rate = rates[index];
-        return (rate.timestamp, rate.rateValue);
+        OracleBuffer.Observation memory rate = observations[index];
+        return (rate.blockTimestamp, rate.observedValue);
     }
 
-    function testObserveSingle(uint256 queriedTime)
+    function testObserveSingle(uint32 queriedTime)
         external
-        returns (uint256 rateValue)
+        returns (uint256 observedValue)
     {
         latestObservedRateValue = observeSingle(
-            Time.blockTimestampScaled(),
+            Time.blockTimestampTruncated(),
             queriedTime,
             oracleVars.rateIndex,
             oracleVars.rateCardinality
@@ -130,29 +95,51 @@ contract TestRateOracle is AaveRateOracle {
             );
     }
 
-    function testBinarySearch(uint256 target)
+    // function testBinarySearch(uint32 target)
+    //     external
+    //     view
+    //     returns (uint256 beforeOrAtRateValue, uint256 afterOrAtRateValue)
+    // {
+    //     (OracleBuffer.Observation memory beforeOrAt, OracleBuffer.Observation memory atOrAfter) = observations.binarySearch(
+    //         Time.blockTimestampTruncated(),
+    //         target,
+    //         oracleVars.rateIndex,
+    //         oracleVars.rateCardinality
+    //     );
+    //     beforeOrAtRateValue = beforeOrAt.observedValue;
+    //     afterOrAtRateValue = atOrAfter.observedValue;
+    // }
+    function binarySearch(uint32 target)
         external
         view
-        returns (uint256 beforeOrAtRateValue, uint256 afterOrAtRateValue)
+        returns (
+            OracleBuffer.Observation memory beforeOrAt,
+            OracleBuffer.Observation memory atOrAfter
+        )
     {
-        (Rate memory beforeOrAt, Rate memory atOrAfter) = binarySearch(
-            target,
-            oracleVars.rateIndex,
-            oracleVars.rateCardinality
-        );
-        beforeOrAtRateValue = beforeOrAt.rateValue;
-        afterOrAtRateValue = atOrAfter.rateValue;
+        return
+            observations.binarySearch(
+                target,
+                oracleVars.rateIndex,
+                oracleVars.rateCardinality
+            );
     }
 
-    function testGetSurroundingRates(uint256 target) external {
-        (Rate memory beforeOrAt, Rate memory atOrAfter) = getSurroundingRates(
-            target,
-            oracleVars.rateIndex,
-            oracleVars.rateCardinality
-        );
+    function testGetSurroundingRates(uint32 target) external {
+        uint256 currentValue = IAaveV2LendingPool(aaveLendingPool)
+            .getReserveNormalizedIncome(underlying);
+        (
+            OracleBuffer.Observation memory beforeOrAt,
+            OracleBuffer.Observation memory atOrAfter
+        ) = observations.getSurroundingObservations(
+                target,
+                currentValue,
+                oracleVars.rateIndex,
+                oracleVars.rateCardinality
+            );
 
-        latestBeforeOrAtRateValue = beforeOrAt.rateValue;
-        latestAfterOrAtRateValue = atOrAfter.rateValue;
+        latestBeforeOrAtRateValue = beforeOrAt.observedValue;
+        latestAfterOrAtRateValue = atOrAfter.observedValue;
     }
 
     function testComputeApyFromRate(uint256 rateFromTo, uint256 timeInYears)
@@ -161,24 +148,5 @@ contract TestRateOracle is AaveRateOracle {
         returns (uint256)
     {
         return computeApyFromRate(rateFromTo, timeInYears);
-    }
-
-    function testVariableFactor(
-        uint256 termStartTimestamp,
-        uint256 termEndTimestamp
-    ) external {
-        latestVariableFactor = variableFactor(
-            termStartTimestamp,
-            termEndTimestamp
-        );
-    }
-
-    // function testGetHistoricalApy() external {
-    //   latestHistoricalApy = getHistoricalApy();
-    // }
-
-    // temporary until fixed
-    function getHistoricalApy() public pure override returns (uint256) {
-        return 10**17;
     }
 }

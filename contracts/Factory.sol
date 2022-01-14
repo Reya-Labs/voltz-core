@@ -1,106 +1,42 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 import "./interfaces/IFactory.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
-import "./Deployer.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Voltz Factory Contract
-/// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
-contract Factory is IFactory, Deployer {
+/// @notice Deploys Voltz VAMMs and MarginEngines and manages ownership and control over amm protocol fees
+// Following this example https://github.com/OriginProtocol/minimal-proxy-example/blob/master/contracts/PairFactory.sol
+contract Factory is IFactory, Ownable {
+
+  using Clones for address;
   
-  modifier onlyFactoryOwner {
-    require(msg.sender == owner, "NOT_OWNER");
-    _;
+  address public override masterMarginEngine;
+  address public override masterVAMM;
+
+  constructor(address _masterMarginEngine, address _masterVAMM) {
+    masterMarginEngine = _masterMarginEngine;
+    masterVAMM = _masterVAMM;
   }
 
-  /// @inheritdoc IFactory
-  address public override owner;
-
-  /// @inheritdoc IFactory
-  mapping(bytes32 => mapping(address => mapping(uint256 => mapping(uint256 => address))))
-    public
-    override getMarginEngineMap;
-  
-  /// @inheritdoc IFactory
-  mapping(address => address) public override getVAMMMap;
-
-  /// @inheritdoc IFactory
-  mapping(bytes32 => address) public override getRateOracleAddress;
-
-  constructor() {
-    owner = msg.sender;
-    emit OwnerChanged(address(0), msg.sender);
+  function createVAMM(bytes32 salt) external override {
+    masterVAMM.cloneDeterministic(salt);
   }
 
-  /// @inheritdoc IFactory
-  function createVAMM(address marginEngineAddress)
-    external
-    override
-    onlyFactoryOwner
-    returns (address vamm)
-  {
-    require(marginEngineAddress != address(0), "ZERO_ADDRESS");
-    require(getVAMMMap[marginEngineAddress] == address(0), "EXISTED_VAMM");
-
-    vamm = deployVAMM(marginEngineAddress);
-
-    return vamm;
+  function createMarginEngine(bytes32 salt) external override {
+    masterMarginEngine.cloneDeterministic(salt);
   }
 
-  /// @inheritdoc IFactory
-  function createMarginEngine(
-    address underlyingToken,
-    bytes32 rateOracleId,
-    uint256 termEndTimestamp)
-    external
-    override
-    onlyFactoryOwner
-    returns (address marginEngine)
-  {
-    uint256 termStartTimestamp = Time.blockTimestampScaled(); 
-    require(
-      getMarginEngineMap[rateOracleId][underlyingToken][termStartTimestamp][
-        termEndTimestamp
-      ] == address(0),
-      "EXISTED_AMM"
-    );
-
-    marginEngine = deployMarginEngine(
-      address(this),
-      underlyingToken,
-      rateOracleId,
-      termStartTimestamp,
-      termEndTimestamp);
-
-    // emit margin engine created
-
-    return marginEngine;
+  function getVAMMAddress(bytes32 salt) external view override returns (address) {
+    require(masterVAMM != address(0), "master VAMM must be set");
+    return masterVAMM.predictDeterministicAddress(salt);
   }
 
-  /// @inheritdoc IFactory
-  function setOwner(address _owner) external override onlyFactoryOwner {
-    emit OwnerChanged(owner, _owner);
-    owner = _owner;
+  function getMarginEngineAddress(bytes32 salt) external view override returns (address) {
+    require(masterMarginEngine != address(0), "master MarginEngine must be set");
+    return masterMarginEngine.predictDeterministicAddress(salt);
   }
 
-  /// @inheritdoc IFactory
-  function addRateOracle(bytes32 _rateOracleId, address _rateOracleAddress)
-    external
-    override
-    onlyFactoryOwner
-  {
-    require(_rateOracleId != bytes32(0), "ZERO_BYTES");
-    require(_rateOracleAddress != address(0), "ZERO_ADDRESS");
-    require(
-      _rateOracleId == IRateOracle(_rateOracleAddress).rateOracleId(),
-      "INVALID_ID"
-    );
-    require(getRateOracleAddress[_rateOracleId] == address(0), "EXISTED_ID");
-
-    emit RateOracleAdded(_rateOracleId, _rateOracleAddress);
-
-    getRateOracleAddress[_rateOracleId] = _rateOracleAddress;
-  }
 }

@@ -19,9 +19,10 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-
-contract VAMM is IVAMM, Pausable {
+contract VAMM is IVAMM, Pausable, Initializable, Ownable {
   using LowGasSafeMath for uint256;
   using LowGasSafeMath for int256;
   using SafeCast for uint256;
@@ -40,9 +41,11 @@ contract VAMM is IVAMM, Pausable {
   
   uint256 public constant SECONDS_IN_DAY_WAD = 86400 * 10**18;
 
-  address public immutable override factory;
-
   bool public override unlocked;
+
+  address private deployer;
+
+  IRateOracle internal rateOracle;
 
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
@@ -53,29 +56,24 @@ contract VAMM is IVAMM, Pausable {
     unlocked = true;
   }
 
-  /// @dev Modifier that ensures that critical actions in the contract can only be done by the top-level factory owner
-  modifier onlyFactoryOwner() {
-    require(msg.sender == IFactory(factory).owner(), "only factory owner");
-    _;
-  }
-
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
     uint256 currentTimestamp = Time.blockTimestampScaled(); 
-    require(currentTimestamp < marginEngine.termEndTimestamp(), "amm hasn't reached maturity");
-    uint256 timeDelta = marginEngine.termEndTimestamp() - currentTimestamp;
+    require(currentTimestamp < IMarginEngine(marginEngineAddress).termEndTimestamp(), "amm hasn't reached maturity");
+    uint256 timeDelta = IMarginEngine(marginEngineAddress).termEndTimestamp() - currentTimestamp;
     require(timeDelta > SECONDS_IN_DAY_WAD, "amm must be 1 day past maturity");
     _;
   }
 
-  constructor() Pausable() {
-    address _marginEngineAddress;
-    (
-      _marginEngineAddress
-    ) = IDeployer(msg.sender).vammParameters();
+  constructor () Pausable() {
+    deployer = msg.sender;
+  }
 
-    marginEngine = IMarginEngine(_marginEngineAddress);
-    factory = marginEngine.factory();
+  function initialize(address _marginEngineAddress) public initializer {
+    require(_marginEngineAddress != address(0), "ME must be set");
+    marginEngineAddress = _marginEngineAddress;
+    address rateOracleAddress = IMarginEngine(marginEngineAddress).rateOracleAddress();
+    rateOracle = IRateOracle(rateOracleAddress);
   }
 
   VAMMVars public override vammVars;
@@ -90,18 +88,13 @@ contract VAMM is IVAMM, Pausable {
 
   uint256 public override protocolFees;
 
-  IMarginEngine public override marginEngine;
-
-  function setMarginEngine(address _marginEngineAddress) external onlyFactoryOwner override {
-    marginEngine = IMarginEngine(_marginEngineAddress);
-  }
-
+  address public override marginEngineAddress;
 
   function updateProtocolFees(uint256 protocolFeesCollected)
     external
     override
   {
-    require(msg.sender==address(marginEngine), "only MarginEngine");
+    require(msg.sender==marginEngineAddress, "only MarginEngine");
     if (protocolFees < protocolFeesCollected) {
       revert NotEnoughFunds(protocolFeesCollected, protocolFees);
     }
@@ -109,7 +102,7 @@ contract VAMM is IVAMM, Pausable {
   }
 
   /// @dev not locked because it initializes unlocked
-  function initialize(uint160 sqrtPriceX96) external override {
+  function initializeVAMM(uint160 sqrtPriceX96) external override {
     if (vammVars.sqrtPriceX96 != 0)  {
       revert ExpectedSqrtPriceZeroBeforeInit(vammVars.sqrtPriceX96);
     }
@@ -123,20 +116,20 @@ contract VAMM is IVAMM, Pausable {
     emit Initialize(sqrtPriceX96, tick);
   }
 
-  function setFeeProtocol(uint256 feeProtocol) external override onlyFactoryOwner lock {
+  function setFeeProtocol(uint256 feeProtocol) external override onlyOwner lock {
     vammVars.feeProtocol = feeProtocol;
     // emit set fee protocol
   }
 
-  function setTickSpacing(int24 _tickSpacing) external override onlyFactoryOwner {
+  function setTickSpacing(int24 _tickSpacing) external override onlyOwner {
     tickSpacing = _tickSpacing;
   }
 
-  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external override onlyFactoryOwner {
+  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external override onlyOwner {
     maxLiquidityPerTick = _maxLiquidityPerTick;
   }
 
-  function setFee(uint256 _fee) external override onlyFactoryOwner {
+  function setFee(uint256 _fee) external override onlyOwner {
     fee = _fee;
   }
 
@@ -154,7 +147,7 @@ contract VAMM is IVAMM, Pausable {
       })
     );
 
-    marginEngine.unwindPosition(msg.sender, tickLower, tickUpper);
+    IMarginEngine(marginEngineAddress).unwindPosition(msg.sender, tickLower, tickUpper);
   }
 
   function flipTicks(ModifyPositionParams memory params)
@@ -229,7 +222,7 @@ contract VAMM is IVAMM, Pausable {
       feeGrowthGlobal
     );
 
-    marginEngine.updatePosition(params, vars);
+    IMarginEngine(marginEngineAddress).updatePosition(params, vars);
 
     // clear any tick data that is no longer needed
     if (params.liquidityDelta < 0) {
@@ -241,7 +234,7 @@ contract VAMM is IVAMM, Pausable {
       }
     }
 
-    marginEngine.rateOracle().writeOracleEntry();
+    rateOracle.writeOracleEntry();
 
     if (params.liquidityDelta != 0) {
       if (
@@ -270,7 +263,7 @@ contract VAMM is IVAMM, Pausable {
       revert LiquidityDeltaMustBePositiveInMint(amount);
     }
 
-    marginEngine.checkPositionMarginRequirementSatisfied(
+    IMarginEngine(marginEngineAddress).checkPositionMarginRequirementSatisfied(
       recipient,
       tickLower,
       tickUpper,
@@ -343,7 +336,7 @@ contract VAMM is IVAMM, Pausable {
 
     /// @dev write an entry to the rate oracle (given no throttling), should be a no-op
 
-    marginEngine.rateOracle().writeOracleEntry();
+    rateOracle.writeOracleEntry();
 
     // continue swapping as long as we haven't used the entire input/output and haven't reached the price (implied fixed rate) limit
     while (
@@ -391,17 +384,18 @@ contract VAMM is IVAMM, Pausable {
         state.liquidity,
         state.amountSpecifiedRemaining,
         fee,
-        marginEngine.termEndTimestamp() - Time.blockTimestampScaled()
+        IMarginEngine(marginEngineAddress).termEndTimestamp() - Time.blockTimestampScaled()
       );
 
       if (params.amountSpecified > 0) {
         // exact input
+        /// @audit prb math is not used in here
         state.amountSpecifiedRemaining -= (step.amountIn).toInt256();
         state.amountCalculated = state.amountCalculated.sub(
           (step.amountOut).toInt256()
         );
       } else {
-        // prb math is not used in here
+        /// @audit prb math is not used in here
         state.amountSpecifiedRemaining += step.amountOut.toInt256();
         state.amountCalculated = state.amountCalculated.add(
           (step.amountIn).toInt256()
@@ -417,9 +411,9 @@ contract VAMM is IVAMM, Pausable {
 
       // update global fee tracker
       if (state.liquidity > 0) {
-        uint256 variableFactor = marginEngine.rateOracle().variableFactor(
-          marginEngine.termStartTimestamp(),
-          marginEngine.termEndTimestamp()
+        uint256 variableFactor = rateOracle.variableFactor(
+          IMarginEngine(marginEngineAddress).termStartTimestamp(),
+          IMarginEngine(marginEngineAddress).termEndTimestamp()
         );
         (
           state.feeGrowthGlobal,
@@ -430,8 +424,8 @@ contract VAMM is IVAMM, Pausable {
           state,
           step,
           variableFactor,
-          marginEngine.termStartTimestamp(),
-          marginEngine.termEndTimestamp()
+          IMarginEngine(marginEngineAddress).termStartTimestamp(),
+          IMarginEngine(marginEngineAddress).termEndTimestamp()
         );
       }
 
@@ -446,9 +440,10 @@ contract VAMM is IVAMM, Pausable {
             state.feeGrowthGlobal
           );
 
+          /// @audit moving rightward?
           // if we're moving leftward, we interpret liquidityNet as the opposite sign
           // safe because liquidityNet cannot be type(int128).min
-          if (params.isFT) liquidityNet = -liquidityNet;
+          if (!params.isFT) liquidityNet = -liquidityNet;
 
           state.liquidity = LiquidityMath.addDelta(
             state.liquidity,
@@ -456,7 +451,7 @@ contract VAMM is IVAMM, Pausable {
           );
         }
 
-        state.tick = params.isFT ? step.tickNext - 1 : step.tickNext;
+        state.tick = !params.isFT ? step.tickNext - 1 : step.tickNext;
       } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
         // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
         state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
@@ -464,9 +459,11 @@ contract VAMM is IVAMM, Pausable {
     }
 
     if (state.tick != vammVarsStart.tick) {
+       // update the tick in case it changed
       vammVars.sqrtPriceX96 = state.sqrtPriceX96;
       vammVars.tick = state.tick;
     } else {
+      // otherwise just update the price
       vammVars.sqrtPriceX96 = state.sqrtPriceX96;
     }
 
@@ -480,6 +477,9 @@ contract VAMM is IVAMM, Pausable {
       protocolFees = protocolFees + state.protocolFee;
     }
 
+    /// @audit add revert statement if isFT and amountSpecified is not positive
+    /// @dev Also, if a VT wishes to trade x notional, amountSpecified needs to be an exact output (in terms of the variableTokens they receive), hence amountSpecified needs to be negative 
+    /// @audit add revert statement if isFT and amountSpecified is not positive
     (swapLocalVars.amount0Int, swapLocalVars.amount1Int) = params.isFT ==
       params.amountSpecified > 0
       ? (
@@ -514,31 +514,30 @@ contract VAMM is IVAMM, Pausable {
       _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
         int256(swapLocalVars.amount0),
         -int256(swapLocalVars.amount1),
-        marginEngine.rateOracle().variableFactor(
-          marginEngine.termStartTimestamp(),
-          marginEngine.termEndTimestamp()
+        rateOracle.variableFactor(
+          IMarginEngine(marginEngineAddress).termStartTimestamp(),
+          IMarginEngine(marginEngineAddress).termEndTimestamp()
         ),
-        marginEngine.termStartTimestamp(),
-        marginEngine.termEndTimestamp()
+        IMarginEngine(marginEngineAddress).termStartTimestamp(),
+        IMarginEngine(marginEngineAddress).termEndTimestamp()
       );
     } else {
       _variableTokenDelta = int256(swapLocalVars.amount1);
       _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
         -int256(swapLocalVars.amount0),
         int256(swapLocalVars.amount1),
-        marginEngine.rateOracle().variableFactor(
-          marginEngine.termStartTimestamp(),
-          marginEngine.termEndTimestamp()
+        rateOracle.variableFactor(
+          IMarginEngine(marginEngineAddress).termStartTimestamp(),
+          IMarginEngine(marginEngineAddress).termEndTimestamp()
         ),
-        marginEngine.termStartTimestamp(),
-        marginEngine.termEndTimestamp()
+        IMarginEngine(marginEngineAddress).termStartTimestamp(),
+        IMarginEngine(marginEngineAddress).termEndTimestamp()
       );
     }
 
     // if this is not the case then it is a position unwind induced swap triggered by a position liquidation  which is handled in the position unwind function
-    // maybe would be cleaner to use callbacks like Uniswap v3?
     if (params.isTrader) {
-      marginEngine.updateTraderBalances(
+      IMarginEngine(marginEngineAddress).updateTraderBalances(
         params.recipient,
         _fixedTokenDelta,
         _variableTokenDelta,
@@ -619,9 +618,9 @@ contract VAMM is IVAMM, Pausable {
 
 
     function calculateUpdatedGlobalTrackerValues(
-        IVAMM.SwapParams memory params,
-        IVAMM.SwapState memory state,
-        IVAMM.StepComputations memory step,
+        SwapParams memory params,
+        SwapState memory state,
+        StepComputations memory step,
         uint256 variableFactor,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
@@ -639,6 +638,11 @@ contract VAMM is IVAMM, Pausable {
             PRBMathUD60x18.div(step.feeAmount, uint256(state.liquidity));
 
         if (params.isFT) {
+
+            /// @dev if the trader is a fixed taker then the variable token growth global should be incremented (since LPs are receiving variable tokens)
+            /// @dev if the trader is a fixed taker then the fixed token growth global should decline (since LPs are providing fixed tokens)
+            /// @dev if the trader is a fixed taker amountOut is in terms of variable tokens (it is a positive value)
+            
             stateVariableTokenGrowthGlobal =
                 state.variableTokenGrowthGlobal +
                 PRBMathSD59x18.div(
@@ -646,7 +650,11 @@ contract VAMM is IVAMM, Pausable {
                     int256(uint256(state.liquidity))
                 );
 
-            // check the signs
+            
+            /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
+            /// @dev in this case amountIn is in terms of unbalanced fixed tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
+            /// @dev in this case amountOut is in terms of variable tokens, hence the value passed needs to be positive --> int256(step.amountOut)
+
             stateFixedTokenGrowthGlobal =
                 state.fixedTokenGrowthGlobal +
                 PRBMathSD59x18.div(
@@ -660,13 +668,21 @@ contract VAMM is IVAMM, Pausable {
                     int256(uint256(state.liquidity))
                 );
         } else {
-            // check the signs are correct
+
+            /// @dev if a trader is a variable taker, the variable token growth should decline (since the LPs are providing variable tokens)
+            /// @dev if a trader is a variable taker, the fixed token growth should increase (since the LPs are receiving fixed tokens)
+            /// @dev if a trader is a variable taker amountIn is in terms of variable tokens
+            
             stateVariableTokenGrowthGlobal =
                 state.variableTokenGrowthGlobal +
                 PRBMathSD59x18.div(
                     -int256(step.amountIn),
                     int256(uint256(state.liquidity))
                 );
+
+            /// @dev fixed token delta should be positive (for LPs)
+            /// @dev in this case amountIn is in terms of variable tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
+            /// @dev in this case amountOut is in terms of fixedToken, hence the value passed needs to be positive --> int256(step.amountOut),
 
             stateFixedTokenGrowthGlobal =
                 state.fixedTokenGrowthGlobal +
@@ -677,7 +693,7 @@ contract VAMM is IVAMM, Pausable {
                         variableFactor,
                         termStartTimestamp,
                         termEndTimestamp
-                    ), // variable factor maturity false
+                    ),
                     int256(uint256(state.liquidity))
                 );
         }

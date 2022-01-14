@@ -2,94 +2,59 @@
 
 pragma solidity ^0.8.0;
 
+import "./OracleBuffer.sol";
 import "../interfaces/rate_oracles/IRateOracle.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "../interfaces/IFactory.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "../core_libraries/Time.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
-abstract contract BaseRateOracle is IRateOracle {
-    /// @inheritdoc IRateOracle
-    bytes32 public immutable override rateOracleId;
+abstract contract BaseRateOracle is IRateOracle, Ownable {
+    using OracleBuffer for OracleBuffer.Observation[65535];
+
+    uint256 public constant ONE_WEI = 10**18;
+
+    /// @notice a cache of settlement rates for interest rate swaps associated with this rate oracle, indexed by start time and then end time
+    mapping(uint32 => mapping(uint32 => uint256)) public settlementRateCache;
+    struct OracleVars {
+        /// @dev the most-recently updated index of the rates array
+        uint16 rateIndex;
+        /// @dev the current maximum number of rates that are being stored
+        uint16 rateCardinality;
+        /// @dev the next maximum number of rates to store, triggered in rates.write
+        uint16 rateCardinalityNext;
+    }
 
     /// @inheritdoc IRateOracle
     address public immutable override underlying;
 
     /// @inheritdoc IRateOracle
-    uint256 public override secondsAgo;
-    /// @inheritdoc IRateOracle
     uint256 public override minSecondsSinceLastUpdate;
 
-    /// @inheritdoc IRateOracle
-    OracleVars public override oracleVars;
+    OracleVars public oracleVars;
 
-    /// @inheritdoc IRateOracle
-    Rate[65535] public override rates;
-
-    address public immutable override factory;
+    /// @notice the observations tracked over time by this oracle
+    OracleBuffer.Observation[65535] public observations;
 
     /// @dev Must be the Factory owner
     error NotFactoryOwner();
-
-    /// @dev Modifier that ensures a given function can only be called by the top-level factory owner
-    modifier onlyFactoryOwner() {
-        if (msg.sender != IFactory(factory).owner()) {
-            revert NotFactoryOwner();
-        }
-        _;
-    }
-
-    /// @inheritdoc IRateOracle
-    function setSecondsAgo(uint256 _secondsAgo)
-        external
-        override
-        onlyFactoryOwner
-    {
-        secondsAgo = _secondsAgo; // in wei
-
-        // emit seconds ago set
-        // unqiue for rate oracle id and the underlying address
-    }
 
     /// @inheritdoc IRateOracle
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate)
         external
         override
-        onlyFactoryOwner
+        onlyOwner
     {
         minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate; // in wei
 
-        // emit
+        // @audit emit event
     }
 
-    constructor(
-        bytes32 _rateOracleId,
-        address _underlying,
-        address _factory
-    ) {
-        rateOracleId = _rateOracleId;
+    constructor(address _underlying) {
         underlying = _underlying;
-        factory = _factory;
-    }
-
-    /// @inheritdoc IRateOracle
-    function variableFactor(
-        uint256 termStartTimestamp,
-        uint256 termEndTimestamp
-    ) public view virtual override returns (uint256 result);
-
-    /// @notice Prepares the rates array to store up to `next` rates
-    /// @param current The current next cardinality of the oracle array
-    /// @param next The proposed next cardinality which will be populated in the rates array
-    /// @return next The next cardinality which will be populated in the rates array
-    function grow(uint16 current, uint16 next) internal pure returns (uint16) {
-        require(current > 0, "I");
-
-        // no-op if the passed next value isn't greater than the current next value
-        if (next <= current) return current;
-
-        return next;
     }
 
     // AB: lock the amm when calling this function?
@@ -101,7 +66,7 @@ abstract contract BaseRateOracle is IRateOracle {
     {
         uint16 rateCardinalityNextOld = oracleVars.rateCardinalityNext; // for the event
 
-        uint16 rateCardinalityNextNew = grow(
+        uint16 rateCardinalityNextNew = observations.grow(
             rateCardinalityNextOld,
             rateCardinalityNext
         );
@@ -116,46 +81,114 @@ abstract contract BaseRateOracle is IRateOracle {
         }
     }
 
-    /// @notice Calculates the observed APY returned by the rate oracle in a given period
-    /// @param from The timestamp of the start of the period, in wei-seconds
-    /// @param to The timestamp of the end of the period, in wei-seconds
-    /// @dev Reverts if we have no data point for either timestamp
-    function getApyFromTo(uint256 from, uint256 to)
+    /// @notice Computes the APY based on the un-annualised rateFromTo value and timeInYears (in wei)
+    /// @param rateFromTo Un-annualised rate (in wei)
+    /// @param timeInYears Time in years for the period for which we want to calculate the apy (in wei)
+    /// @return apy APY for a given rateFromTo and timeInYears
+    function computeApyFromRate(uint256 rateFromTo, uint256 timeInYears)
         internal
+        pure
+        returns (uint256 apy)
+    {
+        if (rateFromTo == 0) {
+            return 0;
+        }
+        uint256 exponent = PRBMathUD60x18.div(ONE_WEI, timeInYears);
+        uint256 apyPlusOne = PRBMathUD60x18.pow(
+            (ONE_WEI + rateFromTo),
+            exponent
+        );
+        apy = apyPlusOne - ONE_WEI;
+    }
+
+    /// @inheritdoc IRateOracle
+    function getRateFromTo(uint256 from, uint256 to)
+        public
         view
         virtual
-        returns (uint256 apyFromTo);
-
-    /// @inheritdoc IRateOracle
-    function writeRate(
-        uint16 index,
-        uint16 cardinality,
-        uint16 cardinalityNext
-    )
-        public
-        virtual
         override
-        returns (uint16 indexUpdated, uint16 cardinalityUpdated);
+        returns (uint256);
 
     /// @inheritdoc IRateOracle
-    function observeSingle(
-        uint256 currentTime,
-        uint256 queriedTime,
-        uint16 index,
-        uint16 cardinality
-    ) public view virtual override returns (uint256 rateValue);
+    function getApyFromTo(uint256 from, uint256 to)
+        public
+        view
+        override
+        returns (uint256 apyFromTo)
+    {
+        require(from <= to, "Misordered dates");
+
+        uint256 rateFromTo = getRateFromTo(from, to);
+
+        uint256 timeInSeconds = to - from;
+
+        uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
+
+        apyFromTo = computeApyFromRate(rateFromTo, timeInYears);
+    }
+
+    /// @inheritdoc IRateOracle
+    function variableFactor(
+        uint256 termStartTimestampInWeiSeconds,
+        uint256 termEndTimestampInWeiSeconds
+    ) public override(IRateOracle) returns (uint256 result) {
+        bool cacheable;
+        (result, cacheable) = _variableFactor(
+            termStartTimestampInWeiSeconds,
+            termEndTimestampInWeiSeconds
+        );
+
+        if (cacheable) {
+            uint32 termStartTimestamp = Time.timestampAsUint32(
+                PRBMathUD60x18.toUint(termStartTimestampInWeiSeconds)
+            );
+            uint32 termEndTimestamp = Time.timestampAsUint32(
+                PRBMathUD60x18.toUint(termEndTimestampInWeiSeconds)
+            );
+
+            settlementRateCache[termStartTimestamp][termEndTimestamp] = result;
+        }
+
+        return result;
+    }
+
+    /// @inheritdoc IRateOracle
+    function variableFactorNoCache(
+        uint256 termStartTimestampInWeiSeconds,
+        uint256 termEndTimestampInWeiSeconds
+    ) public view override(IRateOracle) returns (uint256 result) {
+        (result, ) = _variableFactor(
+            termStartTimestampInWeiSeconds,
+            termEndTimestampInWeiSeconds
+        );
+    }
+
+    function _variableFactor(
+        uint256 termStartTimestampInWeiSeconds,
+        uint256 termEndTimestampInWeiSeconds
+    ) private view returns (uint256 result, bool cacheable) {
+        uint32 termStartTimestamp = Time.timestampAsUint32(
+            PRBMathUD60x18.toUint(termStartTimestampInWeiSeconds)
+        );
+        uint32 termEndTimestamp = Time.timestampAsUint32(
+            PRBMathUD60x18.toUint(termEndTimestampInWeiSeconds)
+        );
+
+        require(termStartTimestamp > 0 && termEndTimestamp > 0, "UNITS");
+        if (settlementRateCache[termStartTimestamp][termEndTimestamp] != 0) {
+            result = settlementRateCache[termStartTimestamp][termEndTimestamp];
+        } else if (Time.blockTimestampTruncated() >= termEndTimestamp) {
+            result = getRateFromTo(termStartTimestamp, termEndTimestamp);
+            cacheable = true;
+        } else {
+            result = getRateFromTo(
+                termStartTimestamp,
+                Time.blockTimestampTruncated()
+            );
+        }
+        return (result, cacheable);
+    }
 
     /// @inheritdoc IRateOracle
     function writeOracleEntry() external virtual override;
-
-    /// @inheritdoc IRateOracle
-    function getHistoricalApy()
-        external
-        view
-        virtual
-        override
-        returns (uint256 historicalApy);
-
-    /// @inheritdoc IRateOracle
-    function initialize() public virtual override;
 }

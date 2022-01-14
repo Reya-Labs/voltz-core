@@ -157,10 +157,6 @@ interface IVAMM is IPositionStructs {
     /// @return The boolean, true if the vamm is unlocked
     function unlocked() external view returns (bool);
 
-    /// @notice Top-level factory address
-    /// @return Address of the top-level factory contract
-    function factory() external view returns (address);
-
     /// @notice The vamm tick spacing
     /// @dev Ticks can only be used at multiples of this value, minimum of 1 and always positive
     /// e.g.: a tickSpacing of 3 means ticks can be initialized every 3rd tick, i.e., ..., -6, -3, 0, 3, 6, ...
@@ -207,12 +203,8 @@ interface IVAMM is IPositionStructs {
     /// @dev Protocol fees will never exceed uint256
     function protocolFees() external view returns (uint256);
 
-    /// @notice The parent AMM of the vamm
-    /// @return Parent AMM of the vamm
-    function marginEngine() external view returns (IMarginEngine);
-
-    /// @notice Function that sets the parent AMM of the vamm
-    function setMarginEngine(address _marginEngineAddress) external;
+    // marginEngineAddress
+    function marginEngineAddress() external view returns (address);
 
     /// @notice Function that sets the feeProtocol of the vamm
     function setFeeProtocol(uint256 feeProtocol) external;
@@ -233,7 +225,7 @@ interface IVAMM is IPositionStructs {
     /// @notice Sets the initial price for the vamm
     /// @dev Price is represented as a sqrt(amountVariableToken/amountFixedToken) Q64.96 value
     /// @param sqrtPriceX96 the initial sqrt price of the vamm as a Q64.96
-    function initialize(uint160 sqrtPriceX96) external;
+    function initializeVAMM(uint160 sqrtPriceX96) external;
 
     function burn(
         int24 tickLower,

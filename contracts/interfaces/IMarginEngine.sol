@@ -36,23 +36,17 @@ interface IMarginEngine is IPositionStructs {
 
     // immutables
 
-    /// @notice The contract that deployed the amm, which must adhere to the Factory interface
-    /// @return The contract address
-    function factory() external view returns (address);
-
     function fcm() external view returns (address);
 
     // /// @notice The address of the underlying (non-yield bearing) pool token - e.g. USDC
     // /// @return The underlying pool token address
     function underlyingToken() external view returns (address);
 
-    function rateOracleId() external view returns (bytes32);
+    function rateOracleAddress() external view returns (address);
 
     function termStartTimestamp() external view returns (uint256);
 
     function termEndTimestamp() external view returns (uint256);
-
-    function rateOracle() external view returns (IRateOracle);
 
     // errors
 
@@ -78,7 +72,7 @@ interface IMarginEngine is IPositionStructs {
 
     function liquidatorReward() external view returns (uint256);
 
-    function vamm() external view returns (IVAMM);
+    function vammAddress() external view returns (address);
 
     /// @notice Returns the information about a position by the position's key
     /// @param owner The address of the position owner
@@ -90,6 +84,19 @@ interface IMarginEngine is IPositionStructs {
         int24 tickLower,
         int24 tickUpper
     ) external view returns (Position.Info memory position);
+
+    /// @notice Gets the look-back window size that's used to request the historical APY from the rate Oracle
+    /// @dev The historical APY of the Rate Oracle is necessary for MarginEngine computations
+    /// @dev The look-back window is seconds from the current timestamp
+    /// @dev This value is only settable by the the Factory owner and may be unique for each MarginEngine
+    /// @dev When setting secondAgo, the setter needs to take into consideration the underlying volatility of the APYs in the reference yield-bearing pool (e.g. Aave v2 USDC)
+    /// @return secondsAgo in seconds
+    function secondsAgo() external view returns (uint256); // @audit suffix with Wad, and move this to MarginEngine so that it can be different for different IRS durations
+
+    /// @notice Sets secondsAgo: The look-back window size used to calculate the historical APY for margin purposes
+    /// @param _secondsAgo the duration of the lookback window in seconds
+    /// @dev Can only be set by the Factory Owner
+    function setSecondsAgo(uint256 _secondsAgo) external;
 
     /// @notice Returns the information about a trader by the trader's key
     /// @param key The wallet address of the trader
@@ -216,7 +223,7 @@ interface IMarginEngine is IPositionStructs {
 
     function collectProtocol(address recipient, uint256 amount) external;
 
-    function setVAMM(address _vAMMAddress) external;
+    function setVAMMAddress(address _vAMMAddress) external;
 
     function setFCM(address _fcm) external;
 }

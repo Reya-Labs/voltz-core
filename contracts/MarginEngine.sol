@@ -18,8 +18,10 @@ import "./interfaces/IDeployer.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MarginEngine is IMarginEngine, Pausable {
+contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
     
@@ -38,17 +40,13 @@ contract MarginEngine is IMarginEngine, Pausable {
     /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
     uint256 public override liquidatorReward;
     /// @inheritdoc IMarginEngine
-    address public override immutable underlyingToken;
+    address public override underlyingToken;
     /// @inheritdoc IMarginEngine
-    uint256 public override immutable termStartTimestamp;
+    uint256 public override termStartTimestamp;
     /// @inheritdoc IMarginEngine
-    uint256 public override immutable termEndTimestamp;
+    uint256 public override termEndTimestamp;
     /// @inheritdoc IMarginEngine
-    IRateOracle public override immutable rateOracle;
-    /// @inheritdoc IMarginEngine
-    bytes32 public override rateOracleId;
-    /// @inheritdoc IMarginEngine
-    address public override factory;
+    address public override rateOracleAddress;
 
     address public override fcm; // full collateralisation module
 
@@ -56,26 +54,31 @@ contract MarginEngine is IMarginEngine, Pausable {
     /// @inheritdoc IMarginEngine
     mapping(address => Trader.Info) public override traders;
 
-    IVAMM public override vamm;
+    address public override vammAddress;
 
     MarginCalculatorParameters internal marginCalculatorParameters;
 
+    /// @inheritdoc IMarginEngine
+    uint256 public override secondsAgo;
+
+    address private deployer;
+
     constructor() Pausable() {  
 
-        (
-            factory,
-            underlyingToken,
-            rateOracleId,
-            termStartTimestamp,
-            termEndTimestamp
-        ) = IDeployer(msg.sender).marginEngineParameters();
+        deployer = msg.sender; /// @audit this is presumably the factory
 
-        address rateOracleAddress = IFactory(factory).getRateOracleAddress(
-            rateOracleId
-        );
+    }
 
-        rateOracle = IRateOracle(rateOracleAddress);
+    function initialize(address _underlyingToken, address _rateOracleAddress, uint256 _termStartTimestamp, uint256 _termEndTimestamp) public initializer {
+        require(_underlyingToken != address(0), "UT must be set");
+        require(_rateOracleAddress != address(0), "RO must be set");
+        require(_termStartTimestamp != 0, "TS must be set");
+        require(_termEndTimestamp != 0, "TE must be set");
 
+        underlyingToken = _underlyingToken;
+        rateOracleAddress = _rateOracleAddress;
+        termStartTimestamp = _termStartTimestamp;
+        termEndTimestamp = _termEndTimestamp;
     }
 
     /// Only the position/trade owner can update the position/trade margin
@@ -107,38 +110,42 @@ contract MarginEngine is IMarginEngine, Pausable {
         _;
     }
 
-    modifier onlyFactoryOwner() {
-        if (msg.sender != IFactory(factory).owner()) {
-            revert NotFactoryOwner();
-        }
-        _;
-    }
-
     // add override
     /// @notice Set the per-oracle MarginCalculatorParameters
     /// @param _marginCalculatorParameters the MarginCalculatorParameters to set
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory _marginCalculatorParameters
-    ) external onlyFactoryOwner {
+    ) external onlyOwner {
         marginCalculatorParameters = _marginCalculatorParameters;
     }
 
-    function setVAMM(address _vAMMAddress) external override onlyFactoryOwner {
-        vamm = IVAMM(_vAMMAddress);
+    function setVAMMAddress(address _vAMMAddress) external override onlyOwner {
+        vammAddress = _vAMMAddress;
     }
 
-    function setFCM(address _fcm) external override onlyFactoryOwner {
+    function setFCM(address _fcm) external override onlyOwner {
         fcm = _fcm;
+    }
+
+    /// @inheritdoc IMarginEngine
+    function setSecondsAgo(uint256 _secondsAgo)
+        external
+        override
+        onlyOwner
+    {
+        secondsAgo = _secondsAgo; // in wei
+
+        // @audit emit seconds ago set
     }
 
     function collectProtocol(address recipient, uint256 amount)
         external
         override
-        onlyFactoryOwner{
+        onlyOwner{
 
         if (amount > 0) {
-            /// @dev if the amount exceeds the available balances, vamm.updateProtocolFees(amount) should be reverted as intended
-            vamm.updateProtocolFees(amount);
+            /// @dev if the amount exceeds the available balances, IVAMM(vammAddress).updateProtocolFees(amount) should be reverted as intended
+            IVAMM(vammAddress).updateProtocolFees(amount);
             IERC20Minimal(underlyingToken).transfer(
                 recipient,
                 amount
@@ -148,7 +155,7 @@ contract MarginEngine is IMarginEngine, Pausable {
         // emit collect protocol event
     }
     
-    function setLiquidatorReward(uint256 _liquidatorReward) external override onlyFactoryOwner {
+    function setLiquidatorReward(uint256 _liquidatorReward) external override onlyOwner {
         liquidatorReward = _liquidatorReward;
     }
 
@@ -180,7 +187,7 @@ contract MarginEngine is IMarginEngine, Pausable {
             }
         }
         
-        uint256 variableFactor = rateOracle.variableFactor(termStartTimestamp, termEndTimestamp);
+        uint256 variableFactor = IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp);
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
         int256 updatedMarginWouldBe = position.margin + marginDelta;
@@ -227,7 +234,7 @@ contract MarginEngine is IMarginEngine, Pausable {
         require(position._liquidity==0, "fully burned");
         require(!position.isSettled, "already settled");
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(termStartTimestamp, termEndTimestamp));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestamp, termEndTimestamp, IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp));
 
         position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMargin(settlementCashflow);
@@ -241,19 +248,33 @@ contract MarginEngine is IMarginEngine, Pausable {
 
         require(!trader.isSettled, "not settled");
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestamp, termEndTimestamp, rateOracle.variableFactor(termStartTimestamp, termEndTimestamp));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestamp, termEndTimestamp, IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMargin(settlementCashflow);
         trader.settleTrader();
     }
 
+    /// @notice Computes the historical APY value of the RateOracle 
+    /// @dev The lookback window used by this function is determined by the secondsAgo state variable    
+    function getHistoricalApy()
+        public
+        view
+        virtual // virtual because overridden by tests
+        returns (uint256 historicalApy)
+    {
+        uint256 to = block.timestamp;
+        uint256 from = to - secondsAgo;
+
+        return IRateOracle(rateOracleAddress).getApyFromTo(from, to);
+    }
+    
     /// @inheritdoc IMarginEngine
     function liquidatePosition(ModifyPositionParams memory params) external override {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        (, int24 tick, ) = vamm.vammVars();
+        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
@@ -269,8 +290,8 @@ contract MarginEngine is IMarginEngine, Pausable {
                 liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: rateOracle.variableFactor(termStartTimestamp, termEndTimestamp),
-                historicalApy: rateOracle.getHistoricalApy()
+                variableFactor: IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp),
+                historicalApy: getHistoricalApy()
             }),
             position.margin,
             marginCalculatorParameters
@@ -284,7 +305,7 @@ contract MarginEngine is IMarginEngine, Pausable {
 
         position.updateMargin(-int256(liquidatorReward));
 
-        vamm.burn(params.tickLower, params.tickUpper, position._liquidity); // burn all liquidity
+        IVAMM(vammAddress).burn(params.tickLower, params.tickUpper, position._liquidity); // burn all liquidity
 
         IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, liquidatorRewardValue);
         
@@ -304,7 +325,7 @@ contract MarginEngine is IMarginEngine, Pausable {
                 termStartTimestamp: termStartTimestamp,
                 termEndTimestamp: termEndTimestamp,
                 isLM: true,
-                historicalApy: rateOracle.getHistoricalApy()
+                historicalApy: getHistoricalApy()
             }),
             trader.margin,
             marginCalculatorParameters
@@ -340,7 +361,7 @@ contract MarginEngine is IMarginEngine, Pausable {
             uint128 amount
         ) external override {
         
-        (, int24 tick, ) = vamm.vammVars();
+        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
         updatePositionTokenBalances(recipient, tickLower, tickUpper);
         Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
         uint128 amountTotal = LiquidityMath.addDelta(position._liquidity, int128(amount));
@@ -357,8 +378,8 @@ contract MarginEngine is IMarginEngine, Pausable {
                 liquidity: amountTotal,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance, 
-                variableFactor: rateOracle.variableFactor(termStartTimestamp, termEndTimestamp),
-                historicalApy: rateOracle.getHistoricalApy()
+                variableFactor: IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp),
+                historicalApy: getHistoricalApy()
             }), marginCalculatorParameters
         ));
    
@@ -370,8 +391,8 @@ contract MarginEngine is IMarginEngine, Pausable {
     /// @inheritdoc IMarginEngine
     function updatePosition(IVAMM.ModifyPositionParams memory params, IVAMM.UpdatePositionVars memory vars) external override {
 
-        /// @dev this function can only be called by the vamm following a swap    
-        require(msg.sender==address(vamm), "only vamm");        
+        /// @dev this function can only be called by the vamm following a swap
+        require(msg.sender==vammAddress, "only vamm");        
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
         position.updateLiquidity(params.liquidityDelta);
@@ -387,7 +408,7 @@ contract MarginEngine is IMarginEngine, Pausable {
     function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, bool isUnwind) external override {
 
         /// @dev this function can only be called by the vamm following a swap    
-        require(msg.sender==address(vamm), "only vamm");
+        require(msg.sender==vammAddress, "only vamm");
         
         Trader.Info storage trader = traders[recipient];
         trader.updateBalances(fixedTokenBalance, variableTokenBalance);
@@ -399,7 +420,7 @@ contract MarginEngine is IMarginEngine, Pausable {
                 termStartTimestamp:termStartTimestamp,
                 termEndTimestamp:termEndTimestamp,
                 isLM: false,
-                historicalApy: rateOracle.getHistoricalApy()
+                historicalApy: getHistoricalApy()
             }), marginCalculatorParameters
         ));
 
@@ -414,8 +435,8 @@ contract MarginEngine is IMarginEngine, Pausable {
         int24 tickUpper) internal {
 
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        (, int24 tick, ) = vamm.vammVars();
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = vamm.computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
+        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
+        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = IVAMM(vammAddress).computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
@@ -430,7 +451,7 @@ contract MarginEngine is IMarginEngine, Pausable {
     ) external override returns(int256 _fixedTokenBalance, int256 _variableTokenBalance) {
 
         /// @dev this function can only be called by the vamm following a swap    
-        require(msg.sender==address(vamm), "only vamm");
+        require(msg.sender==vammAddress, "only vamm");
 
         updatePositionTokenBalances(owner, tickLower, tickUpper);
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
@@ -457,7 +478,7 @@ contract MarginEngine is IMarginEngine, Pausable {
                 isTrader: false
             });
 
-            (_fixedTokenBalance, _variableTokenBalance) = vamm.swap(params); // check the outputs are correct
+            (_fixedTokenBalance, _variableTokenBalance) = IVAMM(vammAddress).swap(params); // check the outputs are correct
         } else {
             // get into an FT swap
             // variableTokenBalance is positive
@@ -471,7 +492,7 @@ contract MarginEngine is IMarginEngine, Pausable {
                 isTrader: false
             });
 
-            (_fixedTokenBalance, _variableTokenBalance) = vamm.swap(params);
+            (_fixedTokenBalance, _variableTokenBalance) = IVAMM(vammAddress).swap(params);
         }
 
         position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
@@ -495,7 +516,7 @@ contract MarginEngine is IMarginEngine, Pausable {
         uint256 variableFactor
     ) internal view {
 
-        (, int24 tick, ) = vamm.vammVars();
+        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
 
         MarginCalculator.PositionMarginRequirementParams
             memory marginReqParams = MarginCalculator
@@ -511,7 +532,7 @@ contract MarginEngine is IMarginEngine, Pausable {
                     fixedTokenBalance: positionFixedTokenBalance,
                     variableTokenBalance: positionVariableTokenBalance,
                     variableFactor: variableFactor,
-                    historicalApy: rateOracle.getHistoricalApy()
+                    historicalApy: getHistoricalApy()
                 });
 
         int256 positionMarginRequirement = int256(
@@ -620,7 +641,7 @@ contract MarginEngine is IMarginEngine, Pausable {
                     termStartTimestamp: termStartTimestamp,
                     termEndTimestamp: termEndTimestamp,
                     isLM: false,
-                    historicalApy: rateOracle.getHistoricalApy()
+                    historicalApy: getHistoricalApy()
                 }), marginCalculatorParameters
             )
         );
@@ -652,7 +673,7 @@ contract MarginEngine is IMarginEngine, Pausable {
                 isTrader: true
             });
 
-            vamm.swap(params);
+            IVAMM(vammAddress).swap(params);
         } else {
             // get into an FT swap
             // notional is negative
@@ -666,7 +687,7 @@ contract MarginEngine is IMarginEngine, Pausable {
                 isTrader: true
             });
 
-            vamm.swap(params);
+            IVAMM(vammAddress).swap(params);
         }
     }
 
