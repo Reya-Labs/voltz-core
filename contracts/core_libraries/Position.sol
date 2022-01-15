@@ -107,7 +107,6 @@ library Position {
         );
     }
 
-
     /// @notice Returns Fixed and Variable Token Deltas
     /// @param self position info struct represeting a liquidity provider
     /// @param fixedTokenGrowthInside fixed token growth per unit of liquidity as of now (in wei)
