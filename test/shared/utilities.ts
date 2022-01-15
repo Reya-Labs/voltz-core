@@ -1,12 +1,5 @@
-import {
-  BigNumber,
-  BigNumberish,
-  ContractTransaction,
-  utils,
-  Wallet,
-} from "ethers";
+import { BigNumber, BigNumberish, utils } from "ethers";
 import Bn from "bignumber.js";
-import { TestVAMM } from "../../typechain/TestVAMM";
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
 import { sqrt } from "./sqrt";
