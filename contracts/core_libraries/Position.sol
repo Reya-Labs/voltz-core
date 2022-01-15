@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "../utils/FullMath.sol";
 import "../utils/LiquidityMath.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
@@ -63,7 +62,7 @@ library Position {
 
     /// @notice Updates the Info struct of a position by changing the amount of margin according to marginDelta
     /// @param self Position Info Struct of the Liquidity Provider
-    /// @param marginDelta Change in the margin account of the position
+    /// @param marginDelta Change in the margin account of the position (in wei)
     function updateMargin(Info storage self, int256 marginDelta) internal {
         Info memory _self = self;
         self.margin = _self.margin + marginDelta;
@@ -102,22 +101,17 @@ library Position {
     {
         Info memory _self = self;
 
-        require(_self._liquidity > 0, "NP");
-
         _feeDelta = PRBMathUD60x18.mul(
-            feeGrowthInside - _self.feeGrowthInsideLast,
-            uint256(_self._liquidity) * 10**18
+            (feeGrowthInside - _self.feeGrowthInsideLast),
+            uint256(_self._liquidity)
         );
     }
 
-    /// #if_succeeds fixedTokenGrowthInside==_self.fixedTokenGrowthInsideLast ==> _fixedTokenBalance == 0;
-    /// #if_succeeds variableTokenGrowthInside==_self.variableTokenGrowthInsideLast ==> _variableTokenBalance == 0;
-    /// #if_succeeds _self._liquidity > 0;
 
     /// @notice Returns Fixed and Variable Token Deltas
     /// @param self position info struct represeting a liquidity provider
-    /// @param fixedTokenGrowthInside fixed token growth per unit of liquidity as of now
-    /// @param variableTokenGrowthInside variable token growth per unit of liquidity as of now
+    /// @param fixedTokenGrowthInside fixed token growth per unit of liquidity as of now (in wei)
+    /// @param variableTokenGrowthInside variable token growth per unit of liquidity as of now (in wei)
     /// @return _fixedTokenDelta = (fixedTokenGrowthInside-fixedTokenGrowthInsideLast) * liquidity of a position
     /// @return _variableTokenDelta = (variableTokenGrowthInside-variableTokenGrowthInsideLast) * liquidity of a position
     function calculateFixedAndVariableDelta(
@@ -131,17 +125,15 @@ library Position {
     {
         Info memory _self = self;
 
-        // require(_self._liquidity > 0, "NP");
-
-        // liquidity is in wei already
+        /// @dev liquidity is in Wei (18 decimals)
 
         _fixedTokenDelta = PRBMathSD59x18.mul(
-            fixedTokenGrowthInside - _self.fixedTokenGrowthInsideLast,
+            (fixedTokenGrowthInside - _self.fixedTokenGrowthInsideLast),
             int256(uint256(_self._liquidity))
         );
 
         _variableTokenDelta = PRBMathSD59x18.mul(
-            variableTokenGrowthInside - _self.variableTokenGrowthInsideLast,
+            (variableTokenGrowthInside - _self.variableTokenGrowthInsideLast),
             int256(uint256(_self._liquidity))
         );
     }
@@ -167,8 +159,6 @@ library Position {
     {
         self.feeGrowthInsideLast = feeGrowthInside;
     }
-
-    /// #if_succeeds liquidityDelta != 0;
 
     /// @notice Updates position's liqudity following either mint or a burn
     /// @param self The individual position to update

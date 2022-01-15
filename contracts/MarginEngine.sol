@@ -29,10 +29,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     using Position for Position.Info;
     using Trader for Trader.Info;
 
-    /// @dev Must be the Factory owner
-    error NotFactoryOwner();
-
-    /// @dev liquidatorReward is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
+    /// @dev liquidatorReward (in wei) is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
     /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
     uint256 public override liquidatorReward;
     /// @inheritdoc IMarginEngine
@@ -59,6 +56,8 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
 
     address private deployer;
 
+    bool isInsuranceDepleted;
+
     constructor() Pausable() {  
 
         deployer = msg.sender; /// this is presumably the factory
@@ -77,7 +76,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         termEndTimestamp = _termEndTimestamp;
     }
 
-    /// Only the position/trade owner can update the position/trade margin
+    /// Only the position/trade owner can update the LP/Trader margin
     error OnlyOwnerCanUpdatePosition();
 
     /// Margin delta must not equal zero
@@ -134,6 +133,11 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         // @audit emit seconds ago set
     }
 
+    // add override
+    function setIsInsuranceDepleted(bool _isInsuranceDepleted) external onlyOwner {
+        isInsuranceDepleted = _isInsuranceDepleted;
+    }
+
     function collectProtocol(address recipient, uint256 amount)
         external
         override
@@ -180,6 +184,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         uint256 variableFactor = IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp);
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
+        require((position.margin + marginDelta) > 0, "can't withdraw more than have");
         
         if (marginDelta < 0) {
 
@@ -187,19 +192,28 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
                 revert OnlyOwnerCanUpdatePosition();
             }
 
-            int256 updatedMarginWouldBe = position.margin + marginDelta;
+            if (isInsuranceDepleted) {
 
-            checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor); 
+                position.updateMargin(marginDelta);
 
-            position.updateMargin(marginDelta);
+                transferMargin(msg.sender, marginDelta);
 
-            transferMargin(params.owner, marginDelta);
+            } else {
+            
+                int256 updatedMarginWouldBe = position.margin + marginDelta;
+
+                checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor); 
+
+                position.updateMargin(marginDelta);
+
+                transferMargin(msg.sender, marginDelta);
+            }
 
         } else {
 
             position.updateMargin(marginDelta);
 
-            transferMargin(params.owner, marginDelta);
+            transferMargin(msg.sender, marginDelta);
         }
            
     }
@@ -220,6 +234,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     function updateTraderMargin(address traderAddress, int256 marginDelta) external nonZeroDelta(marginDelta) override {
         
         Trader.Info storage trader = traders[traderAddress];
+        require((trader.margin + marginDelta) > 0, "can't withdraw more than have");
         
         if (marginDelta < 0) {
 
@@ -227,13 +242,21 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
                 revert OnlyOwnerCanUpdatePosition();
             }
 
-            int256 updatedMarginWouldBe = trader.margin + marginDelta;
+            if (isInsuranceDepleted) {
+
+                trader.updateMargin(marginDelta);
+
+                transferMargin(msg.sender, marginDelta);
+
+            } else {
+                int256 updatedMarginWouldBe = trader.margin + marginDelta;
             
-            checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled);
+                checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled);
 
-            trader.updateMargin(marginDelta);
+                trader.updateMargin(marginDelta);
 
-            transferMargin(msg.sender, marginDelta);
+                transferMargin(msg.sender, marginDelta);
+            }
 
         } else {
             
@@ -246,16 +269,12 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     
     /// @inheritdoc IMarginEngine
     function settlePosition(ModifyPositionParams memory params) external onlyAfterMaturity override whenNotPaused onlyAfterMaturity {
-
-        if (params.owner != msg.sender) {
-            revert OnlyOwnerCanUpdatePosition();
-        }
-
+        
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
 
-        // @dev position can only be settled if it is burned and not settled
+        /// @dev position can only be settled if it is burned and not settled
         require(position._liquidity==0, "fully burned");
         require(!position.isSettled, "already settled");
 
@@ -425,7 +444,12 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
         uint256 feeDelta = position.calculateFeeDelta(vars.feeGrowthInside);
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
+        
+
+        /// @dev collect fees generated since last mint/burn
         position.updateMargin(int256(feeDelta));
+        
+        
         position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
         position.updateFeeGrowthInside(vars.feeGrowthInside);
     }
