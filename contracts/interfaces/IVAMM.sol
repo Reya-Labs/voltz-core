@@ -225,6 +225,7 @@ interface IVAMM is IPositionStructs {
     function initializeVAMM(uint160 sqrtPriceX96) external;
 
     function burn(
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount

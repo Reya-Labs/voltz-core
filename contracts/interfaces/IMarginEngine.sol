@@ -229,4 +229,14 @@ interface IMarginEngine is IPositionStructs {
     function setVAMMAddress(address _vAMMAddress) external;
 
     function setFCM(address _fcm) external;
+
+    function checkPositionMarginSufficientToIncentiviseLiquidators(
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper
+    ) external view;
+
+    function checkTraderMarginSufficientToIncentiviseLiquidators(
+        address traderAddress
+    ) external view;
 }

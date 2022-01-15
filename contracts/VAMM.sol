@@ -133,20 +133,26 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
   }
 
   function burn(
+    address recipient,
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
   ) external override whenNotPaused lock {
+
+    /// @dev if msg.sender is the MarginEngine, it is a burn induced by a position liquidation
+
+    require((msg.sender==recipient) || (msg.sender == marginEngineAddress), "MS or ME");
+
     updatePosition(
       ModifyPositionParams({
-        owner: msg.sender,
+        owner: recipient,
         tickLower: tickLower,
         tickUpper: tickUpper,
         liquidityDelta: -int256(uint256(amount)).toInt128()
       })
     );
 
-    IMarginEngine(marginEngineAddress).unwindPosition(msg.sender, tickLower, tickUpper);
+    IMarginEngine(marginEngineAddress).unwindPosition(recipient, tickLower, tickUpper);
   }
 
   function flipTicks(ModifyPositionParams memory params)
@@ -264,6 +270,14 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       revert LiquidityDeltaMustBePositiveInMint(amount);
     }
 
+    require(msg.sender==recipient, "only msg.sender can mint");
+
+    IMarginEngine(marginEngineAddress).checkPositionMarginSufficientToIncentiviseLiquidators(
+      recipient,
+      tickLower,
+      tickUpper
+    );
+
     IMarginEngine(marginEngineAddress).checkPositionMarginRequirementSatisfied(
       recipient,
       tickLower,
@@ -309,6 +323,11 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
 
     if (params.isUnwind) {
       require(msg.sender==marginEngineAddress, "only ME induce unwind");
+    } else {
+      /// todo: require trader margin sufficient to incentivise liquidators
+      /// @dev must be a trader (positions can only call swap if they have been liquidated)
+      require(params.recipient==msg.sender, "only sender initiate swap");
+      IMarginEngine(marginEngineAddress).checkTraderMarginSufficientToIncentiviseLiquidators(params.recipient);
     }
 
     /// @dev lock the vamm while the swap is taking place
