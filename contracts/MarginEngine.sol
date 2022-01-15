@@ -177,22 +177,31 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        if (marginDelta < 0) {
-            if (params.owner != msg.sender) {
-                revert OnlyOwnerCanUpdatePosition();
-            }
-        }
-        
         uint256 variableFactor = IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp);
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
-        int256 updatedMarginWouldBe = position.margin + marginDelta;
+        
+        if (marginDelta < 0) {
 
-        checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor); 
+            if (params.owner != msg.sender) {
+                revert OnlyOwnerCanUpdatePosition();
+            }
 
-        position.updateMargin(marginDelta);
+            int256 updatedMarginWouldBe = position.margin + marginDelta;
 
-        transferMargin(params.owner, marginDelta);
+            checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor); 
+
+            position.updateMargin(marginDelta);
+
+            transferMargin(params.owner, marginDelta);
+
+        } else {
+
+            position.updateMargin(marginDelta);
+
+            transferMargin(params.owner, marginDelta);
+        }
+           
     }
     
 
@@ -210,21 +219,29 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     /// @inheritdoc IMarginEngine
     function updateTraderMargin(address traderAddress, int256 marginDelta) external nonZeroDelta(marginDelta) override {
         
+        Trader.Info storage trader = traders[traderAddress];
+        
         if (marginDelta < 0) {
+
             if (traderAddress != msg.sender) {
                 revert OnlyOwnerCanUpdatePosition();
             }
+
+            int256 updatedMarginWouldBe = trader.margin + marginDelta;
+            
+            checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled);
+
+            trader.updateMargin(marginDelta);
+
+            transferMargin(msg.sender, marginDelta);
+
+        } else {
+            
+            trader.updateMargin(marginDelta);
+
+            transferMargin(msg.sender, marginDelta);
         }
 
-        Trader.Info storage trader = traders[traderAddress];
-
-        int256 updatedMarginWouldBe = trader.margin + marginDelta;
-        
-        checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled);
-
-        trader.updateMargin(marginDelta);
-
-        transferMargin(msg.sender, marginDelta);
     }
     
     /// @inheritdoc IMarginEngine
