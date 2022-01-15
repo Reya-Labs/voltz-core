@@ -19,23 +19,23 @@ describe("Position", () => {
     return { positionTest };
   }
 
-  describe("#updateLiquidity", () => {
-    it("reverts if liquidity delta is zero", async () => {
-      const { positionTest } = await loadFixture(fixture);
-      const positionLiquidity = await positionTest.position();
-      expect(positionLiquidity._liquidity).to.eq(0);
-      return expect(positionTest.updateLiquidity(0)).to.be.revertedWith("NP");
-    });
+  // describe("#updateLiquidity", () => {
+  //   it("reverts if liquidity delta is zero", async () => {
+  //     const { positionTest } = await loadFixture(fixture);
+  //     const positionLiquidity = await positionTest.position();
+  //     expect(positionLiquidity._liquidity).to.eq(0);
+  //     return expect(positionTest.updateLiquidity(0)).to.be.revertedWith("NP");
+  //   });
 
-    it("correctly updates the liqudity of a position", async () => {
-      const { positionTest } = await loadFixture(fixture);
-      await positionTest.updateLiquidity(100);
-      await positionTest.updateLiquidity(0);
-      await positionTest.updateLiquidity(-10);
-      const positionLiquidityUpdated = await positionTest.position();
-      expect(positionLiquidityUpdated[0]).to.eq(90);
-    });
-  });
+  //   it("correctly updates the liqudity of a position", async () => {
+  //     const { positionTest } = await loadFixture(fixture);
+  //     await positionTest.updateLiquidity(100);
+  //     await positionTest.updateLiquidity(0);
+  //     await positionTest.updateLiquidity(-10);
+  //     const positionLiquidityUpdated = await positionTest.position();
+  //     expect(positionLiquidityUpdated[0]).to.eq(90);
+  //   });
+  // });
 
   describe("#updateMargin", () => {
     it("correctly updates the margin of a position", async () => {
@@ -114,27 +114,27 @@ describe("Position", () => {
     });
   });
 
-  describe("#calculateFeeDelta", () => {
-    it("check fails when liquidity zero", async () => {
-      const { positionTest } = await loadFixture(fixture);
-      return expect(
-        positionTest.calculateFeeDelta(toBn("50"))
-      ).to.be.revertedWith("NP");
-    });
+  // describe("#calculateFeeDelta", () => {
+  //   it("check fails when liquidity zero", async () => {
+  //     const { positionTest } = await loadFixture(fixture);
+  //     return expect(
+  //       positionTest.calculateFeeDelta(toBn("50"))
+  //     ).to.be.revertedWith("NP");
+  //   });
 
-    it("test when feeGrowthInsideLast = 0", async () => {
-      const { positionTest } = await loadFixture(fixture);
-      const lastFeeGrowthInside = 0;
-      const feeGrowthInside = 50;
-      const liquidity = 10;
-      await positionTest.updateLiquidity(liquidity);
-      const result = await positionTest.calculateFeeDelta(
-        toBn(feeGrowthInside)
-      );
-      console.log("result", result);
-      expect(result).to.eq(
-        toBn((feeGrowthInside - lastFeeGrowthInside) * liquidity)
-      );
-    });
-  });
+  //   it("test when feeGrowthInsideLast = 0", async () => {
+  //     const { positionTest } = await loadFixture(fixture);
+  //     const lastFeeGrowthInside = 0;
+  //     const feeGrowthInside = 50;
+  //     const liquidity = 10;
+  //     await positionTest.updateLiquidity(liquidity);
+  //     const result = await positionTest.calculateFeeDelta(
+  //       toBn(feeGrowthInside)
+  //     );
+  //     console.log("result", result);
+  //     expect(result).to.eq(
+  //       toBn((feeGrowthInside - lastFeeGrowthInside) * liquidity)
+  //     );
+  //   });
+  // });
 });

@@ -1,268 +1,109 @@
-// to fix following refactoring
-// import { ethers, waffle } from "hardhat";
-// import { BigNumber, Wallet } from "ethers";
-// import { Factory } from "../../typechain/Factory";
-// import { expect } from "../shared/expect";
-// import {
-//   timeFixture,
-//   metaFixture,
-//   fixedAndVariableMathFixture,
-//   marginCalculatorFixture,
-//   rateOracleFixture,
-//   mockAaveLendingPoolFixture,
-// } from "../shared/fixtures";
-// import { getCurrentTimestamp } from "../helpers/time";
-// import { toBn } from "evm-bn";
-// import { consts } from "../helpers/constants";
-// import {
-//   ERC20Mock,
-//   FixedAndVariableMath,
-//   MockAaveLendingPool,
-//   TestRateOracle,
-//   Time,
-// } from "../../typechain";
-// import {
-//   RATE_ORACLE_ID,
-//   INVALID_ORACLE_ID,
-//   ZERO_ADDRESS,
-//   ZERO_BYTES,
-// } from "../shared/utilities";
-// const { provider } = waffle;
+import { ethers, waffle } from "hardhat";
+import { Wallet, utils } from "ethers";
+import { Factory } from "../../typechain/Factory";
+import { TestRateOracle } from "../../typechain/TestRateOracle";
+import { ERC20Mock } from "../../typechain/ERC20Mock";
+import { expect } from "../shared/expect";
+import { metaFixture } from "../shared/fixtures";
+import { BigNumber } from "@ethersproject/bignumber";
 
-// const createFixtureLoader = waffle.createFixtureLoader;
+const createFixtureLoader = waffle.createFixtureLoader;
 
-// describe("Factory", () => {
-//   let wallet: Wallet, other: Wallet;
+const salts = [utils.formatBytes32String("1"), utils.formatBytes32String("2")];
 
-//   let loadFixture: ReturnType<typeof createFixtureLoader>;
+describe("Factory", () => {
+  let wallet: Wallet, other: Wallet;
+  let loadFixture: ReturnType<typeof createFixtureLoader>;
+  let factory: Factory;
+  let token: ERC20Mock;
+  let rateOracleTest: TestRateOracle;
+  let termStartTimestampBN: BigNumber;
+  let termEndTimestampBN: BigNumber;
 
-//   before("create fixture loader", async () => {
-//     [wallet, other] = await (ethers as any).getSigners();
-//     loadFixture = createFixtureLoader([wallet, other]);
-//   });
+  before("create fixture loader", async () => {
+    [wallet, other] = await (ethers as any).getSigners();
+    loadFixture = createFixtureLoader([wallet, other]);
+    ({
+      factory,
+      token,
+      rateOracleTest,
+      termStartTimestampBN,
+      termEndTimestampBN,
+    } = await loadFixture(metaFixture));
+  });
 
-//   describe("#updateOwner", () => {
-//     let factory: Factory;
+  // linter doesn't like these for some reason
+  // it("Check master margin engine was successfully deployed", async () => {
+  //   expect(marginEngineMasterTest.address).to.exist;
+  // });
 
-//     beforeEach("deploy fixture", async () => {
-//       ({ factory } = await loadFixture(metaFixture));
-//     });
+  // it("Check master vamm was successfully deployed", async () => {
+  //   expect(vammMasterTest.address).to.exist;
+  // });
 
-//     it("check setOwner", async () => {
-//       // check initial owner
-//       expect(await factory.owner()).to.equal(wallet.address);
+  // it("Check factory was successfully deployed", async () => {
+  //   expect(factory.address).to.exist;
+  // });
 
-//       // change owner
-//       await factory.setOwner(other.address);
+  it("Should deploy a cloned MarginEngine contract and allow initialisation of custom MarginEngine info", async () => {
+    // get the expected address
+    const marginEngineAddress = await factory.getMarginEngineAddress(salts[0]);
+    // expect(marginEngineAddress).to.exist;
 
-//       // check final owner
-//       expect(await factory.owner()).to.equal(other.address);
-//     });
-//   });
+    await factory.createMarginEngine(salts[0]);
 
-//   describe("#updateCalculator", () => {
-//     let factory: Factory;
+    const marginEngineTestFactory = await ethers.getContractFactory(
+      "TestMarginEngine"
+    );
+    const marginEngine1 = marginEngineTestFactory.attach(marginEngineAddress);
 
-//     beforeEach("deploy fixture", async () => {
-//       ({ factory } = await loadFixture(metaFixture));
-//     });
+    expect(marginEngine1.address).to.eq(marginEngineAddress);
 
-//     it("check calculator", async () => {
-//       // create new calculator
-//       const { time } = await timeFixture();
-//       const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
-//         time.address
-//       );
+    await marginEngine1.initialize(
+      token.address,
+      rateOracleTest.address,
+      termStartTimestampBN,
+      termEndTimestampBN
+    );
 
-//       const { testMarginCalculator } = await marginCalculatorFixture(
-//         fixedAndVariableMath.address,
-//         time.address,
-//         factory.address
-//       );
+    await expect(
+      marginEngine1.initialize(
+        token.address,
+        rateOracleTest.address,
+        termStartTimestampBN,
+        termEndTimestampBN
+      )
+    ).to.be.revertedWith("contract is already initialized");
 
-//       // check initial calculator
-//       expect(await factory.calculator()).to.not.equal(
-//         testMarginCalculator.address
-//       );
+    const underlyingAddress = await marginEngine1.underlyingToken();
+    const rateOracleAddress = await marginEngine1.rateOracleAddress();
+    const termStartTimestampBNERealised =
+      await marginEngine1.termStartTimestamp();
+    const termEndTimestampBNRealised = await marginEngine1.termEndTimestamp();
+    expect(underlyingAddress).to.eq(token.address);
+    expect(rateOracleAddress).to.eq(rateOracleTest.address);
+    expect(termStartTimestampBNERealised).to.eq(termStartTimestampBN);
+    expect(termEndTimestampBNRealised).to.eq(termEndTimestampBN);
 
-//       // change calculator
-//       factory.setCalculator(testMarginCalculator.address);
+    // deploy a vamm
 
-//       // check final calculator
-//       expect(await factory.calculator()).to.equal(testMarginCalculator.address);
-//     });
-//   });
+    const vammAddress = await factory.getVAMMAddress(salts[1]);
+    // expect(vammAddress).to.exist;
 
-//   describe("#createAMM", () => {
-//     let factory: Factory;
-//     let token: ERC20Mock;
-//     let termStartTimestamp: number;
-//     let termEndTimestamp: number;
-//     let termEndTimestampBN: BigNumber;
+    await factory.createVAMM(salts[1]);
 
-//     beforeEach("deploy fixture", async () => {
-//       ({ factory, token } = await loadFixture(metaFixture));
-//       termStartTimestamp = await getCurrentTimestamp(provider);
-//       termEndTimestamp = termStartTimestamp + consts.ONE_WEEK.toNumber();
-//       termEndTimestampBN = toBn(termEndTimestamp.toString());
-//     });
+    const vammTestFactory = await ethers.getContractFactory("TestVAMM");
+    const vamm1 = vammTestFactory.attach(vammAddress);
 
-//     it("checkOwnerPrivilege", async () => {
-//       await expect(
-//         factory
-//           .connect(other)
-//           .createAMM(token.address, RATE_ORACLE_ID, termEndTimestampBN)
-//       ).to.be.revertedWith("NOT_OWNER");
-//     });
+    expect(vamm1.address).to.eq(vammAddress);
 
-//     it("checkCreateAMM", async () => {
-//       // create AMM
-//       const tx = await factory.createAMM(
-//         token.address,
-//         RATE_ORACLE_ID,
-//         termEndTimestampBN
-//       );
-//       const receipt = await tx.wait();
-//       const ammAddress = receipt.events?.[0].args?.ammAddress as string;
+    await vamm1.initialize(marginEngine1.address);
 
-//       // check that AMM address is valid
-//       expect(ammAddress).to.not.equal(ZERO_ADDRESS);
-//     });
-//   });
+    await expect(vamm1.initialize(marginEngine1.address)).to.be.revertedWith(
+      "contract is already initialized"
+    );
 
-//   // describe("#createVAMM", () => {
-//   //     let factory: Factory;
-//   //     let token: ERC20Mock;
-//   //     let termStartTimestamp: number;
-//   //     let termEndTimestamp: number;
-//   //     let termEndTimestampBN: BigNumber;
-
-//   //     beforeEach("deploy fixture", async() => {
-//   //         ({ factory, token } = await loadFixture(metaFixture));
-//   //         termStartTimestamp = await getCurrentTimestamp(provider);
-//   //         termEndTimestamp = termStartTimestamp + consts.ONE_WEEK.toNumber();
-//   //         termEndTimestampBN = toBn(termEndTimestamp.toString());
-//   //     });
-
-//   //     it("checkOwnerPrivilege", async () => {
-//   //         await expect(factory.connect(other).createVAMM(ZERO_ADDRESS)).to.be.revertedWith("NOT_OWNER");
-//   //     });
-
-//   //     it("checkZeroAddress", async () => {
-//   //         await expect(factory.createVAMM(ZERO_ADDRESS)).to.be.revertedWith("ZERO_ADDRESS");
-//   //     });
-
-//   //     it("checkCreateVAMM", async () => {
-//   //         let tx_amm = await factory.createAMM(token.address, RATE_ORACLE_ID, termEndTimestampBN);
-//   //         let receipt_amm = await tx_amm.wait();
-//   //         const ammAddress = receipt_amm.events?.[0].args?.ammAddress as string;
-//   //         console.log("AMM address:", ammAddress);
-
-//   //         let tx_vamm = await factory.createVAMM(ammAddress);
-//   //         let receipt_vamm = await tx_vamm.wait();
-//   //         const vammAddress = receipt_vamm.events?.[0].args?.vammAddress as string;
-//   //         console.log("-> VAMM address:", vammAddress);
-
-//   //         expect(vammAddress).to.not.equal(ZERO_ADDRESS);
-
-//   //         // // check that VAMM is in map
-//   //         // expect(await factory.getVAMMMap(ammAddress)).to.equal(vammAddress);
-
-//   //         // // check that VAMM is not duplicated
-//   //         // await expect(factory.createVAMM(ammAddress)).to.be.revertedWith("EXISTED_VAMM");
-//   //     });
-//   // });
-
-//   // describe("#createMarginEngine", () => {
-//   //     let factory: Factory;
-//   //     let token: ERC20Mock;
-//   //     let termStartTimestamp: number;
-//   //     let termEndTimestamp: number;
-//   //     let termEndTimestampBN: BigNumber;
-
-//   //     beforeEach("deploy fixture", async() => {
-//   //         ({ factory, token } = await loadFixture(metaFixture));
-//   //         termStartTimestamp = await getCurrentTimestamp(provider);
-//   //         termEndTimestamp = termStartTimestamp + consts.ONE_WEEK.toNumber();
-//   //         termEndTimestampBN = toBn(termEndTimestamp.toString());
-//   //     });
-
-//   //     it("checkOwnerPrivilege", async () => {
-//   //         await expect(factory.connect(other).createMarginEngine(ZERO_ADDRESS)).to.be.revertedWith("NOT_OWNER");
-//   //     });
-
-//   //     it("checkZeroAddress", async () => {
-//   //         await expect(factory.createMarginEngine(ZERO_ADDRESS)).to.be.revertedWith("ZERO_ADDRESS");
-//   //     });
-
-//   //     it("checkcreateMarginEngine", async () => {
-//   //         let tx_amm = await factory.createAMM(token.address, RATE_ORACLE_ID, termEndTimestampBN);
-//   //         let receipt_amm = await tx_amm.wait();
-//   //         const ammAddress = receipt_amm.events?.[0].args?.ammAddress as string;
-//   //         console.log("AMM address:", ammAddress);
-
-//   //         let tx_me = await factory.createMarginEngine(ammAddress);
-//   //         let receipt_me = await tx_me.wait();
-//   //         const marginEngineAddress = receipt_me.events?.[0].args?.marginEngineAddress as string;
-//   //         console.log("-> Margin Engine address:", marginEngineAddress);
-
-//   //         expect(marginEngineAddress).to.not.equal(ZERO_ADDRESS);
-//   //     });
-//   // });
-
-//   describe("#addRateOracle", () => {
-//     let factory: Factory;
-//     let fixedAndVariableMath: FixedAndVariableMath;
-//     let token: ERC20Mock;
-//     let time: Time;
-//     let aaveLendingPool: MockAaveLendingPool;
-//     let testRateOracle: TestRateOracle;
-
-//     beforeEach("deploy fixture", async () => {
-//       ({ time } = await loadFixture(timeFixture));
-//       ({ fixedAndVariableMath } = await fixedAndVariableMathFixture(
-//         time.address
-//       ));
-//       ({ factory, token } = await loadFixture(metaFixture));
-//       ({ aaveLendingPool } = await mockAaveLendingPoolFixture());
-//       await aaveLendingPool.setReserveNormalizedIncome(
-//         token.address,
-//         BigNumber.from(10).pow(27)
-//       );
-
-//       ({ testRateOracle } = await rateOracleFixture(
-//         fixedAndVariableMath.address,
-//         time.address,
-//         token.address,
-//         aaveLendingPool.address,
-//         factory.address
-//       ));
-//     });
-
-//     it("checkOwnerPrivelege", async () => {
-//       await expect(
-//         factory
-//           .connect(other)
-//           .addRateOracle(RATE_ORACLE_ID, testRateOracle.address)
-//       ).to.be.revertedWith("NOT_OWNER");
-//     });
-
-//     it("checkZeroBytes", async () => {
-//       await expect(
-//         factory.addRateOracle(ZERO_BYTES, testRateOracle.address)
-//       ).to.be.revertedWith("ZERO_BYTES");
-//     });
-
-//     it("checkInvalidOracleID", async () => {
-//       await expect(
-//         factory.addRateOracle(INVALID_ORACLE_ID, testRateOracle.address)
-//       ).to.be.revertedWith("INVALID_ID");
-//     });
-
-//     it("checkExistedID", async () => {
-//       await expect(
-//         factory.addRateOracle(RATE_ORACLE_ID, testRateOracle.address)
-//       ).to.be.revertedWith("EXISTED_ID");
-//     });
-//   });
-// });
+    const marginEngineAddressRealised = await vamm1.marginEngineAddress();
+    expect(marginEngineAddressRealised).to.eq(marginEngine1.address);
+  });
+});

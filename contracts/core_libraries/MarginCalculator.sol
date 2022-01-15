@@ -234,7 +234,7 @@ library MarginCalculator {
         uint256 historicalApy,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal view returns (uint256 variableFactor) {
+    ) internal pure returns (uint256 variableFactor) {
         uint256 timeInYearsFromStartUntilMaturity = FixedAndVariableMath
             .accrualFact(timeInSecondsFromStartToMaturity);
 
@@ -462,8 +462,7 @@ library MarginCalculator {
             return 0;
         }
 
-        // PositionMarginRequirementsVars memory vars;
-
+        // @audit Check if this logic is the best way to handle position margin requirement calculation
         // @audit check with pen and paper again
 
         int256 scenario1LPVariableTokenBalance;

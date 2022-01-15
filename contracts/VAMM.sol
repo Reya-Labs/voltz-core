@@ -56,6 +56,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
   }
 
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
+  /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
     uint256 currentTimestamp = Time.blockTimestampScaled(); 
     require(currentTimestamp < IMarginEngine(marginEngineAddress).termEndTimestamp(), "amm hasn't reached maturity");
