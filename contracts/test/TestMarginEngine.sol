@@ -106,7 +106,6 @@ contract TestMarginEngine is MarginEngine {
             );
     }
 
-
     function updatePositionTokenBalancesTest(
         address owner,
         int24 tickLower,

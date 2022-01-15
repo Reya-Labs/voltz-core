@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import {
   BigNumber,
   BigNumberish,
@@ -7,14 +6,7 @@ import {
   Wallet,
 } from "ethers";
 import Bn from "bignumber.js";
-// import { TestAMMCallee } from "../../typechain/TestAMMCallee";
-// import { MockTimeAMM } from "../../typechain/MockTimeAMM";
 import { TestVAMM } from "../../typechain/TestVAMM";
-import { TestVAMMCallee } from "../../typechain/TestVAMMCallee";
-=======
-import { BigNumber, utils } from "ethers";
-
->>>>>>> ammRefactoring
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
 import { sqrt } from "./sqrt";
