@@ -5,6 +5,7 @@ import {
   utils,
   Wallet,
 } from "ethers";
+import Bn from "bignumber.js";
 // import { TestAMMCallee } from "../../typechain/TestAMMCallee";
 // import { MockTimeAMM } from "../../typechain/MockTimeAMM";
 import { TestVAMM } from "../../typechain/TestVAMM";
@@ -352,4 +353,26 @@ export function calculateSettlementCashflow(
   const variableCashflow = mul(variableTokenBalance, variableFactorToMaturity);
 
   return add(fixedCashflow, variableCashflow);
+}
+
+Bn.config({ EXPONENTIAL_AT: 999999, DECIMAL_PLACES: 40 });
+
+// returns the sqrt price as a 64x96
+export function encodePriceSqrt(
+  reserve1: BigNumberish,
+  reserve0: BigNumberish
+): BigNumber {
+  return BigNumber.from(
+    new Bn(reserve1.toString())
+      .div(reserve0.toString())
+      .sqrt()
+      .multipliedBy(new Bn(2).pow(96))
+      .integerValue(3)
+      .toString()
+  );
+}
+
+// decodes the sqrt price as a floating point number
+export function decodePriceSqrt(price: BigNumber): string {
+  return new Bn(price.toString()).div(new Bn(2).pow(96)).pow(2).toString();
 }
