@@ -7,14 +7,10 @@ import "./interfaces/IVAMM.sol";
 import "./core_libraries/Position.sol";
 import "./core_libraries/Trader.sol";
 import "./core_libraries/MarginCalculator.sol";
-
 import "./utils/SafeCast.sol";
 import "./utils/LowGasSafeMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
-import "./interfaces/IFactory.sol";
-import "./interfaces/IDeployer.sol";
-
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
@@ -272,7 +268,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     function getHistoricalApy()
         public
         view
-        virtual // virtual because overridden by tests
+        virtual // virtual because overridden by tests // @audit should virtual be removed?
         returns (uint256 historicalApy)
     {
         uint256 to = block.timestamp;

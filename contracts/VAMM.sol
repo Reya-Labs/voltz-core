@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 import "./core_libraries/Tick.sol";
-import "./interfaces/IDeployer.sol";
 import "./interfaces/IVAMM.sol";
 import "./core_libraries/TickBitmap.sol";
 import "./core_libraries/Position.sol";
@@ -292,7 +291,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
     whenNotPaused
     checkCurrentTimestampTermEndTimestampDelta
     lock
-    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 cumulativeFeeIncurred)
+    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred)
   {
     /// might be helpful to have a higher level peripheral function (initiateIRS) which then calls swap
 
@@ -487,6 +486,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
     feeGrowthGlobal = state.feeGrowthGlobal;
     variableTokenGrowthGlobal = state.variableTokenGrowthGlobal;
     fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;
+    _cumulativeFeeIncurred = state.cumulativeFeeIncurred;
 
     if (state.protocolFee > 0) {
       protocolFees = protocolFees + state.protocolFee;
