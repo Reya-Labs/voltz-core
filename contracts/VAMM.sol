@@ -59,8 +59,8 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
     uint256 currentTimestamp = Time.blockTimestampScaled(); 
-    require(currentTimestamp < amm.termEndTimestamp(), "vamm has reached maturity");
-    uint256 timeDelta = amm.termEndTimestamp() - currentTimestamp;
+    require(currentTimestamp < IMarginEngine(marginEngineAddress).termEndTimestamp(), "vamm has reached maturity");
+    uint256 timeDelta = IMarginEngine(marginEngineAddress).termEndTimestamp() - currentTimestamp;
     require(timeDelta > SECONDS_IN_DAY_WAD, "vamm must be 1 day before maturity");
     _;
   }
@@ -439,16 +439,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
-<<<<<<< HEAD
-        /// @dev need to fix this 
-        // uint256 delta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
-        step.feeAmount = step.feeAmount - (PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol));
-        state.protocolFee = state.protocolFee + (PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol));
-=======
         step.feeProtocolDelta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
         step.feeAmount = step.feeAmount - step.feeProtocolDelta;
         state.protocolFee = state.protocolFee + step.feeProtocolDelta;
->>>>>>> ammRefactoring
       }
 
       // update global fee tracker
