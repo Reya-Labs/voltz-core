@@ -395,6 +395,7 @@ contract VAMM is IVAMM, Pausable {
 
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
+        /// @dev need to fix this 
         // uint256 delta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
         step.feeAmount = step.feeAmount - (PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol));
         state.protocolFee = state.protocolFee + (PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol));

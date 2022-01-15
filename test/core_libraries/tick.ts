@@ -238,6 +238,34 @@ describe("Tick", () => {
       expect(variableTokenGrowthOutside).to.eq(toBn("-1900"));
       expect(feeGrowthOutside).to.eq(toBn("0"));
     });
+
+    it("two flips no op", async () => {
+      await tickTest.setTick(2, {
+        liquidityGross: 3,
+        liquidityNet: 4,
+        fixedTokenGrowthOutside: toBn("100"),
+        variableTokenGrowthOutside: toBn("-100"),
+        feeGrowthOutside: toBn("10"),
+        initialized: true,
+      });
+
+      await tickTest.cross(2, toBn("1000"), toBn("-2000"), toBn("10"));
+      await tickTest.cross(2, toBn("1000"), toBn("-2000"), toBn("10"));
+
+      const {
+        feeGrowthOutside,
+        liquidityGross,
+        liquidityNet,
+        fixedTokenGrowthOutside,
+        variableTokenGrowthOutside,
+      } = await tickTest.ticks(2);
+
+      expect(liquidityGross).to.eq(3);
+      expect(liquidityNet).to.eq(4);
+      expect(fixedTokenGrowthOutside).to.eq(toBn("100"));
+      expect(variableTokenGrowthOutside).to.eq(toBn("-100"));
+      expect(feeGrowthOutside).to.eq(toBn("10"));
+    });
   });
 
   describe("#update", async () => {
@@ -297,7 +325,132 @@ describe("Tick", () => {
       ).to.eq(true);
     });
 
-    // TODO: to continue here
+    it("exceed max liquididty", async () => {
+      await expect(
+        tickTest.callStatic.update(
+          2,
+          0,
+          toBn("8"),
+          toBn("1000"),
+          toBn("-2000"),
+          toBn("10"),
+          false,
+          toBn("10")
+        )
+      ).to.be.revertedWith("LO");
+    });
+
+    it("tick <= tickCurrent", async () => {
+      await tickTest.update(
+        0,
+        0,
+        toBn("3"),
+        toBn("1000"),
+        toBn("-2000"),
+        toBn("10"),
+        false,
+        toBn("10")
+      );
+
+      const {
+        liquidityGross,
+        liquidityNet,
+        fixedTokenGrowthOutside,
+        variableTokenGrowthOutside,
+        feeGrowthOutside,
+        initialized,
+      } = await tickTest.ticks(0);
+      expect(liquidityGross).to.eq(toBn("3"));
+      expect(liquidityNet).to.eq(toBn("3"));
+      expect(fixedTokenGrowthOutside).to.eq(toBn("1000"));
+      expect(variableTokenGrowthOutside).to.eq(toBn("-2000"));
+      expect(feeGrowthOutside).to.eq(toBn("10"));
+      expect(initialized).to.eq(true);
+    });
+
+    it("tick > tickCurrent", async () => {
+      await tickTest.update(
+        1,
+        0,
+        toBn("3"),
+        toBn("1000"),
+        toBn("-2000"),
+        toBn("10"),
+        false,
+        toBn("10")
+      );
+
+      const {
+        liquidityGross,
+        liquidityNet,
+        fixedTokenGrowthOutside,
+        variableTokenGrowthOutside,
+        feeGrowthOutside,
+        initialized,
+      } = await tickTest.ticks(1);
+      expect(liquidityGross).to.eq(toBn("3"));
+      expect(liquidityNet).to.eq(toBn("3"));
+      expect(fixedTokenGrowthOutside).to.eq(toBn("0"));
+      expect(variableTokenGrowthOutside).to.eq(toBn("0"));
+      expect(feeGrowthOutside).to.eq(toBn("0"));
+      expect(initialized).to.eq(true);
+    });
+
+    it("do not update globals if initialized", async () => {
+      await tickTest.update(
+        2,
+        2,
+        toBn("3"),
+        toBn("1000"),
+        toBn("-2000"),
+        toBn("20"),
+        false,
+        toBn("10")
+      );
+
+      const {
+        liquidityGross,
+        liquidityNet,
+        fixedTokenGrowthOutside,
+        variableTokenGrowthOutside,
+        feeGrowthOutside,
+        initialized,
+      } = await tickTest.ticks(2);
+      expect(liquidityGross).to.eq(toBn("6"));
+      expect(liquidityNet).to.eq(toBn("7"));
+      expect(fixedTokenGrowthOutside).to.eq(toBn("100"));
+      expect(variableTokenGrowthOutside).to.eq(toBn("-100"));
+      expect(feeGrowthOutside).to.eq(toBn("10"));
+      expect(initialized).to.eq(true);
+    });
+
+    it("subtract net liquidity when upper tick", async () => {
+      await tickTest.update(
+        2,
+        2,
+        toBn("3"),
+        toBn("1000"),
+        toBn("-2000"),
+        toBn("20"),
+        true,
+        toBn("10")
+      );
+
+      const {
+        liquidityGross,
+        liquidityNet,
+        fixedTokenGrowthOutside,
+        variableTokenGrowthOutside,
+        feeGrowthOutside,
+        initialized,
+      } = await tickTest.ticks(2);
+      expect(liquidityGross).to.eq(toBn("6"));
+      expect(liquidityNet).to.eq(toBn("1"));
+      expect(fixedTokenGrowthOutside).to.eq(toBn("100"));
+      expect(variableTokenGrowthOutside).to.eq(toBn("-100"));
+      expect(feeGrowthOutside).to.eq(toBn("10"));
+      expect(initialized).to.eq(true);
+    });
   });
 
   // Needs Test cases

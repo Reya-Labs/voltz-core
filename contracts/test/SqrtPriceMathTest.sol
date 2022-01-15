@@ -33,4 +33,34 @@ contract SqrtPriceMathTest {
                 roundUp
             );
     }
+
+    function getNextSqrtPriceFromInput(
+        uint160 sqrtPX96,
+        uint128 liquidity,
+        uint256 amountIn,
+        bool zeroForOne
+    ) external pure returns (uint160 sqrtQX96) {
+        return
+            SqrtPriceMath.getNextSqrtPriceFromInput(
+                sqrtPX96,
+                liquidity,
+                amountIn,
+                zeroForOne
+            );
+    }
+
+    function getNextSqrtPriceFromOutput(
+        uint160 sqrtPX96,
+        uint128 liquidity,
+        uint256 amountOut,
+        bool zeroForOne
+    ) external pure returns (uint160 sqrtQX96) {
+        return
+            SqrtPriceMath.getNextSqrtPriceFromOutput(
+                sqrtPX96,
+                liquidity,
+                amountOut,
+                zeroForOne
+            );
+    }
 }

@@ -64,7 +64,6 @@ library Tick {
             feeGrowthAbove = feeGrowthGlobal - upper.feeGrowthOutside;
         }
 
-        /// @dev can't this value be negative? (at this moment it's uint256)
         feeGrowthInside = feeGrowthGlobal - (feeGrowthBelow + feeGrowthAbove);
     }
 
@@ -173,6 +172,7 @@ library Tick {
 
         Tick.Info storage info = self[tick];
 
+        /// @audit uint128 again
         uint128 liquidityGrossBefore = info.liquidityGross;
         uint128 liquidityGrossAfter = LiquidityMath.addDelta(
             liquidityGrossBefore,
@@ -200,6 +200,7 @@ library Tick {
 
         info.liquidityGross = liquidityGrossAfter;
 
+        /// @audit add comments
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
         info.liquidityNet = upper
             ? int256(info.liquidityNet).sub(liquidityDelta).toInt128()
