@@ -1,22 +1,17 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
 import "./interfaces/IFactory.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
-import "./Deployer.sol";
-import "./VAMM.sol";
-import "./core_libraries/FixedAndVariableMath.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Voltz Factory Contract
-/// @notice Deploys Voltz AMMs and manages ownership and control over amm protocol fees
-contract Factory is IFactory, Deployer {
-  
-  modifier onlyFactoryOwner {
-    require(msg.sender == owner, "NOT_OWNER");
-    _;
-  }
+/// @notice Deploys Voltz VAMMs and MarginEngines and manages ownership and control over amm protocol fees
+// Following this example https://github.com/OriginProtocol/minimal-proxy-example/blob/master/contracts/PairFactory.sol
+contract Factory is IFactory, Ownable {
 
+<<<<<<< HEAD
   /// @inheritdoc IFactory
   address public override owner;
 
@@ -37,32 +32,27 @@ contract Factory is IFactory, Deployer {
   constructor() {
     owner = msg.sender;
     emit OwnerChanged(address(0), msg.sender);
+=======
+  using Clones for address;
+  
+  address public override masterMarginEngine;
+  address public override masterVAMM;
+
+  constructor(address _masterMarginEngine, address _masterVAMM) {
+    masterMarginEngine = _masterMarginEngine;
+    masterVAMM = _masterVAMM;
+>>>>>>> ammRefactoring
   }
 
-  /// @inheritdoc IFactory
-  function setCalculator(address _calculator) external override onlyFactoryOwner {
-    require(_calculator != address(0), "ZERO_ADDRESS");
-
-    emit CalculatorChanged(_calculator);
-
-    calculator = _calculator;
+  function createVAMM(bytes32 salt) external override {
+    masterVAMM.cloneDeterministic(salt);
   }
 
-  /// @inheritdoc IFactory
-  function createVAMM(address ammAddress)
-    external
-    override
-    onlyFactoryOwner
-    returns (address vamm)
-  {
-    require(ammAddress != address(0), "ZERO_ADDRESS");
-    require(getVAMMMap[ammAddress] == address(0), "EXISTED_VAMM");
-
-    vamm = deployVAMM(ammAddress);
-
-    return vamm;
+  function createMarginEngine(bytes32 salt) external override {
+    masterMarginEngine.cloneDeterministic(salt);
   }
 
+<<<<<<< HEAD
   /// @inheritdoc IFactory
   function createMarginEngine(address ammAddress)
     external
@@ -111,11 +101,19 @@ contract Factory is IFactory, Deployer {
       termStartTimestamp,
       termEndTimestamp
     );
+=======
+  function getVAMMAddress(bytes32 salt) external view override returns (address) {
+    require(masterVAMM != address(0), "master VAMM must be set");
+    return masterVAMM.predictDeterministicAddress(salt);
+>>>>>>> ammRefactoring
   }
 
-  /// @inheritdoc IFactory
-  function setOwner(address _owner) external override onlyFactoryOwner {
-    emit OwnerChanged(owner, _owner);
-    owner = _owner;
+  function getMarginEngineAddress(bytes32 salt) external view override returns (address) {
+    require(masterMarginEngine != address(0), "master MarginEngine must be set");
+    return masterMarginEngine.predictDeterministicAddress(salt);
   }
+<<<<<<< HEAD
+=======
+
+>>>>>>> ammRefactoring
 }

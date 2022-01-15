@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { Factory } from "../../typechain/Factory";
@@ -136,3 +137,5 @@ describe("AMM", () => {
     });
   });
 });
+=======
+>>>>>>> ammRefactoring

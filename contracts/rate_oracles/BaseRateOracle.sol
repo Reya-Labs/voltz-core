@@ -7,10 +7,12 @@ import "../interfaces/rate_oracles/IRateOracle.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "../interfaces/IFactory.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "../core_libraries/Time.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
-abstract contract BaseRateOracle is IRateOracle {
+abstract contract BaseRateOracle is IRateOracle, Ownable {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     uint256 public constant ONE_WEI = 10**18;
@@ -37,34 +39,22 @@ abstract contract BaseRateOracle is IRateOracle {
     /// @notice the observations tracked over time by this oracle
     OracleBuffer.Observation[65535] public observations;
 
-    /// @inheritdoc IRateOracle
-    address public immutable override factory;
-
     /// @dev Must be the Factory owner
     error NotFactoryOwner();
-
-    /// @dev Modifier that ensures a given function can only be called by the top-level factory owner
-    modifier onlyFactoryOwner() {
-        if (msg.sender != IFactory(factory).owner()) {
-            revert NotFactoryOwner();
-        }
-        _;
-    }
 
     /// @inheritdoc IRateOracle
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate)
         external
         override
-        onlyFactoryOwner
+        onlyOwner
     {
         minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate; // in wei
 
         // @audit emit event
     }
 
-    constructor(address _underlying, address _factory) {
+    constructor(address _underlying) {
         underlying = _underlying;
-        factory = _factory;
     }
 
     // AB: lock the amm when calling this function?

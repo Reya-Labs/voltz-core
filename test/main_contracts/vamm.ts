@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { TestVAMM } from "../../typechain/TestVAMM";
@@ -501,3 +502,5 @@ describe("VAMM", () => {
   //   });
   // });
 });
+=======
+>>>>>>> ammRefactoring

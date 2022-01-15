@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import "./IAMM.sol";
+import "./IMarginEngine.sol";
 import "./IPositionStructs.sol";
 
 interface IVAMM is IPositionStructs {
@@ -83,13 +83,8 @@ interface IVAMM is IPositionStructs {
     }
 
     struct SwapLocalVars {
-        /// @dev fixed token amount traded by a trader within a given tick range
-        int256 amount0Int;
-        /// @dev variable token amount traded by a trader within a given tick range
-        int256 amount1Int;
-        /// @dev absolute value of amount0Int (must be non-negative)
+        // AB: add docs
         uint256 amount0;
-        /// @dev absolute value of amount1Int (must be non-negative)
         uint256 amount1;
     }
 
@@ -113,6 +108,8 @@ interface IVAMM is IPositionStructs {
         uint256 feeGrowthGlobal;
         /// @dev amount of underlying token paid as protocol fee
         uint256 protocolFee;
+        /// @dev cumulative fee incurred while initiating a swap
+        uint256 cumulativeFeeIncurred;
     }
 
     struct StepComputations {
@@ -130,6 +127,8 @@ interface IVAMM is IPositionStructs {
         uint256 amountOut;
         /// @dev how much fee is being paid in (underlying token)
         uint256 feeAmount;
+        /// @dev ...
+        uint256 feeProtocolDelta;
     }
 
     struct UpdatePositionVars {
@@ -154,10 +153,6 @@ interface IVAMM is IPositionStructs {
     /// @notice whether the vamm is locked
     /// @return The boolean, true if the vamm is unlocked
     function unlocked() external view returns (bool);
-
-    /// @notice Top-level factory address
-    /// @return Address of the top-level factory contract
-    function factory() external view returns (address);
 
     /// @notice The vamm tick spacing
     /// @dev Ticks can only be used at multiples of this value, minimum of 1 and always positive
@@ -205,12 +200,8 @@ interface IVAMM is IPositionStructs {
     /// @dev Protocol fees will never exceed uint256
     function protocolFees() external view returns (uint256);
 
-    /// @notice The parent AMM of the vamm
-    /// @return Parent AMM of the vamm
-    function amm() external view returns (IAMM);
-
-    /// @notice Function that sets the parent AMM of the vamm
-    function setAMM(address _ammAddress) external;
+    // marginEngineAddress
+    function marginEngineAddress() external view returns (address);
 
     /// @notice Function that sets the feeProtocol of the vamm
     function setFeeProtocol(uint256 feeProtocol) external;
@@ -231,9 +222,10 @@ interface IVAMM is IPositionStructs {
     /// @notice Sets the initial price for the vamm
     /// @dev Price is represented as a sqrt(amountVariableToken/amountFixedToken) Q64.96 value
     /// @param sqrtPriceX96 the initial sqrt price of the vamm as a Q64.96
-    function initialize(uint160 sqrtPriceX96) external;
+    function initializeVAMM(uint160 sqrtPriceX96) external;
 
     function burn(
+        address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
@@ -255,9 +247,14 @@ interface IVAMM is IPositionStructs {
     /// @param params SwapParams necessary to initiate an Interest Rate Swap
     /// @return _fixedTokenDelta Fixed Token Delta
     /// @return _variableTokenDelta Variable Token Delta
+    /// @return _cumulativeFeeIncurred Cumulative Fee Incurred
     function swap(SwapParams memory params)
         external
-        returns (int256 _fixedTokenDelta, int256 _variableTokenDelta);
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred
+        );
 
     /// @notice Look up information about a specific tick in the amm
     /// @param tick The tick to look up

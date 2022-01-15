@@ -7,7 +7,6 @@ import "./Time.sol";
 import "hardhat/console.sol";
 
 /// @title A utility library for mathematics of fixed and variable token amounts.
-/// @author Artur Begyan
 library FixedAndVariableMath {
     /// @notice Number of wei-seconds in a year
     /// @dev Ignoring leap years since we're only using it to calculate the eventual APY rate
@@ -30,7 +29,7 @@ library FixedAndVariableMath {
         uint256 termStartTimestamp,
         uint256 termEndTimestamp,
         uint256 variableFactorToMaturity
-    ) external view returns (int256 cashflow) {
+    ) internal view returns (int256 cashflow) {
         int256 fixedCashflow = PRBMathSD59x18.mul(
             fixedTokenBalance,
             int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
@@ -51,7 +50,7 @@ library FixedAndVariableMath {
     /// #if_succeeds $result > 0;
     /// #if_succeeds old(timeInSeconds) > 0;
     function accrualFact(uint256 timeInSecondsAsWad)
-        public
+        internal
         pure
         returns (uint256 timeInYears)
     {
@@ -74,7 +73,7 @@ library FixedAndVariableMath {
         bool atMaturity,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
-    ) public view returns (uint256 fixedFactorValue) {
+    ) internal view returns (uint256 fixedFactorValue) {
         require(termEndTimestamp > termStartTimestamp, "E<=S");
 
         require(Time.blockTimestampScaled() >= termStartTimestamp, "B.T>S");
@@ -97,10 +96,6 @@ library FixedAndVariableMath {
     /// @param termStartTimestamp When does the period of time begin, in wei-seconds
     /// @param termEndTimestamp When does the period of time end, in wei-seconds
     /// @return fixedTokenBalance The fixed token balance for that time period
-    ///
-    /// #if_succeeds old(termStartTimestamp) < old(termEndTimestamp);
-    /// #if_succeeds excessBalance < 0 ==> fixedTokenBalance > amount0;
-    /// #if_succeeds excessBalance > 0 ==> fixedTokenBalance < amount0;
     function calculateFixedTokenBalance(
         int256 amount0,
         int256 excessBalance,
@@ -109,13 +104,16 @@ library FixedAndVariableMath {
     ) internal view returns (int256 fixedTokenBalance) {
         require(termEndTimestamp > termStartTimestamp, "E<=S");
 
+        /// @audit explain the math in simple terms
+
         // expected fixed cashflow with unbalanced number of fixed tokens
         int256 exp1 = PRBMathSD59x18.mul(
             amount0,
             int256(fixedFactor(true, termStartTimestamp, termEndTimestamp))
         );
 
-        // fixed cashflow  with balanced number of fixed tokens
+        // fixed cashflow with balanced number of fixed tokens, this cashflow accounts for the excess balance accrued since
+        // the inception of the IRS AMM
         int256 numerator = exp1 - excessBalance;
 
         // fixed token balance that takes into account acrrued cashflows
@@ -158,6 +156,8 @@ library FixedAndVariableMath {
             int256(accruedVariableFactor)
         );
 
+        /// @dev cashflows accrued since the inception of the IRS AMM
+
         accruedValues.excessBalance =
             accruedValues.excessFixedAccruedBalance +
             accruedValues.excessVariableAccruedBalance;
@@ -172,15 +172,13 @@ library FixedAndVariableMath {
     /// @param termStartTimestamp When does the period of time begin, in wei-seconds
     /// @param termEndTimestamp When does the period of time end, in wei-seconds
     /// @return fixedTokenBalance The fixed token balance for that time period
-    ///
-    /// #if_succeeds termEndTimestamp > termStartTimestamp;
     function getFixedTokenBalance(
         int256 amount0,
         int256 amount1,
         uint256 accruedVariableFactor,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
-    ) public view returns (int256 fixedTokenBalance) {
+    ) internal view returns (int256 fixedTokenBalance) {
         if (
             !(((amount0 <= 0 && amount1 >= 0) ||
                 (amount0 >= 0 && amount1 <= 0)) ||
@@ -188,10 +186,6 @@ library FixedAndVariableMath {
         ) {
             revert AmountSignsSame();
         }
-
-        // console.log("CONTRACT: termEndTimestamp: ", termEndTimestamp);
-        // console.log("CONTRACT: termStartTimestamp: ", termStartTimestamp);
-        // console.log(termEndTimestamp > termStartTimestamp);
 
         require(termEndTimestamp > termStartTimestamp, "E<=S");
 

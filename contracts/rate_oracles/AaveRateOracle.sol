@@ -20,11 +20,9 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @inheritdoc IAaveRateOracle
     address public override aaveLendingPool;
 
-    constructor(
-        address _aaveLendingPool,
-        address underlying,
-        address factory
-    ) BaseRateOracle(underlying, factory) {
+    constructor(address _aaveLendingPool, address underlying)
+        BaseRateOracle(underlying)
+    {
         aaveLendingPool = _aaveLendingPool;
         uint32 blockTimestamp = Time.blockTimestampTruncated();
         uint256 result = IAaveV2LendingPool(aaveLendingPool)

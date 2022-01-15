@@ -22,7 +22,6 @@ library Tick {
         int128 liquidityNet;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
-
         int256 fixedTokenGrowthOutside;
         int256 variableTokenGrowthOutside;
         uint256 feeGrowthOutside;
@@ -42,7 +41,7 @@ library Tick {
         int24 tickUpper,
         int24 tickCurrent,
         uint256 feeGrowthGlobal
-    ) external view returns (uint256 feeGrowthInside) {
+    ) internal view returns (uint256 feeGrowthInside) {
         Info storage lower = self[tickLower];
         Info storage upper = self[tickUpper];
 
@@ -77,7 +76,7 @@ library Tick {
     function getVariableTokenGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         VariableTokenGrowthInsideParams memory params
-    ) public view returns (int256 variableTokenGrowthInside) {
+    ) internal view returns (int256 variableTokenGrowthInside) {
         Info storage lower = self[params.tickLower];
         Info storage upper = self[params.tickUpper];
 
@@ -118,11 +117,11 @@ library Tick {
     function getFixedTokenGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         FixedTokenGrowthInsideParams memory params
-    ) public view returns (int256 fixedTokenGrowthInside) {
+    ) internal view returns (int256 fixedTokenGrowthInside) {
         Info storage lower = self[params.tickLower];
         Info storage upper = self[params.tickUpper];
 
-        // calculate the FixedTokenGrowth below
+        // calculate the fixedTokenGrowth below
         int256 fixedTokenGrowthBelow;
 
         if (params.tickCurrent >= params.tickLower) {
@@ -133,7 +132,7 @@ library Tick {
                 lower.fixedTokenGrowthOutside;
         }
 
-        // calculate the FixedTokenGrowth above
+        // calculate the fixedTokenGrowth above
         int256 fixedTokenGrowthAbove;
 
         if (params.tickCurrent < params.tickUpper) {
@@ -167,7 +166,7 @@ library Tick {
         uint256 feeGrowthGlobal,
         bool upper,
         uint128 maxLiquidity
-    ) external returns (bool flipped) {
+    ) internal returns (bool flipped) {
         // update is no longer internal
 
         Tick.Info storage info = self[tick];
@@ -211,7 +210,7 @@ library Tick {
     /// @param self The mapping containing all initialized tick information for initialized ticks
     /// @param tick The tick that will be cleared
     function clear(mapping(int24 => Tick.Info) storage self, int24 tick)
-        external
+        internal
     {
         delete self[tick];
     }
@@ -226,7 +225,7 @@ library Tick {
         int256 fixedTokenGrowthGlobal,
         int256 variableTokenGrowthGlobal,
         uint256 feeGrowthGlobal
-    ) external returns (int128 liquidityNet) {
+    ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
 
         info.feeGrowthOutside = feeGrowthGlobal - info.feeGrowthOutside;

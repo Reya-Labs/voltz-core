@@ -1,7 +1,7 @@
 import { Factory } from "../../typechain/Factory";
 import { TestVAMM } from "../../typechain/TestVAMM";
-import { TestAMM } from "../../typechain/TestAMM";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
+<<<<<<< HEAD
 import { TestVAMMCallee } from "../../typechain/TestVAMMCallee";
 import { TestMarginEngineCallee } from "../../typechain/TestMarginEngineCallee";
 import { TestDeployer } from "../../typechain/TestDeployer";
@@ -32,11 +32,14 @@ import {
 } from "./utilities";
 import { toBn } from "evm-bn";
 const { provider } = waffle;
+=======
+import { BigNumber } from "@ethersproject/bignumber";
+import { TestRateOracle } from "../../typechain/TestRateOracle";
+>>>>>>> ammRefactoring
 
-interface FactoryFixture {
-  factory: Factory;
-}
+import { ERC20Mock } from "../../typechain";
 
+<<<<<<< HEAD
 export async function marginCalculatorFixture(
   fixedAndVariableMathAddress: string,
   factoryAddress: string
@@ -49,13 +52,15 @@ export async function marginCalculatorFixture(
       },
     }
   );
+=======
+import { consts } from "../helpers/constants";
+>>>>>>> ammRefactoring
 
-  const testMarginCalculator = await TestMarginCalculatorFactory.deploy(
-    factoryAddress
-  );
+import { ethers, waffle } from "hardhat";
+import { getCurrentTimestamp } from "../helpers/time";
 
-  return { testMarginCalculator };
-}
+import { toBn } from "evm-bn";
+const { provider } = waffle;
 
 export async function mockERC20Fixture() {
   const MockERC20Factory = await ethers.getContractFactory("ERC20Mock");
@@ -75,6 +80,7 @@ export async function mockAaveLendingPoolFixture() {
   return { aaveLendingPool };
 }
 
+<<<<<<< HEAD
 export async function rateOracleFixture(
   fixedAndVariableMathAddress: string,
   tokenAddress: string,
@@ -112,29 +118,25 @@ async function vammHelpersFixture(fixedAndVariableMathAddress: string) {
   });
 
   const vammHelpers = await VAMMHelpersFactory.deploy();
+=======
+export async function vammMasterTestFixture() {
+  const vammMasterTestFactory = await ethers.getContractFactory("TestVAMM");
+  const vammMasterTest = await vammMasterTestFactory.deploy();
+>>>>>>> ammRefactoring
 
-  return { vammHelpers };
+  return { vammMasterTest };
 }
 
-async function tickFixture() {
-  const TickFactory = await ethers.getContractFactory("Tick");
-
-  const tick = await TickFactory.deploy();
-
-  return { tick };
-}
-
-async function unwindTraderUnwinPositionFixture() {
-  const UnwindTraderUnwindPositionFactory = await ethers.getContractFactory(
-    "UnwindTraderUnwindPosition"
+export async function marginEngineMasterTestFixture() {
+  const marginEngineMasterTestFactory = await ethers.getContractFactory(
+    "TestMarginEngine"
   );
+  const marginEngineMasterTest = await marginEngineMasterTestFactory.deploy();
 
-  const unwindTraderUnwindPosition =
-    await UnwindTraderUnwindPositionFactory.deploy();
-
-  return { unwindTraderUnwindPosition };
+  return { marginEngineMasterTest };
 }
 
+<<<<<<< HEAD
 export async function fixedAndVariableMathFixture() {
   const fixedAndVariableMathFactory = await ethers.getContractFactory(
     "FixedAndVariableMath"
@@ -162,22 +164,42 @@ export async function factoryFixture(
   });
   const factory = (await factoryFactory.deploy()) as Factory;
   return { factory };
+=======
+export async function factoryFixture(
+  _masterMarginEngineAddress: string,
+  _masterVAMMAddress: string
+) {
+  const factoryFactory = await ethers.getContractFactory("Factory");
+  const factory = await factoryFactory.deploy(
+    _masterMarginEngineAddress,
+    _masterVAMMAddress
+  );
+
+  return { factory };
 }
 
-// one fixture for everything amm/vamm/marginEngine
-// the fixture needs to properly set everything
-// just use onlyFactory auth for all amm, vamm and margin engine
-// callees now work
-// convert the amm fixture into a composite one and use it for all the tests amm, vamm and margin engine
+export async function rateOracleTestFixture(
+  _aaveLendingPoolAddress: string,
+  _underlyingAddress: string
+) {
+  const rateOracleTestFactory = await ethers.getContractFactory(
+    "TestRateOracle"
+  );
+  const rateOracleTest = await rateOracleTestFactory.deploy(
+    _aaveLendingPoolAddress,
+    _underlyingAddress
+  );
+
+  return { rateOracleTest };
+>>>>>>> ammRefactoring
+}
 
 interface MetaFixture {
   factory: Factory;
-  ammTest: TestAMM;
-  vammTest: TestVAMM;
-  marginEngineTest: TestMarginEngine;
-  vammCalleeTest: TestVAMMCallee;
-  marginEngineCalleeTest: TestMarginEngineCallee;
+  vammMasterTest: TestVAMM;
+  marginEngineMasterTest: TestMarginEngine;
   token: ERC20Mock;
+<<<<<<< HEAD
   testMarginCalculator: MarginCalculatorTest;
   testRateOracle: TestRateOracle;
 }
@@ -197,9 +219,23 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     tick.address,
     unwindTraderUnwindPosition.address,
     vammHelpers.address
-  );
+=======
+  rateOracleTest: TestRateOracle;
+  termStartTimestampBN: BigNumber;
+  termEndTimestampBN: BigNumber;
+}
 
+export const metaFixture = async function (): Promise<MetaFixture> {
+  const { marginEngineMasterTest } = await marginEngineMasterTestFixture();
+  const { vammMasterTest } = await vammMasterTestFixture();
+  const { factory } = await factoryFixture(
+    marginEngineMasterTest.address,
+    vammMasterTest.address
+>>>>>>> ammRefactoring
+  );
+  const { token } = await mockERC20Fixture();
   const { aaveLendingPool } = await mockAaveLendingPoolFixture();
+<<<<<<< HEAD
   await aaveLendingPool.setReserveNormalizedIncome(
     token.address,
     BigNumber.from(10).pow(27)
@@ -208,10 +244,14 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { testRateOracle } = await rateOracleFixture(
     fixedAndVariableMath.address,
     token.address,
+=======
+  const { rateOracleTest } = await rateOracleTestFixture(
+>>>>>>> ammRefactoring
     aaveLendingPool.address,
-    factory.address
+    token.address
   );
 
+<<<<<<< HEAD
   console.log(`testRateOracle at ${testRateOracle.address}`);
 
   await testRateOracle.testGrow(10);
@@ -225,12 +265,15 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   // deploy the margin engine
   // set the margin engine in the amm, set the vamm in the amm
 
+=======
+>>>>>>> ammRefactoring
   const termStartTimestamp: number = await getCurrentTimestamp(provider);
   const termEndTimestamp: number =
     termStartTimestamp + consts.ONE_WEEK.toNumber();
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
+<<<<<<< HEAD
   // console.log(
   //   "Test: Term Start Timestamp is: ",
   //   termStartTimestampBN.toString()
@@ -367,15 +410,20 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   // link the vamm to the amm
   await ammTest.setVAMM(vammAddress);
 
+=======
+>>>>>>> ammRefactoring
   return {
     factory,
-    ammTest,
-    vammTest,
-    marginEngineTest,
-    vammCalleeTest,
-    marginEngineCalleeTest,
+    vammMasterTest,
+    marginEngineMasterTest,
     token,
+<<<<<<< HEAD
     testMarginCalculator,
     testRateOracle,
+=======
+    rateOracleTest,
+    termStartTimestampBN,
+    termEndTimestampBN,
+>>>>>>> ammRefactoring
   };
 };

@@ -21,15 +21,12 @@ contract TestRateOracle is AaveRateOracle {
     uint256 public latestAfterOrAtRateValue;
 
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
-    constructor(
-        address aaveLendingPool,
-        address underlying,
-        address factory
-    ) AaveRateOracle(aaveLendingPool, underlying, factory) {
+    constructor(address aaveLendingPool, address underlying)
+        AaveRateOracle(aaveLendingPool, underlying)
+    {
         // if not done manually, doesn't work for some reason
         aaveLendingPool = aaveLendingPool;
         underlying = underlying;
-        factory = factory;
 
         // console.log("Test Contract: Aave lending pool address is: ", aaveLendingPool);
         // console.log("Test Contract: Underlying is: ", underlying);

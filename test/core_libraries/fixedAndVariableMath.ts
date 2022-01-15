@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // NEW
 
 import { BigNumber } from "ethers";
@@ -375,3 +376,5 @@ describe("FixedAndVariableMath", () => {
     });
   });
 });
+=======
+>>>>>>> ammRefactoring

@@ -1,7 +1,10 @@
 import { ethers, waffle } from "hardhat";
-import { BigNumber, Wallet } from "ethers";
+import { Wallet, utils } from "ethers";
 import { Factory } from "../../typechain/Factory";
+import { TestRateOracle } from "../../typechain/TestRateOracle";
+import { ERC20Mock } from "../../typechain/ERC20Mock";
 import { expect } from "../shared/expect";
+<<<<<<< HEAD
 import {
   metaFixture,
   fixedAndVariableMathFixture,
@@ -18,18 +21,37 @@ import {
 } from "../../typechain";
 import { ZERO_ADDRESS } from "../shared/utilities";
 const { provider } = waffle;
+=======
+import { metaFixture } from "../shared/fixtures";
+import { BigNumber } from "@ethersproject/bignumber";
+
+>>>>>>> ammRefactoring
 const createFixtureLoader = waffle.createFixtureLoader;
+
+const salts = [utils.formatBytes32String("1"), utils.formatBytes32String("2")];
 
 describe("Factory", () => {
   let wallet: Wallet, other: Wallet;
-
   let loadFixture: ReturnType<typeof createFixtureLoader>;
+  let factory: Factory;
+  let token: ERC20Mock;
+  let rateOracleTest: TestRateOracle;
+  let termStartTimestampBN: BigNumber;
+  let termEndTimestampBN: BigNumber;
 
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);
+    ({
+      factory,
+      token,
+      rateOracleTest,
+      termStartTimestampBN,
+      termEndTimestampBN,
+    } = await loadFixture(metaFixture));
   });
 
+<<<<<<< HEAD
   describe("#updateOwner", () => {
     let factory: Factory;
 
@@ -64,20 +86,29 @@ describe("Factory", () => {
         fixedAndVariableMath.address,
         factory.address
       );
+=======
+  // linter doesn't like these for some reason
+  // it("Check master margin engine was successfully deployed", async () => {
+  //   expect(marginEngineMasterTest.address).to.exist;
+  // });
 
-      // check initial calculator
-      expect(await factory.calculator()).to.not.equal(
-        testMarginCalculator.address
-      );
+  // it("Check master vamm was successfully deployed", async () => {
+  //   expect(vammMasterTest.address).to.exist;
+  // });
+>>>>>>> ammRefactoring
 
-      // change calculator
-      factory.setCalculator(testMarginCalculator.address);
+  // it("Check factory was successfully deployed", async () => {
+  //   expect(factory.address).to.exist;
+  // });
 
-      // check final calculator
-      expect(await factory.calculator()).to.equal(testMarginCalculator.address);
-    });
-  });
+  it("Should deploy a cloned MarginEngine contract and allow initialisation of custom MarginEngine info", async () => {
+    // get the expected address
+    const marginEngineAddress = await factory.getMarginEngineAddress(salts[0]);
+    // expect(marginEngineAddress).to.exist;
 
+    await factory.createMarginEngine(salts[0]);
+
+<<<<<<< HEAD
   describe("#createAMM", () => {
     let factory: Factory;
     let token: ERC20Mock;
@@ -100,44 +131,51 @@ describe("Factory", () => {
           .createAMM(token.address, testRateOracle.address, termEndTimestampBN)
       ).to.be.revertedWith("NOT_OWNER");
     });
+=======
+    const marginEngineTestFactory = await ethers.getContractFactory(
+      "TestMarginEngine"
+    );
+    const marginEngine1 = marginEngineTestFactory.attach(marginEngineAddress);
 
-    it("checkCreateAMM", async () => {
-      // create AMM
-      const tx = await factory.createAMM(
+    expect(marginEngine1.address).to.eq(marginEngineAddress);
+
+    await marginEngine1.initialize(
+      token.address,
+      rateOracleTest.address,
+      termStartTimestampBN,
+      termEndTimestampBN
+    );
+>>>>>>> ammRefactoring
+
+    await expect(
+      marginEngine1.initialize(
         token.address,
+<<<<<<< HEAD
         testRateOracle.address,
+=======
+        rateOracleTest.address,
+        termStartTimestampBN,
+>>>>>>> ammRefactoring
         termEndTimestampBN
-      );
-      const receipt = await tx.wait();
-      const ammAddress = receipt.events?.[0].args?.ammAddress as string;
+      )
+    ).to.be.revertedWith("contract is already initialized");
 
-      // check that AMM address is valid
-      expect(ammAddress).to.not.equal(ZERO_ADDRESS);
-    });
-  });
+    const underlyingAddress = await marginEngine1.underlyingToken();
+    const rateOracleAddress = await marginEngine1.rateOracleAddress();
+    const termStartTimestampBNERealised =
+      await marginEngine1.termStartTimestamp();
+    const termEndTimestampBNRealised = await marginEngine1.termEndTimestamp();
+    expect(underlyingAddress).to.eq(token.address);
+    expect(rateOracleAddress).to.eq(rateOracleTest.address);
+    expect(termStartTimestampBNERealised).to.eq(termStartTimestampBN);
+    expect(termEndTimestampBNRealised).to.eq(termEndTimestampBN);
 
-  // describe("#createVAMM", () => {
-  //     let factory: Factory;
-  //     let token: ERC20Mock;
-  //     let termStartTimestamp: number;
-  //     let termEndTimestamp: number;
-  //     let termEndTimestampBN: BigNumber;
+    // deploy a vamm
 
-  //     beforeEach("deploy fixture", async() => {
-  //         ({ factory, token } = await loadFixture(metaFixture));
-  //         termStartTimestamp = await getCurrentTimestamp(provider);
-  //         termEndTimestamp = termStartTimestamp + consts.ONE_WEEK.toNumber();
-  //         termEndTimestampBN = toBn(termEndTimestamp.toString());
-  //     });
+    const vammAddress = await factory.getVAMMAddress(salts[1]);
+    // expect(vammAddress).to.exist;
 
-  //     it("checkOwnerPrivilege", async () => {
-  //         await expect(factory.connect(other).createVAMM(ZERO_ADDRESS)).to.be.revertedWith("NOT_OWNER");
-  //     });
-
-  //     it("checkZeroAddress", async () => {
-  //         await expect(factory.createVAMM(ZERO_ADDRESS)).to.be.revertedWith("ZERO_ADDRESS");
-  //     });
-
+<<<<<<< HEAD
   //     it("checkCreateVAMM", async () => {
   //         let tx_amm = await factory.createAMM(token.address, testRateOracle.address, termEndTimestampBN);
   //         let receipt_amm = await tx_amm.wait();
@@ -208,5 +246,22 @@ describe("Factory", () => {
         BigNumber.from(10).pow(27)
       );
     });
+=======
+    await factory.createVAMM(salts[1]);
+
+    const vammTestFactory = await ethers.getContractFactory("TestVAMM");
+    const vamm1 = vammTestFactory.attach(vammAddress);
+
+    expect(vamm1.address).to.eq(vammAddress);
+
+    await vamm1.initialize(marginEngine1.address);
+
+    await expect(vamm1.initialize(marginEngine1.address)).to.be.revertedWith(
+      "contract is already initialized"
+    );
+
+    const marginEngineAddressRealised = await vamm1.marginEngineAddress();
+    expect(marginEngineAddressRealised).to.eq(marginEngine1.address);
+>>>>>>> ammRefactoring
   });
 });

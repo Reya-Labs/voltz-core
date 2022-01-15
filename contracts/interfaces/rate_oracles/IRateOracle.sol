@@ -32,10 +32,13 @@ interface IRateOracle {
     /// @return underlying The address of the underlying token
     function underlying() external view returns (address);
 
+<<<<<<< HEAD
     /// @notice Gets the address of the top-level Factory contract
     /// @return Factory Address of the Factory contract
     function factory() external view returns (address);
 
+=======
+>>>>>>> ammRefactoring
     /// @notice Gets the variable factor between termStartTimestamp and termEndTimestamp
     /// @return result The variable factor
     /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). Term end timestamps are cached for quick retrieval later.
@@ -84,4 +87,8 @@ interface IRateOracle {
     /// Write oracle entry is called whenever a new position is minted via the vamm or when a swap is initiated via the vamm
     /// That way the gas costs of Rate Oracle updates can be distributed across organic interactions with the protocol
     function writeOracleEntry() external;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> ammRefactoring

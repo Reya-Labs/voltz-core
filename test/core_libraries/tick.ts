@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // hybrid of uniswap + new
 
 // import the TickTest type
@@ -482,3 +483,5 @@ describe("Tick", () => {
     });
   });
 });
+=======
+>>>>>>> ammRefactoring

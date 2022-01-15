@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 
 import "../utils/FullMath.sol";
 import "../utils/SqrtPriceMath.sol";
-import "prb-math/contracts/PRBMathSD59x18Typed.sol";
-import "prb-math/contracts/PRBMathUD60x18Typed.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
+import "prb-math/contracts/PRBMathSD59x18.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 
 /// @title Computes the result of a swap within ticks
@@ -20,15 +20,10 @@ library SwapMath {
             timeToMaturityInSeconds
         );
 
-        feeAmount = PRBMathUD60x18Typed
-            .mul(
-                PRBMath.UD60x18({value: notional}),
-                PRBMathUD60x18Typed.mul(
-                    PRBMath.UD60x18({value: feePercentage}),
-                    PRBMath.UD60x18({value: timeInYears})
-                )
-            )
-            .value;
+        feeAmount = PRBMathUD60x18.mul(
+            notional,
+            PRBMathUD60x18.mul(feePercentage, timeInYears)
+        );
     }
 
     /// @notice Computes the result of swapping some amount in, or amount out, given the parameters of the swap
