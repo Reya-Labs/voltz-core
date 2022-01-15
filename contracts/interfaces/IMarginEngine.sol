@@ -98,6 +98,16 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Can only be set by the Factory Owner
     function setSecondsAgo(uint256 _secondsAgo) external;
 
+    function setMarginCalculatorParameters(
+        MarginCalculatorParameters memory _marginCalculatorParameters
+    ) external;
+
+    function setIsInsuranceDepleted(bool _isInsuranceDepleted) external;
+
+    function setMinMarginToIncentiviseLiquidators(
+        uint256 _minMarginToIncentiviseLiquidators
+    ) external;
+
     /// @notice Returns the information about a trader by the trader's key
     /// @param key The wallet address of the trader
     /// @return margin Margin (in terms of the underlying tokens) in the trader's Voltz account
@@ -156,7 +166,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Can be called by anyone
     /// @dev A Trader cannot be settled before IRS AMM maturity
     /// @dev Steps to settle: calculate settlement cashflow based on the fixed and variable balances of the trader, update the fixed and variable balances to 0, update the margin to account for IRS settlement cashflow
-    function settleTrader() external;
+    function settleTrader(address traderAddress) external;
 
     /// @notice Liquidate a Position
     /// @dev Steps to liquidate: update position's fixed and variable token balances to account for balances accumulated throughout the trades made since the last mint/burn/poke,

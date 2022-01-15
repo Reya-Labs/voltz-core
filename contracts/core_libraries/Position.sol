@@ -72,7 +72,6 @@ library Position {
     /// @param self Position Info struct of the liquidity provider
     /// @param fixedTokenBalanceDelta Change in the number of fixed tokens in the position's fixed token balance
     /// @param variableTokenBalanceDelta Change in the number of variable tokens in the position's variable token balance
-    /// #if_succeeds fixedTokenBalanceDelta!=0 || variableTokenBalanceDelta!=0;
     function updateBalances(
         Info storage self,
         int256 fixedTokenBalanceDelta,
@@ -100,6 +99,8 @@ library Position {
         returns (uint256 _feeDelta)
     {
         Info memory _self = self;
+
+        /// @dev liquidity is in Wei (18 decimals)
 
         _feeDelta = PRBMathUD60x18.mul(
             (feeGrowthInside - _self.feeGrowthInsideLast),

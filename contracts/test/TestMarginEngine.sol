@@ -10,7 +10,7 @@ contract TestMarginEngine is MarginEngine {
 
     function getUnderlyingToken()
         external
-        view
+        pure
         returns (address underlyingToken)
     {
         return underlyingToken;

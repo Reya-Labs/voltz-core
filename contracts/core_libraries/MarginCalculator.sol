@@ -142,7 +142,7 @@ library MarginCalculator {
         bool isUpper,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal view returns (uint256 apyBound) {
+    ) internal pure returns (uint256 apyBound) {
         ApyBoundVars memory apyBoundVars;
 
         int256 beta4 = PRBMathSD59x18.mul(

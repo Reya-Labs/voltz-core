@@ -22,7 +22,6 @@ library Tick {
         int128 liquidityNet;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
-
         int256 fixedTokenGrowthOutside;
         int256 variableTokenGrowthOutside;
         uint256 feeGrowthOutside;
@@ -122,7 +121,7 @@ library Tick {
         Info storage lower = self[params.tickLower];
         Info storage upper = self[params.tickUpper];
 
-        // calculate the FixedTokenGrowth below
+        // calculate the fixedTokenGrowth below
         int256 fixedTokenGrowthBelow;
 
         if (params.tickCurrent >= params.tickLower) {
@@ -133,7 +132,7 @@ library Tick {
                 lower.fixedTokenGrowthOutside;
         }
 
-        // calculate the FixedTokenGrowth above
+        // calculate the fixedTokenGrowth above
         int256 fixedTokenGrowthAbove;
 
         if (params.tickCurrent < params.tickUpper) {

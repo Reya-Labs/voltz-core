@@ -107,12 +107,11 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         _;
     }
 
-    // add override
     /// @notice Set the per-oracle MarginCalculatorParameters
     /// @param _marginCalculatorParameters the MarginCalculatorParameters to set
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory _marginCalculatorParameters
-    ) external onlyOwner {
+    ) external override onlyOwner {
         marginCalculatorParameters = _marginCalculatorParameters;
     }
 
@@ -135,13 +134,11 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         // @audit emit seconds ago set
     }
 
-    // add override
-    function setIsInsuranceDepleted(bool _isInsuranceDepleted) external onlyOwner {
+    function setIsInsuranceDepleted(bool _isInsuranceDepleted) external override onlyOwner {
         isInsuranceDepleted = _isInsuranceDepleted;
     }
 
-    // add override
-    function setMinMarginToIncentiviseLiquidators(uint256 _minMarginToIncentiviseLiquidators) external onlyOwner {
+    function setMinMarginToIncentiviseLiquidators(uint256 _minMarginToIncentiviseLiquidators) external override onlyOwner {
         minMarginToIncentiviseLiquidators = _minMarginToIncentiviseLiquidators;
     }
 
@@ -275,15 +272,17 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     }
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(ModifyPositionParams memory params) external onlyAfterMaturity override whenNotPaused onlyAfterMaturity {
+    function settlePosition(ModifyPositionParams memory params) external override whenNotPaused onlyAfterMaturity {
         
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
-
+            
         /// @dev position can only be settled if it is burned and not settled
         require(position._liquidity==0, "fully burned");
         require(!position.isSettled, "already settled");
+
+        updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
 
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestamp, termEndTimestamp, IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp));
 
@@ -293,9 +292,11 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     }
     
     /// @inheritdoc IMarginEngine
-    function settleTrader() external override whenNotPaused onlyAfterMaturity {
+    function settleTrader(address traderAddress) external override whenNotPaused onlyAfterMaturity {
+        
+        /// @dev anyone should be able to call this function post matrity
 
-        Trader.Info storage trader = traders[msg.sender];
+        Trader.Info storage trader = traders[traderAddress];
 
         require(!trader.isSettled, "not settled");
 
@@ -434,6 +435,8 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
             int24 tickUpper,
             uint128 amount
         ) external override {
+
+        /// @dev supposed to be called by the VAMM before minting further liqudiity
         
         (, int24 tick, ) = IVAMM(vammAddress).vammVars();
         updatePositionTokenBalances(recipient, tickLower, tickUpper);
@@ -465,7 +468,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     /// @inheritdoc IMarginEngine
     function updatePosition(IVAMM.ModifyPositionParams memory params, IVAMM.UpdatePositionVars memory vars) external override {
 
-        /// @dev this function can only be called by the vamm following a swap
+        /// @dev this function can only be called by the vamm
         require(msg.sender==vammAddress, "only vamm");        
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
@@ -474,10 +477,8 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         uint256 feeDelta = position.calculateFeeDelta(vars.feeGrowthInside);
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         
-
         /// @dev collect fees generated since last mint/burn
         position.updateMargin(int256(feeDelta));
-        
         
         position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
         position.updateFeeGrowthInside(vars.feeGrowthInside);
@@ -496,8 +497,8 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
             MarginCalculator.TraderMarginRequirementParams({
                 fixedTokenBalance: trader.fixedTokenBalance,
                 variableTokenBalance: trader.variableTokenBalance,
-                termStartTimestamp:termStartTimestamp,
-                termEndTimestamp:termEndTimestamp,
+                termStartTimestamp: termStartTimestamp,
+                termEndTimestamp: termEndTimestamp,
                 isLM: false,
                 historicalApy: getHistoricalApy()
             }), marginCalculatorParameters
@@ -690,9 +691,9 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         uint256 variableFactor
     ) internal view {
 
-        /// @dev If the AMM has reached maturity, the only reason why someone would want to update
-        // their margin is to withdraw it completely. If so, the position needs to be both burned
-        // and settled.
+        /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
+        /// @dev their margin is to withdraw it completely. If so, the position needs to be both burned
+        /// @dev and settled.
 
         if (Time.blockTimestampScaled() >= termEndTimestamp) {
             if (!isPositionBurned) {
