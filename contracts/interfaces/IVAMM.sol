@@ -99,13 +99,13 @@ interface IVAMM is IPositionStructs {
         /// @dev the tick associated with the current price
         int24 tick;
         /// @dev the global fixed token growth
-        int256 fixedTokenGrowthGlobal;
+        int256 fixedTokenGrowthGlobalX128;
         /// @dev the global variable token growth
-        int256 variableTokenGrowthGlobal;
+        int256 variableTokenGrowthGlobalX128;
         /// @dev the current liquidity in range
         uint128 liquidity;
         /// @dev the global fee growth of the underlying token
-        uint256 feeGrowthGlobal;
+        uint256 feeGrowthGlobalX128;
         /// @dev amount of underlying token paid as protocol fee
         uint256 protocolFee;
         /// @dev cumulative fee incurred while initiating a swap
@@ -183,15 +183,15 @@ interface IVAMM is IPositionStructs {
 
     /// @notice The fixed token growth in wei, accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
-    function fixedTokenGrowthGlobal() external view returns (int256);
+    function fixedTokenGrowthGlobalX128() external view returns (int256);
 
     /// @notice The variable token growth in wei, accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
-    function variableTokenGrowthGlobal() external view returns (int256);
+    function variableTokenGrowthGlobalX128() external view returns (int256);
 
     /// @notice The fee growth in wei, collected per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
-    function feeGrowthGlobal() external view returns (uint256);
+    function feeGrowthGlobalX128() external view returns (uint256);
 
     /// @notice The currently in range liquidity available to the vamm
     function liquidity() external view returns (uint128);

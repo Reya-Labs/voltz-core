@@ -135,11 +135,11 @@ contract TestMarginEngine is MarginEngine {
         int24 tickUpper,
         uint128 _liquidity,
         int256 margin,
-        int256 fixedTokenGrowthInsideLast,
-        int256 variableTokenGrowthInsideLast,
+        int256 fixedTokenGrowthInsideLastX128,
+        int256 variableTokenGrowthInsideLastX128,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        uint256 feeGrowthInsideLast,
+        uint256 feeGrowthInsideLastX128,
         bool isSettled
     ) external {
         positions[
@@ -147,11 +147,11 @@ contract TestMarginEngine is MarginEngine {
         ] = Position.Info({
             _liquidity: _liquidity,
             margin: margin,
-            fixedTokenGrowthInsideLast: fixedTokenGrowthInsideLast,
-            variableTokenGrowthInsideLast: variableTokenGrowthInsideLast,
+            fixedTokenGrowthInsideLastX128: fixedTokenGrowthInsideLastX128,
+            variableTokenGrowthInsideLastX128: variableTokenGrowthInsideLastX128,
             fixedTokenBalance: fixedTokenBalance,
             variableTokenBalance: variableTokenBalance,
-            feeGrowthInsideLast: feeGrowthInsideLast,
+            feeGrowthInsideLastX128: feeGrowthInsideLastX128,
             isSettled: isSettled
         });
     }

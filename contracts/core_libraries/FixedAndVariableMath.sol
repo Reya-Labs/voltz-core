@@ -10,7 +10,7 @@ import "hardhat/console.sol";
 library FixedAndVariableMath {
     /// @notice Number of wei-seconds in a year
     /// @dev Ignoring leap years since we're only using it to calculate the eventual APY rate
-    
+
     // suggestion: do this conversion with PRB.fromUnit()
     uint256 public constant SECONDS_IN_YEAR_IN_WAD = 31536000 * 10**18;
     uint256 public constant ONE_HUNDRED_IN_WAD = 100 * 10**18;
@@ -32,15 +32,18 @@ library FixedAndVariableMath {
         uint256 termEndTimestampWad,
         uint256 variableFactorToMaturityWad
     ) internal view returns (int256 cashflow) {
-
         /// @dev convert fixed and variable token balances to their respective fixed token representations
 
         int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(fixedTokenBalance);
-        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(variableTokenBalance);
+        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(
+            variableTokenBalance
+        );
 
         int256 fixedCashflowWad = PRBMathSD59x18.mul(
             fixedTokenBalanceWad,
-            int256(fixedFactor(true, termStartTimestampWad, termEndTimestampWad))
+            int256(
+                fixedFactor(true, termStartTimestampWad, termEndTimestampWad)
+            )
         );
 
         int256 variableCashflowWad = PRBMathSD59x18.mul(
@@ -49,7 +52,7 @@ library FixedAndVariableMath {
         );
 
         int256 cashflowWad = fixedCashflowWad + variableCashflowWad;
-        
+
         /// @dev convert back to non-fixed point representation
         cashflow = PRBMathSD59x18.toInt(cashflowWad);
     }
@@ -85,14 +88,21 @@ library FixedAndVariableMath {
 
         uint256 timeInSecondsWad;
 
-        if (atMaturity || (Time.blockTimestampScaled() >= termEndTimestampWad)) {
+        if (
+            atMaturity || (Time.blockTimestampScaled() >= termEndTimestampWad)
+        ) {
             timeInSecondsWad = termEndTimestampWad - termStartTimestampWad;
         } else {
-            timeInSecondsWad = Time.blockTimestampScaled() - termStartTimestampWad;
+            timeInSecondsWad =
+                Time.blockTimestampScaled() -
+                termStartTimestampWad;
         }
 
         uint256 timeInYearsWad = accrualFact(timeInSecondsWad);
-        fixedFactorValueWad = PRBMathUD60x18.div(timeInYearsWad, ONE_HUNDRED_IN_WAD);
+        fixedFactorValueWad = PRBMathUD60x18.div(
+            timeInYearsWad,
+            ONE_HUNDRED_IN_WAD
+        );
     }
 
     /// @notice Calculate the fixed token balance for a position over a timespan
@@ -114,7 +124,9 @@ library FixedAndVariableMath {
         // expected fixed cashflow with unbalanced number of fixed tokens
         int256 exp1Wad = PRBMathSD59x18.mul(
             amount0Wad,
-            int256(fixedFactor(true, termStartTimestampWad, termEndTimestampWad))
+            int256(
+                fixedFactor(true, termStartTimestampWad, termEndTimestampWad)
+            )
         );
 
         // fixed cashflow with balanced number of fixed tokens, this cashflow accounts for the excess balance accrued since
@@ -124,7 +136,9 @@ library FixedAndVariableMath {
         // fixed token balance that takes into account acrrued cashflows
         fixedTokenBalanceWad = PRBMathSD59x18.div(
             numeratorWad,
-            int256(fixedFactor(true, termStartTimestampWad, termEndTimestampWad))
+            int256(
+                fixedFactor(true, termStartTimestampWad, termEndTimestampWad)
+            )
         );
     }
 
@@ -153,7 +167,9 @@ library FixedAndVariableMath {
 
         accruedValues.excessFixedAccruedBalanceWad = PRBMathSD59x18.mul(
             amount0Wad,
-            int256(fixedFactor(false, termStartTimestampWad, termEndTimestampWad))
+            int256(
+                fixedFactor(false, termStartTimestampWad, termEndTimestampWad)
+            )
         );
 
         accruedValues.excessVariableAccruedBalanceWad = PRBMathSD59x18.mul(

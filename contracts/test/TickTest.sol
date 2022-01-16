@@ -23,14 +23,14 @@ contract TickTest {
         int24 tickLower,
         int24 tickUpper,
         int24 tickCurrent,
-        uint256 feeGrowthGlobal
-    ) external view returns (uint256 feeGrowthInside) {
+        uint256 feeGrowthGlobalX128
+    ) external view returns (uint256 feeGrowthInsideX128) {
         return
             ticks.getFeeGrowthInside(
                 tickLower,
                 tickUpper,
                 tickCurrent,
-                feeGrowthGlobal
+                feeGrowthGlobalX128
             );
     }
 
@@ -48,15 +48,15 @@ contract TickTest {
         int24 tickLower,
         int24 tickUpper,
         int24 tickCurrent,
-        int256 variableTokenGrowthGlobal
-    ) public view returns (int256 variableTokenGrowthInside) {
+        int256 variableTokenGrowthGlobalX128
+    ) public view returns (int256 variableTokenGrowthInsideX128) {
         return
             ticks.getVariableTokenGrowthInside(
                 Tick.VariableTokenGrowthInsideParams({
                     tickLower: tickLower,
                     tickUpper: tickUpper,
                     tickCurrent: tickCurrent,
-                    variableTokenGrowthGlobal: variableTokenGrowthGlobal
+                    variableTokenGrowthGlobalX128: variableTokenGrowthGlobalX128
                 })
             );
     }
@@ -66,15 +66,15 @@ contract TickTest {
         int24 tickLower,
         int24 tickUpper,
         int24 tickCurrent,
-        int256 fixedTokenGrowthGlobal
-    ) public view returns (int256 fixedTokenGrowthInside) {
+        int256 fixedTokenGrowthGlobalX128
+    ) public view returns (int256 fixedTokenGrowthInsideX128) {
         return
             ticks.getFixedTokenGrowthInside(
                 Tick.FixedTokenGrowthInsideParams({
                     tickLower: tickLower,
                     tickUpper: tickUpper,
                     tickCurrent: tickCurrent,
-                    fixedTokenGrowthGlobal: fixedTokenGrowthGlobal
+                    fixedTokenGrowthGlobalX128: fixedTokenGrowthGlobalX128
                 })
             );
     }
@@ -84,9 +84,9 @@ contract TickTest {
         int24 tick,
         int24 tickCurrent,
         int128 liquidityDelta,
-        int256 fixedTokenGrowthGlobal,
-        int256 variableTokenGrowthGlobal,
-        uint256 feeGrowthGlobal,
+        int256 fixedTokenGrowthGlobalX128,
+        int256 variableTokenGrowthGlobalX128,
+        uint256 feeGrowthGlobalX128,
         bool upper,
         uint128 maxLiquidity
     ) external returns (bool flipped) {
@@ -95,9 +95,9 @@ contract TickTest {
                 tick,
                 tickCurrent,
                 liquidityDelta,
-                fixedTokenGrowthGlobal,
-                variableTokenGrowthGlobal,
-                feeGrowthGlobal,
+                fixedTokenGrowthGlobalX128,
+                variableTokenGrowthGlobalX128,
+                feeGrowthGlobalX128,
                 upper,
                 maxLiquidity
             );
@@ -111,16 +111,16 @@ contract TickTest {
     // DONE
     function cross(
         int24 tick,
-        int256 fixedTokenGrowthGlobal,
-        int256 variableTokenGrowthGlobal,
-        uint256 feeGrowthGlobal
+        int256 fixedTokenGrowthGlobalX128,
+        int256 variableTokenGrowthGlobalX128,
+        uint256 feeGrowthGlobalX128
     ) external returns (int128 liquidityNet) {
         return
             ticks.cross(
                 tick,
-                fixedTokenGrowthGlobal,
-                variableTokenGrowthGlobal,
-                feeGrowthGlobal
+                fixedTokenGrowthGlobalX128,
+                variableTokenGrowthGlobalX128,
+                feeGrowthGlobalX128
             );
     }
 }
