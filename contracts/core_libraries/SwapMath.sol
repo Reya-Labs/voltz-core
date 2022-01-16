@@ -12,18 +12,20 @@ import "../core_libraries/FixedAndVariableMath.sol";
 /// @notice Contains methods for computing the result of a swap within a single tick price range, i.e., a single tick.
 library SwapMath {
     function computeFeeAmount(
-        uint256 notional,
-        uint256 timeToMaturityInSeconds,
-        uint256 feePercentage
+        uint256 notionalWad,
+        uint256 timeToMaturityInSecondsWad,
+        uint256 feePercentageWad
     ) internal pure returns (uint256 feeAmount) {
-        uint256 timeInYears = FixedAndVariableMath.accrualFact(
-            timeToMaturityInSeconds
+        uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
+            timeToMaturityInSecondsWad
         );
 
-        feeAmount = PRBMathUD60x18.mul(
-            notional,
-            PRBMathUD60x18.mul(feePercentage, timeInYears)
+        uint256 feeAmountWad = PRBMathUD60x18.mul(
+            notionalWad,
+            PRBMathUD60x18.mul(feePercentageWad, timeInYearsWad)
         );
+
+        feeAmount = PRBMathUD60x18.toUint(feeAmountWad);
     }
 
     /// @notice Computes the result of swapping some amount in, or amount out, given the parameters of the swap
@@ -40,8 +42,8 @@ library SwapMath {
         uint160 sqrtRatioTargetX96,
         uint128 liquidity,
         int256 amountRemaining,
-        uint256 feePercentage,
-        uint256 timeToMaturityInSeconds
+        uint256 feePercentageWad,
+        uint256 timeToMaturityInSecondsWad
     )
         internal
         pure
@@ -150,13 +152,16 @@ library SwapMath {
 
         // cap the output amount to not exceed the remaining output amount
         if (!exactIn && amountOut > uint256(-amountRemaining)) {
+            /// @dev if !exact in => fixedTaker => has no effect on notional since notional = amountIn
             amountOut = uint256(-amountRemaining);
         }
 
+        uint256 notionalWad = PRBMathUD60x18.fromUint(notional);
+        
         feeAmount = computeFeeAmount(
-            notional,
-            timeToMaturityInSeconds,
-            feePercentage
+            notionalWad,
+            timeToMaturityInSecondsWad,
+            feePercentageWad
         );
     }
 }
