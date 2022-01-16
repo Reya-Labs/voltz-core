@@ -59,8 +59,8 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
     uint256 currentTimestamp = Time.blockTimestampScaled(); 
-    require(currentTimestamp < IMarginEngine(marginEngineAddress).termEndTimestamp(), "vamm has reached maturity");
-    uint256 timeDelta = IMarginEngine(marginEngineAddress).termEndTimestamp() - currentTimestamp;
+    require(currentTimestamp < IMarginEngine(marginEngineAddress).termEndTimestampWad(), "vamm has reached maturity");
+    uint256 timeDelta = IMarginEngine(marginEngineAddress).termEndTimestampWad() - currentTimestamp;
     require(timeDelta > SECONDS_IN_DAY_WAD, "vamm must be 1 day before maturity");
     _;
   }
@@ -414,7 +414,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         state.liquidity,
         state.amountSpecifiedRemaining,
         fee,
-        IMarginEngine(marginEngineAddress).termEndTimestamp() - Time.blockTimestampScaled()
+        IMarginEngine(marginEngineAddress).termEndTimestampWad() - Time.blockTimestampScaled()
       );
 
       if (params.amountSpecified > 0) {
@@ -447,8 +447,8 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       // update global fee tracker
       if (state.liquidity > 0) {
         uint256 variableFactor = rateOracle.variableFactor(
-          IMarginEngine(marginEngineAddress).termStartTimestamp(),
-          IMarginEngine(marginEngineAddress).termEndTimestamp()
+          IMarginEngine(marginEngineAddress).termStartTimestampWad(),
+          IMarginEngine(marginEngineAddress).termEndTimestampWad()
         );
         (
           state.feeGrowthGlobal,
@@ -459,8 +459,8 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
           state,
           step,
           variableFactor,
-          IMarginEngine(marginEngineAddress).termStartTimestamp(),
-          IMarginEngine(marginEngineAddress).termEndTimestamp()
+          IMarginEngine(marginEngineAddress).termStartTimestampWad(),
+          IMarginEngine(marginEngineAddress).termEndTimestampWad()
         );
       }
 
@@ -526,11 +526,11 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         int256(swapLocalVars.amount0),
         -int256(swapLocalVars.amount1),
         rateOracle.variableFactor(
-          IMarginEngine(marginEngineAddress).termStartTimestamp(),
-          IMarginEngine(marginEngineAddress).termEndTimestamp()
+          IMarginEngine(marginEngineAddress).termStartTimestampWad(),
+          IMarginEngine(marginEngineAddress).termEndTimestampWad()
         ),
-        IMarginEngine(marginEngineAddress).termStartTimestamp(),
-        IMarginEngine(marginEngineAddress).termEndTimestamp()
+        IMarginEngine(marginEngineAddress).termStartTimestampWad(),
+        IMarginEngine(marginEngineAddress).termEndTimestampWad()
       );
     } else {
       _variableTokenDelta = int256(swapLocalVars.amount1);
@@ -538,11 +538,11 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         -int256(swapLocalVars.amount0),
         int256(swapLocalVars.amount1),
         rateOracle.variableFactor(
-          IMarginEngine(marginEngineAddress).termStartTimestamp(),
-          IMarginEngine(marginEngineAddress).termEndTimestamp()
+          IMarginEngine(marginEngineAddress).termStartTimestampWad(),
+          IMarginEngine(marginEngineAddress).termEndTimestampWad()
         ),
-        IMarginEngine(marginEngineAddress).termStartTimestamp(),
-        IMarginEngine(marginEngineAddress).termEndTimestamp()
+        IMarginEngine(marginEngineAddress).termStartTimestampWad(),
+        IMarginEngine(marginEngineAddress).termEndTimestampWad()
       );
     }
 
@@ -644,8 +644,8 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         SwapState memory state,
         StepComputations memory step,
         uint256 variableFactor,
-        uint256 termStartTimestamp,
-        uint256 termEndTimestamp
+        uint256 termStartTimestampWad,
+        uint256 termEndTimestampWad
     )
         internal
         view
@@ -684,8 +684,8 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
                         -int256(step.amountIn),
                         int256(step.amountOut),
                         variableFactor,
-                        termStartTimestamp,
-                        termEndTimestamp
+                        termStartTimestampWad,
+                        termEndTimestampWad
                     ),
                     int256(uint256(state.liquidity))
                 );
@@ -713,8 +713,8 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
                         int256(step.amountOut),
                         -int256(step.amountIn),
                         variableFactor,
-                        termStartTimestamp,
-                        termEndTimestamp
+                        termStartTimestampWad,
+                        termEndTimestampWad
                     ),
                     int256(uint256(state.liquidity))
                 );

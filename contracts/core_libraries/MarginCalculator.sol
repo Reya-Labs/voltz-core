@@ -19,21 +19,21 @@ library MarginCalculator {
 
     struct ApyBoundVars {
         /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration
-        int256 timeFactor;
+        int256 timeFactorWad;
         /// @dev 1 - timeFactor
-        int256 oneMinusTimeFactor;
+        int256 oneMinusTimeFactorWad;
         /// @dev k = (alpha/sigmaSquared)
-        int256 k;
+        int256 kWad;
         /// @dev zeta = (sigmaSquared*(1-timeFactor))/beta
-        int256 zeta;
-        int256 lambdaNum;
-        int256 lambdaDen;
+        int256 zetaWad;
+        int256 lambdaNumWad;
+        int256 lambdaDenWad;
         /// @dev lambda = lambdaNum/lambdaDen = (beta*timeFactor)*historicalApy / (sigmaSquared*(1-timeFactor))
-        int256 lambda;
+        int256 lambdaWad;
         /// @dev critical value from the normal distribution (refer to the litepaper, equations 12 and 13)
-        int256 criticalValueMultiplier;
+        int256 criticalValueMultiplierWad;
         /// @dev critical value = sqrt(2(k+2*lambda))
-        int256 criticalValue;
+        int256 criticalValueWad;
     }
 
     struct TraderMarginRequirementParams {
@@ -42,13 +42,13 @@ library MarginCalculator {
         /// @dev current variableToken balance of a given trader
         int256 variableTokenBalance;
         /// @dev timestamp of the IRS AMM initiation (18 decimals)
-        uint256 termStartTimestamp;
+        uint256 termStartTimestampWad;
         /// @dev timestamp of the IRS AMM maturity (18 decimals)
-        uint256 termEndTimestamp;
+        uint256 termEndTimestampWad;
         /// @dev isLM = true => Liquidation Margin is calculated, isLM = false => Initial Margin is calculated
         bool isLM;
         /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
-        uint256 historicalApy;
+        uint256 historicalApyWad;
     }
 
     struct PositionMarginRequirementParams {
@@ -63,9 +63,9 @@ library MarginCalculator {
         /// @dev Current tick in the Virtual Automated Market Maker
         int24 currentTick;
         /// @dev Timestamp of the IRS AMM initiation (18 decimals)
-        uint256 termStartTimestamp;
+        uint256 termStartTimestampWad;
         /// @dev Timestamp of the IRS AMM maturity (18 decimals)
-        uint256 termEndTimestamp;
+        uint256 termEndTimestampWad;
         /// @dev Amount of active liquidity of a position
         uint128 liquidity;
         /// @dev Curren Fixed Token Balance of a position
@@ -74,25 +74,27 @@ library MarginCalculator {
         /// @dev Curren Variabe Token Balance of a position
         int256 variableTokenBalance;
         /// @dev Variable Factor is the variable rate from the IRS AMM initiation and until IRS AMM maturity (when computing margin requirements)
-        uint256 variableFactor;
+        uint256 variableFactorWad;
         /// @dev Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
-        uint256 historicalApy;
+        uint256 historicalApyWad;
     }
 
     struct MinimumMarginRequirementLocalVars {
         /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure.
         /// @dev minDelta is different depending on whether we are calculating a Liquidation or an Initial Margin Requirement
-        uint256 minDelta;
+        uint256 minDeltaWad;
         /// @dev notional is the absolute value of the variable token balance
-        uint256 notional;
+        uint256 notionalWad;
         /// @dev timeInSeconds = termEndTimestamp - termStartTimestamp of the IRS AMM
-        uint256 timeInSeconds;
+        uint256 timeInSecondsWad;
         /// @dev timeInYears = timeInSeconds / SECONDS_IN_YEAR (where SECONDS_IN_YEAR=31536000)
-        uint256 timeInYears;
+        uint256 timeInYearsWad;
         /// @dev Only relevant for Variable Takers, since the worst case scenario for them if the variable rates are at the zero lower bound, assuming the APY in the underlying yield-bearing pool can never be negative
         /// @dev zeroLowerBoundMargin = abs(fixedTokenBalance) * timeInYears * 1%
-        uint256 zeroLowerBoundMargin;
+        uint256 zeroLowerBoundMarginWad;
     }
+
+    /// suggestions: do the below conversions using PRBMath
 
     int256 public constant ONE_WEI = 10**18;
 
@@ -101,195 +103,196 @@ library MarginCalculator {
 
     /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t_max) where t is the maturity timestamp, and t_max is the max number of seconds for the amm duration, s is the current timestamp and beta is a diffusion process parameter set via calibration
     function computeTimeFactor(
-        uint256 termEndTimestampScaled,
-        uint256 currentTimestampScaled,
+        uint256 termEndTimestampWad,
+        uint256 currentTimestampWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal pure returns (int256 timeFactor) {
-        require(termEndTimestampScaled > 0, "termEndTimestamp must be > 0");
+        require(termEndTimestampWad > 0, "termEndTimestamp must be > 0");
         require(
-            currentTimestampScaled <= termEndTimestampScaled,
+            currentTimestampWad <= termEndTimestampWad,
             "endTime must be > currentTime"
         );
         require(
-            _marginCalculatorParameters.beta != 0,
+            _marginCalculatorParameters.betaWad != 0,
             "parameters not set for oracle"
         );
 
-        int256 beta = _marginCalculatorParameters.beta;
-        int256 tMax = _marginCalculatorParameters.tMax;
+        int256 betaWad = _marginCalculatorParameters.betaWad;
+        int256 tMaxWad = _marginCalculatorParameters.tMaxWad;
 
-        int256 scaledTime = PRBMathSD59x18.div(
-            (int256(termEndTimestampScaled) - int256(currentTimestampScaled)),
-            tMax
+        int256 scaledTimeWad = PRBMathSD59x18.div(
+            (int256(termEndTimestampWad) - int256(currentTimestampWad)),
+            tMaxWad
         );
 
-        int256 expInput = PRBMathSD59x18.mul((-beta), scaledTime);
+        int256 expInputWad = PRBMathSD59x18.mul((-betaWad), scaledTimeWad);
 
-        timeFactor = PRBMathSD59x18.exp(expInput);
+        timeFactor = PRBMathSD59x18.exp(expInputWad);
     }
 
     /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
-    /// @param termEndTimestampScaled termEndTimestampScaled
-    /// @param currentTimestampScaled currentTimestampScaled
-    /// @param historicalApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
+    /// @param termEndTimestampWad termEndTimestampScaled
+    /// @param currentTimestampWad currentTimestampScaled
+    /// @param historicalApyWad Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @param isUpper isUpper = true ==> calculating the APY Upper Bound, otherwise APY Lower Bound
-    /// @return apyBound APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
+    /// @return apyBoundWad APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
     function computeApyBound(
-        uint256 termEndTimestampScaled,
-        uint256 currentTimestampScaled,
-        uint256 historicalApy,
+        uint256 termEndTimestampWad,
+        uint256 currentTimestampWad,
+        uint256 historicalApyWad,
         bool isUpper,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal pure returns (uint256 apyBound) {
+    ) internal pure returns (uint256 apyBoundWad) {
         ApyBoundVars memory apyBoundVars;
 
-        int256 beta4 = PRBMathSD59x18.mul(
-            _marginCalculatorParameters.beta,
+        int256 beta4Wad = PRBMathSD59x18.mul(
+            _marginCalculatorParameters.betaWad,
             4 * ONE_WEI
         );
 
-        apyBoundVars.timeFactor = computeTimeFactor(
-            termEndTimestampScaled,
-            currentTimestampScaled,
+        apyBoundVars.timeFactorWad = computeTimeFactor(
+            termEndTimestampWad,
+            currentTimestampWad,
             _marginCalculatorParameters
         );
 
-        apyBoundVars.oneMinusTimeFactor = ONE_WEI - apyBoundVars.timeFactor;
+        apyBoundVars.oneMinusTimeFactorWad = ONE_WEI - apyBoundVars.timeFactorWad;
 
-        apyBoundVars.k = PRBMathSD59x18.div(
-            _marginCalculatorParameters.alpha,
-            _marginCalculatorParameters.sigmaSquared
+        apyBoundVars.kWad = PRBMathSD59x18.div(
+            _marginCalculatorParameters.alphaWad,
+            _marginCalculatorParameters.sigmaSquaredWad
         );
 
-        apyBoundVars.zeta = PRBMathSD59x18.div(
+        apyBoundVars.zetaWad = PRBMathSD59x18.div(
             PRBMathSD59x18.mul(
-                _marginCalculatorParameters.sigmaSquared,
-                apyBoundVars.oneMinusTimeFactor
+                _marginCalculatorParameters.sigmaSquaredWad,
+                apyBoundVars.oneMinusTimeFactorWad
             ),
-            beta4
+            beta4Wad
         );
 
-        apyBoundVars.lambdaNum = PRBMathSD59x18.mul(
-            PRBMathSD59x18.mul(beta4, apyBoundVars.timeFactor),
-            int256(historicalApy)
+        apyBoundVars.lambdaNumWad = PRBMathSD59x18.mul(
+            PRBMathSD59x18.mul(beta4Wad, apyBoundVars.timeFactorWad),
+            int256(historicalApyWad)
         );
 
-        apyBoundVars.lambdaDen = PRBMathSD59x18.mul(
-            beta4,
-            apyBoundVars.timeFactor
-        ); // check the time factor exists, if not have a fallback?
-        apyBoundVars.lambda = PRBMathSD59x18.div(
-            apyBoundVars.lambdaNum,
-            apyBoundVars.lambdaDen
+        apyBoundVars.lambdaDenWad = PRBMathSD59x18.mul(
+            beta4Wad,
+            apyBoundVars.timeFactorWad
         );
 
-        apyBoundVars.criticalValueMultiplier = PRBMathSD59x18.mul(
-            PRBMathSD59x18.mul(2 * (10**18), apyBoundVars.lambda) +
-                apyBoundVars.k,
-            (2 * (10**18))
+        apyBoundVars.lambdaWad = PRBMathSD59x18.div(
+            apyBoundVars.lambdaNumWad,
+            apyBoundVars.lambdaDenWad
         );
 
-        apyBoundVars.criticalValue;
+        apyBoundVars.criticalValueMultiplierWad = PRBMathSD59x18.mul(
+            PRBMathSD59x18.mul(PRBMathSD59x18.fromInt(2), apyBoundVars.lambdaWad) +
+                apyBoundVars.kWad,
+            (PRBMathSD59x18.fromInt(2))
+        );
+
+        apyBoundVars.criticalValueWad;
 
         if (isUpper) {
-            apyBoundVars.criticalValue = PRBMathSD59x18.mul(
-                _marginCalculatorParameters.xiUpper,
-                PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplier)
+            apyBoundVars.criticalValueWad = PRBMathSD59x18.mul(
+                _marginCalculatorParameters.xiUpperWad,
+                PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplierWad)
             );
         } else {
-            apyBoundVars.criticalValue = PRBMathSD59x18.mul(
-                _marginCalculatorParameters.xiLower,
-                PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplier)
+            apyBoundVars.criticalValueWad = PRBMathSD59x18.mul(
+                _marginCalculatorParameters.xiLowerWad,
+                PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplierWad)
             );
         }
 
-        int256 apyBoundInt = PRBMathSD59x18.mul(
-            apyBoundVars.zeta,
-            apyBoundVars.k + apyBoundVars.lambda + apyBoundVars.criticalValue
+        int256 apyBoundIntWad = PRBMathSD59x18.mul(
+            apyBoundVars.zetaWad,
+            apyBoundVars.kWad + apyBoundVars.lambdaWad + apyBoundVars.criticalValueWad
         );
 
-        if (apyBoundInt < 0) {
-            apyBound = 0;
+        if (apyBoundIntWad < 0) {
+            apyBoundWad = 0;
         } else {
-            apyBound = uint256(apyBoundInt);
+            apyBoundWad = uint256(apyBoundIntWad);
         }
     }
 
     /// @notice Calculates the Worst Case Variable Factor At Maturity
-    /// @param timeInSecondsFromStartToMaturity Duration of a given IRS AMM (18 decimals)
-    /// @param termEndTimestampScaled termEndTimestampScaled
-    /// @param currentTimestampScaled currentTimestampScaled
+    /// @param timeInSecondsFromStartToMaturityWad Duration of a given IRS AMM (18 decimals)
+    /// @param termEndTimestampWad termEndTimestampScaled
+    /// @param currentTimestampWad currentTimestampScaled
     /// @param isFT isFT => we are dealing with a Fixed Taker (short) IRS position, otherwise it is a Variable Taker (long) IRS position
     /// @param isLM isLM => we are computing a Liquidation Margin otherwise computing an Initial Margin
-    /// @param historicalApy Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
-    /// @return variableFactor The Worst Case Variable Factor At Maturity = APY Bound * accrualFactor(timeInYearsFromStartUntilMaturity) where APY Bound = APY Upper Bound for Fixed Takers and APY Lower Bound for Variable Takers
+    /// @param historicalApyWad Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
+    /// @return variableFactorWad The Worst Case Variable Factor At Maturity = APY Bound * accrualFactor(timeInYearsFromStartUntilMaturity) where APY Bound = APY Upper Bound for Fixed Takers and APY Lower Bound for Variable Takers
     function worstCaseVariableFactorAtMaturity(
-        uint256 timeInSecondsFromStartToMaturity,
-        uint256 termEndTimestampScaled,
-        uint256 currentTimestampScaled,
+        uint256 timeInSecondsFromStartToMaturityWad,
+        uint256 termEndTimestampWad,
+        uint256 currentTimestampWad,
         bool isFT,
         bool isLM,
-        uint256 historicalApy,
+        uint256 historicalApyWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal pure returns (uint256 variableFactor) {
-        uint256 timeInYearsFromStartUntilMaturity = FixedAndVariableMath
-            .accrualFact(timeInSecondsFromStartToMaturity);
+    ) internal pure returns (uint256 variableFactorWad) {
+        uint256 timeInYearsFromStartUntilMaturityWad = FixedAndVariableMath
+            .accrualFact(timeInSecondsFromStartToMaturityWad);
 
         if (isFT) {
             if (isLM) {
-                variableFactor = PRBMathUD60x18.mul(
+                variableFactorWad = PRBMathUD60x18.mul(
                     computeApyBound(
-                        termEndTimestampScaled,
-                        currentTimestampScaled,
-                        historicalApy,
+                        termEndTimestampWad,
+                        currentTimestampWad,
+                        historicalApyWad,
                         true,
                         _marginCalculatorParameters
                     ),
-                    timeInYearsFromStartUntilMaturity
+                    timeInYearsFromStartUntilMaturityWad
                 );
             } else {
-                variableFactor = PRBMathUD60x18.mul(
+                variableFactorWad = PRBMathUD60x18.mul(
                     PRBMathUD60x18.mul(
                         computeApyBound(
-                            termEndTimestampScaled,
-                            currentTimestampScaled,
-                            historicalApy,
+                            termEndTimestampWad,
+                            currentTimestampWad,
+                            historicalApyWad,
                             true,
                             _marginCalculatorParameters
                         ),
-                        _marginCalculatorParameters.apyUpperMultiplier
+                        _marginCalculatorParameters.apyUpperMultiplierWad
                     ),
-                    timeInYearsFromStartUntilMaturity
+                    timeInYearsFromStartUntilMaturityWad
                 );
             }
         } else {
             if (isLM) {
-                variableFactor = PRBMathUD60x18.mul(
+                variableFactorWad = PRBMathUD60x18.mul(
                     computeApyBound(
-                        termEndTimestampScaled,
-                        currentTimestampScaled,
-                        historicalApy,
+                        termEndTimestampWad,
+                        currentTimestampWad,
+                        historicalApyWad,
                         false,
                         _marginCalculatorParameters
                     ),
-                    timeInYearsFromStartUntilMaturity
+                    timeInYearsFromStartUntilMaturityWad
                 );
             } else {
-                variableFactor = PRBMathUD60x18.mul(
+                variableFactorWad = PRBMathUD60x18.mul(
                     PRBMathUD60x18.mul(
                         computeApyBound(
-                            termEndTimestampScaled,
-                            currentTimestampScaled,
-                            historicalApy,
+                            termEndTimestampWad,
+                            currentTimestampWad,
+                            historicalApyWad,
                             false,
                             _marginCalculatorParameters
                         ),
-                        _marginCalculatorParameters.apyLowerMultiplier
+                        _marginCalculatorParameters.apyLowerMultiplierWad
                     ),
-                    timeInYearsFromStartUntilMaturity
+                    timeInYearsFromStartUntilMaturityWad
                 );
             }
         }
@@ -303,57 +306,58 @@ library MarginCalculator {
     /// @dev Also the minDelta is different for Liquidation and Initial Margin Requirements
     /// @dev where minDeltaIM > minDeltaLM
     /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
-    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
+    /// @return marginWad Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
     function getMinimumMarginRequirement(
         TraderMarginRequirementParams memory params,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal view returns (uint256 margin) {
+    ) internal view returns (uint256 marginWad) {
         MinimumMarginRequirementLocalVars memory vars;
 
-        vars.timeInSeconds =
-            params.termEndTimestamp -
-            params.termStartTimestamp;
+        vars.timeInSecondsWad =
+            params.termEndTimestampWad -
+            params.termStartTimestampWad;
 
-        vars.timeInYears = FixedAndVariableMath.accrualFact(vars.timeInSeconds);
+        vars.timeInYearsWad = FixedAndVariableMath.accrualFact(vars.timeInSecondsWad);
 
         if (params.isLM) {
-            vars.minDelta = uint256(_marginCalculatorParameters.minDeltaLM);
+            vars.minDeltaWad = uint256(_marginCalculatorParameters.minDeltaLMWad);
         } else {
-            vars.minDelta = uint256(_marginCalculatorParameters.minDeltaIM);
+            vars.minDeltaWad = uint256(_marginCalculatorParameters.minDeltaIMWad);
         }
 
-        if (params.variableTokenBalance < 0) {
-            // variable token balance must be negative
-            vars.notional = uint256(-params.variableTokenBalance);
+        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(params.variableTokenBalance);
 
-            margin = PRBMathUD60x18.mul(
-                vars.notional,
-                PRBMathUD60x18.mul(vars.minDelta, vars.timeInYears)
+        if (variableTokenBalanceWad < 0) {
+
+            vars.notionalWad = uint256(-variableTokenBalanceWad);
+
+            marginWad = PRBMathUD60x18.mul(
+                vars.notionalWad,
+                PRBMathUD60x18.mul(vars.minDeltaWad, vars.timeInYearsWad)
             );
         } else {
-            // variable token balance must be non-negative
-            // fixed token balance must be non-positive
-            // check that at least one is non-zero
 
-            vars.notional = uint256(params.variableTokenBalance);
+            vars.notionalWad = uint256(variableTokenBalanceWad);
 
-            vars.zeroLowerBoundMargin = PRBMathUD60x18.mul(
-                uint256(-params.fixedTokenBalance),
+            int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(params.fixedTokenBalance);
+
+            vars.zeroLowerBoundMarginWad = PRBMathUD60x18.mul(
+                uint256(-fixedTokenBalanceWad),
                 FixedAndVariableMath.fixedFactor(
                     true,
-                    params.termStartTimestamp,
-                    params.termEndTimestamp
+                    params.termStartTimestampWad,
+                    params.termEndTimestampWad
                 )
             );
 
-            margin = PRBMathUD60x18.mul(
-                vars.notional,
-                PRBMathUD60x18.mul(vars.minDelta, vars.timeInYears)
+            marginWad = PRBMathUD60x18.mul(
+                vars.notionalWad,
+                PRBMathUD60x18.mul(vars.minDeltaWad, vars.timeInYearsWad)
             );
 
-            if (margin > vars.zeroLowerBoundMargin) {
-                margin = vars.zeroLowerBoundMargin;
+            if (marginWad > vars.zeroLowerBoundMarginWad) {
+                marginWad = vars.zeroLowerBoundMarginWad;
             }
         }
     }
@@ -370,44 +374,48 @@ library MarginCalculator {
             return 0;
         }
 
-        uint256 timeInSecondsFromStartToMaturity = params.termEndTimestamp -
-            params.termStartTimestamp;
+        int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(params.fixedTokenBalance);
+        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(params.variableTokenBalance);
 
-        int256 exp1 = PRBMathSD59x18.mul(
-            params.fixedTokenBalance,
+        uint256 timeInSecondsFromStartToMaturityWad = params.termEndTimestampWad -
+            params.termStartTimestampWad;
+
+        int256 exp1Wad = PRBMathSD59x18.mul(
+            fixedTokenBalanceWad,
             int256(
                 FixedAndVariableMath.fixedFactor(
                     true,
-                    params.termStartTimestamp,
-                    params.termEndTimestamp
+                    params.termStartTimestampWad,
+                    params.termEndTimestampWad
                 )
             )
         );
 
-        int256 exp2 = PRBMathSD59x18.mul(
-            params.variableTokenBalance,
+        int256 exp2Wad = PRBMathSD59x18.mul(
+            variableTokenBalanceWad,
             int256(
                 worstCaseVariableFactorAtMaturity(
-                    timeInSecondsFromStartToMaturity,
-                    params.termEndTimestamp,
+                    timeInSecondsFromStartToMaturityWad,
+                    params.termEndTimestampWad,
                     Time.blockTimestampScaled(),
                     params.variableTokenBalance < 0,
                     params.isLM,
-                    params.historicalApy,
+                    params.historicalApyWad,
                     _marginCalculatorParameters
                 )
             )
         );
 
-        int256 modelMargin = exp1 + exp2;
+        int256 modelMarginWad = exp1Wad + exp2Wad;
 
-        int256 minimumMargin = int256(
+        int256 minimumMarginWad = int256(
             getMinimumMarginRequirement(params, _marginCalculatorParameters)
         );
-        if (modelMargin < minimumMargin) {
-            margin = uint256(minimumMargin);
+
+        if (modelMarginWad < minimumMarginWad) {
+            margin = PRBMathUD60x18.toUint(uint256(minimumMarginWad)) ;
         } else {
-            margin = uint256(modelMargin);
+            margin = PRBMathUD60x18.toUint(uint256(modelMarginWad));
         }
     }
 
@@ -494,17 +502,20 @@ library MarginCalculator {
                     int128(params.liquidity)
                 );
 
+            /// @audit should not use PRB math for the below calculation
+            
             scenario1LPVariableTokenBalance =
                 params.variableTokenBalance +
                 amount1FromTickLowerToTickUpper;
+            
             scenario1LPFixedTokenBalance =
                 params.fixedTokenBalance +
                 FixedAndVariableMath.getFixedTokenBalance(
                     amount0FromTickLowerToTickUpper,
                     amount1FromTickLowerToTickUpper,
-                    params.variableFactor,
-                    params.termStartTimestamp,
-                    params.termEndTimestamp
+                    params.variableFactorWad,
+                    params.termStartTimestampWad,
+                    params.termEndTimestampWad
                 );
 
             /// @dev Scenario 2
@@ -541,9 +552,9 @@ library MarginCalculator {
                 FixedAndVariableMath.getFixedTokenBalance(
                     amount0FromCurrentTickToTickUpper,
                     amount1FromCurrentTickToTickUpper,
-                    params.variableFactor,
-                    params.termStartTimestamp,
-                    params.termEndTimestamp
+                    params.variableFactorWad,
+                    params.termStartTimestampWad,
+                    params.termEndTimestampWad
                 );
 
             /// @dev from the perspective of the LP (not the trader who is a Variable Taker)
@@ -573,9 +584,9 @@ library MarginCalculator {
                 FixedAndVariableMath.getFixedTokenBalance(
                     amount0FromCurrentTickToTickLower,
                     amount1FromCurrentTickToTickLower,
-                    params.variableFactor,
-                    params.termStartTimestamp,
-                    params.termEndTimestamp
+                    params.variableFactorWad,
+                    params.termStartTimestampWad,
+                    params.termEndTimestampWad
                 );
         } else {
             /// @dev scenario 1: a trader comes in and trades all the liqudiity all the way to tickLower given current liqudity of the LP
@@ -608,9 +619,9 @@ library MarginCalculator {
                 FixedAndVariableMath.getFixedTokenBalance(
                     amount0FromTickUpperToTickLower,
                     amount1FromTickUpperToTickLower,
-                    params.variableFactor,
-                    params.termStartTimestamp,
-                    params.termEndTimestamp
+                    params.variableFactorWad,
+                    params.termStartTimestampWad,
+                    params.termEndTimestampWad
                 );
 
             /// @dev Scenario 2
@@ -622,10 +633,10 @@ library MarginCalculator {
             TraderMarginRequirementParams({
                 fixedTokenBalance: scenario1LPFixedTokenBalance,
                 variableTokenBalance: scenario1LPVariableTokenBalance,
-                termStartTimestamp: params.termStartTimestamp,
-                termEndTimestamp: params.termEndTimestamp,
+                termStartTimestampWad: params.termStartTimestampWad,
+                termEndTimestampWad: params.termEndTimestampWad,
                 isLM: params.isLM,
-                historicalApy: params.historicalApy
+                historicalApyWad: params.historicalApyWad
             }),
             _marginCalculatorParameters
         );
@@ -634,10 +645,10 @@ library MarginCalculator {
             TraderMarginRequirementParams({
                 fixedTokenBalance: scenario2LPFixedTokenBalance,
                 variableTokenBalance: scenario2LPVariableTokenBalance,
-                termStartTimestamp: params.termStartTimestamp,
-                termEndTimestamp: params.termEndTimestamp,
+                termStartTimestampWad: params.termStartTimestampWad,
+                termEndTimestampWad: params.termEndTimestampWad,
                 isLM: params.isLM,
-                historicalApy: params.historicalApy
+                historicalApyWad: params.historicalApyWad
             }),
             _marginCalculatorParameters
         );
