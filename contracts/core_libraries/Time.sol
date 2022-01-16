@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
 library Time {
     uint256 private constant MAX_UINT32 = 2**32 - 1;
@@ -9,7 +10,7 @@ library Time {
     /// @return Current timestamp in wei-seconds (1/1e18)
     function blockTimestampScaled() internal view returns (uint256) {
         // solhint-disable-next-line not-rely-on-time
-        return block.timestamp * 10**18;
+        return PRBMathUD60x18.fromUint(block.timestamp);
     }
 
     /// @dev Returns the block timestamp truncated to 32 bits, checking for overflow.
