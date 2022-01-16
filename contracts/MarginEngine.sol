@@ -35,9 +35,9 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     /// @inheritdoc IMarginEngine
     address public override underlyingToken;
     /// @inheritdoc IMarginEngine
-    uint256 public override termStartTimestamp;
+    uint256 public override termStartTimestampWad;
     /// @inheritdoc IMarginEngine
-    uint256 public override termEndTimestamp;
+    uint256 public override termEndTimestampWad;
     /// @inheritdoc IMarginEngine
     address public override rateOracleAddress;
 
@@ -66,16 +66,16 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
 
     }
 
-    function initialize(address _underlyingToken, address _rateOracleAddress, uint256 _termStartTimestamp, uint256 _termEndTimestamp) public initializer {
+    function initialize(address _underlyingToken, address _rateOracleAddress, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) public initializer {
         require(_underlyingToken != address(0), "UT must be set");
         require(_rateOracleAddress != address(0), "RO must be set");
-        require(_termStartTimestamp != 0, "TS must be set");
-        require(_termEndTimestamp != 0, "TE must be set");
+        require(_termStartTimestampWad != 0, "TS must be set");
+        require(_termEndTimestampWad != 0, "TE must be set");
 
         underlyingToken = _underlyingToken;
         rateOracleAddress = _rateOracleAddress;
-        termStartTimestamp = _termStartTimestamp;
-        termEndTimestamp = _termEndTimestamp;
+        termStartTimestampWad = _termStartTimestampWad;
+        termEndTimestampWad = _termEndTimestampWad;
     }
 
     /// Only the position/trade owner can update the LP/Trader margin
@@ -101,7 +101,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     }
 
     modifier onlyAfterMaturity () {
-        if (termEndTimestamp > Time.blockTimestampScaled()) {
+        if (termEndTimestampWad > Time.blockTimestampScaled()) {
             revert CannotSettleBeforeMaturity();
         }
         _;
@@ -185,7 +185,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        uint256 variableFactor = IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp);
+        uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
         require((position.margin + marginDelta) > 0, "can't withdraw more than have");
@@ -206,7 +206,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
             
                 int256 updatedMarginWouldBe = position.margin + marginDelta;
 
-                checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactor); 
+                checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactorWad); 
 
                 position.updateMargin(marginDelta);
 
@@ -284,7 +284,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
 
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestamp, termEndTimestamp, IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
 
         position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMargin(settlementCashflow);
@@ -300,7 +300,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
 
         require(!trader.isSettled, "not settled");
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestamp, termEndTimestamp, IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
 
         trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMargin(settlementCashflow);
@@ -340,13 +340,13 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
                 tickUpper: params.tickUpper,
                 isLM: true,
                 currentTick: tick,
-                termStartTimestamp: termStartTimestamp,
-                termEndTimestamp: termEndTimestamp,
+                termStartTimestampWad: termStartTimestampWad,
+                termEndTimestampWad: termEndTimestampWad,
                 liquidity: position._liquidity,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
-                variableFactor: IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp),
-                historicalApy: getHistoricalApy()
+                variableFactorWad: IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad),
+                historicalApyWad: getHistoricalApy()
             }),
             position.margin,
             marginCalculatorParameters
@@ -382,10 +382,10 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
             MarginCalculator.TraderMarginRequirementParams({
                 fixedTokenBalance: trader.fixedTokenBalance,
                 variableTokenBalance: trader.variableTokenBalance,
-                termStartTimestamp: termStartTimestamp,
-                termEndTimestamp: termEndTimestamp,
+                termStartTimestampWad: termStartTimestampWad,
+                termEndTimestampWad: termEndTimestampWad,
                 isLM: true,
-                historicalApy: getHistoricalApy()
+                historicalApyWad: getHistoricalApy()
             }),
             trader.margin,
             marginCalculatorParameters
@@ -450,13 +450,13 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
                 tickUpper: tickUpper,
                 isLM: false,
                 currentTick: tick,
-                termStartTimestamp: termStartTimestamp,
-                termEndTimestamp: termEndTimestamp,
+                termStartTimestampWad: termStartTimestampWad,
+                termEndTimestampWad: termEndTimestampWad,
                 liquidity: amountTotal,
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance, 
-                variableFactor: IRateOracle(rateOracleAddress).variableFactor(termStartTimestamp, termEndTimestamp),
-                historicalApy: getHistoricalApy()
+                variableFactorWad: IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad),
+                historicalApyWad: getHistoricalApy()
             }), marginCalculatorParameters
         ));
    
@@ -497,10 +497,10 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
             MarginCalculator.TraderMarginRequirementParams({
                 fixedTokenBalance: trader.fixedTokenBalance,
                 variableTokenBalance: trader.variableTokenBalance,
-                termStartTimestamp: termStartTimestamp,
-                termEndTimestamp: termEndTimestamp,
+                termStartTimestampWad: termStartTimestampWad,
+                termEndTimestampWad: termEndTimestampWad,
                 isLM: false,
-                historicalApy: getHistoricalApy()
+                historicalApyWad: getHistoricalApy()
             }), marginCalculatorParameters
         ));
 
@@ -600,7 +600,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     /// @param positionLiquidity Current liquidity supplied by the position
     /// @param positionFixedTokenBalance Fixed token balance of a position since the last mint/burn/poke
     /// @param positionVariableTokenBalance Variable token balance of a position since the last mint/burn/poke
-    /// @param variableFactor Accrued Variable Factor, i.e. the variable APY of the underlying yield-bearing pool since the inception of the IRS AMM until now
+    /// @param variableFactorWad Accrued Variable Factor, i.e. the variable APY of the underlying yield-bearing pool since the inception of the IRS AMM until now
     /// @dev multiplied by (time in seconds since IRS AMM inception / number of seconds in a year)
     function checkPositionMarginAboveRequirement(
         IMarginEngine.ModifyPositionParams memory params,
@@ -608,7 +608,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         uint128 positionLiquidity,
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
-        uint256 variableFactor
+        uint256 variableFactorWad
     ) internal view {
 
         (, int24 tick, ) = IVAMM(vammAddress).vammVars();
@@ -621,13 +621,13 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
                     tickUpper: params.tickUpper,
                     isLM: false,
                     currentTick: tick,
-                    termStartTimestamp: termStartTimestamp,
-                    termEndTimestamp: termEndTimestamp,
+                    termStartTimestampWad: termStartTimestampWad,
+                    termEndTimestampWad: termEndTimestampWad,
                     liquidity: positionLiquidity,
                     fixedTokenBalance: positionFixedTokenBalance,
                     variableTokenBalance: positionVariableTokenBalance,
-                    variableFactor: variableFactor,
-                    historicalApy: getHistoricalApy()
+                    variableFactorWad: variableFactorWad,
+                    historicalApyWad: getHistoricalApy()
                 });
 
         int256 positionMarginRequirement = int256(
@@ -655,7 +655,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         bool isTraderSettled
     ) internal view {
 
-        if (Time.blockTimestampScaled() >= termEndTimestamp) {
+        if (Time.blockTimestampScaled() >= termEndTimestampWad) {
             if (!isTraderSettled) {
                 revert TraderNotSettled();
             }
@@ -678,7 +678,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
     /// @param positionLiquidity Current liquidity supplied by the position
     /// @param positionFixedTokenBalance Fixed token balance of a position since the last mint/burn/poke
     /// @param positionVariableTokenBalance Variable token balance of a position since the last mint/burn/poke
-    /// @param variableFactor Accrued Variable Factor, i.e. the variable APY of the underlying yield-bearing pool since the inception of the IRS AMM until now
+    /// @param variableFactorWad Accrued Variable Factor, i.e. the variable APY of the underlying yield-bearing pool since the inception of the IRS AMM until now
     /// @dev If the current timestamp is higher than the maturity timestamp of the AMM, then the position needs to be burned (detailed definition above)
     function checkPositionMarginCanBeUpdated(
         IMarginEngine.ModifyPositionParams memory params,
@@ -688,14 +688,14 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         uint128 positionLiquidity,
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
-        uint256 variableFactor
+        uint256 variableFactorWad
     ) internal view {
 
         /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
         /// @dev their margin is to withdraw it completely. If so, the position needs to be both burned
         /// @dev and settled.
 
-        if (Time.blockTimestampScaled() >= termEndTimestamp) {
+        if (Time.blockTimestampScaled() >= termEndTimestampWad) {
             if (!isPositionBurned) {
                 revert PositionNotBurned();
             }
@@ -713,7 +713,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
             positionLiquidity,
             positionFixedTokenBalance,
             positionVariableTokenBalance,
-            variableFactor
+            variableFactorWad
         );
     }
 
@@ -733,10 +733,10 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
                 MarginCalculator.TraderMarginRequirementParams({
                     fixedTokenBalance: fixedTokenBalance,
                     variableTokenBalance: variableTokenBalance,
-                    termStartTimestamp: termStartTimestamp,
-                    termEndTimestamp: termEndTimestamp,
+                    termStartTimestampWad: termStartTimestampWad,
+                    termEndTimestampWad: termEndTimestampWad,
                     isLM: false,
-                    historicalApy: getHistoricalApy()
+                    historicalApyWad: getHistoricalApy()
                 }), marginCalculatorParameters
             )
         );

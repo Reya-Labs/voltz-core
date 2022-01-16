@@ -21,17 +21,16 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
 
     struct MarginCalculatorParameters {
-        uint256 apyUpperMultiplier;
-        uint256 apyLowerMultiplier;
-        uint256 minDeltaLM;
-        uint256 minDeltaIM;
-        uint256 maxLeverage;
-        int256 sigmaSquared;
-        int256 alpha;
-        int256 beta;
-        int256 xiUpper;
-        int256 xiLower;
-        int256 tMax;
+        uint256 apyUpperMultiplierWad;
+        uint256 apyLowerMultiplierWad;
+        uint256 minDeltaLMWad;
+        uint256 minDeltaIMWad;
+        int256 sigmaSquaredWad;
+        int256 alphaWad;
+        int256 betaWad;
+        int256 xiUpperWad;
+        int256 xiLowerWad;
+        int256 tMaxWad;
     }
 
     // immutables
@@ -44,9 +43,9 @@ interface IMarginEngine is IPositionStructs {
 
     function rateOracleAddress() external view returns (address);
 
-    function termStartTimestamp() external view returns (uint256);
+    function termStartTimestampWad() external view returns (uint256);
 
-    function termEndTimestamp() external view returns (uint256);
+    function termEndTimestampWad() external view returns (uint256);
 
     // errors
 
