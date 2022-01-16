@@ -6,7 +6,6 @@ import "../utils/LowGasSafeMath.sol";
 import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
-import "hardhat/console.sol";
 
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
@@ -22,9 +21,11 @@ library Tick {
         int128 liquidityNet;
         // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
         // only has relative meaning, not absolute — the value depends on when the tick is initialized
-        int256 fixedTokenGrowthOutside;
-        int256 variableTokenGrowthOutside;
-        uint256 feeGrowthOutside;
+        int256 fixedTokenGrowthOutsideX128;
+        int256 variableTokenGrowthOutsideX128;
+        uint256 feeGrowthOutsideX128;
+        // true iff the tick is initialized, i.e. the value is exactly equivalent to the expression liquidityGross != 0
+        // these 8 bits are set to prevent fresh sstores when crossing newly initialized ticks
         bool initialized;
     }
 
@@ -40,112 +41,110 @@ library Tick {
         int24 tickLower,
         int24 tickUpper,
         int24 tickCurrent,
-        uint256 feeGrowthGlobal
-    ) internal view returns (uint256 feeGrowthInside) {
+        uint256 feeGrowthGlobalX128
+    ) internal view returns (uint256 feeGrowthInsideX128) {
         Info storage lower = self[tickLower];
         Info storage upper = self[tickUpper];
 
         // calculate fee growth below
-        uint256 feeGrowthBelow;
+        uint256 feeGrowthBelowX128;
 
         if (tickCurrent >= tickLower) {
-            feeGrowthBelow = lower.feeGrowthOutside;
+            feeGrowthBelowX128 = lower.feeGrowthOutsideX128;
         } else {
-            feeGrowthBelow = feeGrowthGlobal - lower.feeGrowthOutside;
+            feeGrowthBelowX128 = feeGrowthGlobalX128 - lower.feeGrowthOutsideX128;
         }
 
         // calculate fee growth above
-        uint256 feeGrowthAbove;
+        uint256 feeGrowthAboveX128;
 
         if (tickCurrent < tickUpper) {
-            feeGrowthAbove = upper.feeGrowthOutside;
+            feeGrowthAboveX128 = upper.feeGrowthOutsideX128;
         } else {
-            feeGrowthAbove = feeGrowthGlobal - upper.feeGrowthOutside;
+            feeGrowthAboveX128 = feeGrowthGlobalX128 - upper.feeGrowthOutsideX128;
         }
 
-        feeGrowthInside = feeGrowthGlobal - (feeGrowthBelow + feeGrowthAbove);
+        feeGrowthInsideX128 = feeGrowthGlobalX128 - feeGrowthBelowX128 - feeGrowthAboveX128;
     }
 
     struct VariableTokenGrowthInsideParams {
         int24 tickLower;
         int24 tickUpper;
         int24 tickCurrent;
-        int256 variableTokenGrowthGlobal;
+        int256 variableTokenGrowthGlobalX128;
     }
 
     function getVariableTokenGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         VariableTokenGrowthInsideParams memory params
-    ) internal view returns (int256 variableTokenGrowthInside) {
+    ) internal view returns (int256 variableTokenGrowthInsideX128) {
         Info storage lower = self[params.tickLower];
         Info storage upper = self[params.tickUpper];
 
         // calculate the VariableTokenGrowth below
-        int256 variableTokenGrowthBelow;
+        int256 variableTokenGrowthBelowX128;
 
         if (params.tickCurrent >= params.tickLower) {
-            variableTokenGrowthBelow = lower.variableTokenGrowthOutside;
+            variableTokenGrowthBelowX128 = lower.variableTokenGrowthOutsideX128;
         } else {
-            variableTokenGrowthBelow =
-                params.variableTokenGrowthGlobal -
-                lower.variableTokenGrowthOutside;
+            variableTokenGrowthBelowX128 =
+                params.variableTokenGrowthGlobalX128 -
+                lower.variableTokenGrowthOutsideX128;
         }
 
         // calculate the VariableTokenGrowth above
-        int256 variableTokenGrowthAbove;
+        int256 variableTokenGrowthAboveX128;
 
         if (params.tickCurrent < params.tickUpper) {
-            variableTokenGrowthAbove = upper.variableTokenGrowthOutside;
+            variableTokenGrowthAboveX128 = upper.variableTokenGrowthOutsideX128;
         } else {
-            variableTokenGrowthAbove =
-                params.variableTokenGrowthGlobal -
-                upper.variableTokenGrowthOutside;
+            variableTokenGrowthAboveX128 =
+                params.variableTokenGrowthGlobalX128 -
+                upper.variableTokenGrowthOutsideX128;
         }
 
-        variableTokenGrowthInside =
-            params.variableTokenGrowthGlobal -
-            (variableTokenGrowthBelow + variableTokenGrowthAbove);
+        variableTokenGrowthInsideX128 =
+            params.variableTokenGrowthGlobalX128 - variableTokenGrowthBelowX128 - variableTokenGrowthAboveX128;
     }
 
     struct FixedTokenGrowthInsideParams {
         int24 tickLower;
         int24 tickUpper;
         int24 tickCurrent;
-        int256 fixedTokenGrowthGlobal;
+        int256 fixedTokenGrowthGlobalX128;
     }
 
     function getFixedTokenGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         FixedTokenGrowthInsideParams memory params
-    ) internal view returns (int256 fixedTokenGrowthInside) {
+    ) internal view returns (int256 fixedTokenGrowthInsideX128) {
         Info storage lower = self[params.tickLower];
         Info storage upper = self[params.tickUpper];
 
         // calculate the fixedTokenGrowth below
-        int256 fixedTokenGrowthBelow;
+        int256 fixedTokenGrowthBelowX128;
 
         if (params.tickCurrent >= params.tickLower) {
-            fixedTokenGrowthBelow = lower.fixedTokenGrowthOutside;
+            fixedTokenGrowthBelowX128 = lower.fixedTokenGrowthOutsideX128;
         } else {
-            fixedTokenGrowthBelow =
-                params.fixedTokenGrowthGlobal -
-                lower.fixedTokenGrowthOutside;
+            fixedTokenGrowthBelowX128 =
+                params.fixedTokenGrowthGlobalX128 -
+                lower.fixedTokenGrowthOutsideX128;
         }
 
         // calculate the fixedTokenGrowth above
-        int256 fixedTokenGrowthAbove;
+        int256 fixedTokenGrowthAboveX128;
 
         if (params.tickCurrent < params.tickUpper) {
-            fixedTokenGrowthAbove = upper.fixedTokenGrowthOutside;
+            fixedTokenGrowthAboveX128 = upper.fixedTokenGrowthOutsideX128;
         } else {
-            fixedTokenGrowthAbove =
-                params.fixedTokenGrowthGlobal -
-                upper.fixedTokenGrowthOutside;
+            fixedTokenGrowthAboveX128 =
+                params.fixedTokenGrowthGlobalX128 -
+                upper.fixedTokenGrowthOutsideX128;
         }
 
-        fixedTokenGrowthInside =
-            params.fixedTokenGrowthGlobal -
-            (fixedTokenGrowthBelow + fixedTokenGrowthAbove);
+        fixedTokenGrowthInsideX128 =
+            params.fixedTokenGrowthGlobalX128 - fixedTokenGrowthBelowX128 - fixedTokenGrowthAboveX128;
     }
 
     /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
@@ -161,9 +160,9 @@ library Tick {
         int24 tick,
         int24 tickCurrent,
         int128 liquidityDelta,
-        int256 fixedTokenGrowthGlobal,
-        int256 variableTokenGrowthGlobal,
-        uint256 feeGrowthGlobal,
+        int256 fixedTokenGrowthGlobalX128,
+        int256 variableTokenGrowthGlobalX128,
+        uint256 feeGrowthGlobalX128,
         bool upper,
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
@@ -185,21 +184,21 @@ library Tick {
         if (liquidityGrossBefore == 0) {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tick <= tickCurrent) {
-                info.feeGrowthOutside = feeGrowthGlobal;
+                info.feeGrowthOutsideX128 = feeGrowthGlobalX128;
 
-                info.fixedTokenGrowthOutside = fixedTokenGrowthGlobal;
+                info.fixedTokenGrowthOutsideX128 = fixedTokenGrowthGlobalX128;
 
-                info.variableTokenGrowthOutside = variableTokenGrowthGlobal;
+                info.variableTokenGrowthOutsideX128 = variableTokenGrowthGlobalX128;
             }
 
             info.initialized = true;
         }
 
-        /// @audit shouldn't we unintialize the tick if liquidityGrossAfter = 0?
+        /// check shouldn't we unintialize the tick if liquidityGrossAfter = 0?
 
         info.liquidityGross = liquidityGrossAfter;
 
-        /// @audit add comments
+        /// add comments
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
         info.liquidityNet = upper
             ? int256(info.liquidityNet).sub(liquidityDelta).toInt128()
@@ -222,21 +221,21 @@ library Tick {
     function cross(
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
-        int256 fixedTokenGrowthGlobal,
-        int256 variableTokenGrowthGlobal,
-        uint256 feeGrowthGlobal
+        int256 fixedTokenGrowthGlobalX128,
+        int256 variableTokenGrowthGlobalX128,
+        uint256 feeGrowthGlobalX128
     ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
 
-        info.feeGrowthOutside = feeGrowthGlobal - info.feeGrowthOutside;
+        info.feeGrowthOutsideX128 = feeGrowthGlobalX128 - info.feeGrowthOutsideX128;
 
-        info.fixedTokenGrowthOutside =
-            fixedTokenGrowthGlobal -
-            info.fixedTokenGrowthOutside;
+        info.fixedTokenGrowthOutsideX128 =
+            fixedTokenGrowthGlobalX128 -
+            info.fixedTokenGrowthOutsideX128;
 
-        info.variableTokenGrowthOutside =
-            variableTokenGrowthGlobal -
-            info.variableTokenGrowthOutside;
+        info.variableTokenGrowthOutsideX128 =
+            variableTokenGrowthGlobalX128 -
+            info.variableTokenGrowthOutsideX128;
 
         liquidityNet = info.liquidityNet;
     }

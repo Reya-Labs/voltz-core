@@ -20,6 +20,8 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./utils/FixedPoint128.sol";
+
 
 contract VAMM is IVAMM, Pausable, Initializable, Ownable {
   using LowGasSafeMath for uint256;
@@ -78,11 +80,11 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
 
   VAMMVars public override vammVars;
 
-  int256 public override fixedTokenGrowthGlobal;
+  int256 public override fixedTokenGrowthGlobalX128;
 
-  int256 public override variableTokenGrowthGlobal;
+  int256 public override variableTokenGrowthGlobalX128;
 
-  uint256 public override feeGrowthGlobal;
+  uint256 public override feeGrowthGlobalX128;
 
   uint128 public override liquidity;
 
@@ -164,9 +166,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       params.tickLower,
       vammVars.tick,
       params.liquidityDelta,
-      fixedTokenGrowthGlobal,
-      variableTokenGrowthGlobal,
-      feeGrowthGlobal,
+      fixedTokenGrowthGlobalX128,
+      variableTokenGrowthGlobalX128,
+      feeGrowthGlobalX128,
       false,
       maxLiquidityPerTick
     );
@@ -174,9 +176,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       params.tickUpper,
       vammVars.tick,
       params.liquidityDelta,
-      fixedTokenGrowthGlobal,
-      variableTokenGrowthGlobal,
-      feeGrowthGlobal,
+      fixedTokenGrowthGlobalX128,
+      variableTokenGrowthGlobalX128,
+      feeGrowthGlobalX128,
       true,
       maxLiquidityPerTick
     );
@@ -208,7 +210,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         tickLower: params.tickLower,
         tickUpper: params.tickUpper,
         tickCurrent: vammVars.tick,
-        fixedTokenGrowthGlobal: fixedTokenGrowthGlobal
+        fixedTokenGrowthGlobalX128: fixedTokenGrowthGlobalX128
       })
     );
 
@@ -217,7 +219,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         tickLower: params.tickLower,
         tickUpper: params.tickUpper,
         tickCurrent: vammVars.tick,
-        variableTokenGrowthGlobal: variableTokenGrowthGlobal
+        variableTokenGrowthGlobalX128: variableTokenGrowthGlobalX128
       })
     );
 
@@ -225,7 +227,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       params.tickLower,
       params.tickUpper,
       vammVars.tick,
-      feeGrowthGlobal
+      feeGrowthGlobalX128
     );
 
     IMarginEngine(marginEngineAddress).updatePosition(params, vars);
@@ -357,9 +359,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       sqrtPriceX96: vammVarsStart.sqrtPriceX96,
       tick: vammVarsStart.tick,
       liquidity: cache.liquidityStart,
-      fixedTokenGrowthGlobal: fixedTokenGrowthGlobal,
-      variableTokenGrowthGlobal: variableTokenGrowthGlobal,
-      feeGrowthGlobal: feeGrowthGlobal,
+      fixedTokenGrowthGlobalX128: fixedTokenGrowthGlobalX128,
+      variableTokenGrowthGlobalX128: variableTokenGrowthGlobalX128,
+      feeGrowthGlobalX128: feeGrowthGlobalX128,
       protocolFee: 0,
       cumulativeFeeIncurred: 0
     });
@@ -446,19 +448,19 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
 
       // update global fee tracker
       if (state.liquidity > 0) {
-        uint256 variableFactor = rateOracle.variableFactor(
+        uint256 variableFactorWad = rateOracle.variableFactor(
           IMarginEngine(marginEngineAddress).termStartTimestampWad(),
           IMarginEngine(marginEngineAddress).termEndTimestampWad()
         );
         (
-          state.feeGrowthGlobal,
-          state.variableTokenGrowthGlobal,
-          state.fixedTokenGrowthGlobal
+          state.feeGrowthGlobalX128,
+          state.variableTokenGrowthGlobalX128,
+          state.fixedTokenGrowthGlobalX128
         ) = calculateUpdatedGlobalTrackerValues(
           params,
           state,
           step,
-          variableFactor,
+          variableFactorWad,
           IMarginEngine(marginEngineAddress).termStartTimestampWad(),
           IMarginEngine(marginEngineAddress).termEndTimestampWad()
         );
@@ -470,9 +472,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         if (step.initialized) {
           int128 liquidityNet = ticks.cross(
             step.tickNext,
-            state.fixedTokenGrowthGlobal,
-            state.variableTokenGrowthGlobal,
-            state.feeGrowthGlobal
+            state.fixedTokenGrowthGlobalX128,
+            state.variableTokenGrowthGlobalX128,
+            state.feeGrowthGlobalX128
           );
 
           // if we're moving rightward (along the virtual amm), we interpret liquidityNet as the opposite sign
@@ -503,9 +505,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
 
     // update liquidity if it changed
     if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;
-    feeGrowthGlobal = state.feeGrowthGlobal;
-    variableTokenGrowthGlobal = state.variableTokenGrowthGlobal;
-    fixedTokenGrowthGlobal = state.fixedTokenGrowthGlobal;
+    feeGrowthGlobalX128 = state.feeGrowthGlobalX128;
+    variableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128;
+    fixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128;
     _cumulativeFeeIncurred = state.cumulativeFeeIncurred;
 
     if (state.protocolFee > 0) {
@@ -594,7 +596,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         tickLower: tickLower,
         tickUpper: tickUpper,
         tickCurrent: currentTick,
-        fixedTokenGrowthGlobal: fixedTokenGrowthGlobal
+        fixedTokenGrowthGlobalX128: fixedTokenGrowthGlobalX128
       })
     );
 
@@ -603,7 +605,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         tickLower: tickLower,
         tickUpper: tickUpper,
         tickCurrent: currentTick,
-        variableTokenGrowthGlobal: variableTokenGrowthGlobal
+        variableTokenGrowthGlobalX128: variableTokenGrowthGlobalX128
       })
     );
   }
@@ -643,21 +645,20 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
         SwapParams memory params,
         SwapState memory state,
         StepComputations memory step,
-        uint256 variableFactor,
+        uint256 variableFactorWad,
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad
     )
         internal
         view
         returns (
-            uint256 stateFeeGrowthGlobal,
-            int256 stateVariableTokenGrowthGlobal,
-            int256 stateFixedTokenGrowthGlobal
+            uint256 stateFeeGrowthGlobalX128,
+            int256 stateVariableTokenGrowthGlobalX128,
+            int256 stateFixedTokenGrowthGlobalX128
         )
     {
-        stateFeeGrowthGlobal =
-            state.feeGrowthGlobal +
-            PRBMathUD60x18.div(step.feeAmount, uint256(state.liquidity));
+
+        stateFeeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
         if (params.isFT) {
 
@@ -665,59 +666,46 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
             /// @dev if the trader is a fixed taker then the fixed token growth global should decline (since LPs are providing fixed tokens)
             /// @dev if the trader is a fixed taker amountOut is in terms of variable tokens (it is a positive value)
             
-            stateVariableTokenGrowthGlobal =
-                state.variableTokenGrowthGlobal +
-                PRBMathSD59x18.div(
-                    int256(step.amountOut),
-                    int256(uint256(state.liquidity))
-                );
+            stateVariableTokenGrowthGlobalX128 += int256(FullMath.mulDiv(step.amountOut, FixedPoint128.Q128, state.liquidity));
 
-            
             /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
             /// @dev in this case amountIn is in terms of unbalanced fixed tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of variable tokens, hence the value passed needs to be positive --> int256(step.amountOut)
 
-            stateFixedTokenGrowthGlobal =
-                state.fixedTokenGrowthGlobal +
-                PRBMathSD59x18.div(
-                    FixedAndVariableMath.getFixedTokenBalance(
-                        -int256(step.amountIn),
-                        int256(step.amountOut),
-                        variableFactor,
-                        termStartTimestampWad,
-                        termEndTimestampWad
-                    ),
-                    int256(uint256(state.liquidity))
-                );
+            // this value is negative
+            int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+              -int256(step.amountIn),
+              int256(step.amountOut),
+              variableFactorWad,
+              termStartTimestampWad,
+              termEndTimestampWad
+            ); 
+
+            stateFixedTokenGrowthGlobalX128 -= int256(FullMath.mulDiv(uint256(-fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
+
         } else {
 
             /// @dev if a trader is a variable taker, the variable token growth should decline (since the LPs are providing variable tokens)
             /// @dev if a trader is a variable taker, the fixed token growth should increase (since the LPs are receiving fixed tokens)
             /// @dev if a trader is a variable taker amountIn is in terms of variable tokens
-            
-            stateVariableTokenGrowthGlobal =
-                state.variableTokenGrowthGlobal +
-                PRBMathSD59x18.div(
-                    -int256(step.amountIn),
-                    int256(uint256(state.liquidity))
-                );
+          
+            stateVariableTokenGrowthGlobalX128 -= int256(FullMath.mulDiv(step.amountIn, FixedPoint128.Q128, state.liquidity));
 
             /// @dev fixed token delta should be positive (for LPs)
             /// @dev in this case amountIn is in terms of variable tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of fixedToken, hence the value passed needs to be positive --> int256(step.amountOut),
 
-            stateFixedTokenGrowthGlobal =
-                state.fixedTokenGrowthGlobal +
-                PRBMathSD59x18.div(
-                    FixedAndVariableMath.getFixedTokenBalance(
-                        int256(step.amountOut),
-                        -int256(step.amountIn),
-                        variableFactor,
-                        termStartTimestampWad,
-                        termEndTimestampWad
-                    ),
-                    int256(uint256(state.liquidity))
-                );
+            // this value is positive
+            int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+              int256(step.amountOut),
+              -int256(step.amountIn),
+              variableFactorWad,
+              termStartTimestampWad,
+              termEndTimestampWad
+            );
+
+            stateFixedTokenGrowthGlobalX128 += int256(FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
+
         }
     }
 

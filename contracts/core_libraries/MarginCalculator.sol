@@ -158,7 +158,9 @@ library MarginCalculator {
             _marginCalculatorParameters
         );
 
-        apyBoundVars.oneMinusTimeFactorWad = ONE_WEI - apyBoundVars.timeFactorWad;
+        apyBoundVars.oneMinusTimeFactorWad =
+            ONE_WEI -
+            apyBoundVars.timeFactorWad;
 
         apyBoundVars.kWad = PRBMathSD59x18.div(
             _marginCalculatorParameters.alphaWad,
@@ -189,8 +191,10 @@ library MarginCalculator {
         );
 
         apyBoundVars.criticalValueMultiplierWad = PRBMathSD59x18.mul(
-            PRBMathSD59x18.mul(PRBMathSD59x18.fromInt(2), apyBoundVars.lambdaWad) +
-                apyBoundVars.kWad,
+            PRBMathSD59x18.mul(
+                PRBMathSD59x18.fromInt(2),
+                apyBoundVars.lambdaWad
+            ) + apyBoundVars.kWad,
             (PRBMathSD59x18.fromInt(2))
         );
 
@@ -210,7 +214,9 @@ library MarginCalculator {
 
         int256 apyBoundIntWad = PRBMathSD59x18.mul(
             apyBoundVars.zetaWad,
-            apyBoundVars.kWad + apyBoundVars.lambdaWad + apyBoundVars.criticalValueWad
+            apyBoundVars.kWad +
+                apyBoundVars.lambdaWad +
+                apyBoundVars.criticalValueWad
         );
 
         if (apyBoundIntWad < 0) {
@@ -318,18 +324,25 @@ library MarginCalculator {
             params.termEndTimestampWad -
             params.termStartTimestampWad;
 
-        vars.timeInYearsWad = FixedAndVariableMath.accrualFact(vars.timeInSecondsWad);
+        vars.timeInYearsWad = FixedAndVariableMath.accrualFact(
+            vars.timeInSecondsWad
+        );
 
         if (params.isLM) {
-            vars.minDeltaWad = uint256(_marginCalculatorParameters.minDeltaLMWad);
+            vars.minDeltaWad = uint256(
+                _marginCalculatorParameters.minDeltaLMWad
+            );
         } else {
-            vars.minDeltaWad = uint256(_marginCalculatorParameters.minDeltaIMWad);
+            vars.minDeltaWad = uint256(
+                _marginCalculatorParameters.minDeltaIMWad
+            );
         }
 
-        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(params.variableTokenBalance);
+        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(
+            params.variableTokenBalance
+        );
 
         if (variableTokenBalanceWad < 0) {
-
             vars.notionalWad = uint256(-variableTokenBalanceWad);
 
             marginWad = PRBMathUD60x18.mul(
@@ -337,10 +350,11 @@ library MarginCalculator {
                 PRBMathUD60x18.mul(vars.minDeltaWad, vars.timeInYearsWad)
             );
         } else {
-
             vars.notionalWad = uint256(variableTokenBalanceWad);
 
-            int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(params.fixedTokenBalance);
+            int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(
+                params.fixedTokenBalance
+            );
 
             vars.zeroLowerBoundMarginWad = PRBMathUD60x18.mul(
                 uint256(-fixedTokenBalanceWad),
@@ -374,11 +388,15 @@ library MarginCalculator {
             return 0;
         }
 
-        int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(params.fixedTokenBalance);
-        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(params.variableTokenBalance);
+        int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(
+            params.fixedTokenBalance
+        );
+        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(
+            params.variableTokenBalance
+        );
 
-        uint256 timeInSecondsFromStartToMaturityWad = params.termEndTimestampWad -
-            params.termStartTimestampWad;
+        uint256 timeInSecondsFromStartToMaturityWad = params
+            .termEndTimestampWad - params.termStartTimestampWad;
 
         int256 exp1Wad = PRBMathSD59x18.mul(
             fixedTokenBalanceWad,
@@ -413,7 +431,7 @@ library MarginCalculator {
         );
 
         if (modelMarginWad < minimumMarginWad) {
-            margin = PRBMathUD60x18.toUint(uint256(minimumMarginWad)) ;
+            margin = PRBMathUD60x18.toUint(uint256(minimumMarginWad));
         } else {
             margin = PRBMathUD60x18.toUint(uint256(modelMarginWad));
         }
@@ -503,11 +521,11 @@ library MarginCalculator {
                 );
 
             /// @audit should not use PRB math for the below calculation
-            
+
             scenario1LPVariableTokenBalance =
                 params.variableTokenBalance +
                 amount1FromTickLowerToTickUpper;
-            
+
             scenario1LPFixedTokenBalance =
                 params.fixedTokenBalance +
                 FixedAndVariableMath.getFixedTokenBalance(
