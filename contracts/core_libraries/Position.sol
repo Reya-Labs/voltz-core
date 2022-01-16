@@ -106,8 +106,7 @@ library Position {
             feeGrowthInsideX128 - _self.feeGrowthInsideLastX128,
             _self._liquidity,
             FixedPoint128.Q128
-            );
-
+        );
     }
 
     /// @notice Returns Fixed and Variable Token Deltas
@@ -126,41 +125,48 @@ library Position {
         returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
     {
         Info memory _self = self;
-        
-        int256 fixedTokenGrowthInsideDeltaX128 = fixedTokenGrowthInsideX128 - _self.fixedTokenGrowthInsideLastX128;
+
+        int256 fixedTokenGrowthInsideDeltaX128 = fixedTokenGrowthInsideX128 -
+            _self.fixedTokenGrowthInsideLastX128;
 
         if (fixedTokenGrowthInsideDeltaX128 > 0) {
-            _fixedTokenDelta = int256(FullMath.mulDiv(
-                uint256(fixedTokenGrowthInsideDeltaX128),
-                _self._liquidity,
-                FixedPoint128.Q128
-            ));
+            _fixedTokenDelta = int256(
+                FullMath.mulDiv(
+                    uint256(fixedTokenGrowthInsideDeltaX128),
+                    _self._liquidity,
+                    FixedPoint128.Q128
+                )
+            );
         } else {
-            _fixedTokenDelta = -int256(FullMath.mulDiv(
-                uint256(-fixedTokenGrowthInsideDeltaX128),
-                _self._liquidity,
-                FixedPoint128.Q128
-            ));
+            _fixedTokenDelta = -int256(
+                FullMath.mulDiv(
+                    uint256(-fixedTokenGrowthInsideDeltaX128),
+                    _self._liquidity,
+                    FixedPoint128.Q128
+                )
+            );
         }
 
-        int256 variableTokenGrowthInsideDeltaX128 = variableTokenGrowthInsideX128 - _self.variableTokenGrowthInsideLastX128;
+        int256 variableTokenGrowthInsideDeltaX128 = variableTokenGrowthInsideX128 -
+                _self.variableTokenGrowthInsideLastX128;
 
         if (variableTokenGrowthInsideDeltaX128 > 0) {
-            _variableTokenDelta = int256(FullMath.mulDiv(
-                uint256(variableTokenGrowthInsideDeltaX128),
-                _self._liquidity,
-                FixedPoint128.Q128
-            ));
+            _variableTokenDelta = int256(
+                FullMath.mulDiv(
+                    uint256(variableTokenGrowthInsideDeltaX128),
+                    _self._liquidity,
+                    FixedPoint128.Q128
+                )
+            );
         } else {
-            _variableTokenDelta = -int256(FullMath.mulDiv(
-                uint256(-variableTokenGrowthInsideDeltaX128),
-                _self._liquidity,
-                FixedPoint128.Q128
-            ));
-        
+            _variableTokenDelta = -int256(
+                FullMath.mulDiv(
+                    uint256(-variableTokenGrowthInsideDeltaX128),
+                    _self._liquidity,
+                    FixedPoint128.Q128
+                )
+            );
         }
-
-
     }
 
     /// @notice Updates fixedTokenGrowthInsideLast and variableTokenGrowthInsideLast to the current values
@@ -179,9 +185,10 @@ library Position {
     /// @notice Updates feeGrowthInsideLast to the current value
     /// @param self position info struct represeting a liquidity provider
     /// @param feeGrowthInsideX128 fee growth per unit of liquidity as of now
-    function updateFeeGrowthInside(Info storage self, uint256 feeGrowthInsideX128)
-        internal
-    {
+    function updateFeeGrowthInside(
+        Info storage self,
+        uint256 feeGrowthInsideX128
+    ) internal {
         self.feeGrowthInsideLastX128 = feeGrowthInsideX128;
     }
 

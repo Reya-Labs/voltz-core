@@ -157,7 +157,7 @@ library SwapMath {
         }
 
         uint256 notionalWad = PRBMathUD60x18.fromUint(notional);
-        
+
         feeAmount = computeFeeAmount(
             notionalWad,
             timeToMaturityInSecondsWad,

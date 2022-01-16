@@ -52,7 +52,9 @@ library Tick {
         if (tickCurrent >= tickLower) {
             feeGrowthBelowX128 = lower.feeGrowthOutsideX128;
         } else {
-            feeGrowthBelowX128 = feeGrowthGlobalX128 - lower.feeGrowthOutsideX128;
+            feeGrowthBelowX128 =
+                feeGrowthGlobalX128 -
+                lower.feeGrowthOutsideX128;
         }
 
         // calculate fee growth above
@@ -61,10 +63,15 @@ library Tick {
         if (tickCurrent < tickUpper) {
             feeGrowthAboveX128 = upper.feeGrowthOutsideX128;
         } else {
-            feeGrowthAboveX128 = feeGrowthGlobalX128 - upper.feeGrowthOutsideX128;
+            feeGrowthAboveX128 =
+                feeGrowthGlobalX128 -
+                upper.feeGrowthOutsideX128;
         }
 
-        feeGrowthInsideX128 = feeGrowthGlobalX128 - feeGrowthBelowX128 - feeGrowthAboveX128;
+        feeGrowthInsideX128 =
+            feeGrowthGlobalX128 -
+            feeGrowthBelowX128 -
+            feeGrowthAboveX128;
     }
 
     struct VariableTokenGrowthInsideParams {
@@ -104,7 +111,9 @@ library Tick {
         }
 
         variableTokenGrowthInsideX128 =
-            params.variableTokenGrowthGlobalX128 - variableTokenGrowthBelowX128 - variableTokenGrowthAboveX128;
+            params.variableTokenGrowthGlobalX128 -
+            variableTokenGrowthBelowX128 -
+            variableTokenGrowthAboveX128;
     }
 
     struct FixedTokenGrowthInsideParams {
@@ -144,7 +153,9 @@ library Tick {
         }
 
         fixedTokenGrowthInsideX128 =
-            params.fixedTokenGrowthGlobalX128 - fixedTokenGrowthBelowX128 - fixedTokenGrowthAboveX128;
+            params.fixedTokenGrowthGlobalX128 -
+            fixedTokenGrowthBelowX128 -
+            fixedTokenGrowthAboveX128;
     }
 
     /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
@@ -188,7 +199,8 @@ library Tick {
 
                 info.fixedTokenGrowthOutsideX128 = fixedTokenGrowthGlobalX128;
 
-                info.variableTokenGrowthOutsideX128 = variableTokenGrowthGlobalX128;
+                info
+                    .variableTokenGrowthOutsideX128 = variableTokenGrowthGlobalX128;
             }
 
             info.initialized = true;
@@ -227,7 +239,9 @@ library Tick {
     ) internal returns (int128 liquidityNet) {
         Tick.Info storage info = self[tick];
 
-        info.feeGrowthOutsideX128 = feeGrowthGlobalX128 - info.feeGrowthOutsideX128;
+        info.feeGrowthOutsideX128 =
+            feeGrowthGlobalX128 -
+            info.feeGrowthOutsideX128;
 
         info.fixedTokenGrowthOutsideX128 =
             fixedTokenGrowthGlobalX128 -
