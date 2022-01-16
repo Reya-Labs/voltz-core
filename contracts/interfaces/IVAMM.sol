@@ -53,8 +53,9 @@ interface IVAMM is IPositionStructs {
         uint160 sqrtPriceX96;
         /// @dev the current tick in the vamm
         int24 tick;
-        /// @dev the current protocol fee as a percentage of the swap fee taken on withdrawal
-        uint256 feeProtocol;
+        // the current protocol fee as a percentage of the swap fee taken on withdrawal
+        // represented as an integer denominator (1/x)%
+        uint8 feeProtocol;
     }
 
     struct SwapParams {
@@ -78,8 +79,9 @@ interface IVAMM is IPositionStructs {
         uint128 liquidityStart;
         /// @dev the timestamp of the current block (in wei)
         uint256 blockTimestamp;
-        /// @dev the protocol fee for the underlying token
-        uint256 feeProtocol;
+        // the current protocol fee as a percentage of the swap fee taken on withdrawal
+        // represented as an integer denominator (1/x)%
+        uint8 feeProtocol;
     }
 
     struct SwapLocalVars {
@@ -171,14 +173,14 @@ interface IVAMM is IPositionStructs {
 
     /// @return sqrtPriceX96 The current price of the pool as a sqrt(variableToken/fixedToken) Q64.96 value
     /// @return tick The current tick of the vamm, i.e. according to the last tick transition that was run.
-    /// @return feeProtocol (in wei) The protocol fee in terms of the underlying token
+    /// @return feeProtocol feeProtocol
     function vammVars()
         external
         view
         returns (
             uint160 sqrtPriceX96,
             int24 tick,
-            uint256 feeProtocol
+            uint8 feeProtocol
         );
 
     /// @notice The fixed token growth in wei, accumulated per unit of liquidity for the entire life of the vamm
@@ -204,7 +206,7 @@ interface IVAMM is IPositionStructs {
     function marginEngineAddress() external view returns (address);
 
     /// @notice Function that sets the feeProtocol of the vamm
-    function setFeeProtocol(uint256 feeProtocol) external;
+    function setFeeProtocol(uint8 feeProtocol) external;
 
     /// @notice Function that sets the tickSpacing of the vamm
     function setTickSpacing(int24 _tickSpacing) external;

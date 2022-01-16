@@ -118,7 +118,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
     emit Initialize(sqrtPriceX96, tick);
   }
 
-  function setFeeProtocol(uint256 feeProtocol) external override onlyOwner lock {
+  function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
     vammVars.feeProtocol = feeProtocol;
     // emit set fee protocol
   }
@@ -441,9 +441,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
       
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
-        step.feeProtocolDelta = PRBMathUD60x18.mul(step.feeAmount, cache.feeProtocol); // as a percentage of LP fees
-        step.feeAmount = step.feeAmount - step.feeProtocolDelta;
-        state.protocolFee = state.protocolFee + step.feeProtocolDelta;
+        step.feeProtocolDelta = step.feeAmount / cache.feeProtocol;
+        step.feeAmount -= step.feeProtocolDelta;
+        state.protocolFee += step.feeProtocolDelta;
       }
 
       // update global fee tracker
@@ -511,7 +511,7 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
     _cumulativeFeeIncurred = state.cumulativeFeeIncurred;
 
     if (state.protocolFee > 0) {
-      protocolFees = protocolFees + state.protocolFee;
+      protocolFees += state.protocolFee;
     }
 
     if (params.isFT) {
