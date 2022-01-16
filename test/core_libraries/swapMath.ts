@@ -5,7 +5,6 @@ import { SwapMathTest } from "../../typechain/SwapMathTest";
 // import { Wallet } from "ethers";
 // import { createFixtureLoader } from "ethereum-waffle";
 // import { SqrtPriceMathTest } from "../../typechain/SqrtPriceMathTest";
-import { fixedAndVariableMathFixture, timeFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
 import { encodePriceSqrt, expandTo18Decimals } from "../shared/utilities";
 
@@ -23,15 +22,7 @@ describe("SwapMath", () => {
   // });
 
   const fixtureSwapMath = async () => {
-    const { time } = await timeFixture();
-    const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
-      time.address
-    );
-    const factory = await ethers.getContractFactory("SwapMathTest", {
-      libraries: {
-        FixedAndVariableMath: fixedAndVariableMath.address,
-      },
-    });
+    const factory = await ethers.getContractFactory("SwapMathTest");
     return (await factory.deploy()) as SwapMathTest;
   };
 

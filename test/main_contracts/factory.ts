@@ -78,8 +78,9 @@ describe("Factory", () => {
     const underlyingAddress = await marginEngine1.underlyingToken();
     const rateOracleAddress = await marginEngine1.rateOracleAddress();
     const termStartTimestampBNERealised =
-      await marginEngine1.termStartTimestamp();
-    const termEndTimestampBNRealised = await marginEngine1.termEndTimestamp();
+      await marginEngine1.termStartTimestampWad();
+    const termEndTimestampBNRealised =
+      await marginEngine1.termEndTimestampWad();
     expect(underlyingAddress).to.eq(token.address);
     expect(rateOracleAddress).to.eq(rateOracleTest.address);
     expect(termStartTimestampBNERealised).to.eq(termStartTimestampBN);
