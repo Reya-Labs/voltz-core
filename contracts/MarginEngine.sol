@@ -474,15 +474,15 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
         position.updateLiquidity(params.liquidityDelta);
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
-        uint256 feeDelta = position.calculateFeeDelta(vars.feeGrowthInside);
+        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(vars.fixedTokenGrowthInsideX128, vars.variableTokenGrowthInsideX128);
+        uint256 feeDelta = position.calculateFeeDelta(vars.feeGrowthInsideX128);
         position.updateBalances(fixedTokenDelta, variableTokenDelta);
         
         /// @dev collect fees generated since last mint/burn
         position.updateMargin(int256(feeDelta));
         
-        position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInside, vars.variableTokenGrowthInside);
-        position.updateFeeGrowthInside(vars.feeGrowthInside);
+        position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInsideX128, vars.variableTokenGrowthInsideX128);
+        position.updateFeeGrowthInside(vars.feeGrowthInsideX128);
     }
 
     /// @inheritdoc IMarginEngine

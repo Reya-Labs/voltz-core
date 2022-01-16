@@ -139,11 +139,11 @@ interface IVAMM is IPositionStructs {
         /// @dev If true flips the initialized state (or upper tick) for a given tick from false to true, or vice versa
         bool flippedUpper;
         /// @dev Fixed token growth inside a given tick range
-        int256 fixedTokenGrowthInside;
+        int256 fixedTokenGrowthInsideX128;
         /// @dev Variable token growth inside a given tick range
-        int256 variableTokenGrowthInside;
+        int256 variableTokenGrowthInsideX128;
         /// @dev Fee growth inside a given tick range in terms of the underlying token
-        uint256 feeGrowthInside;
+        uint256 feeGrowthInsideX128;
     }
 
     /// @dev "constructor" for proxy instances

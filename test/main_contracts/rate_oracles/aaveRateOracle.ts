@@ -20,6 +20,22 @@ function computeApyFromRate(rateFromTo: BigNumber, timeInYears: BigNumber) {
   return apy;
 }
 
+// function interpolateRateValue(
+//   beforeOrAtRateValue: BigNumber,
+//   apyFromBeforeOrAtToAtOrAfter: BigNumber,
+//   timeDeltaBeforeOrAtToQueriedTime: BigNumber
+// ) {
+//   const timeInYears = accrualFact(timeDeltaBeforeOrAtToQueriedTime);
+//   const exp1 = sub(
+//     pow(add(toBn("1.0"), apyFromBeforeOrAtToAtOrAfter), timeInYears),
+//     toBn("1.0")
+//   );
+
+//   const rateValue = mul(beforeOrAtRateValue, exp1);
+
+//   return rateValue;
+// }
+
 describe("Aave Rate Oracle", () => {
   let wallet: Wallet, other: Wallet;
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>;

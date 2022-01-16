@@ -8,28 +8,23 @@ import "./rate_oracles/IRateOracle.sol";
 
 interface IMarginEngine is IPositionStructs {
     // structs
-    // below should all be SD59x18 or UD60x18 user defined types?
-    /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
-    /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity
-    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Liquidation Margin Computation
-    /// @dev Minimum possible absolute APY delta between the underlying pool and the fixed rate of a given IRS contract, used as a safety measure for Initial Margin Computation
-    /// @dev Maximum allowed leverage on Voltz Protocol where leverage = (notional traded in an IRS contract) / (margin in the account of an LP/FT/VT)
-    /// @dev The standard deviation that determines the volatility of the underlying pool APY
-    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing alpha (from the litepaper)
-    /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper), for efficiency insted of storing beta (from the litepaper)
-    /// @dev Standard normal critical value used in the computation of the Upper APY Bound of the underlying pool
-    /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
 
     struct MarginCalculatorParameters {
+        /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity (18 decimals fixed point number)
         uint256 apyUpperMultiplierWad;
+        /// @dev Lower bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity (18 decimals)
         uint256 apyLowerMultiplierWad;
-        uint256 minDeltaLMWad;
-        uint256 minDeltaIMWad;
+        /// @dev The volatility of the underlying pool APY (settable by the owner of the Margin Engine) (18 decimals)
         int256 sigmaSquaredWad;
+        /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper) (18 decimals)
         int256 alphaWad;
+        /// @dev Margin Engine Parameter estimated via CIR model calibration (for details refer to litepaper) (18 decimals)
         int256 betaWad;
+        /// @dev Standard normal critical value used in the computation of the Upper APY Bound of the underlying pool
         int256 xiUpperWad;
+        /// @dev Standard normal critical value used in the computation of the Lower APY Bound of the underlying pool
         int256 xiLowerWad;
+        /// @dev Max term possible for a Voltz IRS AMM in seconds (18 decimals)
         int256 tMaxWad;
     }
 

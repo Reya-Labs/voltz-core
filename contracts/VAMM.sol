@@ -221,7 +221,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       (vars.flippedLower, vars.flippedUpper) = flipTicks(params);
     }
 
-    vars.fixedTokenGrowthInside = ticks.getFixedTokenGrowthInside(
+    vars.fixedTokenGrowthInsideX128 = ticks.getFixedTokenGrowthInside(
       Tick.FixedTokenGrowthInsideParams({
         tickLower: params.tickLower,
         tickUpper: params.tickUpper,
@@ -230,7 +230,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    vars.variableTokenGrowthInside = ticks.getVariableTokenGrowthInside(
+    vars.variableTokenGrowthInsideX128 = ticks.getVariableTokenGrowthInside(
       Tick.VariableTokenGrowthInsideParams({
         tickLower: params.tickLower,
         tickUpper: params.tickUpper,
@@ -239,7 +239,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    vars.feeGrowthInside = ticks.getFeeGrowthInside(
+    vars.feeGrowthInsideX128 = ticks.getFeeGrowthInside(
       params.tickLower,
       params.tickUpper,
       vammVars.tick,
