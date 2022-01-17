@@ -4,7 +4,7 @@ import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { BigNumber } from "@ethersproject/bignumber";
 import { TestRateOracle } from "../../typechain/TestRateOracle";
 
-import { ERC20Mock } from "../../typechain";
+import { ERC20Mock, MockAaveLendingPool } from "../../typechain";
 
 import { consts } from "../helpers/constants";
 
@@ -82,6 +82,7 @@ interface MetaFixture {
   marginEngineMasterTest: TestMarginEngine;
   token: ERC20Mock;
   rateOracleTest: TestRateOracle;
+  aaveLendingPool: MockAaveLendingPool;
   termStartTimestampBN: BigNumber;
   termEndTimestampBN: BigNumber;
 }
@@ -112,6 +113,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     marginEngineMasterTest,
     token,
     rateOracleTest,
+    aaveLendingPool,
     termStartTimestampBN,
     termEndTimestampBN,
   };

@@ -25,7 +25,12 @@ import {
 } from "../shared/utilities";
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
-import { ERC20Mock, Factory, TestRateOracle } from "../../typechain";
+import {
+  ERC20Mock,
+  Factory,
+  MockAaveLendingPool,
+  TestRateOracle,
+} from "../../typechain";
 import { advanceTimeAndBlock } from "../helpers/time";
 import { consts } from "../helpers/constants";
 import { sub } from "../shared/functions";
@@ -42,6 +47,7 @@ describe("VAMM", () => {
   let termEndTimestampBN: BigNumber;
   let vammTest: TestVAMM;
   let marginEngineTest: TestMarginEngine;
+  let aaveLendingPool: MockAaveLendingPool;
 
   let tickSpacing: number;
   let minTick: number;
@@ -59,6 +65,7 @@ describe("VAMM", () => {
       factory,
       token,
       rateOracleTest,
+      aaveLendingPool,
       termStartTimestampBN,
       termEndTimestampBN,
     } = await loadFixture(metaFixture));
@@ -90,22 +97,24 @@ describe("VAMM", () => {
     await marginEngineTest.setVAMMAddress(vammTest.address);
 
     const margin_engine_params = {
-        apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
-        apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
-        minDeltaLMWad: MIN_DELTA_LM,
-        minDeltaIMWad: MIN_DELTA_IM,
-        sigmaSquaredWad: SIGMA_SQUARED,
-        alphaWad: ALPHA,
-        betaWad: BETA,
-        xiUpperWad: XI_UPPER,
-        xiLowerWad: XI_LOWER,
-        tMaxWad: T_MAX,
-      };
+      apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+      apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+      minDeltaLMWad: MIN_DELTA_LM,
+      minDeltaIMWad: MIN_DELTA_IM,
+      sigmaSquaredWad: SIGMA_SQUARED,
+      alphaWad: ALPHA,
+      betaWad: BETA,
+      xiUpperWad: XI_UPPER,
+      xiLowerWad: XI_LOWER,
+      tMaxWad: T_MAX,
+    };
 
-      await marginEngineTest.setMarginCalculatorParameters(
-        margin_engine_params
-      );
+    await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
+    await aaveLendingPool.setReserveNormalizedIncome(
+      token.address,
+      toBn("1.1")
+    );
 
     minTick = getMinTick(TICK_SPACING);
     maxTick = getMaxTick(TICK_SPACING);
@@ -375,16 +384,19 @@ describe("VAMM", () => {
       await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
       await vammTest.setTestProtocolFees(toBn("3"));
       expect(await vammTest.protocolFees()).to.be.equal(toBn("3"));
-      await expect(marginEngineTest.collectProtocol(other.address, toBn("4")))
+      await expect(marginEngineTest.collectProtocol(wallet.address, toBn("4")))
         .to.be.reverted;
     });
 
     it("check updateProtocolFees", async () => {
       await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
+      await token.mint(marginEngineTest.address, BigNumber.from(10).pow(27));
+      await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
       await vammTest.setTestProtocolFees(toBn("5"));
       expect(await vammTest.protocolFees()).to.be.equal(toBn("5"));
-      await expect(marginEngineTest.collectProtocol(wallet.address, toBn("4")))
-        .to.not.be.reverted;
+      await marginEngineTest.collectProtocol(wallet.address, toBn("4"));
+      //   await expect(marginEngineTest.collectProtocol(wallet.address, toBn("4")))
+      //     .to.not.be.reverted;
       expect(await vammTest.protocolFees()).to.be.equal(toBn("1"));
     });
   });
