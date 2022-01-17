@@ -110,8 +110,7 @@ describe("VAMM", () => {
 
     it("correctly computes position fixed and variable growth inside", async () => {
       const realized =
-        await vammTest.computePositionFixedAndVariableGrowthInsideTest(
-          vammTest.address,
+        await vammTest.computePositionFixedAndVariableGrowthInside(
           -1,
           1,
           0
@@ -186,8 +185,7 @@ describe("VAMM", () => {
   describe("#mint", () => {
     it("fails if not initialized", async () => {
       await expect(
-        vammTest.mintTest(
-          vammTest.address,
+        vammTest.mint(
           wallet.address,
           -tickSpacing,
           tickSpacing,
@@ -233,41 +231,31 @@ describe("VAMM", () => {
           toBn("100000")
         );
 
-        await vammTest.mint(
-          wallet.address,
-          minTick,
-          maxTick,
-          3161
-        );
+        await vammTest.mint(wallet.address, minTick, maxTick, 3161);
       });
 
       describe("failure cases", async () => {
         it("fails if tickLower greater than tickUpper", async () => {
           // await expect(mint(wallet.address, 1, 0, 1)).to.be.reverted
-          await expect(
-            vammTest.mint(wallet.address, 1, 0, 1)
-          ).to.be.reverted;
+          await expect(vammTest.mint(wallet.address, 1, 0, 1)).to.be.reverted;
         });
 
         it("fails if tickLower less than min tick", async () => {
           // should be TLM but...hardhat
-          await expect(
-            vammTest.mint(wallet.address, -887273, 0, 1)
-          ).to.be.reverted;
+          await expect(vammTest.mint(wallet.address, -887273, 0, 1)).to.be
+            .reverted;
         });
 
         it("fails if tickUpper greater than max tick", async () => {
           // should be TUM but...hardhat
-          await expect(
-            vammTest.mint(wallet.address, 0, 887273, 1)
-          ).to.be.reverted;
+          await expect(vammTest.mint(wallet.address, 0, 887273, 1)).to.be
+            .reverted;
         });
 
         it("fails if amount exceeds the max", async () => {
           const maxLiquidityGross = await vammTest.maxLiquidityPerTick();
           await expect(
-            vammTest.mintTest(
-              vammTest.address,
+            vammTest.mint(
               wallet.address,
               minTick + tickSpacing,
               maxTick - tickSpacing,
@@ -297,8 +285,7 @@ describe("VAMM", () => {
         });
 
         it("adds liquidity to liquidityGross", async () => {
-          await vammTest.mintTest(
-            vammTest.address,
+          await vammTest.mint(
             wallet.address,
             -240,
             0,
@@ -314,8 +301,7 @@ describe("VAMM", () => {
             .liquidityGross;
           expect(liquidityGross2).to.eq(0);
           expect(liquidityGross3).to.eq(0);
-          await vammTest.mintTest(
-            vammTest.address,
+          await vammTest.mint(
             wallet.address,
             -240,
             tickSpacing,
@@ -331,8 +317,7 @@ describe("VAMM", () => {
           const liquidityGross7 = (await vammTest.ticks(tickSpacing * 2))
             .liquidityGross;
           expect(liquidityGross7).to.eq(0);
-          await vammTest.mintTest(
-            vammTest.address,
+          await vammTest.mint(
             wallet.address,
             0,
             tickSpacing * 2,
@@ -351,15 +336,13 @@ describe("VAMM", () => {
         });
 
         it("removes liquidity from liquidityGross", async () => {
-          await vammTest.mintTest(
-            vammTest.address,
+          await vammTest.mint(
             wallet.address,
             -240,
             0,
             100
           );
-          await vammTest.mintTest(
-            vammTest.address,
+          await vammTest.mint(
             wallet.address,
             -240,
             0,
