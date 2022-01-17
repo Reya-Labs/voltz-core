@@ -11,6 +11,16 @@ import {
   MIN_SQRT_RATIO,
   encodeSqrtRatioX96,
   getMaxLiquidityPerTick,
+  APY_UPPER_MULTIPLIER,
+  APY_LOWER_MULTIPLIER,
+  MIN_DELTA_LM,
+  MIN_DELTA_IM,
+  SIGMA_SQUARED,
+  ALPHA,
+  BETA,
+  XI_UPPER,
+  XI_LOWER,
+  T_MAX,
 } from "../shared/utilities";
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
@@ -75,6 +85,26 @@ describe("VAMM", () => {
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
     vammTest = vammTestFactory.attach(vammAddress);
     await vammTest.initialize(marginEngineTest.address);
+
+    await marginEngineTest.setVAMMAddress(vammTest.address);
+
+    const margin_engine_params = {
+        apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+        apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+        minDeltaLMWad: MIN_DELTA_LM,
+        minDeltaIMWad: MIN_DELTA_IM,
+        sigmaSquaredWad: SIGMA_SQUARED,
+        alphaWad: ALPHA,
+        betaWad: BETA,
+        xiUpperWad: XI_UPPER,
+        xiLowerWad: XI_LOWER,
+        tMaxWad: T_MAX,
+      };
+
+      await marginEngineTest.setMarginCalculatorParameters(
+        margin_engine_params
+      );
+
 
     minTick = getMinTick(TICK_SPACING);
     maxTick = getMaxTick(TICK_SPACING);
@@ -186,29 +216,12 @@ describe("VAMM", () => {
     describe("after initialization", async () => {
       beforeEach("initialize the pool at price of 10:1", async () => {
         await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
+        await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100));
+        await vammTest.setFeeProtocol(3);
+        await vammTest.setTickSpacing(TICK_SPACING);
 
         await token.mint(wallet.address, BigNumber.from(10).pow(27));
         await token.approve(wallet.address, BigNumber.from(10).pow(27));
-
-        console.log(
-          "owner of margin engine:   ",
-          await marginEngineTest.owner()
-        );
-        console.log("address of margin engine: ", marginEngineTest.address);
-        console.log(
-          "address of ME in vamm:    ",
-          await vammTest.marginEngineAddress()
-        );
-        console.log("address of vamm:          ", vammTest.address);
-        console.log("address of factory:       ", factory.address);
-        console.log("address of wallet:        ", wallet.address);
-
-        console.log(
-          "balance:",
-          (await token.balanceOf(wallet.address)).toString()
-        );
-
-        await marginEngineTest.setVAMMAddress(vammTest.address);
 
         await marginEngineTest.updatePositionMargin(
           {
@@ -338,22 +351,22 @@ describe("VAMM", () => {
     it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
       advanceTimeAndBlock(sub(consts.ONE_WEEK, consts.ONE_DAY), 1);
       await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
-        "amm must be 1 day past maturity"
+        "vamm must be 1 day before maturity"
       );
     });
 
     it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
       advanceTimeAndBlock(consts.ONE_WEEK, 1);
       await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
-        "amm hasn't reached maturity"
+        "vamm has reached maturity"
       );
     });
   });
 
   describe("#updateProtocolFees", () => {
-    it("check AMM privilege ", async () => {
+    it("check MarginEngine privilege ", async () => {
       await expect(vammTest.updateProtocolFees(toBn("1"))).to.be.revertedWith(
-        "only AMM"
+        "only MarginEngine"
       );
     });
 
@@ -369,7 +382,7 @@ describe("VAMM", () => {
       await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
       await vammTest.setTestProtocolFees(toBn("5"));
       expect(await vammTest.protocolFees()).to.be.equal(toBn("5"));
-      await expect(marginEngineTest.collectProtocol(other.address, toBn("4")))
+      await expect(marginEngineTest.collectProtocol(wallet.address, toBn("4")))
         .to.not.be.reverted;
       expect(await vammTest.protocolFees()).to.be.equal(toBn("1"));
     });
@@ -378,15 +391,15 @@ describe("VAMM", () => {
   describe("#setFeeProtocol", () => {
     it("check owner privilege ", async () => {
       await expect(
-        vammTest.connect(other).setFeeProtocol(toBn("0.03"))
-      ).to.be.revertedWith("only factory owner");
+        vammTest.connect(other).setFeeProtocol(5)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("check setFeeProtocol", async () => {
       await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
       expect((await vammTest.vammVars()).feeProtocol).to.be.equal(toBn("0"));
-      await expect(vammTest.setFeeProtocol(toBn("0.03"))).to.not.be.reverted;
-      expect((await vammTest.vammVars()).feeProtocol).to.be.equal(toBn("0.03"));
+      await expect(vammTest.setFeeProtocol(5)).to.not.be.reverted;
+      expect((await vammTest.vammVars()).feeProtocol).to.be.equal(5);
     });
   });
 
@@ -394,11 +407,11 @@ describe("VAMM", () => {
     it("check owner privilege ", async () => {
       await expect(
         vammTest.connect(other).setTickSpacing(100)
-      ).to.be.revertedWith("only factory owner");
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("check setTickSpacing", async () => {
-      expect(await vammTest.tickSpacing()).to.be.equal(TICK_SPACING);
+      expect(await vammTest.tickSpacing()).to.be.equal(0);
       await expect(vammTest.setTickSpacing(100)).to.not.be.reverted;
       expect(await vammTest.tickSpacing()).to.be.equal(100);
     });
@@ -410,13 +423,11 @@ describe("VAMM", () => {
         vammTest
           .connect(other)
           .setMaxLiquidityPerTick(getMaxLiquidityPerTick(100))
-      ).to.be.revertedWith("only factory owner");
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("check setMaxLiquidityPerTick", async () => {
-      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
+      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(0);
       await expect(vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100)))
         .to.not.be.reverted;
       expect(await vammTest.maxLiquidityPerTick()).to.be.equal(
@@ -429,11 +440,11 @@ describe("VAMM", () => {
     it("check owner privilege ", async () => {
       await expect(
         vammTest.connect(other).setFee(toBn("0.05"))
-      ).to.be.revertedWith("only factory owner");
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
-    it("check setTickSpacing", async () => {
-      expect(await vammTest.fee()).to.be.equal(toBn("0.03"));
+    it("check setFee", async () => {
+      expect(await vammTest.fee()).to.be.equal(toBn("0"));
       await expect(vammTest.setFee(toBn("0.05"))).to.not.be.reverted;
       expect(await vammTest.fee()).to.be.equal(toBn("0.05"));
     });

@@ -211,7 +211,7 @@ library FixedAndVariableMath {
         int256 amount0Wad = PRBMathSD59x18.fromInt(amount0);
         int256 amount1Wad = PRBMathSD59x18.fromInt(amount1);
 
-        require(termEndTimestampWad > termStartTimestampWad, "E>S");
+        require(termEndTimestampWad > termStartTimestampWad, "E<=S");
 
         int256 excessBalanceWad = getExcessBalance(
             amount0Wad,
