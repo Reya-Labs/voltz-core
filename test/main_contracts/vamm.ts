@@ -233,8 +233,7 @@ describe("VAMM", () => {
           toBn("100000")
         );
 
-        await vammTest.mintTest(
-          vammTest.address,
+        await vammTest.mint(
           wallet.address,
           minTick,
           maxTick,
@@ -246,21 +245,21 @@ describe("VAMM", () => {
         it("fails if tickLower greater than tickUpper", async () => {
           // await expect(mint(wallet.address, 1, 0, 1)).to.be.reverted
           await expect(
-            vammTest.mintTest(vammTest.address, wallet.address, 1, 0, 1)
+            vammTest.mint(wallet.address, 1, 0, 1)
           ).to.be.reverted;
         });
 
         it("fails if tickLower less than min tick", async () => {
           // should be TLM but...hardhat
           await expect(
-            vammTest.mintTest(vammTest.address, wallet.address, -887273, 0, 1)
+            vammTest.mint(wallet.address, -887273, 0, 1)
           ).to.be.reverted;
         });
 
         it("fails if tickUpper greater than max tick", async () => {
           // should be TUM but...hardhat
           await expect(
-            vammTest.mintTest(vammTest.address, wallet.address, 0, 887273, 1)
+            vammTest.mint(wallet.address, 0, 887273, 1)
           ).to.be.reverted;
         });
 
@@ -276,12 +275,12 @@ describe("VAMM", () => {
             )
           ).to.be.reverted;
           // AB: fails
-          // await expect(vammTest.mintTest(vammTest.address, wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(10000))).to.not.be.reverted;
+          // await expect(vammTest.mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(10000))).to.not.be.reverted;
         });
 
         // AB: get back to this
         // it("fails if total amount at tick exceeds the max", async () => {
-        //   await vammTest.mintTest(vammTest.address, wallet.address, minTick+tickSpacing, maxTick-tickSpacing, 1000);
+        //   await vammTest.mint(wallet.address, minTick+tickSpacing, maxTick-tickSpacing, 1000);
         //   const maxLiquidityGross = await vammTest.maxLiquidityPerTick();
         //   console.log("maxLiquidityGross: ", maxLiquidityGross);
         //   // await expect(

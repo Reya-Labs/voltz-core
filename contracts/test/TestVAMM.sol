@@ -40,34 +40,4 @@ contract TestVAMM is VAMM {
         ticks[tick] = info;
     }
 
-    function computePositionFixedAndVariableGrowthInsideTest(
-        address vamm,
-        int24 tickLower,
-        int24 tickUpper,
-        int24 currentTick
-    )
-        external
-        view
-        returns (
-            int256 fixedTokenGrowthInside,
-            int256 variableTokenGrowthInside
-        )
-    {
-        return
-            IVAMM(vamm).computePositionFixedAndVariableGrowthInside(
-                tickLower,
-                tickUpper,
-                currentTick
-            );
-    }
-
-    function mintTest(
-        address vamm,
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount
-    ) external {
-        IVAMM(vamm).mint(recipient, tickLower, tickUpper, amount);
-    }
 }
