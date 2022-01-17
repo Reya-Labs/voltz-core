@@ -13,11 +13,11 @@ import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
+contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
     
@@ -60,7 +60,7 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
 
     uint256 public minMarginToIncentiviseLiquidators;
 
-    constructor() Pausable() {  
+    constructor() PausableUpgradeable() {  
 
         deployer = msg.sender; /// this is presumably the factory
 
@@ -76,6 +76,9 @@ contract MarginEngine is IMarginEngine, Pausable, Initializable, Ownable {
         rateOracleAddress = _rateOracleAddress;
         termStartTimestampWad = _termStartTimestampWad;
         termEndTimestampWad = _termEndTimestampWad;
+
+        __Ownable_init();
+        __Pausable_init();
     }
 
     /// Only the position/trade owner can update the LP/Trader margin

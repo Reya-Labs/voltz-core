@@ -48,6 +48,8 @@
     "@aave/protocol-js": "^4.3.0",
     "@aave/protocol-v2": "^1.0.1",
     "@openzeppelin/contracts": "^4.4.0",
+    "@openzeppelin/contracts-ethereum-package": "^2.2.3",
+    "@openzeppelin/contracts-upgradeable": "^4.4.2",
     "@openzeppelin/upgrades": "^2.8.0",
     "@uniswap/sdk-core": "^3.0.1",
     "hardhat-contract-sizer": "^2.1.1",
