@@ -203,17 +203,23 @@ describe("VAMM", () => {
         await token.mint(wallet.address, BigNumber.from(10).pow(27));
         await token.approve(wallet.address, BigNumber.from(10).pow(27));
 
-        console.log("owner of margin engine:   ", await marginEngineTest.owner());
+        console.log(
+          "owner of margin engine:   ",
+          await marginEngineTest.owner()
+        );
         console.log("address of margin engine: ", marginEngineTest.address);
         console.log(
-                    "address of ME in vamm:    ",
+          "address of ME in vamm:    ",
           await vammTest.marginEngineAddress()
         );
         console.log("address of vamm:          ", vammTest.address);
         console.log("address of factory:       ", factory.address);
         console.log("address of wallet:        ", wallet.address);
 
-        console.log("balance:", (await token.balanceOf(wallet.address)).toString());
+        console.log(
+          "balance:",
+          (await token.balanceOf(wallet.address)).toString()
+        );
 
         await marginEngineTest.setVAMMAddress(vammTest.address);
 

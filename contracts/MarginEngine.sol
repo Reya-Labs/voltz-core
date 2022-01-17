@@ -60,7 +60,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     uint256 public minMarginToIncentiviseLiquidators;
 
-    constructor() PausableUpgradeable() {  
+
+    // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {  
 
         deployer = msg.sender; /// this is presumably the factory
 

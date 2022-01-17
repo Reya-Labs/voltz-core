@@ -17,13 +17,13 @@ import "./interfaces/IFactory.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./utils/FixedPoint128.sol";
 
 
-contract VAMM is IVAMM, Pausable, Initializable, Ownable {
+contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   using LowGasSafeMath for uint256;
   using LowGasSafeMath for int256;
   using SafeCast for uint256;
@@ -67,7 +67,9 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
     _;
   }
 
-  constructor () Pausable() {
+  // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor () initializer {
     deployer = msg.sender;
   }
 
@@ -76,6 +78,8 @@ contract VAMM is IVAMM, Pausable, Initializable, Ownable {
     marginEngineAddress = _marginEngineAddress;
     address rateOracleAddress = IMarginEngine(marginEngineAddress).rateOracleAddress();
     rateOracle = IRateOracle(rateOracleAddress);
+    __Ownable_init();
+    __Pausable_init();
   }
 
   VAMMVars public override vammVars;
