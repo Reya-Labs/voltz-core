@@ -1,11 +1,10 @@
 import { expect } from "../shared/expect";
 import { ethers, waffle } from "hardhat";
-import snapshotGasCost from "../shared/snapshotGasCost";
+// import snapshotGasCost from "../shared/snapshotGasCost";
 import { SwapMathTest } from "../../typechain/SwapMathTest";
 // import { Wallet } from "ethers";
 // import { createFixtureLoader } from "ethereum-waffle";
 // import { SqrtPriceMathTest } from "../../typechain/SqrtPriceMathTest";
-import { fixedAndVariableMathFixture, timeFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
 import { encodePriceSqrt, expandTo18Decimals } from "../shared/utilities";
 
@@ -23,15 +22,7 @@ describe("SwapMath", () => {
   // });
 
   const fixtureSwapMath = async () => {
-    const { time } = await timeFixture();
-    const { fixedAndVariableMath } = await fixedAndVariableMathFixture(
-      time.address
-    );
-    const factory = await ethers.getContractFactory("SwapMathTest", {
-      libraries: {
-        FixedAndVariableMath: fixedAndVariableMath.address,
-      },
-    });
+    const factory = await ethers.getContractFactory("SwapMathTest");
     return (await factory.deploy()) as SwapMathTest;
   };
 
@@ -338,103 +329,103 @@ describe("SwapMath", () => {
     //   expect(feeAmount).to.eq(1)
     // })
 
-    describe("gas", () => {
-      it("swap one for zero exact in capped", async () => {
-        await snapshotGasCost(
-          swapMath.getGasCostOfComputeSwapStep(
-            encodePriceSqrt(1, 1),
-            encodePriceSqrt(101, 100),
-            expandTo18Decimals(2),
-            expandTo18Decimals(1),
-            toBn("0.3"),
-            toBn("31536000")
-          )
-        );
-      });
-      it("swap zero for one exact in capped", async () => {
-        await snapshotGasCost(
-          swapMath.getGasCostOfComputeSwapStep(
-            encodePriceSqrt(1, 1),
-            encodePriceSqrt(99, 100),
-            expandTo18Decimals(2),
-            expandTo18Decimals(1),
-            toBn("0.3"),
-            toBn("31536000")
-          )
-        );
-      });
-      it("swap one for zero exact out capped", async () => {
-        await snapshotGasCost(
-          swapMath.getGasCostOfComputeSwapStep(
-            encodePriceSqrt(1, 1),
-            encodePriceSqrt(101, 100),
-            expandTo18Decimals(2),
-            expandTo18Decimals(1).mul(-1),
-            toBn("0.3"),
-            toBn("31536000")
-          )
-        );
-      });
-      it("swap zero for one exact out capped", async () => {
-        await snapshotGasCost(
-          swapMath.getGasCostOfComputeSwapStep(
-            encodePriceSqrt(1, 1),
-            encodePriceSqrt(99, 100),
-            expandTo18Decimals(2),
-            expandTo18Decimals(1).mul(-1),
-            toBn("0.3"),
-            toBn("31536000")
-          )
-        );
-      });
-      it("swap one for zero exact in partial", async () => {
-        await snapshotGasCost(
-          swapMath.getGasCostOfComputeSwapStep(
-            encodePriceSqrt(1, 1),
-            encodePriceSqrt(1010, 100),
-            expandTo18Decimals(2),
-            1000,
-            toBn("0.3"),
-            toBn("31536000")
-          )
-        );
-      });
-      it("swap zero for one exact in partial", async () => {
-        await snapshotGasCost(
-          swapMath.getGasCostOfComputeSwapStep(
-            encodePriceSqrt(1, 1),
-            encodePriceSqrt(99, 1000),
-            expandTo18Decimals(2),
-            1000,
-            toBn("0.3"),
-            toBn("31536000")
-          )
-        );
-      });
-      it("swap one for zero exact out partial", async () => {
-        await snapshotGasCost(
-          swapMath.getGasCostOfComputeSwapStep(
-            encodePriceSqrt(1, 1),
-            encodePriceSqrt(1010, 100),
-            expandTo18Decimals(2),
-            1000,
-            toBn("0.3"),
-            toBn("31536000")
-          )
-        );
-      });
-      it("swap zero for one exact out partial", async () => {
-        await snapshotGasCost(
-          swapMath.getGasCostOfComputeSwapStep(
-            encodePriceSqrt(1, 1),
-            encodePriceSqrt(99, 1000),
-            expandTo18Decimals(2),
-            1000,
-            toBn("0.3"),
-            toBn("31536000")
-          )
-        );
-      });
-    });
+    // describe("gas", () => {
+    //   it("swap one for zero exact in capped", async () => {
+    //     await snapshotGasCost(
+    //       swapMath.getGasCostOfComputeSwapStep(
+    //         encodePriceSqrt(1, 1),
+    //         encodePriceSqrt(101, 100),
+    //         expandTo18Decimals(2),
+    //         expandTo18Decimals(1),
+    //         toBn("0.3"),
+    //         toBn("31536000")
+    //       )
+    //     );
+    //   });
+    //   it("swap zero for one exact in capped", async () => {
+    //     await snapshotGasCost(
+    //       swapMath.getGasCostOfComputeSwapStep(
+    //         encodePriceSqrt(1, 1),
+    //         encodePriceSqrt(99, 100),
+    //         expandTo18Decimals(2),
+    //         expandTo18Decimals(1),
+    //         toBn("0.3"),
+    //         toBn("31536000")
+    //       )
+    //     );
+    //   });
+    //   it("swap one for zero exact out capped", async () => {
+    //     await snapshotGasCost(
+    //       swapMath.getGasCostOfComputeSwapStep(
+    //         encodePriceSqrt(1, 1),
+    //         encodePriceSqrt(101, 100),
+    //         expandTo18Decimals(2),
+    //         expandTo18Decimals(1).mul(-1),
+    //         toBn("0.3"),
+    //         toBn("31536000")
+    //       )
+    //     );
+    //   });
+    //   it("swap zero for one exact out capped", async () => {
+    //     await snapshotGasCost(
+    //       swapMath.getGasCostOfComputeSwapStep(
+    //         encodePriceSqrt(1, 1),
+    //         encodePriceSqrt(99, 100),
+    //         expandTo18Decimals(2),
+    //         expandTo18Decimals(1).mul(-1),
+    //         toBn("0.3"),
+    //         toBn("31536000")
+    //       )
+    //     );
+    //   });
+    //   it("swap one for zero exact in partial", async () => {
+    //     await snapshotGasCost(
+    //       swapMath.getGasCostOfComputeSwapStep(
+    //         encodePriceSqrt(1, 1),
+    //         encodePriceSqrt(1010, 100),
+    //         expandTo18Decimals(2),
+    //         1000,
+    //         toBn("0.3"),
+    //         toBn("31536000")
+    //       )
+    //     );
+    //   });
+    //   it("swap zero for one exact in partial", async () => {
+    //     await snapshotGasCost(
+    //       swapMath.getGasCostOfComputeSwapStep(
+    //         encodePriceSqrt(1, 1),
+    //         encodePriceSqrt(99, 1000),
+    //         expandTo18Decimals(2),
+    //         1000,
+    //         toBn("0.3"),
+    //         toBn("31536000")
+    //       )
+    //     );
+    //   });
+    //   it("swap one for zero exact out partial", async () => {
+    //     await snapshotGasCost(
+    //       swapMath.getGasCostOfComputeSwapStep(
+    //         encodePriceSqrt(1, 1),
+    //         encodePriceSqrt(1010, 100),
+    //         expandTo18Decimals(2),
+    //         1000,
+    //         toBn("0.3"),
+    //         toBn("31536000")
+    //       )
+    //     );
+    //   });
+    //   it("swap zero for one exact out partial", async () => {
+    //     await snapshotGasCost(
+    //       swapMath.getGasCostOfComputeSwapStep(
+    //         encodePriceSqrt(1, 1),
+    //         encodePriceSqrt(99, 1000),
+    //         expandTo18Decimals(2),
+    //         1000,
+    //         toBn("0.3"),
+    //         toBn("31536000")
+    //       )
+    //     );
+    //   });
+    // });
   });
 });
