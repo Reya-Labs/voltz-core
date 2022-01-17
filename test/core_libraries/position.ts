@@ -4,7 +4,6 @@ import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
 import { PositionTest } from "../../typechain/PositionTest";
 import { toBn } from "../helpers/toBn";
-import { calculateFixedAndVariableDelta } from "../shared/utilities";
 
 const { loadFixture } = waffle;
 
@@ -86,77 +85,48 @@ describe("Position", () => {
   });
 
   describe("#calculateFixedAndVariableDelta", () => {
-    it("check the inside last balances are correctly updated", async () => {
+    it("check fixed and variable deltas are correctly calculated", async () => {
       const { positionTest } = await loadFixture(fixture);
       await positionTest.updateLiquidity(10);
       const updatedPosition = await positionTest.position();
 
-      expect(updatedPosition._liquidity, "1").to.eq(10);
+      expect(updatedPosition._liquidity).to.eq(10);
 
-      console.log(
-        "last fixed:",
-        (await positionTest.getFixedTokenGrowthInsideLastX128()).toString()
-      );
-      console.log(
-        "last variable:",
-        (await positionTest.getVariableTokenGrowthInsideLastX128()).toString()
-      );
+      const Q128 = BigNumber.from(2).pow(128)
+      const Q128Negative = Q128.mul(BigNumber.from(-1))
+
+      console.log(Q128); // 1 in Q128
+      console.log(Q128Negative); // -1 in Q128
 
       const result = await positionTest.calculateFixedAndVariableDelta(
-        toBn("20"),
-        toBn("-30")
+        Q128,
+        Q128Negative
       );
-
-      await positionTest.updateFixedAndVariableTokenGrowthInside(
-        toBn("20"),
-        toBn("-30")
-      );
-
-      console.log(
-        "last fixed:",
-        (await positionTest.getFixedTokenGrowthInsideLastX128()).toString()
-      );
-      console.log(
-        "last variable:",
-        (await positionTest.getVariableTokenGrowthInsideLastX128()).toString()
-      );
-
-      console.log("result: ", result.toString());
-
-      const expectedResult = calculateFixedAndVariableDelta(
-        toBn("20"),
-        toBn("-30"),
-        toBn("0"),
-        toBn("0"),
-        BigNumber.from(10)
-      );
-
-      expect(result[0], "2").to.eq(expectedResult[0]);
-      expect(result[1], "3").to.eq(expectedResult[1]);
+      
+      expect(result[0]).to.eq(10);
+      expect(result[1]).to.eq(-10);
+      
     });
   });
 
   describe("#calculateFeeDelta", () => {
-    it("check fails when liquidity zero", async () => {
+
+    it("check fee delta correctly calculated", async () => {
       const { positionTest } = await loadFixture(fixture);
-      return expect(
-        positionTest.calculateFeeDelta(toBn("50"))
-      ).to.be.revertedWith("NP");
+      await positionTest.updateLiquidity(10);
+      const updatedPosition = await positionTest.position();
+
+      expect(updatedPosition._liquidity).to.eq(10);
+
+      const Q128 = BigNumber.from(2).pow(128)
+
+      const result = await positionTest.calculateFeeDelta(
+        Q128
+      );
+      
+      expect(result).to.eq(10);
+      
     });
 
-    it("test when feeGrowthInsideLast = 0", async () => {
-      const { positionTest } = await loadFixture(fixture);
-      const lastFeeGrowthInside = 0;
-      const feeGrowthInside = 50;
-      const liquidity = 10;
-      await positionTest.updateLiquidity(liquidity);
-      const result = await positionTest.calculateFeeDelta(
-        toBn(feeGrowthInside)
-      );
-      console.log("result", result);
-      expect(result).to.eq(
-        toBn((feeGrowthInside - lastFeeGrowthInside) * liquidity)
-      );
-    });
   });
 });
