@@ -67,6 +67,9 @@ describe("VAMM", () => {
       termEndTimestampBN
     );
 
+    // update marginEngineTest allowance
+    await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
+
     // deploy a vamm
     const vammAddress = await factory.getVAMMAddress(salts[1]);
     await factory.createVAMM(salts[1]);
