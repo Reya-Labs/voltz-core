@@ -110,11 +110,7 @@ describe("VAMM", () => {
 
     it("correctly computes position fixed and variable growth inside", async () => {
       const realized =
-        await vammTest.computePositionFixedAndVariableGrowthInside(
-          -1,
-          1,
-          0
-        );
+        await vammTest.computePositionFixedAndVariableGrowthInside(-1, 1, 0);
       const realizedFixedTokenGrowthInside = realized[0];
       const realizedVariableTokenGrowthInside = realized[1];
 
@@ -184,14 +180,8 @@ describe("VAMM", () => {
 
   describe("#mint", () => {
     it("fails if not initialized", async () => {
-      await expect(
-        vammTest.mint(
-          wallet.address,
-          -tickSpacing,
-          tickSpacing,
-          1
-        )
-      ).to.be.reverted;
+      await expect(vammTest.mint(wallet.address, -tickSpacing, tickSpacing, 1))
+        .to.be.reverted;
     });
 
     describe("after initialization", async () => {
@@ -285,12 +275,7 @@ describe("VAMM", () => {
         });
 
         it("adds liquidity to liquidityGross", async () => {
-          await vammTest.mint(
-            wallet.address,
-            -240,
-            0,
-            100
-          );
+          await vammTest.mint(wallet.address, -240, 0, 100);
           const liquidityGross0 = (await vammTest.ticks(-240)).liquidityGross;
           expect(liquidityGross0).to.eq(100);
           const liquidityGross1 = (await vammTest.ticks(0)).liquidityGross;
@@ -301,12 +286,7 @@ describe("VAMM", () => {
             .liquidityGross;
           expect(liquidityGross2).to.eq(0);
           expect(liquidityGross3).to.eq(0);
-          await vammTest.mint(
-            wallet.address,
-            -240,
-            tickSpacing,
-            150
-          );
+          await vammTest.mint(wallet.address, -240, tickSpacing, 150);
           const liquidityGross4 = (await vammTest.ticks(-240)).liquidityGross;
           expect(liquidityGross4).to.eq(250);
           const liquidityGross5 = (await vammTest.ticks(0)).liquidityGross;
@@ -317,12 +297,7 @@ describe("VAMM", () => {
           const liquidityGross7 = (await vammTest.ticks(tickSpacing * 2))
             .liquidityGross;
           expect(liquidityGross7).to.eq(0);
-          await vammTest.mint(
-            wallet.address,
-            0,
-            tickSpacing * 2,
-            60
-          );
+          await vammTest.mint(wallet.address, 0, tickSpacing * 2, 60);
           const liquidityGross8 = (await vammTest.ticks(-240)).liquidityGross;
           const liquidityGross9 = (await vammTest.ticks(0)).liquidityGross;
           const liquidityGross10 = (await vammTest.ticks(tickSpacing))
@@ -336,18 +311,8 @@ describe("VAMM", () => {
         });
 
         it("removes liquidity from liquidityGross", async () => {
-          await vammTest.mint(
-            wallet.address,
-            -240,
-            0,
-            100
-          );
-          await vammTest.mint(
-            wallet.address,
-            -240,
-            0,
-            40
-          );
+          await vammTest.mint(wallet.address, -240, 0, 100);
+          await vammTest.mint(wallet.address, -240, 0, 40);
           // await vammTest.burn( )
         });
 

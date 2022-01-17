@@ -142,24 +142,6 @@ export function getGrowthInside(
   return sub(growthGlobal, add(fixedTokenGrowthBelow, fixedTokenGrowthAbove));
 }
 
-export function calculateFixedAndVariableDelta(
-  fixedTokenGrowthInside: BigNumber,
-  variableTokenGrowthInside: BigNumber,
-  fixedTokenGrowthInsideLast: BigNumber,
-  variableTokenGrowthInsideLast: BigNumber,
-  liquidity: BigNumber
-) {
-  const fixedTokenBalance: BigNumber = mul(
-    sub(fixedTokenGrowthInside, fixedTokenGrowthInsideLast),
-    liquidity
-  );
-  const variableTokenBalance: BigNumber = mul(
-    sub(variableTokenGrowthInside, variableTokenGrowthInsideLast),
-    liquidity
-  );
-
-  return [fixedTokenBalance, variableTokenBalance];
-}
 
 export function calculateSettlementCashflow(
   fixedTokenBalance: BigNumber,
