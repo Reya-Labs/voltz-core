@@ -133,8 +133,6 @@ describe("Position", () => {
 
       expect(result[0], "2").to.eq(expectedResult[0]);
       expect(result[1], "3").to.eq(expectedResult[1]);
-
-      
     });
   });
 
