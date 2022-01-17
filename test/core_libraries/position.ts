@@ -92,8 +92,8 @@ describe("Position", () => {
 
       expect(updatedPosition._liquidity).to.eq(10);
 
-      const Q128 = BigNumber.from(2).pow(128)
-      const Q128Negative = Q128.mul(BigNumber.from(-1))
+      const Q128 = BigNumber.from(2).pow(128);
+      const Q128Negative = Q128.mul(BigNumber.from(-1));
 
       console.log(Q128); // 1 in Q128
       console.log(Q128Negative); // -1 in Q128
@@ -102,15 +102,13 @@ describe("Position", () => {
         Q128,
         Q128Negative
       );
-      
+
       expect(result[0]).to.eq(10);
       expect(result[1]).to.eq(-10);
-      
     });
   });
 
   describe("#calculateFeeDelta", () => {
-
     it("check fee delta correctly calculated", async () => {
       const { positionTest } = await loadFixture(fixture);
       await positionTest.updateLiquidity(10);
@@ -118,15 +116,11 @@ describe("Position", () => {
 
       expect(updatedPosition._liquidity).to.eq(10);
 
-      const Q128 = BigNumber.from(2).pow(128)
+      const Q128 = BigNumber.from(2).pow(128);
 
-      const result = await positionTest.calculateFeeDelta(
-        Q128
-      );
-      
+      const result = await positionTest.calculateFeeDelta(Q128);
+
       expect(result).to.eq(10);
-      
     });
-
   });
 });

@@ -223,7 +223,8 @@ interface IMarginEngine is IPositionStructs {
     function unwindPosition(
         address owner,
         int24 tickLower,
-        int24 tickUpper
+        int24 tickUpper,
+        bool isPreMaturity
     ) external;
 
     function checkPositionMarginRequirementSatisfied(
