@@ -82,7 +82,7 @@ library FixedAndVariableMath {
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad
     ) internal view returns (uint256 fixedFactorValueWad) {
-        require(termEndTimestampWad > termStartTimestampWad, "E<=S");
+        require(termEndTimestampWad > termStartTimestampWad, "E>S");
 
         require(Time.blockTimestampScaled() >= termStartTimestampWad, "B.T>S");
 
@@ -117,7 +117,7 @@ library FixedAndVariableMath {
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad
     ) internal view returns (int256 fixedTokenBalanceWad) {
-        require(termEndTimestampWad > termStartTimestampWad, "E<=S");
+        require(termEndTimestampWad > termStartTimestampWad, "E>S");
 
         /// @audit explain the math in simple terms
 

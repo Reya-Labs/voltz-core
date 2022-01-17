@@ -288,8 +288,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         require(position._liquidity==0, "fully burned");
         require(!position.isSettled, "already settled");
 
-        updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
-
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
 
         position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
@@ -533,25 +531,30 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function unwindPosition(
         address owner,
         int24 tickLower,
-        int24 tickUpper
+        int24 tickUpper,
+        bool isCloseToMaturityOrBeyondMaturity
     ) external override {
-        
-        int256 _fixedTokenBalance;
-        int256 _variableTokenBalance;
-        uint256 _cumulativeFeeIncurred;
+    
+        /// @dev rename the function since it only does the unwind if before maturity
 
-        /// @dev this function can only be called by the vamm following a swap    
+        /// @dev this function can only be called by the vamm following a burn    
         require(msg.sender==vammAddress, "only vamm");
-        
-        /// @dev updatePositionTokenBalances is already done in the liquidatePosition call
+                
+        updatePositionTokenBalances(owner, tickLower, tickUpper);
 
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        if (!isCloseToMaturityOrBeyondMaturity) {
 
-        Tick.checkTicks(tickLower, tickUpper);
+            int256 _fixedTokenBalance;
+            int256 _variableTokenBalance;
+            uint256 _cumulativeFeeIncurred;
 
-        if (position.variableTokenBalance == 0) {
-            revert PositionNetZero();
-        }
+            Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+
+            Tick.checkTicks(tickLower, tickUpper);
+
+            if (position.variableTokenBalance == 0) {
+                revert PositionNetZero();
+            }
 
         /// @dev initiate a swap
 
@@ -597,6 +600,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         position.updateMargin(-int256(_cumulativeFeeIncurred));
         /// @dev passes the _fixedTokenBalance and _variableTokenBalance deltas
         position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
+
+        }
+    
     }
 
     /// @notice Check if the position margin is above the Initial Margin Requirement

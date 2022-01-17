@@ -57,13 +57,26 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     unlocked = true;
   }
 
+  function isCloseToMaturityOrBeyondMaturity() internal view returns(bool vammInactive) {
+    uint256 currentTimestamp = Time.blockTimestampScaled(); 
+
+    if (currentTimestamp >= IMarginEngine(marginEngineAddress).termEndTimestampWad()) {
+      vammInactive = true; 
+    } else {
+      uint256 timeDelta = IMarginEngine(marginEngineAddress).termEndTimestampWad() - currentTimestamp;
+      if (timeDelta <= SECONDS_IN_DAY_WAD) {
+        vammInactive = true; 
+      }
+    }
+
+  }
+  
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
-    uint256 currentTimestamp = Time.blockTimestampScaled(); 
-    require(currentTimestamp < IMarginEngine(marginEngineAddress).termEndTimestampWad(), "vamm has reached maturity");
-    uint256 timeDelta = IMarginEngine(marginEngineAddress).termEndTimestampWad() - currentTimestamp;
-    require(timeDelta > SECONDS_IN_DAY_WAD, "vamm must be 1 day before maturity");
+    if (isCloseToMaturityOrBeyondMaturity()) {
+      revert();
+    }
     _;
   }
 
@@ -150,6 +163,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     require((msg.sender==recipient) || (msg.sender == marginEngineAddress), "MS or ME");
 
+    /// @audit check the order of operations, make sure the position's liquidity is not used in the unwind
+
     updatePosition(
       ModifyPositionParams({
         owner: recipient,
@@ -159,7 +174,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    IMarginEngine(marginEngineAddress).unwindPosition(recipient, tickLower, tickUpper);
+    IMarginEngine(marginEngineAddress).unwindPosition(recipient, tickLower, tickUpper, isCloseToMaturityOrBeyondMaturity());
   }
 
   function flipTicks(ModifyPositionParams memory params)
