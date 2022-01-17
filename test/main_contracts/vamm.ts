@@ -222,18 +222,21 @@ describe("VAMM", () => {
         await marginEngineTest.setVAMMAddress(vammTest.address);
 
         const margin_engine_params = {
-           apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
-           apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
-           minDeltaLMWad: MIN_DELTA_LM,
-           minDeltaIMWad: MIN_DELTA_IM,
-           sigmaSquaredWad: SIGMA_SQUARED,
-           alphaWad: ALPHA,
-           betaWad: BETA,
-           xiUpperWad: XI_UPPER,
-           xiLowerWad: XI_LOWER,
-           tMaxWad: T_MAX}
+          apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+          apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+          minDeltaLMWad: MIN_DELTA_LM,
+          minDeltaIMWad: MIN_DELTA_IM,
+          sigmaSquaredWad: SIGMA_SQUARED,
+          alphaWad: ALPHA,
+          betaWad: BETA,
+          xiUpperWad: XI_UPPER,
+          xiLowerWad: XI_LOWER,
+          tMaxWad: T_MAX,
+        };
 
-        await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
+        await marginEngineTest.setMarginCalculatorParameters(
+          margin_engine_params
+        );
 
         await marginEngineTest.updatePositionMargin(
           {

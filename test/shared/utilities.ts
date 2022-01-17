@@ -142,7 +142,6 @@ export function getGrowthInside(
   return sub(growthGlobal, add(fixedTokenGrowthBelow, fixedTokenGrowthAbove));
 }
 
-
 export function calculateSettlementCashflow(
   fixedTokenBalance: BigNumber,
   variableTokenBalance: BigNumber,

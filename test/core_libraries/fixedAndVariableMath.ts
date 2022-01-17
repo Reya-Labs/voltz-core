@@ -94,11 +94,6 @@ describe("FixedAndVariableMath", () => {
   before(async () => {
     await network.provider.send("evm_setNextBlockTimestamp", [BLOCK_TIMESTAMP]);
 
-    const fixedAndVariableMathFactory = await ethers.getContractFactory(
-      "FixedAndVariableMath"
-    );
-
-    const fixedAndVariableMath = await fixedAndVariableMathFactory.deploy();
     const fixedAndVariableMathTestFactory = await ethers.getContractFactory(
       "FixedAndVariableMathTest"
     );
