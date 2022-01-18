@@ -43,7 +43,7 @@ contract MarginCalculatorTest {
             memory _marginCalculatorParameters
     ) external view returns (uint256 margin) {
         return
-            MarginCalculator.getMinimumMarginRequirement(
+            MarginCalculator.getTraderMarginRequirement(
                 params,
                 _marginCalculatorParameters
             );
