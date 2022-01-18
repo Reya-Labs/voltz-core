@@ -77,15 +77,25 @@ contract MarginCalculatorTest {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) external view returns (bool isLiquidatable) {
-        return MarginCalculator.isLiquidatableTrader(params, currentMargin, _marginCalculatorParameters);
+        return
+            MarginCalculator.isLiquidatableTrader(
+                params,
+                currentMargin,
+                _marginCalculatorParameters
+            );
     }
-    
+
     function isLiquidatablePosition(
         MarginCalculator.PositionMarginRequirementParams memory params,
         int256 currentMargin,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) external view returns (bool _isLiquidatable) {
-        return MarginCalculator.isLiquidatablePosition(params, currentMargin, _marginCalculatorParameters);
+        return
+            MarginCalculator.isLiquidatablePosition(
+                params,
+                currentMargin,
+                _marginCalculatorParameters
+            );
     }
 }

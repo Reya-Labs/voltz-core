@@ -1,4 +1,4 @@
-import { Wallet, BigNumber, utils } from "ethers";
+import { Wallet, BigNumber } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
@@ -22,18 +22,6 @@ import {
 
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import { getCurrentTimestamp } from "../helpers/time";
-
-import { mostSignificantBit, TickMath } from "../shared/tickMath";
-import { SqrtPriceMath } from "../shared/sqrtPriceMath";
-import JSBI from "jsbi";
-import { TestRateOracle } from "../../typechain/TestRateOracle";
-import {
-  ERC20Mock,
-  Factory,
-  MockAaveLendingPool,
-  TestMarginEngine,
-  TestVAMM,
-} from "../../typechain";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
@@ -109,269 +97,6 @@ function getExcessBalance(
   );
 
   return excessBalance;
-}
-
-function getPositionMarginRequirement(
-  tickLower: number,
-  tickUpper: number,
-  isLM: boolean,
-  currentTick: number,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  liquidity: JSBI,
-  fixedTokenBalance: BigNumber,
-  variableTokenBalance: BigNumber,
-  variableFactor: BigNumber,
-  historicalApy: BigNumber,
-  blockTimestampScaled: BigNumber
-) {
-  if (JSBI.equal(liquidity, JSBI.BigInt(0))) {
-    return toBn("0.0");
-  }
-
-  if (currentTick < tickLower) {
-    console.log("TESTTTTTT: currentTick < tickLower");
-    if (variableTokenBalance.gt(toBn("0.0"))) {
-      throw new Error("varible balance > 0");
-    } else if (variableTokenBalance.lt(toBn("0.0"))) {
-      return getTraderMarginRequirement(
-        fixedTokenBalance,
-        variableTokenBalance,
-        termStartTimestamp,
-        termEndTimestamp,
-        isLM,
-        historicalApy,
-        blockTimestampScaled
-      );
-    } else {
-      const amount0JSBI = SqrtPriceMath.getAmount0Delta(
-        TickMath.getSqrtRatioAtTick(tickLower),
-        TickMath.getSqrtRatioAtTick(tickUpper),
-        liquidity,
-        false
-      );
-
-      const amount1JSBI = SqrtPriceMath.getAmount1Delta(
-        TickMath.getSqrtRatioAtTick(tickLower),
-        TickMath.getSqrtRatioAtTick(tickUpper),
-        liquidity,
-        true
-      );
-
-      const amount1 = BigNumber.from(amount1JSBI.toString());
-
-      let amount0 = BigNumber.from(amount0JSBI.toString());
-      amount0 = mul(amount0, toBn("-1.0"));
-
-      const expectedVariableTokenBalance = amount1;
-      const expectedFixedTokenBalance = getFixedTokenBalance(
-        amount0,
-        amount1,
-        variableFactor,
-        termStartTimestamp,
-        termEndTimestamp,
-        blockTimestampScaled
-      );
-
-      return getTraderMarginRequirement(
-        expectedFixedTokenBalance,
-        expectedVariableTokenBalance,
-        termStartTimestamp,
-        termEndTimestamp,
-        isLM,
-        historicalApy,
-        blockTimestampScaled
-      );
-    }
-  } else if (currentTick < tickUpper) {
-    console.log("TESTTTTTT: currentTick < tickUpper");
-    return positionMarginBetweenTicksHelper(
-      tickLower,
-      tickUpper,
-      isLM,
-      currentTick,
-      termStartTimestamp,
-      termEndTimestamp,
-      liquidity,
-      fixedTokenBalance,
-      variableTokenBalance,
-      variableFactor,
-      historicalApy,
-      blockTimestampScaled
-    );
-  } else {
-    console.log("TESTTTTTT: currentTick >= tickLower");
-    if (variableTokenBalance.lt(toBn("0.0"))) {
-      throw new Error("varible balance < 0");
-    } else if (variableTokenBalance.gt(toBn("0.0"))) {
-      return getTraderMarginRequirement(
-        fixedTokenBalance,
-        variableTokenBalance,
-        termStartTimestamp,
-        termEndTimestamp,
-        isLM,
-        historicalApy,
-        blockTimestampScaled
-      );
-    } else {
-      const amount0JSBI = SqrtPriceMath.getAmount0Delta(
-        TickMath.getSqrtRatioAtTick(tickLower),
-        TickMath.getSqrtRatioAtTick(tickUpper),
-        liquidity,
-        true
-      );
-
-      const amount1JSBI = SqrtPriceMath.getAmount1Delta(
-        TickMath.getSqrtRatioAtTick(tickLower),
-        TickMath.getSqrtRatioAtTick(tickUpper),
-        liquidity,
-        false
-      );
-
-      const amount0 = BigNumber.from(amount0JSBI.toString());
-      let amount1 = BigNumber.from(amount1JSBI.toString());
-
-      amount1 = mul(amount1, toBn("-1.0"));
-
-      const expectedVariableTokenBalance = amount1;
-      const expectedFixedTokenbalance = getFixedTokenBalance(
-        amount0,
-        amount1,
-        variableFactor,
-        termStartTimestamp,
-        termEndTimestamp,
-        blockTimestampScaled
-      );
-
-      return getTraderMarginRequirement(
-        expectedFixedTokenbalance,
-        expectedVariableTokenBalance,
-        termStartTimestamp,
-        termEndTimestamp,
-        isLM,
-        historicalApy,
-        blockTimestampScaled
-      );
-    }
-  }
-}
-
-function positionMarginBetweenTicksHelper(
-  tickLower: number,
-  tickUpper: number,
-  isLM: boolean,
-  currentTick: number,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  liquidity: JSBI,
-  fixedTokenBalance: BigNumber,
-  variableTokenBalance: BigNumber,
-  variableFactor: BigNumber,
-  historicalApy: BigNumber,
-  blockTimestampScaled: BigNumber
-) {
-  // make sure that in here the variable factor is the accrued variable factor
-  // emphasise this in the docs
-
-  const amount0UpJSBI = SqrtPriceMath.getAmount0Delta(
-    TickMath.getSqrtRatioAtTick(currentTick),
-    TickMath.getSqrtRatioAtTick(tickUpper),
-    liquidity,
-    true
-  );
-
-  const amount1UpJSBI = SqrtPriceMath.getAmount1Delta(
-    TickMath.getSqrtRatioAtTick(currentTick),
-    TickMath.getSqrtRatioAtTick(tickUpper),
-    liquidity,
-    false
-  );
-
-  let amount0Up = BigNumber.from(amount0UpJSBI.toString());
-  const amount1Up = BigNumber.from(amount1UpJSBI.toString());
-
-  amount0Up = mul(amount0Up, toBn("-1.0"));
-
-  const expectedVariableTokenBalanceAfterUp: BigNumber = add(
-    variableTokenBalance,
-    amount1Up
-  );
-  let fixedTokenBalanceAfterRebalancing: BigNumber = getFixedTokenBalance(
-    amount0Up,
-    amount1Up,
-    variableFactor,
-    termStartTimestamp,
-    termEndTimestamp,
-    blockTimestampScaled
-  );
-  const expectedFixedTokenBalanceAfterUp: BigNumber = add(
-    fixedTokenBalance,
-    fixedTokenBalanceAfterRebalancing
-  );
-  const marginReqAfterUp: BigNumber = getTraderMarginRequirement(
-    expectedFixedTokenBalanceAfterUp,
-    expectedVariableTokenBalanceAfterUp,
-    termStartTimestamp,
-    termEndTimestamp,
-    isLM,
-    historicalApy,
-    blockTimestampScaled
-  );
-
-  const amount0DownJSBI = SqrtPriceMath.getAmount0Delta(
-    TickMath.getSqrtRatioAtTick(currentTick),
-    TickMath.getSqrtRatioAtTick(tickLower),
-    liquidity,
-    false
-  );
-
-  const amount1DownJSBI = SqrtPriceMath.getAmount1Delta(
-    TickMath.getSqrtRatioAtTick(currentTick),
-    TickMath.getSqrtRatioAtTick(tickLower),
-    liquidity,
-    true
-  );
-
-  const amount0Down = BigNumber.from(amount0DownJSBI.toString());
-  let amount1Down = BigNumber.from(amount1DownJSBI.toString());
-
-  amount1Down = mul(amount1Down, toBn("-1.0"));
-
-  const expectedVariableTokenBalanceAfterDown: BigNumber = add(
-    variableTokenBalance,
-    amount1Down
-  );
-  fixedTokenBalanceAfterRebalancing = getFixedTokenBalance(
-    amount0Down,
-    amount1Down,
-    variableFactor,
-    termStartTimestamp,
-    termEndTimestamp,
-    blockTimestampScaled
-  );
-  const expectedFixedTokenBalanceAfterDown: BigNumber = add(
-    fixedTokenBalance,
-    fixedTokenBalanceAfterRebalancing
-  );
-  const marginReqAfterDown: BigNumber = getTraderMarginRequirement(
-    expectedFixedTokenBalanceAfterDown,
-    expectedVariableTokenBalanceAfterDown,
-    termStartTimestamp,
-    termEndTimestamp,
-    isLM,
-    historicalApy,
-    blockTimestampScaled
-  );
-
-  let margin: BigNumber;
-
-  if (sub(marginReqAfterUp, marginReqAfterDown) > toBn("0")) {
-    margin = marginReqAfterUp;
-  } else {
-    margin = marginReqAfterDown;
-  }
-
-  return margin;
 }
 
 function getTraderMarginRequirement(
@@ -606,8 +331,6 @@ describe("MarginCalculator", () => {
   // - Setup
 
   let wallet: Wallet, other: Wallet;
-  let testMarginCalculator: MarginCalculatorTest;
-  let testRateOracle: TestRateOracle;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
   before("create fixture loader", async () => {
@@ -785,9 +508,6 @@ describe("MarginCalculator", () => {
     });
 
     it("returns zero if position isn't settled", async () => {
-      const fixedTokenBalance: BigNumber = toBn("10000");
-      const variableTokenBalance: BigNumber = toBn("1000");
-
       const trader_margin_requirement_params = {
         fixedTokenBalance: toBn("10000"),
         variableTokenBalance: toBn("1000"),
@@ -1197,7 +917,7 @@ describe("MarginCalculator", () => {
         tMaxWad: T_MAX,
       };
 
-    ({testMarginCalculator} = await loadFixture(marginCalculatorFixture));
+      ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
     });
 
     it("correctly checks for the fact the trader is liquidatable", async () => {
@@ -1223,8 +943,8 @@ describe("MarginCalculator", () => {
         termStartTimestampWad: termStartTimestampScaled,
         termEndTimestampWad: termEndTimestampScaled,
         isLM: isLM,
-        historicalApyWad: historicalApy
-      }
+        historicalApyWad: historicalApy,
+      };
 
       const realized = await testMarginCalculator.isLiquidatableTrader(
         trader_margin_requirement_params,
@@ -1253,7 +973,7 @@ describe("MarginCalculator", () => {
         tMaxWad: T_MAX,
       };
 
-    ({testMarginCalculator} = await loadFixture(marginCalculatorFixture));
+      ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
     });
 
     it("correctly checks for the fact the position is liquidatable", async () => {
@@ -1293,8 +1013,8 @@ describe("MarginCalculator", () => {
         fixedTokenBalance: fixedTokenBalance,
         variableTokenBalance: variableTokenBalance,
         variableFactorWad: variableFactor,
-        historicalApyWad: historicalApy
-      }
+        historicalApyWad: historicalApy,
+      };
 
       const realized = await testMarginCalculator.isLiquidatablePosition(
         position_margin_requirement_params,
