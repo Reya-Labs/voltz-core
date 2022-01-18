@@ -75,7 +75,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
     if (isCloseToMaturityOrBeyondMaturity()) {
-      revert();
+      revert("closeToOrBeyondMaturity");
     }
     _;
   }

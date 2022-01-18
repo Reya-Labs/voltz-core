@@ -101,6 +101,14 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     token.address
   );
 
+  await aaveLendingPool.setReserveNormalizedIncome(
+    token.address,
+    BigNumber.from(2).pow(27)
+  );
+
+  // write oracle entry
+  await rateOracleTest.writeOracleEntry();
+
   const termStartTimestamp: number = await getCurrentTimestamp(provider);
   const termEndTimestamp: number =
     termStartTimestamp + consts.ONE_WEEK.toNumber();

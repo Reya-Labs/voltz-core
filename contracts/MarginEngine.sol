@@ -191,7 +191,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
         updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
         require((position.margin + marginDelta) > 0, "can't withdraw more than have");
@@ -209,6 +208,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 transferMargin(msg.sender, marginDelta);
 
             } else {
+
+                uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
             
                 int256 updatedMarginWouldBe = position.margin + marginDelta;
 

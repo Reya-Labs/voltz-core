@@ -112,7 +112,7 @@ describe("VAMM", () => {
 
     await aaveLendingPool.setReserveNormalizedIncome(
       token.address,
-      toBn("1.1")
+      BigNumber.from(2).pow(27)
     );
 
     minTick = getMinTick(TICK_SPACING);
