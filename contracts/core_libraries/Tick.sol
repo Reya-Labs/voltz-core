@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "../utils/LowGasSafeMath.sol";
 import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
@@ -10,7 +9,6 @@ import "../utils/LiquidityMath.sol";
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
-    using LowGasSafeMath for int256;
     using SafeCast for int256;
 
     // info stored for each initialized individual tick
@@ -213,8 +211,8 @@ library Tick {
         /// add comments
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
         info.liquidityNet = upper
-            ? int256(info.liquidityNet).sub(liquidityDelta).toInt128()
-            : int256(info.liquidityNet).add(liquidityDelta).toInt128();
+            ? info.liquidityNet - liquidityDelta
+            : info.liquidityNet + liquidityDelta;
     }
 
     /// @notice Clears tick data

@@ -8,7 +8,6 @@ import "./core_libraries/Position.sol";
 import "./core_libraries/Trader.sol";
 
 import "./utils/SafeCast.sol";
-import "./utils/LowGasSafeMath.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
@@ -24,8 +23,6 @@ import "./utils/FixedPoint128.sol";
 
 
 contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
-  using LowGasSafeMath for uint256;
-  using LowGasSafeMath for int256;
   using SafeCast for uint256;
   using SafeCast for int256;
   using Tick for mapping(int24 => Tick.Info);
@@ -442,16 +439,12 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         // exact input
         /// prb math is not used in here (following v3 logic)
         state.amountSpecifiedRemaining -= (step.amountIn).toInt256(); // this value is positive
-        state.amountCalculated = state.amountCalculated.sub(
-          (step.amountOut).toInt256()
-        ); // this value is negative
+        state.amountCalculated -= step.amountOut.toInt256(); // this value is negative
       } else {
         // is a VariableTaker
         /// prb math is not used in here (following v3 logic)
         state.amountSpecifiedRemaining += step.amountOut.toInt256(); // this value is negative
-        state.amountCalculated = state.amountCalculated.add(
-          (step.amountIn).toInt256()
-        ); // this value is positive
+        state.amountCalculated += step.amountIn.toInt256(); // this value is positive
       }
 
       // update cumulative fee incurred while initiating an interest rate swap

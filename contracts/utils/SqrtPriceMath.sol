@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "./LowGasSafeMath.sol";
 import "./SafeCast.sol";
 
 import "./FullMath.sol";
@@ -12,7 +11,6 @@ import "./FixedPoint96.sol";
 /// @title Functions based on Q64.96 sqrt price and liquidity
 /// @notice Contains the math that uses square root of price as a Q64.96 and liquidity to compute deltas
 library SqrtPriceMath {
-    using LowGasSafeMath for uint256;
     using SafeCast for uint256;
 
     /// @notice Gets the next sqrt price given a delta of token0
@@ -56,7 +54,7 @@ library SqrtPriceMath {
                 uint160(
                     UnsafeMath.divRoundingUp(
                         numerator1,
-                        (numerator1 / sqrtPX96).add(amount)
+                        (numerator1 / sqrtPX96) + amount
                     )
                 );
         } else {
@@ -101,7 +99,7 @@ library SqrtPriceMath {
                     : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
             );
 
-            return uint256(sqrtPX96).add(quotient).toUint160();
+            return sqrtPX96 + quotient.toUint160();
         } else {
             uint256 quotient = (
                 amount <= type(uint160).max

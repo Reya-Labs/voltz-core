@@ -8,7 +8,6 @@ import "./core_libraries/Position.sol";
 import "./core_libraries/Trader.sol";
 import "./core_libraries/MarginCalculator.sol";
 import "./utils/SafeCast.sol";
-import "./utils/LowGasSafeMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
@@ -18,9 +17,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
-    using LowGasSafeMath for uint256;
-    using LowGasSafeMath for int256;
-    
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
