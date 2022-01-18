@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 import Bn from "bignumber.js";
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
