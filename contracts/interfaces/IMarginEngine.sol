@@ -101,6 +101,8 @@ interface IMarginEngine is IPositionStructs {
         MarginCalculatorParameters memory _marginCalculatorParameters
     ) external;
 
+    // function getMarginCalculatorParameters() external view returns (MarginCalculatorParameters memory _marginCalculatorParameters);
+
     function setIsInsuranceDepleted(bool _isInsuranceDepleted) external;
 
     function setMinMarginToIncentiviseLiquidators(

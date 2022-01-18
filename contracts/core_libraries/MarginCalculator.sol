@@ -387,7 +387,7 @@ library MarginCalculator {
         if (params.fixedTokenBalance >= 0 && params.variableTokenBalance >= 0) {
             return 0;
         }
-
+        
         int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(
             params.fixedTokenBalance
         );

@@ -182,7 +182,7 @@ describe("FixedAndVariableMath", () => {
           afterCurrentBlockTimestamp,
           afterAfterCurrentBlockTimestamp
         )
-      ).to.be.revertedWith("B.T>S");
+      ).to.be.revertedWith("B.T<S");
     });
 
     // no longer the case

@@ -48,6 +48,16 @@ export async function marginEngineMasterTestFixture() {
   return { marginEngineMasterTest };
 }
 
+export async function marginCalculatorFixture() {
+  const TestMarginCalculatorFactory = await ethers.getContractFactory(
+    "MarginCalculatorTest"
+  );
+
+  const testMarginCalculator = await TestMarginCalculatorFactory.deploy();
+
+  return { testMarginCalculator };
+}
+
 export async function factoryFixture(
   _masterMarginEngineAddress: string,
   _masterVAMMAddress: string
