@@ -44,7 +44,7 @@ describe("SwapMath", () => {
           toBn("31536000"),
           toBn("0.3")
         )
-      ).to.eq(toBn("300"));
+      ).to.eq(300);
     });
 
     it("no notional", async () => {
@@ -54,19 +54,19 @@ describe("SwapMath", () => {
           toBn("31536000"),
           toBn("0.3")
         )
-      ).to.eq(toBn("0"));
+      ).to.eq(0);
     });
 
     it("no time until maturity", async () => {
       expect(
         await swapMath.computeFeeAmount(toBn("1000"), toBn("0"), toBn("0.3"))
-      ).to.eq(toBn("0"));
+      ).to.eq(0);
     });
 
     it("no percentage fee", async () => {
       expect(
         await swapMath.computeFeeAmount(toBn("0"), toBn("31536000"), toBn("0"))
-      ).to.eq(toBn("0"));
+      ).to.eq(0);
     });
 
     it("overflow if notional >= 10**60", async () => {
@@ -108,25 +108,10 @@ describe("SwapMath", () => {
           timeToMaturityInSeconds
         );
 
-      console.log("fee amount:", feeAmount.toString());
       expect(amountIn).to.eq("9975124224178055");
-      expect(feeAmount).to.eq(
-        await swapMath.computeFeeAmount(amountIn, timeToMaturityInSeconds, fee)
-      );
+      expect(feeAmount).to.eq("2992537267253416");
       expect(amountOut).to.eq("9925619580021728");
-      expect(amountIn.add(feeAmount), "entire amount is not used").to.lt(
-        amount
-      );
-
-      //   const priceAfterWholeInputAmount = await sqrtPriceMath.getNextSqrtPriceFromInput(
-      //     price,
-      //     liquidity,
-      //     amount,
-      //     zeroForOne
-      //   )
-
       expect(sqrtQ, "price is capped at price target").to.eq(priceTarget);
-      //   expect(sqrtQ, 'price is less than price after whole input amount').to.lt(priceAfterWholeInputAmount)
     });
 
     it("exact amount out that gets capped at price target in one for zero", async () => {
@@ -147,25 +132,13 @@ describe("SwapMath", () => {
           fee,
           timeToMaturityInSeconds
         );
-
+        
       expect(amountIn).to.eq("9975124224178055");
-      expect(feeAmount).to.eq(
-        await swapMath.computeFeeAmount(amountIn, timeToMaturityInSeconds, fee)
-      );
+      expect(feeAmount).to.eq("2992537267253416");
       expect(amountOut).to.eq("9925619580021728");
-      expect(amountOut, "entire amount out is not returned").to.lt(
-        amount.mul(-1)
-      );
-
-      //   const priceAfterWholeOutputAmount = await sqrtPriceMath.getNextSqrtPriceFromOutput(
-      //     price,
-      //     liquidity,
-      //     amount.mul(-1),
-      //     zeroForOne
-      //   )
+      expect(amountOut, "entire amount out is not returned").to.lt(amount.mul(-1));
 
       expect(sqrtQ, "price is capped at price target").to.eq(priceTarget);
-      //   expect(sqrtQ, 'price is less than price after whole output amount').to.lt(priceAfterWholeOutputAmount)
     });
 
     it("exact amount in that is fully spent in one for zero", async () => {
@@ -253,9 +226,7 @@ describe("SwapMath", () => {
       expect(sqrtQ).to.eq("417332158212080224061264428696775");
       expect(amountIn).to.eq("36040886511");
       expect(amountOut).to.eq(toBn("1"));
-      expect(feeAmount).to.eq(
-        await swapMath.computeFeeAmount(amountOut, timeToMaturityInSeconds, fee)
-      );
+      expect(feeAmount).to.eq("300000000000000000");
     });
 
     it("target price of 1 uses partial input amount", async () => {
@@ -275,157 +246,10 @@ describe("SwapMath", () => {
           timeToMaturityInSeconds
         );
 
-      // console.log("price:", decodePriceSqrt(price))
-      // console.log("priceTarget:", decodePriceSqrt(priceTarget))
-      // console.log("amountIn:", amountIn.toString())
-      // console.log("amountOut:", amountOut.toString())
-      // console.log("sqrtQ:", decodePriceSqrt(sqrtQ))
-
       expect(sqrtQ, "sqrtQ").to.eq(encodePriceSqrt(1, 1));
       expect(amountIn, "amount in").to.eq(toBn("0.5"));
       expect(amountOut, "amount out").to.eq(toBn("1"));
       expect(feeAmount, "fee amount").to.eq(toBn("0.3"));
     });
-
-    // it('handles intermediate insufficient liquidity in zero for one exact output case', async () => {
-    //   const sqrtP = BigNumber.from('20282409603651670423947251286016')
-    //   const sqrtPTarget = sqrtP.mul(11).div(10)
-    //   const liquidity = 1024
-    //   // virtual reserves of one are only 4
-    //   // https://www.wolframalpha.com/input/?i=1024+%2F+%2820282409603651670423947251286016+%2F+2**96%29
-    //   const amountRemaining = -4
-    //   const feePips = 3000
-    //   const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
-    //     sqrtP,
-    //     sqrtPTarget,
-    //     liquidity,
-    //     amountRemaining,
-    //     feePips
-    //   )
-    //   expect(amountOut).to.eq(0)
-    //   expect(sqrtQ).to.eq(sqrtPTarget)
-    //   expect(amountIn).to.eq(26215)
-    //   expect(feeAmount).to.eq(79)
-    // })
-
-    // it('handles intermediate insufficient liquidity in one for zero exact output case', async () => {
-    //   const sqrtP = BigNumber.from('20282409603651670423947251286016')
-    //   const sqrtPTarget = sqrtP.mul(9).div(10)
-    //   const liquidity = 1024
-    //   // virtual reserves of zero are only 262144
-    //   // https://www.wolframalpha.com/input/?i=1024+*+%2820282409603651670423947251286016+%2F+2**96%29
-    //   const amountRemaining = -263000
-    //   const feePips = 3000
-    //   const { amountIn, amountOut, sqrtQ, feeAmount } = await swapMath.computeSwapStep(
-    //     sqrtP,
-    //     sqrtPTarget,
-    //     liquidity,
-    //     amountRemaining,
-    //     feePips
-    //   )
-    //   expect(amountOut).to.eq(26214)
-    //   expect(sqrtQ).to.eq(sqrtPTarget)
-    //   expect(amountIn).to.eq(1)
-    //   expect(feeAmount).to.eq(1)
-    // })
-
-    // describe("gas", () => {
-    //   it("swap one for zero exact in capped", async () => {
-    //     await snapshotGasCost(
-    //       swapMath.getGasCostOfComputeSwapStep(
-    //         encodePriceSqrt(1, 1),
-    //         encodePriceSqrt(101, 100),
-    //         expandTo18Decimals(2),
-    //         expandTo18Decimals(1),
-    //         toBn("0.3"),
-    //         toBn("31536000")
-    //       )
-    //     );
-    //   });
-    //   it("swap zero for one exact in capped", async () => {
-    //     await snapshotGasCost(
-    //       swapMath.getGasCostOfComputeSwapStep(
-    //         encodePriceSqrt(1, 1),
-    //         encodePriceSqrt(99, 100),
-    //         expandTo18Decimals(2),
-    //         expandTo18Decimals(1),
-    //         toBn("0.3"),
-    //         toBn("31536000")
-    //       )
-    //     );
-    //   });
-    //   it("swap one for zero exact out capped", async () => {
-    //     await snapshotGasCost(
-    //       swapMath.getGasCostOfComputeSwapStep(
-    //         encodePriceSqrt(1, 1),
-    //         encodePriceSqrt(101, 100),
-    //         expandTo18Decimals(2),
-    //         expandTo18Decimals(1).mul(-1),
-    //         toBn("0.3"),
-    //         toBn("31536000")
-    //       )
-    //     );
-    //   });
-    //   it("swap zero for one exact out capped", async () => {
-    //     await snapshotGasCost(
-    //       swapMath.getGasCostOfComputeSwapStep(
-    //         encodePriceSqrt(1, 1),
-    //         encodePriceSqrt(99, 100),
-    //         expandTo18Decimals(2),
-    //         expandTo18Decimals(1).mul(-1),
-    //         toBn("0.3"),
-    //         toBn("31536000")
-    //       )
-    //     );
-    //   });
-    //   it("swap one for zero exact in partial", async () => {
-    //     await snapshotGasCost(
-    //       swapMath.getGasCostOfComputeSwapStep(
-    //         encodePriceSqrt(1, 1),
-    //         encodePriceSqrt(1010, 100),
-    //         expandTo18Decimals(2),
-    //         1000,
-    //         toBn("0.3"),
-    //         toBn("31536000")
-    //       )
-    //     );
-    //   });
-    //   it("swap zero for one exact in partial", async () => {
-    //     await snapshotGasCost(
-    //       swapMath.getGasCostOfComputeSwapStep(
-    //         encodePriceSqrt(1, 1),
-    //         encodePriceSqrt(99, 1000),
-    //         expandTo18Decimals(2),
-    //         1000,
-    //         toBn("0.3"),
-    //         toBn("31536000")
-    //       )
-    //     );
-    //   });
-    //   it("swap one for zero exact out partial", async () => {
-    //     await snapshotGasCost(
-    //       swapMath.getGasCostOfComputeSwapStep(
-    //         encodePriceSqrt(1, 1),
-    //         encodePriceSqrt(1010, 100),
-    //         expandTo18Decimals(2),
-    //         1000,
-    //         toBn("0.3"),
-    //         toBn("31536000")
-    //       )
-    //     );
-    //   });
-    //   it("swap zero for one exact out partial", async () => {
-    //     await snapshotGasCost(
-    //       swapMath.getGasCostOfComputeSwapStep(
-    //         encodePriceSqrt(1, 1),
-    //         encodePriceSqrt(99, 1000),
-    //         expandTo18Decimals(2),
-    //         1000,
-    //         toBn("0.3"),
-    //         toBn("31536000")
-    //       )
-    //     );
-    //   });
-    // });
   });
 });
