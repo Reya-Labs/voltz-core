@@ -1,5 +1,5 @@
 import { ethers, waffle } from "hardhat";
-import { BigNumber, Wallet, utils } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import { expect } from "../shared/expect";
 import { metaFixture } from "../shared/fixtures";
 import { advanceTimeAndBlock } from "../helpers/time";
@@ -31,7 +31,6 @@ import {
 } from "../shared/utilities";
 
 const createFixtureLoader = waffle.createFixtureLoader;
-const salts = [utils.formatBytes32String("1"), utils.formatBytes32String("2")];
 
 describe("MarginEngine", () => {
   let wallet: Wallet, other: Wallet;
@@ -581,16 +580,16 @@ describe("MarginEngine", () => {
       // burn the position
       await vammTest.burn(wallet.address, -1, 1, toBn("1"));
 
-      const traderInfo = await marginEngineTest.traders(wallet.address);
-      console.log("TFTB", traderInfo.fixedTokenBalance.toString());
+      // const traderInfo = await marginEngineTest.traders(wallet.address);
+      // console.log("TFTB", traderInfo.fixedTokenBalance.toString());
 
-      const positionInfo = await marginEngineTest.getPosition(
-        wallet.address,
-        -1,
-        1
-      );
-      console.log("PFTB", positionInfo.fixedTokenBalance.toString());
-      console.log("PVTB", positionInfo.variableTokenBalance.toString());
+      // const positionInfo = await marginEngineTest.getPosition(
+      //   wallet.address,
+      //   -1,
+      //   1
+      // );
+      // console.log("PFTB", positionInfo.fixedTokenBalance.toString());
+      // console.log("PVTB", positionInfo.variableTokenBalance.toString());
 
       expect(1).to.eq(1);
 

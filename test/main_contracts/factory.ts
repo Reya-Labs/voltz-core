@@ -1,5 +1,5 @@
 import { ethers, waffle } from "hardhat";
-import { Wallet, utils } from "ethers";
+import { Wallet } from "ethers";
 import { Factory } from "../../typechain/Factory";
 import { TestRateOracle } from "../../typechain/TestRateOracle";
 import { ERC20Mock } from "../../typechain/ERC20Mock";
@@ -8,8 +8,6 @@ import { metaFixture } from "../shared/fixtures";
 import { BigNumber } from "@ethersproject/bignumber";
 
 const createFixtureLoader = waffle.createFixtureLoader;
-
-const salts = [utils.formatBytes32String("1"), utils.formatBytes32String("2")];
 
 describe("Factory", () => {
   let wallet: Wallet, other: Wallet;
@@ -45,15 +43,21 @@ describe("Factory", () => {
   //   expect(factory.address).to.exist;
   // });
 
-  it("Should deploy a cloned MarginEngine contract and allow initialisation of custom MarginEngine info", async () => {
-    // get the expected address
+  it("Cannot deploy if not the owner", async () => {
+    await expect(
+      factory
+        .connect(other)
+        .deployIrsInstance(
+          token.address,
+          rateOracleTest.address,
+          termStartTimestampBN,
+          termEndTimestampBN
+        )
+    ).to.be.revertedWith("caller is not the owner");
+  });
 
-    const createTrx = await factory.deployIrsInstance(
-      token.address,
-      rateOracleTest.address,
-      termStartTimestampBN,
-      termEndTimestampBN
-    );
+  it("Deploys and initializes proxies successfully", async () => {
+    // get the expected addresses
     const marginEngineAddress = await factory.getMarginEngineAddress(
       token.address,
       rateOracleTest.address,
@@ -67,19 +71,31 @@ describe("Factory", () => {
       termEndTimestampBN
     );
 
+    // Now deployand check the log
+    await expect(
+      factory.deployIrsInstance(
+        token.address,
+        rateOracleTest.address,
+        termStartTimestampBN,
+        termEndTimestampBN
+      )
+    )
+      .to.emit(factory, "IrsInstanceDeployed")
+      .withArgs(
+        token.address,
+        rateOracleTest.address,
+        termStartTimestampBN,
+        termEndTimestampBN,
+        marginEngineAddress,
+        vammAddress
+      );
+
     const marginEngineTestFactory = await ethers.getContractFactory(
       "TestMarginEngine"
     );
     const marginEngine1 = marginEngineTestFactory.attach(marginEngineAddress);
 
     expect(marginEngine1.address).to.eq(marginEngineAddress);
-
-    // await marginEngine1.initialize(
-    //   token.address,
-    //   rateOracleTest.address,
-    //   termStartTimestampBN,
-    //   termEndTimestampBN
-    // );
 
     await expect(
       marginEngine1.initialize(
@@ -101,9 +117,7 @@ describe("Factory", () => {
     expect(termStartTimestampBNERealised).to.eq(termStartTimestampBN);
     expect(termEndTimestampBNRealised).to.eq(termEndTimestampBN);
 
-    // deploy a vamm
-
-    // expect(vammAddress).to.exist;
+    // check vamm values
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
     const vamm1 = vammTestFactory.attach(vammAddress);
 

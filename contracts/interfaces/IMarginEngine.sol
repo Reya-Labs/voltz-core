@@ -68,7 +68,12 @@ interface IMarginEngine is IPositionStructs {
     error PositionNotSettled();
 
     /// @dev "constructor" for proxy instances
-    function initialize(address _underlyingToken, address _rateOracleAddress, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external;
+    function initialize(
+        address _underlyingToken,
+        address _rateOracleAddress,
+        uint256 _termStartTimestampWad,
+        uint256 _termEndTimestampWad
+    ) external;
 
     // view functions
 

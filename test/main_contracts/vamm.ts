@@ -1,5 +1,5 @@
 import { ethers, waffle } from "hardhat";
-import { BigNumber, Wallet, utils } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import { TestVAMM } from "../../typechain/TestVAMM";
 import { expect } from "../shared/expect";
 import { metaFixture } from "../shared/fixtures";
@@ -35,7 +35,6 @@ import { consts } from "../helpers/constants";
 import { sub } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
-const salts = [utils.formatBytes32String("1"), utils.formatBytes32String("2")];
 
 describe("VAMM", () => {
   let wallet: Wallet, other: Wallet;
@@ -296,16 +295,16 @@ describe("VAMM", () => {
         });
 
         it("adds liquidity to liquidityGross", async () => {
-          const firstObsInOracleBuffer = await rateOracleTest.observations(0);
-          console.log(
-            "firstObsInOracleBuffer",
-            firstObsInOracleBuffer.blockTimestamp.toString(),
-            firstObsInOracleBuffer.observedValue.toString()
-          );
-          console.log(
-            "TS",
-            (await marginEngineTest.termStartTimestampWad()).toString()
-          );
+          // const firstObsInOracleBuffer = await rateOracleTest.observations(0);
+          // console.log(
+          //   "firstObsInOracleBuffer",
+          //   firstObsInOracleBuffer.blockTimestamp.toString(),
+          //   firstObsInOracleBuffer.observedValue.toString()
+          // );
+          // console.log(
+          //   "TS",
+          //   (await marginEngineTest.termStartTimestampWad()).toString()
+          // );
 
           await vammTest.mint(wallet.address, -240, 0, 100);
           const liquidityGross0 = (await vammTest.ticks(-240)).liquidityGross;

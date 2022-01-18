@@ -39,7 +39,7 @@ contract Factory is IFactory, Ownable {
     return masterMarginEngine.predictDeterministicAddress(salt);
   }
 
-  function deployIrsInstance(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external override returns (address marginEngineProxy, address vammProxy) {
+  function deployIrsInstance(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external override onlyOwner returns (address marginEngineProxy, address vammProxy) {
     bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     IMarginEngine marginEngine = IMarginEngine(masterMarginEngine.cloneDeterministic(salt));
     IVAMM vamm = IVAMM(masterVAMM.cloneDeterministic(salt));
