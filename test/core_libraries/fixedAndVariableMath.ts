@@ -163,10 +163,10 @@ describe("FixedAndVariableMath", () => {
     it("reverts if the end timestamp is before the start timestamp", async () => {
       await expect(
         fixedAndVariableMathTest.fixedFactorTest(false, toBn("1"), toBn("1"))
-      ).to.be.revertedWith("E>S");
+      ).to.be.revertedWith("E<=S");
       await expect(
         fixedAndVariableMathTest.fixedFactorTest(false, toBn("2"), toBn("1"))
-      ).to.be.revertedWith("E>S");
+      ).to.be.revertedWith("E<=S");
     });
 
     it("reverts unless the start timestamp is in the past", async () => {
@@ -257,7 +257,7 @@ describe("FixedAndVariableMath", () => {
           currentBlockTimestamp,
           currentBlockTimestamp
         )
-      ).to.be.revertedWith("E>S");
+      ).to.be.revertedWith("E<=S");
 
       await expect(
         fixedAndVariableMathTest.calculateFixedTokenBalance(
@@ -266,7 +266,7 @@ describe("FixedAndVariableMath", () => {
           currentBlockTimestamp,
           beforeCurrentBlockTimestamp
         )
-      ).to.be.revertedWith("E>S");
+      ).to.be.revertedWith("E<=S");
     });
 
     it("correctly calculates the fixed token balance", async () => {
