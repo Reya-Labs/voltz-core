@@ -68,31 +68,35 @@ describe("VAMM", () => {
       termEndTimestampBN,
     } = await loadFixture(metaFixture));
 
-    // deploy a margin engine
-    const marginEngineAddress = await factory.getMarginEngineAddress(salts[0]);
-    await factory.createMarginEngine(salts[0]);
-    const marginEngineTestFactory = await ethers.getContractFactory(
-      "TestMarginEngine"
-    );
-    marginEngineTest = marginEngineTestFactory.attach(marginEngineAddress);
-    await marginEngineTest.initialize(
+    // deploy a margin engine & vamm
+    await factory.deployIrsInstance(
       token.address,
       rateOracleTest.address,
       termStartTimestampBN,
       termEndTimestampBN
     );
+    const marginEngineAddress = await factory.getMarginEngineAddress(
+      token.address,
+      rateOracleTest.address,
+      termStartTimestampBN,
+      termEndTimestampBN
+    );
+    const marginEngineTestFactory = await ethers.getContractFactory(
+      "TestMarginEngine"
+    );
+    marginEngineTest = marginEngineTestFactory.attach(marginEngineAddress);
+    const vammAddress = await factory.getVAMMAddress(
+      token.address,
+      rateOracleTest.address,
+      termStartTimestampBN,
+      termEndTimestampBN
+    );
+    const vammTestFactory = await ethers.getContractFactory("TestVAMM");
+    vammTest = vammTestFactory.attach(vammAddress);
+    await marginEngineTest.setVAMMAddress(vammTest.address);
 
     // update marginEngineTest allowance
     await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
-
-    // deploy a vamm
-    const vammAddress = await factory.getVAMMAddress(salts[1]);
-    await factory.createVAMM(salts[1]);
-    const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    vammTest = vammTestFactory.attach(vammAddress);
-    await vammTest.initialize(marginEngineTest.address);
-
-    await marginEngineTest.setVAMMAddress(vammTest.address);
 
     const margin_engine_params = {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,

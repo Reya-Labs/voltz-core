@@ -45,7 +45,13 @@ contract Factory is IFactory, Ownable {
     IVAMM vamm = IVAMM(masterVAMM.cloneDeterministic(salt));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     vamm.initialize(address(marginEngine));
+    marginEngine.setVAMMAddress(address(vamm));
     emit IrsInstanceDeployed(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, address(marginEngine), address(vamm));
+
+    // Transfer ownership of all instances to the factory owner
+    Ownable(address(vamm)).transferOwnership(msg.sender);
+    Ownable(address(marginEngine)).transferOwnership(msg.sender);
+
     return(address(marginEngine), address(vammProxy));
   }
 }
