@@ -296,6 +296,17 @@ describe("VAMM", () => {
         });
 
         it("adds liquidity to liquidityGross", async () => {
+          const firstObsInOracleBuffer = await rateOracleTest.observations(0);
+          console.log(
+            "firstObsInOracleBuffer",
+            firstObsInOracleBuffer.blockTimestamp.toString(),
+            firstObsInOracleBuffer.observedValue.toString()
+          );
+          console.log(
+            "TS",
+            (await marginEngineTest.termStartTimestampWad()).toString()
+          );
+
           await vammTest.mint(wallet.address, -240, 0, 100);
           const liquidityGross0 = (await vammTest.ticks(-240)).liquidityGross;
           expect(liquidityGross0).to.eq(100);
@@ -360,14 +371,14 @@ describe("VAMM", () => {
     it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
       advanceTimeAndBlock(sub(consts.ONE_WEEK, consts.ONE_DAY), 1);
       await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
-        "vamm must be 1 day before maturity"
+        "closeToOrBeyondMaturity"
       );
     });
 
     it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
       advanceTimeAndBlock(consts.ONE_WEEK, 1);
       await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
-        "vamm has reached maturity"
+        "closeToOrBeyondMaturity"
       );
     });
   });

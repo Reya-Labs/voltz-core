@@ -9,7 +9,7 @@ import { ERC20Mock, MockAaveLendingPool } from "../../typechain";
 import { consts } from "../helpers/constants";
 
 import { ethers, waffle } from "hardhat";
-import { getCurrentTimestamp } from "../helpers/time";
+import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 
 import { toBn } from "evm-bn";
 const { provider } = waffle;
@@ -106,7 +106,11 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     BigNumber.from(2).pow(27)
   );
 
+  await rateOracleTest.testGrow(5);
   // write oracle entry
+  await rateOracleTest.writeOracleEntry();
+  // advance time after first write to the oracle
+  await advanceTimeAndBlock(consts.ONE_DAY, 2); // advance by one day
   await rateOracleTest.writeOracleEntry();
 
   const termStartTimestamp: number = await getCurrentTimestamp(provider);

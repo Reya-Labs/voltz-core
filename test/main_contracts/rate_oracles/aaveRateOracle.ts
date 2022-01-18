@@ -1,4 +1,3 @@
-// to be refactored
 // import { BigNumber, Wallet, Contract } from "ethers";
 // import { ethers, waffle } from "hardhat";
 // import { expect } from "chai";
