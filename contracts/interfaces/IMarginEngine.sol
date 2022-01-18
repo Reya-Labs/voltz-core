@@ -67,6 +67,9 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Position must be settled after AMM has reached maturity
     error PositionNotSettled();
 
+    /// @dev "constructor" for proxy instances
+    function initialize(address _underlyingToken, address _rateOracleAddress, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external;
+
     // view functions
 
     function liquidatorReward() external view returns (uint256);

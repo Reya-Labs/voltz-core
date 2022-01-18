@@ -47,10 +47,25 @@ describe("Factory", () => {
 
   it("Should deploy a cloned MarginEngine contract and allow initialisation of custom MarginEngine info", async () => {
     // get the expected address
-    const marginEngineAddress = await factory.getMarginEngineAddress(salts[0]);
-    // expect(marginEngineAddress).to.exist;
 
-    await factory.createMarginEngine(salts[0]);
+    const createTrx = await factory.deployIrsInstance(
+      token.address,
+      rateOracleTest.address,
+      termStartTimestampBN,
+      termEndTimestampBN
+    );
+    const marginEngineAddress = await factory.getMarginEngineAddress(
+      token.address,
+      rateOracleTest.address,
+      termStartTimestampBN,
+      termEndTimestampBN
+    );
+    const vammAddress = await factory.getVAMMAddress(
+      token.address,
+      rateOracleTest.address,
+      termStartTimestampBN,
+      termEndTimestampBN
+    );
 
     const marginEngineTestFactory = await ethers.getContractFactory(
       "TestMarginEngine"
@@ -59,12 +74,12 @@ describe("Factory", () => {
 
     expect(marginEngine1.address).to.eq(marginEngineAddress);
 
-    await marginEngine1.initialize(
-      token.address,
-      rateOracleTest.address,
-      termStartTimestampBN,
-      termEndTimestampBN
-    );
+    // await marginEngine1.initialize(
+    //   token.address,
+    //   rateOracleTest.address,
+    //   termStartTimestampBN,
+    //   termEndTimestampBN
+    // );
 
     await expect(
       marginEngine1.initialize(
@@ -88,17 +103,11 @@ describe("Factory", () => {
 
     // deploy a vamm
 
-    const vammAddress = await factory.getVAMMAddress(salts[1]);
     // expect(vammAddress).to.exist;
-
-    await factory.createVAMM(salts[1]);
-
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
     const vamm1 = vammTestFactory.attach(vammAddress);
 
     expect(vamm1.address).to.eq(vammAddress);
-
-    await vamm1.initialize(marginEngine1.address);
 
     await expect(vamm1.initialize(marginEngine1.address)).to.be.revertedWith(
       "contract is already initialized"

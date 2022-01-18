@@ -3,6 +3,8 @@
 pragma solidity ^0.8.0;
 import "./interfaces/IFactory.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
+import "./interfaces//IMarginEngine.sol";
+import "./interfaces//IVAMM.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -21,21 +23,30 @@ contract Factory is IFactory, Ownable {
     masterVAMM = _masterVAMM;
   }
 
-  function createVAMM(bytes32 salt) external override {
-    masterVAMM.cloneDeterministic(salt);
+  function getSalt(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) internal pure returns (bytes32 salt) {
+    return keccak256(abi.encode(_underlyingToken, _rateOracle,  _termStartTimestampWad, _termEndTimestampWad));
   }
 
-  function createMarginEngine(bytes32 salt) external override {
-    masterMarginEngine.cloneDeterministic(salt);
-  }
-
-  function getVAMMAddress(bytes32 salt) external view override returns (address) {
+  function getVAMMAddress(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external view override returns (address) {
     require(masterVAMM != address(0), "master VAMM must be set");
+    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     return masterVAMM.predictDeterministicAddress(salt);
   }
 
-  function getMarginEngineAddress(bytes32 salt) external view override returns (address) {
+  function getMarginEngineAddress(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external view override returns (address) {
     require(masterMarginEngine != address(0), "master MarginEngine must be set");
+    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     return masterMarginEngine.predictDeterministicAddress(salt);
   }
+
+  function deployIrsInstance(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external override returns (address marginEngineProxy, address vammProxy) {
+    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
+    IMarginEngine marginEngine = IMarginEngine(masterMarginEngine.cloneDeterministic(salt));
+    IVAMM vamm = IVAMM(masterVAMM.cloneDeterministic(salt));
+    marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
+    vamm.initialize(address(marginEngine));
+    emit IrsInstanceDeployed(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, address(marginEngine), address(vamm));
+    return(address(marginEngine), address(vammProxy));
+  }
 }
+

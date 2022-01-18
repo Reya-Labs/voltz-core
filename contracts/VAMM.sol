@@ -86,7 +86,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     deployer = msg.sender;
   }
 
-  function initialize(address _marginEngineAddress) public initializer {
+  function initialize(address _marginEngineAddress) external override initializer {
     require(_marginEngineAddress != address(0), "ME must be set");
     marginEngineAddress = _marginEngineAddress;
     address rateOracleAddress = IMarginEngine(marginEngineAddress).rateOracleAddress();

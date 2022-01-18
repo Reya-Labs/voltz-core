@@ -146,6 +146,8 @@ interface IVAMM is IPositionStructs {
         uint256 feeGrowthInside;
     }
 
+    /// @dev "constructor" for proxy instances
+    function initialize(address _marginEngineAddress) external;
     // immutables
 
     /// @notice The vamm's fee (proportion) in wei

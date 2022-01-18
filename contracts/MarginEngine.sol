@@ -69,7 +69,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     }
 
-    function initialize(address _underlyingToken, address _rateOracleAddress, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) public initializer {
+    function initialize(address _underlyingToken, address _rateOracleAddress, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external override initializer {
         require(_underlyingToken != address(0), "UT must be set");
         require(_rateOracleAddress != address(0), "RO must be set");
         require(_termStartTimestampWad != 0, "TS must be set");
