@@ -52,7 +52,7 @@ contract Factory is IFactory, Ownable {
     Ownable(address(vamm)).transferOwnership(msg.sender);
     Ownable(address(marginEngine)).transferOwnership(msg.sender);
 
-    return(address(marginEngine), address(vammProxy));
+    return(address(marginEngine), address(vamm));
   }
 }
 
