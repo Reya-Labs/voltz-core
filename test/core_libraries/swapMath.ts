@@ -132,11 +132,13 @@ describe("SwapMath", () => {
           fee,
           timeToMaturityInSeconds
         );
-        
+
       expect(amountIn).to.eq("9975124224178055");
       expect(feeAmount).to.eq("2992537267253416");
       expect(amountOut).to.eq("9925619580021728");
-      expect(amountOut, "entire amount out is not returned").to.lt(amount.mul(-1));
+      expect(amountOut, "entire amount out is not returned").to.lt(
+        amount.mul(-1)
+      );
 
       expect(sqrtQ, "price is capped at price target").to.eq(priceTarget);
     });
