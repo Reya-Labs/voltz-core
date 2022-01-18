@@ -326,7 +326,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     override
     whenNotPaused
     checkCurrentTimestampTermEndTimestampDelta
-    lock
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred)
   {
     /// might be helpful to have a higher level peripheral function (initiateIRS) which then calls swap
@@ -343,8 +342,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       require(params.amountSpecified < 0, "AS<0");
     }
 
-    if (params.isUnwind) {
-      require(msg.sender==marginEngineAddress, "only ME induce unwind");
+    if (params.isUnwind || !params.isTrader) {
+      require(msg.sender==marginEngineAddress, "only");
     } else {
       /// todo: require trader margin sufficient to incentivise liquidators
       /// @dev must be a trader (positions can only call swap if they have been liquidated)
@@ -570,15 +569,19 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     // if this is not the case then it is a position unwind induced swap triggered by a position liquidation which is handled in the position unwind function
     if (params.isTrader) {
 
-      if (params.isUnwind) {
-        IMarginEngine(marginEngineAddress).updateTraderMarginAfterUnwind(params.recipient, -int256(state.cumulativeFeeIncurred));
-      } else {
-        IMarginEngine(marginEngineAddress).updateTraderMargin(
-          params.recipient,
-          -int256(state.cumulativeFeeIncurred)
-        );
-      }
+      if (state.cumulativeFeeIncurred > 0) {
+              
+        if (params.isUnwind) {
+          IMarginEngine(marginEngineAddress).updateTraderMarginAfterUnwind(params.recipient, -int256(state.cumulativeFeeIncurred));
+        } else {
+          IMarginEngine(marginEngineAddress).updateTraderMargin(
+            params.recipient,
+            -int256(state.cumulativeFeeIncurred)
+          );
+        }
 
+      }
+      
       IMarginEngine(marginEngineAddress).updateTraderBalances(
         params.recipient,
         _fixedTokenDelta,

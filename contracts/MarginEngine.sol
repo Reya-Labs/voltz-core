@@ -782,7 +782,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 recipient: traderAddress,
                 isFT: false,
                 amountSpecified: traderVariableTokenBalance,
-                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
+                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1,
                 isUnwind: true,
                 isTrader: true
             });
@@ -799,7 +799,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 recipient: traderAddress,
                 isFT: true,
                 amountSpecified: traderVariableTokenBalance,
-                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
+                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO - 1,
                 isUnwind: true,
                 isTrader: true
             });
