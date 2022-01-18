@@ -236,12 +236,12 @@ describe("MarginEngine", () => {
 
   describe("#updateTraderMargin", async () => {
     it("check trader margin correctly updated", async () => {
-      console.log("CR1");
+      // console.log("CR1");
       await marginEngineTest.updateTraderMargin(wallet.address, 1);
-      console.log("CR2");
+      // console.log("CR2");
       // retrieve the trader info object
       const traderInfo = await marginEngineTest.traders(wallet.address);
-      console.log("CR3");
+      // console.log("CR3");
       const traderMargin = traderInfo[0];
       expect(traderMargin).to.eq(1);
     });
@@ -586,7 +586,7 @@ describe("MarginEngine", () => {
       await vammTest.burn(wallet.address, -1, 1, toBn("1"));
 
       // const traderInfo = await marginEngineTest.traders(wallet.address);
-      // console.log("TFTB", traderInfo.fixedTokenBalance.toString());
+      // // console.log("TFTB", traderInfo.fixedTokenBalance.toString());
 
       // const positionInfo = await marginEngineTest.getPosition(
       //   wallet.address,
@@ -644,7 +644,7 @@ describe("MarginEngine", () => {
   //     const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
   //     underlyingTokenAddress = await testRateOracle.underlying();
   //     const aaveLendingPoolAbi = [
-  //       "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+  //       "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
   //       "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
   //     ];
   //     aaveLendingPoolContract = new Contract(

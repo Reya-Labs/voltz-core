@@ -33,19 +33,19 @@ describe("Aave Rate Oracle", () => {
     const { token } = await mockERC20Fixture();
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
 
-    console.log(
-      "Test TS: Aave lending pool address is: ",
-      aaveLendingPool.address
-    );
+    // console.log(
+    //   "Test TS: Aave lending pool address is: ",
+    //   aaveLendingPool.address
+    // );
 
     await aaveLendingPool.setReserveNormalizedIncome(
       token.address,
       toBn("1.0") // should be in ray
     );
-    console.log(
-      "Test TS: Aave normalized income is: ",
-      await aaveLendingPool.getReserveNormalizedIncome(token.address)
-    );
+    // console.log(
+    //   "Test TS: Aave normalized income is: ",
+    //   await aaveLendingPool.getReserveNormalizedIncome(token.address)
+    // );
 
     const { rateOracleTest } = await rateOracleTestFixture(
       aaveLendingPool.address,
@@ -127,8 +127,8 @@ describe("Aave Rate Oracle", () => {
       const [rateIndex] = await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(0);
       const [rateTimestamp, rateValue] = await testRateOracle.getRate(0);
-      console.log(`currentTimestamp: ${currentTimestamp}`);
-      console.log(`rateTimestamp: ${rateTimestamp.valueOf()}`);
+      // console.log(`currentTimestamp: ${currentTimestamp}`);
+      // console.log(`rateTimestamp: ${rateTimestamp.valueOf()}`);
       expect(rateValue).to.eq(toBn("1.0"));
       expect(rateTimestamp).to.eq(currentTimestamp + 1);
     });
@@ -138,9 +138,9 @@ describe("Aave Rate Oracle", () => {
       await testRateOracle.testGrow(4);
       let [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
       expect(rateCardinality).to.eq(1);
-      console.log(await getCurrentTimestamp(provider));
+      // console.log(await getCurrentTimestamp(provider));
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-      console.log(await getCurrentTimestamp(provider));
+      // console.log(await getCurrentTimestamp(provider));
       await testRateOracle.writeOracleEntry();
       [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
       expect(rateCardinality).to.eq(4);
@@ -166,7 +166,7 @@ describe("Aave Rate Oracle", () => {
       const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
       underlyingTokenAddress = await testRateOracle.underlying();
       const aaveLendingPoolAbi = [
-        "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+        "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
         "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
       ];
       aaveLendingPoolContract = new Contract(
@@ -249,7 +249,7 @@ describe("Aave Rate Oracle", () => {
       const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
       underlyingTokenAddress = await testRateOracle.underlying();
       const aaveLendingPoolAbi = [
-        "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+        "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
         "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
       ];
       aaveLendingPoolContract = new Contract(
@@ -302,7 +302,7 @@ describe("Aave Rate Oracle", () => {
       const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
       underlyingTokenAddress = await testRateOracle.underlying();
       const aaveLendingPoolAbi = [
-        "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+        "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
         "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
       ];
       aaveLendingPoolContract = new Contract(
@@ -335,8 +335,8 @@ describe("Aave Rate Oracle", () => {
       const realizedAtOrAfterValue =
         await testRateOracle.latestAfterOrAtRateValue();
 
-      console.log(realizedBeforeOrAtRateValue);
-      console.log(realizedAtOrAfterValue);
+      // console.log(realizedBeforeOrAtRateValue);
+      // console.log(realizedAtOrAfterValue);
 
       expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.0"));
       expect(realizedAtOrAfterValue).to.eq(toBn("1.1"));
@@ -350,8 +350,8 @@ describe("Aave Rate Oracle", () => {
       const realizedAtOrAfterValue =
         await testRateOracle.latestAfterOrAtRateValue();
 
-      console.log(realizedBeforeOrAtRateValue);
-      console.log(realizedAtOrAfterValue);
+      // console.log(realizedBeforeOrAtRateValue);
+      // console.log(realizedAtOrAfterValue);
 
       expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.1"));
       expect(realizedAtOrAfterValue).to.eq(0);
@@ -414,7 +414,7 @@ describe("Aave Rate Oracle", () => {
       const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
       underlyingTokenAddress = await testRateOracle.underlying();
       const aaveLendingPoolAbi = [
-        "function getReserveNormalizedIncome(address _underlyingAsset) public override view returns (uint256)",
+        "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
         "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
       ];
       aaveLendingPoolContract = new Contract(

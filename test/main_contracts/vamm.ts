@@ -187,7 +187,7 @@ describe("VAMM", () => {
   describe("#quickChecks", async () => {
     it("check the current tick", async () => {
       const currentTick = (await vammTest.vammVars()).tick;
-      console.log("Current Tick is", currentTick);
+      // console.log("Current Tick is", currentTick);
       expect(currentTick).to.eq(0);
     });
   });

@@ -95,8 +95,8 @@ describe("Position", () => {
       const Q128 = BigNumber.from(2).pow(128);
       const Q128Negative = Q128.mul(BigNumber.from(-1));
 
-      console.log(Q128); // 1 in Q128
-      console.log(Q128Negative); // -1 in Q128
+      // console.log(Q128); // 1 in Q128
+      // console.log(Q128Negative); // -1 in Q128
 
       const result = await positionTest.calculateFixedAndVariableDelta(
         Q128,
