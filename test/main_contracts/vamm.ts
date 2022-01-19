@@ -36,6 +36,8 @@ import { sub } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
+// more vamm tests!
+
 describe("VAMM", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
