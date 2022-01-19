@@ -214,17 +214,19 @@ library MarginCalculator {
             );
         }
 
-        int256 apyBoundIntWad = (isUpper) ? PRBMathSD59x18.mul(
-            apyBoundVars.zetaWad,
-            (apyBoundVars.kWad +
-                apyBoundVars.lambdaWad +
-                apyBoundVars.criticalValueWad)
-        ) : PRBMathSD59x18.mul(
-            apyBoundVars.zetaWad,
-            (apyBoundVars.kWad +
-                apyBoundVars.lambdaWad -
-                apyBoundVars.criticalValueWad)
-        );
+        int256 apyBoundIntWad = (isUpper)
+            ? PRBMathSD59x18.mul(
+                apyBoundVars.zetaWad,
+                (apyBoundVars.kWad +
+                    apyBoundVars.lambdaWad +
+                    apyBoundVars.criticalValueWad)
+            )
+            : PRBMathSD59x18.mul(
+                apyBoundVars.zetaWad,
+                (apyBoundVars.kWad +
+                    apyBoundVars.lambdaWad -
+                    apyBoundVars.criticalValueWad)
+            );
 
         if (apyBoundIntWad < 0) {
             apyBoundWad = 0;

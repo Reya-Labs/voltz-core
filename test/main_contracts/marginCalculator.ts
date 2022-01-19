@@ -2,11 +2,8 @@ import { Wallet, BigNumber } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
-import { div, sub, mul, add, sqrt, exp } from "../shared/functions";
 import { marginCalculatorFixture } from "../shared/fixtures";
 import {
-  accrualFact,
-  fixedFactor,
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
   MIN_DELTA_LM,
@@ -25,140 +22,6 @@ import { getCurrentTimestamp } from "../helpers/time";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
-
-export function getFixedTokenBalance(
-  amount0: BigNumber,
-  amount1: BigNumber,
-  accruedVariableFactor: BigNumber,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  currentBlockTimestamp: BigNumber
-): BigNumber {
-  const excessBalance = getExcessBalance(
-    amount0,
-    amount1,
-    accruedVariableFactor,
-    termStartTimestamp,
-    termEndTimestamp,
-    currentBlockTimestamp
-  );
-
-  return calculateFixedTokenBalance(
-    amount0,
-    excessBalance,
-    termStartTimestamp,
-    termEndTimestamp
-  );
-}
-
-function calculateFixedTokenBalance(
-  amount0: BigNumber,
-  exceessBalance: BigNumber,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber
-): BigNumber {
-  const fixedFactorAtMaturity: BigNumber = fixedFactor(
-    true,
-    termStartTimestamp,
-    termEndTimestamp,
-    toBn((1632249308).toString()) // temporary
-  );
-
-  const exp1: BigNumber = mul(amount0, fixedFactorAtMaturity);
-  const numerator: BigNumber = sub(exp1, exceessBalance);
-  const fixedTokenBalance: BigNumber = div(numerator, fixedFactorAtMaturity);
-
-  return fixedTokenBalance;
-}
-
-function getExcessBalance(
-  amount0: BigNumber,
-  amount1: BigNumber,
-  accruedVariableFactor: BigNumber,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  currentBlockTimestamp: BigNumber
-): BigNumber {
-  const excessFixedAccruedBalance = mul(
-    amount0,
-    fixedFactor(
-      false,
-      termStartTimestamp,
-      termEndTimestamp,
-      currentBlockTimestamp
-    )
-  );
-
-  const excessVariableAccruedBalance = mul(amount1, accruedVariableFactor);
-
-  const excessBalance = add(
-    excessFixedAccruedBalance,
-    excessVariableAccruedBalance
-  );
-
-  return excessBalance;
-}
-
-// to replace with excel (not robust enough as an approach)
-// function getTraderMarginRequirement(
-//   fixedTokenBalance: BigNumber,
-//   variableTokenBalance: BigNumber,
-//   termStartTimestamp: BigNumber,
-//   termEndTimestamp: BigNumber,
-//   isLM: boolean,
-//   historicalApy: BigNumber,
-//   blockTimestampScaled: BigNumber
-// ) {
-//   if (fixedTokenBalance.gte(toBn("0")) && variableTokenBalance.gte(toBn("0"))) {
-//     return toBn("0.0");
-//   }
-
-//   let isFT = false;
-//   if (fixedTokenBalance.gt(toBn("0"))) {
-//     isFT = true;
-//   }
-
-//   const timeInSecondsFromStartToMaturity: BigNumber = sub(
-//     termEndTimestamp,
-//     termStartTimestamp
-//   );
-
-//   const exp1 = mul(
-//     fixedTokenBalance,
-//     fixedFactor(
-//       true,
-//       termStartTimestamp,
-//       termEndTimestamp,
-//       blockTimestampScaled
-//     )
-//   );
-
-//   const exp2 = mul(
-//     variableTokenBalance,
-//     worstCaseVariableFactorAtMaturity(
-//       timeInSecondsFromStartToMaturity,
-//       termEndTimestamp,
-//       blockTimestampScaled,
-//       isFT,
-//       isLM,
-//       historicalApy
-//     )
-//   );
-
-//   const modelMargin = add(exp1, exp2);
-//   const minimumMargin = toBn("0");
-
-//   let margin: BigNumber;
-//   if (sub(modelMargin, minimumMargin) < toBn("0")) {
-//     margin = minimumMargin;
-//   } else {
-//     margin = modelMargin;
-//   }
-
-//   margin.div(BigNumber.from(10).pow(18));
-
-//   return margin;
-// }
 
 describe("MarginCalculator", () => {
   // - Setup
@@ -505,7 +368,9 @@ describe("MarginCalculator", () => {
         (currentTimestamp + 604800).toString() // add a week
       );
 
-      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const termStartTimestampScaled = toBn(
+        (currentTimestamp - 604800).toString()
+      );
       const isLM = true;
       const historicalApy = toBn("0.1");
 
@@ -536,7 +401,9 @@ describe("MarginCalculator", () => {
         (currentTimestamp + 604800).toString() // add a week
       );
 
-      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const termStartTimestampScaled = toBn(
+        (currentTimestamp - 604800).toString()
+      );
       const isLM = true;
       const historicalApy = toBn("0.1");
 
@@ -567,7 +434,9 @@ describe("MarginCalculator", () => {
         (currentTimestamp + 604800).toString() // add a week
       );
 
-      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const termStartTimestampScaled = toBn(
+        (currentTimestamp - 604800).toString()
+      );
       const isLM = false;
       const historicalApy = toBn("0.1");
 
@@ -598,7 +467,9 @@ describe("MarginCalculator", () => {
         (currentTimestamp + 604800).toString() // add a week
       );
 
-      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const termStartTimestampScaled = toBn(
+        (currentTimestamp - 604800).toString()
+      );
       const isLM = false;
       const historicalApy = toBn("0.1");
 
@@ -630,7 +501,9 @@ describe("MarginCalculator", () => {
         (currentTimestamp + 604800).toString() // add a week
       );
 
-      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const termStartTimestampScaled = toBn(
+        (currentTimestamp - 604800).toString()
+      );
       const isLM = true;
       const historicalApy = toBn("0.1");
 
@@ -662,7 +535,9 @@ describe("MarginCalculator", () => {
         (currentTimestamp + 604800).toString() // add a week
       );
 
-      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const termStartTimestampScaled = toBn(
+        (currentTimestamp - 604800).toString()
+      );
       const isLM = false;
       const historicalApy = toBn("0.1");
 
@@ -716,7 +591,9 @@ describe("MarginCalculator", () => {
         (currentTimestamp + 604800).toString() // add a week
       );
 
-      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const termStartTimestampScaled = toBn(
+        (currentTimestamp - 604800).toString()
+      );
       const isLM = false;
       const historicalApy = toBn("0.1");
 
