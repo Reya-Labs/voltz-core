@@ -32,7 +32,8 @@ import {
 } from "../../typechain";
 import { advanceTimeAndBlock } from "../helpers/time";
 import { consts } from "../helpers/constants";
-import { sub } from "../shared/functions";
+import { sub, add } from "../shared/functions";
+import { TickMath } from "../shared/tickMath";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -477,6 +478,79 @@ describe("VAMM", () => {
       expect(await vammTest.fee()).to.be.equal(toBn("0.05"));
     });
   });
+
+  describe("#swap", () => {
+
+    beforeEach("initialize the pool at price of 1:1", async () => {
+      await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(TICK_SPACING));
+      await vammTest.setTickSpacing(TICK_SPACING);
+      await vammTest.initializeVAMM(MIN_SQRT_RATIO);
+      await vammTest.setFeeProtocol(3);
+
+      await token.mint(wallet.address, BigNumber.from(10).pow(27));
+      await token.approve(wallet.address, BigNumber.from(10).pow(27));
+
+      await marginEngineTest.updatePositionMargin(
+        {
+          owner: wallet.address,
+          tickLower: -TICK_SPACING,
+          tickUpper: TICK_SPACING,
+          liquidityDelta: 0,
+        },
+        toBn("100000")
+      );
+
+      await vammTest.mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("100000"));
+    });
+
+    it("scenario1", async () => {
+
+      await marginEngineTest.updateTraderMargin(
+        wallet.address,
+        toBn("100000")
+      );
+
+      await vammTest.swap(
+        {
+          recipient: wallet.address,
+          isFT: true,
+          amountSpecified: toBn("1"),
+          sqrtPriceLimitX96: BigNumber.from(TickMath.getSqrtRatioAtTick(TICK_SPACING*2).toString()), 
+          isUnwind: false, 
+          isTrader: true
+        }
+      );
+
+      // check trader balances
+      const traderInfo = await marginEngineTest.traders(wallet.address);
+      const traderFixedTokenBalance = traderInfo.fixedTokenBalance;
+      const traderVariableTokenBalance = traderInfo.variableTokenBalance;
+
+      expect(traderInfo.variableTokenBalance).to.eq(toBn("-1"));
+
+      await marginEngineTest.updatePositionTokenBalancesTest(wallet.address, -TICK_SPACING, TICK_SPACING);
+
+      // check position token balances
+      const positionInfo = await marginEngineTest.getPosition(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
+
+      const positionFixedTokenBalance = positionInfo.fixedTokenBalance;
+      const positionVariableTokenBalance = positionInfo.variableTokenBalance;
+
+      // note there is some discrepancy between the balances, they don't quite cancel each other
+      // investigate the implicationsof this
+
+      expect(positionFixedTokenBalance).to.eq(toBn("-0.999966931216935141"));
+      expect(positionVariableTokenBalance).to.eq(toBn("1.006007643968346957"));
+      expect(traderFixedTokenBalance).to.eq(toBn("1.005974376519806980"));
+      expect(traderVariableTokenBalance).to.eq(toBn("-1"));
+     
+    })
+
+  })
 
   // TODO: check after testing updatePosition() and MarginEngine.unwindPosition()
   // describe("#burn", () => {
