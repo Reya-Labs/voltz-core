@@ -160,110 +160,6 @@ function getExcessBalance(
 //   return margin;
 // }
 
-function worstCaseVariableFactorAtMaturity(
-  timeInSecondsFromStartToMaturity: BigNumber,
-  termEndTimestampScaled: BigNumber,
-  currentTimestampScaled: BigNumber,
-  isFT: boolean,
-  isLM: boolean,
-  historicalApy: BigNumber
-): BigNumber {
-  const timeInYearsFromStartUntilMaturity: BigNumber = accrualFact(
-    timeInSecondsFromStartToMaturity
-  );
-
-  let variableFactor: BigNumber;
-  let apyBound: BigNumber;
-
-  if (isFT) {
-    apyBound = computeApyBound(
-      termEndTimestampScaled,
-      currentTimestampScaled,
-      historicalApy,
-      true
-    );
-    if (isLM) {
-      variableFactor = mul(timeInYearsFromStartUntilMaturity, apyBound);
-    } else {
-      variableFactor = mul(
-        timeInYearsFromStartUntilMaturity,
-        mul(apyBound, APY_UPPER_MULTIPLIER)
-      );
-    }
-  } else {
-    apyBound = computeApyBound(
-      termEndTimestampScaled,
-      currentTimestampScaled,
-      historicalApy,
-      false
-    );
-    if (isLM) {
-      variableFactor = mul(timeInYearsFromStartUntilMaturity, apyBound);
-    } else {
-      variableFactor = mul(
-        timeInYearsFromStartUntilMaturity,
-        mul(apyBound, APY_LOWER_MULTIPLIER)
-      );
-    }
-  }
-
-  return variableFactor;
-}
-
-function computeApyBound(
-  termEndTimestampScaled: BigNumber,
-  currentTimestampScaled: BigNumber,
-  historicalApy: BigNumber,
-  isUpper: boolean
-) {
-  const beta4 = mul(toBn("4.0"), BETA);
-  const timeFactor = computeTimeFactor(
-    BETA,
-    termEndTimestampScaled,
-    currentTimestampScaled
-  );
-  const oneMinusTimeFactor: BigNumber = sub(toBn("1"), timeFactor);
-  const k: BigNumber = div(ALPHA, SIGMA_SQUARED);
-  const zeta: BigNumber = div(mul(SIGMA_SQUARED, oneMinusTimeFactor), beta4);
-  const lambdaNum: BigNumber = mul(mul(beta4, timeFactor), historicalApy);
-  const lambdaDen: BigNumber = mul(beta4, timeFactor);
-  const lambda: BigNumber = div(lambdaNum, lambdaDen);
-  const criticalValueMultiplier: BigNumber = mul(
-    add(mul(toBn("2"), lambda), k),
-    toBn("2")
-  );
-  const criticalValueMultiplierSqrt: BigNumber = sqrt(criticalValueMultiplier);
-
-  let criticalValue: BigNumber;
-  if (isUpper) {
-    criticalValue = mul(XI_UPPER, criticalValueMultiplierSqrt);
-  } else {
-    criticalValue = mul(XI_LOWER, criticalValueMultiplierSqrt);
-  }
-
-  let apyBound: BigNumber = mul(zeta, add(add(k, lambda), criticalValue));
-  if (apyBound < toBn("0")) {
-    apyBound = toBn("0");
-  }
-
-  return apyBound;
-}
-
-function computeTimeFactor(
-  beta: BigNumber,
-  termEndTimestampScaled: BigNumber,
-  currentTimestampScaled: BigNumber
-) {
-  const remainingSeconds = sub(termEndTimestampScaled, currentTimestampScaled);
-  const scaledTime = div(remainingSeconds, T_MAX);
-  // console.log("Scaled Time is: ", scaledTime.toString());
-  // console.log("Remaining seconds is: ", remainingSeconds.toString());
-  const expInput = mul(mul(beta, toBn("-1.0")), scaledTime);
-  // console.log("Exp input is : ", expInput.toString());
-
-  return exp(expInput);
-}
-
 describe("MarginCalculator", () => {
   // - Setup
 
@@ -324,19 +220,13 @@ describe("MarginCalculator", () => {
         (currentTimestamp + 604800).toString() // add a week
       );
 
-      const expected = computeTimeFactor(
-        BETA,
-        termEndTimestampScaled,
-        toBn(currentTimestamp.toString())
-      );
-
       const realized = await testMarginCalculator.computeTimeFactor(
         termEndTimestampScaled,
         toBn(currentTimestamp.toString()),
         margin_engine_params
       );
 
-      expect(realized).to.be.closeTo(expected, 100);
+      expect(realized).to.be.eq("981004647228725753");
     });
   });
 
@@ -374,13 +264,6 @@ describe("MarginCalculator", () => {
       const historicalApy: BigNumber = toBn("0.02");
       const isUpper: boolean = true;
 
-      const expected: BigNumber = computeApyBound(
-        termEndTimestampScaled,
-        currentTimestampScaled,
-        historicalApy,
-        isUpper
-      );
-
       expect(
         await testMarginCalculator.computeApyBound(
           termEndTimestampScaled,
@@ -389,7 +272,7 @@ describe("MarginCalculator", () => {
           isUpper,
           margin_engine_params
         )
-      ).to.be.closeTo(expected, 10000000000000);
+      ).to.eq("24278147968583284");
     });
 
     // passes
@@ -405,12 +288,6 @@ describe("MarginCalculator", () => {
       const historicalApy: BigNumber = toBn("0.02");
       const isUpper: boolean = false;
 
-      const expected: BigNumber = computeApyBound(
-        termEndTimestampScaled,
-        currentTimestampScaled,
-        historicalApy,
-        isUpper
-      );
       expect(
         await testMarginCalculator.computeApyBound(
           termEndTimestampScaled,
@@ -419,7 +296,7 @@ describe("MarginCalculator", () => {
           isUpper,
           margin_engine_params
         )
-      ).to.be.closeTo(expected, 10000000000000);
+      ).to.eq("17456226370556757");
     });
   });
 
@@ -498,15 +375,6 @@ describe("MarginCalculator", () => {
       const isLM = true;
       const historicalApy = toBn("0.1");
 
-      const expected = worstCaseVariableFactorAtMaturity(
-        timeInSecondsFromStartToMaturityBN,
-        termEndTimestampScaled,
-        currentTimestampScaled,
-        isFT,
-        isLM,
-        historicalApy
-      );
-
       const realized =
         await testMarginCalculator.worstCaseVariableFactorAtMaturity(
           timeInSecondsFromStartToMaturityBN,
@@ -518,7 +386,7 @@ describe("MarginCalculator", () => {
           margin_engine_params
         );
 
-      expect(realized).to.be.closeTo(expected, 100);
+      expect(realized).to.eq("4123691408399440");
     });
 
     it("correctly calculates the worst case variable factor at maturity FT, IM", async () => {
@@ -535,15 +403,6 @@ describe("MarginCalculator", () => {
       const isLM = false;
       const historicalApy = toBn("0.1");
 
-      const expected = worstCaseVariableFactorAtMaturity(
-        timeInSecondsFromStartToMaturityBN,
-        termEndTimestampScaled,
-        currentTimestampScaled,
-        isFT,
-        isLM,
-        historicalApy
-      );
-
       const realized =
         await testMarginCalculator.worstCaseVariableFactorAtMaturity(
           timeInSecondsFromStartToMaturityBN,
@@ -555,8 +414,7 @@ describe("MarginCalculator", () => {
           margin_engine_params
         );
 
-      // expect(realized).to.eq(expected);
-      expect(realized).to.be.closeTo(expected, 100);
+      expect(realized).to.eq("6185537112599160");
     });
 
     it("correctly calculates the worst case variable factor at maturity VT, LM", async () => {
@@ -573,15 +431,6 @@ describe("MarginCalculator", () => {
       const isLM = true;
       const historicalApy = toBn("0.1");
 
-      const expected = worstCaseVariableFactorAtMaturity(
-        timeInSecondsFromStartToMaturityBN,
-        termEndTimestampScaled,
-        currentTimestampScaled,
-        isFT,
-        isLM,
-        historicalApy
-      );
-
       const realized =
         await testMarginCalculator.worstCaseVariableFactorAtMaturity(
           timeInSecondsFromStartToMaturityBN,
@@ -593,7 +442,7 @@ describe("MarginCalculator", () => {
           margin_engine_params
         );
 
-      expect(realized).to.be.closeTo(expected, 100);
+      expect(realized).to.eq("3543058379114670");
     });
 
     it("correctly calculates the worst case variable factor at maturity VT, IM", async () => {
@@ -610,15 +459,6 @@ describe("MarginCalculator", () => {
       const isLM = false;
       const historicalApy = toBn("0.1");
 
-      const expected = worstCaseVariableFactorAtMaturity(
-        timeInSecondsFromStartToMaturityBN,
-        termEndTimestampScaled,
-        currentTimestampScaled,
-        isFT,
-        isLM,
-        historicalApy
-      );
-
       const realized =
         await testMarginCalculator.worstCaseVariableFactorAtMaturity(
           timeInSecondsFromStartToMaturityBN,
@@ -630,211 +470,220 @@ describe("MarginCalculator", () => {
           margin_engine_params
         );
 
-      // expect(realized).to.eq(expected);
-      expect(realized).to.be.closeTo(expected, 100);
+      expect(realized).to.eq("2480140865380269");
     });
   });
 
-  // describe("#getTraderMarginRequirement", async () => {
-  //   let margin_engine_params: any;
-  //   let testMarginCalculator: MarginCalculatorTest;
+  describe("#getTraderMarginRequirement", async () => {
+    let margin_engine_params: any;
+    let testMarginCalculator: MarginCalculatorTest;
 
-  //   beforeEach("deploy calculator", async () => {
-  //     margin_engine_params = {
-  //       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
-  //       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
-  //       minDeltaLMWad: MIN_DELTA_LM,
-  //       minDeltaIMWad: MIN_DELTA_IM,
-  //       sigmaSquaredWad: SIGMA_SQUARED,
-  //       alphaWad: ALPHA,
-  //       betaWad: BETA,
-  //       xiUpperWad: XI_UPPER,
-  //       xiLowerWad: XI_LOWER,
-  //       tMaxWad: T_MAX,
-  //     };
+    beforeEach("deploy calculator", async () => {
+      margin_engine_params = {
+        apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+        apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+        minDeltaLMWad: MIN_DELTA_LM,
+        minDeltaIMWad: MIN_DELTA_IM,
+        sigmaSquaredWad: SIGMA_SQUARED,
+        alphaWad: ALPHA,
+        betaWad: BETA,
+        xiUpperWad: XI_UPPER,
+        xiLowerWad: XI_LOWER,
+        tMaxWad: T_MAX,
+      };
 
-  //     ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
-  //   });
+      ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
+    });
 
-  //   it("correctly calculates the trader margin requirement: FT, LM", async () => {
-  //     const fixedTokenBalance: BigNumber = toBn("1000");
-  //     const variableTokenBalance: BigNumber = toBn("-3000");
+    it("correctly calculates the trader margin requirement: FT, LM", async () => {
+      const fixedTokenBalance: BigNumber = toBn("1000");
+      const variableTokenBalance: BigNumber = toBn("-30");
 
-  //     const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-  //     const currentTimestampScaled = toBn(currentTimestamp.toString());
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
-  //     const termStartTimestamp = currentTimestamp - 604800;
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp + 604800).toString() // add a week
+      );
 
-  //     const termEndTimestampScaled = toBn(
-  //       (termStartTimestamp + 604800).toString() // add a week
-  //     );
+      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const isLM = true;
+      const historicalApy = toBn("0.1");
 
-  //     const termStartTimestampScaled = toBn(termStartTimestamp.toString());
-  //     const isLM = false;
-  //     const historicalApy = toBn("0.1");
+      const trader_margin_requirement_params = {
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
 
-  //     const trader_margin_requirement_params = {
-  //       fixedTokenBalance: fixedTokenBalance,
-  //       variableTokenBalance: variableTokenBalance,
-  //       termStartTimestampWad: termStartTimestampScaled,
-  //       termEndTimestampWad: termEndTimestampScaled,
-  //       isLM: isLM,
-  //       historicalApyWad: historicalApy,
-  //     };
+      const realized = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params,
+        margin_engine_params
+      );
 
-  //     const realized = await testMarginCalculator.getTraderMarginRequirement(
-  //       trader_margin_requirement_params,
-  //       margin_engine_params
-  //     );
+      expect(realized).to.eq("259850901583632800");
+    });
 
-  //     const expected = getTraderMarginRequirement(
-  //       fixedTokenBalance,
-  //       variableTokenBalance,
-  //       termStartTimestampScaled,
-  //       termEndTimestampScaled,
-  //       isLM,
-  //       historicalApy,
-  //       currentTimestampScaled
-  //     );
+    it("correctly calculates the trader margin requirement: FT, LM with <0", async () => {
+      const fixedTokenBalance: BigNumber = toBn("1000");
+      const variableTokenBalance: BigNumber = toBn("-3000");
 
-  //     expect(realized).to.be.closeTo(expected, 100);
-  //   });
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
-  //   it("correctly calculates the trader margin requirement: FT, IM", async () => {
-  //     const fixedTokenBalance: BigNumber = toBn("1000");
-  //     const variableTokenBalance: BigNumber = toBn("-3000");
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp + 604800).toString() // add a week
+      );
 
-  //     const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-  //     const currentTimestampScaled = toBn(currentTimestamp.toString());
+      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const isLM = true;
+      const historicalApy = toBn("0.1");
 
-  //     const termStartTimestamp = currentTimestamp - 604800;
+      const trader_margin_requirement_params = {
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
 
-  //     const termEndTimestampScaled = toBn(
-  //       (termStartTimestamp + 604800).toString() // add a week
-  //     );
+      const realized = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params,
+        margin_engine_params
+      );
 
-  //     const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+      expect(realized).to.eq("0");
+    });
 
-  //     const isLM = false;
-  //     const historicalApy = toBn("0.1");
+    it("correctly calculates the trader margin requirement: FT, IM", async () => {
+      const fixedTokenBalance: BigNumber = toBn("1000");
+      const variableTokenBalance: BigNumber = toBn("-30");
 
-  //     const trader_margin_requirement_params = {
-  //       fixedTokenBalance: fixedTokenBalance,
-  //       variableTokenBalance: variableTokenBalance,
-  //       termStartTimestampWad: termStartTimestampScaled,
-  //       termEndTimestampWad: termEndTimestampScaled,
-  //       isLM: isLM,
-  //       historicalApyWad: historicalApy,
-  //     };
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
-  //     const realized = await testMarginCalculator.getTraderMarginRequirement(
-  //       trader_margin_requirement_params,
-  //       margin_engine_params
-  //     );
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp + 604800).toString() // add a week
+      );
 
-  //     const expected = getTraderMarginRequirement(
-  //       fixedTokenBalance,
-  //       variableTokenBalance,
-  //       termStartTimestampScaled,
-  //       termEndTimestampScaled,
-  //       isLM,
-  //       historicalApy,
-  //       currentTimestampScaled
-  //     );
+      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const isLM = false;
+      const historicalApy = toBn("0.1");
 
-  //     expect(realized).to.be.closeTo(expected, 100);
-  //   });
+      const trader_margin_requirement_params = {
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
 
-  //   it("correctly calculates the trader margin requirement: VT, LM", async () => {
-  //     const fixedTokenBalance: BigNumber = toBn("-1000");
-  //     const variableTokenBalance: BigNumber = toBn("3000");
+      const realized = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params,
+        margin_engine_params
+      );
 
-  //     const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-  //     const currentTimestampScaled = toBn(currentTimestamp.toString());
+      expect(realized).to.eq("197995530457641200");
+    });
 
-  //     const termStartTimestamp = currentTimestamp - 604800;
+    it("correctly calculates the trader margin requirement: FT, IM with <0", async () => {
+      const fixedTokenBalance: BigNumber = toBn("1000");
+      const variableTokenBalance: BigNumber = toBn("-3000");
 
-  //     const termEndTimestampScaled = toBn(
-  //       (termStartTimestamp + 604800).toString() // add a week
-  //     );
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
-  //     const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp + 604800).toString() // add a week
+      );
 
-  //     const isLM = true;
-  //     const historicalApy = toBn("0.1");
+      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const isLM = false;
+      const historicalApy = toBn("0.1");
 
-  //     const trader_margin_requirement_params = {
-  //       fixedTokenBalance: fixedTokenBalance,
-  //       variableTokenBalance: variableTokenBalance,
-  //       termStartTimestampWad: termStartTimestampScaled,
-  //       termEndTimestampWad: termEndTimestampScaled,
-  //       isLM: isLM,
-  //       historicalApyWad: historicalApy,
-  //     };
+      const trader_margin_requirement_params = {
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
 
-  //     const realized = await testMarginCalculator.getTraderMarginRequirement(
-  //       trader_margin_requirement_params,
-  //       margin_engine_params
-  //     );
+      const realized = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params,
+        margin_engine_params
+      );
 
-  //     const expected = getTraderMarginRequirement(
-  //       fixedTokenBalance,
-  //       variableTokenBalance,
-  //       termStartTimestampScaled,
-  //       termEndTimestampScaled,
-  //       isLM,
-  //       historicalApy,
-  //       currentTimestampScaled
-  //     );
+      console.log(realized.toString());
+      expect(realized).to.eq("0");
+    });
 
-  //     expect(realized).to.be.closeTo(expected, 100);
-  //   });
+    it("correctly calculates the trader margin requirement: FT, LM", async () => {
+      const fixedTokenBalance: BigNumber = toBn("-1000");
+      const variableTokenBalance: BigNumber = toBn("3000");
 
-  //   it("correctly calculates the trader margin requirement: VT, IM", async () => {
-  //     const fixedTokenBalance: BigNumber = toBn("-1000");
-  //     const variableTokenBalance: BigNumber = toBn("3000");
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
-  //     const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-  //     const currentTimestampScaled = toBn(currentTimestamp.toString());
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp + 604800).toString() // add a week
+      );
 
-  //     const termStartTimestamp = currentTimestamp - 604800;
+      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const isLM = true;
+      const historicalApy = toBn("0.1");
 
-  //     const termEndTimestampScaled = toBn(
-  //       (termStartTimestamp + 604800).toString() // add a week
-  //     );
+      const trader_margin_requirement_params = {
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
 
-  //     const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+      const realized = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params,
+        margin_engine_params
+      );
 
-  //     const isLM = false;
-  //     const historicalApy = toBn("0.1");
+      console.log(realized.toString());
+      expect(realized).to.eq("10245613493508394000");
+    });
 
-  //     const trader_margin_requirement_params = {
-  //       fixedTokenBalance: fixedTokenBalance,
-  //       variableTokenBalance: variableTokenBalance,
-  //       termStartTimestampWad: termStartTimestampScaled,
-  //       termEndTimestampWad: termEndTimestampScaled,
-  //       isLM: isLM,
-  //       historicalApyWad: historicalApy,
-  //     };
+    it("correctly calculates the trader margin requirement: FT, IM", async () => {
+      const fixedTokenBalance: BigNumber = toBn("-1000");
+      const variableTokenBalance: BigNumber = toBn("3000");
 
-  //     const realized = await testMarginCalculator.getTraderMarginRequirement(
-  //       trader_margin_requirement_params,
-  //       margin_engine_params
-  //     );
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
-  //     const expected = getTraderMarginRequirement(
-  //       fixedTokenBalance,
-  //       variableTokenBalance,
-  //       termStartTimestampScaled,
-  //       termEndTimestampScaled,
-  //       isLM,
-  //       historicalApy,
-  //       currentTimestampScaled
-  //     );
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp + 604800).toString() // add a week
+      );
 
-  //     expect(realized).to.be.closeTo(expected, 100);
-  //   });
-  // });
+      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
+      const isLM = false;
+      const historicalApy = toBn("0.1");
+
+      const trader_margin_requirement_params = {
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
+
+      const realized = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params,
+        margin_engine_params
+      );
+
+      console.log(realized.toString());
+      expect(realized).to.eq("7056860952305191000");
+    });
+  });
 
   describe("#isLiquiisLiquidatableTrader", async () => {
     let margin_engine_params: any;
@@ -858,21 +707,18 @@ describe("MarginCalculator", () => {
     });
 
     it("correctly checks for the fact the trader is liquidatable", async () => {
-      const fixedTokenBalance: BigNumber = toBn("1000");
-      const variableTokenBalance: BigNumber = toBn("-3000");
+      const fixedTokenBalance: BigNumber = toBn("-1000");
+      const variableTokenBalance: BigNumber = toBn("3000");
 
-      const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-
-      const termStartTimestamp = currentTimestamp - 604800;
-      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+      const currentTimestamp = await getCurrentTimestamp(provider);
 
       const termEndTimestampScaled = toBn(
-        (termStartTimestamp + 604800).toString() // add a week
+        (currentTimestamp + 604800).toString() // add a week
       );
 
+      const termStartTimestampScaled = toBn((currentTimestamp - 604800).toString());
       const isLM = false;
       const historicalApy = toBn("0.1");
-      const currentMargin = toBn("0.0");
 
       const trader_margin_requirement_params = {
         fixedTokenBalance: fixedTokenBalance,
@@ -882,6 +728,8 @@ describe("MarginCalculator", () => {
         isLM: isLM,
         historicalApyWad: historicalApy,
       };
+
+      const currentMargin = toBn("0.0");
 
       const realized = await testMarginCalculator.isLiquidatableTrader(
         trader_margin_requirement_params,
