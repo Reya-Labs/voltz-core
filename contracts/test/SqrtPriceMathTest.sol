@@ -63,4 +63,20 @@ contract SqrtPriceMathTest {
                 zeroForOne
             );
     }
+
+    function getAmount0DeltaRoundUpIncluded(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        int128 liquidity
+    ) external pure returns (int256 amount0) {
+        return SqrtPriceMath.getAmount0Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity);
+    }
+
+    function getAmount1DeltaRoundUpIncluded(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        int128 liquidity
+    ) external pure returns (int256 amount0) {
+        return SqrtPriceMath.getAmount1Delta(sqrtRatioAX96, sqrtRatioBX96, liquidity);
+    }
 }

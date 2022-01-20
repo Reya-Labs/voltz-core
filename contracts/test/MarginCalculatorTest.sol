@@ -98,4 +98,12 @@ contract MarginCalculatorTest {
                 _marginCalculatorParameters
             );
     }
+
+    function getPositionMarginRequirement(
+        MarginCalculator.PositionMarginRequirementParams memory params,
+        IMarginEngine.MarginCalculatorParameters
+            memory _marginCalculatorParameters
+    ) external view returns (uint256 margin) {
+        return MarginCalculator.getPositionMarginRequirement(params, _marginCalculatorParameters);
+    }
 }

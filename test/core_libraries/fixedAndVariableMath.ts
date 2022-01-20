@@ -4,89 +4,15 @@ import { BigNumber } from "ethers";
 import { ethers, network, waffle } from "hardhat";
 import { expect } from "chai";
 import { FixedAndVariableMathTest } from "../../typechain/FixedAndVariableMathTest";
-import { fixedFactor, calculateSettlementCashflow } from "../shared/utilities";
 import { toBn } from "evm-bn";
-import { div, sub, mul, add } from "../shared/functions";
+import { sub, add } from "../shared/functions";
 import { getCurrentTimestamp } from "../helpers/time";
-import { ONE_YEAR_IN_SECONDS } from "../shared/constants";
+import { ONE_YEAR_IN_SECONDS, ONE_WEEK_IN_SECONDS } from "../shared/constants";
 
 const { provider } = waffle;
 
-// const SECONDS_IN_YEAR = ONE_YEAR_IN_SECONDS;
 const BLOCK_TIMESTAMP = 1632249308;
 
-export function getFixedTokenBalance(
-  amount0: BigNumber,
-  amount1: BigNumber,
-  accruedVariableFactor: BigNumber,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  currentBlockTimestamp: BigNumber
-): BigNumber {
-  const excessBalance = getExcessBalance(
-    amount0,
-    amount1,
-    accruedVariableFactor,
-    termStartTimestamp,
-    termEndTimestamp,
-    currentBlockTimestamp
-  );
-
-  return calculateFixedTokenBalance(
-    amount0,
-    excessBalance,
-    termStartTimestamp,
-    termEndTimestamp
-  );
-}
-
-function calculateFixedTokenBalance(
-  amount0: BigNumber,
-  exceessBalance: BigNumber,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber
-): BigNumber {
-  const fixedFactorAtMaturity: BigNumber = fixedFactor(
-    true,
-    termStartTimestamp,
-    termEndTimestamp,
-    toBn((1632249308).toString()) // temporary
-  );
-
-  const exp1: BigNumber = mul(amount0, fixedFactorAtMaturity);
-  const numerator: BigNumber = sub(exp1, exceessBalance);
-  const fixedTokenBalance: BigNumber = div(numerator, fixedFactorAtMaturity);
-
-  return fixedTokenBalance;
-}
-
-function getExcessBalance(
-  amount0: BigNumber,
-  amount1: BigNumber,
-  accruedVariableFactor: BigNumber,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  currentBlockTimestamp: BigNumber
-): BigNumber {
-  const excessFixedAccruedBalance = mul(
-    amount0,
-    fixedFactor(
-      false,
-      termStartTimestamp,
-      termEndTimestamp,
-      currentBlockTimestamp
-    )
-  );
-
-  const excessVariableAccruedBalance = mul(amount1, accruedVariableFactor);
-
-  const excessBalance = add(
-    excessFixedAccruedBalance,
-    excessVariableAccruedBalance
-  );
-
-  return excessBalance;
-}
 
 describe("FixedAndVariableMath", () => {
   let fixedAndVariableMathTest: FixedAndVariableMathTest;
@@ -110,145 +36,183 @@ describe("FixedAndVariableMath", () => {
   });
 
   describe("#calculateSettlementCashflow", () => {
-    const amount0: BigNumber = toBn("-1000");
-    const amount1: BigNumber = toBn("1000");
-    const accruedVariableFactor: BigNumber = toBn("2");
-
     it("correctly calculates the settlement cash flow", async () => {
-      const termEndTimestamp: BigNumber = add(
-        toBn(BLOCK_TIMESTAMP.toString()),
-        ONE_YEAR_IN_SECONDS
+      const amount0 = toBn("1000");
+      const amount1 = toBn("-1000");
+      const accruedVariableFactor = toBn("0.02");
+
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const realized = await fixedAndVariableMathTest.calculateSettlementCashflow(
+        amount0,
+        amount1,
+        termStartTimestamp,
+        termEndTimestamp,
+        accruedVariableFactor
       );
 
-      const expected: BigNumber = calculateSettlementCashflow(
+      expect(realized).to.eq("-19424657534246576000");
+    });
+
+    it("correctly calculates the settlement cash flow", async () => {
+      const amount0 = toBn("1000");
+      const amount1 = toBn("-300");
+      const accruedVariableFactor = toBn("0.02");
+
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const realized = await fixedAndVariableMathTest.calculateSettlementCashflow(
+        amount0,
+        amount1,
+        termStartTimestamp,
+        termEndTimestamp,
+        accruedVariableFactor
+      );
+
+      expect(realized).to.eq("-5424657534246576000");
+    });
+
+    // TODO: make this work according to the spreadsheet "FixedAndVariableMath"
+    it("scenario", async () => {
+      const amount0 = toBn("-1000");
+      const amount1 = toBn("10000");
+      const accruedVariableFactor = toBn("0.001998");
+
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+
+      const realized = await fixedAndVariableMathTest.calculateSettlementCashflow(
+        amount0,
+        amount1,
+        termStartTimestamp,
+        termEndTimestamp,
+        accruedVariableFactor
+      );
+
+      const excessBalance = await fixedAndVariableMathTest.getExcessBalance(
         amount0,
         amount1,
         accruedVariableFactor,
-        currentBlockTimestamp,
-        termEndTimestamp,
-        currentBlockTimestamp
+        termStartTimestamp,
+        termEndTimestamp
       );
+      console.log("excess:", excessBalance.toString());
 
-      expect(
-        await fixedAndVariableMathTest.calculateSettlementCashflow(
-          amount0,
-          amount1,
-          accruedVariableFactor,
-          currentBlockTimestamp,
-          termEndTimestamp
-        )
-      ).to.eq(expected);
+      const fixedFactor = await fixedAndVariableMathTest.fixedFactorTest(true, termStartTimestamp, termEndTimestamp);
+      console.log("fixedFactor:", fixedFactor.toString());
+
+      console.log("cashflow: ", realized.toString());
     });
   });
 
   describe("#accrualFact", () => {
     const testSets = [
-      [toBn("4")],
-      [toBn("50")],
-      [toBn("34536000")],
-      [toBn("34537000")],
+      [toBn("4"), "126839167935"],
+      [toBn("50"), "1585489599188"],
+      [toBn("34536000"), "1095129375951293759"],
+      [toBn("34537000"), "1095161085743277524"],
     ];
 
     testSets.forEach((testSet) => {
-      const x: BigNumber = testSet[0];
+      const x = testSet[0];
+      const expected = testSet[1];
 
       it(`takes ${x} and returns the correct value`, async () => {
-        const expected: BigNumber = div(x, ONE_YEAR_IN_SECONDS);
-        expect(await fixedAndVariableMathTest.accrualFact(x)).to.eq(expected);
+        const realized = await fixedAndVariableMathTest.accrualFact(x);
+        expect(realized).to.eq(expected);
       });
     });
   });
 
   describe("#fixedFactor", () => {
-    it("reverts if the end timestamp is before the start timestamp", async () => {
-      await expect(
-        fixedAndVariableMathTest.fixedFactorTest(false, toBn("1"), toBn("1"))
-      ).to.be.revertedWith("E<=S");
-      await expect(
-        fixedAndVariableMathTest.fixedFactorTest(false, toBn("2"), toBn("1"))
-      ).to.be.revertedWith("E<=S");
-    });
-
-    it("reverts unless the start timestamp is in the past", async () => {
-      const afterCurrentBlockTimestamp = add(currentBlockTimestamp, toBn("1"));
-      const afterAfterCurrentBlockTimestamp = add(
-        afterCurrentBlockTimestamp,
-        toBn("1")
-      );
-
-      await expect(
-        fixedAndVariableMathTest.fixedFactorTest(
-          false,
-          afterCurrentBlockTimestamp,
-          afterAfterCurrentBlockTimestamp
-        )
-      ).to.be.revertedWith("B.T<S");
-    });
-
-    // no longer the case
-    // it("reverts unless the end timestamp is in the future", async () => {
-    //   const beforeCurrentBlockTimestamp = sub(currentBlockTimestamp, toBn("1"));
-    //   const beforeBeforeCurrentBlockTimestamp = sub(
-    //     beforeCurrentBlockTimestamp,
-    //     toBn("1")
-    //   );
-
-    //   await expect(
-    //     fixedAndVariableMathTest.fixedFactorTest(
-    //       false,
-    //       beforeBeforeCurrentBlockTimestamp,
-    //       beforeCurrentBlockTimestamp
-    //     )
-    //   ).to.be.revertedWith("B.T>S");
-    // });
-
     it(`returns the correct fixed factor at maturity`, async () => {
       const termEndTimestamp = add(currentBlockTimestamp, ONE_YEAR_IN_SECONDS); // one year in seconds
       const atMaturity: boolean = true;
 
-      const fixedFactorValue = fixedFactor(
-        true,
+      const realized = await fixedAndVariableMathTest.fixedFactorTest(
+        atMaturity,
         currentBlockTimestamp,
-        termEndTimestamp,
-        currentBlockTimestamp
+        termEndTimestamp
       );
 
-      expect(
-        await fixedAndVariableMathTest.fixedFactorTest(
-          atMaturity,
-          currentBlockTimestamp,
-          termEndTimestamp
-        )
-      ).to.eq(fixedFactorValue);
+      expect(realized).to.eq(toBn("0.01"));
     });
 
     it(`returns the correct fixed factor before maturity`, async () => {
       const termEndTimestamp = add(currentBlockTimestamp, ONE_YEAR_IN_SECONDS); // one year in seconds
       const atMaturity: boolean = false;
 
-      const fixedFactorValue = fixedFactor(
-        false,
+      const realized = await fixedAndVariableMathTest.fixedFactorTest(
+        atMaturity,
         currentBlockTimestamp,
-        termEndTimestamp,
-        currentBlockTimestamp
+        termEndTimestamp
       );
 
-      expect(
-        await fixedAndVariableMathTest.fixedFactorTest(
-          atMaturity,
-          currentBlockTimestamp,
-          termEndTimestamp
-        )
-      ).to.eq(fixedFactorValue);
+      expect(realized).to.eq(toBn("0"));
+    });
+
+    it(`returns the correct fixed factor at maturity for 2 weeks`, async () => {
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+      const atMaturity: boolean = true;
+
+      const realized = await fixedAndVariableMathTest.fixedFactorTest(
+        atMaturity,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      expect(realized).to.eq("575342465753424");
+    });
+
+    it(`returns the correct fixed factor before maturity for 2 weeks`, async () => {
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+      const atMaturity: boolean = false;
+
+      const realized = await fixedAndVariableMathTest.fixedFactorTest(
+        atMaturity,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      expect(realized).to.eq("191780821917808");
+    });
+
+    it(`reverts: end <= start`, async () => {
+      const termStartTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = currentBlockTimestamp; 
+      const atMaturity: boolean = false;
+
+      await expect(fixedAndVariableMathTest.fixedFactorTest(
+        atMaturity,
+        termStartTimestamp,
+        termEndTimestamp
+      )).to.be.revertedWith("E<=S");
+    });
+
+    it(`reverts: current < start`, async () => {
+      const termStartTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+      const atMaturity: boolean = false;
+
+      await expect(fixedAndVariableMathTest.fixedFactorTest(
+        atMaturity,
+        termStartTimestamp,
+        termEndTimestamp
+      )).to.be.revertedWith("B.T<S");
     });
   });
 
   describe("#calculateFixedTokenBalance", () => {
-    const amount0: BigNumber = toBn("-1000");
-    const excessBalance: BigNumber = toBn("30");
 
     it("reverts unless the end timestamp is after the start timestamp", async () => {
       const beforeCurrentBlockTimestamp = sub(currentBlockTimestamp, toBn("1"));
+
+      const amount0: BigNumber = toBn("-1000");
+      const excessBalance: BigNumber = toBn("30");
 
       await expect(
         fixedAndVariableMathTest.calculateFixedTokenBalance(
@@ -270,95 +234,206 @@ describe("FixedAndVariableMath", () => {
     });
 
     it("correctly calculates the fixed token balance", async () => {
-      const termEndTimestamp = add(currentBlockTimestamp, ONE_YEAR_IN_SECONDS);
+      const amount0: BigNumber = toBn("-1000");
+      const excessBalance: BigNumber = toBn("30");
 
-      const expected: BigNumber = await calculateFixedTokenBalance(
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const fixedFactor = await fixedAndVariableMathTest.fixedFactorTest(true, termStartTimestamp, termEndTimestamp);
+      console.log("fixedFactor: ", fixedFactor.toString());
+
+      const realized = await fixedAndVariableMathTest.calculateFixedTokenBalance(
         amount0,
         excessBalance,
-        currentBlockTimestamp,
+        termStartTimestamp,
         termEndTimestamp
       );
 
-      expect(
-        await fixedAndVariableMathTest.calculateFixedTokenBalance(
-          amount0,
-          excessBalance,
-          currentBlockTimestamp,
-          termEndTimestamp
-        )
-      ).to.eq(expected);
+      expect(realized).to.eq("-53142857142857202448979");
+    });
+
+    it("correctly calculates the fixed token balance", async () => {
+      const amount0: BigNumber = toBn("-100");
+      const excessBalance: BigNumber = toBn("100");
+
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+
+      const realized = await fixedAndVariableMathTest.calculateFixedTokenBalance(
+        amount0,
+        excessBalance,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      expect(realized).to.eq("-173909523809524008163265");
+    });
+
+    it("correctly calculates the fixed token balance", async () => {
+      const amount0: BigNumber = toBn("1000");
+      const excessBalance: BigNumber = toBn("-30");
+
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const realized = await fixedAndVariableMathTest.calculateFixedTokenBalance(
+        amount0,
+        excessBalance,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      expect(realized).to.eq("53142857142857202448979");
+    });
+
+    it("balance = amount0 when excess is 0", async () => {
+      const amount0: BigNumber = toBn("1000");
+      const excessBalance: BigNumber = toBn("0");
+
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const realized = await fixedAndVariableMathTest.calculateFixedTokenBalance(
+        amount0,
+        excessBalance,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      expect(realized).to.eq(amount0);
     });
   });
 
   describe("#getExcessBalance", () => {
-    const amount0: BigNumber = toBn("-1000");
-    const amount1: BigNumber = toBn("1000");
-    const accruedVariableFactor: BigNumber = toBn("2");
-
     it("correctly calculates the excess balance", async () => {
-      const termEndTimestamp = add(currentBlockTimestamp, ONE_YEAR_IN_SECONDS);
+      const amount0: BigNumber = toBn("-1000");
+      const amount1: BigNumber = toBn("1000");
+      const accruedVariableFactor: BigNumber = toBn("0.02");
 
-      const expected: BigNumber = await getExcessBalance(
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const realized = await fixedAndVariableMathTest.getExcessBalance(
         amount0,
         amount1,
         accruedVariableFactor,
-        currentBlockTimestamp,
-        termEndTimestamp,
-        currentBlockTimestamp
+        termStartTimestamp,
+        termEndTimestamp
       );
 
-      expect(
-        await fixedAndVariableMathTest.getExcessBalance(
-          amount0,
-          amount1,
-          accruedVariableFactor,
-          currentBlockTimestamp,
-          termEndTimestamp
-        )
-      ).to.eq(expected);
+      expect(realized).to.eq("19808219178082192000");
+    });
+
+    it("correctly calculates the excess balance", async () => {
+      const amount0: BigNumber = toBn("-1000");
+      const amount1: BigNumber = toBn("2000");
+      const accruedVariableFactor: BigNumber = toBn("0.02");
+
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const realized = await fixedAndVariableMathTest.getExcessBalance(
+        amount0,
+        amount1,
+        accruedVariableFactor,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      expect(realized).to.eq("39808219178082192000");
+    });
+
+    it("correctly calculates the excess balance", async () => {
+      const amount0: BigNumber = toBn("1000");
+      const amount1: BigNumber = toBn("-1000");
+      const accruedVariableFactor: BigNumber = toBn("0.02");
+
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const realized = await fixedAndVariableMathTest.getExcessBalance(
+        amount0,
+        amount1,
+        accruedVariableFactor,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      expect(realized).to.eq("-19808219178082192000");
+    });
+
+    it("correctly calculates the excess balance", async () => {
+      const amount0: BigNumber = toBn("1000");
+      const amount1: BigNumber = toBn("-2000");
+      const accruedVariableFactor: BigNumber = toBn("0.02");
+
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const realized = await fixedAndVariableMathTest.getExcessBalance(
+        amount0,
+        amount1,
+        accruedVariableFactor,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      expect(realized).to.eq("-39808219178082192000");
     });
   });
 
   describe("#getFixedTokenBalance", () => {
-    const amount0: BigNumber = toBn("-1000");
-    const amount1: BigNumber = toBn("1000");
-    const accruedVariableFactor: BigNumber = toBn("2");
-    const termEndTimestamp: BigNumber = add(
-      toBn(BLOCK_TIMESTAMP.toString()),
-      ONE_YEAR_IN_SECONDS
-    );
-
     it("reverts if the signs of amount0 and amount1 are the same", async () => {
+      const amount0: BigNumber = toBn("1000");
+      const amount1: BigNumber = toBn("1000");
+      const accruedVariableFactor: BigNumber = toBn("0.02");
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
       await expect(
         fixedAndVariableMathTest.getFixedTokenBalance(
           amount0,
-          amount0,
+          amount1,
           accruedVariableFactor,
-          currentBlockTimestamp,
+          termStartTimestamp,
           termEndTimestamp
         )
       ).to.be.revertedWith("AmountSignsSame()");
     });
 
     it("correctly gets the fixed token balance", async () => {
-      const expected: BigNumber = getFixedTokenBalance(
+      const amount0: BigNumber = toBn("1000");
+      const amount1: BigNumber = toBn("-1000");
+      const accruedVariableFactor: BigNumber = toBn("0.02");
+      const termStartTimestamp = sub(currentBlockTimestamp, ONE_WEEK_IN_SECONDS); // one week in seconds
+      const termEndTimestamp = add(currentBlockTimestamp, ONE_WEEK_IN_SECONDS.mul(2)); // two weeks in seconds
+
+      const excessBalance = await fixedAndVariableMathTest.getExcessBalance(
         amount0,
         amount1,
         accruedVariableFactor,
-        currentBlockTimestamp,
-        termEndTimestamp,
-        currentBlockTimestamp
+        termStartTimestamp,
+        termEndTimestamp
       );
 
-      expect(
-        await fixedAndVariableMathTest.getFixedTokenBalance(
-          amount0,
-          amount1,
-          accruedVariableFactor,
-          currentBlockTimestamp,
-          termEndTimestamp
-        )
-      ).to.eq(expected);
+      const fixedTokenBalance = await fixedAndVariableMathTest.calculateFixedTokenBalance(
+        amount0,
+        excessBalance,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      const realized = await fixedAndVariableMathTest.getFixedTokenBalance(
+        amount0,
+        amount1,
+        accruedVariableFactor,
+        termStartTimestamp,
+        termEndTimestamp
+      );
+
+      expect(realized).to.eq(fixedTokenBalance);
     });
   });
 });

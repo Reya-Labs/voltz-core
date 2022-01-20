@@ -66,26 +66,6 @@ export function accrualFact(timeInSeconds: BigNumber): BigNumber {
   return div(timeInSeconds, SECONDS_IN_YEAR);
 }
 
-export function fixedFactor(
-  atMaturity: boolean,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  currentBlockTimestamp: BigNumber
-): BigNumber {
-  let timeInSeconds: BigNumber;
-
-  if (atMaturity || currentBlockTimestamp.gte(termEndTimestamp)) {
-    timeInSeconds = sub(termEndTimestamp, termStartTimestamp);
-  } else {
-    timeInSeconds = sub(currentBlockTimestamp, termStartTimestamp);
-  }
-
-  const timeInYears: BigNumber = accrualFact(timeInSeconds);
-
-  const fixedFactorValue: BigNumber = mul(timeInYears, toBn("0.01"));
-
-  return fixedFactorValue;
-}
 
 export function getPositionKey(
   address: string,
@@ -115,29 +95,6 @@ export const T_MAX: BigNumber = toBn("31536000"); // one year
 export const DEFAULT_TIME_FACTOR: BigNumber = toBn("0.1");
 export const MIN_TICK: number = -887272;
 export const MAX_TICK: number = 887272;
-
-export function calculateSettlementCashflow(
-  fixedTokenBalance: BigNumber,
-  variableTokenBalance: BigNumber,
-  termStartTimestamp: BigNumber,
-  termEndTimestamp: BigNumber,
-  variableFactorToMaturity: BigNumber,
-  currentBlockTimestamp: BigNumber
-): BigNumber {
-  const fixedCashflow = mul(
-    fixedTokenBalance,
-    fixedFactor(
-      true,
-      termStartTimestamp,
-      termEndTimestamp,
-      currentBlockTimestamp
-    )
-  );
-
-  const variableCashflow = mul(variableTokenBalance, variableFactorToMaturity);
-
-  return add(fixedCashflow, variableCashflow);
-}
 
 Bn.config({ EXPONENTIAL_AT: 999999, DECIMAL_PLACES: 40 });
 

@@ -2,7 +2,7 @@ import { Wallet, BigNumber } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
-import { marginCalculatorFixture } from "../shared/fixtures";
+import { fixedAndVariableMathFixture, marginCalculatorFixture, sqrtPriceMathFixture, tickMathFixture } from "../shared/fixtures";
 import {
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
@@ -15,10 +15,16 @@ import {
   XI_LOWER,
   T_MAX,
   expandTo18Decimals,
+  decodePriceSqrt,
 } from "../shared/utilities";
 
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import { getCurrentTimestamp } from "../helpers/time";
+import { SqrtPriceMath } from "../shared/sqrtPriceMath";
+import { FixedAndVariableMathTest, SqrtPriceMathTest, TickMathTest } from "../../typechain";
+import { sqrt } from "mathjs";
+import { TickMath } from "../shared/tickMath";
+import JSBI from "jsbi";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
@@ -162,46 +168,6 @@ describe("MarginCalculator", () => {
       ).to.eq("17456226370556757");
     });
   });
-
-  // describe("#getTraderMarginRequirement", async () => {
-  //   let margin_engine_params: any;
-  //   let testMarginCalculator: MarginCalculatorTest;
-
-  //   beforeEach("deploy calculator", async () => {
-  //     margin_engine_params = {
-  //       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
-  //       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
-  //       minDeltaLMWad: MIN_DELTA_LM,
-  //       minDeltaIMWad: MIN_DELTA_IM,
-  //       sigmaSquaredWad: SIGMA_SQUARED,
-  //       alphaWad: ALPHA,
-  //       betaWad: BETA,
-  //       xiUpperWad: XI_UPPER,
-  //       xiLowerWad: XI_LOWER,
-  //       tMaxWad: T_MAX,
-  //     };
-
-  //     ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
-  //   });
-
-  //   it("returns zero if position isn't settled", async () => {
-  //     const trader_margin_requirement_params = {
-  //       fixedTokenBalance: toBn("10000"),
-  //       variableTokenBalance: toBn("1000"),
-  //       termStartTimestampWad: toBn("0"),
-  //       termEndTimestampWad: toBn("1"),
-  //       isLM: false,
-  //       historicalApyWad: toBn("0.1"),
-  //     };
-
-  //     expect(
-  //       await testMarginCalculator.getTraderMarginRequirement(
-  //         trader_margin_requirement_params,
-  //         margin_engine_params
-  //       )
-  //     );
-  //   });
-  // });
 
   describe("#worstCaseVariableFactorAtMaturity", async () => {
     let margin_engine_params: any;
@@ -685,6 +651,246 @@ describe("MarginCalculator", () => {
       );
 
       expect(realized).to.eq(true);
+    });
+  });
+
+  describe("#getPositionMarginRequirement", async () => {
+    let margin_engine_params: any;
+    let testMarginCalculator: MarginCalculatorTest;
+    let testSqrtPriceMath: SqrtPriceMathTest;
+    let testFixedAndVariableMath: FixedAndVariableMathTest;
+    let testTickMath: TickMathTest;
+
+    beforeEach("deploy calculator", async () => {
+      margin_engine_params = {
+        apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+        apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+        minDeltaLMWad: MIN_DELTA_LM,
+        minDeltaIMWad: MIN_DELTA_IM,
+        sigmaSquaredWad: SIGMA_SQUARED,
+        alphaWad: ALPHA,
+        betaWad: BETA,
+        xiUpperWad: XI_UPPER,
+        xiLowerWad: XI_LOWER,
+        tMaxWad: T_MAX,
+      };
+
+      ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
+      ({ testSqrtPriceMath } = await loadFixture(sqrtPriceMathFixture));
+      ({ testFixedAndVariableMath } = await loadFixture(fixedAndVariableMathFixture));
+      ({ testTickMath } = await loadFixture(tickMathFixture));
+    });
+
+    it("current tick < lower tick: margin requirement for staying position", async () => {
+      const tickLower: number = 100;
+      const tickUpper: number = 1000;
+      const currentTick: number = 0;
+
+      const currentTimestamp = (await getCurrentTimestamp(provider));
+      const currentTimestampScaled = toBn(currentTimestamp.toString());
+
+      const termStartTimestamp = currentTimestamp - 604800;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp + 2*604800).toString() // add two weeks
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      const fixedTokenBalance: BigNumber = toBn("-100");
+      const variableTokenBalance: BigNumber = toBn("100");
+
+      const variableFactor: BigNumber = toBn("0.02");
+      const historicalApy: BigNumber = toBn("0.3");
+      const liquidityBN: BigNumber = expandTo18Decimals(1000);
+
+      const isLM = true;
+
+
+      const position_margin_requirement_params = {
+        owner: wallet.address,
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        isLM: isLM,
+        currentTick: currentTick,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        liquidity: liquidityBN,
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        variableFactorWad: variableFactor,
+        historicalApyWad: historicalApy,
+      };
+
+      const timeFactor = await testMarginCalculator.computeTimeFactor(termEndTimestampScaled, currentTimestampScaled, margin_engine_params);
+      console.log("time factor: ", timeFactor.toString());
+
+      const ratioAtLowerTickContract = await testTickMath.getSqrtRatioAtTick(tickLower);
+      const ratioAtUpperTickContract = await testTickMath.getSqrtRatioAtTick(tickUpper);
+
+      console.log("ratio lower contract: ", decodePriceSqrt(ratioAtLowerTickContract));
+      console.log("ratio upper contract: ", decodePriceSqrt(ratioAtUpperTickContract));
+
+      const amount0DeltaContract = await testSqrtPriceMath.getAmount0DeltaRoundUpIncluded(ratioAtLowerTickContract, ratioAtUpperTickContract, liquidityBN.mul(-1));
+      const amount1DeltaContract = await testSqrtPriceMath.getAmount1DeltaRoundUpIncluded(ratioAtLowerTickContract, ratioAtUpperTickContract, liquidityBN);
+      
+      console.log("amount0 contract: ", amount0DeltaContract.toString());
+      console.log("amount1 contract: ", amount1DeltaContract.toString());
+
+      const extraFixedTokenBalance = await testFixedAndVariableMath.getFixedTokenBalance(amount0DeltaContract, amount1DeltaContract, variableFactor, termStartTimestampScaled, termEndTimestampScaled);
+
+      const scenario1LPVariableTokenBalance = amount1DeltaContract.add(variableTokenBalance);
+      const scenario1LPFixedTokenBalance = fixedTokenBalance.add(extraFixedTokenBalance);
+
+      console.log("extraFixedTokenBalance", extraFixedTokenBalance.toString());
+      console.log("scenario1LPVariableTokenBalance", scenario1LPVariableTokenBalance.toString());
+      console.log("scenario1LPFixedTokenBalance", scenario1LPFixedTokenBalance.toString());
+
+      const trader_margin_requirement_params_1 = {
+        fixedTokenBalance: scenario1LPFixedTokenBalance,
+        variableTokenBalance: scenario1LPVariableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
+
+      const tmReq1 = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params_1,
+        margin_engine_params
+      );
+
+      console.log("tmreq1:", tmReq1.toString());
+
+      const trader_margin_requirement_params_2 = {
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
+
+      const tmReq2 = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params_2,
+        margin_engine_params
+      );
+
+      console.log("tmreq2:", tmReq2.toString());
+
+      const realized = await testMarginCalculator.getPositionMarginRequirement(
+        position_margin_requirement_params,
+        margin_engine_params
+      );
+
+      console.log("margin: ", realized.toString());
+      expect(realized).to.be.eq("1050340090749058400");
+    });
+
+    it("current tick < lower tick: margin requirement for staying position", async () => {
+      const tickLower: number = 100;
+      const tickUpper: number = 1000;
+      const currentTick: number = 0;
+
+      const currentTimestamp = (await getCurrentTimestamp(provider));
+      const currentTimestampScaled = toBn(currentTimestamp.toString());
+
+      const termStartTimestamp = currentTimestamp - 604800;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp + 2*604800).toString() // add two weeks
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      const fixedTokenBalance: BigNumber = toBn("-100");
+      const variableTokenBalance: BigNumber = toBn("100");
+
+      const variableFactor: BigNumber = toBn("0.02");
+      const historicalApy: BigNumber = toBn("0.3");
+      const liquidityBN: BigNumber = expandTo18Decimals(1000);
+
+      const isLM = true;
+
+
+      const position_margin_requirement_params = {
+        owner: wallet.address,
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        isLM: isLM,
+        currentTick: currentTick,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        liquidity: liquidityBN,
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        variableFactorWad: variableFactor,
+        historicalApyWad: historicalApy,
+      };
+
+      const timeFactor = await testMarginCalculator.computeTimeFactor(termEndTimestampScaled, currentTimestampScaled, margin_engine_params);
+      console.log("time factor: ", timeFactor.toString());
+
+      const ratioAtLowerTickContract = await testTickMath.getSqrtRatioAtTick(tickLower);
+      const ratioAtUpperTickContract = await testTickMath.getSqrtRatioAtTick(tickUpper);
+
+      console.log("ratio lower contract: ", decodePriceSqrt(ratioAtLowerTickContract));
+      console.log("ratio upper contract: ", decodePriceSqrt(ratioAtUpperTickContract));
+
+      const amount0DeltaContract = await testSqrtPriceMath.getAmount0DeltaRoundUpIncluded(ratioAtLowerTickContract, ratioAtUpperTickContract, liquidityBN.mul(-1));
+      const amount1DeltaContract = await testSqrtPriceMath.getAmount1DeltaRoundUpIncluded(ratioAtLowerTickContract, ratioAtUpperTickContract, liquidityBN);
+      
+      console.log("amount0 contract: ", amount0DeltaContract.toString());
+      console.log("amount1 contract: ", amount1DeltaContract.toString());
+
+      const extraFixedTokenBalance = await testFixedAndVariableMath.getFixedTokenBalance(amount0DeltaContract, amount1DeltaContract, variableFactor, termStartTimestampScaled, termEndTimestampScaled);
+
+      const scenario1LPVariableTokenBalance = amount1DeltaContract.add(variableTokenBalance);
+      const scenario1LPFixedTokenBalance = fixedTokenBalance.add(extraFixedTokenBalance);
+
+      console.log("extraFixedTokenBalance", extraFixedTokenBalance.toString());
+      console.log("scenario1LPVariableTokenBalance", scenario1LPVariableTokenBalance.toString());
+      console.log("scenario1LPFixedTokenBalance", scenario1LPFixedTokenBalance.toString());
+
+      const trader_margin_requirement_params_1 = {
+        fixedTokenBalance: scenario1LPFixedTokenBalance,
+        variableTokenBalance: scenario1LPVariableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
+
+      const tmReq1 = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params_1,
+        margin_engine_params
+      );
+
+      console.log("tmreq1:", tmReq1.toString());
+
+      const trader_margin_requirement_params_2 = {
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        isLM: isLM,
+        historicalApyWad: historicalApy,
+      };
+
+      const tmReq2 = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params_2,
+        margin_engine_params
+      );
+
+      console.log("tmreq2:", tmReq2.toString());
+
+      const realized = await testMarginCalculator.getPositionMarginRequirement(
+        position_margin_requirement_params,
+        margin_engine_params
+      );
+
+      console.log("margin: ", realized.toString());
+      expect(realized).to.be.eq("1050340090749058400");
     });
   });
 });
