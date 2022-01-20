@@ -122,15 +122,15 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     // emit set fee protocol
   }
 
-  function setTickSpacing(int24 _tickSpacing) external override onlyOwner {
+  function setTickSpacing(int24 _tickSpacing) external override onlyOwner lock {
     tickSpacing = _tickSpacing;
   }
 
-  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external override onlyOwner {
+  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external override onlyOwner lock {
     maxLiquidityPerTick = _maxLiquidityPerTick;
   }
 
-  function setFee(uint256 _feeWad) external override onlyOwner {
+  function setFee(uint256 _feeWad) external override onlyOwner lock {
     feeWad = _feeWad;
   }
 

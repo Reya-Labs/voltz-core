@@ -28,6 +28,7 @@ import {
   XI_LOWER,
   T_MAX,
   MAX_SQRT_RATIO,
+  MIN_SQRT_RATIO,
 } from "../shared/utilities";
 
 const createFixtureLoader = waffle.createFixtureLoader;
@@ -633,6 +634,54 @@ describe("MarginEngine", () => {
       // expect(positionInfo.fixedTokenBalance).to.eq(toBn("0"));
       // expect(positionInfo.variableTokenBalance).to.eq(toBn("0"));
     });
+  });
+
+  describe("liquidations", async () => {
+    beforeEach("prepare the vamm", async () => {
+      await token.mint(wallet.address, BigNumber.from(10).pow(27));
+      await token.approve(wallet.address, BigNumber.from(10).pow(27));
+
+      await marginEngineTest.updatePositionMargin(
+        {
+          owner: wallet.address,
+          tickLower: -TICK_SPACING,
+          tickUpper: TICK_SPACING,
+          liquidityDelta: 0,
+        },
+        toBn("100000")
+      );
+
+      await marginEngineTest.updateTraderMargin(wallet.address, toBn("100000"));
+
+      await vammTest.initializeVAMM(MIN_SQRT_RATIO);
+
+      await vammTest.setMaxLiquidityPerTick(
+        getMaxLiquidityPerTick(TICK_SPACING)
+      );
+      await vammTest.setTickSpacing(TICK_SPACING);
+
+      await vammTest.setFeeProtocol(0);
+      await vammTest.setFee(toBn("0.5"));
+
+      await vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("10000000")
+      );
+    });
+
+    // it("scenario1: simple trader liquidation", async () => {
+    //   await marginEngineTest.setTrader(wallet.address, toBn("0"), toBn("-1000000"), toBn("10"), false); // clearly liquidatable
+    //   await marginEngineTest.liquidateTrader(wallet.address);
+
+    //   const traderInfo = await marginEngineTest.traders(wallet.address);
+
+    //   // investigate isLiquidatableFunction
+
+    //   expect(traderInfo.variableTokenBalance).to.eq("0");
+
+    // })
   });
 
   // describe("#getHistoricalApy", async () => {
