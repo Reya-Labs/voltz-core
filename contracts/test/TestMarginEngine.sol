@@ -106,12 +106,16 @@ contract TestMarginEngine is MarginEngine {
             );
     }
 
-    function updatePositionTokenBalancesTest(
+    function updatePositionTokenBalancesAndAccountForFeesTest(
         address owner,
         int24 tickLower,
         int24 tickUpper
     ) external {
-        updatePositionTokenBalances(owner, tickLower, tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(
+            owner,
+            tickLower,
+            tickUpper
+        );
     }
 
     function setTrader(

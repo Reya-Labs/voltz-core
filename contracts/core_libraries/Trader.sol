@@ -14,7 +14,9 @@ library Trader {
         bool isSettled;
     }
 
-    function updateMargin(Info storage self, int256 marginDelta) internal {
+    function updateMarginViaDelta(Info storage self, int256 marginDelta)
+        internal
+    {
         self.margin = self.margin + marginDelta;
     }
 
@@ -22,7 +24,7 @@ library Trader {
         self.isSettled = true;
     }
 
-    function updateBalances(
+    function updateBalancesViaDeltas(
         Info storage self,
         int256 fixedTokenBalanceDelta,
         int256 variableTokenBalanceDelta

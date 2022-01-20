@@ -9,14 +9,14 @@ contract TraderTest {
     using Trader for Trader.Info;
 
     function updateMargin(int256 marginDelta) public {
-        trader.updateMargin(marginDelta);
+        trader.updateMarginViaDelta(marginDelta);
     }
 
     function updateBalances(
         int256 fixedTokenBalanceDelta,
         int256 variableTokenBalanceDelta
     ) public {
-        trader.updateBalances(
+        trader.updateBalancesViaDeltas(
             fixedTokenBalanceDelta,
             variableTokenBalanceDelta
         );

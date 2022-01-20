@@ -56,7 +56,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     uint256 public minMarginToIncentiviseLiquidators;
 
-
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {  
@@ -105,6 +104,15 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     modifier onlyAfterMaturity () {
         if (termEndTimestampWad > Time.blockTimestampScaled()) {
             revert CannotSettleBeforeMaturity();
+        }
+        _;
+    }
+
+    /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
+    /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
+    modifier checkCurrentTimestampTermEndTimestampDelta() {
+        if (Time.isCloseToMaturityOrBeyondMaturity(termEndTimestampWad)) {
+        revert("closeToOrBeyondMaturity");
         }
         _;
     }
@@ -187,7 +195,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
         require((position.margin + marginDelta) > 0, "can't withdraw more than have");
         
@@ -199,7 +207,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
             if (isInsuranceDepleted) {
 
-                position.updateMargin(marginDelta);
+                position.updateMarginViaDelta(marginDelta);
 
                 transferMargin(msg.sender, marginDelta);
 
@@ -211,31 +219,20 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
                 checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactorWad); 
 
-                position.updateMargin(marginDelta);
+                position.updateMarginViaDelta(marginDelta);
 
                 transferMargin(msg.sender, marginDelta);
             }
 
         } else {
 
-            position.updateMargin(marginDelta);
+            position.updateMarginViaDelta(marginDelta);
 
             transferMargin(msg.sender, marginDelta);
         }
            
     }
     
-
-    function updateTraderMarginAfterUnwind(address traderAddress, int256 marginDelta) external nonZeroDelta(marginDelta) override {
-        
-        /// @dev this function can only be called by the vamm following a swap induced by an unwind
-        require(msg.sender==vammAddress, "only vamm");        
-
-        // accounts for fees
-        require(marginDelta < 0, "MD<0");
-        Trader.Info storage trader = traders[traderAddress];
-        trader.updateMargin(marginDelta);
-    }
 
     /// @inheritdoc IMarginEngine
     function updateTraderMargin(address traderAddress, int256 marginDelta) external nonZeroDelta(marginDelta) override {
@@ -251,7 +248,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
             if (isInsuranceDepleted) {
 
-                trader.updateMargin(marginDelta);
+                trader.updateMarginViaDelta(marginDelta);
 
                 transferMargin(msg.sender, marginDelta);
 
@@ -260,14 +257,14 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             
                 checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled);
 
-                trader.updateMargin(marginDelta);
+                trader.updateMarginViaDelta(marginDelta);
 
                 transferMargin(msg.sender, marginDelta);
             }
 
         } else {
             
-            trader.updateMargin(marginDelta);
+            trader.updateMarginViaDelta(marginDelta);
 
             transferMargin(msg.sender, marginDelta);
         }
@@ -287,8 +284,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
 
-        position.updateBalances(-position.fixedTokenBalance, -position.variableTokenBalance);
-        position.updateMargin(settlementCashflow);
+        position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
+        position.updateMarginViaDelta(settlementCashflow);
         position.settlePosition();
     }
     
@@ -303,8 +300,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
 
-        trader.updateBalances(-trader.fixedTokenBalance, -trader.variableTokenBalance);
-        trader.updateMargin(settlementCashflow);
+        trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
+        trader.updateMarginViaDelta(settlementCashflow);
         trader.settleTrader();
     }
 
@@ -324,14 +321,15 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     
     
     /// @inheritdoc IMarginEngine
-    function liquidatePosition(ModifyPositionParams memory params) external override {
+    function liquidatePosition(ModifyPositionParams memory params) external checkCurrentTimestampTermEndTimestampDelta override {
 
         /// @dev can only happen before maturity, this is checked when an unwind is triggered which in turn triggers a swap which checks for this condition
+        /// @audit introduce pre maturity check
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         (, int24 tick, ) = IVAMM(vammAddress).vammVars();
-        updatePositionTokenBalances(params.owner, params.tickLower, params.tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
         bool isLiquidatable = MarginCalculator.isLiquidatablePosition(
@@ -359,19 +357,21 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         uint256 liquidatorRewardValue = PRBMathUD60x18.mul(uint256(position.margin), liquidatorReward);
 
-        position.updateMargin(-int256(liquidatorRewardValue));
+        position.updateMarginViaDelta(-int256(liquidatorRewardValue));
 
-        /// @dev burn all of the liquidity which in turn also induces a position unwind
         /// @dev pass position._liquidity to ensure all of the liqudity is burnt
 
         IVAMM(vammAddress).burn(params.owner, params.tickLower, params.tickUpper, position._liquidity);
+
+        /// @audit what if unwind fails, should ideally be a no-op
+        unwindPosition(params.owner, params.tickLower, params.tickUpper);
 
         IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, liquidatorRewardValue);
         
     }
 
     /// @inheritdoc IMarginEngine
-    function liquidateTrader(address traderAddress) external override {
+    function liquidateTrader(address traderAddress) external checkCurrentTimestampTermEndTimestampDelta override {
 
         /// @dev can only happen before maturity, this is checked when an unwind is triggered which in turn triggers a swap which checks for this condition
 
@@ -401,47 +401,29 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             liquidatorReward
         );
 
-        trader.updateMargin(-int256(liquidatorRewardValue));
+        trader.updateMarginViaDelta(-int256(liquidatorRewardValue));
         
         unwindTrader(traderAddress, trader.variableTokenBalance);
 
         IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, liquidatorRewardValue);
 
     }
-
-    function checkPositionMarginSufficientToIncentiviseLiquidators(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper
-    ) external view override {
-        Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
-        if (position.margin < int256(minMarginToIncentiviseLiquidators)) {
-            revert("not enough to incentivise");
-        }
-    }
-
-    function checkTraderMarginSufficientToIncentiviseLiquidators(
-        address traderAddress
-    ) external view override {
-        Trader.Info storage trader = traders[traderAddress];
-        if (trader.margin < int256(minMarginToIncentiviseLiquidators)) {
-            revert("not enough to incentivise");
-        }
-    }
     
-    /// @inheritdoc IMarginEngine
     function checkPositionMarginRequirementSatisfied(
             address recipient,
             int24 tickLower,
             int24 tickUpper,
             uint128 amount
-        ) external override {
+        ) internal {
 
-        /// @dev supposed to be called by the VAMM before minting further liqudiity
-        
         (, int24 tick, ) = IVAMM(vammAddress).vammVars();
-        updatePositionTokenBalances(recipient, tickLower, tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(recipient, tickLower, tickUpper);
         Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
+        
+        if (position.margin < int256(minMarginToIncentiviseLiquidators)) {
+            revert("not enough to incentivise");
+        }
+        
         uint128 amountTotal = LiquidityMath.addDelta(position._liquidity, int128(amount));
         
         int256 marginRequirement = int256(MarginCalculator.getPositionMarginRequirement(
@@ -467,32 +449,85 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
     /// @inheritdoc IMarginEngine
-    function updatePosition(IVAMM.ModifyPositionParams memory params, IVAMM.UpdatePositionVars memory vars) external override {
+    function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external override {
 
         /// @dev this function can only be called by the vamm
-        require(msg.sender==vammAddress, "only vamm");        
+        require(msg.sender==vammAddress, "only vamm");    
+        updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
+        /// @audit position is retreived from storage twice: once in the updatePositionTokenBalancesAndAccountForFees, once below
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
         position.updateLiquidity(params.liquidityDelta);
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(vars.fixedTokenGrowthInsideX128, vars.variableTokenGrowthInsideX128);
-        uint256 feeDelta = position.calculateFeeDelta(vars.feeGrowthInsideX128);
-        position.updateBalances(fixedTokenDelta, variableTokenDelta);
         
-        /// @dev collect fees generated since last mint/burn
-        position.updateMargin(int256(feeDelta));
-        
-        position.updateFixedAndVariableTokenGrowthInside(vars.fixedTokenGrowthInsideX128, vars.variableTokenGrowthInsideX128);
-        position.updateFeeGrowthInside(vars.feeGrowthInsideX128);
+        if (params.liquidityDelta>0) {
+            uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
+            checkPositionMarginAboveRequirement(params, position.margin, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactorWad);
+        }
+
     }
 
+    function updatePositionPostVAMMInducedSwap(address owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int24 currentTick) external override {
+        /// @dev this function can only be called by the vamm following a swap    
+        /// @audit turn into a modifier
+        require(msg.sender==vammAddress, "only vamm");
+
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+
+        updatePositionTokenBalancesAndAccountForFees(owner, tickLower, tickUpper);
+
+        if (cumulativeFeeIncurred > 0) {
+            position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
+        }
+
+        position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
+
+        uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
+        
+        MarginCalculator.PositionMarginRequirementParams
+            memory marginReqParams = MarginCalculator
+                .PositionMarginRequirementParams({
+                    owner: owner,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    isLM: false,
+                    currentTick: currentTick,
+                    termStartTimestampWad: termStartTimestampWad,
+                    termEndTimestampWad: termEndTimestampWad,
+                    liquidity: position._liquidity,
+                    fixedTokenBalance: position.fixedTokenBalance,
+                    variableTokenBalance: position.variableTokenBalance,
+                    variableFactorWad: variableFactorWad,
+                    historicalApyWad: getHistoricalApy()
+                });
+
+        int256 positionMarginRequirement = int256(
+            MarginCalculator.getPositionMarginRequirement(marginReqParams, marginCalculatorParameters)
+        );
+
+        if (positionMarginRequirement > position.margin) {
+            revert MarginRequirementNotMet();
+        }
+
+    }
+    
     /// @inheritdoc IMarginEngine
-    function updateTraderBalances(address recipient, int256 fixedTokenBalance, int256 variableTokenBalance, bool isUnwind) external override {
+    function updateTraderPostVAMMInducedSwap(address recipient, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) external override {
 
         /// @dev this function can only be called by the vamm following a swap    
+        /// @audit turn into a modifier
         require(msg.sender==vammAddress, "only vamm");
         
         Trader.Info storage trader = traders[recipient];
-        trader.updateBalances(fixedTokenBalance, variableTokenBalance);
+
+        if (trader.margin < int256(minMarginToIncentiviseLiquidators)) {
+            revert("not enough to incentivise");
+        }
+
+        if (cumulativeFeeIncurred > 0) {
+            trader.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
+        }
+
+        trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
         int256 marginRequirement = int256(MarginCalculator.getTraderMarginRequirement(
             MarginCalculator.TraderMarginRequirementParams({
@@ -505,103 +540,30 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             }), marginCalculatorParameters
         ));
 
-        if (marginRequirement > trader.margin && !isUnwind) {
+        if (marginRequirement > trader.margin) {
             revert MarginRequirementNotMet();
         }
     }
 
-    function updatePositionTokenBalances(
+    function updatePositionTokenBalancesAndAccountForFees(
         address owner,
         int24 tickLower,
         int24 tickUpper) internal {
 
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
         (, int24 tick, ) = IVAMM(vammAddress).vammVars();
-        (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside) = IVAMM(vammAddress).computePositionFixedAndVariableGrowthInside(tickLower, tickUpper, tick);
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInside, variableTokenGrowthInside);
-        position.updateBalances(fixedTokenDelta, variableTokenDelta);
-        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInside, variableTokenGrowthInside);
+        (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = IVAMM(vammAddress).computeGrowthInside(tickLower, tickUpper, tick);
+        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
+        uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
 
-    }
-    
-    /// @inheritdoc IMarginEngine
-    function unwindPosition(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
-        bool isCloseToMaturityOrBeyondMaturity
-    ) external override {
-    
-        /// @dev rename the function since it only does the unwind if before maturity
-
-        /// @dev this function can only be called by the vamm following a burn    
-        require(msg.sender==vammAddress, "only vamm");
-                
-        updatePositionTokenBalances(owner, tickLower, tickUpper);
-
-        if (!isCloseToMaturityOrBeyondMaturity) {
-
-            int256 _fixedTokenBalance;
-            int256 _variableTokenBalance;
-            uint256 _cumulativeFeeIncurred;
-
-            Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-
-            Tick.checkTicks(tickLower, tickUpper);
-
-            if (position.variableTokenBalance == 0) {
-                revert PositionNetZero();
-            }
-
-        /// @dev initiate a swap
-
-        bool isFT = position.variableTokenBalance < 0;
-
-        if (isFT) {
-            
-            /// @dev get into a Variable Taker swap (the opposite of LP's current position) --> hence isFT is set to false
-            /// @dev amountSpecified needs to be negative
-            /// @dev since the position.variableTokenBalance is already negative, pass position.variableTokenBalance as amountSpecified
-            /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO
-
-            IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                recipient: owner,
-                isFT: false,
-                amountSpecified: position.variableTokenBalance,
-                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
-                isUnwind: true,
-                isTrader: false
-            });
-
-            (_fixedTokenBalance, _variableTokenBalance, _cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params); // check the outputs are correct
-        } else {
-
-            /// @dev get into a Fixed Taker swap (the opposite of LP's current position), hence isFT is set to true in SwapParams
-            /// @dev amountSpecified needs to be positive
-            /// @dev since the position.variableTokenBalance is already positive, pass position.variableTokenBalance as amountSpecified
-            /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO
-
-            IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                recipient: owner,
-                isFT: true,
-                amountSpecified: position.variableTokenBalance,
-                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
-                isUnwind: true,
-                isTrader: false
-            });
-
-            (_fixedTokenBalance, _variableTokenBalance, _cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params);
-        }
-
-        /// @dev update position margin to account for the fees incurred while conducting a swap in order to unwind
-        position.updateMargin(-int256(_cumulativeFeeIncurred));
-        /// @dev passes the _fixedTokenBalance and _variableTokenBalance deltas
-        position.updateBalances(_fixedTokenBalance, _variableTokenBalance);
-
-        }
+        position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
+        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
+        /// @dev collect fees
+        position.updateMarginViaDelta(int256(feeDelta));
+        position.updateFeeGrowthInside(feeGrowthInsideX128);
     
     }
-
+    
     /// @notice Check if the position margin is above the Initial Margin Requirement
     /// @dev Reverts if position's margin is below the requirement
     /// @param params Position owner, position tickLower, position tickUpper, _
@@ -755,6 +717,98 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         }
     }
 
+    
+        /// @notice Unwind a position
+    /// @dev Auth:
+    /// @dev Before unwinding a position, need to check if it is even necessary to unwind it, i.e. check if the most up to date variable token balance of a position is non-zero
+    /// @dev If the current fixed token balance of a position is positive, this implies the position is a net Fixed Taker,
+    /// @dev Hence to unwind need to enter into a Variable Taker IRS contract with notional = abs(current variable token balance)
+    /// @param owner the owner of the position
+    /// @param tickLower the lower tick of the position's tick range
+    /// @param tickUpper the upper tick of the position's tick range
+    function unwindPosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) internal {
+    
+        /// @audit check if beyond maturity
+        /// @audit check if variable token balance is non-zero to conduct the unwind (does not make sense to unwind in that case)
+        Tick.checkTicks(tickLower, tickUpper);
+
+        /// @audit below is potentially redundunt since the burn already induces updates via updatePositionPostVAMMMintBurn, needs to be checked
+
+        updatePositionTokenBalancesAndAccountForFees(owner, tickLower, tickUpper);
+
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+
+        if (position.variableTokenBalance != 0 ) {
+
+            int256 _fixedTokenDelta;
+            int256 _variableTokenDelta;
+            uint256 _cumulativeFeeIncurred;
+
+            /// @dev initiate a swap
+
+            bool isFT = position.variableTokenBalance < 0;
+
+            if (isFT) {
+                
+                /// @dev get into a Variable Taker swap (the opposite of LP's current position) --> hence isFT is set to false
+                /// @dev amountSpecified needs to be negative
+                /// @dev since the position.variableTokenBalance is already negative, pass position.variableTokenBalance as amountSpecified
+                /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO
+
+                /// @audit sqrtPriceLimitX96 needs to be slightly higher than min
+
+                IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                    recipient: owner,
+                    isFT: false,
+                    amountSpecified: position.variableTokenBalance,
+                    sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO,
+                    isUnwind: true,
+                    isTrader: false,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper
+                });
+                
+                // check the outputs are correct
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params);
+            } else {
+
+                /// @dev get into a Fixed Taker swap (the opposite of LP's current position), hence isFT is set to true in SwapParams
+                /// @dev amountSpecified needs to be positive
+                /// @dev since the position.variableTokenBalance is already positive, pass position.variableTokenBalance as amountSpecified
+                /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO
+
+                /// @audit sqrtPriceLimitX96 needs to be slightly lower than max
+
+                IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                    recipient: owner,
+                    isFT: true,
+                    amountSpecified: position.variableTokenBalance,
+                    sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO,
+                    isUnwind: true,
+                    isTrader: false,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper
+                });
+
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params);
+            }
+
+            if (_cumulativeFeeIncurred > 0) {
+                /// @dev update position margin to account for the fees incurred while conducting a swap in order to unwind
+                position.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
+            }
+            
+            /// @dev passes the _fixedTokenBalance and _variableTokenBalance deltas
+            position.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
+
+        }
+        
+    }
+    
     /// @notice Unwind a trader in a given market
     /// @param traderAddress The address of the trader to unwind
     /// @param traderVariableTokenBalance Trader variable token balance
@@ -763,45 +817,68 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 traderVariableTokenBalance
     ) internal {
 
-        require(traderVariableTokenBalance!=0, "no need to unwind");
+        if (traderVariableTokenBalance != 0) {
 
-        bool isFT = traderVariableTokenBalance < 0;
+            int256 _fixedTokenDelta;
+            int256 _variableTokenDelta;
+            uint256 _cumulativeFeeIncurred;
 
-        if (isFT) {
+            bool isFT = traderVariableTokenBalance < 0;
 
-            /// @dev get into a Variable Taker swap (the opposite of trader's current position), hence isFT is set to false in SwapParams
-            /// @dev amountSpecified needs to be negative
-            /// @dev since the traderVariableTokenBalance for a FixedTaker (about to unwind) is already negative, pass traderVariableTokenBalance as amountSpecified
-            /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO
+            if (isFT) {
 
-            IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                recipient: traderAddress,
-                isFT: false,
-                amountSpecified: traderVariableTokenBalance,
-                sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1,
-                isUnwind: true,
-                isTrader: true
-            });
+                /// @dev get into a Variable Taker swap (the opposite of trader's current position), hence isFT is set to false in SwapParams
+                /// @dev amountSpecified needs to be negative
+                /// @dev since the traderVariableTokenBalance for a FixedTaker (about to unwind) is already negative, pass traderVariableTokenBalance as amountSpecified
+                /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO
 
-            IVAMM(vammAddress).swap(params);
-        } else {
-            
-            /// @dev get into a Fixed Taker swap (the opposite of trader's current position), hence isFT is set to true in SwapParams
-            /// @dev amountSpecified needs to be positive
-            /// @dev since the traderVariableTokenBalance for a VariableTaker (about ot unwind) is already positive, pass traderVariableTokenBalance as amountSpecified
-            /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO
+                /// @audit sqrtPriceLimitX96 needs to be slightly higher than min
 
-            IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                recipient: traderAddress,
-                isFT: true,
-                amountSpecified: traderVariableTokenBalance,
-                sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO - 1,
-                isUnwind: true,
-                isTrader: true
-            });
+                IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                    recipient: traderAddress,
+                    isFT: false,
+                    amountSpecified: traderVariableTokenBalance,
+                    sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1,
+                    isUnwind: true,
+                    isTrader: true,
+                    tickLower: 0,
+                    tickUpper: 0
+                });
 
-            IVAMM(vammAddress).swap(params);
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params);
+            } else {
+                
+                /// @dev get into a Fixed Taker swap (the opposite of trader's current position), hence isFT is set to true in SwapParams
+                /// @dev amountSpecified needs to be positive
+                /// @dev since the traderVariableTokenBalance for a VariableTaker (about ot unwind) is already positive, pass traderVariableTokenBalance as amountSpecified
+                /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO
+
+                /// @audit sqrtPriceLimitX96 needs to be slightly lower than max
+
+                IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                    recipient: traderAddress,
+                    isFT: true,
+                    amountSpecified: traderVariableTokenBalance,
+                    sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO - 1,
+                    isUnwind: true,
+                    isTrader: true,
+                    tickLower: 0,
+                    tickUpper: 0
+                });
+
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params);
+            }
+
+            Trader.Info storage trader = traders[traderAddress];
+
+            if (_cumulativeFeeIncurred > 0) {
+                trader.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
+            }
+
+            trader.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
+    
         }
+
     }
 
 }

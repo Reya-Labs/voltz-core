@@ -280,7 +280,7 @@ describe("MarginEngine", () => {
         liquidityNet: 20,
         fixedTokenGrowthOutsideX128: Q128,
         variableTokenGrowthOutsideX128: Q128Negative,
-        feeGrowthOutsideX128: Q128,
+        feeGrowthOutsideX128: 0,
         initialized: true,
       });
 
@@ -289,7 +289,7 @@ describe("MarginEngine", () => {
         liquidityNet: 30,
         fixedTokenGrowthOutsideX128: Q128Negative,
         variableTokenGrowthOutsideX128: Q128,
-        feeGrowthOutsideX128: Q128,
+        feeGrowthOutsideX128: 0,
         initialized: true,
       });
 
@@ -420,7 +420,7 @@ describe("MarginEngine", () => {
         false
       );
 
-      await marginEngineTest.updatePositionTokenBalancesTest(
+      await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         wallet.address,
         -1,
         1
@@ -456,7 +456,7 @@ describe("MarginEngine", () => {
         false
       );
 
-      await marginEngineTest.updatePositionTokenBalancesTest(
+      await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         wallet.address,
         -1,
         1
@@ -575,6 +575,8 @@ describe("MarginEngine", () => {
         sqrtPriceLimitX96: MAX_SQRT_RATIO.sub(1),
         isUnwind: false,
         isTrader: true,
+        tickLower: 0,
+        tickUpper: 0,
       });
 
       // check (stopped here)
