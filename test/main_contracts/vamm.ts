@@ -481,6 +481,7 @@ describe("VAMM", () => {
 
     it("check setTickSpacing", async () => {
       expect(await vammTest.tickSpacing()).to.be.equal(0);
+      await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
       await expect(vammTest.setTickSpacing(100)).to.not.be.reverted;
       expect(await vammTest.tickSpacing()).to.be.equal(100);
     });
@@ -497,6 +498,7 @@ describe("VAMM", () => {
 
     it("check setMaxLiquidityPerTick", async () => {
       expect(await vammTest.maxLiquidityPerTick()).to.be.equal(0);
+      await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
       await expect(vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100)))
         .to.not.be.reverted;
       expect(await vammTest.maxLiquidityPerTick()).to.be.equal(
@@ -514,6 +516,7 @@ describe("VAMM", () => {
 
     it("check setFee", async () => {
       expect(await vammTest.feeWad()).to.be.equal(toBn("0"));
+      await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
       await expect(vammTest.setFee(toBn("0.05"))).to.not.be.reverted;
       expect(await vammTest.feeWad()).to.be.equal(toBn("0.05"));
     });
