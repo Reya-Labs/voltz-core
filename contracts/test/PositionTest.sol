@@ -12,14 +12,14 @@ contract PositionTest {
     }
 
     function updateMargin(int256 marginDelta) public {
-        position.updateMargin(marginDelta);
+        position.updateMarginViaDelta(marginDelta);
     }
 
     function updateBalances(
         int256 fixedTokenBalanceDelta,
         int256 variableTokenBalanceDelta
     ) public {
-        position.updateBalances(
+        position.updateBalancesViaDeltas(
             fixedTokenBalanceDelta,
             variableTokenBalanceDelta
         );

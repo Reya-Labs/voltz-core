@@ -147,11 +147,6 @@ interface IMarginEngine is IPositionStructs {
     function updateTraderMargin(address traderAddress, int256 marginDelta)
         external;
 
-    function updateTraderMarginAfterUnwind(
-        address traderAddress,
-        int256 marginDelta
-    ) external;
-
     /// @notice Settles a Position
     /// @dev Can be called by anyone
     /// @dev A position cannot be settled before maturity
@@ -196,10 +191,8 @@ interface IMarginEngine is IPositionStructs {
     /// @dev 3. Update position's margin by taking into account the position accumulated fees since the last mint/burnpoke
     /// @dev 4. Update fixed and variable token growth + fee growth in the position info struct for future interactions with the position
     /// @param params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _)
-    /// @param vars Relevant variables from vars: feeGrowthInside, fixedTokenGrowthInside and variabelTokenGrowthInside of the tick range of the given position
-    function updatePosition(
-        IPositionStructs.ModifyPositionParams memory params,
-        IVAMM.UpdatePositionVars memory vars
+    function updatePositionPostVAMMInducedMintBurn(
+        IVAMM.ModifyPositionParams memory params
     ) external;
 
     /// @notice Update Fixed and Variable Token Balances of a trader
@@ -210,33 +203,21 @@ interface IMarginEngine is IPositionStructs {
     /// @param recipient The address of the trader who wishes to update their balances
     /// @param fixedTokenBalance Current fixed token balance of a trader
     /// @param variableTokenBalance Current variable token balance of a trader
-    function updateTraderBalances(
+    function updateTraderPostVAMMInducedSwap(
         address recipient,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        bool isUnwind
+        uint256 cumulativeFeeIncurred
     ) external;
 
-    /// @notice Unwind a position
-    /// @dev Auth:
-    /// @dev Before unwinding a position, need to check if it is even necessary to unwind it, i.e. check if the most up to date variable token balance of a position is non-zero
-    /// @dev If the current fixed token balance of a position is positive, this implies the position is a net Fixed Taker,
-    /// @dev Hence to unwind need to enter into a Variable Taker IRS contract with notional = abs(current variable token balance)
-    /// @param owner the owner of the position
-    /// @param tickLower the lower tick of the position's tick range
-    /// @param tickUpper the upper tick of the position's tick range
-    function unwindPosition(
+    function updatePositionPostVAMMInducedSwap(
         address owner,
         int24 tickLower,
         int24 tickUpper,
-        bool isPreMaturity
-    ) external;
-
-    function checkPositionMarginRequirementSatisfied(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount
+        int256 fixedTokenDelta,
+        int256 variableTokenDelta,
+        uint256 cumulativeFeeIncurred,
+        int24 currentTick
     ) external;
 
     function collectProtocol(address recipient, uint256 amount) external;
@@ -244,14 +225,4 @@ interface IMarginEngine is IPositionStructs {
     function setVAMMAddress(address _vAMMAddress) external;
 
     function setFCM(address _fcm) external;
-
-    function checkPositionMarginSufficientToIncentiviseLiquidators(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper
-    ) external view;
-
-    function checkTraderMarginSufficientToIncentiviseLiquidators(
-        address traderAddress
-    ) external view;
 }

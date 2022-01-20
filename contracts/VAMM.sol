@@ -28,7 +28,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   using Tick for mapping(int24 => Tick.Info);
   using TickBitmap for mapping(int16 => uint256);
 
-  uint256 public override fee;
+  uint256 public override feeWad;
 
   int24 public override tickSpacing;
 
@@ -36,8 +36,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   mapping(int24 => Tick.Info) public override ticks;
   mapping(int16 => uint256) public override tickBitmap;
-  
-  uint256 public constant SECONDS_IN_DAY_WAD = 86400 * 10**18;
 
   bool public override unlocked;
 
@@ -54,24 +52,11 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     unlocked = true;
   }
 
-  function isCloseToMaturityOrBeyondMaturity() internal view returns(bool vammInactive) {
-    uint256 currentTimestamp = Time.blockTimestampScaled(); 
-
-    if (currentTimestamp >= IMarginEngine(marginEngineAddress).termEndTimestampWad()) {
-      vammInactive = true; 
-    } else {
-      uint256 timeDelta = IMarginEngine(marginEngineAddress).termEndTimestampWad() - currentTimestamp;
-      if (timeDelta <= SECONDS_IN_DAY_WAD) {
-        vammInactive = true; 
-      }
-    }
-
-  }
-  
+  // https://ethereum.stackexchange.com/questions/68529/solidity-modifiers-in-library
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
-    if (isCloseToMaturityOrBeyondMaturity()) {
+    if (Time.isCloseToMaturityOrBeyondMaturity(IMarginEngine(marginEngineAddress).termEndTimestampWad())) {
       revert("closeToOrBeyondMaturity");
     }
     _;
@@ -145,8 +130,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     maxLiquidityPerTick = _maxLiquidityPerTick;
   }
 
-  function setFee(uint256 _fee) external override onlyOwner {
-    fee = _fee;
+  function setFee(uint256 _feeWad) external override onlyOwner {
+    feeWad = _feeWad;
   }
 
   function burn(
@@ -171,7 +156,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    IMarginEngine(marginEngineAddress).unwindPosition(recipient, tickLower, tickUpper, isCloseToMaturityOrBeyondMaturity());
+    // IMarginEngine(marginEngineAddress).unwindPosition(recipient, tickLower, tickUpper, isCloseToMaturityOrBeyondMaturity());
   }
 
   function flipTicks(ModifyPositionParams memory params)
@@ -210,50 +195,28 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   
   function updatePosition(ModifyPositionParams memory params) private {
 
+    /// @dev give a more descriptive name
+
     Tick.checkTicks(params.tickLower, params.tickUpper);
 
     VAMMVars memory _vammVars = vammVars; // SLOAD for gas optimization
 
-    UpdatePositionVars memory vars;
-
+    bool flippedLower;
+    bool flippedUpper;
+    
     /// @dev update the ticks if necessary
     if (params.liquidityDelta != 0) {
-      (vars.flippedLower, vars.flippedUpper) = flipTicks(params);
+      (flippedLower, flippedUpper) = flipTicks(params);
     }
 
-    vars.fixedTokenGrowthInsideX128 = ticks.getFixedTokenGrowthInside(
-      Tick.FixedTokenGrowthInsideParams({
-        tickLower: params.tickLower,
-        tickUpper: params.tickUpper,
-        tickCurrent: vammVars.tick,
-        fixedTokenGrowthGlobalX128: fixedTokenGrowthGlobalX128
-      })
-    );
-
-    vars.variableTokenGrowthInsideX128 = ticks.getVariableTokenGrowthInside(
-      Tick.VariableTokenGrowthInsideParams({
-        tickLower: params.tickLower,
-        tickUpper: params.tickUpper,
-        tickCurrent: vammVars.tick,
-        variableTokenGrowthGlobalX128: variableTokenGrowthGlobalX128
-      })
-    );
-
-    vars.feeGrowthInsideX128 = ticks.getFeeGrowthInside(
-      params.tickLower,
-      params.tickUpper,
-      vammVars.tick,
-      feeGrowthGlobalX128
-    );
-
-    IMarginEngine(marginEngineAddress).updatePosition(params, vars);
+    IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedMintBurn(params);
 
     // clear any tick data that is no longer needed
     if (params.liquidityDelta < 0) {
-      if (vars.flippedLower) {
+      if (flippedLower) {
         ticks.clear(params.tickLower);
       }
-      if (vars.flippedUpper) {
+      if (flippedUpper) {
         ticks.clear(params.tickUpper);
       }
     }
@@ -291,19 +254,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     require(msg.sender==recipient, "only msg.sender can mint");
 
-    IMarginEngine(marginEngineAddress).checkPositionMarginSufficientToIncentiviseLiquidators(
-      recipient,
-      tickLower,
-      tickUpper
-    );
-
-    IMarginEngine(marginEngineAddress).checkPositionMarginRequirementSatisfied(
-      recipient,
-      tickLower,
-      tickUpper,
-      amount
-    );
-
     updatePosition(
       ModifyPositionParams({
         owner: recipient,
@@ -339,13 +289,20 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       require(params.amountSpecified < 0, "AS<0");
     }
 
-    if (params.isUnwind || !params.isTrader) {
-      require(msg.sender==marginEngineAddress, "only");
+    if (params.isUnwind) {
+      /// necessary checks already done in the unwind call in the ME
+      require(msg.sender==marginEngineAddress, "only ME");
     } else {
-      /// todo: require trader margin sufficient to incentivise liquidators
-      /// @dev must be a trader (positions can only call swap if they have been liquidated)
-      require(params.recipient==msg.sender, "only sender initiate swap");
-      IMarginEngine(marginEngineAddress).checkTraderMarginSufficientToIncentiviseLiquidators(params.recipient);
+      require(msg.sender==params.recipient, "only sender");
+
+      if (params.isTrader) {
+        require(params.tickLower==0, "now tick lower for traders");
+        require(params.tickUpper==0, "now tick upper for traders");
+        /// @audit consider doing this check post swap in the MarginEngine directly to minimise external calls
+      } else {
+        /// @dev dealing with an LP induced swap
+        Tick.checkTicks(params.tickLower, params.tickUpper);
+      }
     }
 
     /// @dev lock the vamm while the swap is taking place
@@ -430,7 +387,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
           : step.sqrtPriceNextX96,
         state.liquidity,
         state.amountSpecifiedRemaining,
-        fee,
+        feeWad,
         IMarginEngine(marginEngineAddress).termEndTimestampWad() - Time.blockTimestampScaled()
       );
 
@@ -533,6 +490,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       swapLocalVars.amount1 = uint256(-(params.amountSpecified - state.amountSpecifiedRemaining));
     }
 
+    /// @audit cache repeated margin engine calls to get termStart and termEnd timestamps
     if (params.isFT) {
       _variableTokenDelta = -int256(swapLocalVars.amount1);
       _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
@@ -559,31 +517,17 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       );
     }
 
-    // if this is not the case then it is a position unwind induced swap triggered by a position liquidation which is handled in the position unwind function
-    if (params.isTrader) {
 
-      if (state.cumulativeFeeIncurred > 0) {
-              
-        if (params.isUnwind) {
-          IMarginEngine(marginEngineAddress).updateTraderMarginAfterUnwind(params.recipient, -int256(state.cumulativeFeeIncurred));
-        } else {
-          IMarginEngine(marginEngineAddress).updateTraderMargin(
-            params.recipient,
-            -int256(state.cumulativeFeeIncurred)
-          );
-        }
-
+    /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
+    if (!params.isUnwind) {
+      if (params.isTrader) {
+        IMarginEngine(marginEngineAddress).updateTraderPostVAMMInducedSwap(params.recipient, _fixedTokenDelta, _variableTokenDelta, state.cumulativeFeeIncurred);
+      } else {
+        IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, _fixedTokenDelta, _variableTokenDelta, state.cumulativeFeeIncurred, vammVars.tick);
       }
-      
-      IMarginEngine(marginEngineAddress).updateTraderBalances(
-        params.recipient,
-        _fixedTokenDelta,
-        _variableTokenDelta,
-        params.isUnwind
-      );
-      
     }
 
+    /// @audit more values in the swap event
     emit Swap(
       msg.sender,
       params.recipient,
@@ -596,7 +540,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   }
 
   /// @inheritdoc IVAMM
-  function computePositionFixedAndVariableGrowthInside(
+  function computeGrowthInside(
     int24 tickLower,
     int24 tickUpper,
     int24 currentTick
@@ -604,9 +548,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     external
     view
     override
-    returns (int256 fixedTokenGrowthInside, int256 variableTokenGrowthInside)
+    returns (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128)
   {
-    fixedTokenGrowthInside = ticks.getFixedTokenGrowthInside(
+    fixedTokenGrowthInsideX128 = ticks.getFixedTokenGrowthInside(
       Tick.FixedTokenGrowthInsideParams({
         tickLower: tickLower,
         tickUpper: tickUpper,
@@ -615,7 +559,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    variableTokenGrowthInside = ticks.getVariableTokenGrowthInside(
+    variableTokenGrowthInsideX128 = ticks.getVariableTokenGrowthInside(
       Tick.VariableTokenGrowthInsideParams({
         tickLower: tickLower,
         tickUpper: tickUpper,
@@ -623,6 +567,14 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         variableTokenGrowthGlobalX128: variableTokenGrowthGlobalX128
       })
     );
+
+    feeGrowthInsideX128 = ticks.getFeeGrowthInside(
+      tickLower,
+      tickUpper,
+      currentTick,
+      feeGrowthGlobalX128
+    );  
+
   }
 
   function checksBeforeSwap(

@@ -72,6 +72,12 @@ interface IVAMM is IPositionStructs {
         /// @dev Is the swap triggered by a trader. If this is false then this is only possible in a scenario where a liquidity provider's position is liquidated
         /// @dev leading to an unwind of a liquidity provider
         bool isTrader;
+        /// @dev in case the swap is triggered by a Liquidity Provider these values need to be present in Swap Params
+
+        /// @dev lower tick of the liquidity provider (needs to be set if isTrader is false)
+        int24 tickLower;
+        /// @dev upper tick of the liqudiity provider (needs to be set if isTrader is false)
+        int24 tickUpper;
     }
 
     struct SwapCache {
@@ -133,19 +139,6 @@ interface IVAMM is IPositionStructs {
         uint256 feeProtocolDelta;
     }
 
-    struct UpdatePositionVars {
-        /// @dev If true flips the initialized state (or lower tick) for a given tick from false to true, or vice versa
-        bool flippedLower;
-        /// @dev If true flips the initialized state (or upper tick) for a given tick from false to true, or vice versa
-        bool flippedUpper;
-        /// @dev Fixed token growth inside a given tick range
-        int256 fixedTokenGrowthInsideX128;
-        /// @dev Variable token growth inside a given tick range
-        int256 variableTokenGrowthInsideX128;
-        /// @dev Fee growth inside a given tick range in terms of the underlying token
-        uint256 feeGrowthInsideX128;
-    }
-
     /// @dev "constructor" for proxy instances
     function initialize(address _marginEngineAddress) external;
 
@@ -153,7 +146,7 @@ interface IVAMM is IPositionStructs {
 
     /// @notice The vamm's fee (proportion) in wei
     /// @return The fee in wei
-    function fee() external view returns (uint256);
+    function feeWad() external view returns (uint256);
 
     /// @notice whether the vamm is locked
     /// @return The boolean, true if the vamm is unlocked
@@ -287,9 +280,10 @@ interface IVAMM is IPositionStructs {
     /// @param tickLower The lower tick of the position
     /// @param tickUpper The upper tick of the position
     /// @param currentTick Current tick in the vamm
-    /// @return fixedTokenGrowthInside Fixed Token Growth inside the given tick range
-    /// @return variableTokenGrowthInside Variable Token Growth inside the given tick range
-    function computePositionFixedAndVariableGrowthInside(
+    /// @return fixedTokenGrowthInsideX128 Fixed Token Growth inside the given tick range
+    /// @return variableTokenGrowthInsideX128 Variable Token Growth inside the given tick range
+    /// @return feeGrowthInsideX128 Fee Growth Inside given tick range
+    function computeGrowthInside(
         int24 tickLower,
         int24 tickUpper,
         int24 currentTick
@@ -297,7 +291,8 @@ interface IVAMM is IPositionStructs {
         external
         view
         returns (
-            int256 fixedTokenGrowthInside,
-            int256 variableTokenGrowthInside
+            int256 fixedTokenGrowthInsideX128,
+            int256 variableTokenGrowthInsideX128,
+            uint256 feeGrowthInsideX128
         );
 }

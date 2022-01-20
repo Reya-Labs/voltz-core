@@ -65,7 +65,9 @@ library Position {
     /// @notice Updates the Info struct of a position by changing the amount of margin according to marginDelta
     /// @param self Position Info Struct of the Liquidity Provider
     /// @param marginDelta Change in the margin account of the position (in wei)
-    function updateMargin(Info storage self, int256 marginDelta) internal {
+    function updateMarginViaDelta(Info storage self, int256 marginDelta)
+        internal
+    {
         Info memory _self = self;
         self.margin = _self.margin + marginDelta;
     }
@@ -74,7 +76,7 @@ library Position {
     /// @param self Position Info struct of the liquidity provider
     /// @param fixedTokenBalanceDelta Change in the number of fixed tokens in the position's fixed token balance
     /// @param variableTokenBalanceDelta Change in the number of variable tokens in the position's variable token balance
-    function updateBalances(
+    function updateBalancesViaDeltas(
         Info storage self,
         int256 fixedTokenBalanceDelta,
         int256 variableTokenBalanceDelta
