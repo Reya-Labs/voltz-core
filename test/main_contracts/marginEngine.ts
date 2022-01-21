@@ -247,6 +247,24 @@ describe("MarginEngine", () => {
       expect(traderMargin).to.eq(1);
     });
 
+    it("check trader margin correctly updated", async () => {
+      // console.log("CR1");
+      await marginEngineTest.updateTraderMargin(wallet.address, 2);
+      // console.log("CR2");
+      // retrieve the trader info object
+      let traderInfo = await marginEngineTest.traders(wallet.address);
+      // console.log("CR3");
+      let traderMargin = traderInfo[0];
+      expect(traderMargin).to.eq(2);
+      await marginEngineTest.updateTraderMargin(wallet.address, -1);
+      // console.log("CR2");
+      // retrieve the trader info object
+      traderInfo = await marginEngineTest.traders(wallet.address);
+      // console.log("CR3");
+      traderMargin = traderInfo[0];
+      expect(traderMargin).to.eq(1);
+    });
+
     it("check token balance correctly updated", async () => {
       const oldTraderBalance = await token.balanceOf(wallet.address);
       const oldMarginEngineBalance = await token.balanceOf(

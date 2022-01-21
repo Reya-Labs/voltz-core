@@ -2,7 +2,7 @@ import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { TestVAMM } from "../../typechain/TestVAMM";
 import { expect } from "../shared/expect";
-import { metaFixture } from "../shared/fixtures";
+import { marginCalculatorFixture, metaFixture } from "../shared/fixtures";
 import {
   TICK_SPACING,
   MIN_SQRT_RATIO,
@@ -29,6 +29,7 @@ import {
 } from "../../typechain";
 import { sub } from "../shared/functions";
 import { TickMath } from "../shared/tickMath";
+import { advanceTimeAndBlock } from "../helpers/time";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -443,7 +444,7 @@ describe("VAMM", () => {
       console.log("FATLP", feesAccruedToLP.toString());
 
       const feesIncurredByTrader = sub(traderInfoOld.margin, traderInfo.margin);
-      console.log("FIBT", feesIncurredByTrader);
+      console.log("FIBT", feesIncurredByTrader.toString());
 
       /// Expected fees = toBn("100") * 0.5 * timeUntilMaturityInYears (approx the whole term which is a week)
       const expectedFees = toBn("0.958904109589041"); // value from excel
@@ -492,5 +493,82 @@ describe("VAMM", () => {
     //   });
 
     // })
+
+    it("scenario 6: trader liquidation", async () => {
+      await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
+
+      await vammTest.setMaxLiquidityPerTick(
+        getMaxLiquidityPerTick(TICK_SPACING)
+      );
+      await vammTest.setTickSpacing(TICK_SPACING);
+
+      await vammTest.setFeeProtocol(0);
+      await vammTest.setFee(0);
+
+      await vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("10000000")
+      );
+
+      /// need some dummy rate oracle data in here
+      advanceTimeAndBlock(BigNumber.from(302400), 3);
+
+      const traderInfoOld = await marginEngineTest.traders(wallet.address);
+      console.log("old trader info: ", traderInfoOld.toString());
+
+      await vammTest.swap({
+        recipient: wallet.address,
+        isFT: false,
+        amountSpecified: toBn("-10000"),
+        sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+        isUnwind: false,
+        isTrader: true,
+        tickLower: 0,
+        tickUpper: 0,
+      });
+
+      const margin_engine_params = {
+        apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+        apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+        minDeltaLMWad: MIN_DELTA_LM,
+        minDeltaIMWad: MIN_DELTA_IM,
+        sigmaSquaredWad: SIGMA_SQUARED,
+        alphaWad: ALPHA,
+        betaWad: BETA,
+        xiUpperWad: XI_UPPER,
+        xiLowerWad: XI_LOWER,
+        tMaxWad: T_MAX,
+      };
+
+      const traderInfoNew = await marginEngineTest.traders(wallet.address);
+      console.log("new trader info: ", traderInfoNew.toString());
+
+      const trader_margin_requirement_params = {
+        fixedTokenBalance: traderInfoNew[1],
+        variableTokenBalance: traderInfoNew[2],
+        termStartTimestampWad: termStartTimestampBN,
+        termEndTimestampWad: termEndTimestampBN,
+        isLM: false,
+        historicalApyWad: await marginEngineTest.getHistoricalApy(),
+      };
+
+      await token.mint(wallet.address, BigNumber.from(10).pow(27));
+      await token.approve(wallet.address, BigNumber.from(10).pow(27));
+
+      await marginEngineTest.updateTraderMargin(wallet.address, toBn("-99986"));
+
+      const { testMarginCalculator } = await loadFixture(
+        marginCalculatorFixture
+      );
+
+      const marginRequirement =
+        await testMarginCalculator.getTraderMarginRequirement(
+          trader_margin_requirement_params,
+          margin_engine_params
+        );
+      console.log("margin req:", marginRequirement.toString());
+    });
   });
 });
