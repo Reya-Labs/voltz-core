@@ -30,6 +30,10 @@ import {
   SqrtPriceMathTest,
   TickMathTest,
 } from "../../typechain";
+import { TickMath } from "../shared/tickMath";
+import { SqrtPriceMath } from "../shared/sqrtPriceMath";
+import JSBI from "jsbi";
+import { add, mul } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
@@ -735,52 +739,41 @@ describe("MarginCalculator", () => {
       );
       console.log("time factor: ", timeFactor.toString());
 
-      const ratioAtLowerTickContract = await testTickMath.getSqrtRatioAtTick(
-        tickLower
-      );
-      const ratioAtUpperTickContract = await testTickMath.getSqrtRatioAtTick(
-        tickUpper
+      const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
+
+      const amount0DeltaJSBI = SqrtPriceMath.getAmount0Delta(
+        TickMath.getSqrtRatioAtTick(tickLower),
+        TickMath.getSqrtRatioAtTick(tickUpper),
+        liquidityJSBI,
+        false
       );
 
-      console.log(
-        "ratio lower contract: ",
-        decodePriceSqrt(ratioAtLowerTickContract)
-      );
-      console.log(
-        "ratio upper contract: ",
-        decodePriceSqrt(ratioAtUpperTickContract)
+      const amount1DeltaJSBI = SqrtPriceMath.getAmount1Delta(
+        TickMath.getSqrtRatioAtTick(tickLower),
+        TickMath.getSqrtRatioAtTick(tickUpper),
+        liquidityJSBI,
+        true
       );
 
-      const amount0DeltaContract =
-        await testSqrtPriceMath.getAmount0DeltaRoundUpIncluded(
-          ratioAtLowerTickContract,
-          ratioAtUpperTickContract,
-          liquidityBN.mul(-1)
-        );
-      const amount1DeltaContract =
-        await testSqrtPriceMath.getAmount1DeltaRoundUpIncluded(
-          ratioAtLowerTickContract,
-          ratioAtUpperTickContract,
-          liquidityBN
-        );
+      let amount0Delta = BigNumber.from(amount0DeltaJSBI.toString());
+      let amount1Delta = BigNumber.from(amount1DeltaJSBI.toString());
 
-      console.log("amount0 contract: ", amount0DeltaContract.toString());
-      console.log("amount1 contract: ", amount1DeltaContract.toString());
+      amount0Delta = mul(amount0Delta, toBn("-1.0"));
+
+      console.log("amount0 contract: ", amount0Delta.toString());
+      console.log("amount1 contract: ", amount1Delta.toString());
 
       const extraFixedTokenBalance =
         await testFixedAndVariableMath.getFixedTokenBalance(
-          amount0DeltaContract,
-          amount1DeltaContract,
+          amount0Delta,
+          amount1Delta,
           variableFactor,
           termStartTimestampScaled,
           termEndTimestampScaled
         );
 
-      const scenario1LPVariableTokenBalance =
-        amount1DeltaContract.add(variableTokenBalance);
-      const scenario1LPFixedTokenBalance = fixedTokenBalance.add(
-        extraFixedTokenBalance
-      );
+      const scenario1LPVariableTokenBalance = add(variableTokenBalance, amount1Delta);
+      const scenario1LPFixedTokenBalance = add(fixedTokenBalance, extraFixedTokenBalance);
 
       console.log("extraFixedTokenBalance", extraFixedTokenBalance.toString());
       console.log(
@@ -824,152 +817,7 @@ describe("MarginCalculator", () => {
 
       console.log("tmreq2:", tmReq2.toString());
 
-      const realized = await testMarginCalculator.getPositionMarginRequirement(
-        position_margin_requirement_params,
-        margin_engine_params
-      );
-
-      console.log("margin: ", realized.toString());
-      expect(realized).to.be.eq("1050340090749058400");
-    });
-
-    it("current tick < lower tick: margin requirement for staying position", async () => {
-      const tickLower: number = 100;
-      const tickUpper: number = 1000;
-      const currentTick: number = 0;
-
-      const currentTimestamp = await getCurrentTimestamp(provider);
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
-
-      const termStartTimestamp = currentTimestamp - 604800;
-
-      const termEndTimestampScaled = toBn(
-        (termStartTimestamp + 2 * 604800).toString() // add two weeks
-      );
-
-      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
-
-      const fixedTokenBalance: BigNumber = toBn("-100");
-      const variableTokenBalance: BigNumber = toBn("100");
-
-      const variableFactor: BigNumber = toBn("0.02");
-      const historicalApy: BigNumber = toBn("0.3");
-      const liquidityBN: BigNumber = expandTo18Decimals(1000);
-
-      const isLM = true;
-
-      const position_margin_requirement_params = {
-        owner: wallet.address,
-        tickLower: tickLower,
-        tickUpper: tickUpper,
-        isLM: isLM,
-        currentTick: currentTick,
-        termStartTimestampWad: termStartTimestampScaled,
-        termEndTimestampWad: termEndTimestampScaled,
-        liquidity: liquidityBN,
-        fixedTokenBalance: fixedTokenBalance,
-        variableTokenBalance: variableTokenBalance,
-        variableFactorWad: variableFactor,
-        historicalApyWad: historicalApy,
-      };
-
-      const timeFactor = await testMarginCalculator.computeTimeFactor(
-        termEndTimestampScaled,
-        currentTimestampScaled,
-        margin_engine_params
-      );
-      console.log("time factor: ", timeFactor.toString());
-
-      const ratioAtLowerTickContract = await testTickMath.getSqrtRatioAtTick(
-        tickLower
-      );
-      const ratioAtUpperTickContract = await testTickMath.getSqrtRatioAtTick(
-        tickUpper
-      );
-
-      console.log(
-        "ratio lower contract: ",
-        decodePriceSqrt(ratioAtLowerTickContract)
-      );
-      console.log(
-        "ratio upper contract: ",
-        decodePriceSqrt(ratioAtUpperTickContract)
-      );
-
-      const amount0DeltaContract =
-        await testSqrtPriceMath.getAmount0DeltaRoundUpIncluded(
-          ratioAtLowerTickContract,
-          ratioAtUpperTickContract,
-          liquidityBN.mul(-1)
-        );
-      const amount1DeltaContract =
-        await testSqrtPriceMath.getAmount1DeltaRoundUpIncluded(
-          ratioAtLowerTickContract,
-          ratioAtUpperTickContract,
-          liquidityBN
-        );
-
-      console.log("amount0 contract: ", amount0DeltaContract.toString());
-      console.log("amount1 contract: ", amount1DeltaContract.toString());
-
-      const extraFixedTokenBalance =
-        await testFixedAndVariableMath.getFixedTokenBalance(
-          amount0DeltaContract,
-          amount1DeltaContract,
-          variableFactor,
-          termStartTimestampScaled,
-          termEndTimestampScaled
-        );
-
-      const scenario1LPVariableTokenBalance =
-        amount1DeltaContract.add(variableTokenBalance);
-      const scenario1LPFixedTokenBalance = fixedTokenBalance.add(
-        extraFixedTokenBalance
-      );
-
-      console.log("extraFixedTokenBalance", extraFixedTokenBalance.toString());
-      console.log(
-        "scenario1LPVariableTokenBalance",
-        scenario1LPVariableTokenBalance.toString()
-      );
-      console.log(
-        "scenario1LPFixedTokenBalance",
-        scenario1LPFixedTokenBalance.toString()
-      );
-
-      const trader_margin_requirement_params_1 = {
-        fixedTokenBalance: scenario1LPFixedTokenBalance,
-        variableTokenBalance: scenario1LPVariableTokenBalance,
-        termStartTimestampWad: termStartTimestampScaled,
-        termEndTimestampWad: termEndTimestampScaled,
-        isLM: isLM,
-        historicalApyWad: historicalApy,
-      };
-
-      const tmReq1 = await testMarginCalculator.getTraderMarginRequirement(
-        trader_margin_requirement_params_1,
-        margin_engine_params
-      );
-
-      console.log("tmreq1:", tmReq1.toString());
-
-      const trader_margin_requirement_params_2 = {
-        fixedTokenBalance: fixedTokenBalance,
-        variableTokenBalance: variableTokenBalance,
-        termStartTimestampWad: termStartTimestampScaled,
-        termEndTimestampWad: termEndTimestampScaled,
-        isLM: isLM,
-        historicalApyWad: historicalApy,
-      };
-
-      const tmReq2 = await testMarginCalculator.getTraderMarginRequirement(
-        trader_margin_requirement_params_2,
-        margin_engine_params
-      );
-
-      console.log("tmreq2:", tmReq2.toString());
-
-      const realized = await testMarginCalculator.getPositionMarginRequirement(
+      const realized = await testMarginCalculator.getPositionMarginRequirementTest(
         position_margin_requirement_params,
         margin_engine_params
       );

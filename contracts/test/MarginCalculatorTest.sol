@@ -99,7 +99,7 @@ contract MarginCalculatorTest {
             );
     }
 
-    function getPositionMarginRequirement(
+    function getPositionMarginRequirementTest(
         MarginCalculator.PositionMarginRequirementParams memory params,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
