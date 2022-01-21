@@ -4,7 +4,7 @@ import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { BigNumber } from "@ethersproject/bignumber";
 import { TestRateOracle } from "../../typechain/TestRateOracle";
 
-import { ERC20Mock, MockAaveLendingPool, SqrtPriceMathTest } from "../../typechain";
+import { ERC20Mock, MockAaveLendingPool } from "../../typechain";
 
 import { consts } from "../helpers/constants";
 
@@ -69,7 +69,7 @@ export async function sqrtPriceMathFixture() {
 }
 
 export async function fixedAndVariableMathFixture() {
-  const fixedAndVariableMathFactory= await ethers.getContractFactory(
+  const fixedAndVariableMathFactory = await ethers.getContractFactory(
     "FixedAndVariableMathTest"
   );
 
@@ -79,9 +79,7 @@ export async function fixedAndVariableMathFixture() {
 }
 
 export async function tickMathFixture() {
-  const TickMathFactury= await ethers.getContractFactory(
-    "TickMathTest"
-  );
+  const TickMathFactury = await ethers.getContractFactory("TickMathTest");
 
   const testTickMath = await TickMathFactury.deploy();
 

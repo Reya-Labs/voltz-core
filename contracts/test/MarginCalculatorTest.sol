@@ -104,6 +104,10 @@ contract MarginCalculatorTest {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) external view returns (uint256 margin) {
-        return MarginCalculator.getPositionMarginRequirement(params, _marginCalculatorParameters);
+        return
+            MarginCalculator.getPositionMarginRequirement(
+                params,
+                _marginCalculatorParameters
+            );
     }
 }

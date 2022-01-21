@@ -3,7 +3,7 @@ import Bn from "bignumber.js";
 import JSBI from "jsbi";
 import { BigintIsh } from "./constants";
 import { sqrt } from "./sqrt";
-import { div, sub, mul, add } from "./functions";
+import { div } from "./functions";
 import { toBn } from "evm-bn";
 
 export const ZERO_ADDRESS: string =
@@ -65,7 +65,6 @@ export function expandToDecimals(n: number, decimals: number): BigNumber {
 export function accrualFact(timeInSeconds: BigNumber): BigNumber {
   return div(timeInSeconds, SECONDS_IN_YEAR);
 }
-
 
 export function getPositionKey(
   address: string,
