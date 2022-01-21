@@ -2,7 +2,12 @@ import { Wallet, BigNumber } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
-import { fixedAndVariableMathFixture, marginCalculatorFixture, sqrtPriceMathFixture, tickMathFixture } from "../shared/fixtures";
+import {
+  fixedAndVariableMathFixture,
+  marginCalculatorFixture,
+  sqrtPriceMathFixture,
+  tickMathFixture,
+} from "../shared/fixtures";
 import {
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
@@ -20,11 +25,11 @@ import {
 
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import { getCurrentTimestamp } from "../helpers/time";
-import { SqrtPriceMath } from "../shared/sqrtPriceMath";
-import { FixedAndVariableMathTest, SqrtPriceMathTest, TickMathTest } from "../../typechain";
-import { sqrt } from "mathjs";
-import { TickMath } from "../shared/tickMath";
-import JSBI from "jsbi";
+import {
+  FixedAndVariableMathTest,
+  SqrtPriceMathTest,
+  TickMathTest,
+} from "../../typechain";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
@@ -677,7 +682,9 @@ describe("MarginCalculator", () => {
 
       ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
       ({ testSqrtPriceMath } = await loadFixture(sqrtPriceMathFixture));
-      ({ testFixedAndVariableMath } = await loadFixture(fixedAndVariableMathFixture));
+      ({ testFixedAndVariableMath } = await loadFixture(
+        fixedAndVariableMathFixture
+      ));
       ({ testTickMath } = await loadFixture(tickMathFixture));
     });
 
@@ -686,13 +693,13 @@ describe("MarginCalculator", () => {
       const tickUpper: number = 1000;
       const currentTick: number = 0;
 
-      const currentTimestamp = (await getCurrentTimestamp(provider));
+      const currentTimestamp = await getCurrentTimestamp(provider);
       const currentTimestampScaled = toBn(currentTimestamp.toString());
 
       const termStartTimestamp = currentTimestamp - 604800;
 
       const termEndTimestampScaled = toBn(
-        (termStartTimestamp + 2*604800).toString() // add two weeks
+        (termStartTimestamp + 2 * 604800).toString() // add two weeks
       );
 
       const termStartTimestampScaled = toBn(termStartTimestamp.toString());
@@ -705,7 +712,6 @@ describe("MarginCalculator", () => {
       const liquidityBN: BigNumber = expandTo18Decimals(1000);
 
       const isLM = true;
-
 
       const position_margin_requirement_params = {
         owner: wallet.address,
@@ -722,29 +728,69 @@ describe("MarginCalculator", () => {
         historicalApyWad: historicalApy,
       };
 
-      const timeFactor = await testMarginCalculator.computeTimeFactor(termEndTimestampScaled, currentTimestampScaled, margin_engine_params);
+      const timeFactor = await testMarginCalculator.computeTimeFactor(
+        termEndTimestampScaled,
+        currentTimestampScaled,
+        margin_engine_params
+      );
       console.log("time factor: ", timeFactor.toString());
 
-      const ratioAtLowerTickContract = await testTickMath.getSqrtRatioAtTick(tickLower);
-      const ratioAtUpperTickContract = await testTickMath.getSqrtRatioAtTick(tickUpper);
+      const ratioAtLowerTickContract = await testTickMath.getSqrtRatioAtTick(
+        tickLower
+      );
+      const ratioAtUpperTickContract = await testTickMath.getSqrtRatioAtTick(
+        tickUpper
+      );
 
-      console.log("ratio lower contract: ", decodePriceSqrt(ratioAtLowerTickContract));
-      console.log("ratio upper contract: ", decodePriceSqrt(ratioAtUpperTickContract));
+      console.log(
+        "ratio lower contract: ",
+        decodePriceSqrt(ratioAtLowerTickContract)
+      );
+      console.log(
+        "ratio upper contract: ",
+        decodePriceSqrt(ratioAtUpperTickContract)
+      );
 
-      const amount0DeltaContract = await testSqrtPriceMath.getAmount0DeltaRoundUpIncluded(ratioAtLowerTickContract, ratioAtUpperTickContract, liquidityBN.mul(-1));
-      const amount1DeltaContract = await testSqrtPriceMath.getAmount1DeltaRoundUpIncluded(ratioAtLowerTickContract, ratioAtUpperTickContract, liquidityBN);
-      
+      const amount0DeltaContract =
+        await testSqrtPriceMath.getAmount0DeltaRoundUpIncluded(
+          ratioAtLowerTickContract,
+          ratioAtUpperTickContract,
+          liquidityBN.mul(-1)
+        );
+      const amount1DeltaContract =
+        await testSqrtPriceMath.getAmount1DeltaRoundUpIncluded(
+          ratioAtLowerTickContract,
+          ratioAtUpperTickContract,
+          liquidityBN
+        );
+
       console.log("amount0 contract: ", amount0DeltaContract.toString());
       console.log("amount1 contract: ", amount1DeltaContract.toString());
 
-      const extraFixedTokenBalance = await testFixedAndVariableMath.getFixedTokenBalance(amount0DeltaContract, amount1DeltaContract, variableFactor, termStartTimestampScaled, termEndTimestampScaled);
+      const extraFixedTokenBalance =
+        await testFixedAndVariableMath.getFixedTokenBalance(
+          amount0DeltaContract,
+          amount1DeltaContract,
+          variableFactor,
+          termStartTimestampScaled,
+          termEndTimestampScaled
+        );
 
-      const scenario1LPVariableTokenBalance = amount1DeltaContract.add(variableTokenBalance);
-      const scenario1LPFixedTokenBalance = fixedTokenBalance.add(extraFixedTokenBalance);
+      const scenario1LPVariableTokenBalance =
+        amount1DeltaContract.add(variableTokenBalance);
+      const scenario1LPFixedTokenBalance = fixedTokenBalance.add(
+        extraFixedTokenBalance
+      );
 
       console.log("extraFixedTokenBalance", extraFixedTokenBalance.toString());
-      console.log("scenario1LPVariableTokenBalance", scenario1LPVariableTokenBalance.toString());
-      console.log("scenario1LPFixedTokenBalance", scenario1LPFixedTokenBalance.toString());
+      console.log(
+        "scenario1LPVariableTokenBalance",
+        scenario1LPVariableTokenBalance.toString()
+      );
+      console.log(
+        "scenario1LPFixedTokenBalance",
+        scenario1LPFixedTokenBalance.toString()
+      );
 
       const trader_margin_requirement_params_1 = {
         fixedTokenBalance: scenario1LPFixedTokenBalance,
@@ -792,13 +838,13 @@ describe("MarginCalculator", () => {
       const tickUpper: number = 1000;
       const currentTick: number = 0;
 
-      const currentTimestamp = (await getCurrentTimestamp(provider));
+      const currentTimestamp = await getCurrentTimestamp(provider);
       const currentTimestampScaled = toBn(currentTimestamp.toString());
 
       const termStartTimestamp = currentTimestamp - 604800;
 
       const termEndTimestampScaled = toBn(
-        (termStartTimestamp + 2*604800).toString() // add two weeks
+        (termStartTimestamp + 2 * 604800).toString() // add two weeks
       );
 
       const termStartTimestampScaled = toBn(termStartTimestamp.toString());
@@ -811,7 +857,6 @@ describe("MarginCalculator", () => {
       const liquidityBN: BigNumber = expandTo18Decimals(1000);
 
       const isLM = true;
-
 
       const position_margin_requirement_params = {
         owner: wallet.address,
@@ -828,29 +873,69 @@ describe("MarginCalculator", () => {
         historicalApyWad: historicalApy,
       };
 
-      const timeFactor = await testMarginCalculator.computeTimeFactor(termEndTimestampScaled, currentTimestampScaled, margin_engine_params);
+      const timeFactor = await testMarginCalculator.computeTimeFactor(
+        termEndTimestampScaled,
+        currentTimestampScaled,
+        margin_engine_params
+      );
       console.log("time factor: ", timeFactor.toString());
 
-      const ratioAtLowerTickContract = await testTickMath.getSqrtRatioAtTick(tickLower);
-      const ratioAtUpperTickContract = await testTickMath.getSqrtRatioAtTick(tickUpper);
+      const ratioAtLowerTickContract = await testTickMath.getSqrtRatioAtTick(
+        tickLower
+      );
+      const ratioAtUpperTickContract = await testTickMath.getSqrtRatioAtTick(
+        tickUpper
+      );
 
-      console.log("ratio lower contract: ", decodePriceSqrt(ratioAtLowerTickContract));
-      console.log("ratio upper contract: ", decodePriceSqrt(ratioAtUpperTickContract));
+      console.log(
+        "ratio lower contract: ",
+        decodePriceSqrt(ratioAtLowerTickContract)
+      );
+      console.log(
+        "ratio upper contract: ",
+        decodePriceSqrt(ratioAtUpperTickContract)
+      );
 
-      const amount0DeltaContract = await testSqrtPriceMath.getAmount0DeltaRoundUpIncluded(ratioAtLowerTickContract, ratioAtUpperTickContract, liquidityBN.mul(-1));
-      const amount1DeltaContract = await testSqrtPriceMath.getAmount1DeltaRoundUpIncluded(ratioAtLowerTickContract, ratioAtUpperTickContract, liquidityBN);
-      
+      const amount0DeltaContract =
+        await testSqrtPriceMath.getAmount0DeltaRoundUpIncluded(
+          ratioAtLowerTickContract,
+          ratioAtUpperTickContract,
+          liquidityBN.mul(-1)
+        );
+      const amount1DeltaContract =
+        await testSqrtPriceMath.getAmount1DeltaRoundUpIncluded(
+          ratioAtLowerTickContract,
+          ratioAtUpperTickContract,
+          liquidityBN
+        );
+
       console.log("amount0 contract: ", amount0DeltaContract.toString());
       console.log("amount1 contract: ", amount1DeltaContract.toString());
 
-      const extraFixedTokenBalance = await testFixedAndVariableMath.getFixedTokenBalance(amount0DeltaContract, amount1DeltaContract, variableFactor, termStartTimestampScaled, termEndTimestampScaled);
+      const extraFixedTokenBalance =
+        await testFixedAndVariableMath.getFixedTokenBalance(
+          amount0DeltaContract,
+          amount1DeltaContract,
+          variableFactor,
+          termStartTimestampScaled,
+          termEndTimestampScaled
+        );
 
-      const scenario1LPVariableTokenBalance = amount1DeltaContract.add(variableTokenBalance);
-      const scenario1LPFixedTokenBalance = fixedTokenBalance.add(extraFixedTokenBalance);
+      const scenario1LPVariableTokenBalance =
+        amount1DeltaContract.add(variableTokenBalance);
+      const scenario1LPFixedTokenBalance = fixedTokenBalance.add(
+        extraFixedTokenBalance
+      );
 
       console.log("extraFixedTokenBalance", extraFixedTokenBalance.toString());
-      console.log("scenario1LPVariableTokenBalance", scenario1LPVariableTokenBalance.toString());
-      console.log("scenario1LPFixedTokenBalance", scenario1LPFixedTokenBalance.toString());
+      console.log(
+        "scenario1LPVariableTokenBalance",
+        scenario1LPVariableTokenBalance.toString()
+      );
+      console.log(
+        "scenario1LPFixedTokenBalance",
+        scenario1LPFixedTokenBalance.toString()
+      );
 
       const trader_margin_requirement_params_1 = {
         fixedTokenBalance: scenario1LPFixedTokenBalance,

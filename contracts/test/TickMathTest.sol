@@ -19,7 +19,7 @@ contract TickMathTest {
         return gasBefore - gasleft();
     }
 
-function getTickAtSqrtRatio(uint160 sqrtPriceX96)
+    function getTickAtSqrtRatio(uint160 sqrtPriceX96)
         external
         pure
         returns (int24)
