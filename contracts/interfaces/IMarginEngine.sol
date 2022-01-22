@@ -72,7 +72,7 @@ interface IMarginEngine is IPositionStructs {
 
     // view functions
 
-    function liquidatorReward() external view returns (uint256);
+    function liquidatorRewardWad() external view returns (uint256);
 
     function vammAddress() external view returns (address);
 
@@ -130,7 +130,7 @@ interface IMarginEngine is IPositionStructs {
 
     // non-view functions
 
-    function setLiquidatorReward(uint256 _liquidatorReward) external;
+    function setLiquidatorReward(uint256 _liquidatorRewardWad) external;
 
     /// @notice Updates Position Margin
     /// @dev Must be called by the owner of the position (unless marginDelta is positive?)

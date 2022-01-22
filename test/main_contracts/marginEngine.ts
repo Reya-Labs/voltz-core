@@ -108,6 +108,7 @@ describe("MarginEngine", () => {
     };
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
+    await marginEngineTest.setLiquidatorReward(toBn("0.1"));
   });
 
   describe("#updateTraderMargin", () => {
@@ -655,10 +656,11 @@ describe("MarginEngine", () => {
   });
 
   describe("liquidations", async () => {
-    beforeEach("prepare the vamm", async () => {
-      await token.mint(wallet.address, BigNumber.from(10).pow(27));
-      await token.approve(wallet.address, BigNumber.from(10).pow(27));
+    beforeEach("token approvals and updating position margin", async () => {
 
+      await token.mint(wallet.address, BigNumber.from(100).pow(27));
+      await token.approve(wallet.address, BigNumber.from(100).pow(27));
+      
       await marginEngineTest.updatePositionMargin(
         {
           owner: wallet.address,
@@ -669,7 +671,9 @@ describe("MarginEngine", () => {
         toBn("100000")
       );
 
-      await marginEngineTest.updateTraderMargin(wallet.address, toBn("100000"));
+    });
+
+    it("scenario1: simple trader liquidation", async () => {
 
       await vammTest.initializeVAMM(MIN_SQRT_RATIO);
 
@@ -678,28 +682,111 @@ describe("MarginEngine", () => {
       );
       await vammTest.setTickSpacing(TICK_SPACING);
 
-      await vammTest.setFeeProtocol(0);
-      await vammTest.setFee(toBn("0.5"));
+      await vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1000000000")
+      );
+
+      await marginEngineTest.setTrader(wallet.address, toBn("0"), toBn("-1000000"), toBn("10"), false); // clearly liquidatable
+
+      await marginEngineTest.updateTraderMargin(wallet.address, toBn("1"));
+
+      const oldMarginEngineBalance = await token.balanceOf(marginEngineTest.address);
+      
+      const oldBalanceOther = await token.balanceOf(other.address);
+      console.log("oldBalanceOther", oldBalanceOther.toString());
+
+      const traderInfoOld = await marginEngineTest.traders(wallet.address);
+      expect(traderInfoOld.variableTokenBalance).to.eq(toBn("10"));
+      
+      await marginEngineTest.connect(other).liquidateTrader(wallet.address);
+
+      const traderInfo = await marginEngineTest.traders(wallet.address);
+
+      const balanceOther = await token.balanceOf(other.address);
+      console.log("balanceOther", balanceOther.toString());
+
+      const balanceMarginEngine = await token.balanceOf(marginEngineTest.address);
+
+      const marginEngineBalanceDelta = sub(oldMarginEngineBalance, balanceMarginEngine);
+
+      expect(balanceOther).to.eq(toBn("0.1"));
+      expect(marginEngineBalanceDelta).to.eq(toBn("0.1"));
+
+      expect(traderInfo.variableTokenBalance).to.eq("0");
+      expect(traderInfo.margin).to.eq(toBn("0.9"));
+
+    })
+
+    it("scenario 2: simple position liquidation", async () => {
+      await token.mint(other.address, BigNumber.from(10).pow(27));
+      await token.approve(other.address, BigNumber.from(10).pow(27));
+
+      await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
+
+      await vammTest.setMaxLiquidityPerTick(
+        getMaxLiquidityPerTick(TICK_SPACING)
+      );
+      await vammTest.setTickSpacing(TICK_SPACING);
 
       await vammTest.mint(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING,
-        toBn("10000000")
+        toBn("1000000000")
       );
-    });
 
-    // it("scenario1: simple trader liquidation", async () => {
-    //   await marginEngineTest.setTrader(wallet.address, toBn("0"), toBn("-1000000"), toBn("10"), false); // clearly liquidatable
-    //   await marginEngineTest.liquidateTrader(wallet.address);
+      await marginEngineTest.setPosition(other.address, -TICK_SPACING, TICK_SPACING, toBn("1000"), toBn("0"), toBn("0"), toBn("0"), toBn("-1000000"), toBn("-10"), toBn("0"), false); // clearly liquidatable
+      
+      await marginEngineTest.updatePositionMargin(
+        {
+          owner: other.address,
+          tickLower: -TICK_SPACING,
+          tickUpper: TICK_SPACING,
+          liquidityDelta: 0
+        },
+        toBn("1")
+      );
 
-    //   const traderInfo = await marginEngineTest.traders(wallet.address);
+      const oldMarginEngineBalance = await token.balanceOf(marginEngineTest.address);
+      
+      const oldBalanceWallet = await token.balanceOf(wallet.address);
+      console.log("oldBalanceOther", oldBalanceWallet.toString());
 
-    //   // investigate isLiquidatableFunction
+      const positionInfoOld = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
 
-    //   expect(traderInfo.variableTokenBalance).to.eq("0");
+      expect(positionInfoOld.variableTokenBalance).to.eq(toBn("-10"));
+      
+      // await marginEngineTest.connect(other).liquidateTrader(wallet.address);
+      await marginEngineTest.liquidatePosition(
+        {
+          owner: other.address,
+          tickLower: -TICK_SPACING,
+          tickUpper: TICK_SPACING,
+          liquidityDelta: 0
+        }
+      );
 
-    // })
+      const positionInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
+
+      const balanceWallet = await token.balanceOf(wallet.address);
+      console.log("balabalanceWalletnceOther", balanceWallet.toString());
+
+      const balanceMarginEngine = await token.balanceOf(marginEngineTest.address);
+
+      const marginEngineBalanceDelta = sub(oldMarginEngineBalance, balanceMarginEngine);
+      const balanceWalletDelta = sub(balanceWallet, oldBalanceWallet);
+
+      expect(balanceWalletDelta).to.eq(toBn("0.1"));
+      expect(marginEngineBalanceDelta).to.eq(toBn("0.1"));
+
+      expect(positionInfo.variableTokenBalance).to.eq("0");
+      expect(positionInfo.margin).to.eq(toBn("0.9"));
+       
+    })
+
   });
 
   // describe("#getHistoricalApy", async () => {

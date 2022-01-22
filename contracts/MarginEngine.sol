@@ -27,7 +27,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     /// @dev liquidatorReward (in wei) is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator 
     /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
-    uint256 public override liquidatorReward;
+    uint256 public override liquidatorRewardWad;
     /// @inheritdoc IMarginEngine
     address public override underlyingToken;
     /// @inheritdoc IMarginEngine
@@ -169,8 +169,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         // emit collect protocol event
     }
     
-    function setLiquidatorReward(uint256 _liquidatorReward) external override onlyOwner {
-        liquidatorReward = _liquidatorReward;
+    function setLiquidatorReward(uint256 _liquidatorRewardWad) external override onlyOwner {
+        liquidatorRewardWad = _liquidatorRewardWad;
     }
 
     /// @inheritdoc IMarginEngine
@@ -355,7 +355,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             revert CannotLiquidate();
         }
 
-        uint256 liquidatorRewardValue = PRBMathUD60x18.mul(uint256(position.margin), liquidatorReward);
+        uint256 liquidatorRewardValueWad = PRBMathUD60x18.mul(PRBMathUD60x18.fromUint(uint256(position.margin)), liquidatorRewardWad);
+
+        uint256 liquidatorRewardValue = PRBMathUD60x18.toUint(liquidatorRewardValueWad);
 
         position.updateMarginViaDelta(-int256(liquidatorRewardValue));
 
@@ -366,7 +368,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         /// @audit what if unwind fails, should ideally be a no-op
         unwindPosition(params.owner, params.tickLower, params.tickUpper);
 
-        IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, liquidatorRewardValue);
+        IERC20Minimal(underlyingToken).transfer(msg.sender, liquidatorRewardValue);
         
     }
 
@@ -396,16 +398,18 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             revert CannotLiquidate();
         }
         
-        uint256 liquidatorRewardValue = PRBMathUD60x18.mul(
-            uint256(trader.margin),
-            liquidatorReward
+        uint256 liquidatorRewardValueWad = PRBMathUD60x18.mul(
+            PRBMathUD60x18.fromUint(uint256(trader.margin)),
+            liquidatorRewardWad
         );
+
+        uint256 liquidatorRewardValue = PRBMathUD60x18.toUint(liquidatorRewardValueWad);
 
         trader.updateMarginViaDelta(-int256(liquidatorRewardValue));
         
         unwindTrader(traderAddress, trader.variableTokenBalance);
 
-        IERC20Minimal(underlyingToken).transferFrom(address(this), msg.sender, liquidatorRewardValue);
+        IERC20Minimal(underlyingToken).transfer(msg.sender, liquidatorRewardValue);
 
     }
     
@@ -732,8 +736,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int24 tickUpper
     ) internal {
     
-        /// @audit check if beyond maturity
-        /// @audit check if variable token balance is non-zero to conduct the unwind (does not make sense to unwind in that case)
+        /// @audit check if beyond maturity (done in the liquidation call)
         Tick.checkTicks(tickLower, tickUpper);
 
         /// @audit below is potentially redundunt since the burn already induces updates via updatePositionPostVAMMMintBurn, needs to be checked
@@ -759,8 +762,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 /// @dev since the position.variableTokenBalance is already negative, pass position.variableTokenBalance as amountSpecified
                 /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO
 
-                /// @audit sqrtPriceLimitX96 needs to be slightly higher than min
-
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
                     recipient: owner,
                     isFT: false,
@@ -780,8 +781,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 /// @dev amountSpecified needs to be positive
                 /// @dev since the position.variableTokenBalance is already positive, pass position.variableTokenBalance as amountSpecified
                 /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO
-
-                /// @audit sqrtPriceLimitX96 needs to be slightly lower than max
 
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
                     recipient: owner,
@@ -832,8 +831,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 /// @dev since the traderVariableTokenBalance for a FixedTaker (about to unwind) is already negative, pass traderVariableTokenBalance as amountSpecified
                 /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO
 
-                /// @audit sqrtPriceLimitX96 needs to be slightly higher than min
-
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
                     recipient: traderAddress,
                     isFT: false,
@@ -852,8 +849,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 /// @dev amountSpecified needs to be positive
                 /// @dev since the traderVariableTokenBalance for a VariableTaker (about ot unwind) is already positive, pass traderVariableTokenBalance as amountSpecified
                 /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO
-
-                /// @audit sqrtPriceLimitX96 needs to be slightly lower than max
 
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
                     recipient: traderAddress,
