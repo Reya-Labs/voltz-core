@@ -81,7 +81,7 @@ contract FixedAndVariableMathTest {
         uint256 accruedVariableFactor,
         uint256 termStartTimestamp,
         uint256 termEndTimestamp
-    ) public view returns (int256 fixedTokenBalance) {
+    ) external view returns (int256 fixedTokenBalance) {
         return
             FixedAndVariableMath.getFixedTokenBalance(
                 amount0,

@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "../core_libraries/MarginCalculator.sol";
+import "../core_libraries/FixedAndVariableMath.sol";
 
 contract MarginCalculatorTest {
     function computeTimeFactor(
@@ -108,6 +109,24 @@ contract MarginCalculatorTest {
             MarginCalculator.getPositionMarginRequirement(
                 params,
                 _marginCalculatorParameters
+            );
+    }
+
+
+    function getFixedTokenBalanceFromMCTest(
+        int256 amount0,
+        int256 amount1,
+        uint256 accruedVariableFactor,
+        uint256 termStartTimestamp,
+        uint256 termEndTimestamp
+    ) external view returns (int256 fixedTokenBalance) {
+        return
+            FixedAndVariableMath.getFixedTokenBalance(
+                amount0,
+                amount1,
+                accruedVariableFactor,
+                termStartTimestamp,
+                termEndTimestamp
             );
     }
 }
