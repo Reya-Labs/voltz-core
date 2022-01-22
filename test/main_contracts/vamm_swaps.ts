@@ -2,7 +2,7 @@ import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { TestVAMM } from "../../typechain/TestVAMM";
 import { expect } from "../shared/expect";
-import { marginCalculatorFixture, metaFixture } from "../shared/fixtures";
+import { metaFixture } from "../shared/fixtures";
 import {
   TICK_SPACING,
   MIN_SQRT_RATIO,
@@ -29,7 +29,6 @@ import {
 } from "../../typechain";
 import { sub } from "../shared/functions";
 import { TickMath } from "../shared/tickMath";
-import { advanceTimeAndBlock } from "../helpers/time";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
