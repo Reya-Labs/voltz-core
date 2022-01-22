@@ -87,6 +87,7 @@ describe("MarginEngine", () => {
 
     // update marginEngineTest allowance
     await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
+    await token.connect(other).approve(marginEngineTest.address, BigNumber.from(10).pow(27));
 
     await token.mint(wallet.address, BigNumber.from(10).pow(27));
     await token.approve(wallet.address, BigNumber.from(10).pow(27));
@@ -567,11 +568,14 @@ describe("MarginEngine", () => {
 
       await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
       await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100));
-      await vammTest.setFeeProtocol(3);
       await vammTest.setTickSpacing(TICK_SPACING);
     });
 
-    it("correctly updates position margin", async () => {
+    it("scenario 1: position settlement", async () => {
+
+      await token.mint(other.address, BigNumber.from(10).pow(27));
+      await token.approve(other.address, BigNumber.from(10).pow(27));
+
       await marginEngineTest.updatePositionMargin(
         {
           owner: wallet.address,
@@ -582,14 +586,15 @@ describe("MarginEngine", () => {
         toBn("100000")
       );
 
-      await marginEngineTest.updateTraderMargin(wallet.address, toBn("10000"));
-
       // mint
-      await vammTest.mint(wallet.address, -1, 1, toBn("1"));
+      await vammTest.mint(wallet.address, -1, 1, toBn("1000"));
+
+      await marginEngineTest.connect(other).updateTraderMargin(other.address, toBn("10000"));
 
       // swap
-      await vammTest.swap({
-        recipient: wallet.address,
+      
+      await vammTest.connect(other).swap({
+        recipient: other.address,
         isFT: true,
         amountSpecified: toBn("1"),
         sqrtPriceLimitX96: MAX_SQRT_RATIO.sub(1),
@@ -599,59 +604,52 @@ describe("MarginEngine", () => {
         tickUpper: 0,
       });
 
-      // check (stopped here)
-      // vammTest.computePositionFixedAndVariableGrowthInside(-1, 1, vammTest.vammVars)
-
       await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
 
-      // burn the position
-      await vammTest.burn(wallet.address, -1, 1, toBn("1"));
+      const traderInfo = await marginEngineTest.traders(other.address);
+      console.log("TFTB", traderInfo.fixedTokenBalance.toString());
+      console.log("TVTB", traderInfo.variableTokenBalance.toString());
 
-      // const traderInfo = await marginEngineTest.traders(wallet.address);
-      // // console.log("TFTB", traderInfo.fixedTokenBalance.toString());
+      const positionInfo = await marginEngineTest.getPosition(
+        wallet.address,
+        -1,
+        1
+      );
+      console.log("PFTB", positionInfo.fixedTokenBalance.toString());
+      console.log("PVTB", positionInfo.variableTokenBalance.toString());
 
-      // const positionInfo = await marginEngineTest.getPosition(
-      //   wallet.address,
-      //   -1,
-      //   1
-      // );
-      // console.log("PFTB", positionInfo.fixedTokenBalance.toString());
-      // console.log("PVTB", positionInfo.variableTokenBalance.toString());
+      await marginEngineTest.settlePosition({
+        owner: wallet.address,
+        tickLower: -1,
+        tickUpper: 1,
+        liquidityDelta: 0
+      });
 
-      expect(1).to.eq(1);
+      await marginEngineTest.settleTrader(other.address);
 
-      // await marginEngineTest.settlePosition({
-      //   owner: wallet.address,
-      //   tickLower: -1,
-      //   tickUpper: 1,
-      //   liquidityDelta: BigNumber.from(0), // does not matter for position settlements
-      // });
+      const traderInfoNew = await marginEngineTest.traders(other.address);
 
-      // const termStartTimestamp = await ammTest.termStartTimestamp();
-      // const termEndTimestamp = await ammTest.termEndTimestamp();
+      const positionInfoNew = await marginEngineTest.getPosition(
+        wallet.address,
+        -1,
+        1
+      );
 
-      // const currentBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
+      const traderMarginDelta = sub(traderInfoNew.margin, traderInfo.margin);
+      const positionMarginDelta = sub(positionInfoNew.margin, positionInfo.margin);
 
-      // const settlementCashflow = calculateSettlementCashflow(
-      //   toBn("1000"),
-      //   toBn("-2000"),
-      //   termStartTimestamp,
-      //   termEndTimestamp,
-      //   toBn("0"),
-      //   toBn(currentBlockTimestamp.toString())
-      // );
+      console.log("traderMarginDelta", traderMarginDelta.toString());
+      console.log("positionMarginDelta", positionMarginDelta.toString());
 
-      // const positionInfo = await marginEngineTest.getPosition(
-      //   wallet.address,
-      //   -1,
-      //   1
-      // );
+      const sumOfTraderMarginDeltaAndPositionMarginDelta = add(traderMarginDelta, positionMarginDelta)
 
-      // const expectedPositionMargin = add(toBn("1000"), settlementCashflow);
-      // expect(positionInfo.margin).to.eq(expectedPositionMargin);
-      // expect(positionInfo.isSettled).to.eq(true);
-      // expect(positionInfo.fixedTokenBalance).to.eq(toBn("0"));
-      // expect(positionInfo.variableTokenBalance).to.eq(toBn("0"));
+      console.log("sumOfTraderMarginDeltaAndPositionMarginDelta", sumOfTraderMarginDeltaAndPositionMarginDelta.toString());
+      
+      // small discrepancy in the delta below
+      expect(sumOfTraderMarginDeltaAndPositionMarginDelta).to.eq(toBn("-0.191589240287870206"));
+      expect(positionInfoNew.isSettled).to.eq(true);
+      expect(positionInfoNew.fixedTokenBalance).to.eq(toBn("0"));
+      expect(positionInfoNew.variableTokenBalance).to.eq(toBn("0"));
     });
   });
 
