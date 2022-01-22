@@ -6,7 +6,7 @@ import { expect } from "chai";
 import { FixedAndVariableMathTest } from "../../typechain/FixedAndVariableMathTest";
 import { toBn } from "evm-bn";
 import { sub, add } from "../shared/functions";
-import { getCurrentTimestamp } from "../helpers/time";
+import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 import { ONE_YEAR_IN_SECONDS, ONE_WEEK_IN_SECONDS } from "../shared/constants";
 
 const { provider } = waffle;
@@ -547,6 +547,55 @@ describe("FixedAndVariableMath", () => {
       );
 
       expect(realized).to.eq(fixedTokenBalance);
+    });
+  });
+
+  describe("full scenarios", async () => {
+    it("scenario 1", async () => {
+      const amount0Unbalanced = toBn("-1000");
+      const amount1 = toBn("10000");
+
+      // none of the variables below are in wad
+
+      const variableFactorFromPoolInitiationToNow = toBn("0.001");
+      const variableFactorFromPoolInitiationToPoolMaturity = toBn("0.003000");
+
+      const termEndTimestamp = add(
+        currentBlockTimestamp,
+        ONE_WEEK_IN_SECONDS.mul(2)
+      );
+
+      console.log("currentBlockTimestamp", currentBlockTimestamp.toString());
+      console.log("termEndTimestamp", termEndTimestamp.toString());
+
+      await advanceTimeAndBlock(BigNumber.from(604800), 2);
+
+      const amount0Rebalanced =
+        await fixedAndVariableMathTest.getFixedTokenBalance(
+          amount0Unbalanced,
+          amount1,
+          variableFactorFromPoolInitiationToNow,
+          currentBlockTimestamp, // termStart
+          termEndTimestamp
+        );
+
+      console.log("amount0Rebalanced TS", amount0Rebalanced.toString());
+
+      const realizedCashflow =
+        await fixedAndVariableMathTest.calculateSettlementCashflow(
+          amount0Rebalanced,
+          amount1,
+          currentBlockTimestamp, // termStart
+          termEndTimestamp,
+          variableFactorFromPoolInitiationToPoolMaturity
+        );
+
+      console.log("realizedCashflow", realizedCashflow.toString());
+
+      // 19,788,239,158,101,500,000.00 (excel value)
+      // 19,808,219,812,278,031,000 (realised value)
+
+      expect(realizedCashflow).to.eq(toBn("19.808219812278031000"));
     });
   });
 });
