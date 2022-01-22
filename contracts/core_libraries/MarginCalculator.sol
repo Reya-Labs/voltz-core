@@ -11,6 +11,7 @@ import "./Position.sol";
 import "./Tick.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
+
 // import "hardhat/console.sol";
 
 /// @title Margin Calculator
@@ -357,7 +358,7 @@ library MarginCalculator {
         // } else {
         //     console.log("exp1Wad Negative", uint256(-exp1Wad));
         // }
-        
+
         int256 exp2Wad = PRBMathSD59x18.mul(
             variableTokenBalanceWad,
             int256(
@@ -372,8 +373,7 @@ library MarginCalculator {
                 )
             )
         );
-        
-        
+
         // if (exp2Wad > 0) {
         //     console.log("exp2Wad Positive", uint256(exp2Wad));
         // } else {
@@ -388,7 +388,9 @@ library MarginCalculator {
         /// @audit rethink if minimum margin requirement is necessary given we have flexibility with MC parameters
 
         if (maxCashflowDeltaToCoverPostMaturity < 0) {
-            margin = PRBMathUD60x18.toUint(uint256(-maxCashflowDeltaToCoverPostMaturity));
+            margin = PRBMathUD60x18.toUint(
+                uint256(-maxCashflowDeltaToCoverPostMaturity)
+            );
         } else {
             margin = 0;
         }

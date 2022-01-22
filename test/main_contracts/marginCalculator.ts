@@ -5,8 +5,6 @@ import { toBn } from "evm-bn";
 import {
   fixedAndVariableMathFixture,
   marginCalculatorFixture,
-  sqrtPriceMathFixture,
-  tickMathFixture,
 } from "../shared/fixtures";
 import {
   APY_UPPER_MULTIPLIER,
@@ -20,16 +18,11 @@ import {
   XI_LOWER,
   T_MAX,
   expandTo18Decimals,
-  decodePriceSqrt,
 } from "../shared/utilities";
 
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import { getCurrentTimestamp } from "../helpers/time";
-import {
-  FixedAndVariableMathTest,
-  SqrtPriceMathTest,
-  TickMathTest,
-} from "../../typechain";
+import { FixedAndVariableMathTest } from "../../typechain";
 import { TickMath } from "../shared/tickMath";
 import { SqrtPriceMath } from "../shared/sqrtPriceMath";
 import JSBI from "jsbi";
@@ -664,9 +657,7 @@ describe("MarginCalculator", () => {
   describe("#getPositionMarginRequirement", async () => {
     let margin_engine_params: any;
     let testMarginCalculator: MarginCalculatorTest;
-    let testSqrtPriceMath: SqrtPriceMathTest;
     let testFixedAndVariableMath: FixedAndVariableMathTest;
-    let testTickMath: TickMathTest;
 
     beforeEach("deploy calculator", async () => {
       margin_engine_params = {
@@ -683,11 +674,9 @@ describe("MarginCalculator", () => {
       };
 
       ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
-      ({ testSqrtPriceMath } = await loadFixture(sqrtPriceMathFixture));
       ({ testFixedAndVariableMath } = await loadFixture(
         fixedAndVariableMathFixture
       ));
-      ({ testTickMath } = await loadFixture(tickMathFixture));
     });
 
     it("current tick < lower tick: margin requirement for staying position", async () => {

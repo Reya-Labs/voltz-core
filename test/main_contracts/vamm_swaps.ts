@@ -495,7 +495,7 @@ describe("VAMM", () => {
     // })
 
     it("scenario 6: trader liquidation", async () => {
-      // # move into the marginEngine.ts 
+      // # move into the marginEngine.ts
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
       await vammTest.setMaxLiquidityPerTick(
