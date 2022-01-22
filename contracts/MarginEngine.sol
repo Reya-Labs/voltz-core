@@ -278,10 +278,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
             
-        /// @dev position can only be settled if it is burned and not settled
-        require(position._liquidity==0, "fully burned");
         require(!position.isSettled, "already settled");
-
+        
+        updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
+        
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
 
         position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
