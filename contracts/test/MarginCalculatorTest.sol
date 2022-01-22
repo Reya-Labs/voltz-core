@@ -112,7 +112,6 @@ contract MarginCalculatorTest {
             );
     }
 
-
     function getFixedTokenBalanceFromMCTest(
         int256 amount0,
         int256 amount1,
