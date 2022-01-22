@@ -11,6 +11,7 @@ import "./Position.sol";
 import "./Tick.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
+// import "hardhat/console.sol";
 
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
@@ -351,6 +352,12 @@ library MarginCalculator {
             )
         );
 
+        // if (exp1Wad > 0) {
+        //     console.log("exp1Wad Positive", uint256(exp1Wad));
+        // } else {
+        //     console.log("exp1Wad Negative", uint256(-exp1Wad));
+        // }
+        
         int256 exp2Wad = PRBMathSD59x18.mul(
             variableTokenBalanceWad,
             int256(
@@ -365,15 +372,25 @@ library MarginCalculator {
                 )
             )
         );
+        
+        
+        // if (exp2Wad > 0) {
+        //     console.log("exp2Wad Positive", uint256(exp2Wad));
+        // } else {
+        //     console.log("exp2Wad Negative", uint256(-exp2Wad));
+        // }
 
-        int256 modelMarginWad = exp1Wad + exp2Wad;
+        // console.log("is variable balance positive", variableTokenBalanceWad>0);
+        // console.log("is fixed balance positive", fixedTokenBalanceWad>0);
+
+        int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
 
         /// @audit rethink if minimum margin requirement is necessary given we have flexibility with MC parameters
 
-        if (modelMarginWad < 0) {
-            margin = 0;
+        if (maxCashflowDeltaToCoverPostMaturity < 0) {
+            margin = PRBMathUD60x18.toUint(uint256(-maxCashflowDeltaToCoverPostMaturity));
         } else {
-            margin = PRBMathUD60x18.toUint(uint256(modelMarginWad));
+            margin = 0;
         }
     }
 

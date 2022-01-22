@@ -236,7 +236,7 @@ describe("MarginEngine", () => {
   });
 
   describe("#updateTraderMargin", async () => {
-    it("check trader margin correctly updated", async () => {
+    it("check trader margin correctly updated scenario 1", async () => {
       // console.log("CR1");
       await marginEngineTest.updateTraderMargin(wallet.address, 1);
       // console.log("CR2");
@@ -247,7 +247,7 @@ describe("MarginEngine", () => {
       expect(traderMargin).to.eq(1);
     });
 
-    it("check trader margin correctly updated", async () => {
+    it("check trader margin correctly updated scenario 2", async () => {
       // console.log("CR1");
       await marginEngineTest.updateTraderMargin(wallet.address, 2);
       // console.log("CR2");
