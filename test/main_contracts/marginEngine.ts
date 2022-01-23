@@ -444,7 +444,7 @@ describe("MarginEngine", () => {
         toBn("-10"),
         toBn("0"),
         false
-      ); 
+      );
 
       await marginEngineTest.updatePositionMargin(
         {
@@ -457,9 +457,11 @@ describe("MarginEngine", () => {
       );
 
       {
-        const positionInfo = await marginEngineTest.getPosition(other.address,
+        const positionInfo = await marginEngineTest.getPosition(
+          other.address,
           -TICK_SPACING,
-          TICK_SPACING);
+          TICK_SPACING
+        );
         expect(positionInfo.variableTokenBalance).to.not.be.equal(0);
       }
 
@@ -470,10 +472,12 @@ describe("MarginEngine", () => {
       );
 
       {
-        const positionInfo = await marginEngineTest.getPosition(other.address,
+        const positionInfo = await marginEngineTest.getPosition(
+          other.address,
           -TICK_SPACING,
-          TICK_SPACING);
-          expect(positionInfo.variableTokenBalance).to.be.equal(0);
+          TICK_SPACING
+        );
+        expect(positionInfo.variableTokenBalance).to.be.equal(0);
       }
     });
 
@@ -520,9 +524,11 @@ describe("MarginEngine", () => {
       );
 
       {
-        const positionInfo = await marginEngineTest.getPosition(other.address,
+        const positionInfo = await marginEngineTest.getPosition(
+          other.address,
           -TICK_SPACING,
-          TICK_SPACING);
+          TICK_SPACING
+        );
         expect(positionInfo.variableTokenBalance).to.not.be.equal(0);
       }
 
@@ -533,10 +539,12 @@ describe("MarginEngine", () => {
       );
 
       {
-        const positionInfo = await marginEngineTest.getPosition(other.address,
+        const positionInfo = await marginEngineTest.getPosition(
+          other.address,
           -TICK_SPACING,
-          TICK_SPACING);
-          expect(positionInfo.variableTokenBalance).to.not.be.equal(0);
+          TICK_SPACING
+        );
+        expect(positionInfo.variableTokenBalance).to.not.be.equal(0);
       }
     });
 
@@ -561,7 +569,7 @@ describe("MarginEngine", () => {
         toBn("-1000000"),
         toBn("10"),
         false
-      ); 
+      );
 
       await marginEngineTest.updateTraderMargin(wallet.address, toBn("1"));
 
@@ -572,10 +580,13 @@ describe("MarginEngine", () => {
     });
   });
 
-    describe("#collectProtocol", () => {
+  describe("#collectProtocol", () => {
     it("checkOwnerPrivilege", async () => {
-      await expect(marginEngineTest.connect(other).collectProtocol(other.address, toBn("1"))).to.be
-        .reverted;
+      await expect(
+        marginEngineTest
+          .connect(other)
+          .collectProtocol(other.address, toBn("1"))
+      ).to.be.reverted;
     });
 
     it("checkCollectProtocol", async () => {
