@@ -294,15 +294,14 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     }
 
     if (params.isUnwind) {
-      /// necessary checks already done in the unwind call in the ME
+      /// no need for checks since ME makes sure the values passed are correct
       require(msg.sender==marginEngineAddress, "only ME");
     } else {
       require(msg.sender==params.recipient, "only sender");
 
       if (params.isTrader) {
-        require(params.tickLower==0, "now tick lower for traders");
-        require(params.tickUpper==0, "now tick upper for traders");
-        /// @audit consider doing this check post swap in the MarginEngine directly to minimise external calls
+        require(params.tickLower==0, "no tick lower for traders");
+        require(params.tickUpper==0, "no tick upper for traders");
       } else {
         /// @dev dealing with an LP induced swap
         Tick.checkTicks(params.tickLower, params.tickUpper);
