@@ -324,7 +324,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function liquidatePosition(ModifyPositionParams memory params) external checkCurrentTimestampTermEndTimestampDelta override {
 
         /// @dev can only happen before maturity, this is checked when an unwind is triggered which in turn triggers a swap which checks for this condition
-        /// @audit introduce pre maturity check
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
