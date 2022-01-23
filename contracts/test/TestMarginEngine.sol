@@ -172,4 +172,11 @@ contract TestMarginEngine is MarginEngine {
     ) public {
         unwindPosition(owner, tickLower, tickUpper);
     }
+
+    function unwindTraderTest(
+        address traderAddress,
+        int256 traderVariableTokenBalance
+    ) public {
+        unwindTrader(traderAddress, traderVariableTokenBalance);
+    }
 }
