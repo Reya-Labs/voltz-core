@@ -143,6 +143,10 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     /// @dev if msg.sender is the MarginEngine, it is a burn induced by a position liquidation
 
+    if (amount <= 0) {
+      revert LiquidityDeltaMustBePositiveInBurn(amount);
+    }
+
     require((msg.sender==recipient) || (msg.sender == marginEngineAddress), "MS or ME");
 
     /// @audit check the order of operations, make sure the position's liquidity is not used in the unwind
