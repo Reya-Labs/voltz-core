@@ -40,6 +40,9 @@ interface IVAMM is IPositionStructs {
     /// @dev Error which ensures the liquidity delta is positive if a given LP wishes to mint further liquidity in the vamm
     error LiquidityDeltaMustBePositiveInMint(uint128 amount);
 
+    /// @dev Error which ensures the liquidity delta is positive if a given LP wishes to burn liquidity in the vamm
+    error LiquidityDeltaMustBePositiveInBurn(uint128 amount);
+
     /// @dev Error which ensures the amount of notional specified when initiating an IRS contract (via the swap function in the vamm) is non-zero
     error IRSNotionalAmountSpecifiedMustBeNonZero(int256 amountSpecified);
 

@@ -164,4 +164,12 @@ contract TestMarginEngine is MarginEngine {
     function getHistoricalApy() public pure override returns (uint256) {
         return 10**17;
     }
+
+    function unwindPositionTest(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) public {
+        unwindPosition(owner, tickLower, tickUpper);
+    }
 }

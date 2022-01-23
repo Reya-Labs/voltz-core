@@ -390,17 +390,7 @@ describe("VAMM", () => {
           );
 
           await vammTest.mint(wallet.address, -240, 0, 100);
-          // await vammTest.mint(wallet.address, -240, 0, 40);
-          // await vammTest.burn( )
         });
-
-        // it('removes liquidity from liquidityGross', async () => {
-        //   await mint(wallet.address, -240, 0, 100)
-        //   await mint(wallet.address, -240, 0, 40)
-        //   await pool.burn(-240, 0, 90)
-        //   expect((await pool.ticks(-240)).liquidityGross).to.eq(50)
-        //   expect((await pool.ticks(0)).liquidityGross).to.eq(50)
-        // })
       });
     });
   });
@@ -522,11 +512,117 @@ describe("VAMM", () => {
     });
   });
 
-  // TODO: check after testing updatePosition() and MarginEngine.unwindPosition()
-  // describe("#burn", () => {
-  //   it("check burn", async () => {
-  //     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
-  //     await vammTest.burn(0, 2, toBn("10"));
-  //   });
-  // });
+  describe("#mint", () => {
+    it("fails if not initialized", async () => {
+      await expect(vammTest.mint(wallet.address, -tickSpacing, tickSpacing, 1))
+        .to.be.reverted;
+    });
+
+    describe("after initialization", async () => {
+      beforeEach("initialize the pool at price of 10:1", async () => {
+        await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
+        await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100));
+        await vammTest.setFeeProtocol(3);
+        await vammTest.setTickSpacing(TICK_SPACING);
+
+        await token.mint(wallet.address, BigNumber.from(10).pow(27));
+        await token.approve(wallet.address, BigNumber.from(10).pow(27));
+
+        await marginEngineTest.updatePositionMargin(
+          {
+            owner: wallet.address,
+            tickLower: minTick,
+            tickUpper: maxTick,
+            liquidityDelta: 0,
+          },
+          toBn("100000")
+        );
+
+        await vammTest.mint(wallet.address, minTick, maxTick, 3161);
+      });
+
+      describe("failure cases", async () => {
+        it("fails if tickLower greater than tickUpper", async () => {
+          // await expect(mint(wallet.address, 1, 0, 1)).to.be.reverted
+          await expect(vammTest.burn(wallet.address, 1, 0, 1)).to.be.reverted;
+        });
+
+        it("fails if tickLower less than min tick", async () => {
+          // should be TLM but...hardhat
+          await expect(vammTest.burn(wallet.address, -887273, 0, 1)).to.be
+            .reverted;
+        });
+
+        it("fails if tickUpper greater than max tick", async () => {
+          // should be TUM but...hardhat
+          await expect(vammTest.burn(wallet.address, 0, 887273, 1)).to.be
+            .reverted;
+        });
+      });
+
+      describe("success cases", async () => {
+        it("initial tick", async () => {
+          expect((await vammTest.vammVars()).tick).to.eq(-23028);
+        });
+
+        it("adds liquidity to liquidityGross", async () => {
+          await marginEngineTest.updatePositionMargin(
+            {
+              owner: wallet.address,
+              tickLower: -240,
+              tickUpper: 0,
+              liquidityDelta: 0,
+            },
+            toBn("100000")
+          );
+
+          await vammTest.mint(wallet.address, -240, 0, 100);
+
+          await marginEngineTest.updatePositionMargin(
+            {
+              owner: wallet.address,
+              tickLower: -240,
+              tickUpper: 60,
+              liquidityDelta: 0,
+            },
+            toBn("100000")
+          );
+
+          await vammTest.mint(wallet.address, -240, 60, 150);
+
+          await marginEngineTest.updatePositionMargin(
+            {
+              owner: wallet.address,
+              tickLower: 0,
+              tickUpper: 120,
+              liquidityDelta: 0,
+            },
+            toBn("100000")
+          );
+
+          await vammTest.mint(wallet.address, 0, 120, 60);
+
+          // start burning
+
+          await vammTest.burn(wallet.address, -240, 0, 70);
+          expect((await vammTest.ticks(-240)).liquidityGross).to.eq(180);
+          expect((await vammTest.ticks(0)).liquidityGross).to.eq(90);
+          expect((await vammTest.ticks(60)).liquidityGross).to.eq(150);
+          expect((await vammTest.ticks(120)).liquidityGross).to.eq(60);
+
+          await vammTest.burn(wallet.address, -240, 60, 150);
+          expect((await vammTest.ticks(-240)).liquidityGross).to.eq(30);
+          expect((await vammTest.ticks(0)).liquidityGross).to.eq(90);
+          expect((await vammTest.ticks(60)).liquidityGross).to.eq(0);
+          expect((await vammTest.ticks(120)).liquidityGross).to.eq(60);
+
+          await expect(vammTest.burn(wallet.address, 0, 120, 70)).to.be
+            .reverted;
+
+          await expect(vammTest.burn(wallet.address, -60, 60, 1)).to.be
+            .reverted;
+        });
+      });
+    });
+  });
 });
