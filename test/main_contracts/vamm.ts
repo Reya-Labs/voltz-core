@@ -512,7 +512,7 @@ describe("VAMM", () => {
     });
   });
 
-  describe("#mint", () => {
+  describe("#burn", () => {
     it("fails if not initialized", async () => {
       await expect(vammTest.mint(wallet.address, -tickSpacing, tickSpacing, 1))
         .to.be.reverted;
