@@ -9,6 +9,7 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 import "../interfaces/IFactory.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../core_libraries/Time.sol";
+import "hardhat/console.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
@@ -39,9 +40,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     /// @notice the observations tracked over time by this oracle
     OracleBuffer.Observation[65535] public observations;
 
-    /// @dev Must be the Factory owner
-    error NotFactoryOwner();
-
     /// @inheritdoc IRateOracle
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate)
         external
@@ -58,7 +56,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     // AB: lock the amm when calling this function?
-    // AB: rename to increaseRateCardinalityNext
     /// @inheritdoc IRateOracle
     function increaseObservarionCardinalityNext(uint16 rateCardinalityNext)
         external
@@ -82,23 +79,23 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     /// @notice Computes the APY based on the un-annualised rateFromTo value and timeInYears (in wei)
-    /// @param rateFromTo Un-annualised rate (in wei)
-    /// @param timeInYears Time in years for the period for which we want to calculate the apy (in wei)
-    /// @return apy APY for a given rateFromTo and timeInYears
-    function computeApyFromRate(uint256 rateFromTo, uint256 timeInYears)
+    /// @param rateFromToWad Un-annualised rate (in wei)
+    /// @param timeInYearsWad Time in years for the period for which we want to calculate the apy (in wei)
+    /// @return apyWad APY for a given rateFromTo and timeInYears
+    function computeApyFromRate(uint256 rateFromToWad, uint256 timeInYearsWad)
         internal
         pure
-        returns (uint256 apy)
+        returns (uint256 apyWad)
     {
-        if (rateFromTo == 0) {
+        if (rateFromToWad == 0) {
             return 0;
         }
-        uint256 exponent = PRBMathUD60x18.div(ONE_WEI, timeInYears);
-        uint256 apyPlusOne = PRBMathUD60x18.pow(
-            (ONE_WEI + rateFromTo),
-            exponent
+        uint256 exponentWad = PRBMathUD60x18.div(ONE_WEI, timeInYearsWad);
+        uint256 apyPlusOneWad = PRBMathUD60x18.pow(
+            (ONE_WEI + rateFromToWad),
+            exponentWad
         );
-        apy = apyPlusOne - ONE_WEI;
+        apyWad = apyPlusOneWad - ONE_WEI;
     }
 
     /// @inheritdoc IRateOracle
@@ -114,26 +111,30 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         public
         view
         override
-        returns (uint256 apyFromTo)
+        returns (uint256 apyFromToWad)
     {
         require(from <= to, "Misordered dates");
 
-        uint256 rateFromTo = getRateFromTo(from, to);
+        uint256 rateFromToWad = getRateFromTo(from, to);
 
         uint256 timeInSeconds = to - from;
 
-        uint256 timeInYears = FixedAndVariableMath.accrualFact(timeInSeconds);
+        uint256 timeInSecondsWad = PRBMathUD60x18.fromUint(timeInSeconds);
 
-        apyFromTo = computeApyFromRate(rateFromTo, timeInYears);
+        uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
+            timeInSecondsWad
+        );
+
+        apyFromToWad = computeApyFromRate(rateFromToWad, timeInYearsWad);
     }
 
     /// @inheritdoc IRateOracle
     function variableFactor(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public override(IRateOracle) returns (uint256 result) {
+    ) public override(IRateOracle) returns (uint256 resultWad) {
         bool cacheable;
-        (result, cacheable) = _variableFactor(
+        (resultWad, cacheable) = _variableFactor(
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds
         );
@@ -146,18 +147,20 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
                 PRBMathUD60x18.toUint(termEndTimestampInWeiSeconds)
             );
 
-            settlementRateCache[termStartTimestamp][termEndTimestamp] = result;
+            settlementRateCache[termStartTimestamp][
+                termEndTimestamp
+            ] = resultWad;
         }
 
-        return result;
+        return resultWad;
     }
 
     /// @inheritdoc IRateOracle
     function variableFactorNoCache(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public view override(IRateOracle) returns (uint256 result) {
-        (result, ) = _variableFactor(
+    ) public view override(IRateOracle) returns (uint256 resultWad) {
+        (resultWad, ) = _variableFactor(
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds
         );
@@ -166,7 +169,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function _variableFactor(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) private view returns (uint256 result, bool cacheable) {
+    ) private view returns (uint256 resultWad, bool cacheable) {
         uint32 termStartTimestamp = Time.timestampAsUint32(
             PRBMathUD60x18.toUint(termStartTimestampInWeiSeconds)
         );
@@ -176,17 +179,19 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
         require(termStartTimestamp > 0 && termEndTimestamp > 0, "UNITS");
         if (settlementRateCache[termStartTimestamp][termEndTimestamp] != 0) {
-            result = settlementRateCache[termStartTimestamp][termEndTimestamp];
+            resultWad = settlementRateCache[termStartTimestamp][
+                termEndTimestamp
+            ];
         } else if (Time.blockTimestampTruncated() >= termEndTimestamp) {
-            result = getRateFromTo(termStartTimestamp, termEndTimestamp);
+            resultWad = getRateFromTo(termStartTimestamp, termEndTimestamp);
             cacheable = true;
         } else {
-            result = getRateFromTo(
+            resultWad = getRateFromTo(
                 termStartTimestamp,
                 Time.blockTimestampTruncated()
             );
         }
-        return (result, cacheable);
+        return (resultWad, cacheable);
     }
 
     /// @inheritdoc IRateOracle
