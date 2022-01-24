@@ -50,9 +50,9 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
             return (index, cardinality);
 
-        uint256 result = IAaveV2LendingPool(aaveLendingPool)
+        uint256 resultRay = IAaveV2LendingPool(aaveLendingPool)
             .getReserveNormalizedIncome(underlying);
-        if (result == 0) {
+        if (resultRay == 0) {
             revert AavePoolGetReserveNormalizedIncomeReturnedZero();
         }
 
@@ -60,7 +60,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             observations.write(
                 index,
                 blockTimestamp,
-                result,
+                resultRay,
                 cardinality,
                 cardinalityNext
             );
@@ -70,7 +70,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @dev Reverts if we have no data point for either timestamp
     /// @param _from The timestamp of the start of the period, in seconds
     /// @param _to The timestamp of the end of the period, in seconds
-    /// @return The "floating rate" expressed in Ray, e.g. 4% is encoded as 0.04*10**27 = 4*10*25
+    /// @return The "floating rate" expressed in Ray, e.g. 4% is encoded as 0.04*10**27 = 4*10**25
     function getRateFromTo(
         uint256 _from,
         uint256 _to // @audit - move docs to IRateOracle. Add additional parameter to use cache and implement cache.
@@ -86,23 +86,25 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint32 from = Time.timestampAsUint32(_from);
         uint32 to = Time.timestampAsUint32(_to);
 
-        uint256 rateFrom = observeSingle(
+        uint256 rateFromRay = observeSingle(
             currentTime,
             from,
             oracleVars.rateIndex,
             oracleVars.rateCardinality
         );
-        uint256 rateTo = observeSingle(
+        uint256 rateToRay = observeSingle(
             currentTime,
             to,
             oracleVars.rateIndex,
             oracleVars.rateCardinality
         );
 
-        if (rateTo > rateFrom) {
+        if (rateToRay > rateFromRay) {
             return
                 WadRayMath.rayToWad(
-                    WadRayMath.rayDiv(rateTo, rateFrom).sub(WadRayMath.RAY)
+                    WadRayMath.rayDiv(rateToRay, rateFromRay).sub(
+                        WadRayMath.RAY
+                    )
                 );
         } else {
             return 0;
@@ -110,33 +112,39 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     /// @notice Calculates the interpolated (counterfactual) rate value
-    /// @param beforeOrAtRateValue  Rate Value (in ray) before the timestamp for which we want to calculate the counterfactual rate value
-    /// @param apyFromBeforeOrAtToAtOrAfter Apy in the period between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
-    /// @param timeDeltaBeforeOrAtToQueriedTime Time Delta (in wei seconds) between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
-    /// @return rateValue Counterfactual (interpolated) rate value in ray
+    /// @param beforeOrAtRateValueRay  Rate Value (in ray) before the timestamp for which we want to calculate the counterfactual rate value
+    /// @param apyFromBeforeOrAtToAtOrAfterWad Apy in the period between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
+    /// @param timeDeltaBeforeOrAtToQueriedTimeWad Time Delta (in wei seconds) between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
+    /// @return rateValueRay Counterfactual (interpolated) rate value in ray
     /// @dev Given [beforeOrAt, atOrAfter] where the timestamp for which the counterfactual is calculated is within that range (but does not touch any of the bounds)
     /// @dev We can calculate the apy for [beforeOrAt, atOrAfter] --> refer to this value as apyFromBeforeOrAtToAtOrAfter
     /// @dev Then we want a counterfactual rate value which results in apy_before_after if the apy is calculated between [beforeOrAt, timestampForCounterfactual]
     /// @dev Hence (1+rateValueWei/beforeOrAtRateValueWei)^(1/timeInYears) = apyFromBeforeOrAtToAtOrAfter
     /// @dev Hence rateValueWei = beforeOrAtRateValueWei * (1+apyFromBeforeOrAtToAtOrAfter)^timeInYears - 1)
     function interpolateRateValue(
-        uint256 beforeOrAtRateValue,
-        uint256 apyFromBeforeOrAtToAtOrAfter,
-        uint256 timeDeltaBeforeOrAtToQueriedTime
-    ) internal pure returns (uint256 rateValue) {
-        uint256 timeInYears = FixedAndVariableMath.accrualFact(
-            timeDeltaBeforeOrAtToQueriedTime
+        uint256 beforeOrAtRateValueRay,
+        uint256 apyFromBeforeOrAtToAtOrAfterWad,
+        uint256 timeDeltaBeforeOrAtToQueriedTimeWad
+    ) internal pure returns (uint256 rateValueRay) {
+        uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
+            timeDeltaBeforeOrAtToQueriedTimeWad
         );
-        uint256 exp1 = PRBMathUD60x18.pow(
-            (ONE_WEI + apyFromBeforeOrAtToAtOrAfter),
-            timeInYears
-        ) - ONE_WEI;
 
-        uint256 beforeOrAtRateValueWei = WadRayMath.rayToWad(
-            beforeOrAtRateValue
+        // scenario without compounding
+        uint256 counterfactualRateWad = PRBMathUD60x18.mul(
+            apyFromBeforeOrAtToAtOrAfterWad,
+            timeInYearsWad
         );
-        uint256 rateValueWei = PRBMathUD60x18.mul(beforeOrAtRateValueWei, exp1);
-        rateValue = WadRayMath.wadToRay(rateValueWei);
+
+        uint256 beforeOrAtRateValueWad = WadRayMath.rayToWad(
+            beforeOrAtRateValueRay
+        );
+
+        uint256 rateValueWad = PRBMathUD60x18.mul(
+            (PRBMathUD60x18.fromUint(1) + counterfactualRateWad),
+            beforeOrAtRateValueWad
+        );
+        rateValueRay = WadRayMath.wadToRay(rateValueWad);
     }
 
     function observeSingle(
@@ -144,65 +152,71 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint32 queriedTime,
         uint16 index,
         uint16 cardinality
-    ) internal view returns (uint256 rateValue) {
+    ) internal view returns (uint256 rateValueRay) {
         require(currentTime >= queriedTime, "OOO");
 
         if (currentTime == queriedTime) {
             OracleBuffer.Observation memory rate;
             rate = observations[index];
             if (rate.blockTimestamp != currentTime) {
-                rateValue = IAaveV2LendingPool(aaveLendingPool)
+                rateValueRay = IAaveV2LendingPool(aaveLendingPool)
                     .getReserveNormalizedIncome(underlying);
             } else {
-                rateValue = rate.observedValue;
+                rateValueRay = rate.observedValue;
             }
-            return rateValue;
+            return rateValueRay;
         }
 
-        uint256 currentValue = IAaveV2LendingPool(aaveLendingPool)
+        uint256 currentValueRay = IAaveV2LendingPool(aaveLendingPool)
             .getReserveNormalizedIncome(underlying);
         (
             OracleBuffer.Observation memory beforeOrAt,
             OracleBuffer.Observation memory atOrAfter
         ) = observations.getSurroundingObservations(
                 queriedTime,
-                currentValue,
+                currentValueRay,
                 index,
                 cardinality
             );
 
         if (queriedTime == beforeOrAt.blockTimestamp) {
             // we are at the left boundary
-            rateValue = beforeOrAt.observedValue;
+            rateValueRay = beforeOrAt.observedValue;
         } else if (queriedTime == atOrAfter.blockTimestamp) {
             // we are at the right boundary
-            rateValue = atOrAfter.observedValue;
+            rateValueRay = atOrAfter.observedValue;
         } else {
             // we are in the middle
             // find apy between beforeOrAt and atOrAfter
 
-            uint256 rateFromBeforeOrAtToAtOrAfter;
+            uint256 rateFromBeforeOrAtToAtOrAfterWad;
+
+            // @audit - more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
-                rateFromBeforeOrAtToAtOrAfter = WadRayMath
+                uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath
                     .rayDiv(atOrAfter.observedValue, beforeOrAt.observedValue)
                     .sub(WadRayMath.RAY);
-                // @audit - more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
+
+                rateFromBeforeOrAtToAtOrAfterWad = WadRayMath.rayToWad(
+                    rateFromBeforeOrAtToAtOrAfterRay
+                );
             }
 
-            uint256 timeInYears = FixedAndVariableMath.accrualFact(
+            uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
                 (atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp) *
                     WadRayMath.wad()
             );
-            uint256 apyFromBeforeOrAtToAtOrAfter = computeApyFromRate(
-                rateFromBeforeOrAtToAtOrAfter,
-                timeInYears
+
+            uint256 apyFromBeforeOrAtToAtOrAfterWad = computeApyFromRate(
+                rateFromBeforeOrAtToAtOrAfterWad,
+                timeInYearsWad
             );
 
             // interpolate rateValue for queriedTime
-            rateValue = interpolateRateValue(
+            rateValueRay = interpolateRateValue(
                 beforeOrAt.observedValue,
-                apyFromBeforeOrAtToAtOrAfter,
+                apyFromBeforeOrAtToAtOrAfterWad,
                 (queriedTime - beforeOrAt.blockTimestamp) * WadRayMath.wad()
             );
         }

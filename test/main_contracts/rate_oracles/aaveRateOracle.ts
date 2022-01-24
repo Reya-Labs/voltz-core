@@ -192,16 +192,6 @@ describe("Aave Rate Oracle", () => {
       ).connect(wallet);
     });
 
-    // it("correctly sets aave lending pool normalized income", async () => {
-    //   await aaveLendingPoolContract.setReserveNormalizedIncome(
-    //     underlyingTokenAddress,
-    //     toBn("1.1")
-    //   );
-    //   const normalizedIncome =
-    //     await testRateOracle.testGetReserveNormalizedIncome();
-    //   expect(normalizedIncome).to.eq(toBn("1.1"));
-    // });
-
     it("correctly calculates rate from one timestamp to the next", async () => {
       await testRateOracle.testGrow(4);
 
@@ -498,7 +488,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("reverts if termStartTimestamp is too old", async () => {
-      const termStartTimestampBN = toBn((firstTimestamp - 1).toString());
+      const termStartTimestampBN = toBn((firstTimestamp - 31536000).toString());
       const termEndTimestampBN = toBn((secondTimestamp + 604800).toString());
 
       await expect(

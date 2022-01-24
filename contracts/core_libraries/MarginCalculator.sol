@@ -11,8 +11,7 @@ import "./Position.sol";
 import "./Tick.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
-
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
@@ -353,11 +352,11 @@ library MarginCalculator {
             )
         );
 
-        // if (exp1Wad > 0) {
-        //     console.log("exp1Wad Positive", uint256(exp1Wad));
-        // } else {
-        //     console.log("exp1Wad Negative", uint256(-exp1Wad));
-        // }
+        if (exp1Wad > 0) {
+            console.log("exp1Wad Positive", uint256(exp1Wad));
+        } else {
+            console.log("exp1Wad Negative", uint256(-exp1Wad));
+        }
 
         int256 exp2Wad = PRBMathSD59x18.mul(
             variableTokenBalanceWad,
@@ -374,14 +373,17 @@ library MarginCalculator {
             )
         );
 
-        // if (exp2Wad > 0) {
-        //     console.log("exp2Wad Positive", uint256(exp2Wad));
-        // } else {
-        //     console.log("exp2Wad Negative", uint256(-exp2Wad));
-        // }
+        if (exp2Wad > 0) {
+            console.log("exp2Wad Positive", uint256(exp2Wad));
+        } else {
+            console.log("exp2Wad Negative", uint256(-exp2Wad));
+        }
 
-        // console.log("is variable balance positive", variableTokenBalanceWad>0);
-        // console.log("is fixed balance positive", fixedTokenBalanceWad>0);
+        console.log(
+            "is variable balance positive",
+            variableTokenBalanceWad > 0
+        );
+        console.log("is fixed balance positive", fixedTokenBalanceWad > 0);
 
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
 
@@ -489,6 +491,32 @@ library MarginCalculator {
                     params.termStartTimestampWad,
                     params.termEndTimestampWad
                 );
+
+            if (scenario1LPVariableTokenBalance > 0) {
+                console.log(
+                    "scenario1LPVariableTokenBalance POS",
+                    uint256(scenario1LPVariableTokenBalance)
+                );
+            } else {
+                console.log(
+                    "scenario1LPVariableTokenBalance NEG",
+                    uint256(-scenario1LPVariableTokenBalance)
+                );
+            }
+
+            if (scenario1LPFixedTokenBalance > 0) {
+                console.log(
+                    "scenario1LPFixedTokenBalance POS",
+                    uint256(scenario1LPFixedTokenBalance)
+                );
+            } else {
+                console.log(
+                    "scenario1LPFixedTokenBalance NEG",
+                    uint256(-scenario1LPFixedTokenBalance)
+                );
+            }
+
+            // console.log("scenario1LPFixedTokenBalance", scenario1LPFixedTokenBalance);
 
             /// @dev Scenario 2
             scenario2LPVariableTokenBalance = params.variableTokenBalance;

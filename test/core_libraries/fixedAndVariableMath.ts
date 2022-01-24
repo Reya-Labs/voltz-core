@@ -2,7 +2,7 @@
 
 import { BigNumber } from "ethers";
 import { ethers, network, waffle } from "hardhat";
-import { expect } from "chai";
+import { expect } from "../shared/expect";
 import { FixedAndVariableMathTest } from "../../typechain/FixedAndVariableMathTest";
 import { toBn } from "evm-bn";
 import { sub, add } from "../shared/functions";
@@ -595,7 +595,7 @@ describe("FixedAndVariableMath", () => {
       // 19,788,239,158,101,500,000.00 (excel value)
       // 19,808,219,812,278,031,000 (realised value)
 
-      expect(realizedCashflow).to.eq(toBn("19.808219812278031000"));
+      expect(realizedCashflow).to.be.near(toBn("19.808219812278031000"));
     });
   });
 });
