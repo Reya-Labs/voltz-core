@@ -7,6 +7,7 @@ import "./core_libraries/TickBitmap.sol";
 import "./core_libraries/Position.sol";
 import "./core_libraries/Trader.sol";
 
+import "./utils/Printer.sol";
 import "./utils/SafeCast.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
@@ -599,6 +600,11 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       /// @dev Movement from right to left along the VAMM, hence the sqrtPriceLimitX96 needs to be higher than the current sqrtPriceX96, but lower than the MAX_SQRT_RATIO
       /// @dev if a trader is a VT, they consume variable in return for fixed
       /// @dev Movement from left to right along the VAMM, hence the sqrtPriceLimitX96 needs to be lower than the current sqrtPriceX96, but higher than the MIN_SQRT_RATIO
+
+      Printer.printUint160("min price:     ", TickMath.MIN_SQRT_RATIO);
+      Printer.printUint160("limit price:   ", params.sqrtPriceLimitX96);
+      Printer.printUint160("current price: ", vammVarsStart.sqrtPriceX96);
+      Printer.printEmptyLine();
 
       require(
           params.isFT
