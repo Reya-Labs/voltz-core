@@ -12,6 +12,7 @@ import "hardhat-prettier";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
+import "hardhat-deploy";
 // import "@primitivefi/hardhat-dodoc"; bring back on demand
 
 dotenv.config();
