@@ -208,7 +208,7 @@ export const metaFixtureScenario1E2E =
     // write oracle entry
     await rateOracleTest.writeOracleEntry();
     // advance time after first write to the oracle
-    await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one day
+    await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
 
     await aaveLendingPool.setReserveNormalizedIncome(
       token.address,

@@ -37,5 +37,5 @@ export const aave_lending_pool_addr =
   "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9";
 
 export const ONE_YEAR_IN_SECONDS = toBn("31536000");
-
 export const ONE_WEEK_IN_SECONDS = toBn("604800");
+export const ONE_DAY_IN_SECONDS = toBn("86400");

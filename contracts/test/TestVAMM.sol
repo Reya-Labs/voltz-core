@@ -39,4 +39,12 @@ contract TestVAMM is VAMM {
     function setTickTest(int24 tick, Tick.Info memory info) external {
         ticks[tick] = info;
     }
+
+    function getCurrentTick() external view returns (int24 currentTick) {
+        return vammVars.tick;
+    }
+
+    function getGasLeft() external view returns (uint256 gas) {
+        return gasleft();
+    }
 }
