@@ -6,7 +6,8 @@ typechain
 docs
 .DS_Store
 contracts/.DS_Store
-
+localhostDeployment.json
+deployments/localhost/
 
 #Hardhat files
 cache

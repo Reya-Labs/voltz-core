@@ -83,7 +83,8 @@
     "format:sol:check": "npx prettier contracts/**/*.sol --check",
     "format:ts:check": "npx prettier '**/*.{json,js,ts,md}' --check",
     "format:check": "npm run format:sol:check && npm run format:ts:check",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "deploy:localhost": "npx hardhat node --tags Factory,Mocks,RateOracles --export localhostDeployment.json"
   },
   "husky": {
     "hooks": {
