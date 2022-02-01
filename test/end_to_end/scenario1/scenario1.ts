@@ -244,7 +244,6 @@ describe("VAMM", () => {
       positions_to_update: number[]
     ) {
       for (let i = 0; i < positions.length; i++) {
-
         if (positions_to_update.includes(i)) {
           await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
             positions[i][0].address,
@@ -261,7 +260,7 @@ describe("VAMM", () => {
           positions[i][1],
           positions[i][2]
         );
-        
+
         await printPositionInfo(positionInfo);
       }
 
@@ -433,7 +432,7 @@ describe("VAMM", () => {
       // LP 1 deposits margin and mints liquidity right after the pool initialisation
       // Should trigger a write to the rate oracle
 
-      /// todo: connect the positon address 
+      /// todo: connect the positon address
       await marginEngineTest.updatePositionMargin(
         {
           owner: positions[0][0].address,
