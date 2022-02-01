@@ -299,7 +299,7 @@ describe("VAMM", () => {
       const currentTimestamp: number = await getCurrentTimestamp(provider);
       const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
       const historicalApyWad: BigNumber =
-        await marginEngineTest.getHistoricalApy();
+        await marginEngineTest.getHistoricalApyReadOnly();
 
       const upperApyBound = await testMarginCalculator.computeApyBound(
         termEndTimestampBN,
