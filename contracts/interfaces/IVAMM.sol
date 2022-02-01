@@ -117,7 +117,7 @@ interface IVAMM is IPositionStructs {
         uint256 cumulativeFeeIncurred;
         /// @dev ...
         int256 fixedTokenDeltaCumulative;
-        /// @dev ... 
+        /// @dev ...
         int256 variableTokenDeltaCumulative;
     }
 
@@ -289,10 +289,7 @@ interface IVAMM is IPositionStructs {
     /// @return fixedTokenGrowthInsideX128 Fixed Token Growth inside the given tick range
     /// @return variableTokenGrowthInsideX128 Variable Token Growth inside the given tick range
     /// @return feeGrowthInsideX128 Fee Growth Inside given tick range
-    function computeGrowthInside(
-        int24 tickLower,
-        int24 tickUpper
-    )
+    function computeGrowthInside(int24 tickLower, int24 tickUpper)
         external
         view
         returns (
