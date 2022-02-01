@@ -93,12 +93,6 @@ interface IVAMM is IPositionStructs {
         uint8 feeProtocol;
     }
 
-    struct SwapLocalVars {
-        // AB: add docs
-        uint256 amount0;
-        uint256 amount1;
-    }
-
     /// @dev the top level state of the swap, the results of which are recorded in storage at the end
     struct SwapState {
         /// @dev the amount remaining to be swapped in/out of the input/output asset
@@ -121,6 +115,10 @@ interface IVAMM is IPositionStructs {
         uint256 protocolFee;
         /// @dev cumulative fee incurred while initiating a swap
         uint256 cumulativeFeeIncurred;
+        /// @dev ...
+        int256 fixedTokenDeltaCumulative;
+        /// @dev ... 
+        int256 variableTokenDeltaCumulative;
     }
 
     struct StepComputations {
@@ -140,6 +138,12 @@ interface IVAMM is IPositionStructs {
         uint256 feeAmount;
         /// @dev ...
         uint256 feeProtocolDelta;
+        /// @dev ...
+        int256 fixedTokenDeltaUnbalanced; // for LP
+        /// @dev ...
+        int256 fixedTokenDelta; // for LP
+        /// @dev ...
+        int256 variableTokenDelta; // for LP
     }
 
     /// @dev "constructor" for proxy instances
@@ -282,14 +286,12 @@ interface IVAMM is IPositionStructs {
     /// @notice Computes the current fixed and variable token growth inside a given tick range given the current tick in the vamm
     /// @param tickLower The lower tick of the position
     /// @param tickUpper The upper tick of the position
-    /// @param currentTick Current tick in the vamm
     /// @return fixedTokenGrowthInsideX128 Fixed Token Growth inside the given tick range
     /// @return variableTokenGrowthInsideX128 Variable Token Growth inside the given tick range
     /// @return feeGrowthInsideX128 Fee Growth Inside given tick range
     function computeGrowthInside(
         int24 tickLower,
-        int24 tickUpper,
-        int24 currentTick
+        int24 tickUpper
     )
         external
         view
