@@ -147,7 +147,7 @@ describe("VAMM", () => {
       await token.approve(allWallets[i].address, BigNumber.from(10).pow(27));
     }
 
-    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+    await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
     await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(TICK_SPACING));
     await vammTest.setTickSpacing(TICK_SPACING);
@@ -450,7 +450,7 @@ describe("VAMM", () => {
       const traders = TWallets;
 
       for (let i = 0; i < LPWallets.length; i++) {
-        positions.push([LPWallets[i], -TICK_SPACING, 0]);
+        positions.push([LPWallets[i], -TICK_SPACING * 300, -TICK_SPACING * 299]); // 6% implied fixed rate
       }
       console.log("length of positions:", positions.length);
 
@@ -484,7 +484,7 @@ describe("VAMM", () => {
           tickUpper: positions[0][2],
           liquidityDelta: 0,
         },
-        toBn("210")
+        toBn("21000")
       );
 
       await printAmounts(positions[0][1], positions[0][2], toBn("1000000"));
@@ -494,7 +494,7 @@ describe("VAMM", () => {
           positions[0][0].address,
           positions[0][1],
           positions[0][2],
-          toBn("1000000")
+          toBn("100000000")
         );
 
       await marginEngineTest.updateTraderMargin(
@@ -521,7 +521,7 @@ describe("VAMM", () => {
       await vammTest.connect(traders[1]).swap({
         recipient: traders[1].address,
         isFT: true,
-        amountSpecified: toBn("3000"),
+        amountSpecified: toBn("2000"),
         sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
         isUnwind: false,
         isTrader: true,
@@ -547,6 +547,11 @@ describe("VAMM", () => {
         await printReserveNormalizedIncome();
 
         await rateOracleTest.writeOracleEntry();
+
+        const historicalApyWad = await marginEngineTest.getHistoricalApy();
+
+        console.log("Historical APY", utils.formatEther(historicalApyWad));
+
       }
 
       await updateAPYbounds();
