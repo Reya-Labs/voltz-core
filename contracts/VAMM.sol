@@ -197,7 +197,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     }
   }
   
-  
+  /// if_succeeds {:msg "Liquidity update"} liquidity = old(liquidity) + params.liquidityDelta;
   function updatePosition(ModifyPositionParams memory params) private {
 
     /// @dev give a more descriptive name
