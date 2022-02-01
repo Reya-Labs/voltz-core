@@ -853,10 +853,10 @@ describe("MarginEngine", () => {
         sumOfTraderMarginDeltaAndPositionMarginDelta.toString()
       );
 
-      // small discrepancy in the delta below
-      expect(sumOfTraderMarginDeltaAndPositionMarginDelta).to.eq(
+      expect(sumOfTraderMarginDeltaAndPositionMarginDelta).to.be.near(
         toBn("-0.191589240287870206")
       );
+
       expect(positionInfoNew.isSettled).to.eq(true);
       expect(positionInfoNew.fixedTokenBalance).to.eq(toBn("0"));
       expect(positionInfoNew.variableTokenBalance).to.eq(toBn("0"));
