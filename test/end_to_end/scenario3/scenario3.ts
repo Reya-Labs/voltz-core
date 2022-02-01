@@ -17,7 +17,6 @@ import {
   XI_UPPER,
   XI_LOWER,
   T_MAX,
-  encodeSqrtRatioX96,
   formatRay,
   MIN_SQRT_RATIO,
   MAX_SQRT_RATIO,
@@ -450,7 +449,11 @@ describe("VAMM", () => {
       const traders = TWallets;
 
       for (let i = 0; i < LPWallets.length; i++) {
-        positions.push([LPWallets[i], -TICK_SPACING * 300, -TICK_SPACING * 299]); // 6% implied fixed rate
+        positions.push([
+          LPWallets[i],
+          -TICK_SPACING * 300,
+          -TICK_SPACING * 299,
+        ]); // 6% implied fixed rate
       }
       console.log("length of positions:", positions.length);
 
@@ -551,7 +554,6 @@ describe("VAMM", () => {
         const historicalApyWad = await marginEngineTest.getHistoricalApy();
 
         console.log("Historical APY", utils.formatEther(historicalApyWad));
-
       }
 
       await updateAPYbounds();
