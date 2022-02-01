@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
+import "../utils/Printer.sol";
 
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
@@ -86,12 +87,19 @@ library Tick {
         Info storage lower = self[params.tickLower];
         Info storage upper = self[params.tickUpper];
 
+        Printer.printInt24("tick lower", params.tickLower);
+        Printer.printInt24("tick upper", params.tickUpper);
+        
         // calculate the VariableTokenGrowth below
         int256 variableTokenGrowthBelowX128;
 
         if (params.tickCurrent >= params.tickLower) {
             variableTokenGrowthBelowX128 = lower.variableTokenGrowthOutsideX128;
         } else {
+            Printer.printInt256("variableTokenGrowthGlobalX128", params.variableTokenGrowthGlobalX128);
+            Printer.printInt256("lower.variableTokenGrowthOutsideX128", lower.variableTokenGrowthOutsideX128);
+            Printer.printInt256("variableTokenGrowthBelowX128", params.variableTokenGrowthGlobalX128 - lower.variableTokenGrowthOutsideX128);
+
             variableTokenGrowthBelowX128 =
                 params.variableTokenGrowthGlobalX128 -
                 lower.variableTokenGrowthOutsideX128;
@@ -108,10 +116,15 @@ library Tick {
                 upper.variableTokenGrowthOutsideX128;
         }
 
+        Printer.printInt256("variableTokenGrowthAboveX128", variableTokenGrowthAboveX128);
+        
+
         variableTokenGrowthInsideX128 =
             params.variableTokenGrowthGlobalX128 -
-            variableTokenGrowthBelowX128 -
-            variableTokenGrowthAboveX128;
+            (variableTokenGrowthBelowX128 +
+            variableTokenGrowthAboveX128);
+        
+        Printer.printInt256("variableTokenGrowthInsideX128", variableTokenGrowthInsideX128);
     }
 
     struct FixedTokenGrowthInsideParams {
@@ -152,8 +165,8 @@ library Tick {
 
         fixedTokenGrowthInsideX128 =
             params.fixedTokenGrowthGlobalX128 -
-            fixedTokenGrowthBelowX128 -
-            fixedTokenGrowthAboveX128;
+            (fixedTokenGrowthBelowX128 +
+            fixedTokenGrowthAboveX128);
     }
 
     /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
@@ -179,7 +192,6 @@ library Tick {
 
         Tick.Info storage info = self[tick];
 
-        /// @audit uint128 again
         uint128 liquidityGrossBefore = info.liquidityGross;
         uint128 liquidityGrossAfter = LiquidityMath.addDelta(
             liquidityGrossBefore,
@@ -244,6 +256,10 @@ library Tick {
         info.fixedTokenGrowthOutsideX128 =
             fixedTokenGrowthGlobalX128 -
             info.fixedTokenGrowthOutsideX128;
+
+        Printer.printInt24("tick crossed", tick);
+        Printer.printInt256("variableTokenGrowthGlobalX128", variableTokenGrowthGlobalX128);
+        Printer.printInt256("info.variableTokenGrowthOutsideX128", info.variableTokenGrowthOutsideX128);
 
         info.variableTokenGrowthOutsideX128 =
             variableTokenGrowthGlobalX128 -

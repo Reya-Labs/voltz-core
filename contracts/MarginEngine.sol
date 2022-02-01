@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import "./utils/Printer.sol";
 import "./core_libraries/Tick.sol";
 import "./interfaces/IMarginEngine.sol";
 import "./interfaces/IVAMM.sol";
@@ -16,6 +15,7 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeCast for uint256;
@@ -284,8 +284,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
         
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
-        Printer.printInt256("settlement cashflow of position:", settlementCashflow);
-        Printer.printEmptyLine();
 
         position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMarginViaDelta(settlementCashflow);
@@ -299,11 +297,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         Trader.Info storage trader = traders[traderAddress];
 
-        require(!trader.isSettled, "already settled");
+        require(!trader.isSettled, "not settled");
 
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
-        Printer.printInt256("settlement cashflow of trader:", settlementCashflow);
-        Printer.printEmptyLine();
 
         trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMarginViaDelta(settlementCashflow);
@@ -469,8 +465,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         if (params.liquidityDelta>0) {
             uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
-            Printer.printUint256("variableFactorWad", variableFactorWad);
-            Printer.printEmptyLine();
+            console.log("variableFactorWad", variableFactorWad);
             checkPositionMarginAboveRequirement(params, position.margin, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactorWad);
         }
 
@@ -561,23 +556,16 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int24 tickUpper) internal {
 
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
-        (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = IVAMM(vammAddress).computeGrowthInside(tickLower, tickUpper, tick);
+        (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = IVAMM(vammAddress).computeGrowthInside(tickLower, tickUpper);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
         uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
-
-        Printer.printUint256("fee delta: ", feeDelta);
-        Printer.printEmptyLine();
-
-        Printer.printInt256("fixed token delta: ", fixedTokenDelta);
-        Printer.printInt256("variable token delta: ", variableTokenDelta);
-        Printer.printEmptyLine();
 
         position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
         /// @dev collect fees
         position.updateMarginViaDelta(int256(feeDelta));
         position.updateFeeGrowthInside(feeGrowthInsideX128);
+    
     }
     
     /// @notice Check if the position margin is above the Initial Margin Requirement
@@ -600,10 +588,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         (, int24 tick, ) = IVAMM(vammAddress).vammVars();
 
-        Printer.printInt256("updated margin would be", updatedMarginWouldBe);
-        Printer.printUint256("position liquidity", positionLiquidity);
-        Printer.printUint256("historical apy", getHistoricalApy());
-        Printer.printEmptyLine();
+        console.log("updatedMarginWouldBe", uint256(updatedMarginWouldBe));
+        console.log("position liquidity", positionLiquidity);
+        console.log("historical apy", getHistoricalApy());
 
         MarginCalculator.PositionMarginRequirementParams
             memory marginReqParams = MarginCalculator

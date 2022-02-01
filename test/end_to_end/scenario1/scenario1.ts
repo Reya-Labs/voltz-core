@@ -240,21 +240,28 @@ describe("VAMM", () => {
 
     async function printPositionsAndTradersInfo(
       positions: [Wallet, number, number][],
-      traders: Wallet[]
+      traders: Wallet[],
+      positions_to_update: number[]
     ) {
       for (let i = 0; i < positions.length; i++) {
-        await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-          positions[i][0].address,
-          positions[i][1],
-          positions[i][2]
-        );
+
+        if (positions_to_update.includes(i)) {
+          await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
+            positions[i][0].address,
+            positions[i][1],
+            positions[i][2]
+          );
+        }
 
         console.log("POSITION: ", i + 1);
+        console.log("TICK LOWER", positions[i][1]);
+        console.log("TICK UPPER", positions[i][2]);
         const positionInfo = await marginEngineTest.getPosition(
           positions[i][0].address,
           positions[i][1],
           positions[i][2]
         );
+        
         await printPositionInfo(positionInfo);
       }
 
@@ -410,6 +417,7 @@ describe("VAMM", () => {
         [LPWallets[0], -TICK_SPACING, TICK_SPACING],
         [LPWallets[1], -3 * TICK_SPACING, -TICK_SPACING],
       ];
+
       const traders = TWallets;
 
       console.log(
@@ -425,6 +433,7 @@ describe("VAMM", () => {
       // LP 1 deposits margin and mints liquidity right after the pool initialisation
       // Should trigger a write to the rate oracle
 
+      /// todo: connect the positon address 
       await marginEngineTest.updatePositionMargin(
         {
           owner: positions[0][0].address,
@@ -486,7 +495,7 @@ describe("VAMM", () => {
       console.log(
         "----------------------------BEFORE FIRST SWAP----------------------------"
       );
-      await printPositionsAndTradersInfo(positions, traders);
+      await printPositionsAndTradersInfo(positions, traders, []);
 
       // price is at tick 0, so we need to see the amount below
       await printAmounts(-TICK_SPACING, 0, toBn("1000000"));
@@ -505,7 +514,10 @@ describe("VAMM", () => {
       console.log(
         "----------------------------AFTER FIRST SWAP----------------------------"
       );
-      await printPositionsAndTradersInfo(positions, traders);
+      await printPositionsAndTradersInfo(positions, traders, [0]);
+
+      const currentTickAfterFirstSwap = await vammTest.getCurrentTick();
+      console.log("current tick: ", currentTickAfterFirstSwap);
 
       // one week passes
 
@@ -567,7 +579,7 @@ describe("VAMM", () => {
       console.log(
         "----------------------------BEFORE SECOND SWAP----------------------------"
       );
-      await printPositionsAndTradersInfo(positions, traders);
+      await printPositionsAndTradersInfo(positions, traders, []);
 
       await vammTest.connect(traders[1]).swap({
         recipient: traders[1].address,
@@ -583,7 +595,10 @@ describe("VAMM", () => {
       console.log(
         "----------------------------AFTER SECOND SWAP----------------------------"
       );
-      await printPositionsAndTradersInfo(positions, traders);
+      await printPositionsAndTradersInfo(positions, traders, [0, 1]);
+
+      const currentTickAfterSecondsSwap = await vammTest.getCurrentTick();
+      console.log("current tick: ", currentTickAfterSecondsSwap);
 
       // Trader 1 engages in a reverse swap
 
@@ -601,7 +616,7 @@ describe("VAMM", () => {
       console.log(
         "----------------------------AFTER THIRD (REVERSE) SWAP----------------------------"
       );
-      await printPositionsAndTradersInfo(positions, traders);
+      await printPositionsAndTradersInfo(positions, traders, [0, 1]);
 
       const currentTick = await vammTest.getCurrentTick();
       console.log("current tick: ", currentTick);
@@ -645,7 +660,7 @@ describe("VAMM", () => {
       console.log(
         "----------------------------FINAL----------------------------"
       );
-      await printPositionsAndTradersInfo(positions, traders);
+      await printPositionsAndTradersInfo(positions, traders, [0, 1]);
     });
   });
 });

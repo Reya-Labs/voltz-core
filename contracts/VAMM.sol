@@ -6,7 +6,6 @@ import "./interfaces/IVAMM.sol";
 import "./core_libraries/TickBitmap.sol";
 import "./core_libraries/Position.sol";
 import "./core_libraries/Trader.sol";
-
 import "./utils/Printer.sol";
 import "./utils/SafeCast.sol";
 import "./utils/SqrtPriceMath.sol";
@@ -161,7 +160,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    // IMarginEngine(marginEngineAddress).unwindPosition(recipient, tickLower, tickUpper, isCloseToMaturityOrBeyondMaturity());
   }
 
   function flipTicks(ModifyPositionParams memory params)
@@ -281,8 +279,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred)
   {
     /// might be helpful to have a higher level peripheral function (initiateIRS) which then calls swap
-
-    SwapLocalVars memory swapLocalVars;
     
     VAMMVars memory vammVarsStart = vammVars;
 
@@ -339,7 +335,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       variableTokenGrowthGlobalX128: variableTokenGrowthGlobalX128,
       feeGrowthGlobalX128: feeGrowthGlobalX128,
       protocolFee: 0,
-      cumulativeFeeIncurred: 0
+      cumulativeFeeIncurred: 0,
+      fixedTokenDeltaCumulative: 0, // for Trader (user invoking the swap)
+      variableTokenDeltaCumulative: 0 // for Trader (user invoking the swap)
     });
 
     /// @dev write an entry to the rate oracle (given no throttling), should be a no-op
@@ -354,7 +352,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       StepComputations memory step;
 
       step.sqrtPriceStartX96 = state.sqrtPriceX96;
-
 
       /// @dev if isFT (fixed taker) (moving right to left), the nextInitializedTick should be more than or equal to the current tick
       /// @dev if !isFT (variable taker) (moving left to right), the nextInitializedTick should be less than or equal to the current tick
@@ -396,16 +393,24 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       );
 
       if (params.amountSpecified > 0) {
-        // is a Fixed Taker
+        // User is a Fixed Taker
         // exact input
         /// prb math is not used in here (following v3 logic)
         state.amountSpecifiedRemaining -= (step.amountIn).toInt256(); // this value is positive
         state.amountCalculated -= step.amountOut.toInt256(); // this value is negative
+        
+        // LP is a Variable Taker
+        step.variableTokenDelta = (step.amountIn).toInt256();
+        step.fixedTokenDeltaUnbalanced = -step.amountOut.toInt256();
       } else {
-        // is a VariableTaker
+        // User is a VariableTaker
         /// prb math is not used in here (following v3 logic)
         state.amountSpecifiedRemaining += step.amountOut.toInt256(); // this value is negative
         state.amountCalculated += step.amountIn.toInt256(); // this value is positive
+
+        // LP is a Fixed Taker
+        step.variableTokenDelta = -step.amountOut.toInt256();
+        step.fixedTokenDeltaUnbalanced = step.amountIn.toInt256();
       }
 
       // update cumulative fee incurred while initiating an interest rate swap
@@ -418,16 +423,20 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         state.protocolFee += step.feeProtocolDelta;
       }
 
+      Printer.printInt256("before update state.variableTokenGrowthGlobalX128", state.variableTokenGrowthGlobalX128);
+      
       // update global fee tracker
       if (state.liquidity > 0) {
         uint256 variableFactorWad = rateOracle.variableFactor(
           IMarginEngine(marginEngineAddress).termStartTimestampWad(),
           IMarginEngine(marginEngineAddress).termEndTimestampWad()
         );
+        
         (
           state.feeGrowthGlobalX128,
           state.variableTokenGrowthGlobalX128,
-          state.fixedTokenGrowthGlobalX128
+          state.fixedTokenGrowthGlobalX128,
+          step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
           params,
           state,
@@ -436,7 +445,12 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
           IMarginEngine(marginEngineAddress).termStartTimestampWad(),
           IMarginEngine(marginEngineAddress).termEndTimestampWad()
         );
+
+        state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
+        state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
       }
+
+      Printer.printInt256("after update state.variableTokenGrowthGlobalX128", state.variableTokenGrowthGlobalX128);
 
       // shift tick if we reached the next price
       if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
@@ -457,6 +471,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             state.liquidity,
             liquidityNet
           );
+
         }
 
         state.tick = !params.isFT ? step.tickNext - 1 : step.tickNext;
@@ -477,57 +492,25 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     // update liquidity if it changed
     if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;
+    
     feeGrowthGlobalX128 = state.feeGrowthGlobalX128;
     variableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128;
     fixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128;
+    
     _cumulativeFeeIncurred = state.cumulativeFeeIncurred;
+    _fixedTokenDelta = state.fixedTokenDeltaCumulative;
+    _variableTokenDelta = state.variableTokenDeltaCumulative;
 
     if (state.protocolFee > 0) {
       protocolFees += state.protocolFee;
     }
 
-    if (params.isFT) {
-      swapLocalVars.amount0 = uint256(-state.amountCalculated);
-      swapLocalVars.amount1 = uint256(params.amountSpecified - state.amountSpecifiedRemaining);
-    } else {
-      swapLocalVars.amount0 = uint256(state.amountCalculated);
-      swapLocalVars.amount1 = uint256(-(params.amountSpecified - state.amountSpecifiedRemaining));
-    }
-
-    /// @audit cache repeated margin engine calls to get termStart and termEnd timestamps
-    if (params.isFT) {
-      _variableTokenDelta = -int256(swapLocalVars.amount1);
-      _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-        int256(swapLocalVars.amount0),
-        -int256(swapLocalVars.amount1),
-        rateOracle.variableFactor(
-          IMarginEngine(marginEngineAddress).termStartTimestampWad(),
-          IMarginEngine(marginEngineAddress).termEndTimestampWad()
-        ),
-        IMarginEngine(marginEngineAddress).termStartTimestampWad(),
-        IMarginEngine(marginEngineAddress).termEndTimestampWad()
-      );
-    } else {
-      _variableTokenDelta = int256(swapLocalVars.amount1);
-      _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-        -int256(swapLocalVars.amount0),
-        int256(swapLocalVars.amount1),
-        rateOracle.variableFactor(
-          IMarginEngine(marginEngineAddress).termStartTimestampWad(),
-          IMarginEngine(marginEngineAddress).termEndTimestampWad()
-        ),
-        IMarginEngine(marginEngineAddress).termStartTimestampWad(),
-        IMarginEngine(marginEngineAddress).termEndTimestampWad()
-      );
-    }
-
-
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
     if (!params.isUnwind) {
       if (params.isTrader) {
-        IMarginEngine(marginEngineAddress).updateTraderPostVAMMInducedSwap(params.recipient, _fixedTokenDelta, _variableTokenDelta, state.cumulativeFeeIncurred);
+        IMarginEngine(marginEngineAddress).updateTraderPostVAMMInducedSwap(params.recipient, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred);
       } else {
-        IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, _fixedTokenDelta, _variableTokenDelta, state.cumulativeFeeIncurred, vammVars.tick);
+        IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.tick);
       }
     }
 
@@ -546,19 +529,19 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   /// @inheritdoc IVAMM
   function computeGrowthInside(
     int24 tickLower,
-    int24 tickUpper,
-    int24 currentTick
+    int24 tickUpper
   )
     external
     view
     override
     returns (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128)
   {
+
     fixedTokenGrowthInsideX128 = ticks.getFixedTokenGrowthInside(
       Tick.FixedTokenGrowthInsideParams({
         tickLower: tickLower,
         tickUpper: tickUpper,
-        tickCurrent: currentTick,
+        tickCurrent: vammVars.tick,
         fixedTokenGrowthGlobalX128: fixedTokenGrowthGlobalX128
       })
     );
@@ -567,7 +550,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       Tick.VariableTokenGrowthInsideParams({
         tickLower: tickLower,
         tickUpper: tickUpper,
-        tickCurrent: currentTick,
+        tickCurrent: vammVars.tick,
         variableTokenGrowthGlobalX128: variableTokenGrowthGlobalX128
       })
     );
@@ -575,7 +558,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     feeGrowthInsideX128 = ticks.getFeeGrowthInside(
       tickLower,
       tickUpper,
-      currentTick,
+      vammVars.tick,
       feeGrowthGlobalX128
     );  
 
@@ -630,11 +613,12 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         returns (
             uint256 stateFeeGrowthGlobalX128,
             int256 stateVariableTokenGrowthGlobalX128,
-            int256 stateFixedTokenGrowthGlobalX128
+            int256 stateFixedTokenGrowthGlobalX128,
+            int256 fixedTokenDelta// for LP
         )
     {
 
-        stateFeeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
+        stateFeeGrowthGlobalX128 = state.feeGrowthGlobalX128 + FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
         if (params.isFT) {
 
@@ -642,22 +626,22 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             /// @dev if the trader is a fixed taker then the fixed token growth global should decline (since LPs are providing fixed tokens)
             /// @dev if the trader is a fixed taker amountOut is in terms of variable tokens (it is a positive value)
             
-            stateVariableTokenGrowthGlobalX128 += int256(FullMath.mulDiv(step.amountOut, FixedPoint128.Q128, state.liquidity));
+            stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
 
             /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
             /// @dev in this case amountIn is in terms of unbalanced fixed tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of variable tokens, hence the value passed needs to be positive --> int256(step.amountOut)
 
             // this value is negative
-            int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-              -int256(step.amountIn),
-              int256(step.amountOut),
+            fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+              step.fixedTokenDeltaUnbalanced,
+              step.variableTokenDelta,
               variableFactorWad,
               termStartTimestampWad,
               termEndTimestampWad
-            ); 
+            );
 
-            stateFixedTokenGrowthGlobalX128 -= int256(FullMath.mulDiv(uint256(-fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
+            stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
 
         } else {
 
@@ -665,22 +649,23 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             /// @dev if a trader is a variable taker, the fixed token growth should increase (since the LPs are receiving fixed tokens)
             /// @dev if a trader is a variable taker amountIn is in terms of variable tokens
           
-            stateVariableTokenGrowthGlobalX128 -= int256(FullMath.mulDiv(step.amountIn, FixedPoint128.Q128, state.liquidity));
-
+            
+            stateVariableTokenGrowthGlobalX128= state.variableTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
+            
             /// @dev fixed token delta should be positive (for LPs)
             /// @dev in this case amountIn is in terms of variable tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of fixedToken, hence the value passed needs to be positive --> int256(step.amountOut),
 
             // this value is positive
-            int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-              int256(step.amountOut),
-              -int256(step.amountIn),
+            fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+              step.fixedTokenDeltaUnbalanced,
+              step.variableTokenDelta,
               variableFactorWad,
               termStartTimestampWad,
               termEndTimestampWad
             );
 
-            stateFixedTokenGrowthGlobalX128 += int256(FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
+            stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
 
         }
     }
