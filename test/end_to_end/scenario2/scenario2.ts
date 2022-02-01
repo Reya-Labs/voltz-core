@@ -280,7 +280,7 @@ describe("VAMM", () => {
     async function updateAPYbounds() {
       const currentTimestamp: number = await getCurrentTimestamp(provider);
       const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
-      historicalApyWad = await marginEngineTest.getHistoricalApy();
+      historicalApyWad = await marginEngineTest.getHistoricalApyReadOnly();
 
       const upperApyBound = await testMarginCalculator.computeApyBound(
         termEndTimestampBN,
@@ -393,7 +393,7 @@ describe("VAMM", () => {
       }
     }
 
-    it("full scenario 2", async () => {
+    it.skip("full scenario 2", async () => {
       const positions: [Wallet, number, number][] = [];
       const traders = TWallets;
 
@@ -422,7 +422,7 @@ describe("VAMM", () => {
       }
 
       // each LP deposits 1,010 liquidity 100 times
-      await rateOracleTest.testGrow(1000);
+      await rateOracleTest.increaseObservarionCardinalityNext(1000);
 
       for (let i = 0; i < 100; i++) {
         console.log(i);
@@ -470,7 +470,7 @@ describe("VAMM", () => {
       }
 
       // each Trader trades 3 variable tokens 100 times
-      await rateOracleTest.testGrow(2000);
+      await rateOracleTest.increaseObservarionCardinalityNext(2000);
 
       for (let i = 0; i < 100; i++) {
         console.log(i);

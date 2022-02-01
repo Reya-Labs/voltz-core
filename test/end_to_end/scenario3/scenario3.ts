@@ -291,7 +291,7 @@ describe("VAMM", () => {
     async function updateAPYbounds() {
       const currentTimestamp: number = await getCurrentTimestamp(provider);
       const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
-      historicalApyWad = await marginEngineTest.getHistoricalApy();
+      historicalApyWad = await marginEngineTest.getHistoricalApyReadOnly();
 
       const upperApyBound = await testMarginCalculator.computeApyBound(
         termEndTimestampBN,
@@ -551,7 +551,8 @@ describe("VAMM", () => {
 
         await rateOracleTest.writeOracleEntry();
 
-        const historicalApyWad = await marginEngineTest.getHistoricalApy();
+        const historicalApyWad =
+          await marginEngineTest.getHistoricalApyReadOnly();
 
         console.log("Historical APY", utils.formatEther(historicalApyWad));
       }

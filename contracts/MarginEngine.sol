@@ -51,6 +51,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @inheritdoc IMarginEngine
     uint256 public override secondsAgo;
 
+    uint256 private cachedHistoricalApy;
+    uint256 private cachedHistoricalApyRefreshTimestamp;
+
+    uint256 public cacheMaxAgeInSeconds;
+
     address private deployer;
 
     bool public isInsuranceDepleted;
@@ -141,8 +146,17 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         onlyOwner
     {
         secondsAgo = _secondsAgo;
+        emit HistoricalApyWindowSet(_secondsAgo);
+    }
 
-        // @audit emit seconds ago set
+    /// @notice Sets the maximum age that the cached historical APY value
+    /// @param _cacheMaxAgeInSeconds The new maximum age that the historical APY cache can be before being considered stale
+    function setCacheMaxAgeInSeconds(uint256 _cacheMaxAgeInSeconds)
+        external
+        onlyOwner
+    {
+        cacheMaxAgeInSeconds = _cacheMaxAgeInSeconds;
+        emit CacheMaxAgeSet(_cacheMaxAgeInSeconds);
     }
 
     function setIsInsuranceDepleted(bool _isInsuranceDepleted) external override onlyOwner {
@@ -310,14 +324,48 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev The lookback window used by this function is determined by the secondsAgo state variable    
     function getHistoricalApy()
         public
+        returns (uint256)
+    {
+        if (cachedHistoricalApyRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
+            // Cache is stale
+            _refreshHistoricalApyCache();
+        }
+        return cachedHistoricalApy;
+    }
+
+    /// @notice Computes the historical APY value of the RateOracle 
+    /// @dev The lookback window used by this function is determined by the secondsAgo state variable    
+    function getHistoricalApyReadOnly()
+        public
         view
-        virtual // virtual because overridden by tests // @audit should virtual be removed?
-        returns (uint256 historicalApy)
+        returns (uint256)
+    {
+        if (cachedHistoricalApyRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
+            // Cache is stale
+            return _getHistoricalApy();
+        }
+        return cachedHistoricalApy;
+    }
+
+    /// @notice Computes the historical APY value of the RateOracle 
+    /// @dev The lookback window used by this function is determined by the secondsAgo state variable    
+    function _getHistoricalApy()
+        internal 
+        view
+        returns (uint256)
     {
         uint256 to = block.timestamp;
         uint256 from = to - secondsAgo;
 
         return IRateOracle(rateOracleAddress).getApyFromTo(from, to);
+    }
+
+    /// @notice Updates the cached historical APY value of the RateOracle even if the cache is not stale 
+    function _refreshHistoricalApyCache()
+        internal
+    {
+        cachedHistoricalApy = _getHistoricalApy();
+        cachedHistoricalApyRefreshTimestamp = block.timestamp;
     }
     
     
@@ -589,9 +637,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         (, int24 tick, ) = IVAMM(vammAddress).vammVars();
 
-        console.log("updatedMarginWouldBe", uint256(updatedMarginWouldBe));
-        console.log("position liquidity", positionLiquidity);
-        console.log("historical apy", getHistoricalApy());
+        Printer.printInt256("updated margin would be", updatedMarginWouldBe);
+        Printer.printUint256("position liquidity", positionLiquidity);
+        Printer.printUint256("historical apy", getHistoricalApyReadOnly());
+        Printer.printEmptyLine();
 
         MarginCalculator.PositionMarginRequirementParams
             memory marginReqParams = MarginCalculator
@@ -607,7 +656,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     fixedTokenBalance: positionFixedTokenBalance,
                     variableTokenBalance: positionVariableTokenBalance,
                     variableFactorWad: variableFactorWad,
-                    historicalApyWad: getHistoricalApy()
+                    historicalApyWad: getHistoricalApyReadOnly()
                 });
 
         int256 positionMarginRequirement = int256(
@@ -717,7 +766,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     termStartTimestampWad: termStartTimestampWad,
                     termEndTimestampWad: termEndTimestampWad,
                     isLM: false,
-                    historicalApyWad: getHistoricalApy()
+                    historicalApyWad: getHistoricalApyReadOnly()
                 }), marginCalculatorParameters
             )
         );

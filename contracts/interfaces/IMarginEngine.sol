@@ -28,6 +28,10 @@ interface IMarginEngine is IPositionStructs {
         int256 tMaxWad;
     }
 
+    // Events
+    event HistoricalApyWindowSet(uint256 secondsAgo);
+    event CacheMaxAgeSet(uint256 cacheMaxAgeInSeconds);
+
     // immutables
 
     function fcm() external view returns (address);

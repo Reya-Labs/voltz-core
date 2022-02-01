@@ -40,7 +40,7 @@ const { provider } = waffle;
 
 const AGRESSIVE_SIGMA_SQUARED: BigNumber = toBn("0.15");
 
-describe("VAMM", () => {
+describe("VAMM - allAtOnce", () => {
   let owner: Wallet;
   const LPWallets: Wallet[] = [];
   const TWallets: Wallet[] = [];
@@ -269,7 +269,7 @@ describe("VAMM", () => {
     async function updateAPYbounds() {
       const currentTimestamp: number = await getCurrentTimestamp(provider);
       const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
-      historicalApyWad = await marginEngineTest.getHistoricalApy();
+      historicalApyWad = await marginEngineTest.getHistoricalApyReadOnly();
 
       const upperApyBound = await testMarginCalculator.computeApyBound(
         termEndTimestampBN,
