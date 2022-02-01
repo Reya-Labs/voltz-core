@@ -588,10 +588,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         (, int24 tick, ) = IVAMM(vammAddress).vammVars();
 
-        console.log("updatedMarginWouldBe", uint256(updatedMarginWouldBe));
-        console.log("position liquidity", positionLiquidity);
-        console.log("historical apy", getHistoricalApy());
-
         MarginCalculator.PositionMarginRequirementParams
             memory marginReqParams = MarginCalculator
                 .PositionMarginRequirementParams({
