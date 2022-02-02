@@ -24,6 +24,10 @@ contract TestVAMM is VAMM {
         protocolFees = _protocolFees;
     }
 
+    function getProtocolFees() external view returns (uint256) {
+        return protocolFees;
+    }
+
     function setVariableTokenGrowthGlobal(int256 _variableTokenGrowthGlobalX128)
         external
     {

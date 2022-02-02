@@ -58,6 +58,8 @@ describe("VAMM", () => {
   let testMarginCalculator: MarginCalculatorTest;
   let testFixedAndVariableMath: FixedAndVariableMathTest;
 
+  let marginCalculatorParams: any;
+
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
   before("create fixture loader", async () => {
@@ -124,7 +126,7 @@ describe("VAMM", () => {
     // update marginEngineTest allowance
     await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
 
-    const marginCalculatorParams = {
+    marginCalculatorParams = {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
       sigmaSquaredWad: AGRESSIVE_SIGMA_SQUARED,
@@ -161,9 +163,41 @@ describe("VAMM", () => {
   });
 
   describe("#Scenario1", () => {
-    let variableFactorWad: BigNumber;
+    let variableFactorWad: BigNumber = toBn("0");
+    let historicalApyWad: BigNumber = toBn("0");
+    let lowerApyBound: BigNumber = toBn("0");
+    let upperApyBound: BigNumber = toBn("0");
+    let accumulatedMargin: BigNumber = toBn("0");
+    let currentTick: number = 0;
 
-    async function printPositionInfo(positionInfo: any) {
+    async function updatePositionMargin(
+      position: [Wallet, number, number],
+      liquidityDeltaBn: BigNumber,
+      marginBn: BigNumber
+    ) {
+      await marginEngineTest.updatePositionMargin(
+        {
+          owner: position[0].address,
+          tickLower: position[1],
+          tickUpper: position[2],
+          liquidityDelta: liquidityDeltaBn,
+        },
+        marginBn
+      );
+
+      accumulatedMargin = accumulatedMargin.add(marginBn);
+    }
+
+    async function updateTraderMargin(trader: Wallet, marginBn: BigNumber) {
+      await marginEngineTest.updateTraderMargin(trader.address, marginBn);
+
+      accumulatedMargin = accumulatedMargin.add(marginBn);
+    }
+
+    async function printPositionInfo(
+      positionInfo: any,
+      accumulator: { value: BigNumber }
+    ) {
       console.log(
         "                        liquidity: ",
         utils.formatEther(positionInfo[0])
@@ -200,6 +234,8 @@ describe("VAMM", () => {
         positionInfo[7].toString()
       );
 
+      accumulator.value = accumulator.value.add(positionInfo[1]);
+
       const settlementCashflow =
         await testFixedAndVariableMath.calculateSettlementCashflow(
           positionInfo[4],
@@ -208,6 +244,14 @@ describe("VAMM", () => {
           termEndTimestampBN,
           variableFactorWad
         );
+
+      accumulator.value = accumulator.value.add(settlementCashflow);
+
+      expect(
+        positionInfo[1].add(settlementCashflow),
+        "margin + settlement cashflow should be > 0"
+      ).to.be.gte(toBn("0"));
+
       console.log(
         "             settlement cashflow: ",
         utils.formatEther(settlementCashflow)
@@ -216,11 +260,16 @@ describe("VAMM", () => {
       console.log("");
     }
 
-    async function printTraderInfo(traderInfo: any) {
+    async function printTraderInfo(
+      traderInfo: any,
+      accumulator: { value: BigNumber }
+    ) {
       console.log("              margin: ", utils.formatEther(traderInfo[0]));
       console.log("   fixedTokenBalance: ", utils.formatEther(traderInfo[1]));
       console.log("variableTokenBalance: ", utils.formatEther(traderInfo[2]));
       console.log("           isSettled: ", traderInfo[3].toString());
+
+      accumulator.value = accumulator.value.add(traderInfo[0]);
 
       const settlementCashflow =
         await testFixedAndVariableMath.calculateSettlementCashflow(
@@ -230,6 +279,13 @@ describe("VAMM", () => {
           termEndTimestampBN,
           variableFactorWad
         );
+      accumulator.value = accumulator.value.add(settlementCashflow);
+
+      expect(
+        traderInfo[0].add(settlementCashflow),
+        "margin + settlement cashflow should be > 0"
+      ).to.be.gte(toBn("0"));
+
       console.log(
         "settlement cashflow: ",
         utils.formatEther(settlementCashflow)
@@ -243,6 +299,8 @@ describe("VAMM", () => {
       traders: Wallet[],
       positions_to_update: number[]
     ) {
+      const accumulator = { value: toBn("0") };
+
       for (let i = 0; i < positions.length; i++) {
         if (positions_to_update.includes(i)) {
           await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
@@ -261,14 +319,24 @@ describe("VAMM", () => {
           positions[i][2]
         );
 
-        await printPositionInfo(positionInfo);
+        await printPositionInfo(positionInfo, accumulator);
       }
 
       for (let i = 0; i < traders.length; i++) {
         console.log("TRADER: ", i + 1);
         const traderInfo = await marginEngineTest.traders(traders[i].address);
-        await printTraderInfo(traderInfo);
+        await printTraderInfo(traderInfo, accumulator);
       }
+
+      expect(
+        accumulator.value,
+        "initial margin should be preserved"
+      ).to.be.near(accumulatedMargin);
+      console.log(
+        "ACCUMULATED SETTLEMENT CASHFLOW AND MARGIN:",
+        utils.formatEther(accumulator.value)
+      );
+      console.log("");
     }
 
     async function printReserveNormalizedIncome() {
@@ -281,34 +349,19 @@ describe("VAMM", () => {
       console.log("");
     }
 
-    async function printAPYboundsAndPositionMargin(
-      position: [Wallet, number, number],
-      liquidity: BigNumber
-    ) {
-      const marginCalculatorParams = {
-        apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
-        apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
-        sigmaSquaredWad: AGRESSIVE_SIGMA_SQUARED,
-        alphaWad: ALPHA,
-        betaWad: BETA,
-        xiUpperWad: XI_UPPER,
-        xiLowerWad: XI_LOWER,
-        tMaxWad: T_MAX,
-      };
-
+    async function updateAPYbounds() {
       const currentTimestamp: number = await getCurrentTimestamp(provider);
       const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
-      const historicalApyWad: BigNumber =
-        await marginEngineTest.getHistoricalApy();
+      historicalApyWad = await marginEngineTest.getHistoricalApy();
 
-      const upperApyBound = await testMarginCalculator.computeApyBound(
+      upperApyBound = await testMarginCalculator.computeApyBound(
         termEndTimestampBN,
         currrentTimestampWad,
         historicalApyWad,
         true,
         marginCalculatorParams
       );
-      const lowerApyBound = await testMarginCalculator.computeApyBound(
+      lowerApyBound = await testMarginCalculator.computeApyBound(
         termEndTimestampBN,
         currrentTimestampWad,
         historicalApyWad,
@@ -327,8 +380,15 @@ describe("VAMM", () => {
       console.log("variable factor:", utils.formatEther(variableFactorWad)); // displayed as zero, investigate
       console.log("");
 
-      const currentTick = await vammTest.getCurrentTick();
+      currentTick = await vammTest.getCurrentTick();
       console.log("current tick: ", currentTick);
+    }
+
+    async function printAPYboundsAndPositionMargin(
+      position: [Wallet, number, number],
+      liquidity: BigNumber
+    ) {
+      await updateAPYbounds();
 
       const position_margin_requirement_params = {
         owner: position[0].address,
@@ -393,6 +453,30 @@ describe("VAMM", () => {
       console.log("           AMOUNT 1: ", BigNumber.from(amount1.toString()));
     }
 
+    // reserveNormalizedIncome format: x.yyyy
+    async function advanceAndUpdateApy(
+      time: BigNumber,
+      blockCount: number,
+      reserveNormalizedIncome: number
+    ) {
+      await advanceTimeAndBlock(time, blockCount);
+
+      console.log(
+        "reserveNormalizedIncome in 1e27",
+        reserveNormalizedIncome.toString().replace(".", "") + "0".repeat(23)
+      );
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        Math.floor(reserveNormalizedIncome * 10000).toString() + "0".repeat(23)
+      );
+
+      await rateOracleTest.writeOracleEntry();
+
+      await printReserveNormalizedIncome();
+
+      await updateAPYbounds();
+    }
+
     async function settlePositionsAndTraders(
       positions: [Wallet, number, number][],
       traders: Wallet[]
@@ -433,15 +517,7 @@ describe("VAMM", () => {
       // Should trigger a write to the rate oracle
 
       /// todo: connect the positon address
-      await marginEngineTest.updatePositionMargin(
-        {
-          owner: positions[0][0].address,
-          tickLower: positions[0][1],
-          tickUpper: positions[0][2],
-          liquidityDelta: 0,
-        },
-        toBn("180")
-      );
+      await updatePositionMargin(positions[0], toBn("0"), toBn("180"));
 
       await expect(
         vammTest
@@ -454,15 +530,7 @@ describe("VAMM", () => {
           )
       ).to.be.reverted;
 
-      await marginEngineTest.updatePositionMargin(
-        {
-          owner: positions[0][0].address,
-          tickLower: positions[0][1],
-          tickUpper: positions[0][2],
-          liquidityDelta: 0,
-        },
-        toBn("30")
-      );
+      await updatePositionMargin(positions[0], toBn("0"), toBn("30"));
 
       await vammTest
         .connect(positions[0][0])
@@ -475,21 +543,11 @@ describe("VAMM", () => {
 
       // two days pass and set reserve normalised income
 
-      await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1); // advance 2 days
-
-      await aaveLendingPool.setReserveNormalizedIncome(
-        token.address,
-        "1008100000000000000000000000" // 10^27 * 1.0081
-      );
-
-      await rateOracleTest.writeOracleEntry();
+      await advanceAndUpdateApy(consts.ONE_DAY.mul(2), 1, 1.0081);
 
       // Trader 1 engages in  a swap that (almost) consumes all of the liquidity of LP 1
 
-      await marginEngineTest.updateTraderMargin(
-        traders[0].address,
-        toBn("1000")
-      );
+      await updateTraderMargin(traders[0], toBn("1000"));
 
       console.log(
         "----------------------------BEFORE FIRST SWAP----------------------------"
@@ -520,16 +578,7 @@ describe("VAMM", () => {
 
       // one week passes
 
-      await advanceTimeAndBlock(consts.ONE_WEEK, 2); // advance one week
-
-      await aaveLendingPool.setReserveNormalizedIncome(
-        token.address,
-        "1010000000000000000000000000" // 10^27 * 1.010
-      );
-
-      await rateOracleTest.writeOracleEntry();
-
-      await printReserveNormalizedIncome();
+      await advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.01); // advance one week
 
       // check apy bounds
 
@@ -538,15 +587,7 @@ describe("VAMM", () => {
       // LP 2 deposits margin and mints liquidity
       // Should trigger a write to the rate oracle
 
-      await marginEngineTest.updatePositionMargin(
-        {
-          owner: positions[1][0].address,
-          tickLower: positions[1][1],
-          tickUpper: positions[1][2],
-          liquidityDelta: 0,
-        },
-        toBn("2000")
-      );
+      await updatePositionMargin(positions[1], toBn("0"), toBn("2000"));
 
       await vammTest
         .connect(positions[1][0])
@@ -559,21 +600,11 @@ describe("VAMM", () => {
 
       // a week passes
 
-      await advanceTimeAndBlock(consts.ONE_WEEK, 2); // advance one week
-
-      await aaveLendingPool.setReserveNormalizedIncome(
-        token.address,
-        "1012500000000000000000000000" // 10^27 * 1.0125
-      );
-
-      await rateOracleTest.writeOracleEntry();
+      await advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125); // advance one week
 
       // Trader 2 engages in a swap and consumes some liquidity of LP 2
 
-      await marginEngineTest.updateTraderMargin(
-        traders[1].address,
-        toBn("1000")
-      );
+      await updateTraderMargin(traders[1], toBn("1000"));
 
       console.log(
         "----------------------------BEFORE SECOND SWAP----------------------------"
@@ -622,14 +653,7 @@ describe("VAMM", () => {
 
       // two weeks pass
 
-      await advanceTimeAndBlock(consts.ONE_WEEK.mul(2), 2); // advance two weeks
-
-      await aaveLendingPool.setReserveNormalizedIncome(
-        token.address,
-        "1013000000000000000000000000" // 10^27 * 1.0130
-      );
-
-      await rateOracleTest.writeOracleEntry();
+      await advanceAndUpdateApy(consts.ONE_WEEK.mul(2), 2, 1.013);
 
       // LP 1 burns all of their liquidity, no trader can engage in swaps with this LP anymore
 
@@ -642,14 +666,7 @@ describe("VAMM", () => {
           toBn("1000000")
         );
 
-      await advanceTimeAndBlock(consts.ONE_WEEK.mul(8), 4); // advance eight weeks (4 days before maturity)
-
-      await aaveLendingPool.setReserveNormalizedIncome(
-        token.address,
-        "1013200000000000000000000000" // 10^27 * 1.0132
-      );
-
-      await rateOracleTest.writeOracleEntry();
+      await advanceAndUpdateApy(consts.ONE_WEEK.mul(8), 4, 1.0132); // advance eight weeks (4 days before maturity)
 
       await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
 

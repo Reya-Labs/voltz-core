@@ -36,7 +36,6 @@ import {
 import { consts } from "../../helpers/constants";
 import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
-import { ONE_DAY_IN_SECONDS } from "../../shared/constants";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -155,32 +154,21 @@ describe("VAMM", () => {
     await vammTest.setTickSpacing(TICK_SPACING);
 
     // set the fees differently in scenario 2
-    await vammTest.setFeeProtocol(0);
-    await vammTest.setFee(0);
+    await vammTest.setFeeProtocol(2); // half of the fees go towards the protocol
+    await vammTest.setFee(toBn("0.5"));
 
     ({ testFixedAndVariableMath } = await loadFixture(
       fixedAndVariableMathFixture
     ));
   });
 
-  describe("#Scenario3", () => {
+  describe("#Scenario4", () => {
     let variableFactorWad: BigNumber = toBn("0");
     let historicalApyWad: BigNumber = toBn("0");
     let lowerApyBound: BigNumber = toBn("0");
     let upperApyBound: BigNumber = toBn("0");
     let accumulatedMargin: BigNumber = toBn("0");
     let currentTick: number = 0;
-
-    const os = require("os");
-    const fs = require("fs");
-
-    function appendNewLine(path: string, text: string) {
-      fs.open(path, "a", 666, function (_: any, id: any) {
-        fs.write(id, text + os.EOL, null, "utf8", function () {
-          fs.close(id, function () {});
-        });
-      });
-    }
 
     async function updatePositionMargin(
       position: [Wallet, number, number],
@@ -340,13 +328,9 @@ describe("VAMM", () => {
         await printTraderInfo(traderInfo, accumulator);
       }
 
-      console.log(
-        utils.formatEther(accumulator.value),
-        utils.formatEther(accumulatedMargin)
-      );
-
+      const protocolFees = await vammTest.getProtocolFees();
       expect(
-        accumulator.value,
+        accumulator.value.add(protocolFees),
         "initial margin should be preserved"
       ).to.be.near(accumulatedMargin);
       console.log(
@@ -399,78 +383,39 @@ describe("VAMM", () => {
 
       currentTick = await vammTest.getCurrentTick();
       console.log("current tick: ", currentTick);
-
-      appendNewLine(
-        "test/end_to_end/scenario3/apybounds.txt",
-        currrentTimestampWad.sub(termStartTimestampBN).div(ONE_DAY_IN_SECONDS) +
-          " " +
-          utils.formatEther(lowerApyBound) +
-          " " +
-          utils.formatEther(historicalApyWad) +
-          " " +
-          utils.formatEther(upperApyBound)
-      );
     }
 
-    // async function printAPYboundsAndPositionMargin(
-    //   position: [Wallet, number, number],
-    //   liquidity: BigNumber
-    // ) {
-    //   await updateAPYbounds();
-
-    //   const position_margin_requirement_params = {
-    //     owner: position[0].address,
-    //     tickLower: position[1],
-    //     tickUpper: position[2],
-    //     isLM: false,
-    //     currentTick: currentTick,
-    //     termStartTimestampWad: termStartTimestampBN,
-    //     termEndTimestampWad: termEndTimestampBN,
-    //     liquidity: liquidity,
-    //     fixedTokenBalance: toBn("0"),
-    //     variableTokenBalance: toBn("0"),
-    //     variableFactorWad: variableFactorWad,
-    //     historicalApyWad: historicalApyWad,
-    //   };
-
-    //   const postitionMarginrRequirement =
-    //     await testMarginCalculator.getPositionMarginRequirementTest(
-    //       position_margin_requirement_params,
-    //       marginCalculatorParams
-    //     );
-
-    //   console.log(
-    //     "position margin requirement: ",
-    //     utils.formatEther(postitionMarginrRequirement)
-    //   );
-    //   console.log("");
-    // }
-
-    async function printAPYboundsAndTraderMargin(trader: Wallet) {
+    async function printAPYboundsAndPositionMargin(
+      position: [Wallet, number, number],
+      liquidity: BigNumber
+    ) {
       await updateAPYbounds();
 
-      const traderInfo = await marginEngineTest.traders(trader.address);
-
-      const trader_margin_requirement_params = {
-        fixedTokenBalance: traderInfo.fixedTokenBalance,
-        variableTokenBalance: traderInfo.variableTokenBalance,
+      const position_margin_requirement_params = {
+        owner: position[0].address,
+        tickLower: position[1],
+        tickUpper: position[2],
+        isLM: false,
+        currentTick: currentTick,
         termStartTimestampWad: termStartTimestampBN,
         termEndTimestampWad: termEndTimestampBN,
-        isLM: false,
+        liquidity: liquidity,
+        fixedTokenBalance: toBn("0"),
+        variableTokenBalance: toBn("0"),
+        variableFactorWad: variableFactorWad,
         historicalApyWad: historicalApyWad,
       };
 
-      const traderMarginrRequirement =
-        await testMarginCalculator.getTraderMarginRequirement(
-          trader_margin_requirement_params,
+      const postitionMarginrRequirement =
+        await testMarginCalculator.getPositionMarginRequirementTest(
+          position_margin_requirement_params,
           marginCalculatorParams
         );
 
       console.log(
-        "trader margin requirement: ",
-        utils.formatEther(traderMarginrRequirement)
+        "position margin requirement: ",
+        utils.formatEther(postitionMarginrRequirement)
       );
-
       console.log("");
     }
 
@@ -551,41 +496,72 @@ describe("VAMM", () => {
       }
     }
 
-    it("full scenario 3", async () => {
-      const positions: [Wallet, number, number][] = [];
-      const traders = TWallets;
+    it("full scenario 4", async () => {
+      const positions: [Wallet, number, number][] = [
+        [LPWallets[0], -TICK_SPACING, TICK_SPACING],
+        [LPWallets[1], -3 * TICK_SPACING, -TICK_SPACING],
+      ];
 
-      for (let i = 0; i < LPWallets.length; i++) {
-        positions.push([
-          LPWallets[i],
-          -TICK_SPACING * 300,
-          -TICK_SPACING * 299,
-        ]); // 6% implied fixed rate
-      }
-      console.log("length of positions:", positions.length);
+      const traders = TWallets;
 
       console.log(
         "----------------------------START----------------------------"
       );
 
-      await updatePositionMargin(positions[0], toBn("0"), toBn("21000"));
+      await printReserveNormalizedIncome();
 
-      await printAmounts(positions[0][1], positions[0][2], toBn("1000000"));
+      // check apy bounds
+
+      printAPYboundsAndPositionMargin(positions[0], toBn("1000000"));
+
+      // LP 1 deposits margin and mints liquidity right after the pool initialisation
+      // Should trigger a write to the rate oracle
+
+      /// todo: connect the positon address
+      await updatePositionMargin(positions[0], toBn("0"), toBn("180"));
+
+      await expect(
+        vammTest
+          .connect(positions[0][0])
+          .mint(
+            positions[0][0].address,
+            positions[0][1],
+            positions[0][2],
+            toBn("1000000")
+          )
+      ).to.be.reverted;
+
+      await updatePositionMargin(positions[0], toBn("0"), toBn("30"));
+
       await vammTest
         .connect(positions[0][0])
         .mint(
           positions[0][0].address,
           positions[0][1],
           positions[0][2],
-          toBn("100000000")
+          toBn("1000000")
         );
 
+      // two days pass and set reserve normalised income
+
+      await advanceAndUpdateApy(consts.ONE_DAY.mul(2), 1, 1.0081);
+
+      // Trader 1 engages in  a swap that (almost) consumes all of the liquidity of LP 1
+
       await updateTraderMargin(traders[0], toBn("1000"));
+
+      console.log(
+        "----------------------------BEFORE FIRST SWAP----------------------------"
+      );
+      await printPositionsAndTradersInfo(positions, traders, []);
+
+      // price is at tick 0, so we need to see the amount below
+      await printAmounts(-TICK_SPACING, 0, toBn("1000000"));
 
       await vammTest.connect(traders[0]).swap({
         recipient: traders[0].address,
         isFT: false,
-        amountSpecified: toBn("-2000"),
+        amountSpecified: toBn("-2995"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
         isUnwind: false,
         isTrader: true,
@@ -593,12 +569,76 @@ describe("VAMM", () => {
         tickUpper: 0,
       });
 
+      console.log(
+        "----------------------------AFTER FIRST SWAP----------------------------"
+      );
+      await printPositionsAndTradersInfo(positions, traders, [0]);
+
+      const currentTickAfterFirstSwap = await vammTest.getCurrentTick();
+      console.log("current tick: ", currentTickAfterFirstSwap);
+
+      // one week passes
+
+      await advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.01); // advance one week
+
+      // check apy bounds
+
+      await printAPYboundsAndPositionMargin(positions[1], toBn("5000000"));
+
+      // LP 2 deposits margin and mints liquidity
+      // Should trigger a write to the rate oracle
+
+      await updatePositionMargin(positions[1], toBn("0"), toBn("2000"));
+
+      await vammTest
+        .connect(positions[1][0])
+        .mint(
+          positions[1][0].address,
+          positions[1][1],
+          positions[1][2],
+          toBn("5000000")
+        );
+
+      console.log("here?");
+
+      // a week passes
+
+      await advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125); // advance one week
+
+      // Trader 2 engages in a swap and consumes some liquidity of LP 2
+
       await updateTraderMargin(traders[1], toBn("1000"));
+
+      console.log(
+        "----------------------------BEFORE SECOND SWAP----------------------------"
+      );
+      await printPositionsAndTradersInfo(positions, traders, []);
 
       await vammTest.connect(traders[1]).swap({
         recipient: traders[1].address,
+        isFT: false,
+        amountSpecified: toBn("-15000"),
+        sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+        isUnwind: false,
+        isTrader: true,
+        tickLower: 0,
+        tickUpper: 0,
+      });
+
+      console.log(
+        "----------------------------AFTER SECOND SWAP----------------------------"
+      );
+      await printPositionsAndTradersInfo(positions, traders, [0, 1]);
+
+      const currentTickAfterSecondsSwap = await vammTest.getCurrentTick();
+      console.log("current tick: ", currentTickAfterSecondsSwap);
+
+      // Trader 1 engages in a reverse swap
+
+      await vammTest.connect(traders[0]).swap({
+        recipient: traders[0].address,
         isFT: true,
-        amountSpecified: toBn("2000"),
+        amountSpecified: toBn("10000"),
         sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
         isUnwind: false,
         isTrader: true,
@@ -606,21 +646,32 @@ describe("VAMM", () => {
         tickUpper: 0,
       });
 
-      for (let i = 0; i < 89; i++) {
-        await printAPYboundsAndTraderMargin(traders[0]);
-        await printAPYboundsAndTraderMargin(traders[1]);
-
-        await advanceAndUpdateApy(consts.ONE_DAY.mul(1), 1, 1.001 + i * 0.0001);
-      }
-
-      await updateAPYbounds();
-
       console.log(
-        "----------------------------BEFORE SETTLEMENT----------------------------"
+        "----------------------------AFTER THIRD (REVERSE) SWAP----------------------------"
       );
       await printPositionsAndTradersInfo(positions, traders, [0, 1]);
 
-      await advanceTimeAndBlock(consts.ONE_DAY.mul(40), 1);
+      const currentTick = await vammTest.getCurrentTick();
+      console.log("current tick: ", currentTick);
+
+      // two weeks pass
+
+      await advanceAndUpdateApy(consts.ONE_WEEK.mul(2), 2, 1.013);
+
+      // LP 1 burns all of their liquidity, no trader can engage in swaps with this LP anymore
+
+      await vammTest
+        .connect(positions[0][0])
+        .burn(
+          positions[0][0].address,
+          positions[0][1],
+          positions[0][2],
+          toBn("1000000")
+        );
+
+      await advanceAndUpdateApy(consts.ONE_WEEK.mul(8), 4, 1.0132); // advance eight weeks (4 days before maturity)
+
+      await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
 
       // settle positions and traders
       await settlePositionsAndTraders(positions, traders);
