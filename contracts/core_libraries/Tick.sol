@@ -66,11 +66,11 @@ library Tick {
                 feeGrowthGlobalX128 -
                 upper.feeGrowthOutsideX128;
         }
-
-        feeGrowthInsideX128 =
-            feeGrowthGlobalX128 -
-            feeGrowthBelowX128 -
-            feeGrowthAboveX128;
+        
+        unchecked {
+            feeGrowthInsideX128 = feeGrowthGlobalX128 - (feeGrowthBelowX128 + feeGrowthAboveX128);
+        }
+    
     }
 
     struct VariableTokenGrowthInsideParams {
@@ -87,29 +87,12 @@ library Tick {
         Info storage lower = self[params.tickLower];
         Info storage upper = self[params.tickUpper];
 
-        Printer.printInt24("tick lower", params.tickLower);
-        Printer.printInt24("tick upper", params.tickUpper);
-
         // calculate the VariableTokenGrowth below
         int256 variableTokenGrowthBelowX128;
 
         if (params.tickCurrent >= params.tickLower) {
             variableTokenGrowthBelowX128 = lower.variableTokenGrowthOutsideX128;
         } else {
-            Printer.printInt256(
-                "variableTokenGrowthGlobalX128",
-                params.variableTokenGrowthGlobalX128
-            );
-            Printer.printInt256(
-                "lower.variableTokenGrowthOutsideX128",
-                lower.variableTokenGrowthOutsideX128
-            );
-            Printer.printInt256(
-                "variableTokenGrowthBelowX128",
-                params.variableTokenGrowthGlobalX128 -
-                    lower.variableTokenGrowthOutsideX128
-            );
-
             variableTokenGrowthBelowX128 =
                 params.variableTokenGrowthGlobalX128 -
                 lower.variableTokenGrowthOutsideX128;
@@ -126,19 +109,10 @@ library Tick {
                 upper.variableTokenGrowthOutsideX128;
         }
 
-        Printer.printInt256(
-            "variableTokenGrowthAboveX128",
-            variableTokenGrowthAboveX128
-        );
-
+        // todo: do we need an unchecked block in here (given we are dealing with an int256)?
         variableTokenGrowthInsideX128 =
             params.variableTokenGrowthGlobalX128 -
             (variableTokenGrowthBelowX128 + variableTokenGrowthAboveX128);
-
-        Printer.printInt256(
-            "variableTokenGrowthInsideX128",
-            variableTokenGrowthInsideX128
-        );
     }
 
     struct FixedTokenGrowthInsideParams {
@@ -176,7 +150,8 @@ library Tick {
                 params.fixedTokenGrowthGlobalX128 -
                 upper.fixedTokenGrowthOutsideX128;
         }
-
+        
+        // todo: do we need an unchecked block in here (given we are dealing with an int256)?
         fixedTokenGrowthInsideX128 =
             params.fixedTokenGrowthGlobalX128 -
             (fixedTokenGrowthBelowX128 + fixedTokenGrowthAboveX128);
@@ -201,7 +176,6 @@ library Tick {
         bool upper,
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
-        // update is no longer internal
 
         Tick.Info storage info = self[tick];
 
@@ -219,6 +193,9 @@ library Tick {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tick <= tickCurrent) {
                 info.feeGrowthOutsideX128 = feeGrowthGlobalX128;
+                
+                Printer.printInt24("tick", tick);
+                Printer.printUint256("info.feeGrowthOutsideX128 updated", info.feeGrowthOutsideX128);
 
                 info.fixedTokenGrowthOutsideX128 = fixedTokenGrowthGlobalX128;
 
@@ -269,16 +246,6 @@ library Tick {
         info.fixedTokenGrowthOutsideX128 =
             fixedTokenGrowthGlobalX128 -
             info.fixedTokenGrowthOutsideX128;
-
-        Printer.printInt24("tick crossed", tick);
-        Printer.printInt256(
-            "variableTokenGrowthGlobalX128",
-            variableTokenGrowthGlobalX128
-        );
-        Printer.printInt256(
-            "info.variableTokenGrowthOutsideX128",
-            info.variableTokenGrowthOutsideX128
-        );
 
         info.variableTokenGrowthOutsideX128 =
             variableTokenGrowthGlobalX128 -

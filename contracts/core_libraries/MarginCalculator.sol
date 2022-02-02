@@ -367,20 +367,6 @@ library MarginCalculator {
             )
         );
 
-        Printer.printInt256("exp1Wad", exp1Wad);
-        Printer.printInt256("exp2Wad", exp2Wad);
-        Printer.printEmptyLine();
-
-        Printer.printBool(
-            "is variable balance positive?",
-            variableTokenBalanceWad > 0
-        );
-        Printer.printBool(
-            "is fixed balance positive?",
-            fixedTokenBalanceWad > 0
-        );
-        Printer.printEmptyLine();
-
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
 
         /// @audit rethink if minimum margin requirement is necessary given we have flexibility with MC parameters
