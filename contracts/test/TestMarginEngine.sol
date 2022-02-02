@@ -168,8 +168,12 @@ contract TestMarginEngine is MarginEngine {
     }
 
     /// #if_succeeds {:msg "test scribble annotation"} c = a + b;
-    function testScribble(uint a, uint b) public pure returns (uint c) {
-        c = a-1+b+1;
+    function testScribble(uint256 a, uint256 b)
+        public
+        pure
+        returns (uint256 c)
+    {
+        c = a - 1 + b + 1;
     }
 
     function unwindPositionTest(
