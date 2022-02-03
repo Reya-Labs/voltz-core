@@ -314,6 +314,37 @@ library MarginCalculator {
         }
     }
 
+    function getMinimumMarginRequirement(
+        TraderMarginRequirementParams memory params,
+        IMarginEngine.MarginCalculatorParameters
+            memory _marginCalculatorParameters
+    ) internal view returns (uint256 margin) {
+
+        // assume we have access to the current sqrtPrice
+        // think how the Full Math library can be engaged
+        // what matters more isn't really leverage but the amount of notional traded
+        // leverage check can also be there, but this check won't really be time consistent
+        // min delta affects the implied leverage
+        // in the end to end tests worth plotting leverage
+        // check the relationship between deivation and leverage -> excel
+        // deviation applied becomes more aggressive, the higher notional is?
+        // simulating an unwind is not ideal since it might result in a revert --> describe the scenario
+        
+        if (params.variableTokenBalance == 0) {
+            return 0;
+        }
+
+        if (params.variableTokenBalance > 0) {
+            // simulate an adversarial unwind
+
+
+        } else {
+            // simulate an adversarial unwind
+
+        }
+
+    }
+    
     /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
     /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
     /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
@@ -368,8 +399,8 @@ library MarginCalculator {
         );
 
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
-
-        /// @audit rethink if minimum margin requirement is necessary given we have flexibility with MC parameters
+        
+        int256 minimumMarginRequirement = getMinimumMarginRequirement(params, _marginCalculatorParameters);
 
         if (maxCashflowDeltaToCoverPostMaturity < 0) {
             margin = PRBMathUD60x18.toUint(
@@ -379,8 +410,8 @@ library MarginCalculator {
             margin = 0;
         }
 
-        Printer.printUint256("margin requirement: ", margin);
-        Printer.printEmptyLine();
+        // Printer.printUint256("margin requirement: ", margin);
+        // Printer.printEmptyLine();
     }
 
     /// @notice Checks if a given position is liquidatable
