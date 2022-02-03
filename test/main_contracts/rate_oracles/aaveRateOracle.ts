@@ -1,7 +1,7 @@
 import { BigNumber, Wallet, Contract } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
-import { toBn } from "evm-bn";
+import { toBn } from "../../helpers/toBn";
 import { div, sub, add, pow } from "../../shared/functions";
 import { TestRateOracle } from "../../../typechain/TestRateOracle";
 import {
@@ -10,6 +10,8 @@ import {
   mockAaveLendingPoolFixture,
 } from "../../shared/fixtures";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
+import { SECONDS_IN_YEAR } from "../../shared/utilities";
+import Decimal from "decimal.js-light";
 
 const { provider } = waffle;
 
@@ -110,7 +112,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("increases the cardinality next for the first call", async () => {
-      await testRateOracle.testGrow(5);
+      await testRateOracle.increaseObservarionCardinalityNext(5);
       const [rateIndex, rateCardinality, rateCardinalityNext] =
         await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(0);
@@ -119,8 +121,8 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("is no op if oracle is already gte that size", async () => {
-      await testRateOracle.testGrow(5);
-      await testRateOracle.testGrow(3);
+      await testRateOracle.increaseObservarionCardinalityNext(5);
+      await testRateOracle.increaseObservarionCardinalityNext(3);
       const [rateIndex, rateCardinality, rateCardinalityNext] =
         await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(0);
@@ -150,8 +152,8 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("grows cardinality if writing past", async () => {
-      await testRateOracle.testGrow(2);
-      await testRateOracle.testGrow(4);
+      await testRateOracle.increaseObservarionCardinalityNext(2);
+      await testRateOracle.increaseObservarionCardinalityNext(4);
       let [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
       expect(rateCardinality).to.eq(1);
       // console.log(await getCurrentTimestamp(provider));
@@ -193,7 +195,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("correctly calculates rate from one timestamp to the next", async () => {
-      await testRateOracle.testGrow(4);
+      await testRateOracle.increaseObservarionCardinalityNext(4);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const rateFromTimestamp = (await getCurrentTimestamp(provider)) + 1;
@@ -220,29 +222,76 @@ describe("Aave Rate Oracle", () => {
     });
   });
 
-  // describe("#interpolateRateValue", async () => {
-  //   let testRateOracle: TestRateOracle;
+  const interpolateRateValue = (
+    principal: Decimal,
+    apy: Decimal,
+    seconds: Decimal
+  ): Decimal => {
+    console.log("1");
+    const secondsPerYear = new Decimal(31536000);
+    const timeInYears = seconds.div(secondsPerYear);
+    const apyFactor = apy.plus(1);
+    console.log("2");
+    const resultAsDecimal = principal.times(apyFactor.pow(timeInYears));
+    console.log("result:", resultAsDecimal.toFixed(10));
+    // convert to way
+    return resultAsDecimal.times(1e18);
+  };
 
-  //   beforeEach("deploy and initialize test oracle", async () => {
-  //     testRateOracle = await loadFixture(initializedOracleFixture);
-  //   });
+  describe.only("#interpolateRateValue", async () => {
+    let testRateOracle: TestRateOracle;
 
-  //   // Get back to this
-  //   // it("correctly interpolates the rate value", async () => {
-  //   //   const realizedInterpolatedRateValue =
-  //   //     await testRateOracle.testInterpolateRateValue(
-  //   //       toBn("1.0"),
-  //   //       toBn("0.1"),
-  //   //       toBn("604800")
-  //   //     ); // one week
-  //   //   const expectedRateValue = interpolateRateValue(
-  //   //     toBn("1.0"),
-  //   //     toBn("0.1"),
-  //   //     toBn("604800")
-  //   //   );
-  //   //   expect(realizedInterpolatedRateValue).to.eq(expectedRateValue);
-  //   // });
-  // });
+    beforeEach("deploy and initialize test oracle", async () => {
+      testRateOracle = await loadFixture(initializedOracleFixture);
+    });
+
+    // Get back to this
+    it("correctly interpolates the rate value", async () => {
+      const PRECISION = 10;
+      const secondsPerYear = 31536000;
+      const startRate = 1;
+      const factorPerSecond = 1.00000001;
+      const rayDecimals = 27;
+      let apyPlusOne = Number(
+        new Decimal(factorPerSecond).pow(secondsPerYear).toFixed(PRECISION)
+      );
+      console.log("apy", apyPlusOne);
+
+      const timeInSeconds = 86400;
+
+      const realizedInterpolatedRateValue =
+        await testRateOracle.interpolateRateValue(
+          toBn(startRate, rayDecimals),
+          toBn(apyPlusOne - 1),
+          toBn(timeInSeconds)
+        ); // one week
+      // const expectedRateValue = interpolateRateValue(
+      //   new Decimal("1.0"),
+      //   new Decimal("0.1"),
+      //   new Decimal("604800")
+      // );
+      // const expectedRateValue = 0;
+      const timeInYears = timeInSeconds / secondsPerYear;
+      const factor = new Decimal(apyPlusOne).pow(timeInYears);
+      const expectedValue = Number(factor.mul(startRate).toFixed(PRECISION));
+      const expectedValueInRay = toBn(
+        expectedValue.toFixed(PRECISION),
+        rayDecimals
+      );
+      console.log("timeInYears", timeInYears);
+      console.log("expectedValue", expectedValue);
+      // expect(realizedInterpolatedRateValue).to.eq(toBn(expectedValue));
+      const closeTo = await testRateOracle.rayValueIsCloseTo(
+        realizedInterpolatedRateValue,
+        expectedValueInRay
+      );
+      console.log("closeTo=", closeTo);
+      if (!closeTo) {
+        // Fail
+        expect(realizedInterpolatedRateValue).to.eq(expectedValueInRay);
+      }
+    });
+  });
 
   describe("#binarySearch", async () => {
     let testRateOracle: TestRateOracle;
@@ -266,7 +315,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("binary search works as expected", async () => {
-      await testRateOracle.testGrow(4);
+      await testRateOracle.increaseObservarionCardinalityNext(4);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const beforeOrAtTimestamp = (await getCurrentTimestamp(provider)) + 1;
@@ -317,7 +366,7 @@ describe("Aave Rate Oracle", () => {
         provider
       ).connect(wallet);
 
-      await testRateOracle.testGrow(6);
+      await testRateOracle.increaseObservarionCardinalityNext(6);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       beforeOrAtTimestamp = (await getCurrentTimestamp(provider)) + 1;
@@ -429,7 +478,7 @@ describe("Aave Rate Oracle", () => {
         provider
       ).connect(wallet);
 
-      await testRateOracle.testGrow(10);
+      await testRateOracle.increaseObservarionCardinalityNext(10);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       firstTimestamp = (await getCurrentTimestamp(provider)) + 1;

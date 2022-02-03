@@ -48,13 +48,6 @@ contract TestRateOracle is AaveRateOracle {
         );
     }
 
-    function testGrow(uint16 _rateCardinalityNext) external {
-        oracleVars.rateCardinalityNext = observations.grow(
-            oracleVars.rateCardinalityNext,
-            _rateCardinalityNext
-        );
-    }
-
     function getRate(uint16 index) external view returns (uint256, uint256) {
         OracleBuffer.Observation memory rate = observations[index];
         return (rate.blockTimestamp, rate.observedValue);
@@ -79,19 +72,6 @@ contract TestRateOracle is AaveRateOracle {
     {
         latestRateFromTo = getRateFromTo(from, to);
         return latestRateFromTo;
-    }
-
-    function testInterpolateRateValue(
-        uint256 beforeOrAtRateValue,
-        uint256 apyFromBeforeOrAtToAtOrAfter,
-        uint256 timeDeltaBeforeOrAtToQueriedTime
-    ) external pure returns (uint256) {
-        return
-            interpolateRateValue(
-                beforeOrAtRateValue,
-                apyFromBeforeOrAtToAtOrAfter,
-                timeDeltaBeforeOrAtToQueriedTime
-            );
     }
 
     // function testBinarySearch(uint32 target)
@@ -147,5 +127,23 @@ contract TestRateOracle is AaveRateOracle {
         returns (uint256)
     {
         return computeApyFromRate(rateFromTo, timeInYears);
+    }
+
+    // Checks that the observed value is within 0.0000001% of the expected value
+    function rayValueIsCloseTo(uint256 observedValueInRay, uint256 expectedValueInRay)
+        external
+        view
+        returns (bool)
+    {
+        uint256 upperBoundFactor = 1000000001 * 1e18;
+        uint256 lowerBoundFactor =  999999999 * 1e18;
+        uint256 upperBound = WadRayMath.rayMul(expectedValueInRay, upperBoundFactor); 
+        uint256 lowerBound = WadRayMath.rayMul(expectedValueInRay, lowerBoundFactor); 
+        console.log('%s <= %s <= %s ??', lowerBound,observedValueInRay, upperBound);
+        if (observedValueInRay <= upperBound && observedValueInRay >= lowerBound) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

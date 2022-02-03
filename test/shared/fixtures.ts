@@ -142,10 +142,10 @@ export const metaFixture = async function (): Promise<MetaFixture> {
 
   await aaveLendingPool.setReserveNormalizedIncome(
     token.address,
-    BigNumber.from(2).pow(27)
+    BigNumber.from(1).pow(27)
   );
 
-  await rateOracleTest.testGrow(5);
+  await rateOracleTest.increaseObservarionCardinalityNext(5);
   // write oracle entry
   await rateOracleTest.writeOracleEntry();
   // advance time after first write to the oracle
@@ -204,7 +204,7 @@ export const metaFixtureScenario1E2E =
       "1000000000000000000000000000" // 10^27
     );
 
-    await rateOracleTest.testGrow(100);
+    await rateOracleTest.increaseObservarionCardinalityNext(100);
     // write oracle entry
     await rateOracleTest.writeOracleEntry();
     // advance time after first write to the oracle
