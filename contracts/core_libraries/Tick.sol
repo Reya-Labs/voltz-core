@@ -66,11 +66,12 @@ library Tick {
                 feeGrowthGlobalX128 -
                 upper.feeGrowthOutsideX128;
         }
-        
+
         unchecked {
-            feeGrowthInsideX128 = feeGrowthGlobalX128 - (feeGrowthBelowX128 + feeGrowthAboveX128);
+            feeGrowthInsideX128 =
+                feeGrowthGlobalX128 -
+                (feeGrowthBelowX128 + feeGrowthAboveX128);
         }
-    
     }
 
     struct VariableTokenGrowthInsideParams {
@@ -150,7 +151,7 @@ library Tick {
                 params.fixedTokenGrowthGlobalX128 -
                 upper.fixedTokenGrowthOutsideX128;
         }
-        
+
         // todo: do we need an unchecked block in here (given we are dealing with an int256)?
         fixedTokenGrowthInsideX128 =
             params.fixedTokenGrowthGlobalX128 -
@@ -176,7 +177,6 @@ library Tick {
         bool upper,
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
-
         Tick.Info storage info = self[tick];
 
         uint128 liquidityGrossBefore = info.liquidityGross;
@@ -193,9 +193,12 @@ library Tick {
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tick <= tickCurrent) {
                 info.feeGrowthOutsideX128 = feeGrowthGlobalX128;
-                
+
                 Printer.printInt24("tick", tick);
-                Printer.printUint256("info.feeGrowthOutsideX128 updated", info.feeGrowthOutsideX128);
+                Printer.printUint256(
+                    "info.feeGrowthOutsideX128 updated",
+                    info.feeGrowthOutsideX128
+                );
 
                 info.fixedTokenGrowthOutsideX128 = fixedTokenGrowthGlobalX128;
 

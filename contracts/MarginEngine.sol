@@ -613,6 +613,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             MarginCalculator.getPositionMarginRequirement(marginReqParams, marginCalculatorParameters)
         );
 
+        Printer.printInt256("positionMarginRequirement", positionMarginRequirement);
+        Printer.printInt256("updatedMarginWouldBe     ", updatedMarginWouldBe);
+
         if (updatedMarginWouldBe <= positionMarginRequirement) {
             revert MarginLessThanMinimum();
         }
