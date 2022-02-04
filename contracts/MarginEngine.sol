@@ -413,6 +413,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     }
     
+    // @audit the following function is unnecessary
     function checkPositionMarginRequirementSatisfied(
             address recipient,
             int24 tickLower,
@@ -685,15 +686,16 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 revert WithdrawalExceedsCurrentMargin();
             }
         }
-
-        checkPositionMarginAboveRequirement(
-            params,
-            updatedMarginWouldBe,
-            positionLiquidity,
-            positionFixedTokenBalance,
-            positionVariableTokenBalance,
-            variableFactorWad
-        );
+        else {
+            checkPositionMarginAboveRequirement(
+                params,
+                updatedMarginWouldBe,
+                positionLiquidity,
+                positionFixedTokenBalance,
+                positionVariableTokenBalance,
+                variableFactorWad
+            );
+        }
     }
 
     /// @notice Check if the trader margin is above the Initial Margin Requirement
