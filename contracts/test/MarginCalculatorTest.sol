@@ -6,6 +6,11 @@ import "../core_libraries/MarginCalculator.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 
 contract MarginCalculatorTest {
+    
+    function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256 variableTokenDeltaAbsolute, uint160 sqrtRatioCurrX96, uint256 devMul, uint256 devDiv) external pure returns (uint256 fixedTokenDeltaUnbalanced) {
+        return MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(variableTokenDeltaAbsolute, sqrtRatioCurrX96, devMul, devDiv);
+    }
+    
     function computeTimeFactor(
         uint256 termEndTimestampWad,
         uint256 currentTimestampWad,

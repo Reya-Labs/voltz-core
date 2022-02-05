@@ -12,6 +12,7 @@ import "./Tick.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
 import "../utils/Printer.sol";
+import "../utils/FullMath.sol";
 
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
@@ -52,6 +53,10 @@ library MarginCalculator {
         bool isLM;
         /// @dev Historical Average APY of the underlying pool (e.g. Aave v2 USDC Lending Pool), 18 decimals
         uint256 historicalApyWad;
+        /// @dev
+        uint160 sqrtPriceX96;
+        /// @dev Variable Factor is the variable rate from the IRS AMM initiation until the current block timestamp
+        uint256 variableFactorWad;
     }
 
     struct PositionMarginRequirementParams {
@@ -81,6 +86,9 @@ library MarginCalculator {
         uint256 variableFactorWad;
         /// @dev Historical Average APY of the underlying pool (e.g. Aave v2 USDC Lending Pool), 18 decimals
         uint256 historicalApyWad;
+
+        /// @dev
+        uint160 sqrtPriceX96;
     }
 
     struct MinimumMarginRequirementLocalVars {
@@ -314,45 +322,105 @@ library MarginCalculator {
         }
     }
 
+    // simulation of a swap without the need to involve the swap function
+    function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256 variableTokenDeltaAbsolute, uint160 sqrtRatioCurrX96, uint256 devMul, uint256 devDiv) internal pure returns (uint256 fixedTokenDeltaUnbalanced) {
+        
+        require(devDiv > 0, "<=0");
+
+        uint256 sqrtRatioPostDeviationX96 = FullMath.mulDiv(
+            sqrtRatioCurrX96,
+            devMul,
+            devDiv
+        );
+
+        // fixedTokenDeltaUnbalanced = variableTokenDelta / (sqrtRatioPostDeviation * sqrtRatioPostDeviation)
+        fixedTokenDeltaUnbalanced = (((variableTokenDeltaAbsolute << FixedPoint96.RESOLUTION) << FixedPoint96.RESOLUTION) / (sqrtRatioPostDeviationX96 * sqrtRatioPostDeviationX96));
+
+    }
+
+
     function getMinimumMarginRequirement(
         TraderMarginRequirementParams memory params,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal view returns (uint256 margin) {
-
-        // assume we have access to the current sqrtPrice
-        // think how the Full Math library can be engaged
-        // what matters more isn't really leverage but the amount of notional traded
-        // leverage check can also be there, but this check won't really be time consistent
-        // min delta affects the implied leverage
-        // in the end to end tests worth plotting leverage
-        // check the relationship between deivation and leverage -> excel
-        // deviation applied becomes more aggressive, the higher notional is?
-        // simulating an unwind is not ideal since it might result in a revert --> describe the scenario
-        
+    
         if (params.variableTokenBalance == 0) {
+            // if the variable token balance is zero there is no need for a minimum liquidator incentive since a liquidtion is not expected
             return 0;
         }
 
-        if (params.variableTokenBalance > 0) {
-            // simulate an adversarial unwind
+        int256 fixedTokenDeltaUnbalanced;
+        uint256 devMul;
 
+        if (params.variableTokenBalance > 0) {
+
+            if (params.fixedTokenBalance > 0) {
+                // if both are positive, no need to have a margin requirement
+                return 0;
+            }
+    
+            if (params.isLM) {
+                devMul = _marginCalculatorParameters.devMulLeftUnwindLM;
+            } else {
+                devMul = _marginCalculatorParameters.devMulLeftUnwindIM;
+            }
+
+            // simulate an adversarial unwind (cumulative position is a VT --> simulate FT unwind --> movement to the left along the VAMM)
+            fixedTokenDeltaUnbalanced = int256(getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256(params.variableTokenBalance), params.sqrtPriceX96, devMul, _marginCalculatorParameters.devDiv));
 
         } else {
-            // simulate an adversarial unwind
 
+            if (params.isLM) {
+                devMul = _marginCalculatorParameters.devMulRightUnwindLM;
+            } else {
+                devMul = _marginCalculatorParameters.devMulRightUnwindIM;
+            }
+            
+            // simulate an adversarial unwind (cumulative position is an FT --> simulate a VT unwind --> movement to the right along the VAMM)
+            fixedTokenDeltaUnbalanced = -int256(getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256(-params.variableTokenBalance), params.sqrtPriceX96, devMul, _marginCalculatorParameters.devDiv));
+        }
+
+        int256 variableTokenDelta = -params.variableTokenBalance;
+
+        int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+            fixedTokenDeltaUnbalanced,
+            variableTokenDelta,
+            params.variableFactorWad,
+            params.termStartTimestampWad,
+            params.termEndTimestampWad
+        );
+
+        int256 updatedVariableTokenBalance = params.variableTokenBalance + variableTokenDelta; // should be zero
+        int256 updatedFixedTokenBalance = params.fixedTokenBalance + fixedTokenDelta;
+
+        margin = _getTraderMarginRequirement(
+            TraderMarginRequirementParams({
+                fixedTokenBalance: updatedFixedTokenBalance,
+                variableTokenBalance: updatedVariableTokenBalance,
+                termStartTimestampWad: params.termStartTimestampWad,
+                termEndTimestampWad: params.termEndTimestampWad,
+                isLM: params.isLM,
+                historicalApyWad: params.historicalApyWad,
+                sqrtPriceX96: params.sqrtPriceX96,
+                variableFactorWad: params.variableFactorWad
+            }),
+            _marginCalculatorParameters
+        );
+
+        if (margin < _marginCalculatorParameters.minMarginToIncentiviseLiquidators) {
+            margin = _marginCalculatorParameters.minMarginToIncentiviseLiquidators;
         }
 
     }
     
-    /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
-    /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
-    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
-    function getTraderMarginRequirement(
+    
+    function _getTraderMarginRequirement(
         TraderMarginRequirementParams memory params,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal view returns (uint256 margin) {
+
         require(
             params.termEndTimestampWad > params.termStartTimestampWad,
             "TE>TS"
@@ -399,9 +467,7 @@ library MarginCalculator {
         );
 
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
-        
-        int256 minimumMarginRequirement = getMinimumMarginRequirement(params, _marginCalculatorParameters);
-
+    
         if (maxCashflowDeltaToCoverPostMaturity < 0) {
             margin = PRBMathUD60x18.toUint(
                 uint256(-maxCashflowDeltaToCoverPostMaturity)
@@ -410,8 +476,24 @@ library MarginCalculator {
             margin = 0;
         }
 
-        // Printer.printUint256("margin requirement: ", margin);
-        // Printer.printEmptyLine();
+    }
+    
+    /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
+    /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
+    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
+    function getTraderMarginRequirement(
+        TraderMarginRequirementParams memory params,
+        IMarginEngine.MarginCalculatorParameters
+            memory _marginCalculatorParameters
+    ) internal view returns (uint256 margin) {
+ 
+        margin = _getTraderMarginRequirement(params, _marginCalculatorParameters);
+
+        uint256 minimumMarginRequirement = getMinimumMarginRequirement(params, _marginCalculatorParameters);
+
+        if (margin < minimumMarginRequirement) {
+            margin = minimumMarginRequirement;
+        }
     }
 
     /// @notice Checks if a given position is liquidatable
@@ -461,7 +543,6 @@ library MarginCalculator {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal view returns (uint256 margin) {
-        // @audit Check if this logic is the best way to handle position margin requirement calculation, check calc with pen and paper again
 
         int256 scenario1LPVariableTokenBalance;
         int256 scenario1LPFixedTokenBalance;
@@ -635,7 +716,9 @@ library MarginCalculator {
                 termStartTimestampWad: params.termStartTimestampWad,
                 termEndTimestampWad: params.termEndTimestampWad,
                 isLM: params.isLM,
-                historicalApyWad: params.historicalApyWad
+                historicalApyWad: params.historicalApyWad,
+                sqrtPriceX96: params.sqrtPriceX96,
+                variableFactorWad: params.variableFactorWad
             }),
             _marginCalculatorParameters
         );
@@ -647,7 +730,9 @@ library MarginCalculator {
                 termStartTimestampWad: params.termStartTimestampWad,
                 termEndTimestampWad: params.termEndTimestampWad,
                 isLM: params.isLM,
-                historicalApyWad: params.historicalApyWad
+                historicalApyWad: params.historicalApyWad,
+                sqrtPriceX96: params.sqrtPriceX96,
+                variableFactorWad: params.variableFactorWad
             }),
             _marginCalculatorParameters
         );

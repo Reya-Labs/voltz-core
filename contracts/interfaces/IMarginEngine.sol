@@ -26,6 +26,17 @@ interface IMarginEngine is IPositionStructs {
         int256 xiLowerWad;
         /// @dev Max term possible for a Voltz IRS AMM in seconds (18 decimals)
         int256 tMaxWad;
+
+        /// @dev
+        uint256 devMulLeftUnwindLM;
+        uint256 devMulRightUnwindLM;
+
+        uint256 devMulLeftUnwindIM;
+        uint256 devMulRightUnwindIM;
+
+        uint256 devDiv;
+
+        uint256 minMarginToIncentiviseLiquidators;
     }
 
     // immutables
@@ -108,9 +119,9 @@ interface IMarginEngine is IPositionStructs {
 
     function setIsInsuranceDepleted(bool _isInsuranceDepleted) external;
 
-    function setMinMarginToIncentiviseLiquidators(
-        uint256 _minMarginToIncentiviseLiquidators
-    ) external;
+    // function setMinMarginToIncentiviseLiquidators(
+    //     uint256 _minMarginToIncentiviseLiquidators
+    // ) external;
 
     /// @notice Returns the information about a trader by the trader's key
     /// @param key The wallet address of the trader
@@ -207,7 +218,8 @@ interface IMarginEngine is IPositionStructs {
         address recipient,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        uint256 cumulativeFeeIncurred
+        uint256 cumulativeFeeIncurred,
+        uint160 sqrtPriceX96
     ) external;
 
     function updatePositionPostVAMMInducedSwap(
@@ -217,7 +229,8 @@ interface IMarginEngine is IPositionStructs {
         int256 fixedTokenDelta,
         int256 variableTokenDelta,
         uint256 cumulativeFeeIncurred,
-        int24 currentTick
+        int24 currentTick,
+        uint160 sqrtPriceX96
     ) external;
 
     function collectProtocol(address recipient, uint256 amount) external;

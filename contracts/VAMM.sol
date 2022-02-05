@@ -508,9 +508,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
     if (!params.isUnwind) {
       if (params.isTrader) {
-        IMarginEngine(marginEngineAddress).updateTraderPostVAMMInducedSwap(params.recipient, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred);
+        IMarginEngine(marginEngineAddress).updateTraderPostVAMMInducedSwap(params.recipient, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.sqrtPriceX96);
       } else {
-        IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.tick);
+        IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.tick, vammVars.sqrtPriceX96);
       }
     }
 
