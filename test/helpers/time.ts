@@ -1,15 +1,18 @@
-import { network } from "hardhat";
+import { network, waffle } from "hardhat";
 import { assert } from "chai";
 import { MockProvider } from "ethereum-waffle";
 import { BigNumber } from "ethers";
+import { Network } from "@ethersproject/networks";
 
-export const getCurrentTimestamp = async (provider: MockProvider) => {
+export const getCurrentTimestamp = async (_provider?: MockProvider) => {
+  const provider = _provider ? _provider : waffle.provider;
   const block = await provider.getBlock("latest");
   return block.timestamp;
 };
 
-export async function setTimeNextBlock(time: BigNumber) {
-  await network.provider.send("evm_setNextBlockTimestamp", [time.toNumber()]);
+export async function setTimeNextBlock(_time: BigNumber | number) {
+  const time = typeof _time === "number" ? _time : _time.toNumber();
+  await network.provider.send("evm_setNextBlockTimestamp", [time]);
 }
 
 // add return type
@@ -27,8 +30,10 @@ export async function evm_revert(snapshotId: string) {
   });
 }
 
-export async function advanceTime(duration: BigNumber) {
-  await network.provider.send("evm_increaseTime", [duration.toNumber()]);
+export async function advanceTime(_duration: BigNumber | number) {
+  const duration =
+    typeof _duration === "number" ? _duration : _duration.toNumber();
+  await network.provider.send("evm_increaseTime", [duration]);
   await network.provider.send("evm_mine", []);
 }
 
