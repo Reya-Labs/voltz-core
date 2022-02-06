@@ -2,10 +2,9 @@ import { network, waffle } from "hardhat";
 import { assert } from "chai";
 import { MockProvider } from "ethereum-waffle";
 import { BigNumber } from "ethers";
-import { Network } from "@ethersproject/networks";
 
 export const getCurrentTimestamp = async (_provider?: MockProvider) => {
-  const provider = _provider ? _provider : waffle.provider;
+  const provider = _provider || waffle.provider;
   const block = await provider.getBlock("latest");
   return block.timestamp;
 };

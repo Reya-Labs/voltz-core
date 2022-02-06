@@ -6,7 +6,7 @@ import "./interfaces/IVAMM.sol";
 import "./core_libraries/TickBitmap.sol";
 import "./core_libraries/Position.sol";
 import "./core_libraries/Trader.sol";
-import "./utils/Printer.sol";
+// import "./utils/Printer.sol";
 import "./utils/SafeCast.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
@@ -423,7 +423,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         state.protocolFee += step.feeProtocolDelta;
       }
 
-      Printer.printInt256("before update state.variableTokenGrowthGlobalX128", state.variableTokenGrowthGlobalX128);
+      // Printer.printInt256("before update state.variableTokenGrowthGlobalX128", state.variableTokenGrowthGlobalX128);
       
       // update global fee tracker
       if (state.liquidity > 0) {
@@ -450,7 +450,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
       }
 
-      Printer.printInt256("after update state.variableTokenGrowthGlobalX128", state.variableTokenGrowthGlobalX128);
+      // Printer.printInt256("after update state.variableTokenGrowthGlobalX128", state.variableTokenGrowthGlobalX128);
 
       // shift tick if we reached the next price
       if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
@@ -584,10 +584,10 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       /// @dev if a trader is a VT, they consume variable in return for fixed
       /// @dev Movement from left to right along the VAMM, hence the sqrtPriceLimitX96 needs to be lower than the current sqrtPriceX96, but higher than the MIN_SQRT_RATIO
 
-      Printer.printUint160("min price:     ", TickMath.MIN_SQRT_RATIO);
-      Printer.printUint160("limit price:   ", params.sqrtPriceLimitX96);
-      Printer.printUint160("current price: ", vammVarsStart.sqrtPriceX96);
-      Printer.printEmptyLine();
+      // Printer.printUint160("min price:     ", TickMath.MIN_SQRT_RATIO);
+      // Printer.printUint160("limit price:   ", params.sqrtPriceLimitX96);
+      // Printer.printUint160("current price: ", vammVarsStart.sqrtPriceX96);
+      // Printer.printEmptyLine();
 
       require(
           params.isFT

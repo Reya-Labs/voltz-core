@@ -27,9 +27,6 @@ contract TestRateOracle is AaveRateOracle {
         // if not done manually, doesn't work for some reason
         aaveLendingPool = aaveLendingPool;
         underlying = underlying;
-
-        // console.log("Test Contract: Aave lending pool address is: ", aaveLendingPool);
-        // console.log("Test Contract: Underlying is: ", underlying);
     }
 
     function getOracleVars()
@@ -130,17 +127,24 @@ contract TestRateOracle is AaveRateOracle {
     }
 
     // Checks that the observed value is within 0.0000001% of the expected value
-    function rayValueIsCloseTo(uint256 observedValueInRay, uint256 expectedValueInRay)
-        external
-        view
-        returns (bool)
-    {
+    function rayValueIsCloseTo(
+        uint256 observedValueInRay,
+        uint256 expectedValueInRay
+    ) external view returns (bool) {
         uint256 upperBoundFactor = 1000000001 * 1e18;
-        uint256 lowerBoundFactor =  999999999 * 1e18;
-        uint256 upperBound = WadRayMath.rayMul(expectedValueInRay, upperBoundFactor); 
-        uint256 lowerBound = WadRayMath.rayMul(expectedValueInRay, lowerBoundFactor); 
-        console.log('%s <= %s <= %s ??', lowerBound,observedValueInRay, upperBound);
-        if (observedValueInRay <= upperBound && observedValueInRay >= lowerBound) {
+        uint256 lowerBoundFactor = 999999999 * 1e18;
+        uint256 upperBound = WadRayMath.rayMul(
+            expectedValueInRay,
+            upperBoundFactor
+        );
+        uint256 lowerBound = WadRayMath.rayMul(
+            expectedValueInRay,
+            lowerBoundFactor
+        );
+        // console.log('%s <= %s <= %s ??', lowerBound,observedValueInRay, upperBound);
+        if (
+            observedValueInRay <= upperBound && observedValueInRay >= lowerBound
+        ) {
             return true;
         } else {
             return false;

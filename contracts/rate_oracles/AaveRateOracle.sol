@@ -8,7 +8,6 @@ import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WayRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
-import "hardhat/console.sol";
 
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     using SafeMath for uint256;
@@ -92,14 +91,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             oracleVars.rateIndex,
             oracleVars.rateCardinality
         );
-        console.log("observeSingle1 yields %s", rateFromRay);
         uint256 rateToRay = observeSingle(
             currentTime,
             to,
             oracleVars.rateIndex,
             oracleVars.rateCardinality
         );
-        console.log("observeSingle2 yields %s", rateToRay);
 
         if (rateToRay > rateFromRay) {
             return
@@ -127,33 +124,15 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 beforeOrAtRateValueRay,
         uint256 apyFromBeforeOrAtToAtOrAfterWad,
         uint256 timeDeltaBeforeOrAtToQueriedTimeWad
-    ) public view returns (uint256 rateValueRay) { // TODO: back to pure after debugging
-        console.log('interpolateRateValue(%s, %s, %s)', beforeOrAtRateValueRay, apyFromBeforeOrAtToAtOrAfterWad, timeDeltaBeforeOrAtToQueriedTimeWad);
+    ) public pure returns (uint256 rateValueRay) {
         uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
             timeDeltaBeforeOrAtToQueriedTimeWad
         );
-        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad + PRBMathUD60x18.fromUint(1);
+        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad +
+            PRBMathUD60x18.fromUint(1);
         uint256 factorInWad = PRBMathUD60x18.pow(apyPlusOne, timeInYearsWad);
         uint256 factorInRay = WadRayMath.wadToRay(factorInWad);
-        console.log('factor in wad %s ; in ray %s', factorInWad, factorInRay);
-        console.log('beforeOrAtRateValueRay %s', beforeOrAtRateValueRay);
         rateValueRay = WadRayMath.rayMul(beforeOrAtRateValueRay, factorInRay);
-        
-        // // scenario without compounding
-        // uint256 counterfactualRateWad = PRBMathUD60x18.mul(
-        //     apyFromBeforeOrAtToAtOrAfterWad,
-        //     timeInYearsWad
-        // );
-
-        // uint256 beforeOrAtRateValueWad = WadRayMath.rayToWad(
-        //     beforeOrAtRateValueRay
-        // );
-
-        // uint256 rateValueWad = PRBMathUD60x18.mul(
-        //     (PRBMathUD60x18.fromUint(1) + counterfactualRateWad),
-        //     beforeOrAtRateValueWad
-        // );
-        // rateValueRay = WadRayMath.wadToRay(rateValueWad);
     }
 
     function observeSingle(
@@ -212,19 +191,15 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
                 );
             }
 
-            console.log('accrualFact(%s, %s) = %s seconds ', atOrAfter.blockTimestamp, beforeOrAt.blockTimestamp, (atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp));
             uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
                 (atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp) *
                     WadRayMath.wad()
             );
 
-
             uint256 apyFromBeforeOrAtToAtOrAfterWad = computeApyFromRate(
                 rateFromBeforeOrAtToAtOrAfterWad,
                 timeInYearsWad
             );
-            
-            console.log('computeApyFromRate(%s, %s) = %s', rateFromBeforeOrAtToAtOrAfterWad, timeInYearsWad, apyFromBeforeOrAtToAtOrAfterWad);
 
             // interpolate rateValue for queriedTime
             rateValueRay = interpolateRateValue(
@@ -233,7 +208,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
                 (queriedTime - beforeOrAt.blockTimestamp) * WadRayMath.wad()
             );
         }
-            console.log('returning %s', rateValueRay);
     }
 
     function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {

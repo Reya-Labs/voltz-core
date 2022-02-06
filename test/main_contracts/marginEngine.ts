@@ -916,9 +916,6 @@ describe("MarginEngine", () => {
         marginEngineTest.address
       );
 
-      const oldBalanceOther = await token.balanceOf(other.address);
-      // console.log("oldBalanceOther", oldBalanceOther.toString());
-
       const traderInfoOld = await marginEngineTest.traders(wallet.address);
       expect(traderInfoOld.variableTokenBalance).to.eq(toBn("10"));
 
@@ -1076,7 +1073,7 @@ describe("MarginEngine", () => {
 
     it("correctly caches historical apy", async () => {
       // Fist write the cache. Note that the rate won't exactly match the APY because another block has elapsed but we have not updated reserveNormalizedIncome. This is OK because we are only testing caching.
-      const trx = await marginEngineTest.getHistoricalApy();
+      await marginEngineTest.getHistoricalApy();
       const realizedHistoricalApy1a =
         await marginEngineTest.getHistoricalApyReadOnly();
       const realizedHistoricalApy1b =
