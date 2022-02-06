@@ -12,6 +12,8 @@ import {
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 import { SECONDS_IN_YEAR } from "../../shared/utilities";
 import Decimal from "decimal.js-light";
+import { ERC20Mock, MockAaveLendingPool } from "../../../typechain";
+import { consts } from "../../helpers/constants";
 
 const { provider } = waffle;
 
@@ -21,6 +23,10 @@ function computeApyFromRate(rateFromTo: BigNumber, timeInYears: BigNumber) {
   const apy: BigNumber = sub(apyPlusOne, toBn("1.0"));
   return apy;
 }
+
+let token: ERC20Mock;
+let aaveLendingPool: MockAaveLendingPool;
+let testRateOracle: TestRateOracle;
 
 // function interpolateRateValue(
 //   beforeOrAtRateValue: BigNumber,
@@ -48,17 +54,18 @@ describe("Aave Rate Oracle", () => {
   });
 
   const oracleFixture = async () => {
-    const { token } = await mockERC20Fixture();
-    const { aaveLendingPool } = await mockAaveLendingPoolFixture();
+    const { token: _token } = await mockERC20Fixture();
+    const { aaveLendingPool: _aaveLendingPool } =
+      await mockAaveLendingPoolFixture();
 
     // console.log(
     //   "Test TS: Aave lending pool address is: ",
     //   aaveLendingPool.address
     // );
 
-    await aaveLendingPool.setReserveNormalizedIncome(
-      token.address,
-      toBn("1.0") // should be in ray
+    await _aaveLendingPool.setReserveNormalizedIncome(
+      _token.address,
+      toBn("1.0", consts.AAVE_RATE_DECIMALS) // should be in ray
     );
     // console.log(
     //   "Test TS: Aave normalized income is: ",
@@ -66,23 +73,26 @@ describe("Aave Rate Oracle", () => {
     // );
 
     const { rateOracleTest } = await rateOracleTestFixture(
-      aaveLendingPool.address,
-      token.address
+      _aaveLendingPool.address,
+      _token.address
     );
 
     await rateOracleTest.setMinSecondsSinceLastUpdate(7200); // two hours
-    return rateOracleTest;
+    return {
+      testRateOracle: rateOracleTest,
+      token: _token,
+      aaveLendingPool: _aaveLendingPool,
+    };
   };
 
-  const initializedOracleFixture = async () => {
-    const testRateOracle = await oracleFixture();
-    return testRateOracle;
-  };
+  // const initializedOracleFixture = async () => {
+  //   const testRateOracle = await oracleFixture();
+  //   return testRateOracle;
+  // };
 
   describe("#initialize", () => {
-    let testRateOracle: TestRateOracle;
     beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
+      ({ testRateOracle } = await loadFixture(oracleFixture));
     });
 
     // it("aave lending pool set correctly", async () => {
@@ -101,10 +111,8 @@ describe("Aave Rate Oracle", () => {
   });
 
   describe("#grow", () => {
-    let testRateOracle: TestRateOracle;
-
     beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
+      ({ testRateOracle } = await loadFixture(oracleFixture));
       // await testRateOracle.initializeTestRateOracle({
       //   tick: 1,
       //   liquidity: 1
@@ -132,10 +140,8 @@ describe("Aave Rate Oracle", () => {
   });
 
   describe("#write", () => {
-    let testRateOracle: TestRateOracle;
-
     beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
+      ({ testRateOracle } = await loadFixture(oracleFixture));
     });
 
     it("single element array gets overwritten", async () => {
@@ -147,7 +153,7 @@ describe("Aave Rate Oracle", () => {
       const [rateTimestamp, rateValue] = await testRateOracle.getRate(0);
       // console.log(`currentTimestamp: ${currentTimestamp}`);
       // console.log(`rateTimestamp: ${rateTimestamp.valueOf()}`);
-      expect(rateValue).to.eq(toBn("1.0"));
+      expect(rateValue).to.eq(toBn("1.0", consts.AAVE_RATE_DECIMALS));
       expect(rateTimestamp).to.eq(currentTimestamp + 1);
     });
 
@@ -173,7 +179,7 @@ describe("Aave Rate Oracle", () => {
       expect(rateIndex).to.eq(2);
       expect(rateCardinality).to.eq(4);
       const [rateTimestamp, rateValue] = await testRateOracle.getRate(2);
-      expect(rateValue).to.eq(toBn("1.0"));
+      expect(rateValue).to.eq(toBn("1.0", consts.AAVE_RATE_DECIMALS));
       expect(rateTimestamp).to.eq(currentTimestamp + 1);
     });
 
@@ -198,29 +204,16 @@ describe("Aave Rate Oracle", () => {
       expect(rateIndex).to.eq(1); // Should be unchanged since insufficient time passed to write new rate
       expect(rateCardinality).to.eq(4);
       const [rateTimestamp, rateValue] = await testRateOracle.getRate(1);
-      expect(rateValue).to.eq(toBn("1.0"));
+      expect(rateValue).to.eq(toBn("1.0", consts.AAVE_RATE_DECIMALS));
       expect(rateTimestamp).to.eq(currentTimestamp + 1); // TImestemp from *before* last write
     });
   });
 
   describe("#getRateFromTo", async () => {
-    let testRateOracle: TestRateOracle;
-    let aaveLendingPoolContract: Contract;
-    let underlyingTokenAddress: string;
-
     beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
-      const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
-      underlyingTokenAddress = await testRateOracle.underlying();
-      const aaveLendingPoolAbi = [
-        "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
-        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
-      ];
-      aaveLendingPoolContract = new Contract(
-        aaveLendingPoolAddress,
-        aaveLendingPoolAbi,
-        provider
-      ).connect(wallet);
+      ({ testRateOracle, token, aaveLendingPool } = await loadFixture(
+        oracleFixture
+      ));
     });
 
     it("correctly calculates rate from one timestamp to the next", async () => {
@@ -232,9 +225,9 @@ describe("Aave Rate Oracle", () => {
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // set new liquidity index value
-      await aaveLendingPoolContract.setReserveNormalizedIncome(
-        underlyingTokenAddress,
-        toBn("1.1")
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        toBn("1.1", consts.AAVE_RATE_DECIMALS)
       );
       const rateToTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testRateOracle.writeOracleEntry();
@@ -252,13 +245,11 @@ describe("Aave Rate Oracle", () => {
   });
 
   describe("#interpolateRateValue", async () => {
-    let testRateOracle: TestRateOracle;
     const PRECISION = 10;
     const secondsPerYear = 31536000;
-    const rayDecimals = 27;
 
     beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
+      ({ testRateOracle } = await loadFixture(oracleFixture));
     });
 
     class InterpolateTest {
@@ -311,14 +302,14 @@ describe("Aave Rate Oracle", () => {
         );
         const realizedInterpolatedRateValue =
           await testRateOracle.interpolateRateValue(
-            toBn(t.startRate, rayDecimals), // Starting value in ray
+            toBn(t.startRate, consts.AAVE_RATE_DECIMALS), // Starting value in ray
             toBn(apyPlusOne - 1),
             toBn(t.timeInSeconds)
           );
 
         if (t.factorPerSecond == 0) {
           expect(realizedInterpolatedRateValue).to.eq(
-            toBn(t.startRate, rayDecimals)
+            toBn(t.startRate, consts.AAVE_RATE_DECIMALS)
           );
         } else {
           const timeInYears = t.timeInSeconds / secondsPerYear;
@@ -328,7 +319,7 @@ describe("Aave Rate Oracle", () => {
           );
           const expectedValueInRay = toBn(
             expectedValue.toFixed(PRECISION),
-            rayDecimals
+            consts.AAVE_RATE_DECIMALS
           );
 
           // C"lose to" is good enough
@@ -346,24 +337,10 @@ describe("Aave Rate Oracle", () => {
   });
 
   describe("#binarySearch", async () => {
-    let testRateOracle: TestRateOracle;
-    let aaveLendingPoolContract: Contract;
-    let underlyingTokenAddress: string;
-
     beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
-
-      const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
-      underlyingTokenAddress = await testRateOracle.underlying();
-      const aaveLendingPoolAbi = [
-        "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
-        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
-      ];
-      aaveLendingPoolContract = new Contract(
-        aaveLendingPoolAddress,
-        aaveLendingPoolAbi,
-        provider
-      ).connect(wallet);
+      ({ testRateOracle, token, aaveLendingPool } = await loadFixture(
+        oracleFixture
+      ));
     });
 
     it("binary search works as expected", async () => {
@@ -375,9 +352,9 @@ describe("Aave Rate Oracle", () => {
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // set new liquidity index value
-      await aaveLendingPoolContract.setReserveNormalizedIncome(
-        underlyingTokenAddress,
-        toBn("1.1")
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        toBn("1.1", consts.AAVE_RATE_DECIMALS)
       );
       const afterOrAtTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testRateOracle.writeOracleEntry();
@@ -388,35 +365,25 @@ describe("Aave Rate Oracle", () => {
 
       const [beforeOrAtRateValue, afterOrAtRateValue] =
         await testRateOracle.binarySearch(targetTimestamp);
-      expect(beforeOrAtRateValue.observedValue).to.eq(toBn("1.0"));
-      expect(afterOrAtRateValue.observedValue).to.eq(toBn("1.1"));
+      expect(beforeOrAtRateValue.observedValue).to.eq(
+        toBn("1.0", consts.AAVE_RATE_DECIMALS)
+      );
+      expect(afterOrAtRateValue.observedValue).to.eq(
+        toBn("1.1", consts.AAVE_RATE_DECIMALS)
+      );
     });
 
     // other scenarios
   });
 
   describe("#getSurroundingRates", async () => {
-    let testRateOracle: TestRateOracle;
-    let aaveLendingPoolContract: Contract;
-    let underlyingTokenAddress: string;
-
     let beforeOrAtTimestamp: number;
     let atOrAfterTimestamp: number;
 
     beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
-
-      const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
-      underlyingTokenAddress = await testRateOracle.underlying();
-      const aaveLendingPoolAbi = [
-        "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
-        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
-      ];
-      aaveLendingPoolContract = new Contract(
-        aaveLendingPoolAddress,
-        aaveLendingPoolAbi,
-        provider
-      ).connect(wallet);
+      ({ testRateOracle, token, aaveLendingPool } = await loadFixture(
+        oracleFixture
+      ));
 
       await testRateOracle.increaseObservarionCardinalityNext(6);
 
@@ -426,9 +393,9 @@ describe("Aave Rate Oracle", () => {
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // set new liquidity index value
-      await aaveLendingPoolContract.setReserveNormalizedIncome(
-        underlyingTokenAddress,
-        toBn("1.1")
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        toBn("1.1", consts.AAVE_RATE_DECIMALS)
       );
       atOrAfterTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testRateOracle.writeOracleEntry();
@@ -442,8 +409,12 @@ describe("Aave Rate Oracle", () => {
       const realizedAtOrAfterValue =
         await testRateOracle.latestAfterOrAtRateValue();
 
-      expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.0"));
-      expect(realizedAtOrAfterValue).to.eq(toBn("1.1"));
+      expect(realizedBeforeOrAtRateValue).to.eq(
+        toBn("1.0", consts.AAVE_RATE_DECIMALS)
+      );
+      expect(realizedAtOrAfterValue).to.eq(
+        toBn("1.1", consts.AAVE_RATE_DECIMALS)
+      );
     });
 
     it("target is atOrAfter", async () => {
@@ -454,7 +425,9 @@ describe("Aave Rate Oracle", () => {
       const realizedAtOrAfterValue =
         await testRateOracle.latestAfterOrAtRateValue();
 
-      expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.1"));
+      expect(realizedBeforeOrAtRateValue).to.eq(
+        toBn("1.1", consts.AAVE_RATE_DECIMALS)
+      );
       expect(realizedAtOrAfterValue).to.eq(0);
     });
 
@@ -472,8 +445,12 @@ describe("Aave Rate Oracle", () => {
 
       // does binary search
 
-      expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.0"));
-      expect(realizedAtOrAfterValue).to.eq(toBn("1.1"));
+      expect(realizedBeforeOrAtRateValue).to.eq(
+        toBn("1.0", consts.AAVE_RATE_DECIMALS)
+      );
+      expect(realizedAtOrAfterValue).to.eq(
+        toBn("1.1", consts.AAVE_RATE_DECIMALS)
+      );
     });
 
     it("fails if target is too old", async () => {
@@ -485,10 +462,8 @@ describe("Aave Rate Oracle", () => {
   });
 
   describe("#computeApyFromRate", async () => {
-    let testRateOracle: TestRateOracle;
-
     beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
+      ({ testRateOracle } = await loadFixture(oracleFixture));
     });
 
     it("correctly computes apy", async () => {
@@ -502,27 +477,13 @@ describe("Aave Rate Oracle", () => {
   });
 
   describe("#variableFactor", async () => {
-    let testRateOracle: TestRateOracle;
-    let aaveLendingPoolContract: Contract;
-    let underlyingTokenAddress: string;
-
     let firstTimestamp: number;
     let secondTimestamp: number;
 
     beforeEach("deploy and initialize test oracle", async () => {
-      testRateOracle = await loadFixture(initializedOracleFixture);
-
-      const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
-      underlyingTokenAddress = await testRateOracle.underlying();
-      const aaveLendingPoolAbi = [
-        "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
-        "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
-      ];
-      aaveLendingPoolContract = new Contract(
-        aaveLendingPoolAddress,
-        aaveLendingPoolAbi,
-        provider
-      ).connect(wallet);
+      ({ testRateOracle, token, aaveLendingPool } = await loadFixture(
+        oracleFixture
+      ));
 
       await testRateOracle.increaseObservarionCardinalityNext(10);
 
@@ -532,9 +493,9 @@ describe("Aave Rate Oracle", () => {
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // set new liquidity index value
-      await aaveLendingPoolContract.setReserveNormalizedIncome(
-        underlyingTokenAddress,
-        toBn("1.1")
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        toBn("1.1", consts.AAVE_RATE_DECIMALS)
       );
       secondTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testRateOracle.writeOracleEntry();
@@ -565,9 +526,9 @@ describe("Aave Rate Oracle", () => {
 
     it("calculates variable factor before maturity", async () => {
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-      await aaveLendingPoolContract.setReserveNormalizedIncome(
-        underlyingTokenAddress,
-        toBn("1.2")
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        toBn("1.2", consts.AAVE_RATE_DECIMALS)
       );
 
       const termStartTimestampBN = toBn(firstTimestamp.toString());

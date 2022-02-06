@@ -70,7 +70,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @dev Reverts if we have no data point for either timestamp
     /// @param _from The timestamp of the start of the period, in seconds
     /// @param _to The timestamp of the end of the period, in seconds
-    /// @return The "floating rate" expressed in Ray, e.g. 4% is encoded as 0.04*10**27 = 4*10**25
+    /// @return The "floating rate" expressed in Wad, e.g. 4% is encoded as 0.04*10**18 = 4*10**16
     function getRateFromTo(
         uint256 _from,
         uint256 _to // @audit - move docs to IRateOracle. Add additional parameter to use cache and implement cache.
@@ -129,7 +129,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 timeDeltaBeforeOrAtToQueriedTimeWad
     ) public view returns (uint256 rateValueRay) { // TODO: back to pure after debugging
         console.log('interpolateRateValue(%s, %s, %s)', beforeOrAtRateValueRay, apyFromBeforeOrAtToAtOrAfterWad, timeDeltaBeforeOrAtToQueriedTimeWad);
-
         uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
             timeDeltaBeforeOrAtToQueriedTimeWad
         );
