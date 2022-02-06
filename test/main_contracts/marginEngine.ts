@@ -2,7 +2,12 @@ import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { expect } from "../shared/expect";
 import { metaFixture } from "../shared/fixtures";
-import { advanceTimeAndBlock } from "../helpers/time";
+import {
+  advanceTime,
+  advanceTimeAndBlock,
+  getCurrentTimestamp,
+  setTimeNextBlock,
+} from "../helpers/time";
 import { toBn } from "evm-bn";
 import { consts } from "../helpers/constants";
 import { sub, add } from "../shared/functions";
@@ -12,6 +17,7 @@ import {
   TestRateOracle,
   TestVAMM,
   TestMarginEngine,
+  MockAaveLendingPool,
 } from "../../typechain";
 import {
   encodeSqrtRatioX96,
@@ -37,6 +43,7 @@ describe("MarginEngine", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
   let factory: Factory;
+  let aaveLendingPool: MockAaveLendingPool;
   let rateOracleTest: TestRateOracle;
   let termStartTimestampBN: BigNumber;
   let termEndTimestampBN: BigNumber;
@@ -57,6 +64,7 @@ describe("MarginEngine", () => {
       rateOracleTest,
       termStartTimestampBN,
       termEndTimestampBN,
+      aaveLendingPool,
     } = await loadFixture(metaFixture));
 
     // deploy a margin engine & vamm
@@ -769,7 +777,7 @@ describe("MarginEngine", () => {
       await vammTest.setTickSpacing(TICK_SPACING);
     });
 
-    it("scenario 1: position settlement", async () => {
+    it.skip("scenario 1: position settlement", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
@@ -806,16 +814,16 @@ describe("MarginEngine", () => {
       await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
 
       const traderInfo = await marginEngineTest.traders(other.address);
-      console.log("TFTB", traderInfo.fixedTokenBalance.toString());
-      console.log("TVTB", traderInfo.variableTokenBalance.toString());
+      // console.log("TFTB", traderInfo.fixedTokenBalance.toString());
+      // console.log("TVTB", traderInfo.variableTokenBalance.toString());
 
       const positionInfo = await marginEngineTest.getPosition(
         wallet.address,
         -1,
         1
       );
-      console.log("PFTB", positionInfo.fixedTokenBalance.toString());
-      console.log("PVTB", positionInfo.variableTokenBalance.toString());
+      // console.log("PFTB", positionInfo.fixedTokenBalance.toString());
+      // console.log("PVTB", positionInfo.variableTokenBalance.toString());
 
       await marginEngineTest.settlePosition({
         owner: wallet.address,
@@ -840,18 +848,18 @@ describe("MarginEngine", () => {
         positionInfo.margin
       );
 
-      console.log("traderMarginDelta", traderMarginDelta.toString());
-      console.log("positionMarginDelta", positionMarginDelta.toString());
+      // console.log("traderMarginDelta", traderMarginDelta.toString());
+      // console.log("positionMarginDelta", positionMarginDelta.toString());
 
       const sumOfTraderMarginDeltaAndPositionMarginDelta = add(
         traderMarginDelta,
         positionMarginDelta
       );
 
-      console.log(
-        "sumOfTraderMarginDeltaAndPositionMarginDelta",
-        sumOfTraderMarginDeltaAndPositionMarginDelta.toString()
-      );
+      // console.log(
+      //   "sumOfTraderMarginDeltaAndPositionMarginDelta",
+      //   sumOfTraderMarginDeltaAndPositionMarginDelta.toString()
+      // );
 
       // small discrepancy in the delta below
       expect(sumOfTraderMarginDeltaAndPositionMarginDelta).to.eq(
@@ -909,7 +917,7 @@ describe("MarginEngine", () => {
       );
 
       const oldBalanceOther = await token.balanceOf(other.address);
-      console.log("oldBalanceOther", oldBalanceOther.toString());
+      // console.log("oldBalanceOther", oldBalanceOther.toString());
 
       const traderInfoOld = await marginEngineTest.traders(wallet.address);
       expect(traderInfoOld.variableTokenBalance).to.eq(toBn("10"));
@@ -919,7 +927,7 @@ describe("MarginEngine", () => {
       const traderInfo = await marginEngineTest.traders(wallet.address);
 
       const balanceOther = await token.balanceOf(other.address);
-      console.log("balanceOther", balanceOther.toString());
+      // console.log("balanceOther", balanceOther.toString());
 
       const balanceMarginEngine = await token.balanceOf(
         marginEngineTest.address
@@ -1029,47 +1037,83 @@ describe("MarginEngine", () => {
     });
   });
 
-  // describe("#getHistoricalApy", async () => {
-  //   let testRateOracle: TestRateOracle;
-  //   let aaveLendingPoolContract: Contract;
-  //   let underlyingTokenAddress: string;
+  describe("#getHistoricalApy[ReadOnly]", async () => {
+    const oneInRay = toBn("1", consts.AAVE_RATE_DECIMALS);
+    const apy = toBn("1.370752688", consts.AAVE_RATE_DECIMALS); // This is equivalent to compounding by 1.00000001 per second for 365 days = 31536000 seconds
+    const secondsAgo = 86400;
+    const cachePeriod = 21600;
+    let startTime;
+    // const apy = toBn("1.371039921"); // This is equivalent to compounding by 1.00000001 per second for 365.2425 days = 31556952 seconds
 
-  //   beforeEach("deploy and initialize test oracle", async () => {
-  //     testRateOracle = await loadFixture(initializedOracleFixture);
+    beforeEach("deploy and initialize test oracle", async () => {
+      await rateOracleTest.increaseObservarionCardinalityNext(10);
+      await aaveLendingPool.setReserveNormalizedIncome(token.address, oneInRay);
+      await rateOracleTest.writeOracleEntry();
 
-  //     const aaveLendingPoolAddress = await testRateOracle.aaveLendingPool();
-  //     underlyingTokenAddress = await testRateOracle.underlying();
-  //     const aaveLendingPoolAbi = [
-  //       "function getReserveNormalizedIncome(address _underlyingAsset) public view returns (uint256)",
-  //       "function setReserveNormalizedIncome(address _underlyingAsset, uint256 _reserveNormalizedIncome) public",
-  //     ];
-  //     aaveLendingPoolContract = new Contract(
-  //       aaveLendingPoolAddress,
-  //       aaveLendingPoolAbi,
-  //       provider
-  //     ).connect(wallet);
+      startTime = await getCurrentTimestamp();
 
-  //     await testRateOracle.testGrow(10);
+      await marginEngineTest.setSecondsAgo(secondsAgo); // one day
+      await marginEngineTest.setCacheMaxAgeInSeconds(cachePeriod); // six hours
+      await aaveLendingPool.setReserveNormalizedIncome(token.address, apy);
+      await setTimeNextBlock(startTime + 31536000); // One year after first reading
+      await rateOracleTest.writeOracleEntry();
+    });
 
-  //     await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-  //     await testRateOracle.writeOracleEntry();
+    it("correctly computes historical apy without cache", async () => {
+      const realizedHistoricalApy1 =
+        await marginEngineTest.getHistoricalApyReadOnly();
+      expect(realizedHistoricalApy1, "matches input APY").to.be.closeTo(
+        apy.sub(oneInRay).div(1e9), // convert rate in ray to APY in wad
+        100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
+      );
+      const realizedHistoricalApy2 =
+        await marginEngineTest.callStatic.getHistoricalApy();
+      expect(
+        realizedHistoricalApy1,
+        "view and non-view give same answer"
+      ).to.eq(realizedHistoricalApy2);
+    });
 
-  //     await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-  //     // set new liquidity index value
-  //     await aaveLendingPoolContract.setReserveNormalizedIncome(
-  //       underlyingTokenAddress,
-  //       toBn("1.1")
-  //     );
-  //     await testRateOracle.writeOracleEntry();
-  //   });
+    it("correctly caches historical apy", async () => {
+      // Fist write the cache. Note that the rate won't exactly match the APY because another block has elapsed but we have not updated reserveNormalizedIncome. This is OK because we are only testing caching.
+      const trx = await marginEngineTest.getHistoricalApy();
+      const realizedHistoricalApy1a =
+        await marginEngineTest.getHistoricalApyReadOnly();
+      const realizedHistoricalApy1b =
+        await marginEngineTest.callStatic.getHistoricalApy();
+      expect(
+        realizedHistoricalApy1a,
+        "view and non-view give same answer"
+      ).to.eq(realizedHistoricalApy1b);
 
-  //   // Error: VM Exception while processing transaction: reverted with reason string '50' (needs to be fixed)
-  //   // it("correctly computes historical apy", async () => {
-  //   //   // await testRateOracle.setSecondsAgo("86400"); // one day
-  //   //   await testRateOracle.testGetHistoricalApy();
-  //   //   const realizedHistoricalApy = await testRateOracle.latestHistoricalApy();
-  //   //   expect(realizedHistoricalApy).to.eq(0);
+      // Still within cache window so expect results unchanged
+      await advanceTime(cachePeriod - 100);
+      const realizedHistoricalApy2a =
+        await marginEngineTest.getHistoricalApyReadOnly();
+      const realizedHistoricalApy2b =
+        await marginEngineTest.callStatic.getHistoricalApy();
+      expect(realizedHistoricalApy2a, "cached value returned (2)").to.eq(
+        realizedHistoricalApy1a
+      );
+      expect(
+        realizedHistoricalApy2a,
+        "view and non-view give same answer (2)"
+      ).to.eq(realizedHistoricalApy2b);
 
-  //   // })
-  // });
+      // Now moving outside the cache window so expect lower APY to be returned (because reserveNormalizedIncome has not been updated so interest has effectively stopped accruing throughout the cache period)
+      await advanceTime(101);
+      const realizedHistoricalApy3a =
+        await marginEngineTest.getHistoricalApyReadOnly();
+      const realizedHistoricalApy3b =
+        await marginEngineTest.callStatic.getHistoricalApy();
+      expect(
+        realizedHistoricalApy3a,
+        "value now is lower than what was cached before"
+      ).to.be.lt(realizedHistoricalApy2a);
+      expect(
+        realizedHistoricalApy3a,
+        "view and non-view give same answer (3)"
+      ).to.eq(realizedHistoricalApy3b);
+    });
+  });
 });
