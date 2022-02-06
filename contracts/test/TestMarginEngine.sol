@@ -160,11 +160,6 @@ contract TestMarginEngine is MarginEngine {
         });
     }
 
-    // temporary until fixed
-    // function getHistoricalApy() public pure override returns (uint256) {
-    //     return 10**17;
-    // }
-
     function unwindPositionTest(
         address owner,
         int24 tickLower,
