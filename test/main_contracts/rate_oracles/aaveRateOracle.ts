@@ -1,4 +1,4 @@
-import { BigNumber, Wallet, Contract } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
 import { toBn } from "../../helpers/toBn";
@@ -15,7 +15,6 @@ import {
   getCurrentTimestamp,
   setTimeNextBlock,
 } from "../../helpers/time";
-import { SECONDS_IN_YEAR } from "../../shared/utilities";
 import Decimal from "decimal.js-light";
 import { ERC20Mock, MockAaveLendingPool } from "../../../typechain";
 import { consts } from "../../helpers/constants";
@@ -364,7 +363,7 @@ describe("Aave Rate Oracle", () => {
       new InterpolateTest(1, 1.000000000001, 60),
       new InterpolateTest(
         1,
-        1.0000000000000001,
+        1.000000000000001,
         1,
         "1 second at insanely low interest"
       ),
@@ -387,7 +386,7 @@ describe("Aave Rate Oracle", () => {
 
     tests.forEach(function (t) {
       it(`interpolateRateValue${t.description}`, async () => {
-        let apyPlusOne = Number(
+        const apyPlusOne = Number(
           new Decimal(t.factorPerSecond).pow(secondsPerYear).toFixed(PRECISION)
         );
         const realizedInterpolatedRateValue =
@@ -397,7 +396,7 @@ describe("Aave Rate Oracle", () => {
             toBn(t.timeInSeconds)
           );
 
-        if (t.factorPerSecond == 0) {
+        if (t.factorPerSecond === 0) {
           expect(realizedInterpolatedRateValue).to.eq(
             toBn(t.startRate, consts.AAVE_RATE_DECIMALS)
           );

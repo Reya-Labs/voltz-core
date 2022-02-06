@@ -15,7 +15,6 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeCast for uint256;
@@ -514,7 +513,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         if (params.liquidityDelta>0) {
             uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
-            console.log("variableFactorWad", variableFactorWad);
             checkPositionMarginAboveRequirement(params, position.margin, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactorWad);
         }
 
@@ -637,10 +635,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         (, int24 tick, ) = IVAMM(vammAddress).vammVars();
 
-        Printer.printInt256("updated margin would be", updatedMarginWouldBe);
-        Printer.printUint256("position liquidity", positionLiquidity);
-        Printer.printUint256("historical apy", getHistoricalApyReadOnly());
-        Printer.printEmptyLine();
+        // Printer.printInt256("updated margin would be", updatedMarginWouldBe);
+        // Printer.printUint256("position liquidity", positionLiquidity);
+        // Printer.printUint256("historical apy", getHistoricalApyReadOnly());
+        // Printer.printEmptyLine();
 
         MarginCalculator.PositionMarginRequirementParams
             memory marginReqParams = MarginCalculator

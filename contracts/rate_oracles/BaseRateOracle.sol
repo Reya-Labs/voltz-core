@@ -9,7 +9,6 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 import "../interfaces/IFactory.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../core_libraries/Time.sol";
-import "hardhat/console.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions

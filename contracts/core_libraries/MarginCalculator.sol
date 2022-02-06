@@ -11,7 +11,8 @@ import "./Position.sol";
 import "./Tick.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
-import "../utils/Printer.sol";
+
+// import "../utils/Printer.sol";
 
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
@@ -367,19 +368,19 @@ library MarginCalculator {
             )
         );
 
-        Printer.printInt256("exp1Wad", exp1Wad);
-        Printer.printInt256("exp2Wad", exp2Wad);
-        Printer.printEmptyLine();
+        // Printer.printInt256("exp1Wad", exp1Wad);
+        // Printer.printInt256("exp2Wad", exp2Wad);
+        // Printer.printEmptyLine();
 
-        Printer.printBool(
-            "is variable balance positive?",
-            variableTokenBalanceWad > 0
-        );
-        Printer.printBool(
-            "is fixed balance positive?",
-            fixedTokenBalanceWad > 0
-        );
-        Printer.printEmptyLine();
+        // Printer.printBool(
+        //     "is variable balance positive?",
+        //     variableTokenBalanceWad > 0
+        // );
+        // Printer.printBool(
+        //     "is fixed balance positive?",
+        //     fixedTokenBalanceWad > 0
+        // );
+        // Printer.printEmptyLine();
 
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
 
@@ -393,8 +394,8 @@ library MarginCalculator {
             margin = 0;
         }
 
-        Printer.printUint256("margin requirement: ", margin);
-        Printer.printEmptyLine();
+        // Printer.printUint256("margin requirement: ", margin);
+        // Printer.printEmptyLine();
     }
 
     /// @notice Checks if a given position is liquidatable
@@ -491,14 +492,14 @@ library MarginCalculator {
                     params.termEndTimestampWad
                 );
 
-            Printer.printInt256(
-                "scenario1LPFixedTokenBalance",
-                scenario1LPFixedTokenBalance
-            );
-            Printer.printInt256(
-                "scenario1LPVariableTokenBalance",
-                scenario1LPVariableTokenBalance
-            );
+            // Printer.printInt256(
+            //     "scenario1LPFixedTokenBalance",
+            //     scenario1LPFixedTokenBalance
+            // );
+            // Printer.printInt256(
+            //     "scenario1LPVariableTokenBalance",
+            //     scenario1LPVariableTokenBalance
+            // );
 
             /// @dev Scenario 2
             scenario2LPVariableTokenBalance = params.variableTokenBalance;
