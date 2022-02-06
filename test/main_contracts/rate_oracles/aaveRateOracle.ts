@@ -9,7 +9,12 @@ import {
   mockERC20Fixture,
   mockAaveLendingPoolFixture,
 } from "../../shared/fixtures";
-import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
+import {
+  advanceTime,
+  advanceTimeAndBlock,
+  getCurrentTimestamp,
+  setTimeNextBlock,
+} from "../../helpers/time";
 import { SECONDS_IN_YEAR } from "../../shared/utilities";
 import Decimal from "decimal.js-light";
 import { ERC20Mock, MockAaveLendingPool } from "../../../typechain";
@@ -77,7 +82,7 @@ describe("Aave Rate Oracle", () => {
       _token.address
     );
 
-    await rateOracleTest.setMinSecondsSinceLastUpdate(7200); // two hours
+    await rateOracleTest.setMinSecondsSinceLastUpdate(0); // test without caching by default
     return {
       testRateOracle: rateOracleTest,
       token: _token,
@@ -184,6 +189,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("does not grow cardinality if insufficient time has passed", async () => {
+      await testRateOracle.setMinSecondsSinceLastUpdate(7200); // two hours
       await testRateOracle.increaseObservarionCardinalityNext(2);
       await testRateOracle.increaseObservarionCardinalityNext(4);
       let [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
@@ -241,6 +247,90 @@ describe("Aave Rate Oracle", () => {
       const expectedRateFromTo = toBn("0.1");
 
       expect(rateFromTo).to.eq(expectedRateFromTo);
+    });
+  });
+
+  describe("#getApyFromTo", async () => {
+    const oneInRay = toBn("1", consts.AAVE_RATE_DECIMALS);
+    const expectedApy = toBn("1.3707526909509977", consts.AAVE_RATE_DECIMALS); // This is equivalent to compounding by 1.00000001 per second for 365 days = 31536000 seconds
+    const twoYearMultiple = toBn(
+      "1.8789629397494015",
+      consts.AAVE_RATE_DECIMALS
+    ); // This is equivalent to compounding by 1.00000001 per second for 2 years = 63072000 seconds
+    let startTime: number;
+
+    beforeEach("deploy and initialize test oracle", async () => {
+      ({ testRateOracle, token, aaveLendingPool } = await loadFixture(
+        oracleFixture
+      ));
+
+      await testRateOracle.increaseObservarionCardinalityNext(10);
+      await aaveLendingPool.setReserveNormalizedIncome(token.address, oneInRay);
+      await testRateOracle.writeOracleEntry();
+      startTime = await getCurrentTimestamp();
+
+      // One year passes
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        expectedApy
+      );
+      await setTimeNextBlock(startTime + 31536000); // One year after first reading
+      await testRateOracle.writeOracleEntry();
+
+      // Another year passes
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        twoYearMultiple
+      );
+      await setTimeNextBlock(startTime + 2 * 31536000); // Two years year after first reading
+      await testRateOracle.writeOracleEntry();
+
+      // 5 more years pass before tests
+      await advanceTime(5 * 31536000);
+    });
+
+    it("correctly calculates APY between two known, consecutive data points", async () => {
+      const apy = await testRateOracle.getApyFromTo(
+        startTime,
+        startTime + 31536000
+      );
+      expect(apy).to.be.closeTo(
+        expectedApy.sub(oneInRay).div(1e9), // convert rate in ray to APY in wad
+        100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
+      );
+    });
+
+    it("correctly calculates APY between two known, NON-consecutive data points", async () => {
+      const apy = await testRateOracle.getApyFromTo(
+        startTime,
+        startTime + 2 * 31536000
+      );
+      expect(apy).to.be.closeTo(
+        expectedApy.sub(oneInRay).div(1e9), // convert rate in ray to APY in wad
+        100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
+      );
+    });
+
+    it("correctly calculates APY for intervals IN BETWEEN consecutive data points", async () => {
+      const apy = await testRateOracle.getApyFromTo(
+        startTime + 100000,
+        startTime + 10000000
+      );
+      expect(apy).to.be.closeTo(
+        expectedApy.sub(oneInRay).div(1e9), // convert rate in ray to APY in wad
+        100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
+      );
+    });
+
+    it("correctly calculates APY for intervals across data points", async () => {
+      const apy = await testRateOracle.getApyFromTo(
+        startTime + 20000000,
+        startTime + 40000000
+      );
+      expect(apy).to.be.closeTo(
+        expectedApy.sub(oneInRay).div(1e9), // convert rate in ray to APY in wad
+        100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
+      );
     });
   });
 
@@ -322,7 +412,7 @@ describe("Aave Rate Oracle", () => {
             consts.AAVE_RATE_DECIMALS
           );
 
-          // C"lose to" is good enough
+          // "Close to" is good enough
           const closeTo = await testRateOracle.rayValueIsCloseTo(
             realizedInterpolatedRateValue,
             expectedValueInRay
