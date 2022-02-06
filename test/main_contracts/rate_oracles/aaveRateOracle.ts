@@ -155,14 +155,18 @@ describe("Aave Rate Oracle", () => {
       await testRateOracle.increaseObservarionCardinalityNext(2);
       await testRateOracle.increaseObservarionCardinalityNext(4);
       let [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      expect(rateIndex).to.eq(0);
       expect(rateCardinality).to.eq(1);
       // console.log(await getCurrentTimestamp(provider));
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // console.log(await getCurrentTimestamp(provider));
       await testRateOracle.writeOracleEntry();
       [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      expect(rateIndex).to.eq(1);
       expect(rateCardinality).to.eq(4);
-      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      const minSecondsSinceLastUpdate =
+        await testRateOracle.minSecondsSinceLastUpdate();
+      await advanceTimeAndBlock(minSecondsSinceLastUpdate.add(1), 2); // advance by more than minSecondsSinceLastUpdate
       const currentTimestamp = await getCurrentTimestamp(provider);
       await testRateOracle.writeOracleEntry();
       [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
@@ -171,6 +175,31 @@ describe("Aave Rate Oracle", () => {
       const [rateTimestamp, rateValue] = await testRateOracle.getRate(2);
       expect(rateValue).to.eq(toBn("1.0"));
       expect(rateTimestamp).to.eq(currentTimestamp + 1);
+    });
+
+    it("does not grow cardinality if insufficient time has passed", async () => {
+      await testRateOracle.increaseObservarionCardinalityNext(2);
+      await testRateOracle.increaseObservarionCardinalityNext(4);
+      let [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      expect(rateIndex).to.eq(0);
+      expect(rateCardinality).to.eq(1);
+      // console.log(await getCurrentTimestamp(provider));
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      const currentTimestamp = await getCurrentTimestamp(provider);
+      await testRateOracle.writeOracleEntry();
+      [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      expect(rateIndex).to.eq(1);
+      expect(rateCardinality).to.eq(4);
+      const minSecondsSinceLastUpdate =
+        await testRateOracle.minSecondsSinceLastUpdate();
+      await advanceTimeAndBlock(minSecondsSinceLastUpdate.sub(100), 2); // advance by less than minSecondsSinceLastUpdate
+      await testRateOracle.writeOracleEntry();
+      [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      expect(rateIndex).to.eq(1); // Should be unchanged since insufficient time passed to write new rate
+      expect(rateCardinality).to.eq(4);
+      const [rateTimestamp, rateValue] = await testRateOracle.getRate(1);
+      expect(rateValue).to.eq(toBn("1.0"));
+      expect(rateTimestamp).to.eq(currentTimestamp + 1); // TImestemp from *before* last write
     });
   });
 
@@ -222,74 +251,97 @@ describe("Aave Rate Oracle", () => {
     });
   });
 
-  const interpolateRateValue = (
-    principal: Decimal,
-    apy: Decimal,
-    seconds: Decimal
-  ): Decimal => {
-    console.log("1");
-    const secondsPerYear = new Decimal(31536000);
-    const timeInYears = seconds.div(secondsPerYear);
-    const apyFactor = apy.plus(1);
-    console.log("2");
-    const resultAsDecimal = principal.times(apyFactor.pow(timeInYears));
-    console.log("result:", resultAsDecimal.toFixed(10));
-    // convert to way
-    return resultAsDecimal.times(1e18);
-  };
-
-  describe.only("#interpolateRateValue", async () => {
+  describe("#interpolateRateValue", async () => {
     let testRateOracle: TestRateOracle;
+    const PRECISION = 10;
+    const secondsPerYear = 31536000;
+    const rayDecimals = 27;
 
     beforeEach("deploy and initialize test oracle", async () => {
       testRateOracle = await loadFixture(initializedOracleFixture);
     });
 
-    // Get back to this
-    it("correctly interpolates the rate value", async () => {
-      const PRECISION = 10;
-      const secondsPerYear = 31536000;
-      const startRate = 1;
-      const factorPerSecond = 1.00000001;
-      const rayDecimals = 27;
-      let apyPlusOne = Number(
-        new Decimal(factorPerSecond).pow(secondsPerYear).toFixed(PRECISION)
-      );
-      console.log("apy", apyPlusOne);
-
-      const timeInSeconds = 86400;
-
-      const realizedInterpolatedRateValue =
-        await testRateOracle.interpolateRateValue(
-          toBn(startRate, rayDecimals),
-          toBn(apyPlusOne - 1),
-          toBn(timeInSeconds)
-        ); // one week
-      // const expectedRateValue = interpolateRateValue(
-      //   new Decimal("1.0"),
-      //   new Decimal("0.1"),
-      //   new Decimal("604800")
-      // );
-      // const expectedRateValue = 0;
-      const timeInYears = timeInSeconds / secondsPerYear;
-      const factor = new Decimal(apyPlusOne).pow(timeInYears);
-      const expectedValue = Number(factor.mul(startRate).toFixed(PRECISION));
-      const expectedValueInRay = toBn(
-        expectedValue.toFixed(PRECISION),
-        rayDecimals
-      );
-      console.log("timeInYears", timeInYears);
-      console.log("expectedValue", expectedValue);
-      // expect(realizedInterpolatedRateValue).to.eq(toBn(expectedValue));
-      const closeTo = await testRateOracle.rayValueIsCloseTo(
-        realizedInterpolatedRateValue,
-        expectedValueInRay
-      );
-      console.log("closeTo=", closeTo);
-      if (!closeTo) {
-        // Fail
-        expect(realizedInterpolatedRateValue).to.eq(expectedValueInRay);
+    class InterpolateTest {
+      public description: string;
+      constructor(
+        public startRate: number,
+        public factorPerSecond: number,
+        public timeInSeconds: number,
+        _description?: string
+      ) {
+        if (_description) {
+          this.description = `: ${_description}`;
+        } else {
+          this.description = `(${startRate}, ${factorPerSecond}, ${timeInSeconds})`;
+        }
       }
+    }
+
+    const tests = [
+      new InterpolateTest(1, 1.00000001, 86400),
+      new InterpolateTest(1, 1.0000000001, 3600),
+      new InterpolateTest(1, 1.000000000001, 60),
+      new InterpolateTest(
+        1,
+        1.0000000000000001,
+        1,
+        "1 second at insanely low interest"
+      ),
+      new InterpolateTest(1, 1, 86400, "zero interest"),
+      new InterpolateTest(1, 1, 1, "zero interest (one second)"),
+      // new InterpolateTest(1, 0.9999999, 86400), // negative interest (factor < 1) not supported?
+      // new InterpolateTest(1, 0.9999999, 1), // negative interest (factor < 1) not supported?
+      new InterpolateTest(1, 1.000000001, 1),
+      new InterpolateTest(50, 1.000000001, 86400),
+      new InterpolateTest(50, 1.000000001, 1),
+      new InterpolateTest(1, 1.000000001, 7776000, "3 months"),
+      new InterpolateTest(2, 1.000001, 1),
+      new InterpolateTest(
+        1,
+        1.000001,
+        7776000,
+        "3 months @ insanely high interest"
+      ),
+    ];
+
+    tests.forEach(function (t) {
+      it(`interpolateRateValue${t.description}`, async () => {
+        let apyPlusOne = Number(
+          new Decimal(t.factorPerSecond).pow(secondsPerYear).toFixed(PRECISION)
+        );
+        const realizedInterpolatedRateValue =
+          await testRateOracle.interpolateRateValue(
+            toBn(t.startRate, rayDecimals), // Starting value in ray
+            toBn(apyPlusOne - 1),
+            toBn(t.timeInSeconds)
+          );
+
+        if (t.factorPerSecond == 0) {
+          expect(realizedInterpolatedRateValue).to.eq(
+            toBn(t.startRate, rayDecimals)
+          );
+        } else {
+          const timeInYears = t.timeInSeconds / secondsPerYear;
+          const factor = new Decimal(apyPlusOne).pow(timeInYears);
+          const expectedValue = Number(
+            factor.mul(t.startRate).toFixed(PRECISION)
+          );
+          const expectedValueInRay = toBn(
+            expectedValue.toFixed(PRECISION),
+            rayDecimals
+          );
+
+          // C"lose to" is good enough
+          const closeTo = await testRateOracle.rayValueIsCloseTo(
+            realizedInterpolatedRateValue,
+            expectedValueInRay
+          );
+          if (!closeTo) {
+            // Fail
+            expect(realizedInterpolatedRateValue).to.eq(expectedValueInRay);
+          }
+        }
+      });
     });
   });
 
@@ -390,9 +442,6 @@ describe("Aave Rate Oracle", () => {
       const realizedAtOrAfterValue =
         await testRateOracle.latestAfterOrAtRateValue();
 
-      // console.log(realizedBeforeOrAtRateValue);
-      // console.log(realizedAtOrAfterValue);
-
       expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.0"));
       expect(realizedAtOrAfterValue).to.eq(toBn("1.1"));
     });
@@ -404,9 +453,6 @@ describe("Aave Rate Oracle", () => {
         await testRateOracle.latestBeforeOrAtRateValue();
       const realizedAtOrAfterValue =
         await testRateOracle.latestAfterOrAtRateValue();
-
-      // console.log(realizedBeforeOrAtRateValue);
-      // console.log(realizedAtOrAfterValue);
 
       expect(realizedBeforeOrAtRateValue).to.eq(toBn("1.1"));
       expect(realizedAtOrAfterValue).to.eq(0);
