@@ -26,25 +26,19 @@ interface IMarginEngine is IPositionStructs {
         int256 xiLowerWad;
         /// @dev Max term possible for a Voltz IRS AMM in seconds (18 decimals)
         int256 tMaxWad;
-
         /// @dev
         uint256 devMulLeftUnwindLMWad;
         uint256 devMulRightUnwindLMWad;
-
         uint256 devMulLeftUnwindIMWad;
         uint256 devMulRightUnwindIMWad;
-
         /// @dev
 
         uint256 fixedRateDeviationMinLeftUnwindLMWad;
         uint256 fixedRateDeviationMinRightUnwindLMWad;
-
         uint256 fixedRateDeviationMinLeftUnwindIMWad;
         uint256 fixedRateDeviationMinRightUnwindIMWad;
-
         /// @dev
         uint256 gammaWad;
-
         uint256 minMarginToIncentiviseLiquidators;
     }
 

@@ -197,16 +197,22 @@ describe("VAMM", () => {
       // note there is some discrepancy between the balances, they don't quite cancel each other
       // investigate the implications of this
 
-      const sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance = add(positionFixedTokenBalance, traderFixedTokenBalance)
-
-      console.log("sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance", sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance.toString());
-
-      expect(positionVariableTokenBalance).to.be.near(
-        toBn("1")
+      const sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance = add(
+        positionFixedTokenBalance,
+        traderFixedTokenBalance
       );
+
+      console.log(
+        "sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance",
+        sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance.toString()
+      );
+
+      expect(positionVariableTokenBalance).to.be.near(toBn("1"));
       expect(traderVariableTokenBalance).to.eq(toBn("-1"));
 
-      expect(sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance).to.be.closeTo(toBn("0"), 10);
+      expect(
+        sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance
+      ).to.be.closeTo(toBn("0"), 10);
     });
 
     it("scenario 2: ", async () => {
@@ -268,15 +274,23 @@ describe("VAMM", () => {
       // note there is some discrepancy between the balances, they don't quite cancel each other
       // investigate the implications of this
 
-      const sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance = add(positionFixedTokenBalance, traderFixedTokenBalance)
+      const sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance = add(
+        positionFixedTokenBalance,
+        traderFixedTokenBalance
+      );
 
-      console.log("sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance 2", sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance.toString());
-      
+      console.log(
+        "sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance 2",
+        sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance.toString()
+      );
+
       expect(positionVariableTokenBalance).to.be.closeTo(toBn("-1"), 10);
 
       expect(traderVariableTokenBalance).to.be.eq(toBn("1"));
 
-      expect(sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance).to.be.closeTo(toBn("0"), 10);
+      expect(
+        sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance
+      ).to.be.closeTo(toBn("0"), 10);
     });
 
     it("scenario 3: check fees (no protocol fees)", async () => {
