@@ -1,9 +1,8 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
 import { TestVAMM } from "../../../typechain/TestVAMM";
-import { expect } from "../../shared/expect";
 import {
-    E2ESetupFixture,
+  E2ESetupFixture,
   fixedAndVariableMathFixture,
   metaFixtureScenario1E2E,
   sqrtPriceMathFixture,
@@ -28,7 +27,7 @@ import {
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../../typechain/TestMarginEngine";
 import {
-    E2ESetup,
+  E2ESetup,
   ERC20Mock,
   Factory,
   FixedAndVariableMathTest,
@@ -163,7 +162,7 @@ describe("VAMM", () => {
       fixedAndVariableMathFixture
     ));
 
-    ( {e2eSetup} = await loadFixture(E2ESetupFixture));
+    ({ e2eSetup } = await loadFixture(E2ESetupFixture));
     await e2eSetup.setMEAddress(marginEngineTest.address);
     await e2eSetup.setVAMMAddress(vammTest.address);
     await e2eSetup.setRateOracleAddress(rateOracleTest.address);
@@ -466,13 +465,14 @@ describe("VAMM", () => {
         toBn("210")
       );
 
-      await e2eSetup.connect(positions[0][0])
-      .mint(
-        positions[0][0].address,
-        positions[0][1],
-        positions[0][2],
-        toBn("1000000")
-      );
+      await e2eSetup
+        .connect(positions[0][0])
+        .mint(
+          positions[0][0].address,
+          positions[0][1],
+          positions[0][2],
+          toBn("1000000")
+        );
 
       // two days pass and set reserve normalised income
 
@@ -487,10 +487,7 @@ describe("VAMM", () => {
 
       // Trader 1 engages in  a swap that (almost) consumes all of the liquidity of LP 1
 
-      await e2eSetup.updateTraderMargin(
-        traders[0].address,
-        toBn("1000")
-      );
+      await e2eSetup.updateTraderMargin(traders[0].address, toBn("1000"));
 
       console.log(
         "----------------------------BEFORE FIRST SWAP----------------------------"
@@ -571,10 +568,7 @@ describe("VAMM", () => {
 
       // Trader 2 engages in a swap and consumes some liquidity of LP 2
 
-      await e2eSetup.updateTraderMargin(
-        traders[1].address,
-        toBn("1000")
-      );
+      await e2eSetup.updateTraderMargin(traders[1].address, toBn("1000"));
 
       console.log(
         "----------------------------BEFORE SECOND SWAP----------------------------"

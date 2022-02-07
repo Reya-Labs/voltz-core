@@ -11,13 +11,13 @@ contract E2ESetup {
         int24 tickUpper;
     }
 
-    mapping (uint => UniqueIdentifiersPosition) public allPositions;
-    mapping (bytes32 => uint) public indexAllPositions;
-    uint public sizeAllPositions = 0;
+    mapping(uint256 => UniqueIdentifiersPosition) public allPositions;
+    mapping(bytes32 => uint256) public indexAllPositions;
+    uint256 public sizeAllPositions = 0;
 
-    mapping (uint => address) public allTraders;
-    mapping (address => uint) public indexAllTraders;
-    uint public sizeAllTraders = 0;
+    mapping(uint256 => address) public allTraders;
+    mapping(address => uint256) public indexAllTraders;
+    uint256 public sizeAllTraders = 0;
 
     int256 initialCashflow = 0;
 
@@ -30,20 +30,30 @@ contract E2ESetup {
         indexAllTraders[trader] = sizeAllTraders;
     }
 
-    function addPosition(address owner, int24 tickLower, int24 tickUpper) external {
-        bytes32 hashedPositon = keccak256(abi.encodePacked(owner, tickLower, tickUpper));
+    function addPosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) external {
+        bytes32 hashedPositon = keccak256(
+            abi.encodePacked(owner, tickLower, tickUpper)
+        );
         if (indexAllPositions[hashedPositon] == 0) {
             return;
         }
         sizeAllPositions += 1;
-        allPositions[sizeAllPositions] = UniqueIdentifiersPosition(owner, tickLower, tickUpper);
+        allPositions[sizeAllPositions] = UniqueIdentifiersPosition(
+            owner,
+            tickLower,
+            tickUpper
+        );
         indexAllPositions[hashedPositon] = sizeAllPositions;
     }
 
     address public MEAddress;
     address public VAMMAddress;
     address public rateOracleAddress;
-    
+
     function setMEAddress(address _MEAddress) external {
         MEAddress = _MEAddress;
     }
@@ -79,14 +89,20 @@ contract E2ESetup {
     function swap(IVAMM.SwapParams memory params) external {
         if (params.isTrader) {
             this.addTrader(params.recipient);
-        }
-        else {
-            this.addPosition(params.recipient, params.tickLower, params.tickUpper);
+        } else {
+            this.addPosition(
+                params.recipient,
+                params.tickLower,
+                params.tickUpper
+            );
         }
         IVAMM(VAMMAddress).swap(params);
     }
 
-    function updatePositionMargin(IPositionStructs.ModifyPositionParams memory params, int256 marginDelta) external {
+    function updatePositionMargin(
+        IPositionStructs.ModifyPositionParams memory params,
+        int256 marginDelta
+    ) external {
         this.addPosition(params.owner, params.tickLower, params.tickUpper);
         IMarginEngine(MEAddress).updatePositionMargin(params, marginDelta);
         initialCashflow += marginDelta;
@@ -103,26 +119,60 @@ contract E2ESetup {
         int256 totalVariableTokens = 0;
         int256 totalCashflow = 0;
 
-        uint256 termStartTimestampWad = uint256(IMarginEngine(MEAddress).termStartTimestampWad());
-        uint256 termEndTimestampWad = uint256(IMarginEngine(MEAddress).termEndTimestampWad());
+        uint256 termStartTimestampWad = uint256(
+            IMarginEngine(MEAddress).termStartTimestampWad()
+        );
+        uint256 termEndTimestampWad = uint256(
+            IMarginEngine(MEAddress).termEndTimestampWad()
+        );
 
-        uint256 variableFactor = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
+        uint256 variableFactor = IRateOracle(rateOracleAddress).variableFactor(
+            termStartTimestampWad,
+            termEndTimestampWad
+        );
 
-        for (uint i = 1; i <= sizeAllPositions; i++) {
-            Position.Info memory position = IMarginEngine(MEAddress).getPosition(allPositions[i].owner, allPositions[i].tickLower, allPositions[i].tickUpper);
-            TestMarginEngine(MEAddress).updatePositionTokenBalancesAndAccountForFeesTest(allPositions[i].owner, allPositions[i].tickLower, allPositions[i].tickUpper);
+        for (uint256 i = 1; i <= sizeAllPositions; i++) {
+            Position.Info memory position = IMarginEngine(MEAddress)
+                .getPosition(
+                    allPositions[i].owner,
+                    allPositions[i].tickLower,
+                    allPositions[i].tickUpper
+                );
+            TestMarginEngine(MEAddress)
+                .updatePositionTokenBalancesAndAccountForFeesTest(
+                    allPositions[i].owner,
+                    allPositions[i].tickLower,
+                    allPositions[i].tickUpper
+                );
             totalFixedTokens += position.fixedTokenBalance;
             totalVariableTokens += position.variableTokenBalance;
             totalCashflow += position.margin;
-            totalCashflow += FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, variableFactor);
+            totalCashflow += FixedAndVariableMath.calculateSettlementCashflow(
+                position.fixedTokenBalance,
+                position.variableTokenBalance,
+                termStartTimestampWad,
+                termEndTimestampWad,
+                variableFactor
+            );
         }
 
-        for (uint i = 1; i <= sizeAllTraders; i++) {
-            (int256 margin, int256 fixedTokenBalance, int256 variableTokenBalance, ) = IMarginEngine(MEAddress).traders(allTraders[i]);
+        for (uint256 i = 1; i <= sizeAllTraders; i++) {
+            (
+                int256 margin,
+                int256 fixedTokenBalance,
+                int256 variableTokenBalance,
+
+            ) = IMarginEngine(MEAddress).traders(allTraders[i]);
             totalFixedTokens += fixedTokenBalance;
             totalVariableTokens += variableTokenBalance;
             totalCashflow += margin;
-            totalCashflow += FixedAndVariableMath.calculateSettlementCashflow(fixedTokenBalance, variableTokenBalance, termStartTimestampWad, termEndTimestampWad, variableFactor);
+            totalCashflow += FixedAndVariableMath.calculateSettlementCashflow(
+                fixedTokenBalance,
+                variableTokenBalance,
+                termStartTimestampWad,
+                termEndTimestampWad,
+                variableFactor
+            );
         }
 
         if (totalFixedTokens != 0) {

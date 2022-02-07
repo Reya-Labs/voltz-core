@@ -80,9 +80,7 @@ export async function fixedAndVariableMathFixture() {
 }
 
 export async function E2ESetupFixture() {
-  const E2ESetupFactory = await ethers.getContractFactory(
-    "E2ESetup"
-  );
+  const E2ESetupFactory = await ethers.getContractFactory("E2ESetup");
 
   const e2eSetup = await E2ESetupFactory.deploy();
 
