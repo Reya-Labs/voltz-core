@@ -28,13 +28,22 @@ interface IMarginEngine is IPositionStructs {
         int256 tMaxWad;
 
         /// @dev
-        uint256 devMulLeftUnwindLM;
-        uint256 devMulRightUnwindLM;
+        uint256 devMulLeftUnwindLMWad;
+        uint256 devMulRightUnwindLMWad;
 
-        uint256 devMulLeftUnwindIM;
-        uint256 devMulRightUnwindIM;
+        uint256 devMulLeftUnwindIMWad;
+        uint256 devMulRightUnwindIMWad;
 
-        uint256 devDiv;
+        /// @dev
+
+        uint256 fixedRateDeviationMinLeftUnwindLMWad;
+        uint256 fixedRateDeviationMinRightUnwindLMWad;
+
+        uint256 fixedRateDeviationMinLeftUnwindIMWad;
+        uint256 fixedRateDeviationMinRightUnwindIMWad;
+
+        /// @dev
+        uint256 gammaWad;
 
         uint256 minMarginToIncentiviseLiquidators;
     }

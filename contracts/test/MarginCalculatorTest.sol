@@ -7,8 +7,8 @@ import "../core_libraries/FixedAndVariableMath.sol";
 
 contract MarginCalculatorTest {
     
-    function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256 variableTokenDeltaAbsolute, uint160 sqrtRatioCurrX96, uint256 devMul, uint256 devDiv) external pure returns (uint256 fixedTokenDeltaUnbalanced) {
-        return MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(variableTokenDeltaAbsolute, sqrtRatioCurrX96, devMul, devDiv);
+    function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256 variableTokenDeltaAbsolute, uint160 sqrtRatioCurrX96, uint256 startingFixedRateMultiplierWad, uint256 fixedRateDeviationMinWad, uint256 termEndTimestampWad, uint256 currentTimestampWad, uint256 tMaxWad, uint256 gammaWad, bool isFTUnwind) external pure returns (uint256 fixedTokenDeltaUnbalanced) {
+        return MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(variableTokenDeltaAbsolute, sqrtRatioCurrX96, startingFixedRateMultiplierWad, fixedRateDeviationMinWad, termEndTimestampWad, currentTimestampWad, tMaxWad, gammaWad, isFTUnwind);
     }
     
     function computeTimeFactor(

@@ -13,6 +13,7 @@ import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
 import "../utils/Printer.sol";
 import "../utils/FullMath.sol";
+import "../utils/FixedPoint96.sol";
 
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
@@ -322,20 +323,83 @@ library MarginCalculator {
         }
     }
 
+    struct SimulatedUnwindLocalVars {
+        uint256 sqrtRatioCurrWad;
+        uint256 fixedRateStartWad;
+        uint256 upperDWad;
+        uint256 scaledTimeWad;
+        int256 expInputWad;
+        int256 oneMinusTimeFactorWad;
+        uint256 dWad;
+        uint256 fixedRateCFWad;
+        uint256 fixedTokenDeltaUnbalancedWad;
+    }
+    
     // simulation of a swap without the need to involve the swap function
-    function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256 variableTokenDeltaAbsolute, uint160 sqrtRatioCurrX96, uint256 devMul, uint256 devDiv) internal pure returns (uint256 fixedTokenDeltaUnbalanced) {
+    function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256 variableTokenDeltaAbsolute, uint160 sqrtRatioCurrX96, uint256 startingFixedRateMultiplierWad, uint256 fixedRateDeviationMinWad, uint256 termEndTimestampWad, uint256 currentTimestampWad, uint256 tMaxWad, uint256 gammaWad, bool isFTUnwind) internal pure returns (uint256 fixedTokenDeltaUnbalanced) {
         
-        require(devDiv > 0, "<=0");
-
-        uint256 sqrtRatioPostDeviationX96 = FullMath.mulDiv(
+        SimulatedUnwindLocalVars memory simulatedUnwindLocalVars;
+        
+        // todo: require checks
+        
+        // calculate f_start
+        simulatedUnwindLocalVars.sqrtRatioCurrWad = FullMath.mulDiv(
+            PRBMathUD60x18.fromUint(1),
             sqrtRatioCurrX96,
-            devMul,
-            devDiv
+            FixedPoint96.Q96
         );
 
-        // fixedTokenDeltaUnbalanced = variableTokenDelta / (sqrtRatioPostDeviation * sqrtRatioPostDeviation)
-        fixedTokenDeltaUnbalanced = (((variableTokenDeltaAbsolute << FixedPoint96.RESOLUTION) << FixedPoint96.RESOLUTION) / (sqrtRatioPostDeviationX96 * sqrtRatioPostDeviationX96));
+        simulatedUnwindLocalVars.fixedRateStartWad = PRBMathUD60x18.div(
+            PRBMathUD60x18.fromUint(1),
+            PRBMathUD60x18.mul(simulatedUnwindLocalVars.sqrtRatioCurrWad, simulatedUnwindLocalVars.sqrtRatioCurrWad)
+        );
 
+        // calculate D
+
+        simulatedUnwindLocalVars.upperDWad = PRBMathUD60x18.mul(simulatedUnwindLocalVars.fixedRateStartWad, startingFixedRateMultiplierWad);
+
+        if (simulatedUnwindLocalVars.upperDWad < fixedRateDeviationMinWad) {
+            simulatedUnwindLocalVars.upperDWad = fixedRateDeviationMinWad;
+        }
+
+        // calculate d
+
+        simulatedUnwindLocalVars.scaledTimeWad = PRBMathUD60x18.div(
+            (termEndTimestampWad - currentTimestampWad),
+            tMaxWad
+        );
+
+        simulatedUnwindLocalVars.expInputWad = PRBMathSD59x18.mul((-int256(gammaWad)), int256(simulatedUnwindLocalVars.scaledTimeWad));
+
+        simulatedUnwindLocalVars.oneMinusTimeFactorWad = PRBMathSD59x18.fromInt(1) - PRBMathSD59x18.exp(simulatedUnwindLocalVars.expInputWad);
+
+        simulatedUnwindLocalVars.dWad = PRBMathUD60x18.mul(simulatedUnwindLocalVars. upperDWad, uint256(simulatedUnwindLocalVars.oneMinusTimeFactorWad));
+
+        // calculate cfFixedRate
+        
+        simulatedUnwindLocalVars.fixedRateCFWad;
+        
+        if (isFTUnwind) {
+
+            if (simulatedUnwindLocalVars.fixedRateStartWad > simulatedUnwindLocalVars.dWad) {
+                simulatedUnwindLocalVars.fixedRateCFWad = simulatedUnwindLocalVars.fixedRateStartWad - simulatedUnwindLocalVars.dWad;
+            } else {
+                simulatedUnwindLocalVars.fixedRateCFWad = 0;
+            }
+        } else {
+            simulatedUnwindLocalVars.fixedRateCFWad = simulatedUnwindLocalVars.fixedRateStartWad + simulatedUnwindLocalVars.dWad;
+        }
+
+        // calculate fixedTokenDeltaUnbalancedWad
+
+        simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad = PRBMathUD60x18.mul(
+            PRBMathUD60x18.fromUint(variableTokenDeltaAbsolute),
+            simulatedUnwindLocalVars.fixedRateCFWad
+        );
+
+        // calculate fixedTokenDeltaUnbalanced
+
+        fixedTokenDeltaUnbalanced = PRBMathUD60x18.toUint(simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad);
     }
 
 
@@ -351,7 +415,8 @@ library MarginCalculator {
         }
 
         int256 fixedTokenDeltaUnbalanced;
-        uint256 devMul;
+        uint256 devMulWad;
+        uint256 fixedRateDeviationMinWad;
 
         if (params.variableTokenBalance > 0) {
 
@@ -361,24 +426,28 @@ library MarginCalculator {
             }
     
             if (params.isLM) {
-                devMul = _marginCalculatorParameters.devMulLeftUnwindLM;
+                devMulWad = _marginCalculatorParameters.devMulLeftUnwindLMWad;
+                fixedRateDeviationMinWad = _marginCalculatorParameters.fixedRateDeviationMinLeftUnwindLMWad;
             } else {
-                devMul = _marginCalculatorParameters.devMulLeftUnwindIM;
+                devMulWad = _marginCalculatorParameters.devMulLeftUnwindIMWad;
+                fixedRateDeviationMinWad = _marginCalculatorParameters.fixedRateDeviationMinLeftUnwindIMWad;
             }
 
             // simulate an adversarial unwind (cumulative position is a VT --> simulate FT unwind --> movement to the left along the VAMM)
-            fixedTokenDeltaUnbalanced = int256(getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256(params.variableTokenBalance), params.sqrtPriceX96, devMul, _marginCalculatorParameters.devDiv));
+            fixedTokenDeltaUnbalanced = int256(getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256(params.variableTokenBalance), params.sqrtPriceX96, devMulWad, fixedRateDeviationMinWad, params.termEndTimestampWad, Time.blockTimestampScaled(), uint256(_marginCalculatorParameters.tMaxWad), _marginCalculatorParameters.gammaWad, true));
 
         } else {
 
             if (params.isLM) {
-                devMul = _marginCalculatorParameters.devMulRightUnwindLM;
+                devMulWad = _marginCalculatorParameters.devMulRightUnwindLMWad;
+                fixedRateDeviationMinWad = _marginCalculatorParameters.fixedRateDeviationMinRightUnwindLMWad;
             } else {
-                devMul = _marginCalculatorParameters.devMulRightUnwindIM;
+                devMulWad = _marginCalculatorParameters.devMulRightUnwindIMWad;
+                fixedRateDeviationMinWad = _marginCalculatorParameters.fixedRateDeviationMinRightUnwindIMWad;
             }
             
             // simulate an adversarial unwind (cumulative position is an FT --> simulate a VT unwind --> movement to the right along the VAMM)
-            fixedTokenDeltaUnbalanced = -int256(getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256(-params.variableTokenBalance), params.sqrtPriceX96, devMul, _marginCalculatorParameters.devDiv));
+            fixedTokenDeltaUnbalanced = -int256(getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(uint256(-params.variableTokenBalance), params.sqrtPriceX96, devMulWad, fixedRateDeviationMinWad, params.termEndTimestampWad, Time.blockTimestampScaled(), uint256(_marginCalculatorParameters.tMaxWad), _marginCalculatorParameters.gammaWad, false));
         }
 
         int256 variableTokenDelta = -params.variableTokenBalance;
@@ -573,8 +642,6 @@ library MarginCalculator {
                     int128(params.liquidity)
                 );
 
-            /// @audit should not use PRB math for the below calculation
-
             scenario1LPVariableTokenBalance =
                 params.variableTokenBalance +
                 amount1FromTickLowerToTickUpper;
@@ -588,15 +655,6 @@ library MarginCalculator {
                     params.termStartTimestampWad,
                     params.termEndTimestampWad
                 );
-
-            Printer.printInt256(
-                "scenario1LPFixedTokenBalance",
-                scenario1LPFixedTokenBalance
-            );
-            Printer.printInt256(
-                "scenario1LPVariableTokenBalance",
-                scenario1LPVariableTokenBalance
-            );
 
             /// @dev Scenario 2
             scenario2LPVariableTokenBalance = params.variableTokenBalance;
@@ -708,6 +766,8 @@ library MarginCalculator {
             scenario2LPVariableTokenBalance = params.variableTokenBalance;
             scenario2LPFixedTokenBalance = params.fixedTokenBalance;
         }
+
+        // @audit make sure correct current prices are provided in here as per the overleaf doc
 
         uint256 scenario1MarginRequirement = getTraderMarginRequirement(
             TraderMarginRequirementParams({
