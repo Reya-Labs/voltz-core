@@ -33,7 +33,7 @@ library MarginCalculator {
         int256 lambdaDenWad;
         /// @dev lambda = lambdaNum / lambdaDen
         int256 lambdaWad;
-        /// @dev critical value = 2(k+2lambda)
+        /// @dev critical value multiplier = 2(k+2lambda)
         int256 criticalValueMultiplierWad;
         /// @dev critical value = sqrt(2(k+2*lambda))*xiUpper (for upper bound calculation), critical value = sqrt(2(k+2*lambda))*xiLower (for lower bound calculation)
         int256 criticalValueWad;
