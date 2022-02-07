@@ -79,6 +79,16 @@ export async function fixedAndVariableMathFixture() {
   return { testFixedAndVariableMath };
 }
 
+export async function E2ESetupFixture() {
+  const E2ESetupFactory = await ethers.getContractFactory(
+    "E2ESetup"
+  );
+
+  const e2eSetup = await E2ESetupFactory.deploy();
+
+  return { e2eSetup };
+}
+
 export async function tickMathFixture() {
   const TickMathFactury = await ethers.getContractFactory("TickMathTest");
 

@@ -129,7 +129,7 @@ contract E2ESetup {
             return false;
         }
 
-        if (variableFixedTokens != 0) {
+        if (totalVariableTokens != 0) {
             return false;
         }
 
