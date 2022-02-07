@@ -612,6 +612,8 @@ library MarginCalculator {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal view returns (uint256 margin) {
+        
+        /// @audit params.sqrtPriceX96 is redundunt
 
         int256 scenario1LPVariableTokenBalance;
         int256 scenario1LPFixedTokenBalance;
@@ -768,6 +770,22 @@ library MarginCalculator {
         }
 
         // @audit make sure correct current prices are provided in here as per the overleaf doc
+ 
+        uint160 scenario1SqrtPriceX96;
+        uint160 scenario2SqrtPriceX96;
+
+        if (scenario1LPVariableTokenBalance > 0) {
+            // will engage in a fixed taker unwind (check this)
+            scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(params.tickUpper);
+        } else {
+            scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(params.tickLower);
+        }
+
+        if (scenario2LPVariableTokenBalance > 0) {
+            scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(params.tickUpper);
+        } else {
+            scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(params.tickLower);
+        }
 
         uint256 scenario1MarginRequirement = getTraderMarginRequirement(
             TraderMarginRequirementParams({
@@ -777,7 +795,7 @@ library MarginCalculator {
                 termEndTimestampWad: params.termEndTimestampWad,
                 isLM: params.isLM,
                 historicalApyWad: params.historicalApyWad,
-                sqrtPriceX96: params.sqrtPriceX96,
+                sqrtPriceX96: scenario1SqrtPriceX96,
                 variableFactorWad: params.variableFactorWad
             }),
             _marginCalculatorParameters
@@ -791,7 +809,7 @@ library MarginCalculator {
                 termEndTimestampWad: params.termEndTimestampWad,
                 isLM: params.isLM,
                 historicalApyWad: params.historicalApyWad,
-                sqrtPriceX96: params.sqrtPriceX96,
+                sqrtPriceX96: scenario2SqrtPriceX96,
                 variableFactorWad: params.variableFactorWad
             }),
             _marginCalculatorParameters
