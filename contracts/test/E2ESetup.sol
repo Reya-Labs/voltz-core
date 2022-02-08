@@ -7,7 +7,9 @@ import "contracts/test/TestVAMM.sol";
 import "contracts/utils/Printer.sol";
 
 contract Swapper {
-    function swap(address VAMMAddress, IVAMM.SwapParams memory params) external {
+    function swap(address VAMMAddress, IVAMM.SwapParams memory params)
+        external
+    {
         IVAMM(VAMMAddress).swap(params);
     }
 }
@@ -108,8 +110,14 @@ contract E2ESetup {
         uint128 amount
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
-        Minter(recipient).mint(VAMMAddress, recipient, tickLower, tickUpper, amount);
-        
+        Minter(recipient).mint(
+            VAMMAddress,
+            recipient,
+            tickLower,
+            tickUpper,
+            amount
+        );
+
         if (!continuousInvariants()) {
             revert("Invariants do not hold");
         }
@@ -122,8 +130,14 @@ contract E2ESetup {
         uint128 amount
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
-        Minter(recipient).burn(VAMMAddress, recipient, tickLower, tickUpper, amount);
-        
+        Minter(recipient).burn(
+            VAMMAddress,
+            recipient,
+            tickLower,
+            tickUpper,
+            amount
+        );
+
         if (!continuousInvariants()) {
             revert("Invariants do not hold");
         }
@@ -140,7 +154,7 @@ contract E2ESetup {
             );
         }
         Swapper(params.recipient).swap(VAMMAddress, params);
-        
+
         if (!continuousInvariants()) {
             revert("Invariants do not hold");
         }
@@ -153,7 +167,7 @@ contract E2ESetup {
         this.addPosition(params.owner, params.tickLower, params.tickUpper);
         IMarginEngine(MEAddress).updatePositionMargin(params, marginDelta);
         initialCashflow += marginDelta;
-        
+
         if (!continuousInvariants()) {
             revert("Invariants do not hold");
         }

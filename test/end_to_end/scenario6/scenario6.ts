@@ -5,9 +5,7 @@ import {
   E2ESetupFixture,
   fixedAndVariableMathFixture,
   metaFixtureScenario1E2E,
-  MinterFixture,
   sqrtPriceMathFixture,
-  SwapperFixture,
   tickMathFixture,
 } from "../../shared/fixtures";
 import {
@@ -41,7 +39,6 @@ import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 import { Minter } from "../../../typechain/Minter";
 import { Swapper } from "../../../typechain/Swapper";
-import { e2eParameters } from "../../shared/e2eSetup";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -63,8 +60,8 @@ describe("VAMM", () => {
   let testFixedAndVariableMath: FixedAndVariableMathTest;
   let e2eSetup: E2ESetup;
 
-  let minters: Minter[] = [];
-  let swappers: Swapper[] = [];
+  const minters: Minter[] = [];
+  const swappers: Swapper[] = [];
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
@@ -177,7 +174,11 @@ describe("VAMM", () => {
       await mintAndApprove(swapper.address);
     }
 
-    await token.approveInternal(e2eSetup.address, marginEngineTest.address, BigNumber.from(10).pow(27));
+    await token.approveInternal(
+      e2eSetup.address,
+      marginEngineTest.address,
+      BigNumber.from(10).pow(27)
+    );
   });
 
   describe("#Scenario6", () => {
@@ -463,13 +464,12 @@ describe("VAMM", () => {
         toBn("210")
       );
 
-      await e2eSetup
-        .mint(
-          positions[0][0],
-          positions[0][1],
-          positions[0][2],
-          toBn("1000000")
-        );
+      await e2eSetup.mint(
+        positions[0][0],
+        positions[0][1],
+        positions[0][2],
+        toBn("1000000")
+      );
 
       // two days pass and set reserve normalised income
 
@@ -543,13 +543,12 @@ describe("VAMM", () => {
         toBn("2000")
       );
 
-      await e2eSetup
-        .mint(
-          positions[1][0],
-          positions[1][1],
-          positions[1][2],
-          toBn("5000000")
-        );
+      await e2eSetup.mint(
+        positions[1][0],
+        positions[1][1],
+        positions[1][2],
+        toBn("5000000")
+      );
 
       // a week passes
 
@@ -626,13 +625,12 @@ describe("VAMM", () => {
 
       // LP 1 burns all of their liquidity, no trader can engage in swaps with this LP anymore
 
-      await e2eSetup
-        .burn(
-          positions[0][0],
-          positions[0][1],
-          positions[0][2],
-          toBn("1000000")
-        );
+      await e2eSetup.burn(
+        positions[0][0],
+        positions[0][1],
+        positions[0][2],
+        toBn("1000000")
+      );
 
       await advanceTimeAndBlock(consts.ONE_WEEK.mul(8), 4); // advance eight weeks (4 days before maturity)
 
