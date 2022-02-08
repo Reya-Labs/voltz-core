@@ -4,7 +4,13 @@ import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { BigNumber } from "@ethersproject/bignumber";
 import { TestRateOracle } from "../../typechain/TestRateOracle";
 
-import { ERC20Mock, MockAaveLendingPool } from "../../typechain";
+import {
+  ERC20Mock,
+  FixedAndVariableMathTest,
+  MockAaveLendingPool,
+  SqrtPriceMathTest,
+  TickMathTest,
+} from "../../typechain";
 
 import { consts } from "../helpers/constants";
 
@@ -19,7 +25,11 @@ const { provider } = waffle;
 export async function mockERC20Fixture() {
   const MockERC20Factory = await ethers.getContractFactory("ERC20Mock");
 
-  const token = await MockERC20Factory.deploy("Voltz USD", "VUSD", 6);
+  const token = (await MockERC20Factory.deploy(
+    "Voltz USD",
+    "VUSD",
+    6
+  )) as ERC20Mock;
 
   return { token };
 }
@@ -29,14 +39,15 @@ export async function mockAaveLendingPoolFixture() {
     "MockAaveLendingPool"
   );
 
-  const aaveLendingPool = await MockAaveLendingPoolFactory.deploy();
+  const aaveLendingPool =
+    (await MockAaveLendingPoolFactory.deploy()) as MockAaveLendingPool;
 
   return { aaveLendingPool };
 }
 
 export async function vammMasterTestFixture() {
   const vammMasterTestFactory = await ethers.getContractFactory("TestVAMM");
-  const vammMasterTest = await vammMasterTestFactory.deploy();
+  const vammMasterTest = (await vammMasterTestFactory.deploy()) as TestVAMM;
 
   return { vammMasterTest };
 }
@@ -45,7 +56,8 @@ export async function marginEngineMasterTestFixture() {
   const marginEngineMasterTestFactory = await ethers.getContractFactory(
     "TestMarginEngine"
   );
-  const marginEngineMasterTest = await marginEngineMasterTestFactory.deploy();
+  const marginEngineMasterTest =
+    (await marginEngineMasterTestFactory.deploy()) as TestMarginEngine;
 
   return { marginEngineMasterTest };
 }
@@ -55,7 +67,8 @@ export async function marginCalculatorFixture() {
     "MarginCalculatorTest"
   );
 
-  const testMarginCalculator = await TestMarginCalculatorFactory.deploy();
+  const testMarginCalculator =
+    (await TestMarginCalculatorFactory.deploy()) as MarginCalculatorTest;
 
   return { testMarginCalculator };
 }
@@ -65,7 +78,8 @@ export async function sqrtPriceMathFixture() {
     "SqrtPriceMathTest"
   );
 
-  const testSqrtPriceMath = await SqrtPriceMathFactory.deploy();
+  const testSqrtPriceMath =
+    (await SqrtPriceMathFactory.deploy()) as SqrtPriceMathTest;
 
   return { testSqrtPriceMath };
 }
@@ -75,7 +89,8 @@ export async function fixedAndVariableMathFixture() {
     "FixedAndVariableMathTest"
   );
 
-  const testFixedAndVariableMath = await fixedAndVariableMathFactory.deploy();
+  const testFixedAndVariableMath =
+    (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMathTest;
 
   return { testFixedAndVariableMath };
 }
@@ -107,7 +122,7 @@ export async function SwapperFixture() {
 export async function tickMathFixture() {
   const TickMathFactury = await ethers.getContractFactory("TickMathTest");
 
-  const testTickMath = await TickMathFactury.deploy();
+  const testTickMath = (await TickMathFactury.deploy()) as TickMathTest;
 
   return { testTickMath };
 }
@@ -117,10 +132,10 @@ export async function factoryFixture(
   _masterVAMMAddress: string
 ) {
   const factoryFactory = await ethers.getContractFactory("Factory");
-  const factory = await factoryFactory.deploy(
+  const factory = (await factoryFactory.deploy(
     _masterMarginEngineAddress,
     _masterVAMMAddress
-  );
+  )) as Factory;
 
   return { factory };
 }
@@ -132,10 +147,10 @@ export async function rateOracleTestFixture(
   const rateOracleTestFactory = await ethers.getContractFactory(
     "TestRateOracle"
   );
-  const rateOracleTest = await rateOracleTestFactory.deploy(
+  const rateOracleTest = (await rateOracleTestFactory.deploy(
     _aaveLendingPoolAddress,
     _underlyingAddress
-  );
+  )) as TestRateOracle;
 
   return { rateOracleTest };
 }
