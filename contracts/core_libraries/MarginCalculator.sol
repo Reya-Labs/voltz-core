@@ -448,6 +448,7 @@ library MarginCalculator {
         uint256 fixedRateDeviationMinWad;
 
         if (params.variableTokenBalance > 0) {
+            
             if (params.fixedTokenBalance > 0) {
                 // if both are positive, no need to have a margin requirement
                 return 0;

@@ -122,10 +122,16 @@ describe("MarginCalculator", () => {
         margin_engine_params
       );
 
-      console.log(
-        "realized minimum trader margin requirement",
-        utils.formatEther(realized.toString())
-      );
+      // console.log("termStartTimestampWad", termStartTimestampWad.toString());
+      // console.log("termEndTimestampWad", termEndTimestampWad.toString());
+      // console.log("sqrtPriceX96", encodeSqrtRatioX96(1, 10).toString());
+
+      // console.log(
+      //   "realized minimum trader margin requirement",
+      //   utils.formatEther(realized.toString())
+      // );
+
+      expect(realized).to.eq(toBn("3.16392511773128076"));
 
       // set up an excel scenario to test this works accordingly
     });
