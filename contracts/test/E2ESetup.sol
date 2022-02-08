@@ -3,12 +3,47 @@
 pragma solidity ^0.8.0;
 
 import "contracts/test/TestMarginEngine.sol";
+import "contracts/test/TestVAMM.sol";
+import "contracts/utils/Printer.sol";
+
+contract Swapper {
+    function swap(address VAMMAddress, IVAMM.SwapParams memory params) external {
+        IVAMM(VAMMAddress).swap(params);
+    }
+}
+
+contract Minter {
+    function mint(
+        address VAMMAddress,
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external {
+        IVAMM(VAMMAddress).mint(recipient, tickLower, tickUpper, amount);
+    }
+
+    function burn(
+        address VAMMAddress,
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external {
+        IVAMM(VAMMAddress).burn(recipient, tickLower, tickUpper, amount);
+    }
+}
 
 contract E2ESetup {
     struct UniqueIdentifiersPosition {
         address owner;
         int24 tickLower;
         int24 tickUpper;
+    }
+
+    function abs(int256 value) public pure returns (uint256) {
+        if (value < 0) return uint256(-value);
+        else return uint256(value);
     }
 
     mapping(uint256 => UniqueIdentifiersPosition) public allPositions;
@@ -21,8 +56,8 @@ contract E2ESetup {
 
     int256 initialCashflow = 0;
 
-    function addTrader(address trader) external {
-        if (indexAllTraders[trader] == 0) {
+    function addTrader(address trader) public {
+        if (indexAllTraders[trader] > 0) {
             return;
         }
         sizeAllTraders += 1;
@@ -34,11 +69,11 @@ contract E2ESetup {
         address owner,
         int24 tickLower,
         int24 tickUpper
-    ) external {
+    ) public {
         bytes32 hashedPositon = keccak256(
             abi.encodePacked(owner, tickLower, tickUpper)
         );
-        if (indexAllPositions[hashedPositon] == 0) {
+        if (indexAllPositions[hashedPositon] > 0) {
             return;
         }
         sizeAllPositions += 1;
@@ -54,15 +89,15 @@ contract E2ESetup {
     address public VAMMAddress;
     address public rateOracleAddress;
 
-    function setMEAddress(address _MEAddress) external {
+    function setMEAddress(address _MEAddress) public {
         MEAddress = _MEAddress;
     }
 
-    function setVAMMAddress(address _VAMMAddress) external {
+    function setVAMMAddress(address _VAMMAddress) public {
         VAMMAddress = _VAMMAddress;
     }
 
-    function setRateOracleAddress(address _rateOracleAddress) external {
+    function setRateOracleAddress(address _rateOracleAddress) public {
         rateOracleAddress = _rateOracleAddress;
     }
 
@@ -71,9 +106,9 @@ contract E2ESetup {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external {
+    ) public {
         this.addPosition(recipient, tickLower, tickUpper);
-        IVAMM(VAMMAddress).mint(recipient, tickLower, tickUpper, amount);
+        Minter(recipient).mint(VAMMAddress, recipient, tickLower, tickUpper, amount);
     }
 
     function burn(
@@ -81,12 +116,12 @@ contract E2ESetup {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external {
+    ) public {
         this.addPosition(recipient, tickLower, tickUpper);
-        IVAMM(VAMMAddress).burn(recipient, tickLower, tickUpper, amount);
+        Minter(recipient).burn(VAMMAddress, recipient, tickLower, tickUpper, amount);
     }
 
-    function swap(IVAMM.SwapParams memory params) external {
+    function swap(IVAMM.SwapParams memory params) public {
         if (params.isTrader) {
             this.addTrader(params.recipient);
         } else {
@@ -96,25 +131,25 @@ contract E2ESetup {
                 params.tickUpper
             );
         }
-        IVAMM(VAMMAddress).swap(params);
+        Swapper(params.recipient).swap(VAMMAddress, params);
     }
 
     function updatePositionMargin(
         IPositionStructs.ModifyPositionParams memory params,
         int256 marginDelta
-    ) external {
+    ) public {
         this.addPosition(params.owner, params.tickLower, params.tickUpper);
         IMarginEngine(MEAddress).updatePositionMargin(params, marginDelta);
         initialCashflow += marginDelta;
     }
 
-    function updateTraderMargin(address trader, int256 marginDelta) external {
+    function updateTraderMargin(address trader, int256 marginDelta) public {
         this.addTrader(trader);
         IMarginEngine(MEAddress).updateTraderMargin(trader, marginDelta);
         initialCashflow += marginDelta;
     }
 
-    function continuousInvariants() external returns (bool) {
+    function continuousInvariants() public returns (bool) {
         int256 totalFixedTokens = 0;
         int256 totalVariableTokens = 0;
         int256 totalCashflow = 0;
@@ -175,18 +210,28 @@ contract E2ESetup {
             );
         }
 
-        if (totalFixedTokens != 0) {
+        Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
+        Printer.printInt256("totalVariableTokens:", totalVariableTokens);
+        Printer.printInt256("    initialCashflow:", initialCashflow);
+        Printer.printInt256("      totalCashflow:", totalCashflow);
+        Printer.printEmptyLine();
+
+        // ideally, this should be 0
+        uint256 approximation = 100;
+        if (abs(totalFixedTokens) > approximation) {
             return false;
         }
 
-        if (totalVariableTokens != 0) {
+        if (abs(totalVariableTokens) > approximation) {
             return false;
         }
 
-        if (totalCashflow != initialCashflow) {
+        if (abs(totalCashflow - initialCashflow) > approximation) {
             return false;
         }
 
+        Printer.printBool("invariant good?", true);
+        Printer.printEmptyLine();
         return true;
     }
 }

@@ -13,6 +13,7 @@ import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 
 import { toBn } from "evm-bn";
+import { e2eParameters } from "./e2eSetup";
 const { provider } = waffle;
 
 export async function mockERC20Fixture() {
@@ -85,6 +86,22 @@ export async function E2ESetupFixture() {
   const e2eSetup = await E2ESetupFactory.deploy();
 
   return { e2eSetup };
+}
+
+export async function MinterFixture() {
+  const MinterFactory = await ethers.getContractFactory("Minter");
+
+  const minter = await MinterFactory.deploy();
+
+  return { minter };
+}
+
+export async function SwapperFixture() {
+  const SwapperFactory = await ethers.getContractFactory("Swapper");
+
+  const swapper = await SwapperFactory.deploy();
+
+  return { swapper };
 }
 
 export async function tickMathFixture() {
@@ -178,7 +195,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   };
 };
 
-interface MetaFixtureE2E {
+interface MetaFixtureScenario1E2E {
   factory: Factory;
   vammMasterTest: TestVAMM;
   marginEngineMasterTest: TestMarginEngine;
@@ -191,7 +208,7 @@ interface MetaFixtureE2E {
 }
 
 export const metaFixtureScenario1E2E =
-  async function (): Promise<MetaFixtureE2E> {
+  async function (): Promise<MetaFixtureScenario1E2E> {
     const { marginEngineMasterTest } = await marginEngineMasterTestFixture();
     const { vammMasterTest } = await vammMasterTestFixture();
     const { factory } = await factoryFixture(
@@ -243,3 +260,73 @@ export const metaFixtureScenario1E2E =
       testMarginCalculator,
     };
   };
+
+  interface MetaFixtureE2E {
+    factory: Factory;
+    vammMasterTest: TestVAMM;
+    marginEngineMasterTest: TestMarginEngine;
+    token: ERC20Mock;
+    rateOracleTest: TestRateOracle;
+    aaveLendingPool: MockAaveLendingPool;
+    termStartTimestampBN: BigNumber;
+    termEndTimestampBN: BigNumber;
+    testMarginCalculator: MarginCalculatorTest;
+  };
+  
+  export const createMetaFixtureE2E = async function(e2eParams: e2eParameters) {
+    const metaFixtureE2E =
+    async function (): Promise<MetaFixtureE2E> {
+      const { marginEngineMasterTest } = await marginEngineMasterTestFixture();
+      const { vammMasterTest } = await vammMasterTestFixture();
+      const { factory } = await factoryFixture(
+        marginEngineMasterTest.address,
+        vammMasterTest.address
+      );
+      const { token } = await mockERC20Fixture();
+      const { aaveLendingPool } = await mockAaveLendingPoolFixture();
+      const { rateOracleTest } = await rateOracleTestFixture(
+        aaveLendingPool.address,
+        token.address
+      );
+  
+      const { testMarginCalculator } = await marginCalculatorFixture();
+  
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        "1000000000000000000000000000" // 10^27
+      );
+  
+      await rateOracleTest.testGrow(100);
+      // write oracle entry
+      await rateOracleTest.writeOracleEntry();
+      // advance time after first write to the oracle
+      await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
+  
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        "1008000000000000000000000000" // 10^27 * 1.008
+      );
+  
+      await rateOracleTest.writeOracleEntry();
+  
+      const termStartTimestamp: number = await getCurrentTimestamp(provider);
+      const termEndTimestamp: number =
+        termStartTimestamp + e2eParams.duration.toNumber();
+      const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
+      const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+  
+      return {
+        factory,
+        vammMasterTest,
+        marginEngineMasterTest,
+        token,
+        rateOracleTest,
+        aaveLendingPool,
+        termStartTimestampBN,
+        termEndTimestampBN,
+        testMarginCalculator,
+      };
+    };
+
+    return metaFixtureE2E;
+  }

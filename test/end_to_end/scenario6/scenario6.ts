@@ -5,7 +5,9 @@ import {
   E2ESetupFixture,
   fixedAndVariableMathFixture,
   metaFixtureScenario1E2E,
+  MinterFixture,
   sqrtPriceMathFixture,
+  SwapperFixture,
   tickMathFixture,
 } from "../../shared/fixtures";
 import {
@@ -37,6 +39,9 @@ import {
 import { consts } from "../../helpers/constants";
 import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
+import { Minter } from "../../../typechain/Minter";
+import { Swapper } from "../../../typechain/Swapper";
+import { e2eParameters } from "../../shared/e2eSetup";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -46,8 +51,6 @@ const AGRESSIVE_SIGMA_SQUARED: BigNumber = toBn("0.15");
 
 describe("VAMM", () => {
   let owner: Wallet;
-  const LPWallets: Wallet[] = [];
-  const TWallets: Wallet[] = [];
   let token: ERC20Mock;
   let factory: Factory;
   let rateOracleTest: TestRateOracle;
@@ -60,30 +63,22 @@ describe("VAMM", () => {
   let testFixedAndVariableMath: FixedAndVariableMathTest;
   let e2eSetup: E2ESetup;
 
+  let minters: Minter[] = [];
+  let swappers: Swapper[] = [];
+
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
   before("create fixture loader", async () => {
-    const numLPWalletsRequested = 2;
-    const numTWalletsRequested = 2;
+    owner = provider.getWallets()[0];
+    provider.getSigner();
 
-    const allWallets = provider.getWallets();
-
-    owner = allWallets[0];
-    for (let i = 1; i < numLPWalletsRequested + 1; i++) {
-      LPWallets.push(allWallets[i]);
-    }
-    for (
-      let i = numLPWalletsRequested + 1;
-      i < numLPWalletsRequested + numTWalletsRequested + 1;
-      i++
-    ) {
-      TWallets.push(allWallets[i]);
-    }
-
-    loadFixture = createFixtureLoader(
-      allWallets.slice(0, numLPWalletsRequested + numTWalletsRequested + 1)
-    );
+    loadFixture = createFixtureLoader([owner]);
   });
+
+  async function mintAndApprove(address: string) {
+    await token.mint(address, BigNumber.from(10).pow(27));
+    await token.approve(address, BigNumber.from(10).pow(27));
+  }
 
   beforeEach("deploy fixture", async () => {
     ({
@@ -157,19 +152,32 @@ describe("VAMM", () => {
     await e2eSetup.setVAMMAddress(vammTest.address);
     await e2eSetup.setRateOracleAddress(rateOracleTest.address);
 
-    const allWallets = [owner, marginEngineTest, e2eSetup].concat(LPWallets).concat(TWallets);
-    for (let i = 0; i < allWallets.length; i++) {
-      await token.mint(allWallets[i].address, BigNumber.from(10).pow(27));
-      await token.approve(allWallets[i].address, BigNumber.from(10).pow(27));
-      console.log("address:", allWallets[i].address);
+    await mintAndApprove(owner.address);
+    await mintAndApprove(marginEngineTest.address);
+    await mintAndApprove(e2eSetup.address);
+
+    const numLPWalletsRequested = 2;
+    const numTWalletsRequested = 2;
+
+    for (let i = 1; i < numLPWalletsRequested + 1; i++) {
+      const MinterFactory = await ethers.getContractFactory("Minter");
+      const minter = await MinterFactory.deploy();
+      minters.push(minter);
+      await mintAndApprove(minter.address);
+    }
+
+    for (
+      let i = numLPWalletsRequested + 1;
+      i < numLPWalletsRequested + numTWalletsRequested + 1;
+      i++
+    ) {
+      const SwapperFactory = await ethers.getContractFactory("Swapper");
+      const swapper = await SwapperFactory.deploy();
+      swappers.push(swapper);
+      await mintAndApprove(swapper.address);
     }
 
     await token.approveInternal(e2eSetup.address, marginEngineTest.address, BigNumber.from(10).pow(27));
-
-    console.log("e2e setup address:", e2eSetup.address);
-    console.log("marginEngineTest address:", marginEngineTest.address);
-    console.log("vammTest address:", vammTest.address);
-    console.log("rateOracleTest address:", rateOracleTest.address);
   });
 
   describe("#Scenario6", () => {
@@ -251,14 +259,14 @@ describe("VAMM", () => {
     }
 
     async function printPositionsAndTradersInfo(
-      positions: [Wallet, number, number][],
-      traders: Wallet[],
+      positions: [string, number, number][],
+      traders: string[],
       positions_to_update: number[]
     ) {
       for (let i = 0; i < positions.length; i++) {
         if (positions_to_update.includes(i)) {
           await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-            positions[i][0].address,
+            positions[i][0],
             positions[i][1],
             positions[i][2]
           );
@@ -268,7 +276,7 @@ describe("VAMM", () => {
         console.log("TICK LOWER", positions[i][1]);
         console.log("TICK UPPER", positions[i][2]);
         const positionInfo = await marginEngineTest.getPosition(
-          positions[i][0].address,
+          positions[i][0],
           positions[i][1],
           positions[i][2]
         );
@@ -278,7 +286,7 @@ describe("VAMM", () => {
 
       for (let i = 0; i < traders.length; i++) {
         console.log("TRADER: ", i + 1);
-        const traderInfo = await marginEngineTest.traders(traders[i].address);
+        const traderInfo = await marginEngineTest.traders(traders[i]);
         await printTraderInfo(traderInfo);
       }
     }
@@ -294,7 +302,7 @@ describe("VAMM", () => {
     }
 
     async function printAPYboundsAndPositionMargin(
-      position: [Wallet, number, number],
+      position: [string, number, number],
       liquidity: BigNumber
     ) {
       const marginCalculatorParams = {
@@ -343,7 +351,7 @@ describe("VAMM", () => {
       console.log("current tick: ", currentTick);
 
       const position_margin_requirement_params = {
-        owner: position[0].address,
+        owner: position[0],
         tickLower: position[1],
         tickUpper: position[2],
         isLM: false,
@@ -406,12 +414,12 @@ describe("VAMM", () => {
     }
 
     async function settlePositionsAndTraders(
-      positions: [Wallet, number, number][],
-      traders: Wallet[]
+      positions: [string, number, number][],
+      traders: string[]
     ) {
       for (let i = 0; i < positions.length; i++) {
         await marginEngineTest.settlePosition({
-          owner: positions[i][0].address,
+          owner: positions[i][0],
           tickLower: positions[i][1],
           tickUpper: positions[i][2],
           liquidityDelta: toBn("0"),
@@ -419,17 +427,17 @@ describe("VAMM", () => {
       }
 
       for (let i = 0; i < traders.length; i++) {
-        await marginEngineTest.settleTrader(traders[i].address);
+        await marginEngineTest.settleTrader(traders[i]);
       }
     }
 
     it("full scenario 6", async () => {
-      const positions: [Wallet, number, number][] = [
-        [LPWallets[0], -TICK_SPACING, TICK_SPACING],
-        [LPWallets[1], -3 * TICK_SPACING, -TICK_SPACING],
+      const positions: [string, number, number][] = [
+        [minters[0].address, -TICK_SPACING, TICK_SPACING],
+        [minters[1].address, -3 * TICK_SPACING, -TICK_SPACING],
       ];
 
-      const traders = TWallets;
+      const traders = [swappers[0].address, swappers[1].address];
 
       console.log(
         "----------------------------START----------------------------"
@@ -445,9 +453,9 @@ describe("VAMM", () => {
       // Should trigger a write to the rate oracle
 
       /// todo: connect the positon address
-      await e2eSetup.connect(positions[0][0]).updatePositionMargin(
+      await e2eSetup.updatePositionMargin(
         {
-          owner: positions[0][0].address,
+          owner: positions[0][0],
           tickLower: positions[0][1],
           tickUpper: positions[0][2],
           liquidityDelta: toBn("0"),
@@ -456,9 +464,8 @@ describe("VAMM", () => {
       );
 
       await e2eSetup
-        .connect(positions[0][0])
         .mint(
-          positions[0][0].address,
+          positions[0][0],
           positions[0][1],
           positions[0][2],
           toBn("1000000")
@@ -477,7 +484,7 @@ describe("VAMM", () => {
 
       // Trader 1 engages in  a swap that (almost) consumes all of the liquidity of LP 1
 
-      await e2eSetup.updateTraderMargin(traders[0].address, toBn("1000"));
+      await e2eSetup.updateTraderMargin(traders[0], toBn("1000"));
 
       console.log(
         "----------------------------BEFORE FIRST SWAP----------------------------"
@@ -487,8 +494,8 @@ describe("VAMM", () => {
       // price is at tick 0, so we need to see the amount below
       await printAmounts(-TICK_SPACING, 0, toBn("1000000"));
 
-      await e2eSetup.connect(traders[0]).swap({
-        recipient: traders[0].address,
+      await e2eSetup.swap({
+        recipient: traders[0],
         isFT: false,
         amountSpecified: toBn("-2995"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -528,7 +535,7 @@ describe("VAMM", () => {
 
       await e2eSetup.updatePositionMargin(
         {
-          owner: positions[1][0].address,
+          owner: positions[1][0],
           tickLower: positions[1][1],
           tickUpper: positions[1][2],
           liquidityDelta: 0,
@@ -537,9 +544,8 @@ describe("VAMM", () => {
       );
 
       await e2eSetup
-        .connect(positions[1][0])
         .mint(
-          positions[1][0].address,
+          positions[1][0],
           positions[1][1],
           positions[1][2],
           toBn("5000000")
@@ -558,15 +564,15 @@ describe("VAMM", () => {
 
       // Trader 2 engages in a swap and consumes some liquidity of LP 2
 
-      await e2eSetup.updateTraderMargin(traders[1].address, toBn("1000"));
+      await e2eSetup.updateTraderMargin(traders[1], toBn("1000"));
 
       console.log(
         "----------------------------BEFORE SECOND SWAP----------------------------"
       );
       await printPositionsAndTradersInfo(positions, traders, []);
 
-      await e2eSetup.connect(traders[1]).swap({
-        recipient: traders[1].address,
+      await e2eSetup.swap({
+        recipient: traders[1],
         isFT: false,
         amountSpecified: toBn("-15000"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -586,8 +592,8 @@ describe("VAMM", () => {
 
       // Trader 1 engages in a reverse swap
 
-      await e2eSetup.connect(traders[0]).swap({
-        recipient: traders[0].address,
+      await e2eSetup.swap({
+        recipient: traders[0],
         isFT: true,
         amountSpecified: toBn("10000"),
         sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
@@ -601,6 +607,8 @@ describe("VAMM", () => {
         "----------------------------AFTER THIRD (REVERSE) SWAP----------------------------"
       );
       await printPositionsAndTradersInfo(positions, traders, [0, 1]);
+
+      await e2eSetup.continuousInvariants();
 
       const currentTick = await vammTest.getCurrentTick();
       console.log("current tick: ", currentTick);
@@ -619,9 +627,8 @@ describe("VAMM", () => {
       // LP 1 burns all of their liquidity, no trader can engage in swaps with this LP anymore
 
       await e2eSetup
-        .connect(positions[0][0])
         .burn(
-          positions[0][0].address,
+          positions[0][0],
           positions[0][1],
           positions[0][2],
           toBn("1000000")
