@@ -126,10 +126,10 @@ describe("MarginCalculator", () => {
       // console.log("termEndTimestampWad", termEndTimestampWad.toString());
       // console.log("sqrtPriceX96", encodeSqrtRatioX96(1, 10).toString());
 
-      // console.log(
-      //   "realized minimum trader margin requirement",
-      //   utils.formatEther(realized.toString())
-      // );
+      console.log(
+        "realized minimum trader margin requirement",
+        utils.formatEther(realized.toString())
+      );
 
       expect(realized).to.eq(toBn("3.16392511773128076"));
 
