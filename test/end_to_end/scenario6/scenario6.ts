@@ -123,9 +123,6 @@ describe("VAMM", () => {
     vammTest = vammTestFactory.attach(vammAddress);
     await marginEngineTest.setVAMMAddress(vammTest.address);
 
-    // update marginEngineTest allowance
-    await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
-
     const marginCalculatorParams = {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
@@ -141,13 +138,6 @@ describe("VAMM", () => {
       marginCalculatorParams
     );
     await marginEngineTest.setSecondsAgo(consts.ONE_WEEK);
-
-    const allWallets = [owner].concat(LPWallets).concat(TWallets);
-    for (let i = 0; i < allWallets.length; i++) {
-      await token.mint(allWallets[i].address, BigNumber.from(10).pow(27));
-      await token.approve(allWallets[i].address, BigNumber.from(10).pow(27));
-      console.log("wallet:", allWallets[i].address);
-    }
 
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
@@ -167,14 +157,14 @@ describe("VAMM", () => {
     await e2eSetup.setVAMMAddress(vammTest.address);
     await e2eSetup.setRateOracleAddress(rateOracleTest.address);
 
-    await token.mint(rateOracleTest.address, BigNumber.from(10).pow(27));
-    await token.approve(rateOracleTest.address, BigNumber.from(10).pow(27));
+    const allWallets = [owner, marginEngineTest, e2eSetup].concat(LPWallets).concat(TWallets);
+    for (let i = 0; i < allWallets.length; i++) {
+      await token.mint(allWallets[i].address, BigNumber.from(10).pow(27));
+      await token.approve(allWallets[i].address, BigNumber.from(10).pow(27));
+      console.log("address:", allWallets[i].address);
+    }
 
-    await token.mint(vammTest.address, BigNumber.from(10).pow(27));
-    await token.approve(vammTest.address, BigNumber.from(10).pow(27));
-
-    await token.mint(e2eSetup.address, BigNumber.from(10).pow(27));
-    await token.approve(e2eSetup.address, BigNumber.from(10).pow(27));
+    await token.approveInternal(e2eSetup.address, marginEngineTest.address, BigNumber.from(10).pow(27));
 
     console.log("e2e setup address:", e2eSetup.address);
     console.log("marginEngineTest address:", marginEngineTest.address);
