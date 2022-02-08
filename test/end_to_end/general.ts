@@ -82,6 +82,9 @@ for (let i of scenarios_to_run) {
     let minters: Minter[];
     let swappers: Swapper[];
 
+    let positions: [string, number, number][] = [];
+    let traders: string[] = [];
+
     let loadFixture: ReturnType<typeof createFixtureLoader>;
 
     // global variables (to avoid recomputing them)
@@ -213,6 +216,16 @@ for (let i of scenarios_to_run) {
           }
       
           await token.approveInternal(e2eSetup.address, marginEngineTest.address, BigNumber.from(10).pow(27));
+
+          positions = [];
+          for (let p of e2eParams.positions) {
+            positions.push([minters[p[0]].address, p[1], p[2]]);
+          }
+
+          traders = [];
+          for (let t of e2eParams.traders) {
+            traders.push(swappers[t].address);
+          }
     });
 
     // print the position information
@@ -295,17 +308,13 @@ for (let i of scenarios_to_run) {
     // print the position and trader information
     async function printPositionsAndTradersInfo(
         positions: [string, number, number][],
-        traders: string[],
-        positions_to_update: number[]
+        traders: string[]
       ) {
         for (let i = 0; i < positions.length; i++) {
-          if (positions_to_update.includes(i)) {
-            await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
+          await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
               positions[i][0],
               positions[i][1],
-              positions[i][2]
-            );
-          }
+              positions[i][2]);
   
           console.log("POSITION: ", i + 1);
           console.log("TICK LOWER", positions[i][1]);
@@ -337,7 +346,7 @@ for (let i of scenarios_to_run) {
         console.log("");
     }
 
-    async function updateAPYbound() {
+    async function updateAPYbounds() {
         const currentTimestamp: number = await getCurrentTimestamp(provider);
         const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
         historicalApyWad = await marginEngineTest.getHistoricalApy();
@@ -369,11 +378,36 @@ for (let i of scenarios_to_run) {
         console.log("");
     }
 
-    // make sure the APY bounds are updated before this
+    // reserveNormalizedIncome format: x.yyyy
+    async function advanceAndUpdateApy(
+        time: BigNumber,
+        blockCount: number,
+        reserveNormalizedIncome: number
+      ) {
+        await advanceTimeAndBlock(time, blockCount);
+  
+        console.log(
+          "reserveNormalizedIncome in 1e27",
+          reserveNormalizedIncome.toString().replace(".", "") + "0".repeat(23)
+        );
+        await aaveLendingPool.setReserveNormalizedIncome(
+          token.address,
+          Math.floor(reserveNormalizedIncome * 10000).toString() + "0".repeat(23)
+        );
+  
+        await rateOracleTest.writeOracleEntry();
+  
+        await printReserveNormalizedIncome();
+  
+        await updateAPYbounds();
+      }
+
     async function printAPYboundsAndPositionMargin(
         position: [string, number, number],
         liquidity: BigNumber
       ) {
+        await updateAPYbounds();
+
         currentTick = await vammTest.getCurrentTick();
         console.log("current tick: ", currentTick);
   
@@ -387,14 +421,14 @@ for (let i of scenarios_to_run) {
           currentTick: currentTick,
           termStartTimestampWad: termStartTimestampBN,
           termEndTimestampWad: termEndTimestampBN,
-          liquidity: liquidity,
-          fixedTokenBalance: positionInfo[4],
-          variableTokenBalance: positionInfo[5],
+          liquidity: liquidity.add(positionInfo._liquidity),
+          fixedTokenBalance: positionInfo.fixedTokenBalance,
+          variableTokenBalance: positionInfo.variableTokenBalance,
           variableFactorWad: variableFactorWad,
           historicalApyWad: historicalApyWad,
         };
   
-        const postitionMarginrRequirement =
+        const positionMarginRequirement =
           await testMarginCalculator.getPositionMarginRequirementTest(
             position_margin_requirement_params,
             marginCalculatorParams
@@ -402,9 +436,41 @@ for (let i of scenarios_to_run) {
   
         console.log(
           "position margin requirement: ",
-          utils.formatEther(postitionMarginrRequirement)
+          utils.formatEther(positionMarginRequirement)
         );
         console.log("");
+
+        return positionMarginRequirement;
+      }
+
+      async function printAPYboundsAndTraderMargin(trader: Wallet) {
+        await updateAPYbounds();
+  
+        const traderInfo = await marginEngineTest.traders(trader.address);
+  
+        const trader_margin_requirement_params = {
+          fixedTokenBalance: traderInfo.fixedTokenBalance,
+          variableTokenBalance: traderInfo.variableTokenBalance,
+          termStartTimestampWad: termStartTimestampBN,
+          termEndTimestampWad: termEndTimestampBN,
+          isLM: false,
+          historicalApyWad: historicalApyWad,
+        };
+  
+        const traderMarginRequirement =
+          await testMarginCalculator.getTraderMarginRequirement(
+            trader_margin_requirement_params,
+            marginCalculatorParams
+          );
+  
+        console.log(
+          "trader margin requirement: ",
+          utils.formatEther(traderMarginRequirement)
+        );
+  
+        console.log("");
+  
+        return traderMarginRequirement;
       }
 
       async function printAmounts(
@@ -438,6 +504,11 @@ for (let i of scenarios_to_run) {
         );
         console.log("           AMOUNT 0: ", BigNumber.from(amount0.toString()));
         console.log("           AMOUNT 1: ", BigNumber.from(amount1.toString()));
+
+        return [
+            parseFloat(utils.formatEther(amount0)),
+            parseFloat(utils.formatEther(amount1)),
+          ];
       }
 
       async function settlePositionsAndTraders(
@@ -458,218 +529,190 @@ for (let i of scenarios_to_run) {
         }
       }
 
-      it("full scenario 6", async () => {
-        const positions: [string, number, number][] = [
-          [minters[0].address, -TICK_SPACING, TICK_SPACING],
-          [minters[1].address, -3 * TICK_SPACING, -TICK_SPACING],
-        ];
-  
-        const traders = [swappers[0].address, swappers[1].address];
-  
+      async function updateCurrentTick() {
+        currentTick = await vammTest.getCurrentTick();
+        console.log("current tick: ", currentTick);
+      }
+
+      it("full scenario", async () => {
         console.log(
           "----------------------------START----------------------------"
         );
   
         await printReserveNormalizedIncome();
-  
-        // check apy bounds
-  
-        printAPYboundsAndPositionMargin(positions[0], toBn("1000000"));
-  
-        // LP 1 deposits margin and mints liquidity right after the pool initialisation
-        // Should trigger a write to the rate oracle
-  
-        /// todo: connect the positon address
-        await e2eSetup.updatePositionMargin(
-          {
-            owner: positions[0][0],
-            tickLower: positions[0][1],
-            tickUpper: positions[0][2],
-            liquidityDelta: toBn("0"),
-          },
-          toBn("210")
-        );
-  
-        await e2eSetup
-          .mint(
-            positions[0][0],
-            positions[0][1],
-            positions[0][2],
-            toBn("1000000")
-          );
+
+        // add 1,000,000 liquidity to Position 0
+        {
+            // print the position margin requirement
+            await printAPYboundsAndPositionMargin(positions[0], toBn("1000000"));
+
+            // update the position margin with 210
+            await e2eSetup.updatePositionMargin(
+                {
+                  owner: positions[0][0],
+                  tickLower: positions[0][1],
+                  tickUpper: positions[0][2],
+                  liquidityDelta: toBn("0"),
+                },
+                toBn("210")
+              );
+
+            // add 1,000,000 liquidity to Position 0
+            await e2eSetup.mint(
+                positions[0][0],
+                positions[0][1],
+                positions[0][2],
+                toBn("1000000")
+              );
+        }
   
         // two days pass and set reserve normalised income
+        await advanceAndUpdateApy(consts.ONE_DAY.mul(2), 1, 1.0081); // advance 2 days
   
-        await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1); // advance 2 days
-  
-        await aaveLendingPool.setReserveNormalizedIncome(
-          token.address,
-          "1008100000000000000000000000" // 10^27 * 1.0081
-        );
-  
-        await rateOracleTest.writeOracleEntry();
-  
-        // Trader 1 engages in  a swap that (almost) consumes all of the liquidity of LP 1
-  
-        await e2eSetup.updateTraderMargin(traders[0], toBn("1000"));
-  
-        console.log(
-          "----------------------------BEFORE FIRST SWAP----------------------------"
-        );
-        await printPositionsAndTradersInfo(positions, traders, []);
-  
-        // price is at tick 0, so we need to see the amount below
-        await printAmounts(-TICK_SPACING, 0, toBn("1000000"));
-  
-        await e2eSetup.swap({
-          recipient: traders[0],
-          isFT: false,
-          amountSpecified: toBn("-2995"),
-          sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-          isUnwind: false,
-          isTrader: true,
-          tickLower: 0,
-          tickUpper: 0,
-        });
-  
-        console.log(
-          "----------------------------AFTER FIRST SWAP----------------------------"
-        );
-        await printPositionsAndTradersInfo(positions, traders, [0]);
+        // Trader 0 engages in a swap that (almost) consumes all of the liquidity of Position 0
+        {
+            console.log(
+                "----------------------------BEFORE FIRST SWAP----------------------------"
+              );
+            await printPositionsAndTradersInfo(positions, traders);
+
+            // update the trader margin with 1,000
+            await e2eSetup.updateTraderMargin(traders[0], toBn("1000"));
+
+            // print the maximum amount given the liquidity of Position 0
+            await updateCurrentTick();
+
+            await printAmounts(positions[0][1], currentTick, toBn("1000000"));
+
+            // Trader 0 buys 2,995 VT
+            await e2eSetup.swap({
+                recipient: traders[0],
+                isFT: false,
+                amountSpecified: toBn("-2995"),
+                sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+                isUnwind: false,
+                isTrader: true,
+                tickLower: 0,
+                tickUpper: 0,
+              });
+
+            console.log(
+                "----------------------------AFTER FIRST SWAP----------------------------"
+            );
+            await printPositionsAndTradersInfo(positions, traders);
+        }
   
         const currentTickAfterFirstSwap = await vammTest.getCurrentTick();
         console.log("current tick: ", currentTickAfterFirstSwap);
   
         // one week passes
-  
-        await advanceTimeAndBlock(consts.ONE_WEEK, 2); // advance one week
-  
-        await aaveLendingPool.setReserveNormalizedIncome(
-          token.address,
-          "1010000000000000000000000000" // 10^27 * 1.010
-        );
-  
-        await rateOracleTest.writeOracleEntry();
-  
+        await advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.01);
         await printReserveNormalizedIncome();
-  
-        // check apy bounds
-  
-        
-        await printAPYboundsAndPositionMargin(positions[1], toBn("5000000"));
-  
-        // LP 2 deposits margin and mints liquidity
-        // Should trigger a write to the rate oracle
-  
-        await e2eSetup.updatePositionMargin(
-          {
-            owner: positions[1][0],
-            tickLower: positions[1][1],
-            tickUpper: positions[1][2],
-            liquidityDelta: 0,
-          },
-          toBn("2000")
-        );
-  
-        await e2eSetup
-          .mint(
-            positions[1][0],
-            positions[1][1],
-            positions[1][2],
-            toBn("5000000")
-          );
-  
+
+        // add 5,000,000 liquidity to Position 1
+        {
+            // print the position margin requirement
+            await printAPYboundsAndPositionMargin(positions[1], toBn("5000000"));
+
+            // update the position margin with 2,000
+            await e2eSetup.updatePositionMargin(
+                {
+                  owner: positions[1][0],
+                  tickLower: positions[1][1],
+                  tickUpper: positions[1][2],
+                  liquidityDelta: 0,
+                },
+                toBn("2000")
+              );
+
+            // add 5,000,000 liquidity to Position 1
+            await e2eSetup.mint(
+                positions[1][0],
+                positions[1][1],
+                positions[1][2],
+                toBn("5000000")
+              );
+        }
+
+
         // a week passes
-  
-        await advanceTimeAndBlock(consts.ONE_WEEK, 2); // advance one week
-  
-        await aaveLendingPool.setReserveNormalizedIncome(
-          token.address,
-          "1012500000000000000000000000" // 10^27 * 1.0125
-        );
-  
-        await rateOracleTest.writeOracleEntry();
-  
-        // Trader 2 engages in a swap and consumes some liquidity of LP 2
-  
-        await e2eSetup.updateTraderMargin(traders[1], toBn("1000"));
-  
-        console.log(
-          "----------------------------BEFORE SECOND SWAP----------------------------"
-        );
-        await printPositionsAndTradersInfo(positions, traders, []);
-  
-        await e2eSetup.swap({
-          recipient: traders[1],
-          isFT: false,
-          amountSpecified: toBn("-15000"),
-          sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-          isUnwind: false,
-          isTrader: true,
-          tickLower: 0,
-          tickUpper: 0,
-        });
-  
-        console.log(
-          "----------------------------AFTER SECOND SWAP----------------------------"
-        );
-        await printPositionsAndTradersInfo(positions, traders, [0, 1]);
-  
-        const currentTickAfterSecondsSwap = await vammTest.getCurrentTick();
-        console.log("current tick: ", currentTickAfterSecondsSwap);
-  
-        // Trader 1 engages in a reverse swap
-  
-        await e2eSetup.swap({
-          recipient: traders[0],
-          isFT: true,
-          amountSpecified: toBn("10000"),
-          sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
-          isUnwind: false,
-          isTrader: true,
-          tickLower: 0,
-          tickUpper: 0,
-        });
-  
-        console.log(
-          "----------------------------AFTER THIRD (REVERSE) SWAP----------------------------"
-        );
-        await printPositionsAndTradersInfo(positions, traders, [0, 1]);
-  
-        await e2eSetup.continuousInvariants();
-  
-        const currentTick = await vammTest.getCurrentTick();
-        console.log("current tick: ", currentTick);
+        await advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125); 
+
+        // Trader 1 engages in a swap
+        {
+            console.log(
+                "----------------------------BEFORE SECOND SWAP----------------------------"
+              );
+            await printPositionsAndTradersInfo(positions, traders);
+
+            // update the trader margin with 1,000
+            await e2eSetup.updateTraderMargin(traders[1], toBn("1000"));
+
+            // print the maximum amount given the liquidity of Position 0
+            await updateCurrentTick();
+
+            await printAmounts(positions[0][1], currentTick, toBn("1000000"));
+            await printAmounts(positions[1][1], currentTick, toBn("5000000"));
+
+            // Trader 1 buys 15,000 VT
+            await e2eSetup.swap({
+                recipient: traders[1],
+                isFT: false,
+                amountSpecified: toBn("-15000"),
+                sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+                isUnwind: false,
+                isTrader: true,
+                tickLower: 0,
+                tickUpper: 0,
+              });
+
+            console.log(
+                "----------------------------AFTER SECOND SWAP----------------------------"
+            );
+            await printPositionsAndTradersInfo(positions, traders);
+        }
+
+        // Trader 0 engages in a reverse swap
+        {
+            console.log(
+                "----------------------------BEFORE THIRD (REVERSE) SWAP----------------------------"
+              );
+            await printPositionsAndTradersInfo(positions, traders);
+
+            // Trader 0 sells 10,000 VT
+            await e2eSetup.swap({
+                recipient: traders[0],
+                isFT: true,
+                amountSpecified: toBn("10000"),
+                sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
+                isUnwind: false,
+                isTrader: true,
+                tickLower: 0,
+                tickUpper: 0,
+              });
+
+            console.log(
+                "----------------------------AFTER THIRD (REVERSE) SWAP----------------------------"
+            );
+            await printPositionsAndTradersInfo(positions, traders);
+        }
+
+        await updateCurrentTick();
   
         // two weeks pass
+        await advanceAndUpdateApy(consts.ONE_WEEK.mul(2), 2, 1.0130); // advance two weeks
   
-        await advanceTimeAndBlock(consts.ONE_WEEK.mul(2), 2); // advance two weeks
-  
-        await aaveLendingPool.setReserveNormalizedIncome(
-          token.address,
-          "1013000000000000000000000000" // 10^27 * 1.0130
-        );
-  
-        await rateOracleTest.writeOracleEntry();
-  
-        // LP 1 burns all of their liquidity, no trader can engage in swaps with this LP anymore
-  
-        await e2eSetup
-          .burn(
+        // burn all liquidity of Position 0
+        {
+            await e2eSetup.burn(
             positions[0][0],
             positions[0][1],
             positions[0][2],
             toBn("1000000")
           );
+        }
   
-        await advanceTimeAndBlock(consts.ONE_WEEK.mul(8), 4); // advance eight weeks (4 days before maturity)
-  
-        await aaveLendingPool.setReserveNormalizedIncome(
-          token.address,
-          "1013200000000000000000000000" // 10^27 * 1.0132
-        );
-  
-        await rateOracleTest.writeOracleEntry();
+        await advanceAndUpdateApy(consts.ONE_WEEK.mul(8), 4, 1.0132); // advance eight weeks (4 days before maturity)
   
         await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
   
@@ -679,6 +722,6 @@ for (let i of scenarios_to_run) {
         console.log(
           "----------------------------FINAL----------------------------"
         );
-        await printPositionsAndTradersInfo(positions, traders, [0, 1]);
+        await printPositionsAndTradersInfo(positions, traders);
       });
 }

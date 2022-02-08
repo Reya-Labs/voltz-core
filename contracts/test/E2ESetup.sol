@@ -109,6 +109,10 @@ contract E2ESetup {
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
         Minter(recipient).mint(VAMMAddress, recipient, tickLower, tickUpper, amount);
+        
+        if (!continuousInvariants()) {
+            revert("Invariants do not hold");
+        }
     }
 
     function burn(
@@ -119,6 +123,10 @@ contract E2ESetup {
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
         Minter(recipient).burn(VAMMAddress, recipient, tickLower, tickUpper, amount);
+        
+        if (!continuousInvariants()) {
+            revert("Invariants do not hold");
+        }
     }
 
     function swap(IVAMM.SwapParams memory params) public {
@@ -132,6 +140,10 @@ contract E2ESetup {
             );
         }
         Swapper(params.recipient).swap(VAMMAddress, params);
+        
+        if (!continuousInvariants()) {
+            revert("Invariants do not hold");
+        }
     }
 
     function updatePositionMargin(
@@ -141,12 +153,20 @@ contract E2ESetup {
         this.addPosition(params.owner, params.tickLower, params.tickUpper);
         IMarginEngine(MEAddress).updatePositionMargin(params, marginDelta);
         initialCashflow += marginDelta;
+        
+        if (!continuousInvariants()) {
+            revert("Invariants do not hold");
+        }
     }
 
     function updateTraderMargin(address trader, int256 marginDelta) public {
         this.addTrader(trader);
         IMarginEngine(MEAddress).updateTraderMargin(trader, marginDelta);
         initialCashflow += marginDelta;
+
+        if (!continuousInvariants()) {
+            revert("Invariants do not hold");
+        }
     }
 
     function continuousInvariants() public returns (bool) {
@@ -167,14 +187,14 @@ contract E2ESetup {
         );
 
         for (uint256 i = 1; i <= sizeAllPositions; i++) {
-            Position.Info memory position = IMarginEngine(MEAddress)
-                .getPosition(
+            TestMarginEngine(MEAddress)
+                .updatePositionTokenBalancesAndAccountForFeesTest(
                     allPositions[i].owner,
                     allPositions[i].tickLower,
                     allPositions[i].tickUpper
                 );
-            TestMarginEngine(MEAddress)
-                .updatePositionTokenBalancesAndAccountForFeesTest(
+            Position.Info memory position = IMarginEngine(MEAddress)
+                .getPosition(
                     allPositions[i].owner,
                     allPositions[i].tickLower,
                     allPositions[i].tickUpper
@@ -230,8 +250,6 @@ contract E2ESetup {
             return false;
         }
 
-        Printer.printBool("invariant good?", true);
-        Printer.printEmptyLine();
         return true;
     }
 }
