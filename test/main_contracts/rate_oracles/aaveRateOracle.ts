@@ -1,5 +1,5 @@
 import { BigNumber, Wallet } from "ethers";
-import { ethers, waffle } from "hardhat";
+import { ethers, waffle, deployments } from "hardhat";
 import { expect } from "chai";
 import { toBn } from "../../helpers/toBn";
 import { div, sub, add, pow } from "../../shared/functions";
@@ -96,7 +96,11 @@ describe("Aave Rate Oracle", () => {
 
   describe("#initialize", () => {
     beforeEach("deploy and initialize test oracle", async () => {
-      ({ testRateOracle } = await loadFixture(oracleFixture));
+      // ({ testRateOracle } = await loadFixture(oracleFixture));
+      await deployments.fixture(["Factory", "Mocks", "RateOracles"]);
+      testRateOracle = (await ethers.getContract(
+        "TestRateOracle"
+      )) as TestRateOracle;
     });
 
     // it("aave lending pool set correctly", async () => {
@@ -116,8 +120,10 @@ describe("Aave Rate Oracle", () => {
 
   describe("#grow", () => {
     beforeEach("deploy and initialize test oracle", async () => {
-      ({ testRateOracle } = await loadFixture(oracleFixture));
-      // await testRateOracle.initializeTestRateOracle({
+      await deployments.fixture(["Factory", "Mocks", "RateOracles"]);
+      testRateOracle = (await ethers.getContract(
+        "TestRateOracle"
+      )) as TestRateOracle; // await testRateOracle.initializeTestRateOracle({
       //   tick: 1,
       //   liquidity: 1
       // });
