@@ -2,10 +2,7 @@ import { Wallet, BigNumber } from "ethers";
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
-import {
-  fixedAndVariableMathFixture,
-  marginCalculatorFixture,
-} from "../shared/fixtures";
+import { marginCalculatorFixture } from "../shared/fixtures";
 import {
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
@@ -17,16 +14,10 @@ import {
   XI_UPPER,
   XI_LOWER,
   T_MAX,
-  expandTo18Decimals,
 } from "../shared/utilities";
 
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import { getCurrentTimestamp } from "../helpers/time";
-import { FixedAndVariableMathTest } from "../../typechain";
-import { TickMath } from "../shared/tickMath";
-import { SqrtPriceMath } from "../shared/sqrtPriceMath";
-import JSBI from "jsbi";
-import { add, mul } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
