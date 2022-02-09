@@ -105,6 +105,19 @@ export class ScenarioRunner {
       this.outputFile,
       "current tick: " + this.currentTick.toString() + "\n"
     );
+
+    const sqrtPriceAtCurrentTick = await this.testTickMath.getSqrtRatioAtTick(
+      this.currentTick
+    );
+    fs.appendFileSync(
+      this.outputFile,
+      "sqrt price at current tick: " +
+        (
+          sqrtPriceAtCurrentTick.div(BigNumber.from(2).pow(64)).toNumber() /
+          2 ** 32
+        ).toString() +
+        "\n"
+    );
     fs.appendFileSync(this.outputFile, "\n");
 
     const currentReseveNormalizedIncome =
@@ -201,6 +214,46 @@ export class ScenarioRunner {
         this.positions[i][0],
         this.positions[i][1],
         this.positions[i][2]
+      );
+
+      fs.appendFileSync(
+        this.outputFile,
+        "                       lower tick: " +
+        this.positions[i][1].toString() +
+          "\n"
+      );
+
+      const sqrtPriceAtLowerTick = await this.testTickMath.getSqrtRatioAtTick(
+        this.positions[i][1]
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "         sqrt price at lower tick: " +
+          (
+            sqrtPriceAtLowerTick.div(BigNumber.from(2).pow(64)).toNumber() /
+            2 ** 32
+          ).toString() +
+          "\n"
+      );
+
+      fs.appendFileSync(
+        this.outputFile,
+        "                       upper tick: " +
+        this.positions[i][2].toString() +
+          "\n"
+      );
+
+      const sqrtPriceAtUpperTick = await this.testTickMath.getSqrtRatioAtTick(
+        this.positions[i][2]
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "         sqrt price at upper tick: " +
+          (
+            sqrtPriceAtUpperTick.div(BigNumber.from(2).pow(64)).toNumber() /
+            2 ** 32
+          ).toString() +
+          "\n"
       );
 
       fs.appendFileSync(

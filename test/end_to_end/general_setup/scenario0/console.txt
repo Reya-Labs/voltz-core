@@ -2,6 +2,7 @@
 current timestamp: 1634841354
 
 current tick: 0
+sqrt price at current tick: 1
 
 current reserve normalised income: 1.008000000
 
@@ -16,6 +17,10 @@ variable factor: 0.0
 No of   Minters: 2
 No of Positions: 2
 POSITION 0
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
                         liquidity: 0.0
                            margin: 0.0
    fixedTokenGrowthInsideLastX128: 0
@@ -27,6 +32,10 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 1
+                       lower tick: -180
+         sqrt price at lower tick: 0.9910408246796578
+                       upper tick: -60
+         sqrt price at upper tick: 0.9970046449452639
                         liquidity: 0.0
                            margin: 0.0
    fixedTokenGrowthInsideLastX128: 0
@@ -58,6 +67,7 @@ settlement cashflow: 0.0
 current timestamp: 1635014160
 
 current tick: 0
+sqrt price at current tick: 1
 
 current reserve normalised income: 1.008100000
 
@@ -72,6 +82,10 @@ variable factor: 0.000099206349206349
 No of   Minters: 2
 No of Positions: 2
 POSITION 0
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
    fixedTokenGrowthInsideLastX128: 0
@@ -83,6 +97,10 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 1
+                       lower tick: -180
+         sqrt price at lower tick: 0.9910408246796578
+                       upper tick: -60
+         sqrt price at upper tick: 0.9970046449452639
                         liquidity: 0.0
                            margin: 0.0
    fixedTokenGrowthInsideLastX128: 0
@@ -114,6 +132,7 @@ settlement cashflow: 0.0
 current timestamp: 1635014164
 
 current tick: -60
+sqrt price at current tick: 0.9970046449452639
 
 current reserve normalised income: 1.008100000
 
@@ -128,6 +147,10 @@ variable factor: 0.000099206349206349
 No of   Minters: 2
 No of Positions: 2
 POSITION 0
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
    fixedTokenGrowthInsideLastX128: 0.0030577238649129868
@@ -139,6 +162,10 @@ variableTokenGrowthInsideLastX128: -0.0029949999880045652
              settlement cashflow: 7.242470379723346437
 
 POSITION 1
+                       lower tick: -180
+         sqrt price at lower tick: 0.9910408246796578
+                       upper tick: -60
+         sqrt price at upper tick: 0.9970046449452639
                         liquidity: 0.0
                            margin: 0.0
    fixedTokenGrowthInsideLastX128: 0
@@ -170,6 +197,7 @@ settlement cashflow: 0.0
 current timestamp: 1636223774
 
 current tick: -60
+sqrt price at current tick: 0.9970046449452639
 
 current reserve normalised income: 1.012500000
 
@@ -184,6 +212,10 @@ variable factor: 0.004464285714285714
 No of   Minters: 2
 No of Positions: 2
 POSITION 0
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
    fixedTokenGrowthInsideLastX128: 0.0030577238649129868
@@ -195,6 +227,10 @@ variableTokenGrowthInsideLastX128: -0.0029949999880045652
              settlement cashflow: -5.830942318689351737
 
 POSITION 1
+                       lower tick: -180
+         sqrt price at lower tick: 0.9910408246796578
+                       upper tick: -60
+         sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
                            margin: 2000.0
    fixedTokenGrowthInsideLastX128: -0.0030577238649129868
@@ -226,6 +262,7 @@ settlement cashflow: 0.0
 current timestamp: 1636223778
 
 current tick: -121
+sqrt price at current tick: 0.9939685650169849
 
 current reserve normalised income: 1.012500000
 
@@ -240,6 +277,10 @@ variable factor: 0.004464285714285714
 No of   Minters: 2
 No of Positions: 2
 POSITION 0
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
    fixedTokenGrowthInsideLastX128: 0.003058660076931119
@@ -251,6 +292,10 @@ variableTokenGrowthInsideLastX128: -0.0029953548219054937
              settlement cashflow: -5.83021835840474017
 
 POSITION 1
+                       lower tick: -180
+         sqrt price at lower tick: 0.9910408246796578
+                       upper tick: -60
+         sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
                            margin: 2000.0
    fixedTokenGrowthInsideLastX128: 0.004862612811848521
@@ -282,6 +327,7 @@ settlement cashflow: -30.686011900269830806
 current timestamp: 1636223780
 
 current tick: -121
+sqrt price at current tick: 0.9939685650169849
 
 current reserve normalised income: 1.012500000
 
@@ -296,6 +342,10 @@ variable factor: 0.004464285714285714
 No of   Minters: 2
 No of Positions: 2
 POSITION 0
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
    fixedTokenGrowthInsideLastX128: 0.003058660076931119
@@ -307,6 +357,10 @@ variableTokenGrowthInsideLastX128: -0.0029953548219054937
              settlement cashflow: -5.83021835840474017
 
 POSITION 1
+                       lower tick: -180
+         sqrt price at lower tick: 0.9910408246796578
+                       upper tick: -60
+         sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
                            margin: 2000.0
    fixedTokenGrowthInsideLastX128: 0.004862612811848521
@@ -338,6 +392,7 @@ settlement cashflow: -30.686011900269830806
 current timestamp: 1636223783
 
 current tick: -81
+sqrt price at current tick: 0.995958391809836
 
 current reserve normalised income: 1.012500000
 
@@ -352,6 +407,10 @@ variable factor: 0.004464285714285714
 No of   Minters: 2
 No of Positions: 2
 POSITION 0
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
    fixedTokenGrowthInsideLastX128: 0.003058660076931119
@@ -363,6 +422,10 @@ variableTokenGrowthInsideLastX128: -0.0029953548219054937
              settlement cashflow: -5.83021835840474017
 
 POSITION 1
+                       lower tick: -180
+         sqrt price at lower tick: 0.9910408246796578
+                       upper tick: -60
+         sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
                            margin: 2000.0
    fixedTokenGrowthInsideLastX128: -0.0004194010980427265
@@ -394,6 +457,7 @@ settlement cashflow: -30.686011900269830806
 current timestamp: 1642703799
 
 current tick: -81
+sqrt price at current tick: 0.995958391809836
 
 current reserve normalised income: 1.013200000
 
@@ -403,6 +467,10 @@ amount of available variable tokens: 5231.265932331029 (↑) ; 24587.83573098777
 No of   Minters: 2
 No of Positions: 2
 POSITION 0
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
                         liquidity: 0.0
                            margin: 202.089674033323882514
    fixedTokenGrowthInsideLastX128: 0.003058660076931119
@@ -414,6 +482,10 @@ variableTokenGrowthInsideLastX128: -0.0029953548219054937
              settlement cashflow: 0.0
 
 POSITION 1
+                       lower tick: -180
+         sqrt price at lower tick: 0.9910408246796578
+                       upper tick: -60
+         sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
                            margin: 2006.735447560435169657
    fixedTokenGrowthInsideLastX128: -0.0004194010980427265
