@@ -571,6 +571,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         Trader.Info storage trader = traders[recipient];
 
+        /// @audit redundunt since this check is done by the min marign requirement
         if (trader.margin < int256(minMarginToIncentiviseLiquidators)) {
             revert("not enough to incentivise");
         }

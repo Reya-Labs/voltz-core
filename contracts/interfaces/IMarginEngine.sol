@@ -196,7 +196,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev 4. Update fixed and variable token growth + fee growth in the position info struct for future interactions with the position
     /// @param params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _)
     function updatePositionPostVAMMInducedMintBurn(
-        IVAMM.ModifyPositionParams memory params
+        IPositionStructs.ModifyPositionParams memory params
     ) external;
 
     /// @notice Update Fixed and Variable Token Balances of a trader
