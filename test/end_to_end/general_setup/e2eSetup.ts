@@ -14,16 +14,26 @@ import {
   XI_UPPER,
 } from "../../shared/utilities";
 
+// eslint-disable-next-line no-unused-vars
 const Minter1 = 0;
+// eslint-disable-next-line no-unused-vars
 const Minter2 = 1;
+// eslint-disable-next-line no-unused-vars
 const Minter3 = 2;
+// eslint-disable-next-line no-unused-vars
 const Minter4 = 3;
+// eslint-disable-next-line no-unused-vars
 const Minter5 = 4;
 
+// eslint-disable-next-line no-unused-vars
 const Swapper1 = 0;
+// eslint-disable-next-line no-unused-vars
 const Swapper2 = 1;
+// eslint-disable-next-line no-unused-vars
 const Swapper3 = 2;
+// eslint-disable-next-line no-unused-vars
 const Swapper4 = 3;
+// eslint-disable-next-line no-unused-vars
 const Swapper5 = 4;
 
 export interface MintAction {

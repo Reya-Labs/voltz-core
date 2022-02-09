@@ -8,12 +8,7 @@ import {
   tickMathFixture,
   createMetaFixtureE2E,
 } from "../../shared/fixtures";
-import {
-  getMaxLiquidityPerTick,
-  formatRay,
-  MIN_SQRT_RATIO,
-  MAX_SQRT_RATIO,
-} from "../../shared/utilities";
+import { getMaxLiquidityPerTick, formatRay } from "../../shared/utilities";
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../../typechain/TestMarginEngine";
 import {
@@ -26,12 +21,11 @@ import {
   TestRateOracle,
   TickMathTest,
 } from "../../../typechain";
-import { consts } from "../../helpers/constants";
 import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 import { Minter } from "../../../typechain/Minter";
 import { Swapper } from "../../../typechain/Swapper";
-import { e2eParameters, e2eScenarios } from "./e2eSetup";
+import { e2eParameters } from "./e2eSetup";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -88,132 +82,251 @@ export class ScenarioRunner {
     this.params = params_;
     this.outputFile = outputFile_;
 
-    let fs = require("fs");
+    const fs = require("fs");
     fs.writeFileSync(this.outputFile, "");
   }
 
   async exportSnapshot(title: string) {
-    let fs = require("fs");
-    fs.appendFileSync(this.outputFile, "----------------------------" + title + "----------------------------\n");
-    
+    const fs = require("fs");
+    fs.appendFileSync(
+      this.outputFile,
+      "----------------------------" + title + "----------------------------\n"
+    );
+
     const currentTimestamp: number = await getCurrentTimestamp(provider);
-    fs.appendFileSync(this.outputFile, "current timestamp: " + currentTimestamp.toString() + "\n");
+    fs.appendFileSync(
+      this.outputFile,
+      "current timestamp: " + currentTimestamp.toString() + "\n"
+    );
     fs.appendFileSync(this.outputFile, "\n");
 
-    await this.updateCurrentTick(); 
-    fs.appendFileSync(this.outputFile, "current tick: " + this.currentTick.toString() + "\n");
+    await this.updateCurrentTick();
+    fs.appendFileSync(
+      this.outputFile,
+      "current tick: " + this.currentTick.toString() + "\n"
+    );
     fs.appendFileSync(this.outputFile, "\n");
 
     const currentReseveNormalizedIncome =
       await this.aaveLendingPool.getReserveNormalizedIncome(this.token.address);
-    fs.appendFileSync(this.outputFile, "current reserve normalised income: " + formatRay(currentReseveNormalizedIncome).toString() + "\n");
+    fs.appendFileSync(
+      this.outputFile,
+      "current reserve normalised income: " +
+        formatRay(currentReseveNormalizedIncome).toString() +
+        "\n"
+    );
     fs.appendFileSync(this.outputFile, "\n");
 
     const amountsBelow = await this.getAmounts("below");
     const amountsAbove = await this.getAmounts("above");
 
-    fs.appendFileSync(this.outputFile, "amount of available    fixed tokens: " + amountsAbove[0].toString() + " (" + "\u2191" + ")" + " ; " + amountsBelow[0].toString() + " (" + "\u2193" + ")" + "\n");
-    fs.appendFileSync(this.outputFile, "amount of available variable tokens: " + amountsAbove[1].toString() + " (" + "\u2191" + ")" + " ; " + amountsBelow[1].toString() + " (" + "\u2193" + ")" + "\n");
+    fs.appendFileSync(
+      this.outputFile,
+      "amount of available    fixed tokens: " +
+        amountsAbove[0].toString() +
+        " (" +
+        "\u2191" +
+        ")" +
+        " ; " +
+        amountsBelow[0].toString() +
+        " (" +
+        "\u2193" +
+        ")" +
+        "\n"
+    );
+    fs.appendFileSync(
+      this.outputFile,
+      "amount of available variable tokens: " +
+        amountsAbove[1].toString() +
+        " (" +
+        "\u2191" +
+        ")" +
+        " ; " +
+        amountsBelow[1].toString() +
+        " (" +
+        "\u2193" +
+        ")" +
+        "\n"
+    );
     fs.appendFileSync(this.outputFile, "\n");
 
     if (toBn(currentTimestamp.toString()) < this.termEndTimestampBN) {
       await this.updateAPYbounds();
 
-      fs.appendFileSync(this.outputFile, "lower apy bound: " + utils.formatEther(this.lowerApyBound).toString() + "\n");
-      fs.appendFileSync(this.outputFile, " historical apy: " + utils.formatEther(this.historicalApyWad).toString() + "\n");
-      fs.appendFileSync(this.outputFile, "upper apy bound: " + utils.formatEther(this.upperApyBound).toString() + "\n");
-      fs.appendFileSync(this.outputFile, "variable factor: " + utils.formatEther(this.variableFactorWad).toString() + "\n"); // displayed as zero, investigate
+      fs.appendFileSync(
+        this.outputFile,
+        "lower apy bound: " +
+          utils.formatEther(this.lowerApyBound).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        " historical apy: " +
+          utils.formatEther(this.historicalApyWad).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "upper apy bound: " +
+          utils.formatEther(this.upperApyBound).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "variable factor: " +
+          utils.formatEther(this.variableFactorWad).toString() +
+          "\n"
+      ); // displayed as zero, investigate
       fs.appendFileSync(this.outputFile, "\n");
     }
 
-    fs.appendFileSync(this.outputFile, "No of   Minters: " + this.params.numMinters.toString() + "\n");
-    fs.appendFileSync(this.outputFile, "No of Positions: " + this.positions.length.toString() + "\n");
+    fs.appendFileSync(
+      this.outputFile,
+      "No of   Minters: " + this.params.numMinters.toString() + "\n"
+    );
+    fs.appendFileSync(
+      this.outputFile,
+      "No of Positions: " + this.positions.length.toString() + "\n"
+    );
 
-      for (let i = 0; i < this.positions.length; i++) {
-        await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-          this.positions[i][0],
-          this.positions[i][1],
-          this.positions[i][2]
-        );
-  
-        fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
-        const positionInfo = await this.marginEngineTest.getPosition(
-          this.positions[i][0],
-          this.positions[i][1],
-          this.positions[i][2]
-        );
+    for (let i = 0; i < this.positions.length; i++) {
+      await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
+        this.positions[i][0],
+        this.positions[i][1],
+        this.positions[i][2]
+      );
 
-        fs.appendFileSync(this.outputFile,
-          "                        liquidity: " + 
-          utils.formatEther(positionInfo[0]).toString() + "\n"
+      fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
+      const positionInfo = await this.marginEngineTest.getPosition(
+        this.positions[i][0],
+        this.positions[i][1],
+        this.positions[i][2]
+      );
+
+      fs.appendFileSync(
+        this.outputFile,
+        "                        liquidity: " +
+          utils.formatEther(positionInfo[0]).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "                           margin: " +
+          utils.formatEther(positionInfo[1]).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "   fixedTokenGrowthInsideLastX128: " +
+          (
+            positionInfo[2].div(BigNumber.from(2).pow(128 - 32)).toNumber() /
+            2 ** 32
+          ).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "variableTokenGrowthInsideLastX128: " +
+          (
+            positionInfo[3].div(BigNumber.from(2).pow(128 - 32)).toNumber() /
+            2 ** 32
+          ).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "                fixedTokenBalance: " +
+          utils.formatEther(positionInfo[4]).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "             variableTokenBalance: " +
+          utils.formatEther(positionInfo[5]).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "          feeGrowthInsideLastX128: " +
+          (
+            positionInfo[6].div(BigNumber.from(2).pow(128 - 32)).toNumber() /
+            2 ** 32
+          ).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "                        isSettled: " +
+          positionInfo[7].toString() +
+          "\n"
+      );
+
+      const settlementCashflow =
+        await this.testFixedAndVariableMath.calculateSettlementCashflow(
+          positionInfo[4],
+          positionInfo[5],
+          this.termStartTimestampBN,
+          this.termEndTimestampBN,
+          this.variableFactorWad
         );
-        fs.appendFileSync(this.outputFile,
-          "                           margin: " + 
-          utils.formatEther(positionInfo[1]).toString() + "\n"
-        );
-        fs.appendFileSync(this.outputFile,
-          "   fixedTokenGrowthInsideLastX128: " + 
-          (positionInfo[2].div(BigNumber.from(2).pow(128 - 32)).toNumber() / 2 ** 32).toString() + "\n"
-        );
-        fs.appendFileSync(this.outputFile,
-          "variableTokenGrowthInsideLastX128: " + 
-          (positionInfo[3].div(BigNumber.from(2).pow(128 - 32)).toNumber() / 2 ** 32).toString() + "\n"
-        );
-        fs.appendFileSync(this.outputFile,
-          "                fixedTokenBalance: " +
-          utils.formatEther(positionInfo[4]).toString() + "\n"
-        );
-        fs.appendFileSync(this.outputFile,
-          "             variableTokenBalance: " + 
-          utils.formatEther(positionInfo[5]).toString() + "\n"
-        );
-        fs.appendFileSync(this.outputFile,
-          "          feeGrowthInsideLastX128: " + 
-          (positionInfo[6].div(BigNumber.from(2).pow(128 - 32)).toNumber() / 2 ** 32).toString() + "\n"
-        );
-        fs.appendFileSync(this.outputFile,
-          "                        isSettled: " +
-          positionInfo[7].toString() + "\n"
-        );
-    
-        const settlementCashflow =
-          await this.testFixedAndVariableMath.calculateSettlementCashflow(
-            positionInfo[4],
-            positionInfo[5],
-            this.termStartTimestampBN,
-            this.termEndTimestampBN,
-            this.variableFactorWad
-          );
-          fs.appendFileSync(this.outputFile,
-          "             settlement cashflow: " + 
-          utils.formatEther(settlementCashflow).toString() + "\n"
-        );
-        fs.appendFileSync(this.outputFile, "\n");
-      }
+      fs.appendFileSync(
+        this.outputFile,
+        "             settlement cashflow: " +
+          utils.formatEther(settlementCashflow).toString() +
+          "\n"
+      );
       fs.appendFileSync(this.outputFile, "\n");
-  
-      fs.appendFileSync(this.outputFile, "No of Traders: " + this.params.numMinters.toString() + "\n");
-      for (let i = 0; i < this.traders.length; i++) {
-        fs.appendFileSync(this.outputFile, "TRADER: " + i.toString() + "\n");
-        const traderInfo = await this.marginEngineTest.traders(this.traders[i]);
+    }
+    fs.appendFileSync(this.outputFile, "\n");
 
-        fs.appendFileSync(this.outputFile, "              margin: " + utils.formatEther(traderInfo[0]).toString() + "\n");
-        fs.appendFileSync(this.outputFile, "   fixedTokenBalance: " + utils.formatEther(traderInfo[1]).toString() + "\n");
-        fs.appendFileSync(this.outputFile, "variableTokenBalance: " + utils.formatEther(traderInfo[2]).toString() + "\n");
-        fs.appendFileSync(this.outputFile, "           isSettled: " + traderInfo[3].toString() + "\n");
+    fs.appendFileSync(
+      this.outputFile,
+      "No of Traders: " + this.params.numMinters.toString() + "\n"
+    );
+    for (let i = 0; i < this.traders.length; i++) {
+      fs.appendFileSync(this.outputFile, "TRADER: " + i.toString() + "\n");
+      const traderInfo = await this.marginEngineTest.traders(this.traders[i]);
 
-        const settlementCashflow =
-          await this.testFixedAndVariableMath.calculateSettlementCashflow(
-            traderInfo[1],
-            traderInfo[2],
-            this.termStartTimestampBN,
-            this.termEndTimestampBN,
-            this.variableFactorWad
-          );
-        fs.appendFileSync(this.outputFile, "settlement cashflow: " + utils.formatEther(settlementCashflow).toString() + "\n");
-        fs.appendFileSync(this.outputFile, "\n");
-      }
+      fs.appendFileSync(
+        this.outputFile,
+        "              margin: " +
+          utils.formatEther(traderInfo[0]).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "   fixedTokenBalance: " +
+          utils.formatEther(traderInfo[1]).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "variableTokenBalance: " +
+          utils.formatEther(traderInfo[2]).toString() +
+          "\n"
+      );
+      fs.appendFileSync(
+        this.outputFile,
+        "           isSettled: " + traderInfo[3].toString() + "\n"
+      );
+
+      const settlementCashflow =
+        await this.testFixedAndVariableMath.calculateSettlementCashflow(
+          traderInfo[1],
+          traderInfo[2],
+          this.termStartTimestampBN,
+          this.termEndTimestampBN,
+          this.variableFactorWad
+        );
+      fs.appendFileSync(
+        this.outputFile,
+        "settlement cashflow: " +
+          utils.formatEther(settlementCashflow).toString() +
+          "\n"
+      );
       fs.appendFileSync(this.outputFile, "\n");
+    }
+    fs.appendFileSync(this.outputFile, "\n");
   }
 
   async init() {
@@ -418,8 +531,7 @@ export class ScenarioRunner {
   }
 
   // print the position and trader information
-  async printPositionsAndTradersInfo(
-  ) {
+  async printPositionsAndTradersInfo() {
     for (let i = 0; i < this.positions.length; i++) {
       await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         this.positions[i][0],
@@ -492,7 +604,8 @@ export class ScenarioRunner {
     await advanceTimeAndBlock(time, blockCount);
     await this.aaveLendingPool.setReserveNormalizedIncome(
       this.token.address,
-      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() + "0".repeat(23)
+      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
+        "0".repeat(23)
     );
 
     await this.rateOracleTest.writeOracleEntry();
@@ -574,37 +687,35 @@ export class ScenarioRunner {
     return traderMarginRequirement;
   }
 
-  async getAmounts(
-    towards: string
-  ) {
+  async getAmounts(towards: string) {
     await this.updateCurrentTick();
 
     let totalAmount0 = toBn("0");
     let totalAmount1 = toBn("0");
 
-    for (let p of this.positions) {
+    for (const p of this.positions) {
       let lowerTick = p[1];
       let upperTick = p[2];
 
       if (towards === "below") {
-          upperTick = Math.min(this.currentTick, p[2]);
-        }
-      else if (towards == "above") {
+        upperTick = Math.min(this.currentTick, p[2]);
+      } else if (towards === "above") {
         lowerTick = Math.max(this.currentTick, p[1]);
-      }
-      else {
+      } else {
         console.error("direction should be either below or above");
         return [0, 0];
       }
-      
-      const liquidity = (await this.marginEngineTest.getPosition(p[0], p[1], p[2]))._liquidity;
+
+      const liquidity = (
+        await this.marginEngineTest.getPosition(p[0], p[1], p[2])
+      )._liquidity;
       const ratioAtLowerTick = await this.testTickMath.getSqrtRatioAtTick(
         lowerTick
       );
       const ratioAtUpperTick = await this.testTickMath.getSqrtRatioAtTick(
         upperTick
       );
-  
+
       const amount0 = await this.testSqrtPriceMath.getAmount0Delta(
         ratioAtLowerTick,
         ratioAtUpperTick,
@@ -620,11 +731,6 @@ export class ScenarioRunner {
 
       totalAmount0 = totalAmount0.add(amount0);
       totalAmount1 = totalAmount1.add(amount1);
-    }
-
-    if (towards === "above") {
-      totalAmount0 
-      
     }
 
     return [
@@ -657,5 +763,3 @@ export class ScenarioRunner {
 
   async run() {}
 }
-
-
