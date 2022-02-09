@@ -340,7 +340,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       variableTokenDeltaCumulative: 0 // for Trader (user invoking the swap)
     });
 
-    /// @dev write an entry to the rate oracle (given no throttling), should be a no-op
+    /// @dev write an entry to the rate oracle (given no throttling)
 
     rateOracle.writeOracleEntry();
 
