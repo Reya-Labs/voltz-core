@@ -1,7 +1,7 @@
 import { BigNumber } from "@ethersproject/bignumber";
 import { toBn } from "evm-bn";
 import JSBI from "jsbi";
-import { consts } from "../helpers/constants";
+import { consts } from "../../helpers/constants";
 import {
   ALPHA,
   APY_LOWER_MULTIPLIER,
@@ -12,7 +12,7 @@ import {
   T_MAX,
   XI_LOWER,
   XI_UPPER,
-} from "./utilities";
+} from "../../shared/utilities";
 
 const Minter1 = 0;
 const Minter2 = 1;

@@ -447,8 +447,6 @@ contract ERC20 is Context, IERC20 {
         uint256 amount
     ) public virtual override returns (bool) {
         _transfer(sender, recipient, amount);
-        console.log("addresses:", sender, balanceOf(sender));
-        console.log("recipieint:", recipient, balanceOf(recipient));
         _approve(
             sender,
             _msgSender(),

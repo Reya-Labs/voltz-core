@@ -13,7 +13,7 @@ import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 
 import { toBn } from "evm-bn";
-import { e2eParameters } from "./e2eSetup";
+import { e2eParameters } from "../end_to_end/general_setup/e2eSetup";
 const { provider } = waffle;
 
 export async function mockERC20Fixture() {
