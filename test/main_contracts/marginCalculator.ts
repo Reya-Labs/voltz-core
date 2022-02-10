@@ -710,55 +710,6 @@ describe("MarginCalculator", () => {
 
       ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
     });
-
-    it("correctly checks for the fact the position is liquidatable", async () => {
-      const tickLower: number = 100;
-      const tickUpper: number = 1000;
-      const currentTick: number = 0;
-
-      const currentTimestamp = (await getCurrentTimestamp(provider)) + 1;
-
-      const termStartTimestamp = currentTimestamp - 604800;
-
-      const termEndTimestampScaled = toBn(
-        (termStartTimestamp + 604800).toString() // add a week
-      );
-
-      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
-
-      const fixedTokenBalance: BigNumber = toBn("0");
-      const variableTokenBalance: BigNumber = toBn("0");
-
-      const variableFactor: BigNumber = toBn("0.00");
-      const historicalApy: BigNumber = toBn("0.0");
-      const liquidityBN: BigNumber = expandTo18Decimals(1);
-      const currentMargin = toBn("0.0");
-
-      const isLM = false;
-
-      const position_margin_requirement_params = {
-        owner: wallet.address,
-        tickLower: tickLower,
-        tickUpper: tickUpper,
-        isLM: isLM,
-        currentTick: currentTick,
-        termStartTimestampWad: termStartTimestampScaled,
-        termEndTimestampWad: termEndTimestampScaled,
-        liquidity: liquidityBN,
-        fixedTokenBalance: fixedTokenBalance,
-        variableTokenBalance: variableTokenBalance,
-        variableFactorWad: variableFactor,
-        historicalApyWad: historicalApy,
-      };
-
-      const realized = await testMarginCalculator.isLiquidatablePosition(
-        position_margin_requirement_params,
-        currentMargin,
-        margin_engine_params
-      );
-
-      expect(realized).to.eq(true);
-    });
   });
 
   describe("#getPositionMarginRequirement", async () => {
@@ -803,35 +754,36 @@ describe("MarginCalculator", () => {
       ));
       ({ testTickMath } = await loadFixture(tickMathFixture));
 
-      tickAt2p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(2, 1)); // 2%
-      tickAt4p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(4, 1)); // 4%
+      tickAt2p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 2)); // 2%
+      tickAt4p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 4)); // 4%
 
     });
 
-    it("current tick < lower tick: margin requirement for staying position", async () => {
-      const currentTick: number = 0;
-      const tickLower = tickAt2p;
-      const tickUpper = tickAt4p;
-
+    it("current tick < lower tick: margin requirement for expected scenario", async () => {
+      const currentTick: string = (await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 10))).toString(); // 10%
+      const tickLower = tickAt4p;
+      const tickUpper = tickAt2p;
+      
+      console.log("current tick", currentTick);
       console.log("lower tick:", tickLower);
       console.log("upper tick:", tickUpper);
 
       const currentTimestamp = await getCurrentTimestamp(provider);
       const currentTimestampScaled = toBn(currentTimestamp.toString());
 
-      const termStartTimestamp = currentTimestamp - 604800;
+      const termStartTimestamp = currentTimestamp - 0;
 
       const termEndTimestampScaled = toBn(
-        (termStartTimestamp + 2 * 604800).toString() // add two weeks
+        (termStartTimestamp + 31556952).toString() // add a year
       );
 
       const termStartTimestampScaled = toBn(termStartTimestamp.toString());
 
-      const fixedTokenBalance: BigNumber = toBn("-100");
-      const variableTokenBalance: BigNumber = toBn("100");
+      const fixedTokenBalance: BigNumber = toBn("0");
+      const variableTokenBalance: BigNumber = toBn("0");
 
-      const variableFactor: BigNumber = toBn("0.02");
-      const historicalApy: BigNumber = toBn("0.3");
+      const variableFactor: BigNumber = toBn("0.0");
+      const historicalApy: BigNumber = toBn("0.0");
       const liquidityBN: BigNumber = expandTo18Decimals(1000);
 
       const isLM = true;
@@ -849,6 +801,7 @@ describe("MarginCalculator", () => {
         variableTokenBalance: variableTokenBalance,
         variableFactorWad: variableFactor,
         historicalApyWad: historicalApy,
+        sqrtPriceX96: encodeSqrtRatioX96(1, 10).toString()
       };
 
       const timeFactor = await testMarginCalculator.computeTimeFactor(
@@ -910,6 +863,9 @@ describe("MarginCalculator", () => {
         scenario1LPFixedTokenBalance.toString()
       );
 
+      console.log("scenario1LPFixedTokenBalance", utils.formatEther(scenario1LPFixedTokenBalance.toString()));
+      console.log("scenario1LPVariableTokenBalance", utils.formatEther(scenario1LPVariableTokenBalance.toString()));
+      
       const trader_margin_requirement_params_1 = {
         fixedTokenBalance: scenario1LPFixedTokenBalance,
         variableTokenBalance: scenario1LPVariableTokenBalance,
@@ -917,7 +873,7 @@ describe("MarginCalculator", () => {
         termEndTimestampWad: termEndTimestampScaled,
         isLM: isLM,
         historicalApyWad: historicalApy,
-        sqrtPriceX96: encodePriceSqrt(2, 1),
+        sqrtPriceX96: encodePriceSqrt(1, 2),
         variableFactorWad: variableFactor
       };
 
@@ -928,29 +884,7 @@ describe("MarginCalculator", () => {
         margin_engine_params
       );
 
-      console.log("tmreq1:", tmReq1.toString());
-
-      const trader_margin_requirement_params_2 = {
-        fixedTokenBalance: fixedTokenBalance,
-        variableTokenBalance: variableTokenBalance,
-        termStartTimestampWad: termStartTimestampScaled,
-        termEndTimestampWad: termEndTimestampScaled,
-        isLM: isLM,
-        historicalApyWad: historicalApy,
-        sqrtPriceX96: encodePriceSqrt(4, 1),
-        variableFactorWad: variableFactor
-      };
-
-      console.log(" ");
-
-      const tmReq2 = await testMarginCalculator.getTraderMarginRequirement(
-        trader_margin_requirement_params_2,
-        margin_engine_params
-      );
-
-      console.log("tmreq2:", tmReq2.toString());
-
-      console.log(" ");
+      console.log("tmreq1:", utils.formatEther(tmReq1.toString()));
 
       const realized =
         await testMarginCalculator.getPositionMarginRequirementTest(
@@ -958,35 +892,35 @@ describe("MarginCalculator", () => {
           margin_engine_params
         );
 
-      console.log("margin: ", realized.toString());
+      console.log("margin: ", utils.formatEther(realized.toString()));
       expect(realized).to.be.eq(tmReq1);
     });
 
-    it("current tick < lower tick: margin requirement for staying position", async () => {
-      const tickLower = tickAt2p;
-      const tickUpper = tickAt4p;
-      const currentTick: number = 0;
-
+    it("current tick > upper tick: margin requirement for staying position", async () => {
+      const currentTick: string = (await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(2, 1))).toString(); // 0.5%
+      const tickLower = tickAt4p;
+      const tickUpper = tickAt2p;
+      
+      console.log("current tick", currentTick);
       console.log("lower tick:", tickLower);
       console.log("upper tick:", tickUpper);
 
       const currentTimestamp = await getCurrentTimestamp(provider);
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
 
-      const termStartTimestamp = currentTimestamp - 604800;
+      const termStartTimestamp = currentTimestamp - 0;
 
       const termEndTimestampScaled = toBn(
-        (termStartTimestamp + 2 * 604800).toString() // add two weeks
+        (termStartTimestamp + 31556952).toString() // add a year
       );
 
       const termStartTimestampScaled = toBn(termStartTimestamp.toString());
 
-      const fixedTokenBalance: BigNumber = toBn("30407835");
-      const variableTokenBalance: BigNumber = toBn("-207119");
+      const fixedTokenBalance: BigNumber = toBn("-585.809919102571688689");
+      const variableTokenBalance: BigNumber = toBn("207.109440860029119648");
 
-      const variableFactor: BigNumber = toBn("0.02");
-      const historicalApy: BigNumber = toBn("0.01");
-      const liquidityBN: BigNumber = expandTo18Decimals(1000000);
+      const variableFactor: BigNumber = toBn("0.0");
+      const historicalApy: BigNumber = toBn("0.0");
+      const liquidityBN: BigNumber = expandTo18Decimals(1000);
 
       const isLM = true;
 
@@ -1003,88 +937,10 @@ describe("MarginCalculator", () => {
         variableTokenBalance: variableTokenBalance,
         variableFactorWad: variableFactor,
         historicalApyWad: historicalApy,
+        sqrtPriceX96: encodePriceSqrt(2, 1)
       };
-
-      const timeFactor = await testMarginCalculator.computeTimeFactor(
-        termEndTimestampScaled,
-        currentTimestampScaled,
-        margin_engine_params
-      );
-      console.log("time factor: ", timeFactor.toString());
-
-      const liquidityJSBI: JSBI = JSBI.BigInt(liquidityBN.toString());
-
-      const amount0DeltaJSBI = SqrtPriceMath.getAmount0Delta(
-        TickMath.getSqrtRatioAtTick(tickLower),
-        TickMath.getSqrtRatioAtTick(tickUpper),
-        liquidityJSBI,
-        false
-      );
-
-      const amount1DeltaJSBI = SqrtPriceMath.getAmount1Delta(
-        TickMath.getSqrtRatioAtTick(tickLower),
-        TickMath.getSqrtRatioAtTick(tickUpper),
-        liquidityJSBI,
-        true
-      );
-
-      let amount0Delta = BigNumber.from(amount0DeltaJSBI.toString());
-      const amount1Delta = BigNumber.from(amount1DeltaJSBI.toString());
-
-      amount0Delta = mul(amount0Delta, toBn("-1.0"));
-
-      console.log("amount0 contract: ", utils.formatEther(amount0Delta).toString());
-      console.log("amount1 contract: ", utils.formatEther(amount1Delta).toString());
-
-      const extraFixedTokenBalance =
-        await testFixedAndVariableMath.getFixedTokenBalance(
-          amount0Delta,
-          amount1Delta,
-          variableFactor,
-          termStartTimestampScaled,
-          termEndTimestampScaled
-        );
-
-      const scenario1LPVariableTokenBalance = add(
-        variableTokenBalance,
-        amount1Delta
-      );
-      const scenario1LPFixedTokenBalance = add(
-        fixedTokenBalance,
-        extraFixedTokenBalance
-      );
-
-      console.log("extraFixedTokenBalance", utils.formatEther(extraFixedTokenBalance).toString());
-      console.log(
-        "scenario1LPVariableTokenBalance",
-        utils.formatEther(scenario1LPVariableTokenBalance).toString()
-      );
-      console.log(
-        "scenario1LPFixedTokenBalance",
-        utils.formatEther(scenario1LPFixedTokenBalance).toString()
-      );
 
       const trader_margin_requirement_params_1 = {
-        fixedTokenBalance: scenario1LPFixedTokenBalance,
-        variableTokenBalance: scenario1LPVariableTokenBalance,
-        termStartTimestampWad: termStartTimestampScaled,
-        termEndTimestampWad: termEndTimestampScaled,
-        isLM: isLM,
-        historicalApyWad: historicalApy,
-        sqrtPriceX96: encodePriceSqrt(2, 1),
-        variableFactorWad: variableFactor
-      };
-
-      console.log(" ");
-
-      const tmReq1 = await testMarginCalculator.getTraderMarginRequirement(
-        trader_margin_requirement_params_1,
-        margin_engine_params
-      );
-
-      console.log("tmreq1:", utils.formatEther(tmReq1).toString());
-
-      const trader_margin_requirement_params_2 = {
         fixedTokenBalance: fixedTokenBalance,
         variableTokenBalance: variableTokenBalance,
         termStartTimestampWad: termStartTimestampScaled,
@@ -1097,14 +953,12 @@ describe("MarginCalculator", () => {
 
       console.log(" ");
 
-      const tmReq2 = await testMarginCalculator.getTraderMarginRequirement(
-        trader_margin_requirement_params_2,
+      const tmReq = await testMarginCalculator.getTraderMarginRequirement(
+        trader_margin_requirement_params_1,
         margin_engine_params
       );
 
-      console.log("tmreq2:", utils.formatEther(tmReq2).toString());
-
-      console.log(" ");
+      console.log("tmreq:", utils.formatEther(tmReq.toString()));
 
       const realized =
         await testMarginCalculator.getPositionMarginRequirementTest(
@@ -1112,8 +966,62 @@ describe("MarginCalculator", () => {
           margin_engine_params
         );
 
-      console.log("margin: ", utils.formatEther(realized).toString());
-      expect(realized).to.be.eq(tmReq2);
+      console.log("margin: ", utils.formatEther(realized.toString()));
+      expect(realized).to.be.eq(tmReq);
+    });
+
+    it("correctly checks for the fact the position is liquidatable", async () => {
+      const currentTick: string = (await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(2, 1))).toString(); // 0.5%
+      const tickLower = tickAt4p;
+      const tickUpper = tickAt2p;
+      
+      console.log("current tick", currentTick);
+      console.log("lower tick:", tickLower);
+      console.log("upper tick:", tickUpper);
+
+      const currentTimestamp = await getCurrentTimestamp(provider);
+
+      const termStartTimestamp = currentTimestamp - 0;
+
+      const termEndTimestampScaled = toBn(
+        (termStartTimestamp + 31556952).toString() // add a year
+      );
+
+      const termStartTimestampScaled = toBn(termStartTimestamp.toString());
+
+      const fixedTokenBalance: BigNumber = toBn("-585.809919102571688689");
+      const variableTokenBalance: BigNumber = toBn("207.109440860029119648");
+
+      const variableFactor: BigNumber = toBn("0.0");
+      const historicalApy: BigNumber = toBn("0.0");
+      const liquidityBN: BigNumber = expandTo18Decimals(1000);
+
+      const isLM = true;
+
+      const position_margin_requirement_params = {
+        owner: wallet.address,
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        isLM: isLM,
+        currentTick: currentTick,
+        termStartTimestampWad: termStartTimestampScaled,
+        termEndTimestampWad: termEndTimestampScaled,
+        liquidity: liquidityBN,
+        fixedTokenBalance: fixedTokenBalance,
+        variableTokenBalance: variableTokenBalance,
+        variableFactorWad: variableFactor,
+        historicalApyWad: historicalApy,
+        sqrtPriceX96: encodePriceSqrt(2, 1)
+      };
+      const currentMargin = toBn("0.0");
+
+      const realized = await testMarginCalculator.isLiquidatablePosition(
+        position_margin_requirement_params,
+        currentMargin,
+        margin_engine_params
+      );
+
+      expect(realized).to.eq(true);
     });
   });
 });

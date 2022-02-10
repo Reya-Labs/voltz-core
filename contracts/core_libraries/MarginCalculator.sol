@@ -87,6 +87,8 @@ library MarginCalculator {
         uint256 variableFactorWad;
         /// @dev Historical Average APY of the underlying pool (e.g. Aave v2 USDC Lending Pool), 18 decimals
         uint256 historicalApyWad;
+        /// @dev
+        uint160 sqrtPriceX96;
     }
 
     struct MinimumMarginRequirementLocalVars {
@@ -614,17 +616,17 @@ library MarginCalculator {
             _marginCalculatorParameters
         );
 
-        Printer.printUint256("margin", margin);
+        // Printer.printUint256("margin", margin);
 
         uint256 minimumMarginRequirement = getMinimumMarginRequirement(
             params,
             _marginCalculatorParameters
         );
 
-        Printer.printUint256(
-            "minimumMarginRequirement",
-            minimumMarginRequirement
-        );
+        // Printer.printUint256(
+        //     "minimumMarginRequirement",
+        //     minimumMarginRequirement
+        // );
 
         if (margin < minimumMarginRequirement) {
             margin = minimumMarginRequirement;
@@ -681,6 +683,8 @@ library MarginCalculator {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal view returns (uint256 margin) {
+        /// @audit check ticks lower < upper
+
         int256 scenario1LPVariableTokenBalance;
         int256 scenario1LPFixedTokenBalance;
 
@@ -841,24 +845,42 @@ library MarginCalculator {
         uint160 scenario2SqrtPriceX96;
 
         if (scenario1LPVariableTokenBalance > 0) {
-            // will engage in a fixed taker unwind (check this)
+            // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
             scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
                 params.tickUpper
             );
+            if (scenario1SqrtPriceX96 < params.sqrtPriceX96) {
+                scenario1SqrtPriceX96 = params.sqrtPriceX96;
+            }
         } else {
+            // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
             scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
                 params.tickLower
             );
+            if (scenario1SqrtPriceX96 > params.sqrtPriceX96) {
+                scenario1SqrtPriceX96 = params.sqrtPriceX96;
+            }
         }
 
         if (scenario2LPVariableTokenBalance > 0) {
+            // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
             scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
                 params.tickUpper
             );
+            
+            if (scenario2SqrtPriceX96 < params.sqrtPriceX96) {
+                scenario2SqrtPriceX96 = params.sqrtPriceX96;
+            }
+
         } else {
+            // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
             scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
                 params.tickLower
             );
+
+            if (scenario2SqrtPriceX96 > params.sqrtPriceX96) {
+                scenario2SqrtPriceX96 = params.sqrtPriceX96;
+            }
         }
 
         uint256 scenario1MarginRequirement = getTraderMarginRequirement(
