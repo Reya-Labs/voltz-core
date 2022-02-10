@@ -322,7 +322,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        (uint160 sqrtPriceX96, int24 tick, ) = IVAMM(vammAddress).vammVars();
+        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
         updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
@@ -339,8 +339,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
                 variableFactorWad: IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad),
-                historicalApyWad: getHistoricalApy(),
-                sqrtPriceX96: sqrtPriceX96
+                historicalApyWad: getHistoricalApy()
             }),
             position.margin,
             marginCalculatorParameters
@@ -462,8 +461,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     fixedTokenBalance: position.fixedTokenBalance,
                     variableTokenBalance: position.variableTokenBalance,
                     variableFactorWad: variableFactorWad,
-                    historicalApyWad: getHistoricalApy(),
-                    sqrtPriceX96: sqrtPriceX96
+                    historicalApyWad: getHistoricalApy()
                 });
 
         int256 positionMarginRequirement = int256(
@@ -545,7 +543,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         uint256 variableFactorWad
     ) internal view {
 
-        (uint160 sqrtPriceX96, int24 tick, ) = IVAMM(vammAddress).vammVars();
+        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
 
         MarginCalculator.PositionMarginRequirementParams
             memory marginReqParams = MarginCalculator
@@ -561,8 +559,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     fixedTokenBalance: positionFixedTokenBalance,
                     variableTokenBalance: positionVariableTokenBalance,
                     variableFactorWad: variableFactorWad,
-                    historicalApyWad: getHistoricalApy(),
-                    sqrtPriceX96: sqrtPriceX96
+                    historicalApyWad: getHistoricalApy()
                 });
 
         int256 positionMarginRequirement = int256(

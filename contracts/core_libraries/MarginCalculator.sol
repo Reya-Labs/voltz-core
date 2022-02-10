@@ -87,8 +87,6 @@ library MarginCalculator {
         uint256 variableFactorWad;
         /// @dev Historical Average APY of the underlying pool (e.g. Aave v2 USDC Lending Pool), 18 decimals
         uint256 historicalApyWad;
-        /// @dev
-        uint160 sqrtPriceX96;
     }
 
     struct MinimumMarginRequirementLocalVars {
@@ -616,9 +614,16 @@ library MarginCalculator {
             _marginCalculatorParameters
         );
 
+        Printer.printUint256("margin", margin);
+
         uint256 minimumMarginRequirement = getMinimumMarginRequirement(
             params,
             _marginCalculatorParameters
+        );
+
+        Printer.printUint256(
+            "minimumMarginRequirement",
+            minimumMarginRequirement
         );
 
         if (margin < minimumMarginRequirement) {
@@ -656,10 +661,13 @@ library MarginCalculator {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal view returns (bool isLiquidatable) {
+        /// @audit require isLM to be set to true in params
         uint256 marginRequirement = getTraderMarginRequirement(
             params,
             _marginCalculatorParameters
         );
+
+        Printer.printUint256("marginRequirement", marginRequirement);
 
         if (currentMargin < int256(marginRequirement)) {
             isLiquidatable = true;
@@ -673,8 +681,6 @@ library MarginCalculator {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal view returns (uint256 margin) {
-        /// @audit params.sqrtPriceX96 is redundunt
-
         int256 scenario1LPVariableTokenBalance;
         int256 scenario1LPFixedTokenBalance;
 
