@@ -867,11 +867,10 @@ library MarginCalculator {
             scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
                 params.tickUpper
             );
-            
+
             if (scenario2SqrtPriceX96 < params.sqrtPriceX96) {
                 scenario2SqrtPriceX96 = params.sqrtPriceX96;
             }
-
         } else {
             // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
             scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(

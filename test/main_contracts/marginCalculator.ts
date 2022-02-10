@@ -676,11 +676,15 @@ describe("MarginCalculator", () => {
     });
   });
 
-  describe("#isLiquiisLiquidatablePosition", async () => {
+  describe("#getPositionMarginRequirement", async () => {
     let margin_engine_params: any;
     let testMarginCalculator: MarginCalculatorTest;
+    let testFixedAndVariableMath: FixedAndVariableMathTest;
+    let testTickMath: TickMathTest;
+    let tickAt2p: number;
+    let tickAt4p: number;
 
-    beforeEach("deploy calculator", async () => {
+    before("deploy calculator", async () => {
       margin_engine_params = {
         apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
         apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
@@ -709,46 +713,6 @@ describe("MarginCalculator", () => {
       };
 
       ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
-    });
-  });
-
-  describe("#getPositionMarginRequirement", async () => {
-    let margin_engine_params: any;
-    let testMarginCalculator: MarginCalculatorTest;
-    let testFixedAndVariableMath: FixedAndVariableMathTest;
-    let testTickMath: TickMathTest;
-    let tickAt2p: number;
-    let tickAt4p: number;
-    
-    before("deploy calculator", async () => {
-  margin_engine_params = {
-    apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
-    apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
-    minDeltaLMWad: MIN_DELTA_LM,
-    minDeltaIMWad: MIN_DELTA_IM,
-    sigmaSquaredWad: SIGMA_SQUARED,
-    alphaWad: ALPHA,
-    betaWad: BETA,
-    xiUpperWad: XI_UPPER,
-    xiLowerWad: XI_LOWER,
-    tMaxWad: T_MAX,
-
-    devMulLeftUnwindLMWad: toBn("0.5"),
-    devMulRightUnwindLMWad: toBn("0.5"),
-    devMulLeftUnwindIMWad: toBn("2.0"),
-    devMulRightUnwindIMWad: toBn("2.0"),
-
-    fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
-    fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
-
-    fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
-    fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
-
-    gammaWad: toBn("1.0"),
-    minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
-  };
-
-      ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
       ({ testFixedAndVariableMath } = await loadFixture(
         fixedAndVariableMathFixture
       ));
@@ -756,14 +720,15 @@ describe("MarginCalculator", () => {
 
       tickAt2p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 2)); // 2%
       tickAt4p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 4)); // 4%
-
     });
 
     it("current tick < lower tick: margin requirement for expected scenario", async () => {
-      const currentTick: string = (await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 10))).toString(); // 10%
+      const currentTick: string = (
+        await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 10))
+      ).toString(); // 10%
       const tickLower = tickAt4p;
       const tickUpper = tickAt2p;
-      
+
       console.log("current tick", currentTick);
       console.log("lower tick:", tickLower);
       console.log("upper tick:", tickUpper);
@@ -801,7 +766,7 @@ describe("MarginCalculator", () => {
         variableTokenBalance: variableTokenBalance,
         variableFactorWad: variableFactor,
         historicalApyWad: historicalApy,
-        sqrtPriceX96: encodeSqrtRatioX96(1, 10).toString()
+        sqrtPriceX96: encodeSqrtRatioX96(1, 10).toString(),
       };
 
       const timeFactor = await testMarginCalculator.computeTimeFactor(
@@ -832,8 +797,14 @@ describe("MarginCalculator", () => {
 
       amount0Delta = mul(amount0Delta, toBn("-1.0"));
 
-      console.log("amount0 contract: ", utils.formatEther(amount0Delta).toString());
-      console.log("amount1 contract: ", utils.formatEther(amount1Delta).toString());
+      console.log(
+        "amount0 contract: ",
+        utils.formatEther(amount0Delta).toString()
+      );
+      console.log(
+        "amount1 contract: ",
+        utils.formatEther(amount1Delta).toString()
+      );
 
       const extraFixedTokenBalance =
         await testFixedAndVariableMath.getFixedTokenBalance(
@@ -863,9 +834,15 @@ describe("MarginCalculator", () => {
         scenario1LPFixedTokenBalance.toString()
       );
 
-      console.log("scenario1LPFixedTokenBalance", utils.formatEther(scenario1LPFixedTokenBalance.toString()));
-      console.log("scenario1LPVariableTokenBalance", utils.formatEther(scenario1LPVariableTokenBalance.toString()));
-      
+      console.log(
+        "scenario1LPFixedTokenBalance",
+        utils.formatEther(scenario1LPFixedTokenBalance.toString())
+      );
+      console.log(
+        "scenario1LPVariableTokenBalance",
+        utils.formatEther(scenario1LPVariableTokenBalance.toString())
+      );
+
       const trader_margin_requirement_params_1 = {
         fixedTokenBalance: scenario1LPFixedTokenBalance,
         variableTokenBalance: scenario1LPVariableTokenBalance,
@@ -874,7 +851,7 @@ describe("MarginCalculator", () => {
         isLM: isLM,
         historicalApyWad: historicalApy,
         sqrtPriceX96: encodePriceSqrt(1, 2),
-        variableFactorWad: variableFactor
+        variableFactorWad: variableFactor,
       };
 
       console.log(" ");
@@ -897,10 +874,12 @@ describe("MarginCalculator", () => {
     });
 
     it("current tick > upper tick: margin requirement for staying position", async () => {
-      const currentTick: string = (await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(2, 1))).toString(); // 0.5%
+      const currentTick: string = (
+        await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(2, 1))
+      ).toString(); // 0.5%
       const tickLower = tickAt4p;
       const tickUpper = tickAt2p;
-      
+
       console.log("current tick", currentTick);
       console.log("lower tick:", tickLower);
       console.log("upper tick:", tickUpper);
@@ -937,7 +916,7 @@ describe("MarginCalculator", () => {
         variableTokenBalance: variableTokenBalance,
         variableFactorWad: variableFactor,
         historicalApyWad: historicalApy,
-        sqrtPriceX96: encodePriceSqrt(2, 1)
+        sqrtPriceX96: encodePriceSqrt(2, 1),
       };
 
       const trader_margin_requirement_params_1 = {
@@ -948,7 +927,7 @@ describe("MarginCalculator", () => {
         isLM: isLM,
         historicalApyWad: historicalApy,
         sqrtPriceX96: encodePriceSqrt(2, 1),
-        variableFactorWad: variableFactor
+        variableFactorWad: variableFactor,
       };
 
       console.log(" ");
@@ -971,10 +950,12 @@ describe("MarginCalculator", () => {
     });
 
     it("correctly checks for the fact the position is liquidatable", async () => {
-      const currentTick: string = (await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(2, 1))).toString(); // 0.5%
+      const currentTick: string = (
+        await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(2, 1))
+      ).toString(); // 0.5%
       const tickLower = tickAt4p;
       const tickUpper = tickAt2p;
-      
+
       console.log("current tick", currentTick);
       console.log("lower tick:", tickLower);
       console.log("upper tick:", tickUpper);
@@ -1011,7 +992,7 @@ describe("MarginCalculator", () => {
         variableTokenBalance: variableTokenBalance,
         variableFactorWad: variableFactor,
         historicalApyWad: historicalApy,
-        sqrtPriceX96: encodePriceSqrt(2, 1)
+        sqrtPriceX96: encodePriceSqrt(2, 1),
       };
       const currentMargin = toBn("0.0");
 
