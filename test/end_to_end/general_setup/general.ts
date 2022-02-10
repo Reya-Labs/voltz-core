@@ -219,7 +219,7 @@ export class ScenarioRunner {
       fs.appendFileSync(
         this.outputFile,
         "                       lower tick: " +
-        this.positions[i][1].toString() +
+          this.positions[i][1].toString() +
           "\n"
       );
 
@@ -239,7 +239,7 @@ export class ScenarioRunner {
       fs.appendFileSync(
         this.outputFile,
         "                       upper tick: " +
-        this.positions[i][2].toString() +
+          this.positions[i][2].toString() +
           "\n"
       );
 
