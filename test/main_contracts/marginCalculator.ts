@@ -1419,11 +1419,11 @@ describe("MarginCalculator", () => {
       console.log("variable factor:", utils.formatEther(variableFactor));
       console.log("lower apy bound:", utils.formatEther(lowerApyBound));
       console.log("issue in here?");
-      
+
       const isLM = true;
-      
+
       // no variable yield accrued since the inception of the pool since we are currently at the inception
-      const variableFactorSinceTermStartTimestamp = toBn("0"); 
+      const variableFactorSinceTermStartTimestamp = toBn("0");
 
       const realized = await getTraderMarginRequirement(
         fixedTokenBalance,
