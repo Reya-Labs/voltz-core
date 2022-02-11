@@ -195,12 +195,6 @@ library Tick {
             if (tick <= tickCurrent) {
                 info.feeGrowthOutsideX128 = feeGrowthGlobalX128;
 
-                Printer.printInt24("tick", tick);
-                Printer.printUint256(
-                    "info.feeGrowthOutsideX128 updated",
-                    info.feeGrowthOutsideX128
-                );
-
                 info.fixedTokenGrowthOutsideX128 = fixedTokenGrowthGlobalX128;
 
                 info

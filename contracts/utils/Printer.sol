@@ -6,7 +6,7 @@ import "hardhat/console.sol";
 
 /// @title Console things
 library Printer {
-    bool public constant PRINT = true;
+    bool public constant PRINT = false;
 
     function printInt256(string memory reason, int256 number) internal view {
         if (!PRINT) return;

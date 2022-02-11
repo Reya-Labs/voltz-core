@@ -607,7 +607,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
         uint256 variableFactorWad
-    ) internal view {
+    ) internal {
 
         (uint160 sqrtPriceX96, int24 tick, ) = IVAMM(vammAddress).vammVars();
 
@@ -656,7 +656,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 variableTokenBalance,
         bool isTraderSettled,
         uint256 variableFactorWad
-    ) internal view {
+    ) internal {
 
         if (Time.blockTimestampScaled() >= termEndTimestampWad) {
             if (!isTraderSettled) {
@@ -693,7 +693,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
         uint256 variableFactorWad
-    ) internal view {
+    ) internal {
 
         /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
         /// @dev their margin is to withdraw it completely. If so, the position needs to be both burned
@@ -732,7 +732,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         uint256 variableFactorWad
-    ) internal view {
+    ) internal {
 
         (uint160 sqrtPriceX96,, ) = IVAMM(vammAddress).vammVars();
 
