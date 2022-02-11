@@ -10,6 +10,7 @@ import "./core_libraries/MarginCalculator.sol";
 import "./utils/SafeCast.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
+import "./interfaces/IFCM.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -187,8 +188,25 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (_marginDelta > 0) {
             IERC20Minimal(underlyingToken).transferFrom(_account, address(this), uint256(_marginDelta));
         } else {
+
+            uint256 marginEngineBalance = IERC20Minimal(underlyingToken).balanceOf(address(this)); 
+            
+            if (uint256(-_marginDelta) > marginEngineBalance) {
+                uint256 remainingDeltaToCover = uint256(-_marginDelta);
+                if (marginEngineBalance > 0) {
+                    remainingDeltaToCover = remainingDeltaToCover - marginEngineBalance;
+                    IERC20Minimal(underlyingToken).transfer(_account, marginEngineBalance);
+                }
+                IFCM(fcm).transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
+            }
+
             IERC20Minimal(underlyingToken).transfer(_account, uint256(-_marginDelta));
         }
+    }
+
+    function transferMarginToFCMTrader(address _account, uint256 marginDelta) external override {
+        /// @audit can only be called by the FCM
+        IERC20Minimal(underlyingToken).transfer(_account, marginDelta);
     }
 
     /// @inheritdoc IMarginEngine
