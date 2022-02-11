@@ -28,7 +28,7 @@ contract MarginCalculatorTest {
         uint256 tMaxWad,
         uint256 gammaWad,
         bool isFTUnwind
-    ) external pure returns (uint256 fixedTokenDeltaUnbalanced) {
+    ) external view returns (uint256 fixedTokenDeltaUnbalanced) {
         return
             MarginCalculator
                 .getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
@@ -49,7 +49,7 @@ contract MarginCalculatorTest {
         uint256 currentTimestampWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) external pure returns (int256 timeFactor) {
+    ) external view returns (int256 timeFactor) {
         return
             MarginCalculator.computeTimeFactor(
                 termEndTimestampWad,
@@ -65,7 +65,7 @@ contract MarginCalculatorTest {
         bool isUpper,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) external pure returns (uint256 apyBoundWad) {
+    ) external view returns (uint256 apyBoundWad) {
         return
             MarginCalculator.computeApyBound(
                 termEndTimestampWad,
@@ -97,7 +97,7 @@ contract MarginCalculatorTest {
         uint256 historicalApyWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) external pure returns (uint256 variableFactorWad) {
+    ) external view returns (uint256 variableFactorWad) {
         return
             MarginCalculator.worstCaseVariableFactorAtMaturity(
                 timeInSecondsFromStartToMaturityWad,

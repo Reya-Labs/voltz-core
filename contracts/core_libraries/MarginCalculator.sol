@@ -118,7 +118,7 @@ library MarginCalculator {
         uint256 currentTimestampWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal pure returns (int256 timeFactorWad) {
+    ) internal view returns (int256 timeFactorWad) {
         require(termEndTimestampWad > 0, "termEndTimestamp must be > 0");
         require(
             currentTimestampWad <= termEndTimestampWad,
@@ -152,7 +152,7 @@ library MarginCalculator {
         bool isUpper,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal pure returns (uint256 apyBoundWad) {
+    ) internal view returns (uint256 apyBoundWad) {
         ApyBoundVars memory apyBoundVars;
 
         int256 beta4Wad = PRBMathSD59x18.mul(
@@ -261,7 +261,7 @@ library MarginCalculator {
         uint256 historicalApyWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal pure returns (uint256 variableFactorWad) {
+    ) internal view returns (uint256 variableFactorWad) {
         uint256 timeInYearsFromStartUntilMaturityWad = FixedAndVariableMath
             .accrualFact(timeInSecondsFromStartToMaturityWad);
 
@@ -345,7 +345,7 @@ library MarginCalculator {
         uint256 tMaxWad,
         uint256 gammaWad,
         bool isFTUnwind
-    ) internal pure returns (uint256 fixedTokenDeltaUnbalanced) {
+    ) internal view returns (uint256 fixedTokenDeltaUnbalanced) {
         SimulatedUnwindLocalVars memory simulatedUnwindLocalVars;
 
         // todo: require checks
@@ -399,6 +399,13 @@ library MarginCalculator {
 
         // calculate cfFixedRate
 
+        console.log(
+            "fixedRateStartWad",
+            simulatedUnwindLocalVars.fixedRateStartWad
+        );
+        console.log("d", simulatedUnwindLocalVars.dWad);
+        console.log("D", simulatedUnwindLocalVars.upperDWad);
+
         simulatedUnwindLocalVars.fixedRateCFWad;
 
         if (isFTUnwind) {
@@ -419,6 +426,7 @@ library MarginCalculator {
         }
 
         // calculate fixedTokenDeltaUnbalancedWad
+        console.log("fixedRateCFWad", simulatedUnwindLocalVars.fixedRateCFWad);
 
         simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad = PRBMathUD60x18
             .mul(
@@ -504,6 +512,11 @@ library MarginCalculator {
             );
         }
 
+        Printer.printInt256(
+            "fixedTokenDeltaUnbalanced",
+            fixedTokenDeltaUnbalanced
+        );
+
         int256 variableTokenDelta = -params.variableTokenBalance;
 
         int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
@@ -514,10 +527,21 @@ library MarginCalculator {
             params.termEndTimestampWad
         );
 
+        Printer.printInt256("fixedTokenDelta", fixedTokenDelta);
+
         int256 updatedVariableTokenBalance = params.variableTokenBalance +
             variableTokenDelta; // should be zero
         int256 updatedFixedTokenBalance = params.fixedTokenBalance +
             fixedTokenDelta;
+
+        Printer.printInt256(
+            "updatedFixedTokenBalance",
+            updatedFixedTokenBalance
+        );
+        Printer.printInt256(
+            "updatedVariableTokenBalance",
+            updatedVariableTokenBalance
+        );
 
         margin = _getTraderMarginRequirement(
             TraderMarginRequirementParams({
@@ -616,17 +640,17 @@ library MarginCalculator {
             _marginCalculatorParameters
         );
 
-        // Printer.printUint256("margin", margin);
+        Printer.printUint256("margin", margin);
 
         uint256 minimumMarginRequirement = getMinimumMarginRequirement(
             params,
             _marginCalculatorParameters
         );
 
-        // Printer.printUint256(
-        //     "minimumMarginRequirement",
-        //     minimumMarginRequirement
-        // );
+        Printer.printUint256(
+            "minimumMarginRequirement",
+            minimumMarginRequirement
+        );
 
         if (margin < minimumMarginRequirement) {
             margin = minimumMarginRequirement;
