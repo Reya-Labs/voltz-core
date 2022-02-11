@@ -34,7 +34,7 @@ library MarginCalculator {
         int256 lambdaDenWad;
         /// @dev lambda = lambdaNum / lambdaDen
         int256 lambdaWad;
-        /// @dev critical value = 2(k+2lambda)
+        /// @dev critical value multiplier = 2(k+2lambda)
         int256 criticalValueMultiplierWad;
         /// @dev critical value = sqrt(2(k+2*lambda))*xiUpper (for upper bound calculation), critical value = sqrt(2(k+2*lambda))*xiLower (for lower bound calculation)
         int256 criticalValueWad;
@@ -367,20 +367,6 @@ library MarginCalculator {
                 )
             )
         );
-
-        // Printer.printInt256("exp1Wad", exp1Wad);
-        // Printer.printInt256("exp2Wad", exp2Wad);
-        // Printer.printEmptyLine();
-
-        // Printer.printBool(
-        //     "is variable balance positive?",
-        //     variableTokenBalanceWad > 0
-        // );
-        // Printer.printBool(
-        //     "is fixed balance positive?",
-        //     fixedTokenBalanceWad > 0
-        // );
-        // Printer.printEmptyLine();
 
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
 

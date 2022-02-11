@@ -514,6 +514,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       }
     }
 
+    Printer.printUint256("cumulativeFeeIncurred", _cumulativeFeeIncurred);
+    Printer.printEmptyLine();
+
     /// @audit more values in the swap event
     emit Swap(
       msg.sender,

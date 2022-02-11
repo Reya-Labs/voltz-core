@@ -27,7 +27,7 @@ contract SwapMathTest {
         uint256 timeToMaturityInSeconds
     )
         external
-        pure
+        view
         returns (
             uint160 sqrtQ,
             uint256 amountIn,
