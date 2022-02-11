@@ -229,4 +229,6 @@ interface IMarginEngine is IPositionStructs {
     function setVAMMAddress(address _vAMMAddress) external;
 
     function setFCM(address _fcm) external;
+
+    function transferMarginToFCMTrader(address _account, uint256 marginDelta) external;
 }

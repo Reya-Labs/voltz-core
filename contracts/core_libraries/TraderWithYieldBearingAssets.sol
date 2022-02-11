@@ -8,6 +8,7 @@ import "./FixedAndVariableMath.sol";
 library TraderWithYieldBearingAssets {
     // info stored for each user's position
     struct Info {
+        uint256 marginInUnderlyingTokens;
         uint256 marginInYieldBearingTokens; // in terms of aUSDC
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
@@ -16,6 +17,12 @@ library TraderWithYieldBearingAssets {
         uint256 rateFromRayLastUpdate;
     }
 
+    function updateMarginInUnderlyingTokensViaDelta(Info storage self, uint256 marginDelta)
+        internal
+    {
+        self.marginInUnderlyingTokens = self.marginInUnderlyingTokens + marginDelta;
+    }
+    
     function updateRateFrom(Info storage self, uint256 _rateFromRay) internal {
         self.rateFromRayLastUpdate = _rateFromRay;
     }

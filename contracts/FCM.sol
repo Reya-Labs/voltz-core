@@ -14,12 +14,10 @@ import "./utils/WayRayMath.sol";
 // todo: proxy pattern
 // todo: bring the FCM into the factory when initiating the IRS instance
 // todo: add overrides
-// todo: unwind
 // todo: change the name of the unwind boolean since now it handles both fcm and unwinds
-// todo: initiate a fully collateralised swap on someone's behalf
-// todo: introduce settle function
 // todo: introduce base FCM abstract class
 // todo: have a function that lets traders directly deposit aTokens into their margin account (update margin)
+// todo: can we use IERC20Minimal for aTokens?
 
 contract AaveFCM is IFCM {
 
@@ -37,6 +35,9 @@ contract AaveFCM is IFCM {
 
   /// The resulting margin does not meet minimum requirements
   error MarginRequirementNotMet();
+
+  /// Positions and Traders cannot be settled before the applicable interest rate swap has matured 
+  error CannotSettleBeforeMaturity();
   
   constructor (address _underlyingYieldBearingToken, address _vammAddress, address _marginEngineAddress, address _aaveLendingPool) {
     underlyingYieldBearingToken = _underlyingYieldBearingToken;
@@ -47,7 +48,7 @@ contract AaveFCM is IFCM {
     rateOracle = IRateOracle(rateOracleAddress);
   }
 
-  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external {
+  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override {
 
     require(notional!=0, "notional = 0");
 
@@ -84,7 +85,7 @@ contract AaveFCM is IFCM {
 
   }
 
-  function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external {
+  function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override {
     
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
@@ -186,7 +187,7 @@ contract AaveFCM is IFCM {
 
   }
   
-  function computeUpdatedTraderMargin(uint256 rateFromRay, uint256 notional) internal returns (uint256 rateToRay, uint256 updatedTraderMargin) {
+  function computeUpdatedTraderMargin(uint256 rateFromRay, uint256 notional) internal view returns (uint256 rateToRay, uint256 updatedTraderMargin) {
     rateToRay = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
 
     require(rateToRay > rateFromRay, "can't have negative rates");
@@ -210,5 +211,42 @@ contract AaveFCM is IFCM {
 
   }
 
+  modifier onlyAfterMaturity () {
+    if (IMarginEngine(marginEngineAddress).termEndTimestampWad() > Time.blockTimestampScaled()) {
+        revert CannotSettleBeforeMaturity();
+    }
+    _;
+  }
+
+  // only after maturity
+  function settleTrader() external override onlyAfterMaturity { 
+    
+    TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
+    require(!trader.isSettled, "not settled");
+    updateTraderToAccountForAccruedYield(trader);
+    
+    int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, IMarginEngine(marginEngineAddress).termStartTimestampWad(), IMarginEngine(marginEngineAddress).termEndTimestampWad(), rateOracle.variableFactor(IMarginEngine(marginEngineAddress).termStartTimestampWad(), IMarginEngine(marginEngineAddress).termEndTimestampWad()));
+    trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
+
+    if (settlementCashflow > 0) {
+      trader.updateMarginInUnderlyingTokensViaDelta(uint256(settlementCashflow)); // potentially redundunt
+      IMarginEngine(marginEngineAddress).transferMarginToFCMTrader(msg.sender, uint256(settlementCashflow));
+    } else {
+      uint256 updatedTraderMarginInYieldBearingTokens = trader.marginInYieldBearingTokens - uint256(-settlementCashflow);
+      trader.updateMarginInYieldBearingTokens(updatedTraderMarginInYieldBearingTokens);
+    }
+
+    trader.updateMarginInYieldBearingTokens(0);    
+    IERC20Minimal(underlyingYieldBearingToken).transfer(msg.sender, trader.marginInYieldBearingTokens);
+    trader.settleTrader();
+  }
+
+  function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external override {
+    /// @audit can only be called by the MarginEngine
+    // in case of aave 1aUSDC = 1USDC (1aToken = 1Token), hence no need for additional calculations
+    IERC20Minimal(underlyingYieldBearingToken).transfer(_account, marginDeltaInUnderlyingTokens);
+  }
+
+  // optional: margin topup function (in terms of yield bearing tokens)
 
 }
