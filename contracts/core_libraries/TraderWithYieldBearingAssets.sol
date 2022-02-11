@@ -17,12 +17,15 @@ library TraderWithYieldBearingAssets {
         uint256 rateFromRayLastUpdate;
     }
 
-    function updateMarginInUnderlyingTokensViaDelta(Info storage self, uint256 marginDelta)
-        internal
-    {
-        self.marginInUnderlyingTokens = self.marginInUnderlyingTokens + marginDelta;
+    function updateMarginInUnderlyingTokensViaDelta(
+        Info storage self,
+        uint256 marginDelta
+    ) internal {
+        self.marginInUnderlyingTokens =
+            self.marginInUnderlyingTokens +
+            marginDelta;
     }
-    
+
     function updateRateFrom(Info storage self, uint256 _rateFromRay) internal {
         self.rateFromRayLastUpdate = _rateFromRay;
     }
