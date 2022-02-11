@@ -96,6 +96,14 @@ export const DEFAULT_TIME_FACTOR: BigNumber = toBn("0.1");
 export const MIN_TICK: number = -887272;
 export const MAX_TICK: number = 887272;
 
+export const DEV_MUL_LEFT_UNWIND_LM: BigNumber = BigNumber.from("12");
+export const DEV_MUL_RIGHT_UNWIND_LM: BigNumber = BigNumber.from("8");
+
+export const DEV_MUL_LEFT_UNWIND_IM: BigNumber = BigNumber.from("15");
+export const DEV_MUL_RIGHT_UNWIND_IM: BigNumber = BigNumber.from("5");
+
+export const DEV_DIV: BigNumber = BigNumber.from(10);
+
 Bn.config({ EXPONENTIAL_AT: 999999, DECIMAL_PLACES: 40 });
 
 // returns the sqrt price as a 64x96

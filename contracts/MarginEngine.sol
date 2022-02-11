@@ -60,8 +60,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     bool public isInsuranceDepleted;
 
-    uint256 public minMarginToIncentiviseLiquidators;
-
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {  
@@ -161,10 +159,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     function setIsInsuranceDepleted(bool _isInsuranceDepleted) external override onlyOwner {
         isInsuranceDepleted = _isInsuranceDepleted;
-    }
-
-    function setMinMarginToIncentiviseLiquidators(uint256 _minMarginToIncentiviseLiquidators) external override onlyOwner {
-        minMarginToIncentiviseLiquidators = _minMarginToIncentiviseLiquidators;
     }
 
     function collectProtocol(address recipient, uint256 amount)
@@ -287,7 +281,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             } else {
                 int256 updatedMarginWouldBe = trader.margin + marginDelta;
             
-                checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled);
+                checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
 
                 trader.updateMarginViaDelta(marginDelta);
 
@@ -393,7 +387,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
+        (uint160 sqrtPriceX96, int24 tick, ) = IVAMM(vammAddress).vammVars();
         updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
 
@@ -410,7 +404,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 fixedTokenBalance: position.fixedTokenBalance,
                 variableTokenBalance: position.variableTokenBalance,
                 variableFactorWad: IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad),
-                historicalApyWad: getHistoricalApy()
+                historicalApyWad: getHistoricalApy(),
+                sqrtPriceX96: sqrtPriceX96
             }),
             position.margin,
             marginCalculatorParameters
@@ -445,6 +440,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         require(traderAddress!=fcm, "not FCM");
         
         Trader.Info storage trader = traders[traderAddress];
+        
+        (uint160 sqrtPriceX96,,) = IVAMM(vammAddress).vammVars();
             
         bool isLiquidatable = MarginCalculator.isLiquidatableTrader(
             MarginCalculator.TraderMarginRequirementParams({
@@ -453,7 +450,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 termStartTimestampWad: termStartTimestampWad,
                 termEndTimestampWad: termEndTimestampWad,
                 isLM: true,
-                historicalApyWad: getHistoricalApy()
+                historicalApyWad: getHistoricalApy(),
+                sqrtPriceX96: sqrtPriceX96,
+                variableFactorWad: IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad)
             }),
             trader.margin,
             marginCalculatorParameters
@@ -477,46 +476,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         IERC20Minimal(underlyingToken).transfer(msg.sender, liquidatorRewardValue);
 
     }
-    
-    // @audit the following function is unnecessary
-    function checkPositionMarginRequirementSatisfied(
-            address recipient,
-            int24 tickLower,
-            int24 tickUpper,
-            uint128 amount
-        ) internal {
-
-        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
-        updatePositionTokenBalancesAndAccountForFees(recipient, tickLower, tickUpper);
-        Position.Info storage position = positions.get(recipient, tickLower, tickUpper);
-        
-        if (position.margin < int256(minMarginToIncentiviseLiquidators)) {
-            revert("not enough to incentivise");
-        }
-        
-        uint128 amountTotal = LiquidityMath.addDelta(position._liquidity, int128(amount));
-        
-        int256 marginRequirement = int256(MarginCalculator.getPositionMarginRequirement(
-            MarginCalculator.PositionMarginRequirementParams({
-                owner: recipient,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                isLM: false,
-                currentTick: tick,
-                termStartTimestampWad: termStartTimestampWad,
-                termEndTimestampWad: termEndTimestampWad,
-                liquidity: amountTotal,
-                fixedTokenBalance: position.fixedTokenBalance,
-                variableTokenBalance: position.variableTokenBalance, 
-                variableFactorWad: IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad),
-                historicalApyWad: getHistoricalApy()
-            }), marginCalculatorParameters
-        ));
-   
-        if (marginRequirement > position.margin) {
-            revert MarginRequirementNotMet();
-        }
-    }
 
     /// @inheritdoc IMarginEngine
     function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external override {
@@ -536,7 +495,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     }
 
-    function updatePositionPostVAMMInducedSwap(address owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int24 currentTick) external override {
+    function updatePositionPostVAMMInducedSwap(address owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int24 currentTick, uint160 sqrtPriceX96) external override {
         /// @dev this function can only be called by the vamm following a swap    
         /// @audit turn into a modifier
         require(msg.sender==vammAddress, "only vamm");
@@ -567,7 +526,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     fixedTokenBalance: position.fixedTokenBalance,
                     variableTokenBalance: position.variableTokenBalance,
                     variableFactorWad: variableFactorWad,
-                    historicalApyWad: getHistoricalApy()
+                    historicalApyWad: getHistoricalApy(),
+                    sqrtPriceX96: sqrtPriceX96
                 });
 
         int256 positionMarginRequirement = int256(
@@ -581,18 +541,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
     
     /// @inheritdoc IMarginEngine
-    function updateTraderPostVAMMInducedSwap(address recipient, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) external override {
+    function updateTraderPostVAMMInducedSwap(address recipient, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, uint160 sqrtPriceX96) external override {
 
         /// @dev this function can only be called by the vamm following a swap    
         /// @audit turn into a modifier
         require(msg.sender==vammAddress, "only vamm");
         
         Trader.Info storage trader = traders[recipient];
-
-        /// @audit redundunt since this check is done by the min marign requirement
-        if (trader.margin < int256(minMarginToIncentiviseLiquidators)) {
-            revert("not enough to incentivise");
-        }
 
         if (cumulativeFeeIncurred > 0) {
             trader.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
@@ -607,7 +562,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 termStartTimestampWad: termStartTimestampWad,
                 termEndTimestampWad: termEndTimestampWad,
                 isLM: false,
-                historicalApyWad: getHistoricalApy()
+                historicalApyWad: getHistoricalApy(),
+                sqrtPriceX96: sqrtPriceX96,
+                variableFactorWad: IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad)
             }), marginCalculatorParameters
         ));
 
@@ -652,12 +609,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         uint256 variableFactorWad
     ) internal view {
 
-        (, int24 tick, ) = IVAMM(vammAddress).vammVars();
-
-        // Printer.printInt256("updated margin would be", updatedMarginWouldBe);
-        // Printer.printUint256("position liquidity", positionLiquidity);
-        // Printer.printUint256("historical apy", getHistoricalApyReadOnly());
-        // Printer.printEmptyLine();
+        (uint160 sqrtPriceX96, int24 tick, ) = IVAMM(vammAddress).vammVars();
 
         MarginCalculator.PositionMarginRequirementParams
             memory marginReqParams = MarginCalculator
@@ -673,7 +625,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     fixedTokenBalance: positionFixedTokenBalance,
                     variableTokenBalance: positionVariableTokenBalance,
                     variableFactorWad: variableFactorWad,
-                    historicalApyWad: getHistoricalApyReadOnly()
+                    historicalApyWad: getHistoricalApy(),
+                    sqrtPriceX96: sqrtPriceX96
                 });
 
         int256 positionMarginRequirement = int256(
@@ -701,7 +654,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 updatedMarginWouldBe,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        bool isTraderSettled
+        bool isTraderSettled,
+        uint256 variableFactorWad
     ) internal view {
 
         if (Time.blockTimestampScaled() >= termEndTimestampWad) {
@@ -715,7 +669,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             checkTraderMarginAboveRequirement(
                 updatedMarginWouldBe,
                 fixedTokenBalance,
-                variableTokenBalance
+                variableTokenBalance,
+                variableFactorWad
             );
         }
     }
@@ -775,8 +730,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function checkTraderMarginAboveRequirement(
         int256 updatedMarginWouldBe,
         int256 fixedTokenBalance,
-        int256 variableTokenBalance
+        int256 variableTokenBalance,
+        uint256 variableFactorWad
     ) internal view {
+
+        (uint160 sqrtPriceX96,, ) = IVAMM(vammAddress).vammVars();
 
         int256 traderMarginRequirement = int256(
             MarginCalculator.getTraderMarginRequirement(
@@ -786,7 +744,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     termStartTimestampWad: termStartTimestampWad,
                     termEndTimestampWad: termEndTimestampWad,
                     isLM: false,
-                    historicalApyWad: getHistoricalApyReadOnly()
+                    historicalApyWad: getHistoricalApy(),
+                    sqrtPriceX96: sqrtPriceX96,
+                    variableFactorWad: variableFactorWad
                 }), marginCalculatorParameters
             )
         );

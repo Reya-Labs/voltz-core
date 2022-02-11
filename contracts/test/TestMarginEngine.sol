@@ -24,27 +24,31 @@ contract TestMarginEngine is MarginEngine {
         int256 updatedMarginWouldBe,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        bool isTraderSettled
+        bool isTraderSettled,
+        uint256 variableFactorWad
     ) external view {
         return
             checkTraderMarginCanBeUpdated(
                 updatedMarginWouldBe,
                 fixedTokenBalance,
                 variableTokenBalance,
-                isTraderSettled
+                isTraderSettled,
+                variableFactorWad
             );
     }
 
     function checkTraderMarginAboveRequirementTest(
         int256 updatedMarginWouldBe,
         int256 fixedTokenBalance,
-        int256 variableTokenBalance
+        int256 variableTokenBalance,
+        uint256 variableFactorWad
     ) external view {
         return
             checkTraderMarginAboveRequirement(
                 updatedMarginWouldBe,
                 fixedTokenBalance,
-                variableTokenBalance
+                variableTokenBalance,
+                variableFactorWad
             );
     }
 

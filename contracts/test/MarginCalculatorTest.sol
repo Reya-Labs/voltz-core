@@ -6,12 +6,50 @@ import "../core_libraries/MarginCalculator.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 
 contract MarginCalculatorTest {
+    function getMinimumMarginRequirement(
+        MarginCalculator.TraderMarginRequirementParams memory params,
+        IMarginEngine.MarginCalculatorParameters
+            memory _marginCalculatorParameters
+    ) external view returns (uint256 margin) {
+        return
+            MarginCalculator.getMinimumMarginRequirement(
+                params,
+                _marginCalculatorParameters
+            );
+    }
+
+    function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
+        uint256 variableTokenDeltaAbsolute,
+        uint160 sqrtRatioCurrX96,
+        uint256 startingFixedRateMultiplierWad,
+        uint256 fixedRateDeviationMinWad,
+        uint256 termEndTimestampWad,
+        uint256 currentTimestampWad,
+        uint256 tMaxWad,
+        uint256 gammaWad,
+        bool isFTUnwind
+    ) external view returns (uint256 fixedTokenDeltaUnbalanced) {
+        return
+            MarginCalculator
+                .getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
+                    variableTokenDeltaAbsolute,
+                    sqrtRatioCurrX96,
+                    startingFixedRateMultiplierWad,
+                    fixedRateDeviationMinWad,
+                    termEndTimestampWad,
+                    currentTimestampWad,
+                    tMaxWad,
+                    gammaWad,
+                    isFTUnwind
+                );
+    }
+
     function computeTimeFactor(
         uint256 termEndTimestampWad,
         uint256 currentTimestampWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) external pure returns (int256 timeFactor) {
+    ) external view returns (int256 timeFactor) {
         return
             MarginCalculator.computeTimeFactor(
                 termEndTimestampWad,
@@ -27,7 +65,7 @@ contract MarginCalculatorTest {
         bool isUpper,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) external pure returns (uint256 apyBoundWad) {
+    ) external view returns (uint256 apyBoundWad) {
         return
             MarginCalculator.computeApyBound(
                 termEndTimestampWad,
@@ -59,7 +97,7 @@ contract MarginCalculatorTest {
         uint256 historicalApyWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) external pure returns (uint256 variableFactorWad) {
+    ) external view returns (uint256 variableFactorWad) {
         return
             MarginCalculator.worstCaseVariableFactorAtMaturity(
                 timeInSecondsFromStartToMaturityWad,
