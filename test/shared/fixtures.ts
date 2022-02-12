@@ -3,6 +3,7 @@ import { TestVAMM } from "../../typechain/TestVAMM";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { BigNumber } from "@ethersproject/bignumber";
 import { TestRateOracle } from "../../typechain/TestRateOracle";
+import { TestAaveFCM } from "../../typechain/TestAaveFCM";
 
 import {
   ERC20Mock,
@@ -138,6 +139,23 @@ export async function factoryFixture(
   )) as Factory;
 
   return { factory };
+}
+
+export async function aaveFCMTestFixture(
+  _underlyingYieldBearingToken: string,
+  _vammAddress: string,
+  _marginEngineAddress: string,
+  _aaveLendingPoolAddress: string
+) {
+  const aaveFCMFactory = await ethers.getContractFactory("TestAaveFCM");
+  const aaveFCM = (await aaveFCMFactory.deploy(
+    _underlyingYieldBearingToken,
+    _vammAddress,
+    _marginEngineAddress,
+    _aaveLendingPoolAddress
+  )) as TestAaveFCM;
+
+  return { aaveFCM };
 }
 
 export async function rateOracleTestFixture(
