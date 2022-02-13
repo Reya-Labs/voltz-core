@@ -625,7 +625,8 @@ export class ScenarioRunner {
   async updateAPYbounds() {
     const currentTimestamp: number = await getCurrentTimestamp(provider);
     const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
-    this.historicalApyWad = await this.marginEngineTest.getHistoricalApy();
+    this.historicalApyWad =
+      await this.marginEngineTest.getHistoricalApyReadOnly();
 
     this.upperApyBound = await this.testMarginCalculator.computeApyBound(
       this.termEndTimestampBN,
@@ -680,6 +681,10 @@ export class ScenarioRunner {
       position[2]
     );
 
+    const currentSqrtPrice = await this.testTickMath.getSqrtRatioAtTick(
+      this.currentTick
+    );
+
     const position_margin_requirement_params = {
       owner: position[0],
       tickLower: position[1],
@@ -693,6 +698,7 @@ export class ScenarioRunner {
       variableTokenBalance: positionInfo.variableTokenBalance,
       variableFactorWad: this.variableFactorWad,
       historicalApyWad: this.historicalApyWad,
+      sqrtPriceX96: currentSqrtPrice,
     };
 
     const positionMarginRequirement =
@@ -715,6 +721,9 @@ export class ScenarioRunner {
 
     const traderInfo = await this.marginEngineTest.traders(trader.address);
 
+    const currentSqrtPrice = await this.testTickMath.getSqrtRatioAtTick(
+      this.currentTick
+    );
     const trader_margin_requirement_params = {
       fixedTokenBalance: traderInfo.fixedTokenBalance,
       variableTokenBalance: traderInfo.variableTokenBalance,
@@ -722,6 +731,8 @@ export class ScenarioRunner {
       termEndTimestampWad: this.termEndTimestampBN,
       isLM: false,
       historicalApyWad: this.historicalApyWad,
+      sqrtPriceX96: currentSqrtPrice,
+      variableFactorWad: this.variableFactorWad,
     };
 
     const traderMarginRequirement =

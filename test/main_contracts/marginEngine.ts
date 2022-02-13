@@ -118,6 +118,20 @@ describe("MarginEngine", () => {
       xiUpperWad: XI_UPPER,
       xiLowerWad: XI_LOWER,
       tMaxWad: T_MAX,
+
+      devMulLeftUnwindLMWad: toBn("0.5"),
+      devMulRightUnwindLMWad: toBn("0.5"),
+      devMulLeftUnwindIMWad: toBn("0.8"),
+      devMulRightUnwindIMWad: toBn("0.8"),
+
+      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+      gammaWad: toBn("1.0"),
+      minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
     };
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
@@ -222,12 +236,14 @@ describe("MarginEngine", () => {
       const updatedMarginWouldBe = toBn("0");
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
+      const variableFactor = toBn("0");
 
       await expect(
         marginEngineTest.checkTraderMarginAboveRequirementTest(
           updatedMarginWouldBe,
           fixedTokenBalance,
-          variableTokenBalance
+          variableTokenBalance,
+          variableFactor
         )
       ).to.be.reverted;
     });
@@ -237,13 +253,15 @@ describe("MarginEngine", () => {
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
       const isTraderSettled = false;
+      const variableFactor = toBn("0");
 
       await expect(
         marginEngineTest.checkTraderMarginCanBeUpdatedTest(
           updatedMarginWouldBe,
           fixedTokenBalance,
           variableTokenBalance,
-          isTraderSettled
+          isTraderSettled,
+          variableFactor
         )
       ).to.be.reverted;
     });
