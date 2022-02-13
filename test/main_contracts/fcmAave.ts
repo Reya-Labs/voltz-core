@@ -2,11 +2,9 @@ import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
 import { TestVAMM } from "../../typechain/TestVAMM";
 import { expect } from "../shared/expect";
-import { aaveFCMTestFixture, metaFixture } from "../shared/fixtures";
+import { metaFixture } from "../shared/fixtures";
 import {
   TICK_SPACING,
-  MIN_SQRT_RATIO,
-  MAX_SQRT_RATIO,
   getMaxLiquidityPerTick,
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
@@ -24,13 +22,12 @@ import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import {
   ERC20Mock,
-  Factory,
+  // Factory,
   MockAaveLendingPool,
   MockAToken,
   TestAaveFCM,
-  TestRateOracle,
+  // TestRateOracle,
 } from "../../typechain";
-import { add, sub } from "../shared/functions";
 import { TickMath } from "../shared/tickMath";
 import { advanceTime } from "../helpers/time";
 
@@ -41,10 +38,10 @@ const createFixtureLoader = waffle.createFixtureLoader;
 describe("VAMM", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
-  let factory: Factory;
-  let rateOracleTest: TestRateOracle;
-  let termStartTimestampBN: BigNumber;
-  let termEndTimestampBN: BigNumber;
+  // let factory: Factory;
+  // let rateOracleTest: TestRateOracle;
+  // let termStartTimestampBN: BigNumber;
+  // let termEndTimestampBN: BigNumber;
   let vammTest: TestVAMM;
   let marginEngineTest: TestMarginEngine;
   let aaveLendingPool: MockAaveLendingPool;
@@ -60,12 +57,12 @@ describe("VAMM", () => {
 
   beforeEach("deploy fixture", async () => {
     ({
-      factory,
+      // factory,
       token,
-      rateOracleTest,
+      // rateOracleTest,
       aaveLendingPool,
-      termStartTimestampBN,
-      termEndTimestampBN,
+      // termStartTimestampBN,
+      // termEndTimestampBN,
       mockAToken,
       marginEngineTest,
       vammTest

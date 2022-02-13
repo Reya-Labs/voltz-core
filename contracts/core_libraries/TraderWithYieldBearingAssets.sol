@@ -31,7 +31,8 @@ library TraderWithYieldBearingAssets {
         Info storage self,
         uint256 _marginInScaledYieldBearingTokens
     ) internal {
-        self.marginInScaledYieldBearingTokens = _marginInScaledYieldBearingTokens;
+        self
+            .marginInScaledYieldBearingTokens = _marginInScaledYieldBearingTokens;
     }
 
     function settleTrader(Info storage self) internal {
