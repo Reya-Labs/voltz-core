@@ -418,7 +418,9 @@ export class ScenarioRunner {
       "TestMarginEngine"
     );
 
-    this.marginEngineTest = marginEngineTestFactory.attach(marginEngineAddress);
+    this.marginEngineTest = marginEngineTestFactory.attach(
+      marginEngineAddress
+    ) as TestMarginEngine;
 
     // deploy VAMM test
     const vammAddress = await this.factory.getVAMMAddress(
@@ -429,7 +431,7 @@ export class ScenarioRunner {
     );
 
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    this.vammTest = vammTestFactory.attach(vammAddress);
+    this.vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
 
     // deploy Fixed and Variable Math test
     ({ testFixedAndVariableMath: this.testFixedAndVariableMath } =
@@ -481,7 +483,7 @@ export class ScenarioRunner {
     this.minters = [];
     for (let i = 0; i < this.params.numMinters; i++) {
       const MinterFactory = await ethers.getContractFactory("Minter");
-      const minter = await MinterFactory.deploy();
+      const minter = (await MinterFactory.deploy()) as Minter;
       this.minters.push(minter);
       await this.mintAndApprove(minter.address);
     }
@@ -489,7 +491,7 @@ export class ScenarioRunner {
     this.swappers = [];
     for (let i = 0; i < this.params.numSwappers; i++) {
       const SwapperFactory = await ethers.getContractFactory("Swapper");
-      const swapper = await SwapperFactory.deploy();
+      const swapper = (await SwapperFactory.deploy()) as Swapper;
       this.swappers.push(swapper);
       await this.mintAndApprove(swapper.address);
     }
