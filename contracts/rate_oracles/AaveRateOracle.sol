@@ -19,6 +19,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @inheritdoc IAaveRateOracle
     address public override aaveLendingPool;
 
+    uint8 public constant override underlyingYieldBearingProtocolID = 1; // id of aave v2 is 1
+
     constructor(address _aaveLendingPool, address underlying)
         BaseRateOracle(underlying)
     {

@@ -6,12 +6,16 @@ import "./core_libraries/TraderWithYieldBearingAssets.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IVAMM.sol";
 import "./interfaces/aave/IAaveV2LendingPool.sol";
+import "./interfaces/rate_oracles/IAaveRateOracle.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./utils/WayRayMath.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./aave/AaveDataTypes.sol";
 
-// todo: proxy pattern
 // todo: bring the FCM into the factory when initiating the IRS instance
 // todo: add overrides
 // todo: change the name of the unwind boolean since now it handles both fcm and unwinds
@@ -19,7 +23,7 @@ import "./utils/WayRayMath.sol";
 // todo: have a function that lets traders directly deposit aTokens into their margin account (update margin)
 // todo: can we use IERC20Minimal for aTokens?
 
-contract AaveFCM is IFCM {
+contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   using WadRayMath for uint256;
 
@@ -32,6 +36,8 @@ contract AaveFCM is IFCM {
   address public aaveLendingPool;
   IRateOracle internal rateOracle;
 
+  address private deployer;
+
   // add getter
   mapping(address => TraderWithYieldBearingAssets.Info) public override traders;
 
@@ -41,13 +47,23 @@ contract AaveFCM is IFCM {
   /// Positions and Traders cannot be settled before the applicable interest rate swap has matured 
   error CannotSettleBeforeMaturity();
   
-  constructor (address _underlyingYieldBearingToken, address _vammAddress, address _marginEngineAddress, address _aaveLendingPool) {
-    underlyingYieldBearingToken = _underlyingYieldBearingToken;
+  // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() initializer {  
+
+      deployer = msg.sender; /// this is presumably the factory
+
+  }
+  
+  function initialize(address _vammAddress, address _marginEngineAddress) external override initializer {
     vammAddress = _vammAddress;
     marginEngineAddress = _marginEngineAddress;
-    aaveLendingPool = _aaveLendingPool;
     address rateOracleAddress = IMarginEngine(marginEngineAddress).rateOracleAddress();
     rateOracle = IRateOracle(rateOracleAddress);
+    aaveLendingPool = IAaveRateOracle(rateOracleAddress).aaveLendingPool();
+    address underlyingToken = IMarginEngine(marginEngineAddress).underlyingToken();
+    AaveDataTypes.ReserveData memory aaveReserveData = IAaveV2LendingPool(aaveLendingPool).getReserveData(underlyingToken);
+    underlyingYieldBearingToken = aaveReserveData.aTokenAddress;
   }
 
   function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override {

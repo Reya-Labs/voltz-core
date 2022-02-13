@@ -31,4 +31,7 @@ interface IFCM {
             uint256 lastMarginUpdateBlockTimestmap,
             uint256 rateFromRayLastUpdate
         );
+    
+    /// @dev "constructor" for proxy instances
+    function initialize(address _vammAddress, address _marginEngineAddress) external;
 }

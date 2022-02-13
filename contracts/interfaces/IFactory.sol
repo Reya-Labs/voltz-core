@@ -10,9 +10,12 @@ interface IFactory {
         address indexed rateOracle,
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad,
-        address marginEngin,
-        address vamm
+        address marginEngine,
+        address vamm,
+        address fcm
     );
+
+    function setMasterFCM(address masterFCMAddress, address _rateOracle) external;
 
     function getVAMMAddress(
         address _underlyingToken,
@@ -28,6 +31,8 @@ interface IFactory {
         uint256 _termEndTimestampWad
     ) external view returns (address);
 
+    function getFCMAddress(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external view returns (address);
+
     function masterVAMM() external view returns (address);
 
     function masterMarginEngine() external view returns (address);
@@ -38,5 +43,7 @@ interface IFactory {
         address _rateOracle,
         uint256 _termStartTimestampWad,
         uint256 _termEndTimestampWad
-    ) external returns (address marginEngineProxy, address vammProxy);
+    ) external returns (address marginEngineProxy, address vammProxy, address fcmProxy);
+
+    function masterFCMs(uint8 yieldBearingProtocolID) external returns (address masterFCMAddress);
 }

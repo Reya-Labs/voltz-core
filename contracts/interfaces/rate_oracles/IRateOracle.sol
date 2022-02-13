@@ -80,4 +80,6 @@ interface IRateOracle {
     /// Write oracle entry is called whenever a new position is minted via the vamm or when a swap is initiated via the vamm
     /// That way the gas costs of Rate Oracle updates can be distributed across organic interactions with the protocol
     function writeOracleEntry() external;
+
+    function underlyingYieldBearingProtocolID() external view returns(uint8 yieldBearingProtocolID);
 }

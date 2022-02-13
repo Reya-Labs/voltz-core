@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 pragma abicoder v2;
+import "../../aave/AaveDataTypes.sol";
 
 interface IAaveV2LendingPool {
     // struct ReserveConfigurationMap {
@@ -52,6 +53,18 @@ interface IAaveV2LendingPool {
     // function getReserveData(address asset) external view returns (ReserveData memory);
 
     function getReserveNormalizedIncome(address underlyingAsset) external view returns (uint256);
+
+    function initReserve(
+        address asset,
+        address aTokenAddress
+    ) external;
+
+      /**
+   * @dev Returns the state and configuration of the reserve
+   * @param asset The address of the underlying asset of the reserve
+   * @return The state of the reserve
+   **/
+    function getReserveData(address asset) external view returns (AaveDataTypes.ReserveData memory);
 
     // /**
     //  * @dev Returns the user account data across all the reserves
