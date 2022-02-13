@@ -183,7 +183,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
 
   await aaveLendingPool.setReserveNormalizedIncome(
     token.address,
-    BigNumber.from(1).pow(27)
+    BigNumber.from(10).pow(27)
   );
 
   await rateOracleTest.increaseObservarionCardinalityNext(5);

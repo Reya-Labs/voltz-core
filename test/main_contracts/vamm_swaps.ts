@@ -123,15 +123,8 @@ describe("VAMM", () => {
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
-    await aaveLendingPool.setReserveNormalizedIncome(
-      token.address,
-      BigNumber.from(2).pow(27)
-    );
-
-    // minTick = getMinTick(TICK_SPACING);
-    // maxTick = getMaxTick(TICK_SPACING);
-
-    // tickSpacing = TICK_SPACING;
+    // set factor per second
+    await aaveLendingPool.setFactorPerSecondInRay(token.address, "1000000001000000000000000000");
   });
 
   describe("#swapAndBurn", () => {
