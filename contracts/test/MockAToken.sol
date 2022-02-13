@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/aave/IAToken.sol";
 import "../utils/WayRayMath.sol";
+import "../utils/Printer.sol";
 import "./ERC20.sol";
 
 contract MockAToken is IAToken, ERC20 {
@@ -74,6 +75,7 @@ contract MockAToken is IAToken, ERC20 {
             );
     }
 
+    // AB: only lending pool modifier removed from the original AToken implementation
     /**
      * @dev Mints `amount` aTokens to `user`
      * - Only callable by the LendingPool, as extra state updates there need to be managed
@@ -86,10 +88,15 @@ contract MockAToken is IAToken, ERC20 {
         address user,
         uint256 amount,
         uint256 index
-    ) external override onlyLendingPool returns (bool) {
+    ) external override returns (bool) {
         uint256 previousBalance = super.balanceOf(user);
 
+        Printer.printUint256("amount (not scaled)", amount);
+
         uint256 amountScaled = amount.rayDiv(index);
+        
+        Printer.printUint256("amount (scaled)", amountScaled);
+
         require(amountScaled != 0, "CT_INVALID_MINT_AMOUNT");
         _mint(user, amountScaled);
 
@@ -98,6 +105,7 @@ contract MockAToken is IAToken, ERC20 {
         return previousBalance == 0;
     }
 
+    // AB: only lending pool modifier removed from the original AToken implementation
     /**
      * @dev Burns aTokens from `user` and sends the equivalent amount of underlying to `receiverOfUnderlying`
      * - Only callable by the LendingPool, as extra state updates there need to be managed
@@ -111,7 +119,7 @@ contract MockAToken is IAToken, ERC20 {
         address receiverOfUnderlying,
         uint256 amount,
         uint256 index
-    ) external override onlyLendingPool {
+    ) external override {
         uint256 amountScaled = amount.rayDiv(index);
         require(amountScaled != 0, "CT_INVALID_BURN_AMOUNT");
         _burn(user, amountScaled);
@@ -219,9 +227,6 @@ contract MockAToken is IAToken, ERC20 {
         IAaveV2LendingPool pool = _pool;
 
         uint256 index = pool.getReserveNormalizedIncome(underlyingAsset);
-
-        // uint256 fromBalanceBefore = super.balanceOf(from).rayMul(index);
-        // uint256 toBalanceBefore = super.balanceOf(to).rayMul(index);
 
         super._transfer(from, to, amount.rayDiv(index));
 

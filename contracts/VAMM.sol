@@ -290,9 +290,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       require(params.amountSpecified < 0, "AS<0");
     }
 
-    if (params.isUnwind) {
+    if (params.isExternal) {
       /// no need for checks since ME makes sure the values passed are correct
-      require(msg.sender==marginEngineAddress, "only ME");
+      require(msg.sender==marginEngineAddress || msg.sender==IMarginEngine(marginEngineAddress).fcm(), "only ME or FCM");
     } else {
       require(msg.sender==params.recipient, "only sender");
 
@@ -506,7 +506,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     }
 
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
-    if (!params.isUnwind) {
+    if (!params.isExternal) {
       if (params.isTrader) {
         IMarginEngine(marginEngineAddress).updateTraderPostVAMMInducedSwap(params.recipient, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.sqrtPriceX96);
       } else {

@@ -19,4 +19,16 @@ interface IFCM {
         address _account,
         uint256 marginDeltaInUnderlyingTokens
     ) external;
+
+    function traders(address key)
+    external
+    view
+    returns (
+        uint256 marginInScaledYieldBearingTokens,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        bool isSettled,
+        uint256 lastMarginUpdateBlockTimestmap,
+        uint256 rateFromRayLastUpdate
+    );
 }

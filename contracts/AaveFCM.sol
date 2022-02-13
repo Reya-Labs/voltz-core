@@ -15,11 +15,13 @@ import "./utils/WayRayMath.sol";
 // todo: bring the FCM into the factory when initiating the IRS instance
 // todo: add overrides
 // todo: change the name of the unwind boolean since now it handles both fcm and unwinds
-// todo: introduce base FCM abstract class
+// todo: introduce base FCM abstract class?
 // todo: have a function that lets traders directly deposit aTokens into their margin account (update margin)
 // todo: can we use IERC20Minimal for aTokens?
 
 contract AaveFCM is IFCM {
+
+  using WadRayMath for uint256;
 
   using TraderWithYieldBearingAssets for TraderWithYieldBearingAssets.Info;
   
@@ -31,7 +33,7 @@ contract AaveFCM is IFCM {
   IRateOracle internal rateOracle;
 
   // add getter
-  mapping(address => TraderWithYieldBearingAssets.Info) public traders;
+  mapping(address => TraderWithYieldBearingAssets.Info) public override traders;
 
   /// The resulting margin does not meet minimum requirements
   error MarginRequirementNotMet();
@@ -58,7 +60,7 @@ contract AaveFCM is IFCM {
         isFT: true,
         amountSpecified: int256(notional),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
-        isUnwind: true,
+        isExternal: true,
         isTrader: true,
         tickLower: 0,
         tickUpper: 0
@@ -66,23 +68,28 @@ contract AaveFCM is IFCM {
 
     (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params);
 
-    // deposit notional executed in terms of aUSDC
+    // deposit notional executed in terms of aTokens (e.g. aUSDC)
     IERC20Minimal(underlyingYieldBearingToken).transferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
-    updateTraderToAccountForAccruedYield(trader);
+    uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
 
-    uint256 updatedTraderMargin = trader.marginInYieldBearingTokens + uint256(-variableTokenDelta);
-    trader.updateMarginInYieldBearingTokens(updatedTraderMargin);
+    uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens + uint256(-variableTokenDelta).rayDiv(currentRNI);
+    trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
     
     // update trader fixed and variable token balances
 
     trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
-    // transfer fees to the margin engine
+    // transfer fees to the margin engine (in terms of the underlyingToken e.g. aUSDC)
     IERC20Minimal(IMarginEngine(marginEngineAddress).underlyingToken()).transferFrom(msg.sender, marginEngineAddress, cumulativeFeeIncurred);
 
+  }
+
+  function getTraderMarginInYieldBearingTokens(TraderWithYieldBearingAssets.Info storage trader) internal view returns (uint256 marginInYieldBearingTokens) {
+    uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
+    marginInYieldBearingTokens = trader.marginInScaledYieldBearingTokens.rayMul(currentRNI);
   }
 
   function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override {
@@ -97,16 +104,14 @@ contract AaveFCM is IFCM {
         isFT: false,
         amountSpecified: -int256(notionalToUnwind),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
-        isUnwind: true,
+        isExternal: true,
         isTrader: true,
         tickLower: 0,
         tickUpper: 0
     });
 
     (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params);
-    
-    updateTraderToAccountForAccruedYield(trader);
-    
+        
     // update trader fixed and variable token balances
     
     trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
@@ -118,8 +123,10 @@ contract AaveFCM is IFCM {
     // variable token delta should be positive
     IERC20Minimal(underlyingYieldBearingToken).transfer(msg.sender, uint256(variableTokenDelta));
 
-    uint256 updatedTraderMargin = trader.marginInYieldBearingTokens - uint256(variableTokenDelta);
-    trader.updateMarginInYieldBearingTokens(updatedTraderMargin);
+    uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
+
+    uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens - uint256(variableTokenDelta).rayDiv(currentRNI);
+    trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
 
     checkMarginRequirement(trader);
 
@@ -128,16 +135,19 @@ contract AaveFCM is IFCM {
   
   function checkMarginRequirement(TraderWithYieldBearingAssets.Info storage trader) internal {
     // variable token balance should never be positive
-
     // margin should cover the variable leg from now to maturity
 
     uint256 marginToCoverVariableLegFromNowToMaturity = uint256(trader.variableTokenBalance);
-    uint256 marginToCoverRemainingSettlementCashflow = trader.marginInYieldBearingTokens - marginToCoverVariableLegFromNowToMaturity;
+    uint256 marginToCoverRemainingSettlementCashflow = getTraderMarginInYieldBearingTokens(trader) - marginToCoverVariableLegFromNowToMaturity;
 
     int256 remainingSettlementCashflow = calculateRemainingSettlementCashflow(trader);
 
-    if (uint256(-remainingSettlementCashflow) > marginToCoverRemainingSettlementCashflow) {
-      revert MarginRequirementNotMet();
+    if (remainingSettlementCashflow < 0) {
+    
+      if (uint256(-remainingSettlementCashflow) > marginToCoverRemainingSettlementCashflow) {
+        revert MarginRequirementNotMet();
+      }
+    
     }
 
   }
@@ -173,44 +183,7 @@ contract AaveFCM is IFCM {
     remainingSettlementCashflow = PRBMathSD59x18.toInt(cashflowWad);
 
   }
-  
-  function updateTraderToAccountForAccruedYield(TraderWithYieldBearingAssets.Info storage trader) internal {
-
-    if (trader.lastMarginUpdateBlockTimestmap == 0) {
-      trader.updateLastMarginUpdateBlockTimestamp(block.timestamp);
-      trader.updateRateFrom(IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken()));
-    } else {
-      (uint256 currentRateRay, uint256 updatedTraderMargin) = computeUpdatedTraderMargin(trader.marginInYieldBearingTokens, trader.rateFromRayLastUpdate);
-      trader.updateMarginInYieldBearingTokens(updatedTraderMargin);
-      trader.updateRateFrom(currentRateRay);
-    }
-
-  }
-  
-  function computeUpdatedTraderMargin(uint256 rateFromRay, uint256 notional) internal view returns (uint256 rateToRay, uint256 updatedTraderMargin) {
-    rateToRay = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
-
-    require(rateToRay > rateFromRay, "can't have negative rates");
     
-    uint256 rateFromToPlusOneRay = WadRayMath.rayToWad(
-      WadRayMath.rayDiv(rateToRay, rateFromRay)
-    );
-
-    /// @audit easier to have a function that directly converts to Ray instead of doing the steps below
-    /// @audit check how the fixed point math of aTokens
-
-    uint256 notionalWad = PRBMathUD60x18.fromUint(notional);
-
-    uint256 notionalRay = WadRayMath.wadToRay(notionalWad);
-
-    uint256 updatedTraderMarginRay = WadRayMath.rayMul(notionalRay, rateFromToPlusOneRay);
-
-    uint256 updatedTraderMarginWad = WadRayMath.rayToWad(updatedTraderMarginRay);
-
-    updatedTraderMargin = PRBMathUD60x18.toUint(updatedTraderMarginWad);
-
-  }
-
   modifier onlyAfterMaturity () {
     if (IMarginEngine(marginEngineAddress).termEndTimestampWad() > Time.blockTimestampScaled()) {
         revert CannotSettleBeforeMaturity();
@@ -223,27 +196,28 @@ contract AaveFCM is IFCM {
     
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
     require(!trader.isSettled, "not settled");
-    updateTraderToAccountForAccruedYield(trader);
     
     int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, IMarginEngine(marginEngineAddress).termStartTimestampWad(), IMarginEngine(marginEngineAddress).termEndTimestampWad(), rateOracle.variableFactor(IMarginEngine(marginEngineAddress).termStartTimestampWad(), IMarginEngine(marginEngineAddress).termEndTimestampWad()));
     trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
-
+    
     if (settlementCashflow > 0) {
-      trader.updateMarginInUnderlyingTokensViaDelta(uint256(settlementCashflow)); // potentially redundunt
+      // transfers margin in terms of underlying tokens (e.g. USDC) from 
       IMarginEngine(marginEngineAddress).transferMarginToFCMTrader(msg.sender, uint256(settlementCashflow));
     } else {
-      uint256 updatedTraderMarginInYieldBearingTokens = trader.marginInYieldBearingTokens - uint256(-settlementCashflow);
-      trader.updateMarginInYieldBearingTokens(updatedTraderMarginInYieldBearingTokens);
+      uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
+      uint256 updatedTraderMarginInScaledYieldBearingTokens = trader.marginInScaledYieldBearingTokens - uint256(-settlementCashflow).rayDiv(currentRNI);
+      trader.updateMarginInScaledYieldBearingTokens(updatedTraderMarginInScaledYieldBearingTokens);
     }
 
-    trader.updateMarginInYieldBearingTokens(0);    
-    IERC20Minimal(underlyingYieldBearingToken).transfer(msg.sender, trader.marginInYieldBearingTokens);
+    uint256 traderMarginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(trader);
+    trader.updateMarginInScaledYieldBearingTokens(0);    
+    IERC20Minimal(underlyingYieldBearingToken).transfer(msg.sender, traderMarginInYieldBearingTokens);
     trader.settleTrader();
   }
 
   function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external override {
     /// @audit can only be called by the MarginEngine
-    // in case of aave 1aUSDC = 1USDC (1aToken = 1Token), hence no need for additional calculations
+    // in case of aave: 1aUSDC = 1USDC (1aToken = 1Token), hence no need for additional calculations
     IERC20Minimal(underlyingYieldBearingToken).transfer(_account, marginDeltaInUnderlyingTokens);
   }
 

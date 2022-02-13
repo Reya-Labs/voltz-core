@@ -145,3 +145,15 @@ export function formatRay(value: BigNumber, decimals: number = 9): string {
 
   return result;
 }
+
+export function printTraderWithYieldBearingTokensInfo(
+  traderInfo: any
+) {
+  console.log("marginInYieldBearingTokens: ", utils.formatEther(traderInfo[0]));
+  console.log("fixedTokenBalance: ", utils.formatEther(traderInfo[1]));
+  console.log("variableTokenBalance: ", utils.formatEther(traderInfo[2]));
+  console.log("isSettled: ", traderInfo[3].toString());
+  console.log("lastMarginUpdateBlockTimestmap: ", traderInfo[4].toString());
+  console.log("rateFromRayLastUpdate: ", utils.formatUnits(traderInfo[5].toString(), 27));
+  console.log("");
+}

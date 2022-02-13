@@ -802,7 +802,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     isFT: false,
                     amountSpecified: position.variableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1,
-                    isUnwind: true,
+                    isExternal: true,
                     isTrader: false,
                     tickLower: tickLower,
                     tickUpper: tickUpper
@@ -822,7 +822,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     isFT: true,
                     amountSpecified: position.variableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO - 1,
-                    isUnwind: true,
+                    isExternal: true,
                     isTrader: false,
                     tickLower: tickLower,
                     tickUpper: tickUpper
@@ -871,7 +871,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     isFT: false,
                     amountSpecified: traderVariableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1,
-                    isUnwind: true,
+                    isExternal: true,
                     isTrader: true,
                     tickLower: 0,
                     tickUpper: 0
@@ -890,7 +890,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     isFT: true,
                     amountSpecified: traderVariableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO - 1,
-                    isUnwind: true,
+                    isExternal: true,
                     isTrader: true,
                     tickLower: 0,
                     tickUpper: 0

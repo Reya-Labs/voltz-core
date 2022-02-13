@@ -9,6 +9,7 @@ import {
   ERC20Mock,
   FixedAndVariableMathTest,
   MockAaveLendingPool,
+  MockAToken,
   SqrtPriceMathTest,
   TickMathTest,
 } from "../../typechain";
@@ -22,6 +23,21 @@ import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import { toBn } from "evm-bn";
 import { e2eParameters } from "../end_to_end/general_setup/e2eSetup";
 const { provider } = waffle;
+
+export async function mockATokenFixture(_aaveLendingPoolAddress: string, _underlyingAsset: string) {
+  const mockATokenFactory = await ethers.getContractFactory("MockAToken");
+
+  const mockAToken = (
+    await mockATokenFactory.deploy(
+      _aaveLendingPoolAddress,
+      _underlyingAsset,
+      "Voltz aUSD",
+      "aVUSD"
+    ) as MockAToken
+  );
+
+  return { mockAToken }
+}
 
 export async function mockERC20Fixture() {
   const MockERC20Factory = await ethers.getContractFactory("ERC20Mock");
@@ -182,6 +198,10 @@ interface MetaFixture {
   aaveLendingPool: MockAaveLendingPool;
   termStartTimestampBN: BigNumber;
   termEndTimestampBN: BigNumber;
+  mockAToken: MockAToken;
+  marginEngineTest: TestMarginEngine;
+  vammTest: TestVAMM;
+  // aaveFCMTest: TestAaveFCM;
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
@@ -198,9 +218,11 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     token.address
   );
 
+  const { mockAToken } = await mockATokenFixture(aaveLendingPool.address, token.address);
+  
   await aaveLendingPool.setReserveNormalizedIncome(
     token.address,
-    BigNumber.from(1).pow(27)
+    BigNumber.from(10).pow(27)
   );
 
   await rateOracleTest.increaseObservarionCardinalityNext(5);
@@ -216,6 +238,38 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
+  // deploy a margin engine & vamm
+  await factory.deployIrsInstance(
+    token.address,
+    rateOracleTest.address,
+    termStartTimestampBN,
+    termEndTimestampBN
+  );
+  
+  const marginEngineAddress = await factory.getMarginEngineAddress(
+    token.address,
+    rateOracleTest.address,
+    termStartTimestampBN,
+    termEndTimestampBN
+  );
+  const marginEngineTestFactory = await ethers.getContractFactory(
+    "TestMarginEngine"
+  );
+  const marginEngineTest = marginEngineTestFactory.attach(
+    marginEngineAddress
+  ) as TestMarginEngine;
+  const vammAddress = await factory.getVAMMAddress(
+    token.address,
+    rateOracleTest.address,
+    termStartTimestampBN,
+    termEndTimestampBN
+  );
+  const vammTestFactory = await ethers.getContractFactory("TestVAMM");
+  const vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
+  await marginEngineTest.setVAMMAddress(vammTest.address);
+
+  // const aaveFCMTest = await aaveFCMTestFixture(mockAToken.address, vammTest.address, marginEngineTest.address, aaveLendingPool.address);
+
   return {
     factory,
     vammMasterTest,
@@ -225,6 +279,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     aaveLendingPool,
     termStartTimestampBN,
     termEndTimestampBN,
+    mockAToken,
+    marginEngineTest,
+    vammTest
   };
 };
 
@@ -328,7 +385,8 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
       "1000000000000000000000000000" // 10^27
     );
 
-    await rateOracleTest.testGrow(100);
+    // await rateOracleTest.testGrow(100);
+    await rateOracleTest.increaseObservarionCardinalityNext(100);
     // write oracle entry
     await rateOracleTest.writeOracleEntry();
     // advance time after first write to the oracle

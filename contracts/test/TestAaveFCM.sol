@@ -18,4 +18,10 @@ contract TestAaveFCM is AaveFCM {
             _aaveLendingPool
         )
     {}
+
+    function getTraderMarginInYieldBearingTokensTest(address traderAddress) external view returns (uint256 marginInYieldBearingTokens) {
+        TraderWithYieldBearingAssets.Info storage trader = traders[traderAddress];
+        marginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(trader);
+    }
+
 }
