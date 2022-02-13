@@ -62,6 +62,13 @@ export async function mockAaveLendingPoolFixture() {
   return { aaveLendingPool };
 }
 
+export async function fcmMasterTestFixture() {
+  const fcmMasterTestFactory = await ethers.getContractFactory("TestAaveFCM");
+  const fcmMasterTest = (await fcmMasterTestFactory.deploy()) as TestAaveFCM;
+
+  return { fcmMasterTest };
+}
+
 export async function vammMasterTestFixture() {
   const vammMasterTestFactory = await ethers.getContractFactory("TestVAMM");
   const vammMasterTest = (await vammMasterTestFactory.deploy()) as TestVAMM;
@@ -157,23 +164,6 @@ export async function factoryFixture(
   return { factory };
 }
 
-export async function aaveFCMTestFixture(
-  _underlyingYieldBearingToken: string,
-  _vammAddress: string,
-  _marginEngineAddress: string,
-  _aaveLendingPoolAddress: string
-) {
-  const aaveFCMFactory = await ethers.getContractFactory("TestAaveFCM");
-  const aaveFCM = (await aaveFCMFactory.deploy(
-    _underlyingYieldBearingToken,
-    _vammAddress,
-    _marginEngineAddress,
-    _aaveLendingPoolAddress
-  )) as TestAaveFCM;
-
-  return { aaveFCM };
-}
-
 export async function rateOracleTestFixture(
   _aaveLendingPoolAddress: string,
   _underlyingAddress: string
@@ -201,12 +191,13 @@ interface MetaFixture {
   mockAToken: MockAToken;
   marginEngineTest: TestMarginEngine;
   vammTest: TestVAMM;
-  // aaveFCMTest: TestAaveFCM;
+  fcmTest: TestAaveFCM;
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
   const { marginEngineMasterTest } = await marginEngineMasterTestFixture();
   const { vammMasterTest } = await vammMasterTestFixture();
+  const { fcmMasterTest } = await fcmMasterTestFixture();
   const { factory } = await factoryFixture(
     marginEngineMasterTest.address,
     vammMasterTest.address
@@ -225,6 +216,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     BigNumber.from(10).pow(27)
   );
 
+  await aaveLendingPool.initReserve(token.address, mockAToken.address);
+
   await rateOracleTest.increaseObservarionCardinalityNext(5);
   // write oracle entry
   await rateOracleTest.writeOracleEntry();
@@ -238,6 +231,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
+  // set master fcm for aave
+  await factory.setMasterFCM(fcmMasterTest.address, rateOracleTest.address);
+  
   // deploy a margin engine & vamm
   await factory.deployIrsInstance(
     token.address,
@@ -258,6 +254,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const marginEngineTest = marginEngineTestFactory.attach(
     marginEngineAddress
   ) as TestMarginEngine;
+
   const vammAddress = await factory.getVAMMAddress(
     token.address,
     rateOracleTest.address,
@@ -266,9 +263,15 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   );
   const vammTestFactory = await ethers.getContractFactory("TestVAMM");
   const vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
-  await marginEngineTest.setVAMMAddress(vammTest.address);
 
-  // const aaveFCMTest = await aaveFCMTestFixture(mockAToken.address, vammTest.address, marginEngineTest.address, aaveLendingPool.address);
+  const fcmAddress = await factory.getFCMAddress(
+    token.address,
+    rateOracleTest.address,
+    termStartTimestampBN,
+    termEndTimestampBN
+  );
+  const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
+  const fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
 
   return {
     factory,
@@ -281,7 +284,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termEndTimestampBN,
     mockAToken,
     marginEngineTest,
-    vammTest
+    vammTest,
+    fcmTest
   };
 };
 

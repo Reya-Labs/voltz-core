@@ -43,6 +43,11 @@ library Printer {
         console.log(reason, ":", number, " [FROM CONTRACT] ");
     }
 
+    function printUint32(string memory reason, uint32 number) internal view {
+        if (!PRINT) return;
+        console.log(reason, ":", number, " [FROM CONTRACT] ");
+    }
+
     function printUint256(string memory reason, uint256 number) internal view {
         if (!PRINT) return;
         console.log(reason, ":", number, " [FROM CONTRACT] ");
@@ -56,6 +61,11 @@ library Printer {
     function printUint160(string memory reason, uint160 number) internal view {
         if (!PRINT) return;
         console.log(reason, ":", number, " [FROM CONTRACT] ");
+    }
+
+    function printAddress(string memory reason, address _address) internal view {
+        if (!PRINT) return;
+        console.log(reason, ":", _address, " [FROM CONTRACT] ");
     }
 
     function printBool(string memory reason, bool number) internal view {

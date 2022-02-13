@@ -180,4 +180,8 @@ contract TestMarginEngine is MarginEngine {
     ) public {
         unwindTrader(traderAddress, traderVariableTokenBalance);
     }
+
+    function getCachedHistoricalApy() external view returns (uint256) {
+        return cachedHistoricalApy;
+    }
 }

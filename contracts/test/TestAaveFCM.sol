@@ -11,4 +11,16 @@ contract TestAaveFCM is AaveFCM {
         marginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(trader);
     }
 
+    function getVAMMAddress() external view returns (address) {
+        return vammAddress;
+    }
+
+    function getUnderlyingYieldBearingToken() external view returns (address) {
+        return underlyingYieldBearingToken;
+    }
+
+    function getAaveLendingPool() external view returns (address) {
+        return aaveLendingPool;
+    }
+
 }

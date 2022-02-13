@@ -20,6 +20,7 @@ interface IFCM {
         uint256 marginDeltaInUnderlyingTokens
     ) external;
 
+    /// AB: make this function unique to the aave fcm
     function traders(address key)
         external
         view
@@ -27,11 +28,11 @@ interface IFCM {
             uint256 marginInScaledYieldBearingTokens,
             int256 fixedTokenBalance,
             int256 variableTokenBalance,
-            bool isSettled,
-            uint256 lastMarginUpdateBlockTimestmap,
-            uint256 rateFromRayLastUpdate
+            bool isSettled
         );
     
     /// @dev "constructor" for proxy instances
     function initialize(address _vammAddress, address _marginEngineAddress) external;
+
+    function marginEngineAddress() external view returns (address marginEngineAddress);
 }

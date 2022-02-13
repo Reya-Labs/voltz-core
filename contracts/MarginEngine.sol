@@ -51,7 +51,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @inheritdoc IMarginEngine
     uint256 public override secondsAgo;
 
-    uint256 private cachedHistoricalApy;
+    uint256 internal cachedHistoricalApy;
     uint256 private cachedHistoricalApyRefreshTimestamp;
 
     uint256 public cacheMaxAgeInSeconds;
@@ -223,7 +223,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
-        require((position.margin + marginDelta) > 0, "can't withdraw more than have");
+        require((position.margin + marginDelta) >= 0, "can't withdraw more than have");
         
         if (marginDelta < 0) {
 
@@ -583,6 +583,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
         uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
 
+        Printer.printInt256("fixedTokenDelta", fixedTokenDelta);
+        Printer.printInt256("variableTokenDelta", variableTokenDelta);
+
         position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
         /// @dev collect fees
@@ -696,13 +699,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     ) internal {
 
         /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
-        /// @dev their margin is to withdraw it completely. If so, the position needs to be both burned
-        /// @dev and settled.
+        /// @dev their margin is to withdraw it completely. If so, the position needs to be settled
 
         if (Time.blockTimestampScaled() >= termEndTimestampWad) {
-            if (!isPositionBurned) {
-                revert PositionNotBurned();
-            }
+            /// AB: redundunt check
+            // if (!isPositionBurned) {
+            //     revert PositionNotBurned();
+            // }
             if (!isPositionSettled) {
                 revert PositionNotSettled();
             }

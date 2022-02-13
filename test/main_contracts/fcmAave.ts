@@ -26,10 +26,12 @@ import {
   MockAaveLendingPool,
   MockAToken,
   TestAaveFCM,
+  TestRateOracle,
   // TestRateOracle,
 } from "../../typechain";
 import { TickMath } from "../shared/tickMath";
 import { advanceTime } from "../helpers/time";
+import { add, div, mul, pow, sub } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -39,14 +41,14 @@ describe("VAMM", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
   // let factory: Factory;
-  // let rateOracleTest: TestRateOracle;
+  let rateOracleTest: TestRateOracle;
   // let termStartTimestampBN: BigNumber;
   // let termEndTimestampBN: BigNumber;
   let vammTest: TestVAMM;
   let marginEngineTest: TestMarginEngine;
   let aaveLendingPool: MockAaveLendingPool;
-  let aaveFCM: TestAaveFCM;
   let mockAToken: MockAToken;
+  let fcmTest: TestAaveFCM;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
@@ -59,13 +61,14 @@ describe("VAMM", () => {
     ({
       // factory,
       token,
-      // rateOracleTest,
+      rateOracleTest,
       aaveLendingPool,
       // termStartTimestampBN,
       // termEndTimestampBN,
       mockAToken,
       marginEngineTest,
-      vammTest
+      vammTest,
+      fcmTest
     } = await loadFixture(metaFixture));
 
     // update marginEngineTest allowance
@@ -100,20 +103,10 @@ describe("VAMM", () => {
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
-    // fcm setup
-    const aaveFCMFactory = await ethers.getContractFactory("TestAaveFCM");
-    aaveFCM = (await aaveFCMFactory.deploy(
-      mockAToken.address,
-      vammTest.address,
-      marginEngineTest.address,
-      aaveLendingPool.address
-    )) as TestAaveFCM;
-
     // set factor per second
     await aaveLendingPool.setFactorPerSecondInRay(token.address, "1000000001000000000000000000");
 
-    // set fcm
-    await marginEngineTest.setFCM(aaveFCM.address);
+    await marginEngineTest.setSecondsAgo(86400);
 
   });
 
@@ -122,15 +115,23 @@ describe("VAMM", () => {
       await token.mint(wallet.address, BigNumber.from(10).pow(27));
       await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
 
+      await token.mint(other.address, BigNumber.from(10).pow(27));
+      await token.connect(other).approve(marginEngineTest.address, BigNumber.from(10).pow(27));
+
       const currentReserveNormalisedIncome = await aaveLendingPool.getReserveNormalizedIncome(token.address);
 
       // mint aTokens
       await mockAToken.mint(wallet.address, toBn("10000"), currentReserveNormalisedIncome);
-      await mockAToken.approve(aaveFCM.address, toBn("10000"));
+      await mockAToken.approve(fcmTest.address, toBn("10000"));
+    });
 
-      await marginEngineTest.updatePositionMargin(
+    it("scenario1", async () => {
+
+      const otherStartingBalance = await token.balanceOf(other.address);
+      
+      await marginEngineTest.connect(other).updatePositionMargin(
         {
-          owner: wallet.address,
+          owner: other.address,
           tickLower: -TICK_SPACING,
           tickUpper: TICK_SPACING,
           liquidityDelta: 0,
@@ -138,10 +139,6 @@ describe("VAMM", () => {
         "1121850791579727450"
       );
 
-      await marginEngineTest.updateTraderMargin(wallet.address, toBn("100000"));
-    });
-
-    it("scenario1", async () => {
       await vammTest.initializeVAMM(TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString());
 
       await vammTest.setMaxLiquidityPerTick(
@@ -152,32 +149,130 @@ describe("VAMM", () => {
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0"));
 
-      await vammTest.mint(
-        wallet.address,
+      await vammTest.connect(other).mint(
+        other.address,
         -TICK_SPACING,
         TICK_SPACING,
         toBn("100000")
       );
+
+      const traderStartingBalanceInATokens = await mockAToken.balanceOf(wallet.address);
+      const traderStartingBalanceInUnderlyingTokens = await token.balanceOf(wallet.address);
+      // can add since 1aToken=1Token
+      const traderStartingOverallBalanceInUnderlyingTokens = add(traderStartingBalanceInATokens, traderStartingBalanceInUnderlyingTokens);
+
+      console.log("traderStartingBalanceInATokens", utils.formatEther(traderStartingBalanceInATokens));
+      console.log("traderStartingBalanceInUnderlyingTokens", utils.formatEther(traderStartingBalanceInUnderlyingTokens));
+      console.log("traderStartingOverallBalanceInUnderlyingTokens", utils.formatEther(traderStartingOverallBalanceInUnderlyingTokens));
       
       // engage in a fixed taker swap via the fcm
-      await aaveFCM.initiateFullyCollateralisedFixedTakerSwap(toBn("10"), TickMath.getSqrtRatioAtTick(TICK_SPACING).toString());
+      await fcmTest.initiateFullyCollateralisedFixedTakerSwap(toBn("10"), TickMath.getSqrtRatioAtTick(TICK_SPACING).toString());
 
       // do a full scenario with checks
-      const traderInfo = await aaveFCM.traders(wallet.address);
+      const traderInfo = await fcmTest.traders(wallet.address);
       printTraderWithYieldBearingTokensInfo(traderInfo);
 
       expect(traderInfo[2]).to.eq(toBn("-10")); // variable token balance the opposite of notional
         
       // time passes, trader's margin in yield bearing tokens should be the same as the atoken balance of the fcm
-      advanceTime(604800); // advance time by one week
+      await advanceTime(604800); // advance time by one week
+      await rateOracleTest.writeOracleEntry();
+      
+      await marginEngineTest.getHistoricalApy();
 
+      const historicalApyCached = await marginEngineTest.getCachedHistoricalApy();
+
+      console.log("historicalApyCached", utils.formatEther(historicalApyCached));
+
+      expect(await fcmTest.getAaveLendingPool(), "aave lending pool expect").to.eq(aaveLendingPool.address);
+      expect(await fcmTest.marginEngineAddress(), "margin engine address expect").to.eq(marginEngineTest.address);
+      expect(await fcmTest.getUnderlyingYieldBearingToken(), "underlying yield bearing token expect").to.eq(mockAToken.address);
+      expect(await fcmTest.getVAMMAddress(), "vamm address expect").to.eq(vammTest.address);
+      
       // check a token balance of the fcm
-      const aTokenBalanceOfFCM = await mockAToken.balanceOf(aaveFCM.address);
+      const aTokenBalanceOfFCM = await mockAToken.balanceOf(fcmTest.address);
       
       console.log("aTokenBalanceOfFCM", utils.formatEther(aTokenBalanceOfFCM));
 
-      // update trader balances to account for yield accumulation
+      // check trader balance
+      const aTokenBalanceOfTrader = await fcmTest.getTraderMarginInYieldBearingTokensTest(wallet.address);
+
+      console.log("aTokenBalanceOfTrader", utils.formatEther(aTokenBalanceOfTrader));
+
+      expect(aTokenBalanceOfFCM).to.eq(aTokenBalanceOfTrader);
+
+      await fcmTest.settleTrader();
+
+      const traderInfoPostSettlement = await fcmTest.traders(wallet.address);
+      printTraderWithYieldBearingTokensInfo(traderInfoPostSettlement);
       
+      expect(traderInfoPostSettlement[0]).to.eq(0);
+      expect(traderInfoPostSettlement[1]).to.eq(0);
+      expect(traderInfoPostSettlement[2]).to.eq(0);
+      expect(traderInfoPostSettlement[3]).to.eq(true);
+
+      const traderEndingBalanceInATokens = await mockAToken.balanceOf(wallet.address);
+      const traderEndingBalanceInUnderlyingTokens = await token.balanceOf(wallet.address);
+      const traderEndingOverallBalanceInUnderlyingTokens = add(traderEndingBalanceInATokens, traderEndingBalanceInUnderlyingTokens);
+      
+      console.log("traderEndingBalanceInATokens", utils.formatEther(traderEndingBalanceInATokens));
+      console.log("traderEndingBalanceInUnderlyingTokens", utils.formatEther(traderEndingBalanceInUnderlyingTokens));
+      console.log("traderEndingOverallBalanceInUnderlyingTokens", utils.formatEther(traderEndingOverallBalanceInUnderlyingTokens));
+      
+      const traderAbsoluteReturn = sub(traderEndingOverallBalanceInUnderlyingTokens, traderStartingOverallBalanceInUnderlyingTokens);
+      const traderReturn = div(traderAbsoluteReturn, toBn("10")); // toBn("10") is the notional which the trader wanted to secure a fixed return on
+      
+      console.log("traderAbsoluteReturn", utils.formatEther(traderAbsoluteReturn));
+      console.log("traderReturn", utils.formatEther(traderReturn));
+
+      const traderAPY = sub(pow(add(toBn("1.0"), traderReturn), toBn("52.1775")), toBn("1.0"));
+      
+      console.log("traderAPY", utils.formatEther(traderAPY));
+
+      expect(traderAPY).to.be.near(toBn("0.010116042450876211")); // around 1% fixed apy secured as expected
+
+      // lp settles and collects their margin
+      await marginEngineTest.settlePosition(
+        {
+          owner: other.address,
+          tickLower: -TICK_SPACING,
+          tickUpper: TICK_SPACING,
+          liquidityDelta: 0
+        }
+        
+      );
+
+      const positionInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
+      const finalPositionMargin = positionInfo[1];
+      console.log("finalPositionMargin", utils.formatEther(finalPositionMargin));
+      
+      await marginEngineTest.connect(other).updatePositionMargin(
+        {
+          owner: other.address,
+          tickLower: -TICK_SPACING,
+          tickUpper: TICK_SPACING,
+          liquidityDelta: 0
+        },
+        mul(finalPositionMargin, toBn("-1")) 
+      );
+      
+      const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
+      const finalPositionMarginPostUpdateMargin = positionInfoPostUpdateMargin[1];
+      
+      expect(finalPositionMarginPostUpdateMargin).to.eq(0);
+
+      // calculate the return of the LP
+
+      const positionEndingBalanceInATokens = await mockAToken.balanceOf(other.address);
+      const positionEndingBalanceInUnderlyingTokens = await token.balanceOf(other.address);
+      const positionEndingOverallBalanceInUnderlyingTokens = add(positionEndingBalanceInATokens, positionEndingBalanceInUnderlyingTokens);
+      
+      const positionAbsoluteReturn = sub(positionEndingOverallBalanceInUnderlyingTokens, otherStartingBalance);
+      const positionReturn = div(positionAbsoluteReturn, toBn("10")); // toBn("10") is the notional which the trader wanted to secure a fixed return on
+
+      const positionAPY = sub(pow(add(toBn("1.0"), positionReturn), toBn("52.1775")), toBn("1.0"));
+      
+      console.log("positionAPY", utils.formatEther(positionAPY));
 
     });
 

@@ -12,19 +12,6 @@ library TraderWithYieldBearingAssets {
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
         bool isSettled;
-        uint256 lastMarginUpdateBlockTimestmap;
-        uint256 rateFromRayLastUpdate;
-    }
-
-    function updateRateFrom(Info storage self, uint256 _rateFromRay) internal {
-        self.rateFromRayLastUpdate = _rateFromRay;
-    }
-
-    function updateLastMarginUpdateBlockTimestamp(
-        Info storage self,
-        uint256 lastMarginUpdateBlockTimestmap
-    ) internal {
-        self.lastMarginUpdateBlockTimestmap = lastMarginUpdateBlockTimestmap;
     }
 
     function updateMarginInScaledYieldBearingTokens(

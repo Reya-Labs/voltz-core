@@ -11,29 +11,26 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./utils/WayRayMath.sol";
+import "./utils/Printer.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./aave/AaveDataTypes.sol";
 
-// todo: bring the FCM into the factory when initiating the IRS instance
-// todo: add overrides
-// todo: change the name of the unwind boolean since now it handles both fcm and unwinds
-// todo: introduce base FCM abstract class?
-// todo: have a function that lets traders directly deposit aTokens into their margin account (update margin)
-// todo: can we use IERC20Minimal for aTokens?
+// optional: margin topup function (in terms of yield bearing tokens)
+// use the same trader library as for the margin engine
 
 contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   using WadRayMath for uint256;
 
   using TraderWithYieldBearingAssets for TraderWithYieldBearingAssets.Info;
+
+  address public override marginEngineAddress;
   
-  // add overrides
-  address public underlyingYieldBearingToken;
-  address public vammAddress;
-  address public marginEngineAddress;
-  address public aaveLendingPool;
+  address internal vammAddress;
+  address internal underlyingYieldBearingToken;
+  address internal aaveLendingPool;
   IRateOracle internal rateOracle;
 
   address private deployer;
@@ -61,9 +58,13 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     address rateOracleAddress = IMarginEngine(marginEngineAddress).rateOracleAddress();
     rateOracle = IRateOracle(rateOracleAddress);
     aaveLendingPool = IAaveRateOracle(rateOracleAddress).aaveLendingPool();
+
     address underlyingToken = IMarginEngine(marginEngineAddress).underlyingToken();
     AaveDataTypes.ReserveData memory aaveReserveData = IAaveV2LendingPool(aaveLendingPool).getReserveData(underlyingToken);
     underlyingYieldBearingToken = aaveReserveData.aTokenAddress;
+
+    __Ownable_init();
+    __Pausable_init();
   }
 
   function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override {
@@ -236,7 +237,5 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     // in case of aave: 1aUSDC = 1USDC (1aToken = 1Token), hence no need for additional calculations
     IERC20Minimal(underlyingYieldBearingToken).transfer(_account, marginDeltaInUnderlyingTokens);
   }
-
-  // optional: margin topup function (in terms of yield bearing tokens)
 
 }
