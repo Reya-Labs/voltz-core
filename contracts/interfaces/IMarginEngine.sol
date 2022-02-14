@@ -43,26 +43,30 @@ interface IMarginEngine is IPositionStructs {
     }
 
     // Events
-    event HistoricalApyWindowSet(uint256 secondsAgo);
-    event CacheMaxAgeSet(uint256 cacheMaxAgeInSeconds);
-    event IsInsuranceDepletedSet(bool isInsuranceDepleted);
+    event HistoricalApyWindowSet(address source, uint256 secondsAgo);
+    event CacheMaxAgeSet(address source, uint256 cacheMaxAgeInSeconds);
+    event IsInsuranceDepletedSet(address source, bool isInsuranceDepleted);
     event MinMarginToIncentiviseLiquidatorsSet(
+        address source,
         uint256 minMarginToIncentiviseLiquidators
     );
-    event CollectProtocol(address recipient, uint256 amount);
-    event LiquidatorRewardSet(uint256 liquidatorRewardWad);
+    event CollectProtocol(address source, address recipient, uint256 amount);
+    event LiquidatorRewardSet(address source, uint256 liquidatorRewardWad);
     event TraderPostVAMMInducedSwapUpdate(
+        address source,
         address recipient,
         int256 fixedTokenDelta,
         int256 variableTokenDelta,
         uint256 cumulativeFeeIncurred
     );
     event PositionTokenBalancesAndAccountForFeesUpdate(
+        address source,
         address owner,
         int256 fixedTokenDelta,
         int256 variableTokenDelta,
         uint256 feeDelta
     );
+    event SettleTrader(address source, address traderAddress);
 
     // immutables
 

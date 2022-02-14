@@ -100,7 +100,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       revert NotEnoughFunds(protocolFeesCollected, protocolFees);
     }
     protocolFees = protocolFees - protocolFeesCollected;
-    emit ProtocolFeesUpdate(protocolFeesCollected, protocolFees);
+    emit ProtocolFeesUpdate(address(this), protocolFeesCollected, protocolFees);
   }
 
   /// @dev not locked because it initializes unlocked
@@ -115,27 +115,27 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     unlocked = true;
 
-    emit Initialize(sqrtPriceX96, tick);
+    emit Initialize(address(this), sqrtPriceX96, tick);
   }
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
     vammVars.feeProtocol = feeProtocol;
-    emit SetFeeProtocol(marginEngineAddress, feeProtocol);
+    emit SetFeeProtocol(address(this), feeProtocol);
   }
 
   function setTickSpacing(int24 _tickSpacing) external override onlyOwner lock {
     tickSpacing = _tickSpacing;
-    emit SetTickSpacing(marginEngineAddress, tickSpacing);
+    emit SetTickSpacing(address(this), tickSpacing);
   }
 
   function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external override onlyOwner lock {
     maxLiquidityPerTick = _maxLiquidityPerTick;
-    emit MaxLiquidityPerTickSet(_maxLiquidityPerTick);
+    emit MaxLiquidityPerTickSet(address(this), maxLiquidityPerTick);
   }
 
   function setFee(uint256 _feeWad) external override onlyOwner lock {
     feeWad = _feeWad;
-    emit FeeSet(_feeWad);
+    emit FeeSet(address(this), feeWad);
   }
 
   function burn(
@@ -164,7 +164,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    emit Burn(msg.sender, recipient, tickLower, tickUpper, amount);
+    emit Burn(address(this), msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
   function flipTicks(ModifyPositionParams memory params)
@@ -271,7 +271,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    emit Mint(msg.sender, recipient, tickLower, tickUpper, amount);
+    emit Mint(address(this), msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
 
@@ -524,6 +524,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     /// @audit more values in the swap event
     emit Swap(
+      address(this),
       msg.sender,
       params.recipient,
       state.sqrtPriceX96,

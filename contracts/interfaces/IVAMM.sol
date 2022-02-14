@@ -7,6 +7,7 @@ import "./IPositionStructs.sol";
 interface IVAMM is IPositionStructs {
     // events
     event Swap(
+        address source,
         address indexed sender,
         address indexed recipient,
         uint160 sqrtPriceX96,
@@ -15,10 +16,11 @@ interface IVAMM is IPositionStructs {
     );
 
     /// @dev emitted after a given vamm is successfully initialized
-    event Initialize(uint160 sqrtPriceX96, int24 tick);
+    event Initialize(address source, uint160 sqrtPriceX96, int24 tick);
 
     /// @dev emitted after a successful minting of a given LP position
     event Mint(
+        address source,
         address sender,
         address indexed owner,
         int24 indexed tickLower,
@@ -28,6 +30,7 @@ interface IVAMM is IPositionStructs {
 
     /// @dev emitted after a successful burning of a given LP position
     event Burn(
+        address source,
         address sender,
         address indexed owner,
         int24 indexed tickLower,
@@ -37,21 +40,21 @@ interface IVAMM is IPositionStructs {
 
     /// @dev emitted after setting feeProtocol
     event SetFeeProtocol(
-        address indexed marginEngineAddress,
+        address source,
         uint8 feeProtocol
     );
 
     /// @dev emitted after setting tickSpacing
     event SetTickSpacing(
-        address indexed marginEngineAddress,
+        address source,
         int24 tickSpacing
     );
 
-    event MaxLiquidityPerTickSet(uint128 maxLiquidityPerTick);
+    event MaxLiquidityPerTickSet(address source, uint128 maxLiquidityPerTick);
 
-    event FeeSet(uint256 _feeWad);
+    event FeeSet(address source, uint256 feeWad);
 
-    event ProtocolFeesUpdate(uint256 protocolFeesCollected, uint256 protocolFees);
+    event ProtocolFeesUpdate(address source, uint256 protocolFeesCollected, uint256 protocolFees);
 
     // errors
 

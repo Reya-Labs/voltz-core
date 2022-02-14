@@ -144,7 +144,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         onlyOwner
     {
         secondsAgo = _secondsAgo;
-        emit HistoricalApyWindowSet(_secondsAgo);
+        emit HistoricalApyWindowSet(address(this), secondsAgo);
     }
 
     /// @notice Sets the maximum age that the cached historical APY value
@@ -154,12 +154,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         onlyOwner
     {
         cacheMaxAgeInSeconds = _cacheMaxAgeInSeconds;
-        emit CacheMaxAgeSet(_cacheMaxAgeInSeconds);
+        emit CacheMaxAgeSet(address(this), cacheMaxAgeInSeconds);
     }
 
     function setIsInsuranceDepleted(bool _isInsuranceDepleted) external override onlyOwner {
         isInsuranceDepleted = _isInsuranceDepleted;
-        emit IsInsuranceDepletedSet(_isInsuranceDepleted);
+        emit IsInsuranceDepletedSet(address(this), isInsuranceDepleted);
     }
 
     function collectProtocol(address recipient, uint256 amount)
@@ -176,12 +176,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             );
         }
 
-        emit CollectProtocol(recipient, amount);
+        emit CollectProtocol(address(this), recipient, amount);
     }
     
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external override onlyOwner {
         liquidatorRewardWad = _liquidatorRewardWad;
-        emit LiquidatorRewardSet(_liquidatorRewardWad);
+        emit LiquidatorRewardSet(address(this), liquidatorRewardWad);
     }
 
     /// @inheritdoc IMarginEngine
@@ -331,6 +331,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMarginViaDelta(settlementCashflow);
         trader.settleTrader();
+        emit(address(this), traderAddress);
     }
 
     /// @notice Computes the historical APY value of the RateOracle 
@@ -573,7 +574,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (marginRequirement > trader.margin) {
             revert MarginRequirementNotMet();
         }
-        emit TraderPostVAMMInducedSwapUpdate(recipient, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred);
+        emit TraderPostVAMMInducedSwapUpdate(address(this), recipient, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred);
     }
 
     function updatePositionTokenBalancesAndAccountForFees(
@@ -592,7 +593,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         position.updateMarginViaDelta(int256(feeDelta));
         position.updateFeeGrowthInside(feeGrowthInsideX128);
     
-        emit PositionTokenBalancesAndAccountForFeesUpdate(owner, fixedTokenDelta, variableTokenDelta, feeDelta);
+        emit PositionTokenBalancesAndAccountForFeesUpdate(address(this), owner, fixedTokenDelta, variableTokenDelta, feeDelta);
     }
     
     /// @notice Check if the position margin is above the Initial Margin Requirement
