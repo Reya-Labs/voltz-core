@@ -65,7 +65,7 @@ library Position {
     event LiquidityUpdate(
         Position.Info info,
         int128 liquidityDelta,
-        int128 liquidity
+        uint128 liquidity
     );
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries

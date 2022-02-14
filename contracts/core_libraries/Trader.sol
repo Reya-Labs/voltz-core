@@ -18,7 +18,7 @@ library Trader {
     event MarginViaDeltaUpdate(
         Trader.Info info,
         int256 marginDelta,
-        marginDelta margin
+        int256 margin
     );
     event SettleTrader(Trader.Info info);
     event BalancesViaDeltasUpdate(
