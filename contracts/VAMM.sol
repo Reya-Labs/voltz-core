@@ -100,6 +100,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       revert NotEnoughFunds(protocolFeesCollected, protocolFees);
     }
     protocolFees = protocolFees - protocolFeesCollected;
+    emit ProtocolFeesUpdate(protocolFeesCollected, protocolFees);
   }
 
   /// @dev not locked because it initializes unlocked
@@ -119,19 +120,22 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
     vammVars.feeProtocol = feeProtocol;
-    // emit set fee protocol
+    emit SetFeeProtocol(marginEngineAddress, feeProtocol);
   }
 
   function setTickSpacing(int24 _tickSpacing) external override onlyOwner lock {
     tickSpacing = _tickSpacing;
+    emit SetTickSpacing(marginEngineAddress, tickSpacing);
   }
 
   function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external override onlyOwner lock {
     maxLiquidityPerTick = _maxLiquidityPerTick;
+    emit MaxLiquidityPerTickSet(_maxLiquidityPerTick);
   }
 
   function setFee(uint256 _feeWad) external override onlyOwner lock {
     feeWad = _feeWad;
+    emit FeeSet(_feeWad);
   }
 
   function burn(
@@ -160,6 +164,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
+    emit Burn(msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
   function flipTicks(ModifyPositionParams memory params)

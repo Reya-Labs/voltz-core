@@ -160,10 +160,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     function setIsInsuranceDepleted(bool _isInsuranceDepleted) external override onlyOwner {
         isInsuranceDepleted = _isInsuranceDepleted;
+        emit IsInsuranceDepletedSet(_isInsuranceDepleted);
     }
 
     function setMinMarginToIncentiviseLiquidators(uint256 _minMarginToIncentiviseLiquidators) external override onlyOwner {
         minMarginToIncentiviseLiquidators = _minMarginToIncentiviseLiquidators;
+        emit MinMarginToIncentiviseLiquidatorsSet(_minMarginToIncentiviseLiquidators);
     }
 
     function collectProtocol(address recipient, uint256 amount)
@@ -180,11 +182,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             );
         }
 
-        // emit collect protocol event
+        emit CollectProtocol(recipient, amount);
     }
     
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external override onlyOwner {
         liquidatorRewardWad = _liquidatorRewardWad;
+        emit LiquidatorRewardSet(_liquidatorRewardWad);
     }
 
     /// @inheritdoc IMarginEngine
@@ -595,6 +598,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (marginRequirement > trader.margin) {
             revert MarginRequirementNotMet();
         }
+        emit TraderPostVAMMInducedSwapUpdate(recipient, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred);
     }
 
     function updatePositionTokenBalancesAndAccountForFees(
@@ -613,6 +617,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         position.updateMarginViaDelta(int256(feeDelta));
         position.updateFeeGrowthInside(feeGrowthInsideX128);
     
+        emit PositionTokenBalancesAndAccountForFeesUpdate(owner, fixedTokenDelta, variableTokenDelta, feeDelta);
     }
     
     /// @notice Check if the position margin is above the Initial Margin Requirement

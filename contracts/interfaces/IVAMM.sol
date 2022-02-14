@@ -26,6 +26,33 @@ interface IVAMM is IPositionStructs {
         uint128 amount
     );
 
+    /// @dev emitted after a successful burning of a given LP position
+    event Burn(
+        address sender,
+        address indexed owner,
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
+        uint128 amount
+    )
+
+    /// @dev emitted after setting feeProtocol
+    event SetFeeProtocol(
+        address indexed marginEngineAddress,
+        uint8 feeProtocol
+    )
+
+    /// @dev emitted after setting tickSpacing
+    event SetTickSpacing(
+        address indexed marginEngineAddress,
+        int24 tickSpacing
+    )
+
+    event MaxLiquidityPerTickSet(uint128 maxLiquidityPerTick);
+
+    event FeeSet(uint256 _feeWad);
+
+    event ProtocolFeesUpdate(uint256 protocolFeesCollected, uint256 protocolFees);
+
     // errors
 
     /// @dev There are not enough funds available for the requested operation

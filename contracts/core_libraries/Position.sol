@@ -41,6 +41,14 @@ library Position {
         bool isSettled;
     }
 
+    // Events
+    event SettlePosition(Position.Info info);
+    event MarginViaDeltaUpdate(Position.Info info, int256 marginDelta, int256 margin);
+    event BalancesViaDeltasUpdate(Position.Info, int256 fixedTokenBalanceDelta, int256 variableTokenBalanceDelta);
+    event FixedAndVariableTokenGrowthInsideUpdate(Position.Info info, int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128);
+    event FeeGrowthInsideUpdate(Position.Info info, uint256 feeGrowthInsideX128);
+    event LiquidityUpdate(Position.Info info, int128 liquidityDelta, int128 liquidity);
+
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
     /// @param self The mapping containing all user positions
     /// @param owner The address of the position owner
@@ -60,6 +68,7 @@ library Position {
 
     function settlePosition(Info storage self) internal {
         self.isSettled = true;
+        emit SettlePosition(self);
     }
 
     /// @notice Updates the Info struct of a position by changing the amount of margin according to marginDelta
@@ -70,6 +79,7 @@ library Position {
     {
         Info memory _self = self;
         self.margin = _self.margin + marginDelta;
+        emit MarginViaDeltaUpdate(self, marginDelta, self.margin);
     }
 
     /// @notice Updates the Info struct of a position by changing the fixed and variable token balances of the position
@@ -91,6 +101,7 @@ library Position {
                 _self.variableTokenBalance +
                 variableTokenBalanceDelta;
         }
+        emit BalancesViaDeltasUpdate(self, fixedTokenBalanceDelta, variableTokenBalanceDelta);
     }
 
     /// @notice Returns Fee Delta = (feeGrowthInside-feeGrowthInsideLast) * liquidity of the position
@@ -182,6 +193,7 @@ library Position {
     ) internal {
         self.fixedTokenGrowthInsideLastX128 = fixedTokenGrowthInsideX128;
         self.variableTokenGrowthInsideLastX128 = variableTokenGrowthInsideX128;
+        emit FixedAndVariableTokenGrowthInsideUpdate(self, fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
     }
 
     /// @notice Updates feeGrowthInsideLast to the current value
@@ -192,6 +204,7 @@ library Position {
         uint256 feeGrowthInsideX128
     ) internal {
         self.feeGrowthInsideLastX128 = feeGrowthInsideX128;
+        emit FeeGrowthInsideUpdate(self, feeGrowthInsideX128);
     }
 
     /// @notice Updates position's liqudity following either mint or a burn
@@ -214,5 +227,6 @@ library Position {
         }
 
         if (liquidityDelta != 0) self._liquidity = liquidityNext;
+        emit LiquidityUpdate(self, liquidityDelta, _self._liquidity);
     }
 }

@@ -47,7 +47,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     {
         minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate; // in wei
 
-        // @audit emit event
+        emit MinSecondsSinceLastUpdateSet(_minSecondsSinceLastUpdate);
     }
 
     constructor(address _underlying) {

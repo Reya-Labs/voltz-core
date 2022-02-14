@@ -21,6 +21,9 @@ library TickBitmap {
         bitPos = uint8(int8(tick % 256));
     }
 
+    // Events
+    event FlipTick(int24 tick, int24 tickSpacing);
+
     /// @notice Flips the initialized state for a given tick from false to true, or vice versa
     /// @param self The mapping in which to flip the tick
     /// @param tick The tick to flip
@@ -34,6 +37,7 @@ library TickBitmap {
         (int16 wordPos, uint8 bitPos) = position(tick / tickSpacing);
         uint256 mask = 1 << bitPos;
         self[wordPos] ^= mask;
+        emit FlipTick(tick, tickSpacing);
     }
 
     /// @notice Returns the next initialized tick contained in the same word (or adjacent word) as the tick that is either
