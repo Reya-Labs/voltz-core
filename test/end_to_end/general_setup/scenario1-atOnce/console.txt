@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1657904554
+current timestamp: 1657906264
 
 current tick: 0
 sqrt price at current tick: 1
@@ -129,7 +129,7 @@ settlement cashflow: 0.0
 
 
 ----------------------------AFTER MINT----------------------------
-current timestamp: 1660064565
+current timestamp: 1660066275
 
 current tick: 0
 sqrt price at current tick: 1
@@ -259,7 +259,7 @@ settlement cashflow: 0.0
 
 
 ----------------------------BEFORE SETTLEMENT----------------------------
-current timestamp: 1662224574
+current timestamp: 1662226284
 
 current tick: -61
 sqrt price at current tick: 0.9969547984655946
@@ -389,7 +389,7 @@ settlement cashflow: 0.0
 
 
 ----------------------------FINAL----------------------------
-current timestamp: 1665680589
+current timestamp: 1665682299
 
 current tick: -61
 sqrt price at current tick: 0.9969547984655946
