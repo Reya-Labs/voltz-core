@@ -21,7 +21,13 @@ library OracleBuffer {
     }
 
     // Events
-    event OracleBufferWrite(uint16 index, uint32 blockTimestamp, uint256 observedValue, uint16 cardinality, uint16 cardinalityNext);
+    event OracleBufferWrite(
+        uint16 index,
+        uint32 blockTimestamp,
+        uint256 observedValue,
+        uint16 cardinality,
+        uint16 cardinalityNext
+    );
 
     /// @notice Creates an observation struct from the current timestamp and observed value
     /// @dev blockTimestamp _must_ be chronologically equal to or greater than last.blockTimestamp, safe for 0 or 1 overflows
@@ -90,7 +96,13 @@ library OracleBuffer {
 
         indexUpdated = (index + 1) % cardinalityUpdated;
         self[indexUpdated] = observation(blockTimestamp, observedValue);
-        emit OracleBufferWrite(index, blockTimestamp, observedValue, cardinality, cardinalityNext);
+        emit OracleBufferWrite(
+            index,
+            blockTimestamp,
+            observedValue,
+            cardinality,
+            cardinalityNext
+        );
     }
 
     /// @notice Prepares the oracle array to store up to `next` observations

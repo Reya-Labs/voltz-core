@@ -43,11 +43,30 @@ library Position {
 
     // Events
     event SettlePosition(Position.Info info);
-    event MarginViaDeltaUpdate(Position.Info info, int256 marginDelta, int256 margin);
-    event BalancesViaDeltasUpdate(Position.Info, int256 fixedTokenBalanceDelta, int256 variableTokenBalanceDelta);
-    event FixedAndVariableTokenGrowthInsideUpdate(Position.Info info, int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128);
-    event FeeGrowthInsideUpdate(Position.Info info, uint256 feeGrowthInsideX128);
-    event LiquidityUpdate(Position.Info info, int128 liquidityDelta, int128 liquidity);
+    event MarginViaDeltaUpdate(
+        Position.Info info,
+        int256 marginDelta,
+        int256 margin
+    );
+    event BalancesViaDeltasUpdate(
+        Position.Info,
+        int256 fixedTokenBalanceDelta,
+        int256 variableTokenBalanceDelta
+    );
+    event FixedAndVariableTokenGrowthInsideUpdate(
+        Position.Info info,
+        int256 fixedTokenGrowthInsideX128,
+        int256 variableTokenGrowthInsideX128
+    );
+    event FeeGrowthInsideUpdate(
+        Position.Info info,
+        uint256 feeGrowthInsideX128
+    );
+    event LiquidityUpdate(
+        Position.Info info,
+        int128 liquidityDelta,
+        int128 liquidity
+    );
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
     /// @param self The mapping containing all user positions
@@ -101,7 +120,11 @@ library Position {
                 _self.variableTokenBalance +
                 variableTokenBalanceDelta;
         }
-        emit BalancesViaDeltasUpdate(self, fixedTokenBalanceDelta, variableTokenBalanceDelta);
+        emit BalancesViaDeltasUpdate(
+            self,
+            fixedTokenBalanceDelta,
+            variableTokenBalanceDelta
+        );
     }
 
     /// @notice Returns Fee Delta = (feeGrowthInside-feeGrowthInsideLast) * liquidity of the position
@@ -193,7 +216,11 @@ library Position {
     ) internal {
         self.fixedTokenGrowthInsideLastX128 = fixedTokenGrowthInsideX128;
         self.variableTokenGrowthInsideLastX128 = variableTokenGrowthInsideX128;
-        emit FixedAndVariableTokenGrowthInsideUpdate(self, fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
+        emit FixedAndVariableTokenGrowthInsideUpdate(
+            self,
+            fixedTokenGrowthInsideX128,
+            variableTokenGrowthInsideX128
+        );
     }
 
     /// @notice Updates feeGrowthInsideLast to the current value

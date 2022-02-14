@@ -15,10 +15,17 @@ library Trader {
     }
 
     // Events
-    event MarginViaDeltaUpdate(Trader.Info info, int256 marginDelta, marginDelta margin);
+    event MarginViaDeltaUpdate(
+        Trader.Info info,
+        int256 marginDelta,
+        marginDelta margin
+    );
     event SettleTrader(Trader.Info info);
-    event BalancesViaDeltasUpdate(Trader.Info info, int256 fixedTokenBalanceDelta, int256 variableTokenBalanceDelta);
-
+    event BalancesViaDeltasUpdate(
+        Trader.Info info,
+        int256 fixedTokenBalanceDelta,
+        int256 variableTokenBalanceDelta
+    );
 
     function updateMarginViaDelta(Info storage self, int256 marginDelta)
         internal
@@ -47,6 +54,10 @@ library Trader {
 
         self.fixedTokenBalance = fixedTokenBalance;
         self.variableTokenBalance = variableTokenBalance;
-        emit BalancesViaDeltasUpdate(self, fixedTokenBalanceDelta, variableTokenBalanceDelta);
+        emit BalancesViaDeltasUpdate(
+            self,
+            fixedTokenBalanceDelta,
+            variableTokenBalanceDelta
+        );
     }
 }
