@@ -130,32 +130,18 @@ export class ScenarioRunner {
     );
     fs.appendFileSync(this.outputFile, "\n");
 
-    const amountsBelow = await this.getAmounts("below");
-    const amountsAbove = await this.getAmounts("above");
+    const vtBelow = await this.getVT("below");
+    const vtAbove = await this.getVT("above");
 
     fs.appendFileSync(
       this.outputFile,
-      "amount of available    fixed tokens: " +
-        amountsAbove[0].toString() +
-        " (" +
-        "\u2191" +
-        ")" +
-        " ; " +
-        amountsBelow[0].toString() +
-        " (" +
-        "\u2193" +
-        ")" +
-        "\n"
-    );
-    fs.appendFileSync(
-      this.outputFile,
       "amount of available variable tokens: " +
-        amountsAbove[1].toString() +
+        vtAbove.toString() +
         " (" +
         "\u2191" +
         ")" +
         " ; " +
-        amountsBelow[1].toString() +
+        vtBelow.toString() +
         " (" +
         "\u2193" +
         ")" +
@@ -669,7 +655,7 @@ export class ScenarioRunner {
     await this.updateAPYbounds();
   }
 
-  async printAPYboundsAndPositionMargin(
+  async getAPYboundsAndPositionMargin(
     position: [string, number, number],
     liquidity: BigNumber
   ) {
@@ -718,7 +704,7 @@ export class ScenarioRunner {
     return positionMarginRequirement;
   }
 
-  async printAPYboundsAndTraderMargin(trader: Wallet) {
+  async getAPYboundsAndTraderMargin(trader: Wallet) {
     await this.updateAPYbounds();
 
     const traderInfo = await this.marginEngineTest.traders(trader.address);
@@ -753,7 +739,7 @@ export class ScenarioRunner {
     return traderMarginRequirement;
   }
 
-  async getAmounts(towards: string) {
+  async getVT(towards: string) {
     await this.updateCurrentTick();
 
     let totalAmount0 = toBn("0");
@@ -769,8 +755,10 @@ export class ScenarioRunner {
         lowerTick = Math.max(this.currentTick, p[1]);
       } else {
         console.error("direction should be either below or above");
-        return [0, 0];
+        return 0;
       }
+
+      if (lowerTick >= upperTick) continue;
 
       const liquidity = (
         await this.marginEngineTest.getPosition(p[0], p[1], p[2])
@@ -799,10 +787,7 @@ export class ScenarioRunner {
       totalAmount1 = totalAmount1.add(amount1);
     }
 
-    return [
-      parseFloat(utils.formatEther(totalAmount0)),
-      parseFloat(utils.formatEther(totalAmount1)),
-    ];
+    return parseFloat(utils.formatEther(totalAmount1));
   }
 
   async settlePositionsAndTraders(

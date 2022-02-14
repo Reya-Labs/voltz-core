@@ -124,7 +124,10 @@ describe("VAMM", () => {
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
     // set factor per second
-    await aaveLendingPool.setFactorPerSecondInRay(token.address, "1000000001000000000000000000");
+    await aaveLendingPool.setFactorPerSecondInRay(
+      token.address,
+      "1000000001000000000000000000"
+    );
   });
 
   describe("#swapAndBurn", () => {

@@ -1,7 +1,7 @@
 // NEW
 
 import { BigNumber } from "ethers";
-import { ethers, network, waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { expect } from "../shared/expect";
 import { FixedAndVariableMathTest } from "../../typechain/FixedAndVariableMathTest";
 import { toBn } from "evm-bn";
@@ -11,14 +11,10 @@ import { ONE_YEAR_IN_SECONDS, ONE_WEEK_IN_SECONDS } from "../shared/constants";
 
 const { provider } = waffle;
 
-const BLOCK_TIMESTAMP = 1632249308;
-
 describe("FixedAndVariableMath", () => {
   let fixedAndVariableMathTest: FixedAndVariableMathTest;
 
   before(async () => {
-    await network.provider.send("evm_setNextBlockTimestamp", [BLOCK_TIMESTAMP]);
-
     const fixedAndVariableMathTestFactory = await ethers.getContractFactory(
       "FixedAndVariableMathTest"
     );
