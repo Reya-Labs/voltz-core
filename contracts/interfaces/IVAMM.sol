@@ -39,22 +39,20 @@ interface IVAMM is IPositionStructs {
     );
 
     /// @dev emitted after setting feeProtocol
-    event SetFeeProtocol(
-        address source,
-        uint8 feeProtocol
-    );
+    event SetFeeProtocol(address source, uint8 feeProtocol);
 
     /// @dev emitted after setting tickSpacing
-    event SetTickSpacing(
-        address source,
-        int24 tickSpacing
-    );
+    event SetTickSpacing(address source, int24 tickSpacing);
 
     event MaxLiquidityPerTickSet(address source, uint128 maxLiquidityPerTick);
 
     event FeeSet(address source, uint256 feeWad);
 
-    event ProtocolFeesUpdate(address source, uint256 protocolFeesCollected, uint256 protocolFees);
+    event ProtocolFeesUpdate(
+        address source,
+        uint256 protocolFeesCollected,
+        uint256 protocolFees
+    );
 
     // errors
 
