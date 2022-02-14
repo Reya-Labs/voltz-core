@@ -345,7 +345,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       variableTokenDeltaCumulative: 0 // for Trader (user invoking the swap)
     });
 
-    /// @dev write an entry to the rate oracle (given no throttling), should be a no-op
+    /// @dev write an entry to the rate oracle (given no throttling)
 
     rateOracle.writeOracleEntry();
 
@@ -513,11 +513,14 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
     if (!params.isUnwind) {
       if (params.isTrader) {
-        IMarginEngine(marginEngineAddress).updateTraderPostVAMMInducedSwap(params.recipient, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred);
+        IMarginEngine(marginEngineAddress).updateTraderPostVAMMInducedSwap(params.recipient, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.sqrtPriceX96);
       } else {
-        IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.tick);
+        IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.tick, vammVars.sqrtPriceX96);
       }
     }
+
+    Printer.printUint256("cumulativeFeeIncurred", _cumulativeFeeIncurred);
+    Printer.printEmptyLine();
 
     /// @audit more values in the swap event
     emit Swap(

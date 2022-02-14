@@ -106,6 +106,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
                     )
                 );
         } else {
+            /// @audit is this precise, have there been instances where the aave rate is negative?
             return 0;
         }
     }

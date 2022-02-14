@@ -6,6 +6,7 @@ import { ERC20Mock } from "../../typechain/ERC20Mock";
 import { expect } from "../shared/expect";
 import { metaFixture } from "../shared/fixtures";
 import { BigNumber } from "@ethersproject/bignumber";
+import { TestMarginEngine, TestVAMM } from "../../typechain";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -93,7 +94,9 @@ describe("Factory", () => {
     const marginEngineTestFactory = await ethers.getContractFactory(
       "TestMarginEngine"
     );
-    const marginEngine1 = marginEngineTestFactory.attach(marginEngineAddress);
+    const marginEngine1 = marginEngineTestFactory.attach(
+      marginEngineAddress
+    ) as TestMarginEngine;
 
     expect(marginEngine1.address).to.eq(marginEngineAddress);
 
@@ -119,7 +122,7 @@ describe("Factory", () => {
 
     // check vamm values
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    const vamm1 = vammTestFactory.attach(vammAddress);
+    const vamm1 = vammTestFactory.attach(vammAddress) as TestVAMM;
 
     expect(vamm1.address).to.eq(vammAddress);
 

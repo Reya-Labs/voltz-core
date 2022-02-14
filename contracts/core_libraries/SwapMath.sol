@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import "../utils/Printer.sol";
 import "../utils/FullMath.sol";
 import "../utils/SqrtPriceMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
@@ -46,7 +47,7 @@ library SwapMath {
         uint256 timeToMaturityInSecondsWad
     )
         internal
-        pure
+        view
         returns (
             uint160 sqrtRatioNextX96,
             uint256 amountIn,
@@ -163,5 +164,9 @@ library SwapMath {
             timeToMaturityInSecondsWad,
             feePercentageWad
         );
+
+        Printer.printUint256("notional", notional);
+        Printer.printUint256("feeAmount", feeAmount);
+        Printer.printEmptyLine();
     }
 }

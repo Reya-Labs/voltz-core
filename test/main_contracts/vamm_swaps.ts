@@ -27,7 +27,7 @@ import {
   MockAaveLendingPool,
   TestRateOracle,
 } from "../../typechain";
-import { sub } from "../shared/functions";
+import { add, sub } from "../shared/functions";
 import { TickMath } from "../shared/tickMath";
 
 const createFixtureLoader = waffle.createFixtureLoader;
@@ -78,7 +78,9 @@ describe("VAMM", () => {
     const marginEngineTestFactory = await ethers.getContractFactory(
       "TestMarginEngine"
     );
-    marginEngineTest = marginEngineTestFactory.attach(marginEngineAddress);
+    marginEngineTest = marginEngineTestFactory.attach(
+      marginEngineAddress
+    ) as TestMarginEngine;
     const vammAddress = await factory.getVAMMAddress(
       token.address,
       rateOracleTest.address,
@@ -86,7 +88,7 @@ describe("VAMM", () => {
       termEndTimestampBN
     );
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    vammTest = vammTestFactory.attach(vammAddress);
+    vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
     await marginEngineTest.setVAMMAddress(vammTest.address);
 
     // update marginEngineTest allowance
@@ -189,22 +191,30 @@ describe("VAMM", () => {
 
       const positionFixedTokenBalance = positionInfo.fixedTokenBalance;
       const positionVariableTokenBalance = positionInfo.variableTokenBalance;
-      console.log(positionFixedTokenBalance.toString());
-      console.log(positionVariableTokenBalance.toString());
-      console.log(traderFixedTokenBalance.toString());
-      console.log(traderVariableTokenBalance.toString());
+      console.log("PFTB", positionFixedTokenBalance.toString());
+      console.log("PVTB", positionVariableTokenBalance.toString());
+      console.log("TFTB", traderFixedTokenBalance.toString());
+      console.log("TVTB", traderVariableTokenBalance.toString());
 
       // note there is some discrepancy between the balances, they don't quite cancel each other
       // investigate the implications of this
 
-      expect(positionFixedTokenBalance).to.be.near(
-        toBn("-0.999966931216935141")
+      const sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance = add(
+        positionFixedTokenBalance,
+        traderFixedTokenBalance
       );
-      expect(positionVariableTokenBalance).to.be.near(
-        toBn("1.006007643968346957")
+
+      console.log(
+        "sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance",
+        sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance.toString()
       );
-      expect(traderFixedTokenBalance).to.be.near(toBn("1.005974376519806980"));
-      expect(traderVariableTokenBalance).to.be.near(toBn("-1"));
+
+      expect(positionVariableTokenBalance).to.be.near(toBn("1"));
+      expect(traderVariableTokenBalance).to.eq(toBn("-1"));
+
+      expect(
+        sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance
+      ).to.be.closeTo(toBn("0"), 10);
     });
 
     it("scenario 2: ", async () => {
@@ -258,22 +268,31 @@ describe("VAMM", () => {
 
       const positionFixedTokenBalance = positionInfo.fixedTokenBalance;
       const positionVariableTokenBalance = positionInfo.variableTokenBalance;
-      console.log(positionFixedTokenBalance.toString());
-      console.log(positionVariableTokenBalance.toString());
-      console.log(traderFixedTokenBalance.toString());
-      console.log(traderVariableTokenBalance.toString());
+      console.log("PFTB 2", positionFixedTokenBalance.toString());
+      console.log("PVTB 2", positionVariableTokenBalance.toString());
+      console.log("TFTB 2", traderFixedTokenBalance.toString());
+      console.log("TVTB 2", traderVariableTokenBalance.toString());
 
       // note there is some discrepancy between the balances, they don't quite cancel each other
       // investigate the implications of this
 
-      expect(positionFixedTokenBalance).to.be.near(
-        toBn("0.999973544973547070")
+      const sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance = add(
+        positionFixedTokenBalance,
+        traderFixedTokenBalance
       );
-      expect(positionVariableTokenBalance).to.be.near(
-        toBn("-0.994028172746545667")
+
+      console.log(
+        "sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance 2",
+        sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance.toString()
       );
-      expect(traderFixedTokenBalance).to.be.near(toBn("-0.994001875704940701"));
-      expect(traderVariableTokenBalance).to.be.near(toBn("1"));
+
+      expect(positionVariableTokenBalance).to.be.closeTo(toBn("-1"), 10);
+
+      expect(traderVariableTokenBalance).to.be.eq(toBn("1"));
+
+      expect(
+        sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance
+      ).to.be.closeTo(toBn("0"), 10);
     });
 
     it("scenario 3: check fees (no protocol fees)", async () => {
@@ -453,44 +472,6 @@ describe("VAMM", () => {
       expect(feesAccruedToLP).to.be.near(feesIncurredByTrader);
     });
 
-    // it("scenario 5: settlement", async () => {
-
-    //   await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
-
-    //   await vammTest.setMaxLiquidityPerTick(
-    //     getMaxLiquidityPerTick(TICK_SPACING)
-    //   );
-    //   await vammTest.setTickSpacing(TICK_SPACING);
-
-    //   await vammTest.setFeeProtocol(0);
-    //   await vammTest.setFee(0);
-
-    //   await vammTest.mint(
-    //     wallet.address,
-    //     -TICK_SPACING,
-    //     TICK_SPACING,
-    //     toBn("10000000")
-    //   );
-
-    //   /// need some dummy rate oracle data in here
-
-    //   advanceTimeAndBlock(BigNumber.from(302400), 3);
-
-    //   const traderInfoOld = await marginEngineTest.traders(wallet.address);
-
-    //   await vammTest.swap({
-    //     recipient: wallet.address,
-    //     isFT: false,
-    //     amountSpecified: toBn("-100"),
-    //     sqrtPriceLimitX96: BigNumber.from(
-    //       MIN_SQRT_RATIO.add(1)
-    //     ),
-    //     isUnwind: false,
-    //     isTrader: true,
-    //     tickLower: 0,
-    //     tickUpper: 0,
-    //   });
-
-    // })
+    // todo: scenario 6 --> settlement
   });
 });

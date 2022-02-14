@@ -109,7 +109,9 @@ describe("VAMM - allAtOnce", () => {
     const marginEngineTestFactory = await ethers.getContractFactory(
       "TestMarginEngine"
     );
-    marginEngineTest = marginEngineTestFactory.attach(marginEngineAddress);
+    marginEngineTest = marginEngineTestFactory.attach(
+      marginEngineAddress
+    ) as TestMarginEngine;
     const vammAddress = await factory.getVAMMAddress(
       token.address,
       rateOracleTest.address,
@@ -117,7 +119,7 @@ describe("VAMM - allAtOnce", () => {
       termEndTimestampBN
     );
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    vammTest = vammTestFactory.attach(vammAddress);
+    vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
     await marginEngineTest.setVAMMAddress(vammTest.address);
 
     // update marginEngineTest allowance

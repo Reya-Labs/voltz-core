@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "../MarginEngine.sol";
@@ -24,27 +26,31 @@ contract TestMarginEngine is MarginEngine {
         int256 updatedMarginWouldBe,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        bool isTraderSettled
-    ) external view {
+        bool isTraderSettled,
+        uint256 variableFactorWad
+    ) external {
         return
             checkTraderMarginCanBeUpdated(
                 updatedMarginWouldBe,
                 fixedTokenBalance,
                 variableTokenBalance,
-                isTraderSettled
+                isTraderSettled,
+                variableFactorWad
             );
     }
 
     function checkTraderMarginAboveRequirementTest(
         int256 updatedMarginWouldBe,
         int256 fixedTokenBalance,
-        int256 variableTokenBalance
-    ) external view {
+        int256 variableTokenBalance,
+        uint256 variableFactorWad
+    ) external {
         return
             checkTraderMarginAboveRequirement(
                 updatedMarginWouldBe,
                 fixedTokenBalance,
-                variableTokenBalance
+                variableTokenBalance,
+                variableFactorWad
             );
     }
 
@@ -60,7 +66,7 @@ contract TestMarginEngine is MarginEngine {
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
         uint256 variableFactor
-    ) public view {
+    ) public {
         return
             checkPositionMarginCanBeUpdated(
                 ModifyPositionParams({
@@ -89,7 +95,7 @@ contract TestMarginEngine is MarginEngine {
         int256 positionFixedTokenBalance,
         int256 positionVariableTokenBalance,
         uint256 variableFactor
-    ) public view {
+    ) public {
         return
             checkPositionMarginAboveRequirement(
                 ModifyPositionParams({

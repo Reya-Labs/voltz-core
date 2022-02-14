@@ -11,8 +11,9 @@ import "./Position.sol";
 import "./Tick.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
-
-// import "../utils/Printer.sol";
+import "../utils/Printer.sol";
+import "../utils/FullMath.sol";
+import "../utils/FixedPoint96.sol";
 
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
@@ -34,7 +35,7 @@ library MarginCalculator {
         int256 lambdaDenWad;
         /// @dev lambda = lambdaNum / lambdaDen
         int256 lambdaWad;
-        /// @dev critical value = 2(k+2lambda)
+        /// @dev critical value multiplier = 2(k+2lambda)
         int256 criticalValueMultiplierWad;
         /// @dev critical value = sqrt(2(k+2*lambda))*xiUpper (for upper bound calculation), critical value = sqrt(2(k+2*lambda))*xiLower (for lower bound calculation)
         int256 criticalValueWad;
@@ -53,6 +54,10 @@ library MarginCalculator {
         bool isLM;
         /// @dev Historical Average APY of the underlying pool (e.g. Aave v2 USDC Lending Pool), 18 decimals
         uint256 historicalApyWad;
+        /// @dev
+        uint160 sqrtPriceX96;
+        /// @dev Variable Factor is the variable rate from the IRS AMM initiation until the current block timestamp
+        uint256 variableFactorWad;
     }
 
     struct PositionMarginRequirementParams {
@@ -82,6 +87,8 @@ library MarginCalculator {
         uint256 variableFactorWad;
         /// @dev Historical Average APY of the underlying pool (e.g. Aave v2 USDC Lending Pool), 18 decimals
         uint256 historicalApyWad;
+        /// @dev
+        uint160 sqrtPriceX96;
     }
 
     struct MinimumMarginRequirementLocalVars {
@@ -111,7 +118,7 @@ library MarginCalculator {
         uint256 currentTimestampWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal pure returns (int256 timeFactorWad) {
+    ) internal view returns (int256 timeFactorWad) {
         require(termEndTimestampWad > 0, "termEndTimestamp must be > 0");
         require(
             currentTimestampWad <= termEndTimestampWad,
@@ -145,7 +152,7 @@ library MarginCalculator {
         bool isUpper,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal pure returns (uint256 apyBoundWad) {
+    ) internal view returns (uint256 apyBoundWad) {
         ApyBoundVars memory apyBoundVars;
 
         int256 beta4Wad = PRBMathSD59x18.mul(
@@ -254,7 +261,7 @@ library MarginCalculator {
         uint256 historicalApyWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal pure returns (uint256 variableFactorWad) {
+    ) internal view returns (uint256 variableFactorWad) {
         uint256 timeInYearsFromStartUntilMaturityWad = FixedAndVariableMath
             .accrualFact(timeInSecondsFromStartToMaturityWad);
 
@@ -315,10 +322,251 @@ library MarginCalculator {
         }
     }
 
-    /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
-    /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
-    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
-    function getTraderMarginRequirement(
+    struct SimulatedUnwindLocalVars {
+        uint256 sqrtRatioCurrWad;
+        uint256 fixedRateStartWad;
+        uint256 upperDWad;
+        uint256 scaledTimeWad;
+        int256 expInputWad;
+        int256 oneMinusTimeFactorWad;
+        uint256 dWad;
+        uint256 fixedRateCFWad;
+        uint256 fixedTokenDeltaUnbalancedWad;
+    }
+
+    // simulation of a swap without the need to involve the swap function
+    function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
+        uint256 variableTokenDeltaAbsolute,
+        uint160 sqrtRatioCurrX96,
+        uint256 startingFixedRateMultiplierWad,
+        uint256 fixedRateDeviationMinWad,
+        uint256 termEndTimestampWad,
+        uint256 currentTimestampWad,
+        uint256 tMaxWad,
+        uint256 gammaWad,
+        bool isFTUnwind
+    ) internal view returns (uint256 fixedTokenDeltaUnbalanced) {
+        SimulatedUnwindLocalVars memory simulatedUnwindLocalVars;
+
+        // todo: require checks
+
+        // calculate f_start
+        simulatedUnwindLocalVars.sqrtRatioCurrWad = FullMath.mulDiv(
+            PRBMathUD60x18.fromUint(1),
+            sqrtRatioCurrX96,
+            FixedPoint96.Q96
+        );
+
+        simulatedUnwindLocalVars.fixedRateStartWad = PRBMathUD60x18.div(
+            PRBMathUD60x18.fromUint(1),
+            PRBMathUD60x18.mul(
+                simulatedUnwindLocalVars.sqrtRatioCurrWad,
+                simulatedUnwindLocalVars.sqrtRatioCurrWad
+            )
+        );
+
+        // calculate D
+
+        simulatedUnwindLocalVars.upperDWad = PRBMathUD60x18.mul(
+            simulatedUnwindLocalVars.fixedRateStartWad,
+            startingFixedRateMultiplierWad
+        );
+
+        if (simulatedUnwindLocalVars.upperDWad < fixedRateDeviationMinWad) {
+            simulatedUnwindLocalVars.upperDWad = fixedRateDeviationMinWad;
+        }
+
+        // calculate d
+
+        simulatedUnwindLocalVars.scaledTimeWad = PRBMathUD60x18.div(
+            (termEndTimestampWad - currentTimestampWad),
+            tMaxWad
+        );
+
+        simulatedUnwindLocalVars.expInputWad = PRBMathSD59x18.mul(
+            (-int256(gammaWad)),
+            int256(simulatedUnwindLocalVars.scaledTimeWad)
+        );
+
+        simulatedUnwindLocalVars.oneMinusTimeFactorWad =
+            PRBMathSD59x18.fromInt(1) -
+            PRBMathSD59x18.exp(simulatedUnwindLocalVars.expInputWad);
+
+        simulatedUnwindLocalVars.dWad = PRBMathUD60x18.mul(
+            simulatedUnwindLocalVars.upperDWad,
+            uint256(simulatedUnwindLocalVars.oneMinusTimeFactorWad)
+        );
+
+        // calculate cfFixedRate
+
+        console.log(
+            "fixedRateStartWad",
+            simulatedUnwindLocalVars.fixedRateStartWad
+        );
+        console.log("d", simulatedUnwindLocalVars.dWad);
+        console.log("D", simulatedUnwindLocalVars.upperDWad);
+
+        simulatedUnwindLocalVars.fixedRateCFWad;
+
+        if (isFTUnwind) {
+            if (
+                simulatedUnwindLocalVars.fixedRateStartWad >
+                simulatedUnwindLocalVars.dWad
+            ) {
+                simulatedUnwindLocalVars.fixedRateCFWad =
+                    simulatedUnwindLocalVars.fixedRateStartWad -
+                    simulatedUnwindLocalVars.dWad;
+            } else {
+                simulatedUnwindLocalVars.fixedRateCFWad = 0;
+            }
+        } else {
+            simulatedUnwindLocalVars.fixedRateCFWad =
+                simulatedUnwindLocalVars.fixedRateStartWad +
+                simulatedUnwindLocalVars.dWad;
+        }
+
+        // calculate fixedTokenDeltaUnbalancedWad
+        console.log("fixedRateCFWad", simulatedUnwindLocalVars.fixedRateCFWad);
+
+        simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad = PRBMathUD60x18
+            .mul(
+                PRBMathUD60x18.fromUint(variableTokenDeltaAbsolute),
+                simulatedUnwindLocalVars.fixedRateCFWad
+            );
+
+        // calculate fixedTokenDeltaUnbalanced
+
+        fixedTokenDeltaUnbalanced = PRBMathUD60x18.toUint(
+            simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad
+        );
+    }
+
+    function getMinimumMarginRequirement(
+        TraderMarginRequirementParams memory params,
+        IMarginEngine.MarginCalculatorParameters
+            memory _marginCalculatorParameters
+    ) internal view returns (uint256 margin) {
+        if (params.variableTokenBalance == 0) {
+            // if the variable token balance is zero there is no need for a minimum liquidator incentive since a liquidtion is not expected
+            return 0;
+        }
+
+        int256 fixedTokenDeltaUnbalanced;
+        uint256 devMulWad;
+        uint256 fixedRateDeviationMinWad;
+
+        if (params.variableTokenBalance > 0) {
+            if (params.fixedTokenBalance > 0) {
+                // if both are positive, no need to have a margin requirement
+                return 0;
+            }
+
+            if (params.isLM) {
+                devMulWad = _marginCalculatorParameters.devMulLeftUnwindLMWad;
+                fixedRateDeviationMinWad = _marginCalculatorParameters
+                    .fixedRateDeviationMinLeftUnwindLMWad;
+            } else {
+                devMulWad = _marginCalculatorParameters.devMulLeftUnwindIMWad;
+                fixedRateDeviationMinWad = _marginCalculatorParameters
+                    .fixedRateDeviationMinLeftUnwindIMWad;
+            }
+
+            // simulate an adversarial unwind (cumulative position is a VT --> simulate FT unwind --> movement to the left along the VAMM)
+            fixedTokenDeltaUnbalanced = int256(
+                getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
+                    uint256(params.variableTokenBalance),
+                    params.sqrtPriceX96,
+                    devMulWad,
+                    fixedRateDeviationMinWad,
+                    params.termEndTimestampWad,
+                    Time.blockTimestampScaled(),
+                    uint256(_marginCalculatorParameters.tMaxWad),
+                    _marginCalculatorParameters.gammaWad,
+                    true
+                )
+            );
+        } else {
+            if (params.isLM) {
+                devMulWad = _marginCalculatorParameters.devMulRightUnwindLMWad;
+                fixedRateDeviationMinWad = _marginCalculatorParameters
+                    .fixedRateDeviationMinRightUnwindLMWad;
+            } else {
+                devMulWad = _marginCalculatorParameters.devMulRightUnwindIMWad;
+                fixedRateDeviationMinWad = _marginCalculatorParameters
+                    .fixedRateDeviationMinRightUnwindIMWad;
+            }
+
+            // simulate an adversarial unwind (cumulative position is an FT --> simulate a VT unwind --> movement to the right along the VAMM)
+            fixedTokenDeltaUnbalanced = -int256(
+                getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
+                    uint256(-params.variableTokenBalance),
+                    params.sqrtPriceX96,
+                    devMulWad,
+                    fixedRateDeviationMinWad,
+                    params.termEndTimestampWad,
+                    Time.blockTimestampScaled(),
+                    uint256(_marginCalculatorParameters.tMaxWad),
+                    _marginCalculatorParameters.gammaWad,
+                    false
+                )
+            );
+        }
+
+        Printer.printInt256(
+            "fixedTokenDeltaUnbalanced",
+            fixedTokenDeltaUnbalanced
+        );
+
+        int256 variableTokenDelta = -params.variableTokenBalance;
+
+        int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+            fixedTokenDeltaUnbalanced,
+            variableTokenDelta,
+            params.variableFactorWad,
+            params.termStartTimestampWad,
+            params.termEndTimestampWad
+        );
+
+        Printer.printInt256("fixedTokenDelta", fixedTokenDelta);
+
+        int256 updatedVariableTokenBalance = params.variableTokenBalance +
+            variableTokenDelta; // should be zero
+        int256 updatedFixedTokenBalance = params.fixedTokenBalance +
+            fixedTokenDelta;
+
+        Printer.printInt256(
+            "updatedFixedTokenBalance",
+            updatedFixedTokenBalance
+        );
+        Printer.printInt256(
+            "updatedVariableTokenBalance",
+            updatedVariableTokenBalance
+        );
+
+        margin = _getTraderMarginRequirement(
+            TraderMarginRequirementParams({
+                fixedTokenBalance: updatedFixedTokenBalance,
+                variableTokenBalance: updatedVariableTokenBalance,
+                termStartTimestampWad: params.termStartTimestampWad,
+                termEndTimestampWad: params.termEndTimestampWad,
+                isLM: params.isLM,
+                historicalApyWad: params.historicalApyWad,
+                sqrtPriceX96: params.sqrtPriceX96,
+                variableFactorWad: params.variableFactorWad
+            }),
+            _marginCalculatorParameters
+        );
+
+        if (
+            margin <
+            _marginCalculatorParameters.minMarginToIncentiviseLiquidators
+        ) {
+            margin = _marginCalculatorParameters
+                .minMarginToIncentiviseLiquidators;
+        }
+    }
+
+    function _getTraderMarginRequirement(
         TraderMarginRequirementParams memory params,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
@@ -368,23 +616,7 @@ library MarginCalculator {
             )
         );
 
-        // Printer.printInt256("exp1Wad", exp1Wad);
-        // Printer.printInt256("exp2Wad", exp2Wad);
-        // Printer.printEmptyLine();
-
-        // Printer.printBool(
-        //     "is variable balance positive?",
-        //     variableTokenBalanceWad > 0
-        // );
-        // Printer.printBool(
-        //     "is fixed balance positive?",
-        //     fixedTokenBalanceWad > 0
-        // );
-        // Printer.printEmptyLine();
-
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
-
-        /// @audit rethink if minimum margin requirement is necessary given we have flexibility with MC parameters
 
         if (maxCashflowDeltaToCoverPostMaturity < 0) {
             margin = PRBMathUD60x18.toUint(
@@ -393,9 +625,36 @@ library MarginCalculator {
         } else {
             margin = 0;
         }
+    }
 
-        // Printer.printUint256("margin requirement: ", margin);
-        // Printer.printEmptyLine();
+    /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
+    /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
+    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
+    function getTraderMarginRequirement(
+        TraderMarginRequirementParams memory params,
+        IMarginEngine.MarginCalculatorParameters
+            memory _marginCalculatorParameters
+    ) internal view returns (uint256 margin) {
+        margin = _getTraderMarginRequirement(
+            params,
+            _marginCalculatorParameters
+        );
+
+        Printer.printUint256("margin", margin);
+
+        uint256 minimumMarginRequirement = getMinimumMarginRequirement(
+            params,
+            _marginCalculatorParameters
+        );
+
+        Printer.printUint256(
+            "minimumMarginRequirement",
+            minimumMarginRequirement
+        );
+
+        if (margin < minimumMarginRequirement) {
+            margin = minimumMarginRequirement;
+        }
     }
 
     /// @notice Checks if a given position is liquidatable
@@ -428,10 +687,13 @@ library MarginCalculator {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal view returns (bool isLiquidatable) {
+        /// @audit require isLM to be set to true in params
         uint256 marginRequirement = getTraderMarginRequirement(
             params,
             _marginCalculatorParameters
         );
+
+        Printer.printUint256("marginRequirement", marginRequirement);
 
         if (currentMargin < int256(marginRequirement)) {
             isLiquidatable = true;
@@ -445,7 +707,7 @@ library MarginCalculator {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal view returns (uint256 margin) {
-        // @audit Check if this logic is the best way to handle position margin requirement calculation, check calc with pen and paper again
+        /// @audit check ticks lower < upper
 
         int256 scenario1LPVariableTokenBalance;
         int256 scenario1LPFixedTokenBalance;
@@ -476,8 +738,6 @@ library MarginCalculator {
                     int128(params.liquidity)
                 );
 
-            /// @audit should not use PRB math for the below calculation
-
             scenario1LPVariableTokenBalance =
                 params.variableTokenBalance +
                 amount1FromTickLowerToTickUpper;
@@ -491,15 +751,6 @@ library MarginCalculator {
                     params.termStartTimestampWad,
                     params.termEndTimestampWad
                 );
-
-            // Printer.printInt256(
-            //     "scenario1LPFixedTokenBalance",
-            //     scenario1LPFixedTokenBalance
-            // );
-            // Printer.printInt256(
-            //     "scenario1LPVariableTokenBalance",
-            //     scenario1LPVariableTokenBalance
-            // );
 
             /// @dev Scenario 2
             scenario2LPVariableTokenBalance = params.variableTokenBalance;
@@ -612,6 +863,49 @@ library MarginCalculator {
             scenario2LPFixedTokenBalance = params.fixedTokenBalance;
         }
 
+        // @audit make sure correct current prices are provided in here as per the overleaf doc
+
+        uint160 scenario1SqrtPriceX96;
+        uint160 scenario2SqrtPriceX96;
+
+        if (scenario1LPVariableTokenBalance > 0) {
+            // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
+            scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
+                params.tickUpper
+            );
+            if (scenario1SqrtPriceX96 < params.sqrtPriceX96) {
+                scenario1SqrtPriceX96 = params.sqrtPriceX96;
+            }
+        } else {
+            // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
+            scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
+                params.tickLower
+            );
+            if (scenario1SqrtPriceX96 > params.sqrtPriceX96) {
+                scenario1SqrtPriceX96 = params.sqrtPriceX96;
+            }
+        }
+
+        if (scenario2LPVariableTokenBalance > 0) {
+            // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
+            scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
+                params.tickUpper
+            );
+
+            if (scenario2SqrtPriceX96 < params.sqrtPriceX96) {
+                scenario2SqrtPriceX96 = params.sqrtPriceX96;
+            }
+        } else {
+            // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
+            scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
+                params.tickLower
+            );
+
+            if (scenario2SqrtPriceX96 > params.sqrtPriceX96) {
+                scenario2SqrtPriceX96 = params.sqrtPriceX96;
+            }
+        }
+
         uint256 scenario1MarginRequirement = getTraderMarginRequirement(
             TraderMarginRequirementParams({
                 fixedTokenBalance: scenario1LPFixedTokenBalance,
@@ -619,7 +913,9 @@ library MarginCalculator {
                 termStartTimestampWad: params.termStartTimestampWad,
                 termEndTimestampWad: params.termEndTimestampWad,
                 isLM: params.isLM,
-                historicalApyWad: params.historicalApyWad
+                historicalApyWad: params.historicalApyWad,
+                sqrtPriceX96: scenario1SqrtPriceX96,
+                variableFactorWad: params.variableFactorWad
             }),
             _marginCalculatorParameters
         );
@@ -631,7 +927,9 @@ library MarginCalculator {
                 termStartTimestampWad: params.termStartTimestampWad,
                 termEndTimestampWad: params.termEndTimestampWad,
                 isLM: params.isLM,
-                historicalApyWad: params.historicalApyWad
+                historicalApyWad: params.historicalApyWad,
+                sqrtPriceX96: scenario2SqrtPriceX96,
+                variableFactorWad: params.variableFactorWad
             }),
             _marginCalculatorParameters
         );

@@ -26,6 +26,20 @@ interface IMarginEngine is IPositionStructs {
         int256 xiLowerWad;
         /// @dev Max term possible for a Voltz IRS AMM in seconds (18 decimals)
         int256 tMaxWad;
+        /// @dev
+        uint256 devMulLeftUnwindLMWad;
+        uint256 devMulRightUnwindLMWad;
+        uint256 devMulLeftUnwindIMWad;
+        uint256 devMulRightUnwindIMWad;
+        /// @dev
+
+        uint256 fixedRateDeviationMinLeftUnwindLMWad;
+        uint256 fixedRateDeviationMinRightUnwindLMWad;
+        uint256 fixedRateDeviationMinLeftUnwindIMWad;
+        uint256 fixedRateDeviationMinRightUnwindIMWad;
+        /// @dev
+        uint256 gammaWad;
+        uint256 minMarginToIncentiviseLiquidators;
     }
 
     // Events
@@ -130,9 +144,9 @@ interface IMarginEngine is IPositionStructs {
 
     function setIsInsuranceDepleted(bool _isInsuranceDepleted) external;
 
-    function setMinMarginToIncentiviseLiquidators(
-        uint256 _minMarginToIncentiviseLiquidators
-    ) external;
+    // function setMinMarginToIncentiviseLiquidators(
+    //     uint256 _minMarginToIncentiviseLiquidators
+    // ) external;
 
     /// @notice Returns the information about a trader by the trader's key
     /// @param key The wallet address of the trader
@@ -214,7 +228,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev 4. Update fixed and variable token growth + fee growth in the position info struct for future interactions with the position
     /// @param params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _)
     function updatePositionPostVAMMInducedMintBurn(
-        IVAMM.ModifyPositionParams memory params
+        IPositionStructs.ModifyPositionParams memory params
     ) external;
 
     /// @notice Update Fixed and Variable Token Balances of a trader
@@ -229,7 +243,8 @@ interface IMarginEngine is IPositionStructs {
         address recipient,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        uint256 cumulativeFeeIncurred
+        uint256 cumulativeFeeIncurred,
+        uint160 sqrtPriceX96
     ) external;
 
     function updatePositionPostVAMMInducedSwap(
@@ -239,7 +254,8 @@ interface IMarginEngine is IPositionStructs {
         int256 fixedTokenDelta,
         int256 variableTokenDelta,
         uint256 cumulativeFeeIncurred,
-        int24 currentTick
+        int24 currentTick,
+        uint160 sqrtPriceX96
     ) external;
 
     function collectProtocol(address recipient, uint256 amount) external;
@@ -247,4 +263,7 @@ interface IMarginEngine is IPositionStructs {
     function setVAMMAddress(address _vAMMAddress) external;
 
     function setFCM(address _fcm) external;
+
+    function transferMarginToFCMTrader(address _account, uint256 marginDelta)
+        external;
 }

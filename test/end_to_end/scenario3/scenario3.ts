@@ -1,6 +1,7 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
 import { TestVAMM } from "../../../typechain/TestVAMM";
+import { expect } from "../../shared/expect";
 import {
   fixedAndVariableMathFixture,
   metaFixtureScenario1E2E,
@@ -17,6 +18,7 @@ import {
   XI_UPPER,
   XI_LOWER,
   T_MAX,
+  encodeSqrtRatioX96,
   formatRay,
   MIN_SQRT_RATIO,
   MAX_SQRT_RATIO,
@@ -34,6 +36,7 @@ import {
 import { consts } from "../../helpers/constants";
 import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
+import { ONE_DAY_IN_SECONDS } from "../../shared/constants";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -61,7 +64,7 @@ describe("VAMM", () => {
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
   before("create fixture loader", async () => {
-    const numLPWalletsRequested = 1;
+    const numLPWalletsRequested = 2;
     const numTWalletsRequested = 2;
 
     const allWallets = provider.getWallets();
@@ -110,7 +113,9 @@ describe("VAMM", () => {
     const marginEngineTestFactory = await ethers.getContractFactory(
       "TestMarginEngine"
     );
-    marginEngineTest = marginEngineTestFactory.attach(marginEngineAddress);
+    marginEngineTest = marginEngineTestFactory.attach(
+      marginEngineAddress
+    ) as TestMarginEngine;
     const vammAddress = await factory.getVAMMAddress(
       token.address,
       rateOracleTest.address,
@@ -118,7 +123,7 @@ describe("VAMM", () => {
       termEndTimestampBN
     );
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    vammTest = vammTestFactory.attach(vammAddress);
+    vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
     await marginEngineTest.setVAMMAddress(vammTest.address);
 
     // update marginEngineTest allowance
@@ -146,7 +151,7 @@ describe("VAMM", () => {
       await token.approve(allWallets[i].address, BigNumber.from(10).pow(27));
     }
 
-    await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(TICK_SPACING));
     await vammTest.setTickSpacing(TICK_SPACING);
@@ -161,9 +166,12 @@ describe("VAMM", () => {
   });
 
   describe("#Scenario3", () => {
-    let variableFactorWad: BigNumber;
-    let historicalApyWad: BigNumber;
-    let currentTick: number;
+    let variableFactorWad: BigNumber = toBn("0");
+    let historicalApyWad: BigNumber = toBn("0");
+    let lowerApyBound: BigNumber = toBn("0");
+    let upperApyBound: BigNumber = toBn("0");
+    let accumulatedMargin: BigNumber = toBn("0");
+    let currentTick: number = 0;
 
     const os = require("os");
     const fs = require("fs");
@@ -176,7 +184,34 @@ describe("VAMM", () => {
       });
     }
 
-    async function printPositionInfo(positionInfo: any) {
+    async function updatePositionMargin(
+      position: [Wallet, number, number],
+      liquidityDeltaBn: BigNumber,
+      marginBn: BigNumber
+    ) {
+      await marginEngineTest.updatePositionMargin(
+        {
+          owner: position[0].address,
+          tickLower: position[1],
+          tickUpper: position[2],
+          liquidityDelta: liquidityDeltaBn,
+        },
+        marginBn
+      );
+
+      accumulatedMargin = accumulatedMargin.add(marginBn);
+    }
+
+    async function updateTraderMargin(trader: Wallet, marginBn: BigNumber) {
+      await marginEngineTest.updateTraderMargin(trader.address, marginBn);
+
+      accumulatedMargin = accumulatedMargin.add(marginBn);
+    }
+
+    async function printPositionInfo(
+      positionInfo: any,
+      accumulator: { value: BigNumber }
+    ) {
       console.log(
         "                        liquidity: ",
         utils.formatEther(positionInfo[0])
@@ -213,6 +248,8 @@ describe("VAMM", () => {
         positionInfo[7].toString()
       );
 
+      accumulator.value = accumulator.value.add(positionInfo[1]);
+
       const settlementCashflow =
         await testFixedAndVariableMath.calculateSettlementCashflow(
           positionInfo[4],
@@ -221,6 +258,14 @@ describe("VAMM", () => {
           termEndTimestampBN,
           variableFactorWad
         );
+
+      accumulator.value = accumulator.value.add(settlementCashflow);
+
+      expect(
+        positionInfo[1].add(settlementCashflow),
+        "margin + settlement cashflow should be > 0"
+      ).to.be.gte(toBn("0"));
+
       console.log(
         "             settlement cashflow: ",
         utils.formatEther(settlementCashflow)
@@ -229,11 +274,16 @@ describe("VAMM", () => {
       console.log("");
     }
 
-    async function printTraderInfo(traderInfo: any) {
+    async function printTraderInfo(
+      traderInfo: any,
+      accumulator: { value: BigNumber }
+    ) {
       console.log("              margin: ", utils.formatEther(traderInfo[0]));
       console.log("   fixedTokenBalance: ", utils.formatEther(traderInfo[1]));
       console.log("variableTokenBalance: ", utils.formatEther(traderInfo[2]));
       console.log("           isSettled: ", traderInfo[3].toString());
+
+      accumulator.value = accumulator.value.add(traderInfo[0]);
 
       const settlementCashflow =
         await testFixedAndVariableMath.calculateSettlementCashflow(
@@ -243,6 +293,13 @@ describe("VAMM", () => {
           termEndTimestampBN,
           variableFactorWad
         );
+      accumulator.value = accumulator.value.add(settlementCashflow);
+
+      expect(
+        traderInfo[0].add(settlementCashflow),
+        "margin + settlement cashflow should be > 0"
+      ).to.be.gte(toBn("0"));
+
       console.log(
         "settlement cashflow: ",
         utils.formatEther(settlementCashflow)
@@ -253,29 +310,52 @@ describe("VAMM", () => {
 
     async function printPositionsAndTradersInfo(
       positions: [Wallet, number, number][],
-      traders: Wallet[]
+      traders: Wallet[],
+      positions_to_update: number[]
     ) {
+      const accumulator = { value: toBn("0") };
+
       for (let i = 0; i < positions.length; i++) {
-        await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-          positions[i][0].address,
-          positions[i][1],
-          positions[i][2]
-        );
+        if (positions_to_update.includes(i)) {
+          await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
+            positions[i][0].address,
+            positions[i][1],
+            positions[i][2]
+          );
+        }
 
         console.log("POSITION: ", i + 1);
+        console.log("TICK LOWER", positions[i][1]);
+        console.log("TICK UPPER", positions[i][2]);
         const positionInfo = await marginEngineTest.getPosition(
           positions[i][0].address,
           positions[i][1],
           positions[i][2]
         );
-        await printPositionInfo(positionInfo);
+
+        await printPositionInfo(positionInfo, accumulator);
       }
 
       for (let i = 0; i < traders.length; i++) {
         console.log("TRADER: ", i + 1);
         const traderInfo = await marginEngineTest.traders(traders[i].address);
-        await printTraderInfo(traderInfo);
+        await printTraderInfo(traderInfo, accumulator);
       }
+
+      console.log(
+        utils.formatEther(accumulator.value),
+        utils.formatEther(accumulatedMargin)
+      );
+
+      expect(
+        accumulator.value,
+        "initial margin should be preserved"
+      ).to.be.near(accumulatedMargin);
+      console.log(
+        "ACCUMULATED SETTLEMENT CASHFLOW AND MARGIN:",
+        utils.formatEther(accumulator.value)
+      );
+      console.log("");
     }
 
     async function printReserveNormalizedIncome() {
@@ -293,14 +373,14 @@ describe("VAMM", () => {
       const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
       historicalApyWad = await marginEngineTest.getHistoricalApyReadOnly();
 
-      const upperApyBound = await testMarginCalculator.computeApyBound(
+      upperApyBound = await testMarginCalculator.computeApyBound(
         termEndTimestampBN,
         currrentTimestampWad,
         historicalApyWad,
         true,
         marginCalculatorParams
       );
-      const lowerApyBound = await testMarginCalculator.computeApyBound(
+      lowerApyBound = await testMarginCalculator.computeApyBound(
         termEndTimestampBN,
         currrentTimestampWad,
         historicalApyWad,
@@ -321,6 +401,17 @@ describe("VAMM", () => {
 
       currentTick = await vammTest.getCurrentTick();
       console.log("current tick: ", currentTick);
+
+      appendNewLine(
+        "test/end_to_end/scenario3/apybounds.txt",
+        currrentTimestampWad.sub(termStartTimestampBN).div(ONE_DAY_IN_SECONDS) +
+          " " +
+          utils.formatEther(lowerApyBound) +
+          " " +
+          utils.formatEther(historicalApyWad) +
+          " " +
+          utils.formatEther(upperApyBound)
+      );
     }
 
     // async function printAPYboundsAndPositionMargin(
@@ -354,12 +445,6 @@ describe("VAMM", () => {
     //     "position margin requirement: ",
     //     utils.formatEther(postitionMarginrRequirement)
     //   );
-
-    //   appendNewLine(
-    //     "test/end_to_end/scenario3/positionMarginRequirements.txt",
-    //     utils.formatEther(postitionMarginrRequirement)
-    //   );
-
     //   console.log("");
     // }
 
@@ -367,7 +452,6 @@ describe("VAMM", () => {
       await updateAPYbounds();
 
       const traderInfo = await marginEngineTest.traders(trader.address);
-      await printTraderInfo(traderInfo);
 
       const trader_margin_requirement_params = {
         fixedTokenBalance: traderInfo.fixedTokenBalance,
@@ -386,11 +470,6 @@ describe("VAMM", () => {
 
       console.log(
         "trader margin requirement: ",
-        utils.formatEther(traderMarginrRequirement)
-      );
-
-      appendNewLine(
-        "test/end_to_end/scenario3/traderMarginRequirements.txt",
         utils.formatEther(traderMarginrRequirement)
       );
 
@@ -420,10 +499,40 @@ describe("VAMM", () => {
         true
       );
 
-      console.log("PRICE at LOWER tick: ", decodePriceSqrt(ratioAtLowerTick));
-      console.log("PRICE at UPPER tick: ", decodePriceSqrt(ratioAtUpperTick));
-      console.log("           AMOUNT 0: ", utils.formatEther(amount0));
-      console.log("           AMOUNT 1: ", utils.formatEther(amount1));
+      console.log(
+        "PRICE at LOWER tick: ",
+        decodePriceSqrt(BigNumber.from(ratioAtLowerTick.toString()))
+      );
+      console.log(
+        "PRICE at UPPER tick: ",
+        decodePriceSqrt(BigNumber.from(ratioAtUpperTick.toString()))
+      );
+      console.log("           AMOUNT 0: ", BigNumber.from(amount0.toString()));
+      console.log("           AMOUNT 1: ", BigNumber.from(amount1.toString()));
+    }
+
+    // reserveNormalizedIncome format: x.yyyy
+    async function advanceAndUpdateApy(
+      time: BigNumber,
+      blockCount: number,
+      reserveNormalizedIncome: number
+    ) {
+      await advanceTimeAndBlock(time, blockCount);
+
+      console.log(
+        "reserveNormalizedIncome in 1e27",
+        reserveNormalizedIncome.toString().replace(".", "") + "0".repeat(23)
+      );
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        Math.floor(reserveNormalizedIncome * 10000).toString() + "0".repeat(23)
+      );
+
+      await rateOracleTest.writeOracleEntry();
+
+      await printReserveNormalizedIncome();
+
+      await updateAPYbounds();
     }
 
     async function settlePositionsAndTraders(
@@ -461,34 +570,7 @@ describe("VAMM", () => {
         "----------------------------START----------------------------"
       );
 
-      // for (let i = 0; i < 89; i++) {
-      //   printAPYboundsAndPositionMargin(positions[0], toBn("1000000"));
-
-      //   await advanceTimeAndBlock(consts.ONE_DAY.mul(1), 1);
-
-      //   const newPrice = toBn("1001000000").add(
-      //     toBn(i.toString()).mul(BigNumber.from(10).pow(5))
-      //   );
-      //   console.log("new price at", i, ":", newPrice.toString());
-      //   await aaveLendingPool.setReserveNormalizedIncome(
-      //     token.address,
-      //     newPrice
-      //   );
-
-      //   await rateOracleTest.writeOracleEntry();
-      // }
-
-      // await updateAPYbounds();
-
-      await marginEngineTest.updatePositionMargin(
-        {
-          owner: positions[0][0].address,
-          tickLower: positions[0][1],
-          tickUpper: positions[0][2],
-          liquidityDelta: 0,
-        },
-        toBn("21000")
-      );
+      await updatePositionMargin(positions[0], toBn("0"), toBn("21000"));
 
       await printAmounts(positions[0][1], positions[0][2], toBn("1000000"));
       await vammTest
@@ -500,10 +582,7 @@ describe("VAMM", () => {
           toBn("100000000")
         );
 
-      await marginEngineTest.updateTraderMargin(
-        traders[0].address,
-        toBn("1000")
-      );
+      await updateTraderMargin(traders[0], toBn("1000"));
 
       await vammTest.connect(traders[0]).swap({
         recipient: traders[0].address,
@@ -516,10 +595,7 @@ describe("VAMM", () => {
         tickUpper: 0,
       });
 
-      await marginEngineTest.updateTraderMargin(
-        traders[1].address,
-        toBn("1000")
-      );
+      await updateTraderMargin(traders[1], toBn("1000"));
 
       await vammTest.connect(traders[1]).swap({
         recipient: traders[1].address,
@@ -533,28 +609,10 @@ describe("VAMM", () => {
       });
 
       for (let i = 0; i < 89; i++) {
-        printAPYboundsAndTraderMargin(traders[0]);
-        printAPYboundsAndTraderMargin(traders[1]);
+        await printAPYboundsAndTraderMargin(traders[0]);
+        await printAPYboundsAndTraderMargin(traders[1]);
 
-        await advanceTimeAndBlock(consts.ONE_DAY.mul(1), 1);
-
-        const newPrice = toBn("1001000000").add(
-          toBn(i.toString()).mul(BigNumber.from(10).pow(5))
-        );
-        console.log("new price at", i, ":", newPrice.toString());
-        await aaveLendingPool.setReserveNormalizedIncome(
-          token.address,
-          newPrice
-        );
-
-        await printReserveNormalizedIncome();
-
-        await rateOracleTest.writeOracleEntry();
-
-        const historicalApyWad =
-          await marginEngineTest.getHistoricalApyReadOnly();
-
-        console.log("Historical APY", utils.formatEther(historicalApyWad));
+        await advanceAndUpdateApy(consts.ONE_DAY.mul(1), 1, 1.001 + i * 0.0001);
       }
 
       await updateAPYbounds();
@@ -562,16 +620,9 @@ describe("VAMM", () => {
       console.log(
         "----------------------------BEFORE SETTLEMENT----------------------------"
       );
-      await printPositionsAndTradersInfo(positions, traders);
+      await printPositionsAndTradersInfo(positions, traders, [0, 1]);
 
       await advanceTimeAndBlock(consts.ONE_DAY.mul(40), 1);
-
-      await aaveLendingPool.setReserveNormalizedIncome(
-        token.address,
-        "1009000000000000000000000000" // 10^27 * 1.0090
-      );
-
-      await printReserveNormalizedIncome();
 
       // settle positions and traders
       await settlePositionsAndTraders(positions, traders);
@@ -579,7 +630,7 @@ describe("VAMM", () => {
       console.log(
         "----------------------------FINAL----------------------------"
       );
-      await printPositionsAndTradersInfo(positions, traders);
+      await printPositionsAndTradersInfo(positions, traders, [0, 1]);
     });
   });
 });

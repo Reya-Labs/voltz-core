@@ -12,6 +12,7 @@ import "hardhat-prettier";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
+import "hardhat-deploy";
 // import "@primitivefi/hardhat-dodoc"; bring back on demand
 
 dotenv.config();
@@ -37,19 +38,29 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
+    localhost: {
+      live: false,
+      saveDeployments: false,
+    },
     hardhat: {
-      forking: {
-        url: "https://eth-mainnet.alchemyapi.io/v2/pNmKK8pTXHVggw2X4XPAOOuL9SllmxdZ",
-        blockNumber: 13270796,
-      },
-      // accounts: {
-      //   accountsBalance: "100000000000000000000000", // 100000 ETH
-      //   count: 5,
+      // forking: {
+      //   url: "https://eth-mainnet.alchemyapi.io/v2/pNmKK8pTXHVggw2X4XPAOOuL9SllmxdZ",
+      //   blockNumber: 13270796,
       // },
       allowUnlimitedContractSize: true,
     },
   },
-
+  namedAccounts: {
+    deployer: {
+      default: 0, // here this will by default take the first account as deployer
+    },
+    alice: {
+      default: 1,
+    },
+    bob: {
+      default: 2,
+    },
+  },
   paths: {
     sources: "./contracts",
     tests: "./test",

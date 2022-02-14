@@ -112,9 +112,7 @@ describe("VAMM", () => {
     const marginEngineTestFactory = await ethers.getContractFactory(
       "TestMarginEngine"
     );
-    marginEngineTest = marginEngineTestFactory.attach(
-      marginEngineAddress
-    ) as TestMarginEngine;
+    marginEngineTest = marginEngineTestFactory.attach(marginEngineAddress);
     const vammAddress = await factory.getVAMMAddress(
       token.address,
       rateOracleTest.address,
@@ -122,7 +120,7 @@ describe("VAMM", () => {
       termEndTimestampBN
     );
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
+    vammTest = vammTestFactory.attach(vammAddress);
     await marginEngineTest.setVAMMAddress(vammTest.address);
 
     // update marginEngineTest allowance
@@ -156,15 +154,15 @@ describe("VAMM", () => {
     await vammTest.setTickSpacing(TICK_SPACING);
 
     // set the fees differently in scenario 2
-    await vammTest.setFeeProtocol(0);
-    await vammTest.setFee(0);
+    await vammTest.setFeeProtocol(2); // half of the fees go towards the protocol
+    await vammTest.setFee(toBn("0.5"));
 
     ({ testFixedAndVariableMath } = await loadFixture(
       fixedAndVariableMathFixture
     ));
   });
 
-  describe("#Scenario1", () => {
+  describe("#Scenario4", () => {
     let variableFactorWad: BigNumber = toBn("0");
     let historicalApyWad: BigNumber = toBn("0");
     let lowerApyBound: BigNumber = toBn("0");
@@ -200,6 +198,8 @@ describe("VAMM", () => {
       positionInfo: any,
       accumulator: { value: BigNumber }
     ) {
+      console.log("feeGrowthInsideLastX128: ", positionInfo[6].toString());
+
       console.log(
         "                        liquidity: ",
         utils.formatEther(positionInfo[0])
@@ -330,8 +330,9 @@ describe("VAMM", () => {
         await printTraderInfo(traderInfo, accumulator);
       }
 
+      const protocolFees = await vammTest.getProtocolFees();
       expect(
-        accumulator.value,
+        accumulator.value.add(protocolFees),
         "initial margin should be preserved"
       ).to.be.near(accumulatedMargin);
       console.log(
@@ -497,7 +498,7 @@ describe("VAMM", () => {
       }
     }
 
-    it("full scenario 1", async () => {
+    it("full scenario 4", async () => {
       const positions: [Wallet, number, number][] = [
         [LPWallets[0], -TICK_SPACING, TICK_SPACING],
         [LPWallets[1], -3 * TICK_SPACING, -TICK_SPACING],
@@ -599,6 +600,8 @@ describe("VAMM", () => {
           positions[1][2],
           toBn("5000000")
         );
+
+      console.log("here?");
 
       // a week passes
 
