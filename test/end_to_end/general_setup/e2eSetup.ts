@@ -8,6 +8,8 @@ import {
   APY_UPPER_MULTIPLIER,
   BETA,
   encodeSqrtRatioX96,
+  MIN_DELTA_IM,
+  MIN_DELTA_LM,
   TICK_SPACING,
   T_MAX,
   XI_LOWER,
@@ -105,12 +107,28 @@ export const e2eScenarios: e2eParameters[] = [
     marginCalculatorParams: {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+      minDeltaLMWad: MIN_DELTA_LM,
+      minDeltaIMWad: MIN_DELTA_IM,
       sigmaSquaredWad: toBn("0.15"),
       alphaWad: ALPHA,
       betaWad: BETA,
       xiUpperWad: XI_UPPER,
       xiLowerWad: XI_LOWER,
       tMaxWad: T_MAX,
+
+      devMulLeftUnwindLMWad: toBn("0.5"),
+      devMulRightUnwindLMWad: toBn("0.5"),
+      devMulLeftUnwindIMWad: toBn("0.8"),
+      devMulRightUnwindIMWad: toBn("0.8"),
+
+      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+      gammaWad: toBn("1.0"),
+      minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
     },
     lookBackWindowAPY: consts.ONE_WEEK,
     startingPrice: encodeSqrtRatioX96(1, 1),
@@ -122,6 +140,184 @@ export const e2eScenarios: e2eParameters[] = [
       [Minter2, -3 * TICK_SPACING, -TICK_SPACING],
     ],
     traders: [Swapper1, Swapper2],
+    actions: [],
+  },
+
+  {
+    duration: consts.ONE_MONTH.mul(3),
+    numMinters: 5,
+    numSwappers: 5,
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+      apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+      minDeltaLMWad: MIN_DELTA_LM,
+      minDeltaIMWad: MIN_DELTA_IM,
+      sigmaSquaredWad: toBn("0.15"),
+      alphaWad: ALPHA,
+      betaWad: BETA,
+      xiUpperWad: XI_UPPER,
+      xiLowerWad: XI_LOWER,
+      tMaxWad: T_MAX,
+
+      devMulLeftUnwindLMWad: toBn("0.5"),
+      devMulRightUnwindLMWad: toBn("0.5"),
+      devMulLeftUnwindIMWad: toBn("0.8"),
+      devMulRightUnwindIMWad: toBn("0.8"),
+
+      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+      gammaWad: toBn("1.0"),
+      minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+    },
+    lookBackWindowAPY: consts.ONE_WEEK,
+    startingPrice: encodeSqrtRatioX96(1, 1),
+    feeProtocol: 0,
+    fee: toBn("0"),
+    tickSpacing: TICK_SPACING,
+    positions: [
+      [Minter1, -TICK_SPACING, 0],
+      [Minter2, -TICK_SPACING, 0],
+      [Minter3, -TICK_SPACING, 0],
+      [Minter4, -TICK_SPACING, 0],
+      [Minter5, -TICK_SPACING, 0],
+    ],
+    traders: [Swapper1, Swapper2, Swapper3, Swapper4, Swapper5],
+    actions: [],
+  },
+
+  {
+    duration: consts.ONE_MONTH.mul(3),
+    numMinters: 2,
+    numSwappers: 2,
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+      apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+      minDeltaLMWad: MIN_DELTA_LM,
+      minDeltaIMWad: MIN_DELTA_IM,
+      sigmaSquaredWad: toBn("0.15"),
+      alphaWad: ALPHA,
+      betaWad: BETA,
+      xiUpperWad: XI_UPPER,
+      xiLowerWad: XI_LOWER,
+      tMaxWad: T_MAX,
+
+      devMulLeftUnwindLMWad: toBn("0.5"),
+      devMulRightUnwindLMWad: toBn("0.5"),
+      devMulLeftUnwindIMWad: toBn("0.8"),
+      devMulRightUnwindIMWad: toBn("0.8"),
+
+      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+      gammaWad: toBn("1.0"),
+      minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+    },
+    lookBackWindowAPY: consts.ONE_WEEK,
+    startingPrice: encodeSqrtRatioX96(1, 1),
+    feeProtocol: 0,
+    fee: toBn("0"),
+    tickSpacing: TICK_SPACING,
+    positions: [
+      [Minter1, -TICK_SPACING * 300, -TICK_SPACING * 299],
+      [Minter2, -TICK_SPACING * 300, -TICK_SPACING * 299],
+    ],
+    traders: [Swapper1, Swapper2],
+    actions: [],
+  },
+
+  {
+    duration: consts.ONE_MONTH.mul(3),
+    numMinters: 2,
+    numSwappers: 2,
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+      apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+      minDeltaLMWad: MIN_DELTA_LM,
+      minDeltaIMWad: MIN_DELTA_IM,
+      sigmaSquaredWad: toBn("0.15"),
+      alphaWad: ALPHA,
+      betaWad: BETA,
+      xiUpperWad: XI_UPPER,
+      xiLowerWad: XI_LOWER,
+      tMaxWad: T_MAX,
+
+      devMulLeftUnwindLMWad: toBn("0.5"),
+      devMulRightUnwindLMWad: toBn("0.5"),
+      devMulLeftUnwindIMWad: toBn("0.8"),
+      devMulRightUnwindIMWad: toBn("0.8"),
+
+      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+      gammaWad: toBn("1.0"),
+      minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+    },
+    lookBackWindowAPY: consts.ONE_WEEK,
+    startingPrice: encodeSqrtRatioX96(1, 1),
+    feeProtocol: 0,
+    fee: toBn("0.5"),
+    tickSpacing: TICK_SPACING,
+    positions: [
+      [Minter1, -TICK_SPACING, TICK_SPACING],
+      [Minter2, -3 * TICK_SPACING, -TICK_SPACING],
+    ],
+    traders: [Swapper1, Swapper2],
+    actions: [],
+  },
+
+  {
+    duration: consts.ONE_MONTH.mul(3),
+    numMinters: 3,
+    numSwappers: 3,
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+      apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+      minDeltaLMWad: MIN_DELTA_LM,
+      minDeltaIMWad: MIN_DELTA_IM,
+      sigmaSquaredWad: toBn("0.15"),
+      alphaWad: ALPHA,
+      betaWad: BETA,
+      xiUpperWad: XI_UPPER,
+      xiLowerWad: XI_LOWER,
+      tMaxWad: T_MAX,
+
+      devMulLeftUnwindLMWad: toBn("0.5"),
+      devMulRightUnwindLMWad: toBn("0.5"),
+      devMulLeftUnwindIMWad: toBn("0.8"),
+      devMulRightUnwindIMWad: toBn("0.8"),
+
+      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+      gammaWad: toBn("1.0"),
+      minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+    },
+    lookBackWindowAPY: consts.ONE_WEEK,
+    startingPrice: encodeSqrtRatioX96(1, 1),
+    feeProtocol: 0,
+    fee: toBn("0"),
+    tickSpacing: TICK_SPACING,
+    positions: [
+      [Minter1, -TICK_SPACING, TICK_SPACING],
+      [Minter2, -3 * TICK_SPACING, -TICK_SPACING],
+      [Minter1, -3 * TICK_SPACING, TICK_SPACING],
+      [Minter1, 0, TICK_SPACING],
+      [Minter3, -3 * TICK_SPACING, TICK_SPACING],
+    ],
+    traders: [Swapper1, Swapper2, Swapper3],
     actions: [],
   },
 ];
