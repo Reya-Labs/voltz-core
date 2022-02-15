@@ -398,7 +398,6 @@ library MarginCalculator {
         );
 
         // calculate cfFixedRate
-
         simulatedUnwindLocalVars.fixedRateCFWad;
 
         if (isFTUnwind) {
