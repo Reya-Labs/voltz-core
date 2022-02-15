@@ -26,126 +26,96 @@ contract TestMarginEngine is MarginEngine {
             tickUpper
         );
     }
+
+    function getUnderlyingToken()
+        external
+        pure
+        returns (address underlyingToken)
+    {
+        return underlyingToken;
+    }
+
+    function checkPositionMarginCanBeUpdatedTest(
+        int256 updatedMarginWouldBe,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) public {
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+
+        return
+            checkPositionMarginCanBeUpdated(
+                position,
+                updatedMarginWouldBe,
+                tickLower,
+                tickUpper
+            );
+    }
+
+    function checkPositionMarginAboveRequirementTest(
+        int256 updatedMarginWouldBe,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) public {
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        
+        return
+            checkPositionMarginAboveRequirement(
+                position,
+                updatedMarginWouldBe,
+                tickLower,
+                tickUpper
+            );
+    }
+
+    function setPosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 _liquidity,
+        int256 margin,
+        int256 fixedTokenGrowthInsideLastX128,
+        int256 variableTokenGrowthInsideLastX128,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 feeGrowthInsideLastX128,
+        bool isSettled
+    ) external {
+        positions[
+            keccak256(abi.encodePacked(owner, tickLower, tickUpper))
+        ] = Position.Info({
+            _liquidity: _liquidity,
+            margin: margin,
+            fixedTokenGrowthInsideLastX128: fixedTokenGrowthInsideLastX128,
+            variableTokenGrowthInsideLastX128: variableTokenGrowthInsideLastX128,
+            fixedTokenBalance: fixedTokenBalance,
+            variableTokenBalance: variableTokenBalance,
+            feeGrowthInsideLastX128: feeGrowthInsideLastX128,
+            isSettled: isSettled
+        });
+    }
+
+    function unwindPositionTest(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) public {
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        unwindPosition(position, owner, tickLower, tickUpper);
+    }
+
+    function getCachedHistoricalApy() external view returns (uint256) {
+        return cachedHistoricalApy;
+    }
+
+    function getPositionMarginRequirementTest(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        bool isLM
+    ) external returns (uint256) {
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        return getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
+    }
 }
-
-// contract TestMarginEngine is MarginEngine {
-//     using Position for mapping(bytes32 => Position.Info);
-//     using Position for Position.Info;
-
-//     function getUnderlyingToken()
-//         external
-//         pure
-//         returns (address underlyingToken)
-//     {
-//         return underlyingToken;
-//     }
-
-//     function checkPositionMarginCanBeUpdatedTest(
-//         address owner,
-//         int24 tickLower,
-//         int24 tickUpper,
-//         int128 liquidityDelta,
-//         int256 updatedMarginWouldBe,
-//         bool isPositionBurned,
-//         bool isPositionSettled,
-//         uint128 positionLiquidity,
-//         int256 positionFixedTokenBalance,
-//         int256 positionVariableTokenBalance,
-//         uint256 variableFactor
-//     ) public {
-//         return
-//             checkPositionMarginCanBeUpdated(
-//                 ModifyPositionParams({
-//                     owner: owner,
-//                     tickLower: tickLower,
-//                     tickUpper: tickUpper,
-//                     liquidityDelta: liquidityDelta
-//                 }),
-//                 updatedMarginWouldBe,
-//                 isPositionBurned,
-//                 isPositionSettled,
-//                 positionLiquidity,
-//                 positionFixedTokenBalance,
-//                 positionVariableTokenBalance,
-//                 variableFactor
-//             );
-//     }
-
-//     function checkPositionMarginAboveRequirementTest(
-//         address owner,
-//         int24 tickLower,
-//         int24 tickUpper,
-//         int128 liquidityDelta,
-//         int256 updatedMarginWouldBe,
-//         uint128 positionLiquidity,
-//         int256 positionFixedTokenBalance,
-//         int256 positionVariableTokenBalance,
-//         uint256 variableFactor
-//     ) public {
-//         return
-//             checkPositionMarginAboveRequirement(
-//                 ModifyPositionParams({
-//                     owner: owner,
-//                     tickLower: tickLower,
-//                     tickUpper: tickUpper,
-//                     liquidityDelta: liquidityDelta
-//                 }),
-//                 updatedMarginWouldBe,
-//                 positionLiquidity,
-//                 positionFixedTokenBalance,
-//                 positionVariableTokenBalance,
-//                 variableFactor
-//             );
-//     }
-
-//     function updatePositionTokenBalancesAndAccountForFeesTest(
-//         address owner,
-//         int24 tickLower,
-//         int24 tickUpper
-//     ) external {
-//         updatePositionTokenBalancesAndAccountForFees(
-//             owner,
-//             tickLower,
-//             tickUpper
-//         );
-//     }
-
-//     function setPosition(
-//         address owner,
-//         int24 tickLower,
-//         int24 tickUpper,
-//         uint128 _liquidity,
-//         int256 margin,
-//         int256 fixedTokenGrowthInsideLastX128,
-//         int256 variableTokenGrowthInsideLastX128,
-//         int256 fixedTokenBalance,
-//         int256 variableTokenBalance,
-//         uint256 feeGrowthInsideLastX128,
-//         bool isSettled
-//     ) external {
-//         positions[
-//             keccak256(abi.encodePacked(owner, tickLower, tickUpper))
-//         ] = Position.Info({
-//             _liquidity: _liquidity,
-//             margin: margin,
-//             fixedTokenGrowthInsideLastX128: fixedTokenGrowthInsideLastX128,
-//             variableTokenGrowthInsideLastX128: variableTokenGrowthInsideLastX128,
-//             fixedTokenBalance: fixedTokenBalance,
-//             variableTokenBalance: variableTokenBalance,
-//             feeGrowthInsideLastX128: feeGrowthInsideLastX128,
-//             isSettled: isSettled
-//         });
-//     }
-
-//     function unwindPositionTest(
-//         address owner,
-//         int24 tickLower,
-//         int24 tickUpper
-//     ) public {
-//         unwindPosition(owner, tickLower, tickUpper);
-//     }
-
-//     function getCachedHistoricalApy() external view returns (uint256) {
-//         return cachedHistoricalApy;
-//     }
-// }

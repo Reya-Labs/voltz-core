@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "./IVAMM.sol";
 import "./IPositionStructs.sol";
 import "../core_libraries/Position.sol";
-import "../core_libraries/Trader.sol";
 import "./rate_oracles/IRateOracle.sol";
 import "./IFCM.sol";
 
@@ -106,7 +105,7 @@ interface IMarginEngine is IPositionStructs {
     event PositionTokenBalancesAndAccountForFeesUpdate(
         uint256 blockTimestampScaled,
         address source,
-        address owner,
+        Position.Info info,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         uint256 feeDelta
@@ -120,12 +119,6 @@ interface IMarginEngine is IPositionStructs {
         uint256 blockTimestampScaled,
         address source,
         Position.Info info
-    );
-    event MarginViaDeltaUpdate(
-        uint256 blockTimestampScaled,
-        address source,
-        Position.Info info,
-        int256 margin
     );
     event BalancesViaDeltasUpdate(
         uint256 blockTimestampScaled,
@@ -155,7 +148,7 @@ interface IMarginEngine is IPositionStructs {
     event MarginViaDeltaUpdate(
         uint256 blockTimestampScaled,
         address source,
-        Trader.Info info,
+        Position.Info info,
         int256 margin
     );
 
