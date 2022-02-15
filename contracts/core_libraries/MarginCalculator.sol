@@ -333,14 +333,6 @@ library MarginCalculator {
         );
 
         // calculate cfFixedRate
-
-        console.log(
-            "fixedRateStartWad",
-            simulatedUnwindLocalVars.fixedRateStartWad
-        );
-        console.log("d", simulatedUnwindLocalVars.dWad);
-        console.log("D", simulatedUnwindLocalVars.upperDWad);
-
         simulatedUnwindLocalVars.fixedRateCFWad;
 
         if (isFTUnwind) {
@@ -359,6 +351,8 @@ library MarginCalculator {
                 simulatedUnwindLocalVars.fixedRateStartWad +
                 simulatedUnwindLocalVars.dWad;
         }
+
+        // calculate fixedTokenDeltaUnbalancedWad
 
         simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad = PRBMathUD60x18
             .mul(

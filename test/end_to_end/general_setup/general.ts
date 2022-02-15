@@ -130,32 +130,18 @@ export class ScenarioRunner {
     );
     fs.appendFileSync(this.outputFile, "\n");
 
-    const amountsBelow = await this.getAmounts("below");
-    const amountsAbove = await this.getAmounts("above");
+    const vtBelow = await this.getVT("below");
+    const vtAbove = await this.getVT("above");
 
     fs.appendFileSync(
       this.outputFile,
-      "amount of available    fixed tokens: " +
-        amountsAbove[0].toString() +
-        " (" +
-        "\u2191" +
-        ")" +
-        " ; " +
-        amountsBelow[0].toString() +
-        " (" +
-        "\u2193" +
-        ")" +
-        "\n"
-    );
-    fs.appendFileSync(
-      this.outputFile,
       "amount of available variable tokens: " +
-        amountsAbove[1].toString() +
+        vtAbove.toString() +
         " (" +
         "\u2191" +
         ")" +
         " ; " +
-        amountsBelow[1].toString() +
+        vtBelow.toString() +
         " (" +
         "\u2193" +
         ")" +
@@ -418,7 +404,9 @@ export class ScenarioRunner {
       "TestMarginEngine"
     );
 
-    this.marginEngineTest = marginEngineTestFactory.attach(marginEngineAddress);
+    this.marginEngineTest = marginEngineTestFactory.attach(
+      marginEngineAddress
+    ) as TestMarginEngine;
 
     // deploy VAMM test
     const vammAddress = await this.factory.getVAMMAddress(
@@ -429,7 +417,7 @@ export class ScenarioRunner {
     );
 
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    this.vammTest = vammTestFactory.attach(vammAddress);
+    this.vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
 
     // deploy Fixed and Variable Math test
     ({ testFixedAndVariableMath: this.testFixedAndVariableMath } =
@@ -481,7 +469,7 @@ export class ScenarioRunner {
     this.minters = [];
     for (let i = 0; i < this.params.numMinters; i++) {
       const MinterFactory = await ethers.getContractFactory("Minter");
-      const minter = await MinterFactory.deploy();
+      const minter = (await MinterFactory.deploy()) as Minter;
       this.minters.push(minter);
       await this.mintAndApprove(minter.address);
     }
@@ -489,7 +477,7 @@ export class ScenarioRunner {
     this.swappers = [];
     for (let i = 0; i < this.params.numSwappers; i++) {
       const SwapperFactory = await ethers.getContractFactory("Swapper");
-      const swapper = await SwapperFactory.deploy();
+      const swapper = (await SwapperFactory.deploy()) as Swapper;
       this.swappers.push(swapper);
       await this.mintAndApprove(swapper.address);
     }
@@ -625,7 +613,8 @@ export class ScenarioRunner {
   async updateAPYbounds() {
     const currentTimestamp: number = await getCurrentTimestamp(provider);
     const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
-    this.historicalApyWad = await this.marginEngineTest.getHistoricalApy();
+    this.historicalApyWad =
+      await this.marginEngineTest.getHistoricalApyReadOnly();
 
     this.upperApyBound = await this.testMarginCalculator.computeApyBound(
       this.termEndTimestampBN,
@@ -666,7 +655,7 @@ export class ScenarioRunner {
     await this.updateAPYbounds();
   }
 
-  async printAPYboundsAndPositionMargin(
+  async getAPYboundsAndPositionMargin(
     position: [string, number, number],
     liquidity: BigNumber
   ) {
@@ -678,6 +667,10 @@ export class ScenarioRunner {
       position[0],
       position[1],
       position[2]
+    );
+
+    const currentSqrtPrice = await this.testTickMath.getSqrtRatioAtTick(
+      this.currentTick
     );
 
     const position_margin_requirement_params = {
@@ -693,6 +686,7 @@ export class ScenarioRunner {
       variableTokenBalance: positionInfo.variableTokenBalance,
       variableFactorWad: this.variableFactorWad,
       historicalApyWad: this.historicalApyWad,
+      sqrtPriceX96: currentSqrtPrice,
     };
 
     const positionMarginRequirement =
@@ -710,11 +704,14 @@ export class ScenarioRunner {
     return positionMarginRequirement;
   }
 
-  async printAPYboundsAndTraderMargin(trader: Wallet) {
+  async getAPYboundsAndTraderMargin(trader: Wallet) {
     await this.updateAPYbounds();
 
     const traderInfo = await this.marginEngineTest.traders(trader.address);
 
+    const currentSqrtPrice = await this.testTickMath.getSqrtRatioAtTick(
+      this.currentTick
+    );
     const trader_margin_requirement_params = {
       fixedTokenBalance: traderInfo.fixedTokenBalance,
       variableTokenBalance: traderInfo.variableTokenBalance,
@@ -722,6 +719,8 @@ export class ScenarioRunner {
       termEndTimestampWad: this.termEndTimestampBN,
       isLM: false,
       historicalApyWad: this.historicalApyWad,
+      sqrtPriceX96: currentSqrtPrice,
+      variableFactorWad: this.variableFactorWad,
     };
 
     const traderMarginRequirement =
@@ -740,7 +739,7 @@ export class ScenarioRunner {
     return traderMarginRequirement;
   }
 
-  async getAmounts(towards: string) {
+  async getVT(towards: string) {
     await this.updateCurrentTick();
 
     let totalAmount0 = toBn("0");
@@ -756,8 +755,10 @@ export class ScenarioRunner {
         lowerTick = Math.max(this.currentTick, p[1]);
       } else {
         console.error("direction should be either below or above");
-        return [0, 0];
+        return 0;
       }
+
+      if (lowerTick >= upperTick) continue;
 
       const liquidity = (
         await this.marginEngineTest.getPosition(p[0], p[1], p[2])
@@ -786,10 +787,7 @@ export class ScenarioRunner {
       totalAmount1 = totalAmount1.add(amount1);
     }
 
-    return [
-      parseFloat(utils.formatEther(totalAmount0)),
-      parseFloat(utils.formatEther(totalAmount1)),
-    ];
+    return parseFloat(utils.formatEther(totalAmount1));
   }
 
   async settlePositionsAndTraders(

@@ -40,13 +40,13 @@
 
 //     it("checkOwnerPrivilege", async () => {
 //       // create new AMM
-//       const tx = await factory.createAMM(
-//         token.address,
-//         RATE_ORACLE_ID,
-//         termEndTimestampBN
-//       );
-//       const receipt = await tx.wait();
-//       const ammAddress = receipt.events?.[0].args?.ammAddress as string;
+//   const tx = await factory.createAMM(
+//     token.address,
+//     RATE_ORACLE_ID,
+//     termEndTimestampBN
+//   );
+//   const receipt = await tx.wait();
+//   const ammAddress = receipt.events?.[0].args?.ammAddress as string;
 
 //       // TODO: create new VAMM
 

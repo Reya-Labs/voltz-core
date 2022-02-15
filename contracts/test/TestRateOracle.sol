@@ -63,6 +63,13 @@ contract TestRateOracle is AaveRateOracle {
         return latestObservedRateValue;
     }
 
+    function testGrow(uint16 _rateCardinalityNext) external {
+        oracleVars.rateCardinalityNext = observations.grow(
+            oracleVars.rateCardinalityNext,
+            _rateCardinalityNext
+        );
+    }
+
     function testGetRateFromTo(uint256 from, uint256 to)
         external
         returns (uint256)

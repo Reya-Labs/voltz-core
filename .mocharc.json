@@ -1,4 +1,4 @@
 {
   "require": "ts-node/register/files",
-  "timeout": 60000
+  "timeout": 240000
 }

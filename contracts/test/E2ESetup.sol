@@ -250,7 +250,7 @@ contract E2ESetup {
         Printer.printEmptyLine();
 
         // ideally, this should be 0
-        uint256 approximation = 100;
+        uint256 approximation = 100000;
         if (abs(totalFixedTokens) > approximation) {
             return false;
         }

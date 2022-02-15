@@ -106,6 +106,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       revert NotEnoughFunds(protocolFeesCollected, protocolFees);
     }
     protocolFees = protocolFees - protocolFeesCollected;
+    emit ProtocolFeesUpdate(Time.blockTimestampScaled(), marginEngineAddress, protocolFeesCollected, protocolFees);
   }
 
   /// @dev not locked because it initializes unlocked
@@ -120,24 +121,27 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     unlocked = true;
 
-    emit Initialize(sqrtPriceX96, tick);
+    emit Initialize(Time.blockTimestampScaled(), marginEngineAddress, sqrtPriceX96, tick);
   }
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
     vammVars.feeProtocol = feeProtocol;
-    // emit set fee protocol
+    emit SetFeeProtocol(Time.blockTimestampScaled(), marginEngineAddress, feeProtocol);
   }
 
   function setTickSpacing(int24 _tickSpacing) external override onlyOwner lock {
     tickSpacing = _tickSpacing;
+    emit SetTickSpacing(Time.blockTimestampScaled(), marginEngineAddress, tickSpacing);
   }
 
   function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external override onlyOwner lock {
     maxLiquidityPerTick = _maxLiquidityPerTick;
+    emit MaxLiquidityPerTickSet(Time.blockTimestampScaled(), marginEngineAddress, maxLiquidityPerTick);
   }
 
   function setFee(uint256 _feeWad) external override onlyOwner lock {
     feeWad = _feeWad;
+    emit FeeSet(Time.blockTimestampScaled(), marginEngineAddress, feeWad);
   }
 
   function burn(
@@ -164,6 +168,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
+    emit Burn(Time.blockTimestampScaled(), marginEngineAddress, msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
   function flipTicks(ModifyPositionParams memory params)
@@ -180,6 +185,18 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       false,
       maxLiquidityPerTick
     );
+    emit TickUpdate(
+        Time.blockTimestampScaled(),
+        marginEngineAddress,
+        params.tickLower,
+        vammVars.tick,
+        params.liquidityDelta,
+        fixedTokenGrowthGlobalX128,
+        variableTokenGrowthGlobalX128,
+        feeGrowthGlobalX128,
+        false,
+        maxLiquidityPerTick
+    );
     flippedUpper = ticks.update(
       params.tickUpper,
       vammVars.tick,
@@ -190,16 +207,30 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       true,
       maxLiquidityPerTick
     );
+    emit TickUpdate(
+        Time.blockTimestampScaled(),
+        marginEngineAddress,
+        params.tickUpper,
+        vammVars.tick,
+        params.liquidityDelta,
+        fixedTokenGrowthGlobalX128,
+        variableTokenGrowthGlobalX128,
+        feeGrowthGlobalX128,
+        true,
+        maxLiquidityPerTick
+    );
 
     if (flippedLower) {
       tickBitmap.flipTick(params.tickLower, tickSpacing);
+      emit FlipTick(Time.blockTimestampScaled(), marginEngineAddress, params.tickLower, tickSpacing);
     }
     if (flippedUpper) {
       tickBitmap.flipTick(params.tickUpper, tickSpacing);
+      emit FlipTick(Time.blockTimestampScaled(), marginEngineAddress, params.tickUpper, tickSpacing);
     }
   }
-  
-  
+
+
   function updatePosition(ModifyPositionParams memory params) private {
 
     /// @dev give a more descriptive name
@@ -210,7 +241,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     bool flippedLower;
     bool flippedUpper;
-    
+
     /// @dev update the ticks if necessary
     if (params.liquidityDelta != 0) {
       (flippedLower, flippedUpper) = flipTicks(params);
@@ -222,9 +253,11 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     if (params.liquidityDelta < 0) {
       if (flippedLower) {
         ticks.clear(params.tickLower);
+        emit ClearTick(Time.blockTimestampScaled(), marginEngineAddress, params.tickLower);
       }
       if (flippedUpper) {
         ticks.clear(params.tickUpper);
+        emit ClearTick(Time.blockTimestampScaled(), marginEngineAddress, params.tickLower);
       }
     }
 
@@ -244,7 +277,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       }
     }
   }
-  
+
   /// @inheritdoc IVAMM
   function mint(
     address recipient,
@@ -252,9 +285,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     int24 tickUpper,
     uint128 amount
   ) external override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock {
-    
+
     /// might be helpful to have a higher level peripheral function for minting a given amount given a certain amount of notional an LP wants to support
-    
+
     if (amount <= 0) {
       revert LiquidityDeltaMustBePositiveInMint(amount);
     }
@@ -270,7 +303,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    emit Mint(msg.sender, recipient, tickLower, tickUpper, amount);
+    emit Mint(Time.blockTimestampScaled(), address(this), msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
 
@@ -283,15 +316,15 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred)
   {
     /// might be helpful to have a higher level peripheral function (initiateIRS) which then calls swap
-    
+
     VAMMVars memory vammVarsStart = vammVars;
 
     checksBeforeSwap(params, vammVarsStart);
 
     if (params.isFT) {
-      require(params.amountSpecified > 0, "AS>0");
+      require(params.amountSpecified > 0, "amount specified needs to be positive for an FT");
     } else {
-      require(params.amountSpecified < 0, "AS<0");
+      require(params.amountSpecified < 0, "amount specified needs to be negative for an VT");
     }
 
     if (params.isExternal) {
@@ -318,7 +351,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     /// @dev amountSpecified = The amount of the swap, which implicitly configures the swap as exact input (positive), or exact output (negative)
     /// @dev Both FTs and VTs care about the notional of their IRS contract, the notional is the absolute amount of variableTokens traded
     /// @dev Hence, if an FT wishes to trade x notional, amountSpecified needs to be an exact input (in terms of the variableTokens they provide), hence amountSpecified needs to be positive
-    /// @dev Also, if a VT wishes to trade x notional, amountSpecified needs to be an exact output (in terms of the variableTokens they receive), hence amountSpecified needs to be negative 
+    /// @dev Also, if a VT wishes to trade x notional, amountSpecified needs to be an exact output (in terms of the variableTokens they receive), hence amountSpecified needs to be negative
     /// @dev amountCalculated is the amount already swapped out/in of the output (variable taker) / input (fixed taker) asset
     /// @dev amountSpecified should always be in terms of the variable tokens
 
@@ -395,7 +428,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         /// prb math is not used in here (following v3 logic)
         state.amountSpecifiedRemaining -= (step.amountIn).toInt256(); // this value is positive
         state.amountCalculated -= step.amountOut.toInt256(); // this value is negative
-        
+
         // LP is a Variable Taker
         step.variableTokenDelta = (step.amountIn).toInt256();
         step.fixedTokenDeltaUnbalanced = -step.amountOut.toInt256();
@@ -412,7 +445,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
       // update cumulative fee incurred while initiating an interest rate swap
       state.cumulativeFeeIncurred = state.cumulativeFeeIncurred + step.feeAmount;
-      
+
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
         step.feeProtocolDelta = step.feeAmount / cache.feeProtocol;
@@ -421,14 +454,14 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       }
 
       // Printer.printInt256("before update state.variableTokenGrowthGlobalX128", state.variableTokenGrowthGlobalX128);
-      
+
       // update global fee tracker
       if (state.liquidity > 0) {
         uint256 variableFactorWad = rateOracle.variableFactor(
           marginEngine.termStartTimestampWad(),
           marginEngine.termEndTimestampWad()
         );
-        
+
         (
           state.feeGrowthGlobalX128,
           state.variableTokenGrowthGlobalX128,
@@ -454,6 +487,14 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         // if the tick is initialized, run the tick transition
         if (step.initialized) {
           int128 liquidityNet = ticks.cross(
+            step.tickNext,
+            state.fixedTokenGrowthGlobalX128,
+            state.variableTokenGrowthGlobalX128,
+            state.feeGrowthGlobalX128
+          );
+          emit CrossTick(
+            Time.blockTimestampScaled(),
+            marginEngineAddress,
             step.tickNext,
             state.fixedTokenGrowthGlobalX128,
             state.variableTokenGrowthGlobalX128,
@@ -489,11 +530,11 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     // update liquidity if it changed
     if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;
-    
+
     feeGrowthGlobalX128 = state.feeGrowthGlobalX128;
     variableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128;
     fixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128;
-    
+
     _cumulativeFeeIncurred = state.cumulativeFeeIncurred;
     _fixedTokenDelta = state.fixedTokenDeltaCumulative;
     _variableTokenDelta = state.variableTokenDeltaCumulative;
@@ -510,6 +551,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     /// more values in the swap event
     
     emit Swap(
+      Time.blockTimestampScaled(),
+      marginEngineAddress,
       msg.sender,
       params.recipient,
       state.sqrtPriceX96,
@@ -554,7 +597,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       tickUpper,
       vammVars.tick,
       feeGrowthGlobalX128
-    );  
+    );
 
   }
 
@@ -562,7 +605,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       SwapParams memory params,
       VAMMVars memory vammVarsStart
   ) internal view {
-      
+
       if (params.amountSpecified == 0) {
           revert IRSNotionalAmountSpecifiedMustBeNonZero(
               params.amountSpecified
@@ -578,10 +621,10 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       /// @dev if a trader is a VT, they consume variable in return for fixed
       /// @dev Movement from left to right along the VAMM, hence the sqrtPriceLimitX96 needs to be lower than the current sqrtPriceX96, but higher than the MIN_SQRT_RATIO
 
-      // Printer.printUint160("min price:     ", TickMath.MIN_SQRT_RATIO);
-      // Printer.printUint160("limit price:   ", params.sqrtPriceLimitX96);
-      // Printer.printUint160("current price: ", vammVarsStart.sqrtPriceX96);
-      // Printer.printEmptyLine();
+      Printer.printBool("isFT      ", params.isFT);
+      Printer.printUint160("limit price    ", params.sqrtPriceLimitX96);
+      Printer.printUint160("current price  ", vammVarsStart.sqrtPriceX96);
+      Printer.printEmptyLine();
 
       require(
           params.isFT
@@ -619,7 +662,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             /// @dev if the trader is a fixed taker then the variable token growth global should be incremented (since LPs are receiving variable tokens)
             /// @dev if the trader is a fixed taker then the fixed token growth global should decline (since LPs are providing fixed tokens)
             /// @dev if the trader is a fixed taker amountOut is in terms of variable tokens (it is a positive value)
-            
+
             stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
 
             /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
@@ -642,10 +685,10 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             /// @dev if a trader is a variable taker, the variable token growth should decline (since the LPs are providing variable tokens)
             /// @dev if a trader is a variable taker, the fixed token growth should increase (since the LPs are receiving fixed tokens)
             /// @dev if a trader is a variable taker amountIn is in terms of variable tokens
-          
-            
+
+
             stateVariableTokenGrowthGlobalX128= state.variableTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
-            
+
             /// @dev fixed token delta should be positive (for LPs)
             /// @dev in this case amountIn is in terms of variable tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of fixedToken, hence the value passed needs to be positive --> int256(step.amountOut),

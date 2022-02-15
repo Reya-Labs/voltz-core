@@ -6,6 +6,7 @@ import { TestRateOracle } from "../../typechain/TestRateOracle";
 import { TestAaveFCM } from "../../typechain/TestAaveFCM";
 
 import {
+  E2ESetup,
   ERC20Mock,
   FixedAndVariableMathTest,
   MockAaveLendingPool,
@@ -122,7 +123,7 @@ export async function fixedAndVariableMathFixture() {
 export async function E2ESetupFixture() {
   const E2ESetupFactory = await ethers.getContractFactory("E2ESetup");
 
-  const e2eSetup = await E2ESetupFactory.deploy();
+  const e2eSetup = (await E2ESetupFactory.deploy()) as E2ESetup;
 
   return { e2eSetup };
 }
@@ -389,7 +390,10 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
       "1000000000000000000000000000" // 10^27
     );
 
+<<<<<<< HEAD
     // await rateOracleTest.testGrow(100);
+=======
+>>>>>>> 77b34ffca3df3d178e275dd9f4411cd828cb2353
     await rateOracleTest.increaseObservarionCardinalityNext(100);
     // write oracle entry
     await rateOracleTest.writeOracleEntry();
