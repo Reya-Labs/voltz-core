@@ -40,6 +40,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   IRateOracle internal rateOracle;
 
+  IFactory public override factory;
+
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
   modifier lock() {
@@ -69,6 +71,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     require(_marginEngineAddress != address(0), "ME must be set");
     marginEngine = IMarginEngine(_marginEngineAddress);
     rateOracle = marginEngine.rateOracle();
+    factory = IFactory(msg.sender);
     __Ownable_init();
     __Pausable_init();
   }
@@ -156,7 +159,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       revert LiquidityDeltaMustBePositiveInBurn(amount);
     }
 
-    require((msg.sender==recipient) || (msg.sender == address(marginEngine)), "MS or ME");
+    require((msg.sender==recipient) || factory.isApproved(recipient, msg.sender) || (msg.sender == address(marginEngine)), "MS or ME");
 
     updatePosition(
       ModifyPositionParams({
@@ -295,7 +298,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       revert LiquidityDeltaMustBePositiveInMint(amount);
     }
 
-    require(msg.sender==recipient, "only msg.sender can mint");
+    require(msg.sender==recipient || factory.isApproved(recipient, msg.sender), "only msg.sender can mint");
 
     updatePosition(
       ModifyPositionParams({
@@ -337,7 +340,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       require(msg.sender==address(marginEngine) || msg.sender==address(marginEngine.fcm()), "only ME or FCM");
       Tick.checkTicks(params.tickLower, params.tickUpper);
     } else {
-      require(msg.sender==params.recipient, "only sender");
+      require(msg.sender==params.recipient || factory.isApproved(params.recipient, msg.sender), "only sender or approved integration");
       Tick.checkTicks(params.tickLower, params.tickUpper);
     }
 

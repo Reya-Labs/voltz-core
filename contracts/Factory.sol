@@ -26,8 +26,8 @@ contract Factory is IFactory, Ownable {
     _approvals[msg.sender][intAddress] = allowIntegration;
   }
   
-  function isApproved(address intAddress) external override view returns (bool) {
-    return _approvals[msg.sender][intAddress];
+  function isApproved(address owner, address intAddress) external override view returns (bool) {
+    return _approvals[owner][intAddress];
   }
 
   constructor(address _masterMarginEngine, address _masterVAMM) {

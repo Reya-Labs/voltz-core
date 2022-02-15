@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 import "./IMarginEngine.sol";
+import "./IFactory.sol";
 import "./IPositionStructs.sol";
 
 interface IVAMM is IPositionStructs {
@@ -291,6 +292,8 @@ interface IVAMM is IPositionStructs {
     function protocolFees() external view returns (uint256);
 
     function marginEngine() external view returns (IMarginEngine);
+
+    function factory() external view returns (IFactory);
 
     /// @notice Function that sets the feeProtocol of the vamm
     function setFeeProtocol(uint8 feeProtocol) external;

@@ -280,7 +280,7 @@ library MarginCalculator {
         uint256 tMaxWad,
         uint256 gammaWad,
         bool isFTUnwind
-    ) internal view returns (uint256 fixedTokenDeltaUnbalanced) {
+    ) internal pure returns (uint256 fixedTokenDeltaUnbalanced) {
         SimulatedUnwindLocalVars memory simulatedUnwindLocalVars;
 
         // todo: require checks

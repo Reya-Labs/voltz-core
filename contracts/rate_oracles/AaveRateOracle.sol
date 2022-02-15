@@ -57,14 +57,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             revert AavePoolGetReserveNormalizedIncomeReturnedZero();
         }
 
-        return
-            observations.write(
-                index,
-                blockTimestamp,
-                resultRay,
-                cardinality,
-                cardinalityNext
-            );
         emit OracleBufferWrite(
             Time.blockTimestampScaled(),
             address(this),
@@ -74,6 +66,15 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             cardinality,
             cardinalityNext
         );
+
+        return
+            observations.write(
+                index,
+                blockTimestamp,
+                resultRay,
+                cardinality,
+                cardinalityNext
+            );
     }
 
     /// @notice Calculates the observed interest returned by the underlying in a given period
