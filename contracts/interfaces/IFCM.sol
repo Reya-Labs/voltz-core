@@ -32,9 +32,10 @@ interface IFCM {
             int256 variableTokenBalance,
             bool isSettled
         );
-    
+
     /// @dev "constructor" for proxy instances
-    function initialize(address _vammAddress, address _marginEngineAddress) external;
+    function initialize(address _vammAddress, address _marginEngineAddress)
+        external;
 
     function marginEngine() external view returns (IMarginEngine);
 }

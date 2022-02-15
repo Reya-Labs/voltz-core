@@ -43,32 +43,32 @@ library Tick {
         int24 tickCurrent,
         uint256 feeGrowthGlobalX128
     ) internal view returns (uint256 feeGrowthInsideX128) {
-        Info storage lower = self[tickLower];
-        Info storage upper = self[tickUpper];
-
-        // calculate fee growth below
-        uint256 feeGrowthBelowX128;
-
-        if (tickCurrent >= tickLower) {
-            feeGrowthBelowX128 = lower.feeGrowthOutsideX128;
-        } else {
-            feeGrowthBelowX128 =
-                feeGrowthGlobalX128 -
-                lower.feeGrowthOutsideX128;
-        }
-
-        // calculate fee growth above
-        uint256 feeGrowthAboveX128;
-
-        if (tickCurrent < tickUpper) {
-            feeGrowthAboveX128 = upper.feeGrowthOutsideX128;
-        } else {
-            feeGrowthAboveX128 =
-                feeGrowthGlobalX128 -
-                upper.feeGrowthOutsideX128;
-        }
-
         unchecked {
+            Info storage lower = self[tickLower];
+            Info storage upper = self[tickUpper];
+
+            // calculate fee growth below
+            uint256 feeGrowthBelowX128;
+
+            if (tickCurrent >= tickLower) {
+                feeGrowthBelowX128 = lower.feeGrowthOutsideX128;
+            } else {
+                feeGrowthBelowX128 =
+                    feeGrowthGlobalX128 -
+                    lower.feeGrowthOutsideX128;
+            }
+
+            // calculate fee growth above
+            uint256 feeGrowthAboveX128;
+
+            if (tickCurrent < tickUpper) {
+                feeGrowthAboveX128 = upper.feeGrowthOutsideX128;
+            } else {
+                feeGrowthAboveX128 =
+                    feeGrowthGlobalX128 -
+                    upper.feeGrowthOutsideX128;
+            }
+
             feeGrowthInsideX128 =
                 feeGrowthGlobalX128 -
                 (feeGrowthBelowX128 + feeGrowthAboveX128);

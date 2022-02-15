@@ -14,26 +14,20 @@ interface IMarginEngine is IPositionStructs {
         int256 scenario1LPFixedTokenBalance;
         int256 scenario2LPVariableTokenBalance;
         int256 scenario2LPFixedTokenBalance;
-
         int256 amount0FromTickLowerToTickUpper;
         int256 amount1FromTickLowerToTickUpper;
-
         int256 amount0FromCurrentTickToTickUpper;
         int256 amount1FromCurrentTickToTickUpper;
-
         int256 amount0FromCurrentTickToTickLower;
         int256 amount1FromCurrentTickToTickLower;
-
         int256 amount0FromTickUpperToTickLower;
         int256 amount1FromTickUpperToTickLower;
-
         uint160 scenario1SqrtPriceX96;
         uint160 scenario2SqrtPriceX96;
-
         uint256 scenario1MarginRequirement;
         uint256 scenario2MarginRequirement;
     }
-    
+
     struct MarginCalculatorParameters {
         /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity (18 decimals fixed point number)
         uint256 apyUpperMultiplierWad;
@@ -78,7 +72,7 @@ interface IMarginEngine is IPositionStructs {
     // /// @notice The address of the underlying (non-yield bearing) pool token - e.g. USDC
     // /// @return The underlying pool token address
     function underlyingToken() external view returns (address);
-    
+
     function rateOracle() external view returns (IRateOracle);
 
     function termStartTimestampWad() external view returns (uint256);
@@ -153,7 +147,12 @@ interface IMarginEngine is IPositionStructs {
 
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external;
 
-    function updatePositionMargin(address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta) external;
+    function updatePositionMargin(
+        address _owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int256 marginDelta
+    ) external;
 
     /// @notice Settles a Position
     /// @dev Can be called by anyone
@@ -165,7 +164,11 @@ interface IMarginEngine is IPositionStructs {
     /// @dev 4. Update the postion's fixed and varaible token growth inside last to enable future updates
     /// @dev 5. Calculates the settlement cashflow from all of the IRS contracts the position has entered since entering the AMM
     /// @dev 6. Updates the fixed and variable token balances of the position to be zero, adds the settlement cashflow to the position's current margin
-    function settlePosition(int24 tickLower, int24 tickUpper, address _owner) external;
+    function settlePosition(
+        int24 tickLower,
+        int24 tickUpper,
+        address _owner
+    ) external;
 
     /// @notice Liquidate a Position
     /// @dev Steps to liquidate: update position's fixed and variable token balances to account for balances accumulated throughout the trades made since the last mint/burn/poke,
@@ -173,7 +176,11 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Check if the position is liquidatable by calling the isLiquidatablePosition function of the calculator, revert if that is not the case,
     /// @dev Calculate the liquidation reward = current margin of the position * liquidatorReward, subtract the liquidator reward from the position margin,
     /// @dev Burn the position's liquidity ==> not going to enter into new IRS contracts until the AMM maturity, transfer the reward to the liquidator
-    function liquidatePosition(int24 tickLower, int24 tickUpper, address _owner) external;
+    function liquidatePosition(
+        int24 tickLower,
+        int24 tickUpper,
+        address _owner
+    ) external;
 
     /// @notice Update a Position
     /// @dev Steps taken:
@@ -186,8 +193,14 @@ interface IMarginEngine is IPositionStructs {
         IPositionStructs.ModifyPositionParams memory params
     ) external;
 
-    
-    function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) external;
+    function updatePositionPostVAMMInducedSwap(
+        address _owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int256 fixedTokenDelta,
+        int256 variableTokenDelta,
+        uint256 cumulativeFeeIncurred
+    ) external;
 
     function collectProtocol(address recipient, uint256 amount) external;
 

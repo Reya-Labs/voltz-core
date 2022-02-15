@@ -63,7 +63,10 @@ library Printer {
         console.log(reason, ":", number, " [FROM CONTRACT] ");
     }
 
-    function printAddress(string memory reason, address _address) internal view {
+    function printAddress(string memory reason, address _address)
+        internal
+        view
+    {
         if (!PRINT) return;
         console.log(reason, ":", _address, " [FROM CONTRACT] ");
     }

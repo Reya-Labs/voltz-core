@@ -372,5 +372,4 @@ library MarginCalculator {
             simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad
         );
     }
-
 }
