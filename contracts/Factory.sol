@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // Following this example https://github.com/OriginProtocol/minimal-proxy-example/blob/master/contracts/PairFactory.sol
 contract Factory is IFactory, Ownable {
 
-  /// @audit AB: add option to change the masterMarginEngine and masterVAMM (upgradability)?
+  /// AB: add option to change the masterMarginEngine and masterVAMM (upgradability)?
 
   using Clones for address;
   

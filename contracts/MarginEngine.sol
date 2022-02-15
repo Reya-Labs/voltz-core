@@ -34,7 +34,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @inheritdoc IMarginEngine
     uint256 public override termEndTimestampWad;
 
-    address public override fcm; // full collateralisation module
+    IFCM public override fcm; // full collateralisation module
 
     mapping(bytes32 => Position.Info) internal positions;
     IVAMM public override vamm;
@@ -84,6 +84,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     error OnlyVAMM();
 
+    error OnlyFCM();
+
     /// Margin delta must not equal zero
     error InvalidMarginDelta();
 
@@ -106,6 +108,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     modifier onlyVAMM () {
         if (msg.sender != address(vamm)) {
             revert OnlyVAMM();
+        }
+        _;
+    }
+
+    modifier onlyFCM () {
+        if (msg.sender != address(fcm)) {
+            revert OnlyFCM();
         }
         _;
     }
@@ -139,7 +148,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
     function setFCM(address _fcm) external override onlyOwner {
-        fcm = _fcm;
+        fcm = IFCM(_fcm);
     }
 
     /// @inheritdoc IMarginEngine
@@ -209,15 +218,14 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     remainingDeltaToCover = remainingDeltaToCover - marginEngineBalance;
                     IERC20Minimal(underlyingToken).transfer(_account, marginEngineBalance);
                 }
-                IFCM(fcm).transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
+                fcm.transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
             }
 
             IERC20Minimal(underlyingToken).transfer(_account, uint256(-_marginDelta));
         }
     }
 
-    function transferMarginToFCMTrader(address _account, uint256 marginDelta) external override {
-        /// @audit can only be called by the FCM
+    function transferMarginToFCMTrader(address _account, uint256 marginDelta) external onlyFCM override {
         IERC20Minimal(underlyingToken).transfer(_account, marginDelta);
     }
 
@@ -229,7 +237,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
         
         if (position._liquidity > 0) {
-            /// @audit check if can get rid of the below
+            /// check if can get rid of the below
             updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
         }
 
@@ -361,9 +369,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
             vamm.burn(_owner, tickLower, tickUpper, position._liquidity);
         }
-        
-        /// @audit what if burn above fails
-        /// @audit what if the unwind wasn't fully complete
+    
         unwindPosition(position, _owner, tickLower, tickUpper);
 
         IERC20Minimal(underlyingToken).transfer(msg.sender, liquidatorRewardValue);
@@ -485,12 +491,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int24 tickLower,
         int24 tickUpper
     ) internal {
-    
-        /// @audit check if beyond maturity (done in the liquidation call)
-        Tick.checkTicks(tickLower, tickUpper);
 
-        /// @audit below is potentially redundunt since the burn already induces updates via updatePositionPostVAMMMintBurn, needs to be checked
-        // updatePositionTokenBalancesAndAccountForFees(owner, tickLower, tickUpper); --> do this in the test ME
+        Tick.checkTicks(tickLower, tickUpper);
 
         if (position.variableTokenBalance != 0 ) {
 
@@ -568,7 +570,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (position._liquidity > 0) {
 
             updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
-            /// @audit simplify (2 scenarios from current to lower, from  current to upper)
+            /// simplify (2 scenarios from current to lower, from  current to upper)?
 
             PositionMarginRequirementLocalVars memory localVars;
 

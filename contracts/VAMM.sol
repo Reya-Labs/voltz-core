@@ -155,8 +155,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     require((msg.sender==recipient) || (msg.sender == address(marginEngine)), "MS or ME");
 
-    /// @audit check the order of operations, make sure the position's liquidity is not used in the unwind
-
     updatePosition(
       ModifyPositionParams({
         owner: recipient,
@@ -298,7 +296,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     if (params.isExternal) {
       /// no need for checks since ME makes sure the values passed are correct
-      require(msg.sender==address(marginEngine) || msg.sender==marginEngine.fcm(), "only ME or FCM");
+      require(msg.sender==address(marginEngine) || msg.sender==address(marginEngine.fcm()), "only ME or FCM");
     } else {
       require(msg.sender==params.recipient, "only sender");
       Tick.checkTicks(params.tickLower, params.tickUpper);
@@ -509,7 +507,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred);
     }
 
-    /// @audit more values in the swap event
+    /// more values in the swap event
+    
     emit Swap(
       msg.sender,
       params.recipient,

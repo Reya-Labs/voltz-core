@@ -5,6 +5,7 @@ import "./IVAMM.sol";
 import "./IPositionStructs.sol";
 import "../core_libraries/Position.sol";
 import "./rate_oracles/IRateOracle.sol";
+import "./IFCM.sol";
 
 interface IMarginEngine is IPositionStructs {
     // structs
@@ -67,7 +68,7 @@ interface IMarginEngine is IPositionStructs {
 
     // immutables
 
-    function fcm() external view returns (address);
+    function fcm() external view returns (IFCM);
 
     // /// @notice The address of the underlying (non-yield bearing) pool token - e.g. USDC
     // /// @return The underlying pool token address
@@ -130,7 +131,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev This value is only settable by the the Factory owner and may be unique for each MarginEngine
     /// @dev When setting secondAgo, the setter needs to take into consideration the underlying volatility of the APYs in the reference yield-bearing pool (e.g. Aave v2 USDC)
     /// @return secondsAgo in seconds
-    function secondsAgo() external view returns (uint256); // @audit suffix with Wad, and move this to MarginEngine so that it can be different for different IRS durations
+    function secondsAgo() external view returns (uint256); // @audit suffix with Wad
 
     /// @notice Sets secondsAgo: The look-back window size used to calculate the historical APY for margin purposes
     /// @param _secondsAgo the duration of the lookback window in seconds

@@ -44,12 +44,22 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   /// Positions and Traders cannot be settled before the applicable interest rate swap has matured 
   error CannotSettleBeforeMaturity();
   
+  // can only be called by the marginEngine
+  error OnlyMarginEngine();
+  
   // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() initializer {  
 
       deployer = msg.sender; /// this is presumably the factory
 
+  }
+  
+  modifier onlyMarginEngine () {
+    if (msg.sender != address(marginEngine)) {
+        revert OnlyMarginEngine();
+    }
+    _;
   }
   
   function initialize(address _vammAddress, address _marginEngineAddress) external override initializer {
@@ -228,8 +238,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     trader.settleTrader();
   }
 
-  function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external override {
-    /// @audit can only be called by the MarginEngine
+  function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine override {
     // in case of aave: 1aUSDC = 1USDC (1aToken = 1Token), hence no need for additional calculations
     IERC20Minimal(underlyingYieldBearingToken).transfer(_account, marginDeltaInUnderlyingTokens);
   }

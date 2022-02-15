@@ -111,7 +111,7 @@ library Tick {
                 upper.variableTokenGrowthOutsideX128;
         }
 
-        // todo: do we need an unchecked block in here (given we are dealing with an int256)?
+        // do we need an unchecked block in here (given we are dealing with an int256)?
         variableTokenGrowthInsideX128 =
             params.variableTokenGrowthGlobalX128 -
             (variableTokenGrowthBelowX128 + variableTokenGrowthAboveX128);
@@ -153,7 +153,7 @@ library Tick {
                 upper.fixedTokenGrowthOutsideX128;
         }
 
-        // todo: do we need an unchecked block in here (given we are dealing with an int256)?
+        // do we need an unchecked block in here (given we are dealing with an int256)?
         fixedTokenGrowthInsideX128 =
             params.fixedTokenGrowthGlobalX128 -
             (fixedTokenGrowthBelowX128 + fixedTokenGrowthAboveX128);

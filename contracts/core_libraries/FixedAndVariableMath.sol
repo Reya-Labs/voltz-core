@@ -119,7 +119,7 @@ library FixedAndVariableMath {
     ) internal view returns (int256 fixedTokenBalanceWad) {
         require(termEndTimestampWad > termStartTimestampWad, "E<=S");
 
-        /// @audit explain the math in simple terms
+        /// explain the math in simple terms
 
         // expected fixed cashflow with unbalanced number of fixed tokens
         int256 exp1Wad = PRBMathSD59x18.mul(
