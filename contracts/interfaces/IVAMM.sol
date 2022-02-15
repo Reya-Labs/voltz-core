@@ -17,7 +17,12 @@ interface IVAMM is IPositionStructs {
     );
 
     /// @dev emitted after a given vamm is successfully initialized
-    event Initialize(uint256 blockTimestampScaled, address marginEngineAddress, uint160 sqrtPriceX96, int24 tick);
+    event Initialize(
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
+        uint160 sqrtPriceX96,
+        int24 tick
+    );
 
     /// @dev emitted after a successful minting of a given LP position
     event Mint(
@@ -42,14 +47,30 @@ interface IVAMM is IPositionStructs {
     );
 
     /// @dev emitted after setting feeProtocol
-    event SetFeeProtocol(uint256 blockTimestampScaled, address marginEngineAddress, uint8 feeProtocol);
+    event SetFeeProtocol(
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
+        uint8 feeProtocol
+    );
 
     /// @dev emitted after setting tickSpacing
-    event SetTickSpacing(uint256 blockTimestampScaled, address marginEngineAddress, int24 tickSpacing);
+    event SetTickSpacing(
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
+        int24 tickSpacing
+    );
 
-    event MaxLiquidityPerTickSet(uint256 blockTimestampScaled, address marginEngineAddress, uint128 maxLiquidityPerTick);
+    event MaxLiquidityPerTickSet(
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
+        uint128 maxLiquidityPerTick
+    );
 
-    event FeeSet(uint256 blockTimestampScaled, address marginEngineAddress, uint256 feeWad);
+    event FeeSet(
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
+        uint256 feeWad
+    );
 
     event ProtocolFeesUpdate(
         uint256 blockTimestampScaled,
@@ -57,6 +78,8 @@ interface IVAMM is IPositionStructs {
         uint256 protocolFeesCollected,
         uint256 protocolFees
     );
+
+    event FlipTick(uint256 blockTimestampScaled, address marginEngineAddress, int24 tick, int24 tickSpacing);
 
     // errors
 

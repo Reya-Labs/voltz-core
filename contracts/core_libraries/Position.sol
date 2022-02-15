@@ -41,7 +41,6 @@ library Position {
         bool isSettled;
     }
 
-
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
     /// @param self The mapping containing all user positions
     /// @param owner The address of the position owner

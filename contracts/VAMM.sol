@@ -194,9 +194,11 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     if (flippedLower) {
       tickBitmap.flipTick(params.tickLower, tickSpacing);
+      emit FlipTick(Time.blockTimestampScaled(), marginEngineAddress, params.tickLower, tickSpacing);
     }
     if (flippedUpper) {
       tickBitmap.flipTick(params.tickUpper, tickSpacing);
+      emit FlipTick(Time.blockTimestampScaled(), marginEngineAddress, params.tickUpper, tickSpacing);
     }
   }
 

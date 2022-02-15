@@ -44,16 +44,37 @@ interface IMarginEngine is IPositionStructs {
     }
 
     // Events
-    event HistoricalApyWindowSet(uint256 blockTimestampScaled, address source, uint256 secondsAgo);
-    event CacheMaxAgeSet(uint256 blockTimestampScaled, address source, uint256 cacheMaxAgeInSeconds);
-    event IsInsuranceDepletedSet(uint256 blockTimestampScaled, address source, bool isInsuranceDepleted);
+    event HistoricalApyWindowSet(
+        uint256 blockTimestampScaled,
+        address source,
+        uint256 secondsAgo
+    );
+    event CacheMaxAgeSet(
+        uint256 blockTimestampScaled,
+        address source,
+        uint256 cacheMaxAgeInSeconds
+    );
+    event IsInsuranceDepletedSet(
+        uint256 blockTimestampScaled,
+        address source,
+        bool isInsuranceDepleted
+    );
     event MinMarginToIncentiviseLiquidatorsSet(
         uint256 blockTimestampScaled,
         address source,
         uint256 minMarginToIncentiviseLiquidators
     );
-    event CollectProtocol(uint256 blockTimestampScaled, address source, address recipient, uint256 amount);
-    event LiquidatorRewardSet(uint256 blockTimestampScaled, address source, uint256 liquidatorRewardWad);
+    event CollectProtocol(
+        uint256 blockTimestampScaled,
+        address source,
+        address recipient,
+        uint256 amount
+    );
+    event LiquidatorRewardSet(
+        uint256 blockTimestampScaled,
+        address source,
+        uint256 liquidatorRewardWad
+    );
     event TraderPostVAMMInducedSwapUpdate(
         uint256 blockTimestampScaled,
         address source,
@@ -70,9 +91,22 @@ interface IMarginEngine is IPositionStructs {
         int256 variableTokenDelta,
         uint256 feeDelta
     );
-    event SettleTrader(uint256 blockTimestampScaled, address source, address traderAddress);
-    event SettlePosition(uint256 blockTimestampScaled, address source, Position.Info info);
-    event MarginViaDeltaUpdate(uint256 blockTimestampScaled, address source, Position.Info info, int256 margin);
+    event SettleTrader(
+        uint256 blockTimestampScaled,
+        address source,
+        address traderAddress
+    );
+    event SettlePosition(
+        uint256 blockTimestampScaled,
+        address source,
+        Position.Info info
+    );
+    event MarginViaDeltaUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        Position.Info info,
+        int256 margin
+    );
     event BalancesViaDeltasUpdate(
         uint256 blockTimestampScaled,
         address source,
