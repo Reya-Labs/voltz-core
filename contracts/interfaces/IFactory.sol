@@ -15,6 +15,10 @@ interface IFactory {
         address fcm
     );
 
+    function setApproval(address intAddress, bool allowIntegration) external;
+
+    function isApproved(address intAddress) external view returns (bool);
+
     function setMasterFCM(address masterFCMAddress, address _rateOracle)
         external;
 

@@ -15,12 +15,20 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Factory is IFactory, Ownable {
 
   /// AB: add option to change the masterMarginEngine and masterVAMM (upgradability)?
-
   using Clones for address;
   
   address public override masterMarginEngine;
   address public override masterVAMM;
   mapping(uint8 => address) public override masterFCMs;
+  mapping(address => mapping(address => bool)) private _approvals;
+
+  function setApproval(address intAddress, bool allowIntegration) external override {
+    _approvals[msg.sender][intAddress] = allowIntegration;
+  }
+  
+  function isApproved(address intAddress) external override view returns (bool) {
+    return _approvals[msg.sender][intAddress];
+  }
 
   constructor(address _masterMarginEngine, address _masterVAMM) {
     masterMarginEngine = _masterMarginEngine;
@@ -89,5 +97,8 @@ contract Factory is IFactory, Ownable {
 
     return(address(marginEngine), address(vamm), address(fcm));
   }
+
+
+
 }
 
