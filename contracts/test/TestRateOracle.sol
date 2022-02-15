@@ -130,7 +130,7 @@ contract TestRateOracle is AaveRateOracle {
     function rayValueIsCloseTo(
         uint256 observedValueInRay,
         uint256 expectedValueInRay
-    ) external view returns (bool) {
+    ) external pure returns (bool) {
         uint256 upperBoundFactor = 1000000001 * 1e18;
         uint256 lowerBoundFactor = 999999999 * 1e18;
         uint256 upperBound = WadRayMath.rayMul(

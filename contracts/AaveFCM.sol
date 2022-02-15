@@ -26,9 +26,9 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
   using TraderWithYieldBearingAssets for TraderWithYieldBearingAssets.Info;
 
-  address public override marginEngineAddress;
+  IMarginEngine public override marginEngine;
   
-  address internal vammAddress;
+  IVAMM internal vamm;
   address internal underlyingYieldBearingToken;
   address internal aaveLendingPool;
   IRateOracle internal rateOracle;
@@ -53,11 +53,11 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   }
   
   function initialize(address _vammAddress, address _marginEngineAddress) external override initializer {
-    vammAddress = _vammAddress;
-    marginEngineAddress = _marginEngineAddress;
-    rateOracle = IMarginEngine(marginEngineAddress).rateOracle();
+    vamm = IVAMM(_vammAddress);
+    marginEngine = IMarginEngine(_marginEngineAddress);
+    rateOracle = marginEngine.rateOracle();
     aaveLendingPool = IAaveRateOracle(address(rateOracle)).aaveLendingPool();
-    address underlyingToken = IMarginEngine(marginEngineAddress).underlyingToken();
+    address underlyingToken = marginEngine.underlyingToken();
     AaveDataTypes.ReserveData memory aaveReserveData = IAaveV2LendingPool(aaveLendingPool).getReserveData(underlyingToken);
     underlyingYieldBearingToken = aaveReserveData.aTokenAddress;
 
@@ -80,14 +80,14 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
         tickUpper: 0
     });
 
-    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params);
+    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) = vamm.swap(params);
 
     // deposit notional executed in terms of aTokens (e.g. aUSDC)
     IERC20Minimal(underlyingYieldBearingToken).transferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
-    uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
+    uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(marginEngine.underlyingToken());
 
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens + uint256(-variableTokenDelta).rayDiv(currentRNI);
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
@@ -97,12 +97,12 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
     // transfer fees to the margin engine (in terms of the underlyingToken e.g. aUSDC)
-    IERC20Minimal(IMarginEngine(marginEngineAddress).underlyingToken()).transferFrom(msg.sender, marginEngineAddress, cumulativeFeeIncurred);
+    IERC20Minimal(marginEngine.underlyingToken()).transferFrom(msg.sender, address(marginEngine), cumulativeFeeIncurred);
 
   }
 
   function getTraderMarginInYieldBearingTokens(TraderWithYieldBearingAssets.Info storage trader) internal view returns (uint256 marginInYieldBearingTokens) {
-    uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
+    uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(marginEngine.underlyingToken());
     marginInYieldBearingTokens = trader.marginInScaledYieldBearingTokens.rayMul(currentRNI);
   }
 
@@ -123,20 +123,20 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
         tickUpper: 0
     });
 
-    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) = IVAMM(vammAddress).swap(params);
+    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) = vamm.swap(params);
         
     // update trader fixed and variable token balances
     
     trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
     // transfer fees to the margin engine
-    IERC20Minimal(IMarginEngine(marginEngineAddress).underlyingToken()).transferFrom(msg.sender, marginEngineAddress, cumulativeFeeIncurred);
+    IERC20Minimal(marginEngine.underlyingToken()).transferFrom(msg.sender, address(marginEngine), cumulativeFeeIncurred);
 
     // transfer the yield bearing tokens to trader address and update margin in terms of yield bearing tokens
     // variable token delta should be positive
     IERC20Minimal(underlyingYieldBearingToken).transfer(msg.sender, uint256(variableTokenDelta));
 
-    uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
+    uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(marginEngine.underlyingToken());
 
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens - uint256(variableTokenDelta).rayDiv(currentRNI);
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
@@ -176,13 +176,13 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     int256 fixedCashflowWad = PRBMathSD59x18.mul(
       fixedTokenBalanceWad,
       int256(
-        FixedAndVariableMath.fixedFactor(true, IMarginEngine(marginEngineAddress).termStartTimestampWad(), IMarginEngine(marginEngineAddress).termEndTimestampWad())
+        FixedAndVariableMath.fixedFactor(true, marginEngine.termStartTimestampWad(), marginEngine.termEndTimestampWad())
       )
     );
 
     int256 variableFactorFromTermStartTimestampToNow = int256(rateOracle.variableFactor(
-      IMarginEngine(marginEngineAddress).termStartTimestampWad(),
-      IMarginEngine(marginEngineAddress).termEndTimestampWad()
+      marginEngine.termStartTimestampWad(),
+      marginEngine.termEndTimestampWad()
     ));
     
     int256 variableCashflowWad = PRBMathSD59x18.mul(
@@ -198,7 +198,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   }
     
   modifier onlyAfterMaturity () {
-    if (IMarginEngine(marginEngineAddress).termEndTimestampWad() > Time.blockTimestampScaled()) {
+    if (marginEngine.termEndTimestampWad() > Time.blockTimestampScaled()) {
         revert CannotSettleBeforeMaturity();
     }
     _;
@@ -210,14 +210,14 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
     require(!trader.isSettled, "not settled");
     
-    int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, IMarginEngine(marginEngineAddress).termStartTimestampWad(), IMarginEngine(marginEngineAddress).termEndTimestampWad(), rateOracle.variableFactor(IMarginEngine(marginEngineAddress).termStartTimestampWad(), IMarginEngine(marginEngineAddress).termEndTimestampWad()));
+    int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, marginEngine.termStartTimestampWad(), marginEngine.termEndTimestampWad(), rateOracle.variableFactor(marginEngine.termStartTimestampWad(), marginEngine.termEndTimestampWad()));
     trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
     
     if (settlementCashflow > 0) {
       // transfers margin in terms of underlying tokens (e.g. USDC) from 
-      IMarginEngine(marginEngineAddress).transferMarginToFCMTrader(msg.sender, uint256(settlementCashflow));
+      marginEngine.transferMarginToFCMTrader(msg.sender, uint256(settlementCashflow));
     } else {
-      uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(IMarginEngine(marginEngineAddress).underlyingToken());
+      uint256 currentRNI = IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(marginEngine.underlyingToken());
       uint256 updatedTraderMarginInScaledYieldBearingTokens = trader.marginInScaledYieldBearingTokens - uint256(-settlementCashflow).rayDiv(currentRNI);
       trader.updateMarginInScaledYieldBearingTokens(updatedTraderMarginInScaledYieldBearingTokens);
     }

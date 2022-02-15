@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import "./IMarginEngine.sol";
+
 interface IFCM {
     function initiateFullyCollateralisedFixedTakerSwap(
         uint256 notional,
@@ -34,5 +36,5 @@ interface IFCM {
     /// @dev "constructor" for proxy instances
     function initialize(address _vammAddress, address _marginEngineAddress) external;
 
-    function marginEngineAddress() external view returns (address marginEngineAddress);
+    function marginEngine() external view returns (IMarginEngine);
 }

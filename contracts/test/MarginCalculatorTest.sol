@@ -49,7 +49,7 @@ contract MarginCalculatorTest {
         uint256 currentTimestampWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) external view returns (int256 timeFactor) {
+    ) external pure returns (int256 timeFactor) {
         return
             MarginCalculator.computeTimeFactor(
                 termEndTimestampWad,
@@ -65,7 +65,7 @@ contract MarginCalculatorTest {
         bool isUpper,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) external view returns (uint256 apyBoundWad) {
+    ) external pure returns (uint256 apyBoundWad) {
         return
             MarginCalculator.computeApyBound(
                 termEndTimestampWad,
@@ -85,7 +85,7 @@ contract MarginCalculatorTest {
         uint256 historicalApyWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) external view returns (uint256 variableFactorWad) {
+    ) external pure returns (uint256 variableFactorWad) {
         return
             MarginCalculator.worstCaseVariableFactorAtMaturity(
                 timeInSecondsFromStartToMaturityWad,

@@ -53,7 +53,7 @@ library MarginCalculator {
         uint256 currentTimestampWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal view returns (int256 timeFactorWad) {
+    ) internal pure returns (int256 timeFactorWad) {
         require(termEndTimestampWad > 0, "termEndTimestamp must be > 0");
         require(
             currentTimestampWad <= termEndTimestampWad,
@@ -87,7 +87,7 @@ library MarginCalculator {
         bool isUpper,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal view returns (uint256 apyBoundWad) {
+    ) internal pure returns (uint256 apyBoundWad) {
         ApyBoundVars memory apyBoundVars;
 
         int256 beta4Wad = PRBMathSD59x18.mul(
@@ -196,7 +196,7 @@ library MarginCalculator {
         uint256 historicalApyWad,
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
-    ) internal view returns (uint256 variableFactorWad) {
+    ) internal pure returns (uint256 variableFactorWad) {
         uint256 timeInYearsFromStartUntilMaturityWad = FixedAndVariableMath
             .accrualFact(timeInSecondsFromStartToMaturityWad);
 

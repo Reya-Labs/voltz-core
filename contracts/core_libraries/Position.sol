@@ -16,6 +16,11 @@ library Position {
 
     // info stored for each user's position
     struct Info {
+        // has the position been already burned
+        // a burned position can no longer support new IRS contracts but still needs to cover settlement cash-flows of on-going IRS contracts it entered
+        // bool isBurned;, equivalent to having zero liquidity
+        // is position settled
+        bool isSettled;
         // the amount of liquidity owned by this position
         uint128 _liquidity;
         // current margin of the position in terms of the underlyingToken
@@ -34,11 +39,6 @@ library Position {
         int256 variableTokenBalance;
         // fee growth per unit of liquidity as of the last update to liquidity or fees owed (via the margin)
         uint256 feeGrowthInsideLastX128;
-        // has the position been already burned
-        // a burned position can no longer support new IRS contracts but still needs to cover settlement cash-flows of on-going IRS contracts it entered
-        // bool isBurned;, equivalent to having zero liquidity
-        // is position settled
-        bool isSettled;
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries

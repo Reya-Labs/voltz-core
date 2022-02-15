@@ -12,7 +12,7 @@ contract TestAaveFCM is AaveFCM {
     }
 
     function getVAMMAddress() external view returns (address) {
-        return vammAddress;
+        return address(vamm);
     }
 
     function getUnderlyingYieldBearingToken() external view returns (address) {
