@@ -397,6 +397,8 @@ library MarginCalculator {
             uint256(simulatedUnwindLocalVars.oneMinusTimeFactorWad)
         );
 
+        Printer.printUint256("deviation", simulatedUnwindLocalVars.dWad);
+
         // calculate cfFixedRate
 
         simulatedUnwindLocalVars.fixedRateCFWad;
