@@ -16,67 +16,11 @@ import {
   XI_UPPER,
 } from "../../shared/utilities";
 
-// eslint-disable-next-line no-unused-vars
-const Minter1 = 0;
-// eslint-disable-next-line no-unused-vars
-const Minter2 = 1;
-// eslint-disable-next-line no-unused-vars
-const Minter3 = 2;
-// eslint-disable-next-line no-unused-vars
-const Minter4 = 3;
-// eslint-disable-next-line no-unused-vars
-const Minter5 = 4;
-
-// eslint-disable-next-line no-unused-vars
-const Swapper1 = 0;
-// eslint-disable-next-line no-unused-vars
-const Swapper2 = 1;
-// eslint-disable-next-line no-unused-vars
-const Swapper3 = 2;
-// eslint-disable-next-line no-unused-vars
-const Swapper4 = 3;
-// eslint-disable-next-line no-unused-vars
-const Swapper5 = 4;
-
-export interface MintAction {
-  index: number; // index of position
-  liquidity: BigNumber; // liquidity to mint (in wad)
-}
-
-export interface BurnAction {
-  index: number; // index of position
-  liquidity: BigNumber; // liquidity to burn (in wad)
-}
-
-export interface UpdatePositionMarginAction {
-  index: number; // index of position
-  margin: BigNumber; // margin to add
-}
-
-export interface UpdateTraderMarginAction {
-  index: number; // index of swapper
-  margin: BigNumber; // margin to add
-}
-
-export interface SwapAction {
-  index: number; // index of swapper
-  isFT: boolean;
-  amountSpecified: BigNumber; // number of variable tokens in wad
-  sqrtPriceLimitX96: BigNumber; // limit of price
-}
-
-export interface SkipAction {
-  time: BigNumber;
-  blockCount: number;
-  reserveNormalizedIncome: number;
-}
-
 export interface e2eParameters {
   duration: BigNumber;
   lookBackWindowAPY: BigNumber;
 
-  numMinters: number;
-  numSwappers: number;
+  numActors: number;
 
   marginCalculatorParams: any;
 
@@ -86,24 +30,13 @@ export interface e2eParameters {
   feeProtocol: number;
   fee: BigNumber;
 
-  positions: [number, number, number][]; // list of [index of minter, lower tick, upper tick]
-  traders: number[]; // list of index of swapper
-
-  actions: (
-    | SkipAction
-    | SwapAction
-    | UpdateTraderMarginAction
-    | UpdatePositionMarginAction
-    | BurnAction
-    | MintAction
-  )[];
+  positions: [number, number, number][]; // list of [index of actor, lower tick, upper tick]
 }
 
 export const e2eScenarios: e2eParameters[] = [
   {
     duration: consts.ONE_MONTH.mul(3),
-    numMinters: 2,
-    numSwappers: 2,
+    numActors: 4,
     marginCalculatorParams: {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
@@ -136,17 +69,16 @@ export const e2eScenarios: e2eParameters[] = [
     fee: toBn("0"),
     tickSpacing: TICK_SPACING,
     positions: [
-      [Minter1, -TICK_SPACING, TICK_SPACING],
-      [Minter2, -3 * TICK_SPACING, -TICK_SPACING],
+      [0, -TICK_SPACING, TICK_SPACING],
+      [1, -3 * TICK_SPACING, -TICK_SPACING],
+      [2, -TICK_SPACING, TICK_SPACING],
+      [3, -TICK_SPACING, TICK_SPACING],
     ],
-    traders: [Swapper1, Swapper2],
-    actions: [],
   },
 
   {
     duration: consts.ONE_MONTH.mul(3),
-    numMinters: 5,
-    numSwappers: 5,
+    numActors: 10,
     marginCalculatorParams: {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
@@ -179,20 +111,22 @@ export const e2eScenarios: e2eParameters[] = [
     fee: toBn("0"),
     tickSpacing: TICK_SPACING,
     positions: [
-      [Minter1, -TICK_SPACING, 0],
-      [Minter2, -TICK_SPACING, 0],
-      [Minter3, -TICK_SPACING, 0],
-      [Minter4, -TICK_SPACING, 0],
-      [Minter5, -TICK_SPACING, 0],
+      [0, -TICK_SPACING, 0],
+      [1, -TICK_SPACING, 0],
+      [2, -TICK_SPACING, 0],
+      [3, -TICK_SPACING, 0],
+      [4, -TICK_SPACING, 0],
+      [5, -TICK_SPACING, TICK_SPACING],
+      [6, -TICK_SPACING, TICK_SPACING],
+      [7, -TICK_SPACING, TICK_SPACING],
+      [8, -TICK_SPACING, TICK_SPACING],
+      [9, -TICK_SPACING, TICK_SPACING],
     ],
-    traders: [Swapper1, Swapper2, Swapper3, Swapper4, Swapper5],
-    actions: [],
   },
 
   {
     duration: consts.ONE_MONTH.mul(3),
-    numMinters: 2,
-    numSwappers: 2,
+    numActors: 4,
     marginCalculatorParams: {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
@@ -225,17 +159,16 @@ export const e2eScenarios: e2eParameters[] = [
     fee: toBn("0"),
     tickSpacing: TICK_SPACING,
     positions: [
-      [Minter1, -TICK_SPACING * 300, -TICK_SPACING * 299],
-      [Minter2, -TICK_SPACING * 300, -TICK_SPACING * 299],
+      [0, -TICK_SPACING * 300, -TICK_SPACING * 299],
+      [1, -TICK_SPACING * 300, -TICK_SPACING * 299],
+      [2, -TICK_SPACING, TICK_SPACING],
+      [3, -TICK_SPACING, TICK_SPACING],
     ],
-    traders: [Swapper1, Swapper2],
-    actions: [],
   },
 
   {
     duration: consts.ONE_MONTH.mul(3),
-    numMinters: 2,
-    numSwappers: 2,
+    numActors: 4,
     marginCalculatorParams: {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
@@ -268,17 +201,16 @@ export const e2eScenarios: e2eParameters[] = [
     fee: toBn("0.5"),
     tickSpacing: TICK_SPACING,
     positions: [
-      [Minter1, -TICK_SPACING, TICK_SPACING],
-      [Minter2, -3 * TICK_SPACING, -TICK_SPACING],
+      [0, -TICK_SPACING, TICK_SPACING],
+      [1, -3 * TICK_SPACING, -TICK_SPACING],
+      [2, -TICK_SPACING, TICK_SPACING],
+      [3, -TICK_SPACING, TICK_SPACING],
     ],
-    traders: [Swapper1, Swapper2],
-    actions: [],
   },
 
   {
     duration: consts.ONE_MONTH.mul(3),
-    numMinters: 3,
-    numSwappers: 3,
+    numActors: 6,
     marginCalculatorParams: {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
@@ -311,13 +243,14 @@ export const e2eScenarios: e2eParameters[] = [
     fee: toBn("0"),
     tickSpacing: TICK_SPACING,
     positions: [
-      [Minter1, -TICK_SPACING, TICK_SPACING],
-      [Minter2, -3 * TICK_SPACING, -TICK_SPACING],
-      [Minter1, -3 * TICK_SPACING, TICK_SPACING],
-      [Minter1, 0, TICK_SPACING],
-      [Minter3, -3 * TICK_SPACING, TICK_SPACING],
+      [0, -TICK_SPACING, TICK_SPACING],
+      [1, -3 * TICK_SPACING, -TICK_SPACING],
+      [0, -3 * TICK_SPACING, TICK_SPACING],
+      [0, 0, TICK_SPACING],
+      [2, -3 * TICK_SPACING, TICK_SPACING],
+      [3, -TICK_SPACING, TICK_SPACING],
+      [4, -TICK_SPACING, TICK_SPACING],
+      [5, -TICK_SPACING, TICK_SPACING]
     ],
-    traders: [Swapper1, Swapper2, Swapper3],
-    actions: [],
   },
 ];

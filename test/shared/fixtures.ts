@@ -128,21 +128,14 @@ export async function E2ESetupFixture() {
   return { e2eSetup };
 }
 
-export async function MinterFixture() {
-  const MinterFactory = await ethers.getContractFactory("Minter");
+export async function ActorFixture() {
+  const ActorFactory = await ethers.getContractFactory("Actor");
 
-  const minter = await MinterFactory.deploy();
+  const actor = await ActorFactory.deploy();
 
-  return { minter };
+  return { actor };
 }
 
-export async function SwapperFixture() {
-  const SwapperFactory = await ethers.getContractFactory("Swapper");
-
-  const swapper = await SwapperFactory.deploy();
-
-  return { swapper };
-}
 
 export async function tickMathFixture() {
   const TickMathFactury = await ethers.getContractFactory("TickMathTest");
@@ -390,10 +383,7 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
       "1000000000000000000000000000" // 10^27
     );
 
-<<<<<<< HEAD
     // await rateOracleTest.testGrow(100);
-=======
->>>>>>> 77b34ffca3df3d178e275dd9f4411cd828cb2353
     await rateOracleTest.increaseObservarionCardinalityNext(100);
     // write oracle entry
     await rateOracleTest.writeOracleEntry();

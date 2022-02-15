@@ -462,7 +462,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         position.updateFeeGrowthInside(feeGrowthInsideX128);
         emit FeeGrowthInsideUpdate(Time.blockTimestampScaled(), address(this), position, feeGrowthInsideX128);
 
-        emit PositionTokenBalancesAndAccountForFeesUpdate(Time.blockTimestampScaled(), address(this), owner, position.fixedTokenBalance, position.variableTokenBalance, feeDelta);
+        emit PositionTokenBalancesAndAccountForFeesUpdate(Time.blockTimestampScaled(), address(this), position, position.fixedTokenBalance, position.variableTokenBalance, feeDelta);
     }
     
 

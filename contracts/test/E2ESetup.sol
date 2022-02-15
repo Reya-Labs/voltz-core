@@ -6,15 +6,7 @@ import "contracts/test/TestMarginEngine.sol";
 import "contracts/test/TestVAMM.sol";
 import "contracts/utils/Printer.sol";
 
-contract Swapper {
-    function swap(address VAMMAddress, IVAMM.SwapParams memory params)
-        external
-    {
-        IVAMM(VAMMAddress).swap(params);
-    }
-}
-
-contract Minter {
+contract Actor {
     function mint(
         address VAMMAddress,
         address recipient,
@@ -33,6 +25,12 @@ contract Minter {
         uint128 amount
     ) external {
         IVAMM(VAMMAddress).burn(recipient, tickLower, tickUpper, amount);
+    }
+
+    function swap(address VAMMAddress, IVAMM.SwapParams memory params)
+        external
+    {
+        IVAMM(VAMMAddress).swap(params);
     }
 }
 
@@ -110,7 +108,7 @@ contract E2ESetup {
         uint128 amount
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
-        Minter(recipient).mint(
+        Actor(recipient).mint(
             VAMMAddress,
             recipient,
             tickLower,
@@ -130,7 +128,7 @@ contract E2ESetup {
         uint128 amount
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
-        Minter(recipient).burn(
+        Actor(recipient).burn(
             VAMMAddress,
             recipient,
             tickLower,
@@ -159,7 +157,7 @@ contract E2ESetup {
         //         params.tickUpper
         //     );
         // }
-        Swapper(params.recipient).swap(VAMMAddress, params);
+        Actor(params.recipient).swap(VAMMAddress, params);
 
         if (!continuousInvariants()) {
             revert("Invariants do not hold");

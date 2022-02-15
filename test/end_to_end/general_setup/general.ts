@@ -8,10 +8,11 @@ import {
   tickMathFixture,
   createMetaFixtureE2E,
 } from "../../shared/fixtures";
-import { getMaxLiquidityPerTick, formatRay } from "../../shared/utilities";
+import { getMaxLiquidityPerTick, formatRay, TICK_SPACING } from "../../shared/utilities";
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../../typechain/TestMarginEngine";
 import {
+  Actor,
   E2ESetup,
   ERC20Mock,
   Factory,
@@ -23,8 +24,6 @@ import {
 } from "../../../typechain";
 import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
-import { Minter } from "../../../typechain/Minter";
-import { Swapper } from "../../../typechain/Swapper";
 import { e2eParameters } from "./e2eSetup";
 
 const createFixtureLoader = waffle.createFixtureLoader;
@@ -32,6 +31,9 @@ const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
 
 export class ScenarioRunner {
+  traderTickLower: number = -TICK_SPACING;
+  traderTickUpper: number = TICK_SPACING;
+
   params: e2eParameters;
 
   owner!: Wallet;
@@ -54,11 +56,9 @@ export class ScenarioRunner {
   testSqrtPriceMath!: SqrtPriceMathTest;
 
   e2eSetup!: E2ESetup;
-  minters!: Minter[];
-  swappers!: Swapper[];
+  actors!: Actor[];
 
   positions: [string, number, number][] = [];
-  traders: string[] = [];
 
   outputFile!: string;
 
@@ -181,7 +181,7 @@ export class ScenarioRunner {
 
     fs.appendFileSync(
       this.outputFile,
-      "No of   Minters: " + this.params.numMinters.toString() + "\n"
+      "No of   Actors: " + this.params.numActors.toString() + "\n"
     );
     fs.appendFileSync(
       this.outputFile,
@@ -245,20 +245,20 @@ export class ScenarioRunner {
       fs.appendFileSync(
         this.outputFile,
         "                        liquidity: " +
-          utils.formatEther(positionInfo[0]).toString() +
+          utils.formatEther(positionInfo._liquidity).toString() +
           "\n"
       );
       fs.appendFileSync(
         this.outputFile,
         "                           margin: " +
-          utils.formatEther(positionInfo[1]).toString() +
+          utils.formatEther(positionInfo.margin).toString() +
           "\n"
       );
       fs.appendFileSync(
         this.outputFile,
         "   fixedTokenGrowthInsideLastX128: " +
           (
-            positionInfo[2].div(BigNumber.from(2).pow(128 - 32)).toNumber() /
+            positionInfo.fixedTokenGrowthInsideLastX128.div(BigNumber.from(2).pow(128 - 32)).toNumber() /
             2 ** 32
           ).toString() +
           "\n"
@@ -267,7 +267,7 @@ export class ScenarioRunner {
         this.outputFile,
         "variableTokenGrowthInsideLastX128: " +
           (
-            positionInfo[3].div(BigNumber.from(2).pow(128 - 32)).toNumber() /
+            positionInfo.variableTokenGrowthInsideLastX128.div(BigNumber.from(2).pow(128 - 32)).toNumber() /
             2 ** 32
           ).toString() +
           "\n"
@@ -275,20 +275,20 @@ export class ScenarioRunner {
       fs.appendFileSync(
         this.outputFile,
         "                fixedTokenBalance: " +
-          utils.formatEther(positionInfo[4]).toString() +
+          utils.formatEther(positionInfo.fixedTokenBalance).toString() +
           "\n"
       );
       fs.appendFileSync(
         this.outputFile,
         "             variableTokenBalance: " +
-          utils.formatEther(positionInfo[5]).toString() +
+          utils.formatEther(positionInfo.variableTokenBalance).toString() +
           "\n"
       );
       fs.appendFileSync(
         this.outputFile,
         "          feeGrowthInsideLastX128: " +
           (
-            positionInfo[6].div(BigNumber.from(2).pow(128 - 32)).toNumber() /
+            positionInfo.feeGrowthInsideLastX128.div(BigNumber.from(2).pow(128 - 32)).toNumber() /
             2 ** 32
           ).toString() +
           "\n"
@@ -296,7 +296,7 @@ export class ScenarioRunner {
       fs.appendFileSync(
         this.outputFile,
         "                        isSettled: " +
-          positionInfo[7].toString() +
+          positionInfo.isSettled.toString() +
           "\n"
       );
 
@@ -311,55 +311,6 @@ export class ScenarioRunner {
       fs.appendFileSync(
         this.outputFile,
         "             settlement cashflow: " +
-          utils.formatEther(settlementCashflow).toString() +
-          "\n"
-      );
-      fs.appendFileSync(this.outputFile, "\n");
-    }
-    fs.appendFileSync(this.outputFile, "\n");
-
-    fs.appendFileSync(
-      this.outputFile,
-      "No of Traders: " + this.params.numMinters.toString() + "\n"
-    );
-    for (let i = 0; i < this.traders.length; i++) {
-      fs.appendFileSync(this.outputFile, "TRADER: " + i.toString() + "\n");
-      const traderInfo = await this.marginEngineTest.traders(this.traders[i]);
-
-      fs.appendFileSync(
-        this.outputFile,
-        "              margin: " +
-          utils.formatEther(traderInfo[0]).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "   fixedTokenBalance: " +
-          utils.formatEther(traderInfo[1]).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "variableTokenBalance: " +
-          utils.formatEther(traderInfo[2]).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "           isSettled: " + traderInfo[3].toString() + "\n"
-      );
-
-      const settlementCashflow =
-        await this.testFixedAndVariableMath.calculateSettlementCashflow(
-          traderInfo[1],
-          traderInfo[2],
-          this.termStartTimestampBN,
-          this.termEndTimestampBN,
-          this.variableFactorWad
-        );
-      fs.appendFileSync(
-        this.outputFile,
-        "settlement cashflow: " +
           utils.formatEther(settlementCashflow).toString() +
           "\n"
       );
@@ -440,7 +391,7 @@ export class ScenarioRunner {
     this.marginCalculatorParams = this.params.marginCalculatorParams;
 
     // set margin engine parameters
-    await this.marginEngineTest.setVAMMAddress(this.vammTest.address);
+    await this.marginEngineTest.setVAMM(this.vammTest.address);
     await this.marginEngineTest.setMarginCalculatorParameters(
       this.marginCalculatorParams
     );
@@ -465,21 +416,13 @@ export class ScenarioRunner {
     await this.mintAndApprove(this.marginEngineTest.address);
     await this.mintAndApprove(this.e2eSetup.address);
 
-    // create the minters and swappers
-    this.minters = [];
-    for (let i = 0; i < this.params.numMinters; i++) {
-      const MinterFactory = await ethers.getContractFactory("Minter");
-      const minter = (await MinterFactory.deploy()) as Minter;
-      this.minters.push(minter);
-      await this.mintAndApprove(minter.address);
-    }
-
-    this.swappers = [];
-    for (let i = 0; i < this.params.numSwappers; i++) {
-      const SwapperFactory = await ethers.getContractFactory("Swapper");
-      const swapper = (await SwapperFactory.deploy()) as Swapper;
-      this.swappers.push(swapper);
-      await this.mintAndApprove(swapper.address);
+    // create the actors
+    this.actors = [];
+    for (let i = 0; i < this.params.numActors; i++) {
+      const ActorFactory = await ethers.getContractFactory("Actor");
+      const actor = (await ActorFactory.deploy()) as Actor;
+      this.actors.push(actor);
+      await this.mintAndApprove(actor.address);
     }
 
     await this.token.approveInternal(
@@ -490,12 +433,7 @@ export class ScenarioRunner {
 
     this.positions = [];
     for (const p of this.params.positions) {
-      this.positions.push([this.minters[p[0]].address, p[1], p[2]]);
-    }
-
-    this.traders = [];
-    for (const t of this.params.traders) {
-      this.traders.push(this.swappers[t].address);
+      this.positions.push([this.actors[p[0]].address, p[1], p[2]]);
     }
 
     await this.updateCurrentTick();
@@ -572,7 +510,7 @@ export class ScenarioRunner {
   }
 
   // print the position and trader information
-  async printPositionsAndTradersInfo() {
+  async printPositionsInfo() {
     for (let i = 0; i < this.positions.length; i++) {
       await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         this.positions[i][0],
@@ -590,12 +528,6 @@ export class ScenarioRunner {
       );
 
       await this.printPositionInfo(positionInfo);
-    }
-
-    for (let i = 0; i < this.traders.length; i++) {
-      console.log("TRADER: ", i + 1);
-      const traderInfo = await this.marginEngineTest.traders(this.traders[i]);
-      await this.printTraderInfo(traderInfo);
     }
   }
 
@@ -656,87 +588,22 @@ export class ScenarioRunner {
   }
 
   async getAPYboundsAndPositionMargin(
-    position: [string, number, number],
-    liquidity: BigNumber
+    position: [string, number, number]
   ) {
     await this.updateAPYbounds();
 
-    this.currentTick = await this.vammTest.getCurrentTick();
-
-    const positionInfo = await this.marginEngineTest.getPosition(
-      position[0],
-      position[1],
-      position[2]
-    );
-
-    const currentSqrtPrice = await this.testTickMath.getSqrtRatioAtTick(
-      this.currentTick
-    );
-
-    const position_margin_requirement_params = {
-      owner: position[0],
-      tickLower: position[1],
-      tickUpper: position[2],
-      isLM: false,
-      currentTick: this.currentTick,
-      termStartTimestampWad: this.termStartTimestampBN,
-      termEndTimestampWad: this.termEndTimestampBN,
-      liquidity: liquidity.add(positionInfo._liquidity),
-      fixedTokenBalance: positionInfo.fixedTokenBalance,
-      variableTokenBalance: positionInfo.variableTokenBalance,
-      variableFactorWad: this.variableFactorWad,
-      historicalApyWad: this.historicalApyWad,
-      sqrtPriceX96: currentSqrtPrice,
-    };
-
     const positionMarginRequirement =
-      await this.testMarginCalculator.getPositionMarginRequirementTest(
-        position_margin_requirement_params,
-        this.marginCalculatorParams
+      await this.marginEngineTest.getPositionMarginRequirementTest(
+        position[0], position[1], position[2], false
       );
 
     console.log(
       "position margin requirement: ",
-      utils.formatEther(positionMarginRequirement)
+      utils.formatEther(positionMarginRequirement.value)
     );
     console.log("");
 
-    return positionMarginRequirement;
-  }
-
-  async getAPYboundsAndTraderMargin(trader: Wallet) {
-    await this.updateAPYbounds();
-
-    const traderInfo = await this.marginEngineTest.traders(trader.address);
-
-    const currentSqrtPrice = await this.testTickMath.getSqrtRatioAtTick(
-      this.currentTick
-    );
-    const trader_margin_requirement_params = {
-      fixedTokenBalance: traderInfo.fixedTokenBalance,
-      variableTokenBalance: traderInfo.variableTokenBalance,
-      termStartTimestampWad: this.termStartTimestampBN,
-      termEndTimestampWad: this.termEndTimestampBN,
-      isLM: false,
-      historicalApyWad: this.historicalApyWad,
-      sqrtPriceX96: currentSqrtPrice,
-      variableFactorWad: this.variableFactorWad,
-    };
-
-    const traderMarginRequirement =
-      await this.testMarginCalculator.getTraderMarginRequirement(
-        trader_margin_requirement_params,
-        this.marginCalculatorParams
-      );
-
-    console.log(
-      "trader margin requirement: ",
-      utils.formatEther(traderMarginRequirement)
-    );
-
-    console.log("");
-
-    return traderMarginRequirement;
+    return positionMarginRequirement.value;
   }
 
   async getVT(towards: string) {
@@ -790,21 +657,9 @@ export class ScenarioRunner {
     return parseFloat(utils.formatEther(totalAmount1));
   }
 
-  async settlePositionsAndTraders(
-    positions: [string, number, number][],
-    traders: string[]
-  ) {
-    for (let i = 0; i < positions.length; i++) {
-      await this.marginEngineTest.settlePosition({
-        owner: positions[i][0],
-        tickLower: positions[i][1],
-        tickUpper: positions[i][2],
-        liquidityDelta: toBn("0"),
-      });
-    }
-
-    for (let i = 0; i < traders.length; i++) {
-      await this.marginEngineTest.settleTrader(traders[i]);
+  async settlePositions() {
+    for (const p of this.positions) {
+      await this.marginEngineTest.settlePosition(p[1], p[2], p[0]);
     }
   }
 

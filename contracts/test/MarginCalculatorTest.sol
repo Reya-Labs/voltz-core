@@ -6,18 +6,6 @@ import "../core_libraries/MarginCalculator.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 
 contract MarginCalculatorTest {
-    // function getMinimumMarginRequirement(
-    //     MarginCalculator.TraderMarginRequirementParams memory params,
-    //     IMarginEngine.MarginCalculatorParameters
-    //         memory _marginCalculatorParameters
-    // ) external view returns (uint256 margin) {
-    //     return
-    //         MarginCalculator.getMinimumMarginRequirement(
-    //             params,
-    //             _marginCalculatorParameters
-    //         );
-    // }
-
     function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
         uint256 variableTokenDeltaAbsolute,
         uint160 sqrtRatioCurrX96,

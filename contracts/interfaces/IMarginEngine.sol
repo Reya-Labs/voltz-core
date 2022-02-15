@@ -105,7 +105,7 @@ interface IMarginEngine is IPositionStructs {
     event PositionTokenBalancesAndAccountForFeesUpdate(
         uint256 blockTimestampScaled,
         address source,
-        address owner,
+        Position.Info info,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         uint256 feeDelta
@@ -119,12 +119,6 @@ interface IMarginEngine is IPositionStructs {
         uint256 blockTimestampScaled,
         address source,
         Position.Info info
-    );
-    event MarginViaDeltaUpdate(
-        uint256 blockTimestampScaled,
-        address source,
-        Position.Info info,
-        int256 margin
     );
     event BalancesViaDeltasUpdate(
         uint256 blockTimestampScaled,
@@ -150,6 +144,12 @@ interface IMarginEngine is IPositionStructs {
         address source,
         Position.Info info,
         uint128 liquidity
+    );
+    event MarginViaDeltaUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        Position.Info info,
+        int256 margin
     );
 
     // immutables

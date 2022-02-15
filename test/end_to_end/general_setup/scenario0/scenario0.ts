@@ -14,18 +14,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // print the position margin requirement
     await this.getAPYboundsAndPositionMargin(
-      this.positions[0],
-      toBn("1000000")
+      this.positions[0]
     );
 
     // update the position margin with 210
-    await this.e2eSetup.updatePositionMargin(
-      {
-        owner: this.positions[0][0],
-        tickLower: this.positions[0][1],
-        tickUpper: this.positions[0][2],
-        liquidityDelta: toBn("0"),
-      },
+    await this.e2eSetup.updatePositionMargin(this.positions[0][0],
+        this.positions[0][1],
+        this.positions[0][2],
       toBn("210")
     );
 
@@ -44,7 +39,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.exportSnapshot("BEFORE FIRST SWAP");
 
     // update the trader margin with 1,000
-    await this.e2eSetup.updateTraderMargin(this.traders[0], toBn("1000"));
+    await this.e2eSetup.updatePositionMargin(this.positions[2][0], this.positions[2][1], this.positions[2][2], toBn("1000"));
 
     // print the maximum amount given the liquidity of Position 0
     await this.updateCurrentTick();
@@ -53,12 +48,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // Trader 0 buys 2,995 VT
     await this.e2eSetup.swap({
-      recipient: this.traders[0],
+      recipient: this.positions[2][0],
       isFT: false,
       amountSpecified: toBn("-2995"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-      isUnwind: false,
-      isTrader: true,
+      isExternal: false,
       tickLower: 0,
       tickUpper: 0,
     });
@@ -74,18 +68,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // print the position margin requirement
     await this.getAPYboundsAndPositionMargin(
-      this.positions[1],
-      toBn("5000000")
+      this.positions[1]
     );
 
     // update the position margin with 2,000
     await this.e2eSetup.updatePositionMargin(
-      {
-        owner: this.positions[1][0],
-        tickLower: this.positions[1][1],
-        tickUpper: this.positions[1][2],
-        liquidityDelta: 0,
-      },
+      this.positions[1][0],
+      this.positions[1][1],
+      this.positions[1][2],
       toBn("2000")
     );
 
@@ -104,7 +94,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.exportSnapshot("BEFORE SECOND SWAP");
 
     // update the trader margin with 1,000
-    await this.e2eSetup.updateTraderMargin(this.traders[1], toBn("1000"));
+    await this.e2eSetup.updatePositionMargin(this.positions[3][0], this.positions[3][1], this.positions[3][2], toBn("1000"));
 
     // print the maximum amount given the liquidity of Position 0
     await this.updateCurrentTick();
@@ -113,12 +103,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // Trader 1 buys 15,000 VT
     await this.e2eSetup.swap({
-      recipient: this.traders[1],
+      recipient: this.positions[3][0],
       isFT: false,
       amountSpecified: toBn("-15000"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-      isUnwind: false,
-      isTrader: true,
+      isExternal: false,
       tickLower: 0,
       tickUpper: 0,
     });
@@ -130,12 +119,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // Trader 0 sells 10,000 VT
     await this.e2eSetup.swap({
-      recipient: this.traders[0],
+      recipient: this.positions[2][0],
       isFT: true,
       amountSpecified: toBn("10000"),
       sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
-      isUnwind: false,
-      isTrader: true,
+      isExternal: false,
       tickLower: 0,
       tickUpper: 0,
     });
@@ -161,7 +149,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
 
     // settle positions and traders
-    await this.settlePositionsAndTraders(this.positions, this.traders);
+    await this.settlePositions();
 
     await this.exportSnapshot("FINAL");
   }
