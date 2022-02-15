@@ -400,7 +400,6 @@ library MarginCalculator {
         Printer.printUint256("deviation", simulatedUnwindLocalVars.dWad);
 
         // calculate cfFixedRate
-
         simulatedUnwindLocalVars.fixedRateCFWad;
 
         if (isFTUnwind) {
