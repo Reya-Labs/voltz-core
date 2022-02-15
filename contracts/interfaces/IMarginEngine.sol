@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./IVAMM.sol";
 import "./IPositionStructs.sol";
 import "../core_libraries/Position.sol";
+import "../core_libraries/Trader.sol";
 import "./rate_oracles/IRateOracle.sol";
 
 interface IMarginEngine is IPositionStructs {
@@ -43,8 +44,100 @@ interface IMarginEngine is IPositionStructs {
     }
 
     // Events
-    event HistoricalApyWindowSet(uint256 secondsAgo);
-    event CacheMaxAgeSet(uint256 cacheMaxAgeInSeconds);
+    event HistoricalApyWindowSet(
+        uint256 blockTimestampScaled,
+        address source,
+        uint256 secondsAgo
+    );
+    event CacheMaxAgeSet(
+        uint256 blockTimestampScaled,
+        address source,
+        uint256 cacheMaxAgeInSeconds
+    );
+    event IsInsuranceDepletedSet(
+        uint256 blockTimestampScaled,
+        address source,
+        bool isInsuranceDepleted
+    );
+    event MinMarginToIncentiviseLiquidatorsSet(
+        uint256 blockTimestampScaled,
+        address source,
+        uint256 minMarginToIncentiviseLiquidators
+    );
+    event CollectProtocol(
+        uint256 blockTimestampScaled,
+        address source,
+        address recipient,
+        uint256 amount
+    );
+    event LiquidatorRewardSet(
+        uint256 blockTimestampScaled,
+        address source,
+        uint256 liquidatorRewardWad
+    );
+    event TraderPostVAMMInducedSwapUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        address recipient,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 cumulativeFeeIncurred
+    );
+    event PositionTokenBalancesAndAccountForFeesUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        address owner,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 feeDelta
+    );
+    event SettleTrader(
+        uint256 blockTimestampScaled,
+        address source,
+        address traderAddress
+    );
+    event SettlePosition(
+        uint256 blockTimestampScaled,
+        address source,
+        Position.Info info
+    );
+    event MarginViaDeltaUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        Position.Info info,
+        int256 margin
+    );
+    event BalancesViaDeltasUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance
+    );
+    event FixedAndVariableTokenGrowthInsideUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        Position.Info info,
+        int256 fixedTokenGrowthInsideX128,
+        int256 variableTokenGrowthInsideX128
+    );
+    event FeeGrowthInsideUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        Position.Info info,
+        uint256 feeGrowthInsideX128
+    );
+    event LiquidityUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        Position.Info info,
+        uint128 liquidity
+    );
+    event MarginViaDeltaUpdate(
+        uint256 blockTimestampScaled,
+        address source,
+        Trader.Info info,
+        int256 margin
+    );
 
     // immutables
 
