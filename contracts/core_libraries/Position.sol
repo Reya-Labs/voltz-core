@@ -61,7 +61,6 @@ library Position {
 
     function settlePosition(Info storage self) internal {
         self.isSettled = true;
-        emit SettlePosition(self);
     }
 
     /// @notice Updates the Info struct of a position by changing the amount of margin according to marginDelta

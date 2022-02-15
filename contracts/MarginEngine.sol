@@ -144,7 +144,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         onlyOwner
     {
         secondsAgo = _secondsAgo;
-        emit HistoricalApyWindowSet(blockTimestampScaled(), address(this), secondsAgo);
+        emit HistoricalApyWindowSet(Time.blockTimestampScaled(), address(this), secondsAgo);
     }
 
     /// @notice Sets the maximum age that the cached historical APY value
@@ -154,12 +154,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         onlyOwner
     {
         cacheMaxAgeInSeconds = _cacheMaxAgeInSeconds;
-        emit CacheMaxAgeSet(blockTimestampScaled(), address(this), cacheMaxAgeInSeconds);
+        emit CacheMaxAgeSet(Time.blockTimestampScaled(), address(this), cacheMaxAgeInSeconds);
     }
 
     function setIsInsuranceDepleted(bool _isInsuranceDepleted) external override onlyOwner {
         isInsuranceDepleted = _isInsuranceDepleted;
-        emit IsInsuranceDepletedSet(blockTimestampScaled(), address(this), isInsuranceDepleted);
+        emit IsInsuranceDepletedSet(Time.blockTimestampScaled(), address(this), isInsuranceDepleted);
     }
 
     function collectProtocol(address recipient, uint256 amount)
@@ -176,12 +176,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             );
         }
 
-        emit CollectProtocol(blockTimestampScaled(), address(this), recipient, amount);
+        emit CollectProtocol(Time.blockTimestampScaled(), address(this), recipient, amount);
     }
 
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external override onlyOwner {
         liquidatorRewardWad = _liquidatorRewardWad;
-        emit LiquidatorRewardSet(blockTimestampScaled(), address(this), liquidatorRewardWad);
+        emit LiquidatorRewardSet(Time.blockTimestampScaled(), address(this), liquidatorRewardWad);
     }
 
     /// @inheritdoc IMarginEngine
@@ -236,7 +236,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             if (isInsuranceDepleted) {
 
                 position.updateMarginViaDelta(marginDelta);
-                emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), position, position.margin + marginDelta);
+                emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin + marginDelta);
 
                 transferMargin(msg.sender, marginDelta);
 
@@ -249,7 +249,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 checkPositionMarginCanBeUpdated(params, updatedMarginWouldBe, position._liquidity==0, position.isSettled, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactorWad);
 
                 position.updateMarginViaDelta(marginDelta);
-                emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), position, position.margin + marginDelta);
+                emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin + marginDelta);
 
                 transferMargin(msg.sender, marginDelta);
             }
@@ -257,7 +257,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         } else {
 
             position.updateMarginViaDelta(marginDelta);
-            emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), position, position.margin + marginDelta);
+            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin + marginDelta);
 
             transferMargin(msg.sender, marginDelta);
         }
@@ -280,7 +280,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             if (isInsuranceDepleted) {
 
                 trader.updateMarginViaDelta(marginDelta);
-                emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), trader, trader.margin + marginDelta);
+                emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), trader, trader.margin + marginDelta);
 
                 transferMargin(msg.sender, marginDelta);
 
@@ -290,7 +290,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 checkTraderMarginCanBeUpdated(updatedMarginWouldBe, trader.fixedTokenBalance, trader.variableTokenBalance, trader.isSettled, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
 
                 trader.updateMarginViaDelta(marginDelta);
-                emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), trader, trader.margin + marginDelta);
+                emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), trader, trader.margin + marginDelta);
 
                 transferMargin(msg.sender, marginDelta);
             }
@@ -298,7 +298,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         } else {
 
             trader.updateMarginViaDelta(marginDelta);
-            emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), trader, trader.margin + marginDelta);
+            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), trader, trader.margin + marginDelta);
 
             transferMargin(msg.sender, marginDelta);
         }
@@ -320,16 +320,16 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
         emit BalancesViaDeltasUpdate(
-            blockTimestampScaled(),
+            Time.blockTimestampScaled(),
             address(this),
             position,
             -position.fixedTokenBalance,
             -position.variableTokenBalance
         );
         position.updateMarginViaDelta(settlementCashflow);
-        emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), position, settlementCashflow);
+        emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, settlementCashflow);
         position.settlePosition();
-        emit SettlePosition(blockTimestampScaled(), address(this), position);
+        emit SettlePosition(Time.blockTimestampScaled(), address(this), position);
     }
 
     /// @inheritdoc IMarginEngine
@@ -345,9 +345,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
         trader.updateMarginViaDelta(settlementCashflow);
-        emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), trader, settlementCashflow);
+        emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), trader, settlementCashflow);
         trader.settleTrader();
-        emit(blockTimestampScaled(), address(this), traderAddress);
+        emit SettleTrader(Time.blockTimestampScaled(), address(this), traderAddress);
     }
 
     /// @notice Computes the historical APY value of the RateOracle
@@ -439,7 +439,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         uint256 liquidatorRewardValue = PRBMathUD60x18.toUint(liquidatorRewardValueWad);
 
         position.updateMarginViaDelta(-int256(liquidatorRewardValue));
-        emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), position, -int256(liquidatorRewardValue));
+        emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, -int256(liquidatorRewardValue));
 
         /// @dev pass position._liquidity to ensure all of the liqudity is burnt
 
@@ -490,7 +490,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         uint256 liquidatorRewardValue = PRBMathUD60x18.toUint(liquidatorRewardValueWad);
 
         trader.updateMarginViaDelta(-int256(liquidatorRewardValue));
-        emit MarginViaDeltaUpdate(blockTimestampScaled(), adddress(this), trader, -int256(liquidatorRewardValue));
+        emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), trader, -int256(liquidatorRewardValue));
 
         unwindTrader(traderAddress, trader.variableTokenBalance);
 
@@ -508,7 +508,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
         position.updateLiquidity(params.liquidityDelta);
-        emit LiquidityUpdate(blockTimestampScaled(), address(this), position, position._liquidity);
+        emit LiquidityUpdate(Time.blockTimestampScaled(), address(this), position, position._liquidity);
 
         if (params.liquidityDelta>0) {
             uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
@@ -528,12 +528,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         if (cumulativeFeeIncurred > 0) {
             position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
-            emit MarginViaDeltaUpdate(address(this), position, -int256(cumulativeFeeIncurred));
+            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
         }
 
         position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
         emit BalancesViaDeltasUpdate(
-            blockTimestampScaled(),
+            Time.blockTimestampScaled(),
             address(this),
             position,
             fixedTokenDelta,
@@ -581,7 +581,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         if (cumulativeFeeIncurred > 0) {
             trader.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
-            emit MarginViaDeltaUpdate(blockTimestampScaled(), adddress(this), trader, trader.margin);
+            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), trader, trader.margin);
         }
 
         trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
@@ -602,7 +602,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (marginRequirement > trader.margin) {
             revert MarginRequirementNotMet();
         }
-        emit TraderPostVAMMInducedSwapUpdate(blockTimestampScaled(), address(this), recipient, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred);
+        emit TraderPostVAMMInducedSwapUpdate(Time.blockTimestampScaled(), address(this), recipient, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred);
     }
 
     function updatePositionTokenBalancesAndAccountForFees(
@@ -617,7 +617,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
         emit BalancesViaDeltasUpdate(
-            blockTimestampScaled(),
+            Time.blockTimestampScaled(),
             address(this),
             position,
             position.fixedTokenBalance,
@@ -625,19 +625,19 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         );
         position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
         emit FixedAndVariableTokenGrowthInsideUpdate(
-            blockTimestampScaled(),
-            address(this)
+            Time.blockTimestampScaled(),
+            address(this),
             position,
             fixedTokenGrowthInsideX128,
             variableTokenGrowthInsideX128
         );
         /// @dev collect fees
         position.updateMarginViaDelta(int256(feeDelta));
-        emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), position, int256(feeDelta));
+        emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, int256(feeDelta));
         position.updateFeeGrowthInside(feeGrowthInsideX128);
-        emit FeeGrowthInsideUpdate(blockTimestampScaled(), address(this), position, feeGrowthInsideX128);
+        emit FeeGrowthInsideUpdate(Time.blockTimestampScaled(), address(this), position, feeGrowthInsideX128);
 
-        emit PositionTokenBalancesAndAccountForFeesUpdate(blockTimestampScaled(), address(this), owner, position.fixedTokenBalance, position.variableTokenBalance, feeDelta);
+        emit PositionTokenBalancesAndAccountForFeesUpdate(Time.blockTimestampScaled(), address(this), owner, position.fixedTokenBalance, position.variableTokenBalance, feeDelta);
     }
 
     /// @notice Check if the position margin is above the Initial Margin Requirement
@@ -883,13 +883,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             if (_cumulativeFeeIncurred > 0) {
                 /// @dev update position margin to account for the fees incurred while conducting a swap in order to unwind
                 position.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
-                emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), position, -int256(_cumulativeFeeIncurred));
+                emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, -int256(_cumulativeFeeIncurred));
             }
 
             /// @dev passes the _fixedTokenBalance and _variableTokenBalance deltas
             position.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
             emit BalancesViaDeltasUpdate(
-                blockTimestampScaled(),
+                Time.blockTimestampScaled(),
                 address(this),
                 position,
                 _fixedTokenDelta,
@@ -960,7 +960,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
             if (_cumulativeFeeIncurred > 0) {
                 trader.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
-                emit MarginViaDeltaUpdate(blockTimestampScaled(), address(this), trader, -int256(_cumulativeFeeIncurred));
+                emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), trader, -int256(_cumulativeFeeIncurred));
             }
 
             trader.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
