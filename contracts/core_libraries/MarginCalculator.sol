@@ -41,56 +41,6 @@ library MarginCalculator {
         int256 criticalValueWad;
     }
 
-    // struct TraderMarginRequirementParams {
-    //     /// @dev current fixedToken balance of a given trader
-    //     int256 fixedTokenBalance;
-    //     /// @dev current variableToken balance of a given trader
-    //     int256 variableTokenBalance;
-    //     /// @dev timestamp of the IRS AMM initiation (18 decimals)
-    //     uint256 termStartTimestampWad;
-    //     /// @dev timestamp of the IRS AMM maturity (18 decimals)
-    //     uint256 termEndTimestampWad;
-    //     /// @dev isLM = true => Liquidation Margin is calculated, isLM = false => Initial Margin is calculated
-    //     bool isLM;
-    //     /// @dev Historical Average APY of the underlying pool (e.g. Aave v2 USDC Lending Pool), 18 decimals
-    //     uint256 historicalApyWad;
-    //     /// @dev
-    //     uint160 sqrtPriceX96;
-    //     /// @dev Variable Factor is the variable rate from the IRS AMM initiation until the current block timestamp
-    //     uint256 variableFactorWad;
-    // }
-
-    // struct PositionMarginRequirementParams {
-    //     /// @dev Position owner
-    //     address owner;
-    //     /// @dev The lower tick of the position
-    //     int24 tickLower;
-    //     /// @dev The upper tick of the position
-    //     int24 tickUpper;
-    //     /// @dev isLM = true => Liquidation Margin is calculated, isLM = false => Initial Margin is calculated
-    //     bool isLM;
-    //     /// @dev Current tick in the Virtual Automated Market Maker
-    //     int24 currentTick;
-    //     /// @dev Timestamp of the IRS AMM initiation (18 decimals)
-    //     uint256 termStartTimestampWad;
-    //     /// @dev Timestamp of the IRS AMM maturity (18 decimals)
-    //     uint256 termEndTimestampWad;
-    //     /// @dev Amount of active liquidity of a position
-    //     uint128 liquidity;
-    //     /// @dev Curren Fixed Token Balance of a position
-    //     /// @dev In order for this value to be up to date, the Position needs to first check what the fixedTokenGrowthInside is within their tick range and then calculate accrued fixed token delta since the last check
-    //     int256 fixedTokenBalance;
-    //     /// @dev Curren Variabe Token Balance of a position
-    //     /// @dev In order for this value to be up to date, the Position needs to first check what the variableTokenGrowthInside is within their tick range and then calculate accrued variable token delta since the last check
-    //     int256 variableTokenBalance;
-    //     /// @dev Variable Factor is the variable rate from the IRS AMM initiation until the current block timestamp
-    //     uint256 variableFactorWad;
-    //     /// @dev Historical Average APY of the underlying pool (e.g. Aave v2 USDC Lending Pool), 18 decimals
-    //     uint256 historicalApyWad;
-    //     /// @dev
-    //     uint160 sqrtPriceX96;
-    // }
-
     /// suggestions: do the below conversions using PRBMath
     int256 public constant ONE_WEI = 10**18;
 
@@ -409,9 +359,6 @@ library MarginCalculator {
                 simulatedUnwindLocalVars.fixedRateStartWad +
                 simulatedUnwindLocalVars.dWad;
         }
-
-        // calculate fixedTokenDeltaUnbalancedWad
-        console.log("fixedRateCFWad", simulatedUnwindLocalVars.fixedRateCFWad);
 
         simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad = PRBMathUD60x18
             .mul(

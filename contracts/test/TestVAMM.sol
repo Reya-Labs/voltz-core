@@ -12,12 +12,11 @@ contract TestVAMM is VAMM {
         returns (uint256 currentTimestamp, uint256 termEndTimestamp)
     {
         currentTimestamp = Time.blockTimestampScaled();
-        termEndTimestamp = IMarginEngine(marginEngineAddress)
-            .termEndTimestampWad();
+        termEndTimestamp = marginEngine.termEndTimestampWad();
     }
 
     function testGetAMMTermEndTimestamp() external view returns (uint256) {
-        return IMarginEngine(marginEngineAddress).termEndTimestampWad();
+        return marginEngine.termEndTimestampWad();
     }
 
     function setTestProtocolFees(uint256 _protocolFees) external {

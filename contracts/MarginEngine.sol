@@ -53,7 +53,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     bool public isInsuranceDepleted;
 
-    IRateOracle internal rateOracle;
+    IRateOracle public override rateOracle;
 
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -70,11 +70,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         require(_termEndTimestampWad != 0, "TE must be set");
 
         underlyingToken = _underlyingToken;
-        // rateOracleAddress = _rateOracleAddress;
         termStartTimestampWad = _termStartTimestampWad;
         termEndTimestampWad = _termEndTimestampWad;
 
-        rateOracle = IRateOracle(rateOracleAddress);
+        rateOracle = IRateOracle(_rateOracleAddress);
 
         __Ownable_init();
         __Pausable_init();
@@ -108,6 +107,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (msg.sender != address(vamm)) {
             revert OnlyVAMM();
         }
+        _;
     }
     
     modifier onlyAfterMaturity () {
@@ -188,11 +188,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
     /// @inheritdoc IMarginEngine
-    function getPosition(address owner,
+    function getPosition(address _owner,
                          int24 tickLower,
                          int24 tickUpper)
         external override view returns (Position.Info memory position) {
-            return positions.get(owner, tickLower, tickUpper);
+            return positions.get(_owner, tickLower, tickUpper);
     }
 
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
@@ -222,22 +222,22 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
 
-    /// @inheritdoc IMarginEngine
-    function updatePositionMargin(address owner, int24 tickLower, int24 tickUpper, int256 marginDelta) external nonZeroDelta(marginDelta) override {
+    function updatePositionMargin(address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta) external nonZeroDelta(marginDelta) override {
         
         Tick.checkTicks(tickLower, tickUpper);
         
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
         
         if (position._liquidity > 0) {
-            updatePositionTokenBalancesAndAccountForFees(position);
+            /// @audit check if can get rid of the below
+            updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
         }
 
         require((position.margin + marginDelta) >= 0, "can't withdraw more than have");
         
         if (marginDelta < 0) {
 
-            if (owner != msg.sender) {
+            if (_owner != msg.sender) {
                 revert OnlyOwnerCanUpdatePosition();
             }
 
@@ -251,7 +251,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             
                 int256 updatedMarginWouldBe = position.margin + marginDelta;
 
-                checkPositionMarginCanBeUpdated(position, updatedMarginWouldBe, tickLower, tickUpper, owner); 
+                checkPositionMarginCanBeUpdated(position, updatedMarginWouldBe, tickLower, tickUpper); 
 
                 position.updateMarginViaDelta(marginDelta);
 
@@ -269,17 +269,17 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(ModifyPositionParams memory params) external override whenNotPaused onlyAfterMaturity {
+    function settlePosition(int24 tickLower, int24 tickUpper, address _owner) external override whenNotPaused onlyAfterMaturity {
         
-        Tick.checkTicks(params.tickLower, params.tickUpper);
+        Tick.checkTicks(tickLower, tickUpper);
 
-        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper); 
+        Position.Info storage position = positions.get(_owner, tickLower, tickUpper); 
             
         require(!position.isSettled, "already settled");
         
-        updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
         
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad));
 
         position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMarginViaDelta(settlementCashflow);
@@ -324,7 +324,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         uint256 to = block.timestamp;
         uint256 from = to - secondsAgo;
 
-        return IRateOracle(rateOracleAddress).getApyFromTo(from, to);
+        return rateOracle.getApyFromTo(from, to);
     }
 
     /// @notice Updates the cached historical APY value of the RateOracle even if the cache is not stale 
@@ -337,35 +337,15 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     
     
     /// @inheritdoc IMarginEngine
-    function liquidatePosition(ModifyPositionParams memory params) external checkCurrentTimestampTermEndTimestampDelta override {
+    function liquidatePosition(int24 tickLower, int24 tickUpper, address _owner) external checkCurrentTimestampTermEndTimestampDelta override {
 
         /// @dev can only happen before maturity, this is checked when an unwind is triggered which in turn triggers a swap which checks for this condition
 
-        Tick.checkTicks(params.tickLower, params.tickUpper);
+        Tick.checkTicks(tickLower,tickUpper);
 
-        (uint160 sqrtPriceX96, int24 tick, ) = vamm.vammVars();
-        updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
-        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);  
-
-        bool isLiquidatable = MarginCalculator.isLiquidatablePosition(
-            MarginCalculator.PositionMarginRequirementParams({
-                owner: params.owner,
-                tickLower: params.tickLower,
-                tickUpper: params.tickUpper,
-                isLM: true,
-                currentTick: tick,
-                termStartTimestampWad: termStartTimestampWad,
-                termEndTimestampWad: termEndTimestampWad,
-                liquidity: position._liquidity,
-                fixedTokenBalance: position.fixedTokenBalance,
-                variableTokenBalance: position.variableTokenBalance,
-                variableFactorWad: IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad),
-                historicalApyWad: getHistoricalApy(),
-                sqrtPriceX96: sqrtPriceX96
-            }),
-            position.margin,
-            marginCalculatorParameters
-        );
+        Position.Info storage position = positions.get(_owner, tickLower, tickUpper);  
+        
+        bool isLiquidatable = isLiquidatablePosition(position, tickLower, tickUpper);
 
         if (!isLiquidatable) {
             revert CannotLiquidate();
@@ -377,12 +357,14 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         position.updateMarginViaDelta(-int256(liquidatorRewardValue));
 
-        /// @dev pass position._liquidity to ensure all of the liqudity is burnt
-
-        vamm.burn(params.owner, params.tickLower, params.tickUpper, position._liquidity);
-
-        /// @audit what if unwind fails, should ideally be a no-op
-        unwindPosition(params.owner, params.tickLower, params.tickUpper);
+        if (position._liquidity > 0) {
+            /// @dev pass position._liquidity to ensure all of the liqudity is burnt
+            vamm.burn(_owner, tickLower, tickUpper, position._liquidity);
+        }
+        
+        /// @audit what if burn above fails
+        /// @audit what if the unwind wasn't fully complete
+        unwindPosition(position, _owner, tickLower, tickUpper);
 
         IERC20Minimal(underlyingToken).transfer(msg.sender, liquidatorRewardValue);
         
@@ -392,25 +374,22 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @inheritdoc IMarginEngine
     function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external onlyVAMM override {
 
-        updatePositionTokenBalancesAndAccountForFees(params.owner, params.tickLower, params.tickUpper);
-        /// @audit position is retreived from storage twice: once in the updatePositionTokenBalancesAndAccountForFees, once below
-
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper);
         position.updateLiquidity(params.liquidityDelta);
         
         if (params.liquidityDelta>0) {
-            uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
-            checkPositionMarginAboveRequirement(params, position.margin, position._liquidity, position.fixedTokenBalance, position.variableTokenBalance, variableFactorWad);
+            checkPositionMarginAboveRequirement(position, position.margin, params.tickLower, params.tickUpper);
         }
 
     }
 
-    function updatePositionPostVAMMInducedSwap(address owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int24 currentTick, uint160 sqrtPriceX96) external onlyVAMM override {
+    function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) external onlyVAMM override {
         /// @dev this function can only be called by the vamm following a swap    
 
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
 
-        updatePositionTokenBalancesAndAccountForFees(owner, tickLower, tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
 
         if (cumulativeFeeIncurred > 0) {
             position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
@@ -418,28 +397,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
-        uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
-        
-        MarginCalculator.PositionMarginRequirementParams
-            memory marginReqParams = MarginCalculator
-                .PositionMarginRequirementParams({
-                    owner: owner,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    isLM: false,
-                    currentTick: currentTick,
-                    termStartTimestampWad: termStartTimestampWad,
-                    termEndTimestampWad: termEndTimestampWad,
-                    liquidity: position._liquidity,
-                    fixedTokenBalance: position.fixedTokenBalance,
-                    variableTokenBalance: position.variableTokenBalance,
-                    variableFactorWad: variableFactorWad,
-                    historicalApyWad: getHistoricalApy(),
-                    sqrtPriceX96: sqrtPriceX96
-                });
-
         int256 positionMarginRequirement = int256(
-            MarginCalculator.getPositionMarginRequirement(marginReqParams, marginCalculatorParameters)
+            getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
 
         if (positionMarginRequirement > position.margin) {
@@ -450,7 +409,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     
 
     function updatePositionTokenBalancesAndAccountForFees(
-        Position.Info storage position
+        Position.Info storage position,
+        int24 tickLower,
+        int24 tickUpper
         ) internal {
         (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
@@ -469,12 +430,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Position.Info storage position,
         int256 updatedMarginWouldBe,
         int24 tickLower,
-        int24 tickUpper,
-        address owner
+        int24 tickUpper
     ) internal {
     
         int256 positionMarginRequirement = int256(
-            getPositionMarginRequirement(position, tickLower, tickUpper, owner, false)
+            getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
 
         if (updatedMarginWouldBe <= positionMarginRequirement) {
@@ -483,27 +443,18 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
 
-    /// @notice Check if the position margin can be updated
-    /// @param params Position owner, position tickLower, position tickUpper, _
-    /// @param updatedMarginWouldBe Amount of margin supporting the position following a margin update if the transaction does not get reverted (e.g. if the margin requirement is not satisfied)
-    /// @param positionLiquidity Current liquidity supplied by the position
-    /// @param positionFixedTokenBalance Fixed token balance of a position since the last mint/burn/poke
-    /// @param positionVariableTokenBalance Variable token balance of a position since the last mint/burn/poke
-    /// @param variableFactorWad Accrued Variable Factor, i.e. the variable APY of the underlying yield-bearing pool since the inception of the IRS AMM until now
-    /// @dev If the current timestamp is higher than the maturity timestamp of the AMM, then the position needs to be burned (detailed definition above)
     function checkPositionMarginCanBeUpdated(
         Position.Info storage position,
         int256 updatedMarginWouldBe,
         int24 tickLower,
-        int24 tickUpper,
-        address owner
+        int24 tickUpper
     ) internal {
 
         /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
         /// @dev their margin is to withdraw it completely. If so, the position needs to be settled
 
         if (Time.blockTimestampScaled() >= termEndTimestampWad) {
-            if (!isPositionSettled) {
+            if (!position.isSettled) {
                 revert PositionNotSettled();
             }
             if (updatedMarginWouldBe < 0) {
@@ -515,23 +466,22 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 position,
                 updatedMarginWouldBe,
                 tickLower,
-                tickUpper,
-                owner
+                tickUpper
             );
         }
     }
 
     
     /// @notice Unwind a position
-    /// @dev Auth:
     /// @dev Before unwinding a position, need to check if it is even necessary to unwind it, i.e. check if the most up to date variable token balance of a position is non-zero
     /// @dev If the current fixed token balance of a position is positive, this implies the position is a net Fixed Taker,
     /// @dev Hence to unwind need to enter into a Variable Taker IRS contract with notional = abs(current variable token balance)
-    /// @param owner the owner of the position
+    /// @param _owner the owner of the position
     /// @param tickLower the lower tick of the position's tick range
     /// @param tickUpper the upper tick of the position's tick range
     function unwindPosition(
-        address owner,
+        Position.Info storage position,
+        address _owner,
         int24 tickLower,
         int24 tickUpper
     ) internal {
@@ -540,10 +490,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Tick.checkTicks(tickLower, tickUpper);
 
         /// @audit below is potentially redundunt since the burn already induces updates via updatePositionPostVAMMMintBurn, needs to be checked
-
-        updatePositionTokenBalancesAndAccountForFees(owner, tickLower, tickUpper);
-
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        // updatePositionTokenBalancesAndAccountForFees(owner, tickLower, tickUpper); --> do this in the test ME
 
         if (position.variableTokenBalance != 0 ) {
 
@@ -563,12 +510,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO
 
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                    recipient: owner,
+                    recipient: _owner,
                     isFT: false,
                     amountSpecified: position.variableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1,
                     isExternal: true,
-                    isTrader: false,
                     tickLower: tickLower,
                     tickUpper: tickUpper
                 });
@@ -583,12 +529,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO
 
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                    recipient: owner,
+                    recipient: _owner,
                     isFT: true,
                     amountSpecified: position.variableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO - 1,
                     isExternal: true,
-                    isTrader: false,
                     tickLower: tickLower,
                     tickUpper: tickUpper
                 });
@@ -612,275 +557,239 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper,
-        address owner,
         bool isLM
-    ) internal view returns (uint256 margin) {
+    ) internal returns (uint256 margin) {
         Tick.checkTicks(tickLower, tickUpper);
-        
-        // update fees and balances
 
         (uint160 sqrtPriceX96, int24 tick, ) = vamm.vammVars();
 
         uint256 variableFactorWad = rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad);
 
-        if (position.liquidity > 0) {
+        if (position._liquidity > 0) {
 
-             int256 scenario1LPVariableTokenBalance;
-        int256 scenario1LPFixedTokenBalance;
+            updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
+            /// @audit simplify (2 scenarios from current to lower, from  current to upper)
 
-        int256 scenario2LPVariableTokenBalance;
-        int256 scenario2LPFixedTokenBalance;
+            PositionMarginRequirementLocalVars memory localVars;
 
-        /// @audit simplify (2 scenarios from current to lower, from  current to upper)
+            if (tick < tickLower) {
+                /// @dev scenario 1: a trader comes in and trades all the liqudiity all the way to tickUpper given current liqudity of the LP
+                /// @dev scenario 2: current tick never reaches the tickLower (LP stays with their current fixed and variable token balances)
 
-        if (params.currentTick < params.tickLower) {
-            /// @dev scenario 1: a trader comes in and trades all the liqudiity all the way to tickUpper given current liqudity of the LP
-            /// @dev scenario 2: current tick never reaches the tickLower (LP stays with their current fixed and variable token balances)
+                /// @dev from the perspective of the LP (not the trader who is a Fixed Taker)
+                /// @dev Scenario 1
 
-            /// @dev from the perspective of the LP (not the trader who is a Fixed Taker)
-            /// @dev Scenario 1
+                /// @dev this value is negative since the LP is a Variable Taker in this case
+                localVars.amount0FromTickLowerToTickUpper = SqrtPriceMath
+                    .getAmount0Delta(
+                        TickMath.getSqrtRatioAtTick(tickLower),
+                        TickMath.getSqrtRatioAtTick(tickUpper),
+                        -int128(position._liquidity)
+                    );
 
-            /// @dev this value is negative since the LP is a Variable Taker in this case
-            int256 amount0FromTickLowerToTickUpper = SqrtPriceMath
-                .getAmount0Delta(
-                    TickMath.getSqrtRatioAtTick(params.tickLower),
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
-                    -int128(params.liquidity)
-                );
+                /// @dev this value is positive since the LP is a Variable Taker in this case
+                localVars.amount1FromTickLowerToTickUpper = SqrtPriceMath
+                    .getAmount1Delta(
+                        TickMath.getSqrtRatioAtTick(tickLower),
+                        TickMath.getSqrtRatioAtTick(tickUpper),
+                        int128(position._liquidity)
+                    );
 
-            /// @dev this value is positive since the LP is a Variable Taker in this case
-            int256 amount1FromTickLowerToTickUpper = SqrtPriceMath
-                .getAmount1Delta(
-                    TickMath.getSqrtRatioAtTick(params.tickLower),
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
-                    int128(params.liquidity)
-                );
+                localVars.scenario1LPVariableTokenBalance =
+                    position.variableTokenBalance +
+                    localVars.amount1FromTickLowerToTickUpper;
 
-            scenario1LPVariableTokenBalance =
-                params.variableTokenBalance +
-                amount1FromTickLowerToTickUpper;
+                localVars.scenario1LPFixedTokenBalance =
+                    position.fixedTokenBalance +
+                    FixedAndVariableMath.getFixedTokenBalance(
+                        localVars.amount0FromTickLowerToTickUpper,
+                        localVars.amount1FromTickLowerToTickUpper,
+                        variableFactorWad,
+                        termStartTimestampWad,
+                        termEndTimestampWad
+                    );
 
-            scenario1LPFixedTokenBalance =
-                params.fixedTokenBalance +
-                FixedAndVariableMath.getFixedTokenBalance(
-                    amount0FromTickLowerToTickUpper,
-                    amount1FromTickLowerToTickUpper,
-                    params.variableFactorWad,
-                    params.termStartTimestampWad,
-                    params.termEndTimestampWad
-                );
+                /// @dev Scenario 2
+                localVars.scenario2LPVariableTokenBalance = position.variableTokenBalance;
+                localVars.scenario2LPFixedTokenBalance = position.fixedTokenBalance;
+            } else if (tick < tickUpper) {
+                /// @dev scenario 1: a trader comes in and trades all the liquidity from currentTick to tickUpper given current liquidity of LP
+                /// @dev scenario 2: a trader comes in and trades all the liquidity from currentTick to tickLower given current liquidity of LP
 
-            /// @dev Scenario 2
-            scenario2LPVariableTokenBalance = params.variableTokenBalance;
-            scenario2LPFixedTokenBalance = params.fixedTokenBalance;
-        } else if (params.currentTick < params.tickUpper) {
-            /// @dev scenario 1: a trader comes in and trades all the liquidity from currentTick to tickUpper given current liquidity of LP
-            /// @dev scenario 2: a trader comes in and trades all the liquidity from currentTick to tickLower given current liquidity of LP
+                /// @dev from the perspective of the LP (not the trader who is a Fixed Taker)
+                /// @dev Scenario 1
 
-            /// @dev from the perspective of the LP (not the trader who is a Fixed Taker)
-            /// @dev Scenario 1
+                /// @dev this value is negative since the LP is a Variable Taker in this case
+                localVars.amount0FromCurrentTickToTickUpper = SqrtPriceMath
+                    .getAmount0Delta(
+                        TickMath.getSqrtRatioAtTick(tick),
+                        TickMath.getSqrtRatioAtTick(tickUpper),
+                        -int128(position._liquidity)
+                    );
 
-            /// @dev this value is negative since the LP is a Variable Taker in this case
-            int256 amount0FromCurrentTickToTickUpper = SqrtPriceMath
-                .getAmount0Delta(
-                    TickMath.getSqrtRatioAtTick(params.currentTick),
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
-                    -int128(params.liquidity)
-                );
+                /// @dev this value is positive since the LP is a Variable Taker in this case
+                localVars.amount1FromCurrentTickToTickUpper = SqrtPriceMath
+                    .getAmount1Delta(
+                        TickMath.getSqrtRatioAtTick(tick),
+                        TickMath.getSqrtRatioAtTick(tickUpper),
+                        int128(position._liquidity)
+                    );
 
-            /// @dev this value is positive since the LP is a Variable Taker in this case
-            int256 amount1FromCurrentTickToTickUpper = SqrtPriceMath
-                .getAmount1Delta(
-                    TickMath.getSqrtRatioAtTick(params.currentTick),
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
-                    int128(params.liquidity)
-                );
+                localVars.scenario1LPVariableTokenBalance =
+                    position.variableTokenBalance +
+                    localVars.amount1FromCurrentTickToTickUpper;
+                localVars.scenario1LPFixedTokenBalance =
+                    position.fixedTokenBalance +
+                    FixedAndVariableMath.getFixedTokenBalance(
+                        localVars.amount0FromCurrentTickToTickUpper,
+                        localVars.amount1FromCurrentTickToTickUpper,
+                        variableFactorWad,
+                        termStartTimestampWad,
+                        termEndTimestampWad
+                    );
 
-            scenario1LPVariableTokenBalance =
-                params.variableTokenBalance +
-                amount1FromCurrentTickToTickUpper;
-            scenario1LPFixedTokenBalance =
-                params.fixedTokenBalance +
-                FixedAndVariableMath.getFixedTokenBalance(
-                    amount0FromCurrentTickToTickUpper,
-                    amount1FromCurrentTickToTickUpper,
-                    params.variableFactorWad,
-                    params.termStartTimestampWad,
-                    params.termEndTimestampWad
-                );
+                /// @dev from the perspective of the LP (not the trader who is a Variable Taker)
+                /// @dev Scenario 2
 
-            /// @dev from the perspective of the LP (not the trader who is a Variable Taker)
-            /// @dev Scenario 2
+                /// @dev this value is positive since the LP is a Fixed Taker in this case
+                localVars.amount0FromCurrentTickToTickLower = SqrtPriceMath
+                    .getAmount0Delta(
+                        TickMath.getSqrtRatioAtTick(tick),
+                        TickMath.getSqrtRatioAtTick(tickLower),
+                        int128(position._liquidity)
+                    );
 
-            /// @dev this value is positive since the LP is a Fixed Taker in this case
-            int256 amount0FromCurrentTickToTickLower = SqrtPriceMath
-                .getAmount0Delta(
-                    TickMath.getSqrtRatioAtTick(params.currentTick),
-                    TickMath.getSqrtRatioAtTick(params.tickLower),
-                    int128(params.liquidity)
-                );
+                /// @dev this value is negative since the LP is a FixedTaker in this case
+                localVars.amount1FromCurrentTickToTickLower = SqrtPriceMath
+                    .getAmount1Delta(
+                        TickMath.getSqrtRatioAtTick(tick),
+                        TickMath.getSqrtRatioAtTick(tickLower),
+                        -int128(position._liquidity)
+                    );
 
-            /// @dev this value is negative since the LP is a FixedTaker in this case
-            int256 amount1FromCurrentTickToTickLower = SqrtPriceMath
-                .getAmount1Delta(
-                    TickMath.getSqrtRatioAtTick(params.currentTick),
-                    TickMath.getSqrtRatioAtTick(params.tickLower),
-                    -int128(params.liquidity)
-                );
+                localVars.scenario2LPVariableTokenBalance =
+                    position.variableTokenBalance +
+                    localVars.amount1FromCurrentTickToTickLower;
+                localVars.scenario2LPFixedTokenBalance =
+                    position.fixedTokenBalance +
+                    FixedAndVariableMath.getFixedTokenBalance(
+                        localVars.amount0FromCurrentTickToTickLower,
+                        localVars.amount1FromCurrentTickToTickLower,
+                        variableFactorWad,
+                        termStartTimestampWad,
+                        termEndTimestampWad
+                    );
+            } else {
+                /// @dev scenario 1: a trader comes in and trades all the liqudiity all the way to tickLower given current liqudity of the LP
+                /// @dev scenario 2: current tick never reaches the tickUpper (LP stays with their current fixed and variable token balances)
 
-            scenario2LPVariableTokenBalance =
-                params.variableTokenBalance +
-                amount1FromCurrentTickToTickLower;
-            scenario2LPFixedTokenBalance =
-                params.fixedTokenBalance +
-                FixedAndVariableMath.getFixedTokenBalance(
-                    amount0FromCurrentTickToTickLower,
-                    amount1FromCurrentTickToTickLower,
-                    params.variableFactorWad,
-                    params.termStartTimestampWad,
-                    params.termEndTimestampWad
-                );
-        } else {
-            /// @dev scenario 1: a trader comes in and trades all the liqudiity all the way to tickLower given current liqudity of the LP
-            /// @dev scenario 2: current tick never reaches the tickUpper (LP stays with their current fixed and variable token balances)
+                /// @dev from the perspective of the LP (not the trader who is a Variable Taker)
+                /// @dev Scenario 1
 
-            /// @dev from the perspective of the LP (not the trader who is a Variable Taker)
-            /// @dev Scenario 1
+                /// @dev this value is positive since the LP is a Fixed Taker in this case
+                localVars.amount0FromTickUpperToTickLower = SqrtPriceMath
+                    .getAmount0Delta(
+                        TickMath.getSqrtRatioAtTick(tickUpper),
+                        TickMath.getSqrtRatioAtTick(tickLower),
+                        int128(position._liquidity)
+                    );
 
-            /// @dev this value is positive since the LP is a Fixed Taker in this case
-            int256 amount0FromTickUpperToTickLower = SqrtPriceMath
-                .getAmount0Delta(
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
-                    TickMath.getSqrtRatioAtTick(params.tickLower),
-                    int128(params.liquidity)
-                );
+                /// @dev this value is negative since the LP is a Fixed Taker in this case
+                localVars.amount1FromTickUpperToTickLower = SqrtPriceMath
+                    .getAmount1Delta(
+                        TickMath.getSqrtRatioAtTick(tickUpper),
+                        TickMath.getSqrtRatioAtTick(tickLower),
+                        -int128(position._liquidity)
+                    );
 
-            /// @dev this value is negative since the LP is a Fixed Taker in this case
-            int256 amount1FromTickUpperToTickLower = SqrtPriceMath
-                .getAmount1Delta(
-                    TickMath.getSqrtRatioAtTick(params.tickUpper),
-                    TickMath.getSqrtRatioAtTick(params.tickLower),
-                    -int128(params.liquidity)
-                );
+                localVars.scenario1LPVariableTokenBalance =
+                    position.variableTokenBalance +
+                    localVars.amount1FromTickUpperToTickLower;
+                localVars.scenario1LPFixedTokenBalance =
+                    position.fixedTokenBalance +
+                    FixedAndVariableMath.getFixedTokenBalance(
+                        localVars.amount0FromTickUpperToTickLower,
+                        localVars.amount1FromTickUpperToTickLower,
+                        variableFactorWad,
+                        termStartTimestampWad,
+                        termEndTimestampWad
+                    );
 
-            scenario1LPVariableTokenBalance =
-                params.variableTokenBalance +
-                amount1FromTickUpperToTickLower;
-            scenario1LPFixedTokenBalance =
-                params.fixedTokenBalance +
-                FixedAndVariableMath.getFixedTokenBalance(
-                    amount0FromTickUpperToTickLower,
-                    amount1FromTickUpperToTickLower,
-                    params.variableFactorWad,
-                    params.termStartTimestampWad,
-                    params.termEndTimestampWad
-                );
-
-            /// @dev Scenario 2
-            scenario2LPVariableTokenBalance = params.variableTokenBalance;
-            scenario2LPFixedTokenBalance = params.fixedTokenBalance;
-        }
-
-        // @audit make sure correct current prices are provided in here as per the overleaf doc
-
-        uint160 scenario1SqrtPriceX96;
-        uint160 scenario2SqrtPriceX96;
-
-        if (scenario1LPVariableTokenBalance > 0) {
-            // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
-            scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
-                params.tickUpper
-            );
-            if (scenario1SqrtPriceX96 < params.sqrtPriceX96) {
-                scenario1SqrtPriceX96 = params.sqrtPriceX96;
+                /// @dev Scenario 2
+                localVars.scenario2LPVariableTokenBalance = position.variableTokenBalance;
+                localVars.scenario2LPFixedTokenBalance = position.fixedTokenBalance;
             }
-        } else {
-            // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
-            scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
-                params.tickLower
-            );
-            if (scenario1SqrtPriceX96 > params.sqrtPriceX96) {
-                scenario1SqrtPriceX96 = params.sqrtPriceX96;
+
+            if (localVars.scenario1LPVariableTokenBalance > 0) {
+                // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
+                localVars.scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
+                    tickUpper
+                );
+                if (localVars.scenario1SqrtPriceX96 < sqrtPriceX96) {
+                    localVars.scenario1SqrtPriceX96 = sqrtPriceX96;
+                }
+            } else {
+                // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
+                localVars.scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
+                    tickLower
+                );
+                if (localVars.scenario1SqrtPriceX96 > sqrtPriceX96) {
+                    localVars.scenario1SqrtPriceX96 = sqrtPriceX96;
+                }
             }
-        }
 
-        if (scenario2LPVariableTokenBalance > 0) {
-            // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
-            scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
-                params.tickUpper
-            );
+            if (localVars.scenario2LPVariableTokenBalance > 0) {
+                // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
+                localVars.scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
+                    tickUpper
+                );
 
-            if (scenario2SqrtPriceX96 < params.sqrtPriceX96) {
-                scenario2SqrtPriceX96 = params.sqrtPriceX96;
+                if (localVars.scenario2SqrtPriceX96 < sqrtPriceX96) {
+                    localVars.scenario2SqrtPriceX96 = sqrtPriceX96;
+                }
+            } else {
+                // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
+                localVars.scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
+                    tickLower
+                );
+
+                if (localVars.scenario2SqrtPriceX96 > sqrtPriceX96) {
+                    // this should theoretically never be the case
+                    localVars.scenario2SqrtPriceX96 = sqrtPriceX96;
+                }
             }
-        } else {
-            // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
-            scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
-                params.tickLower
-            );
 
-            if (scenario2SqrtPriceX96 > params.sqrtPriceX96) {
-                scenario2SqrtPriceX96 = params.sqrtPriceX96;
+            localVars.scenario1MarginRequirement = getTraderMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
+            localVars.scenario2MarginRequirement = getTraderMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
+
+            if (localVars.scenario1MarginRequirement > localVars.scenario2MarginRequirement) {
+                return localVars.scenario1MarginRequirement;
+            } else {
+                return localVars.scenario2MarginRequirement;
             }
-        }
-
-        uint256 scenario1MarginRequirement = getTraderMarginRequirement(
-            TraderMarginRequirementParams({
-                fixedTokenBalance: scenario1LPFixedTokenBalance,
-                variableTokenBalance: scenario1LPVariableTokenBalance,
-                termStartTimestampWad: params.termStartTimestampWad,
-                termEndTimestampWad: params.termEndTimestampWad,
-                isLM: params.isLM,
-                historicalApyWad: params.historicalApyWad,
-                sqrtPriceX96: scenario1SqrtPriceX96,
-                variableFactorWad: params.variableFactorWad
-            }),
-            _marginCalculatorParameters
-        );
-
-        uint256 scenario2MarginRequirement = getTraderMarginRequirement(
-            TraderMarginRequirementParams({
-                fixedTokenBalance: scenario2LPFixedTokenBalance,
-                variableTokenBalance: scenario2LPVariableTokenBalance,
-                termStartTimestampWad: params.termStartTimestampWad,
-                termEndTimestampWad: params.termEndTimestampWad,
-                isLM: params.isLM,
-                historicalApyWad: params.historicalApyWad,
-                sqrtPriceX96: scenario2SqrtPriceX96,
-                variableFactorWad: params.variableFactorWad
-            }),
-            _marginCalculatorParameters
-        );
-
-        if (scenario1MarginRequirement > scenario2MarginRequirement) {
-            return scenario1MarginRequirement;
-        } else {
-            return scenario2MarginRequirement;
-        }
 
         } else {
-
-
-
+            // directly get the trader margin requirement
+            return getTraderMarginRequirement(position.fixedTokenBalance, position.variableTokenBalance, isLM, sqrtPriceX96);
         }
         
-       
     }
 
     /// @notice Checks if a given position is liquidatable
     /// @dev In order for a position to be liquidatable its current margin needs to be lower than the position's liquidation margin requirement
     /// @return _isLiquidatable A boolean which suggests if a given position is liquidatable
     function isLiquidatablePosition(
-        PositionMarginRequirementParams memory params,
-        int256 currentMargin,
-        IMarginEngine.MarginCalculatorParameters
-            memory _marginCalculatorParameters
-    ) internal view returns (bool _isLiquidatable) {
+        Position.Info storage position,
+        int24 tickLower,
+        int24 tickUpper
+    ) internal returns (bool _isLiquidatable) {
         uint256 marginRequirement = getPositionMarginRequirement(
-            params,
-            _marginCalculatorParameters
+            position,
+            tickLower,
+            tickUpper,
+            true
         );
-        if (currentMargin < int256(marginRequirement)) {
+        if (position.margin < int256(marginRequirement)) {
             _isLiquidatable = true;
         } else {
             _isLiquidatable = false;
@@ -889,28 +798,24 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
 
     /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
-    /// @param params Values necessary for the purposes of the computation of the Trader Margin Requirement
     /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
     function getTraderMarginRequirement(
-        TraderMarginRequirementParams memory params,
-        IMarginEngine.MarginCalculatorParameters
-            memory _marginCalculatorParameters
-    ) internal view returns (uint256 margin) {
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        bool isLM,
+        uint160 sqrtPriceX96
+    ) internal returns (uint256 margin) {    
         margin = _getTraderMarginRequirement(
-            params,
-            _marginCalculatorParameters
+            fixedTokenBalance,
+            variableTokenBalance,
+            isLM
         );
-
-        Printer.printUint256("margin", margin);
 
         uint256 minimumMarginRequirement = getMinimumMarginRequirement(
-            params,
-            _marginCalculatorParameters
-        );
-
-        Printer.printUint256(
-            "minimumMarginRequirement",
-            minimumMarginRequirement
+            fixedTokenBalance,
+            variableTokenBalance,
+            isLM,
+            sqrtPriceX96
         );
 
         if (margin < minimumMarginRequirement) {
@@ -922,7 +827,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         bool isLM
-    ) internal view returns (uint256 margin) {
+    ) internal returns (uint256 margin) {
     
         if (fixedTokenBalance >= 0 && variableTokenBalance >= 0) {
             return 0;
@@ -978,8 +883,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         bool isLM,
-        uint160 sqrtPriceX96,
-    ) internal view returns (uint256 margin) {
+        uint160 sqrtPriceX96
+    ) internal returns (uint256 margin) {
         
         if (variableTokenBalance == 0) {
             // if the variable token balance is zero there is no need for a minimum liquidator incentive since a liquidtion is not expected
@@ -1033,56 +938,45 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
             // simulate an adversarial unwind (cumulative position is an FT --> simulate a VT unwind --> movement to the right along the VAMM)
             fixedTokenDeltaUnbalanced = -int256(
-                getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
-                    uint256(-params.variableTokenBalance),
-                    params.sqrtPriceX96,
+                MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
+                    uint256(-variableTokenBalance),
+                    sqrtPriceX96,
                     devMulWad,
                     fixedRateDeviationMinWad,
-                    params.termEndTimestampWad,
+                    termEndTimestampWad,
                     Time.blockTimestampScaled(),
-                    uint256(_marginCalculatorParameters.tMaxWad),
-                    _marginCalculatorParameters.gammaWad,
+                    uint256(marginCalculatorParameters.tMaxWad),
+                    marginCalculatorParameters.gammaWad,
                     false
                 )
             );
         }
 
-        int256 variableTokenDelta = -params.variableTokenBalance;
+        int256 variableTokenDelta = -variableTokenBalance;
 
         int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
             fixedTokenDeltaUnbalanced,
             variableTokenDelta,
-            params.variableFactorWad,
-            params.termStartTimestampWad,
-            params.termEndTimestampWad
+            rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad),
+            termStartTimestampWad,
+            termEndTimestampWad
         );
 
-        Printer.printInt256("fixedTokenDelta", fixedTokenDelta);
-
-        int256 updatedVariableTokenBalance = params.variableTokenBalance +
+        int256 updatedVariableTokenBalance = variableTokenBalance +
             variableTokenDelta; // should be zero
-        int256 updatedFixedTokenBalance = params.fixedTokenBalance +
+        int256 updatedFixedTokenBalance = fixedTokenBalance +
             fixedTokenDelta;
 
         margin = _getTraderMarginRequirement(
-            TraderMarginRequirementParams({
-                fixedTokenBalance: updatedFixedTokenBalance,
-                variableTokenBalance: updatedVariableTokenBalance,
-                termStartTimestampWad: params.termStartTimestampWad,
-                termEndTimestampWad: params.termEndTimestampWad,
-                isLM: params.isLM,
-                historicalApyWad: params.historicalApyWad,
-                sqrtPriceX96: params.sqrtPriceX96,
-                variableFactorWad: params.variableFactorWad
-            }),
-            _marginCalculatorParameters
-        );
+            updatedFixedTokenBalance,
+            updatedVariableTokenBalance,
+            isLM);
 
         if (
             margin <
-            _marginCalculatorParameters.minMarginToIncentiviseLiquidators
+            marginCalculatorParameters.minMarginToIncentiviseLiquidators
         ) {
-            margin = _marginCalculatorParameters
+            margin = marginCalculatorParameters
                 .minMarginToIncentiviseLiquidators;
         }
     }

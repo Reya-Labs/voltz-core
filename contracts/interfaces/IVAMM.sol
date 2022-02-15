@@ -49,6 +49,8 @@ interface IVAMM is IPositionStructs {
     /// @dev Error which ensures the VAMM is unlocked
     error CanOnlyTradeIfUnlocked(bool unlocked);
 
+    error OnlyMarginEngine();
+
     // structs
 
     struct VAMMVars {
@@ -74,9 +76,6 @@ interface IVAMM is IPositionStructs {
         bool isExternal;
         /// @dev Is the swap triggered by a trader. If this is false then this is only possible in a scenario where a liquidity provider's position is liquidated
         /// @dev leading to an unwind of a liquidity provider
-        bool isTrader;
-        /// @dev in case the swap is triggered by a Liquidity Provider these values need to be present in Swap Params
-
         /// @dev lower tick of the liquidity provider (needs to be set if isTrader is false)
         int24 tickLower;
         /// @dev upper tick of the liqudiity provider (needs to be set if isTrader is false)
@@ -205,8 +204,7 @@ interface IVAMM is IPositionStructs {
     /// @dev Protocol fees will never exceed uint256
     function protocolFees() external view returns (uint256);
 
-    // marginEngineAddress
-    function marginEngineAddress() external view returns (address);
+    function marginEngine() external view returns (IMarginEngine);
 
     /// @notice Function that sets the feeProtocol of the vamm
     function setFeeProtocol(uint8 feeProtocol) external;

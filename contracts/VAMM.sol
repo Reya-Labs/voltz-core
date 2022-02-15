@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 import "./core_libraries/Tick.sol";
 import "./interfaces/IVAMM.sol";
 import "./core_libraries/TickBitmap.sol";
-import "./core_libraries/Position.sol";
-import "./core_libraries/Trader.sol";
 // import "./utils/Printer.sol";
 import "./utils/SafeCast.sol";
 import "./utils/SqrtPriceMath.sol";
@@ -56,7 +54,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
-    if (Time.isCloseToMaturityOrBeyondMaturity(IMarginEngine(marginEngineAddress).termEndTimestampWad())) {
+    if (Time.isCloseToMaturityOrBeyondMaturity(marginEngine.termEndTimestampWad())) {
       revert("closeToOrBeyondMaturity");
     }
     _;
@@ -70,9 +68,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   function initialize(address _marginEngineAddress) external override initializer {
     require(_marginEngineAddress != address(0), "ME must be set");
-    marginEngineAddress = _marginEngineAddress;
-    address rateOracleAddress = IMarginEngine(marginEngineAddress).rateOracleAddress();
-    rateOracle = IRateOracle(rateOracleAddress);
+    marginEngine = IMarginEngine(_marginEngineAddress);
+    rateOracle = marginEngine.rateOracle();
     __Ownable_init();
     __Pausable_init();
   }
@@ -89,13 +86,22 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   uint256 public override protocolFees;
 
-  address public override marginEngineAddress;
+  // address public override marginEngineAddress;
+  IMarginEngine public override marginEngine;
+
+  
+  modifier onlyMarginEngine () {
+    if (msg.sender != address(marginEngine)) {
+        revert OnlyMarginEngine();
+    }
+    _;
+  }
 
   function updateProtocolFees(uint256 protocolFeesCollected)
     external
     override
+    onlyMarginEngine
   {
-    require(msg.sender==marginEngineAddress, "only MarginEngine");
     if (protocolFees < protocolFeesCollected) {
       revert NotEnoughFunds(protocolFeesCollected, protocolFees);
     }
@@ -147,7 +153,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       revert LiquidityDeltaMustBePositiveInBurn(amount);
     }
 
-    require((msg.sender==recipient) || (msg.sender == marginEngineAddress), "MS or ME");
+    require((msg.sender==recipient) || (msg.sender == address(marginEngine)), "MS or ME");
 
     /// @audit check the order of operations, make sure the position's liquidity is not used in the unwind
 
@@ -212,7 +218,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       (flippedLower, flippedUpper) = flipTicks(params);
     }
 
-    IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedMintBurn(params);
+    marginEngine.updatePositionPostVAMMInducedMintBurn(params);
 
     // clear any tick data that is no longer needed
     if (params.liquidityDelta < 0) {
@@ -292,17 +298,10 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     if (params.isExternal) {
       /// no need for checks since ME makes sure the values passed are correct
-      require(msg.sender==marginEngineAddress || msg.sender==IMarginEngine(marginEngineAddress).fcm(), "only ME or FCM");
+      require(msg.sender==address(marginEngine) || msg.sender==marginEngine.fcm(), "only ME or FCM");
     } else {
       require(msg.sender==params.recipient, "only sender");
-
-      if (params.isTrader) {
-        require(params.tickLower==0, "no tick lower for traders");
-        require(params.tickUpper==0, "no tick upper for traders");
-      } else {
-        /// @dev dealing with an LP induced swap
-        Tick.checkTicks(params.tickLower, params.tickUpper);
-      }
+      Tick.checkTicks(params.tickLower, params.tickUpper);
     }
 
     /// @dev lock the vamm while the swap is taking place
@@ -389,7 +388,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         state.liquidity,
         state.amountSpecifiedRemaining,
         feeWad,
-        IMarginEngine(marginEngineAddress).termEndTimestampWad() - Time.blockTimestampScaled()
+        marginEngine.termEndTimestampWad() - Time.blockTimestampScaled()
       );
 
       if (params.amountSpecified > 0) {
@@ -428,8 +427,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       // update global fee tracker
       if (state.liquidity > 0) {
         uint256 variableFactorWad = rateOracle.variableFactor(
-          IMarginEngine(marginEngineAddress).termStartTimestampWad(),
-          IMarginEngine(marginEngineAddress).termEndTimestampWad()
+          marginEngine.termStartTimestampWad(),
+          marginEngine.termEndTimestampWad()
         );
         
         (
@@ -442,8 +441,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
           state,
           step,
           variableFactorWad,
-          IMarginEngine(marginEngineAddress).termStartTimestampWad(),
-          IMarginEngine(marginEngineAddress).termEndTimestampWad()
+          marginEngine.termStartTimestampWad(),
+          marginEngine.termEndTimestampWad()
         );
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
@@ -507,15 +506,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
     if (!params.isExternal) {
-      if (params.isTrader) {
-        IMarginEngine(marginEngineAddress).updateTraderPostVAMMInducedSwap(params.recipient, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.sqrtPriceX96);
-      } else {
-        IMarginEngine(marginEngineAddress).updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, vammVars.tick, vammVars.sqrtPriceX96);
-      }
+      marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred);
     }
-
-    Printer.printUint256("cumulativeFeeIncurred", _cumulativeFeeIncurred);
-    Printer.printEmptyLine();
 
     /// @audit more values in the swap event
     emit Swap(

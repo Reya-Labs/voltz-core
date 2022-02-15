@@ -68,7 +68,7 @@ contract Factory is IFactory, Ownable {
     IVAMM vamm = IVAMM(masterVAMM.cloneDeterministic(salt));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     vamm.initialize(address(marginEngine));
-    marginEngine.setVAMMAddress(address(vamm));
+    marginEngine.setVAMM(address(vamm));
 
     uint8 yieldBearingProtocolID = IRateOracle(_rateOracle).underlyingYieldBearingProtocolID();
     IFCM fcm;

@@ -6,17 +6,17 @@ import "../core_libraries/MarginCalculator.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 
 contract MarginCalculatorTest {
-    function getMinimumMarginRequirement(
-        MarginCalculator.TraderMarginRequirementParams memory params,
-        IMarginEngine.MarginCalculatorParameters
-            memory _marginCalculatorParameters
-    ) external view returns (uint256 margin) {
-        return
-            MarginCalculator.getMinimumMarginRequirement(
-                params,
-                _marginCalculatorParameters
-            );
-    }
+    // function getMinimumMarginRequirement(
+    //     MarginCalculator.TraderMarginRequirementParams memory params,
+    //     IMarginEngine.MarginCalculatorParameters
+    //         memory _marginCalculatorParameters
+    // ) external view returns (uint256 margin) {
+    //     return
+    //         MarginCalculator.getMinimumMarginRequirement(
+    //             params,
+    //             _marginCalculatorParameters
+    //         );
+    // }
 
     function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
         uint256 variableTokenDeltaAbsolute,
@@ -76,18 +76,6 @@ contract MarginCalculatorTest {
             );
     }
 
-    function getTraderMarginRequirement(
-        MarginCalculator.TraderMarginRequirementParams memory params,
-        IMarginEngine.MarginCalculatorParameters
-            memory _marginCalculatorParameters
-    ) external view returns (uint256 margin) {
-        return
-            MarginCalculator.getTraderMarginRequirement(
-                params,
-                _marginCalculatorParameters
-            );
-    }
-
     function worstCaseVariableFactorAtMaturity(
         uint256 timeInSecondsFromStartToMaturityWad,
         uint256 termEndTimestampWad,
@@ -110,45 +98,31 @@ contract MarginCalculatorTest {
             );
     }
 
-    function isLiquidatableTrader(
-        MarginCalculator.TraderMarginRequirementParams memory params,
-        int256 currentMargin,
-        IMarginEngine.MarginCalculatorParameters
-            memory _marginCalculatorParameters
-    ) external view returns (bool isLiquidatable) {
-        return
-            MarginCalculator.isLiquidatableTrader(
-                params,
-                currentMargin,
-                _marginCalculatorParameters
-            );
-    }
+    // function isLiquidatablePosition(
+    //     MarginCalculator.PositionMarginRequirementParams memory params,
+    //     int256 currentMargin,
+    //     IMarginEngine.MarginCalculatorParameters
+    //         memory _marginCalculatorParameters
+    // ) external view returns (bool _isLiquidatable) {
+    //     return
+    //         MarginCalculator.isLiquidatablePosition(
+    //             params,
+    //             currentMargin,
+    //             _marginCalculatorParameters
+    //         );
+    // }
 
-    function isLiquidatablePosition(
-        MarginCalculator.PositionMarginRequirementParams memory params,
-        int256 currentMargin,
-        IMarginEngine.MarginCalculatorParameters
-            memory _marginCalculatorParameters
-    ) external view returns (bool _isLiquidatable) {
-        return
-            MarginCalculator.isLiquidatablePosition(
-                params,
-                currentMargin,
-                _marginCalculatorParameters
-            );
-    }
-
-    function getPositionMarginRequirementTest(
-        MarginCalculator.PositionMarginRequirementParams memory params,
-        IMarginEngine.MarginCalculatorParameters
-            memory _marginCalculatorParameters
-    ) external view returns (uint256 margin) {
-        return
-            MarginCalculator.getPositionMarginRequirement(
-                params,
-                _marginCalculatorParameters
-            );
-    }
+    // function getPositionMarginRequirementTest(
+    //     MarginCalculator.PositionMarginRequirementParams memory params,
+    //     IMarginEngine.MarginCalculatorParameters
+    //         memory _marginCalculatorParameters
+    // ) external view returns (uint256 margin) {
+    //     return
+    //         MarginCalculator.getPositionMarginRequirement(
+    //             params,
+    //             _marginCalculatorParameters
+    //         );
+    // }
 
     function getFixedTokenBalanceFromMCTest(
         int256 amount0,

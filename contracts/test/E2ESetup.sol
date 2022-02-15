@@ -144,15 +144,21 @@ contract E2ESetup {
     }
 
     function swap(IVAMM.SwapParams memory params) public {
-        if (params.isTrader) {
-            this.addTrader(params.recipient);
-        } else {
-            this.addPosition(
-                params.recipient,
-                params.tickLower,
-                params.tickUpper
-            );
-        }
+        this.addPosition(
+            params.recipient,
+            params.tickLower,
+            params.tickUpper
+        );
+        // old
+        // if (params.isTrader) {
+        //     this.addTrader(params.recipient);
+        // } else {
+        //     this.addPosition(
+        //         params.recipient,
+        //         params.tickLower,
+        //         params.tickUpper
+        //     );
+        // }
         Swapper(params.recipient).swap(VAMMAddress, params);
 
         if (!continuousInvariants()) {
@@ -161,21 +167,13 @@ contract E2ESetup {
     }
 
     function updatePositionMargin(
-        IPositionStructs.ModifyPositionParams memory params,
+        address _owner,
+        int24 tickLower,
+        int24 tickUpper,
         int256 marginDelta
     ) public {
-        this.addPosition(params.owner, params.tickLower, params.tickUpper);
-        IMarginEngine(MEAddress).updatePositionMargin(params, marginDelta);
-        initialCashflow += marginDelta;
-
-        if (!continuousInvariants()) {
-            revert("Invariants do not hold");
-        }
-    }
-
-    function updateTraderMargin(address trader, int256 marginDelta) public {
-        this.addTrader(trader);
-        IMarginEngine(MEAddress).updateTraderMargin(trader, marginDelta);
+        this.addPosition(_owner, tickLower, tickUpper);
+        IMarginEngine(MEAddress).updatePositionMargin(_owner, tickLower, tickUpper, marginDelta);
         initialCashflow += marginDelta;
 
         if (!continuousInvariants()) {
@@ -225,24 +223,25 @@ contract E2ESetup {
             );
         }
 
-        for (uint256 i = 1; i <= sizeAllTraders; i++) {
-            (
-                int256 margin,
-                int256 fixedTokenBalance,
-                int256 variableTokenBalance,
+        // OLD
+        // for (uint256 i = 1; i <= sizeAllTraders; i++) {
+        //     (
+        //         int256 margin,
+        //         int256 fixedTokenBalance,
+        //         int256 variableTokenBalance,
 
-            ) = IMarginEngine(MEAddress).traders(allTraders[i]);
-            totalFixedTokens += fixedTokenBalance;
-            totalVariableTokens += variableTokenBalance;
-            totalCashflow += margin;
-            totalCashflow += FixedAndVariableMath.calculateSettlementCashflow(
-                fixedTokenBalance,
-                variableTokenBalance,
-                termStartTimestampWad,
-                termEndTimestampWad,
-                variableFactor
-            );
-        }
+        //     ) = IMarginEngine(MEAddress).traders(allTraders[i]);
+        //     totalFixedTokens += fixedTokenBalance;
+        //     totalVariableTokens += variableTokenBalance;
+        //     totalCashflow += margin;
+        //     totalCashflow += FixedAndVariableMath.calculateSettlementCashflow(
+        //         fixedTokenBalance,
+        //         variableTokenBalance,
+        //         termStartTimestampWad,
+        //         termEndTimestampWad,
+        //         variableFactor
+        //     );
+        // }
 
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);

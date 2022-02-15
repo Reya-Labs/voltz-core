@@ -55,10 +55,8 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   function initialize(address _vammAddress, address _marginEngineAddress) external override initializer {
     vammAddress = _vammAddress;
     marginEngineAddress = _marginEngineAddress;
-    address rateOracleAddress = IMarginEngine(marginEngineAddress).rateOracleAddress();
-    rateOracle = IRateOracle(rateOracleAddress);
-    aaveLendingPool = IAaveRateOracle(rateOracleAddress).aaveLendingPool();
-
+    rateOracle = IMarginEngine(marginEngineAddress).rateOracle();
+    aaveLendingPool = IAaveRateOracle(address(rateOracle)).aaveLendingPool();
     address underlyingToken = IMarginEngine(marginEngineAddress).underlyingToken();
     AaveDataTypes.ReserveData memory aaveReserveData = IAaveV2LendingPool(aaveLendingPool).getReserveData(underlyingToken);
     underlyingYieldBearingToken = aaveReserveData.aTokenAddress;
@@ -78,7 +76,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
         amountSpecified: int256(notional),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         isExternal: true,
-        isTrader: true,
         tickLower: 0,
         tickUpper: 0
     });
@@ -122,7 +119,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
         amountSpecified: -int256(notionalToUnwind),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         isExternal: true,
-        isTrader: true,
         tickLower: 0,
         tickUpper: 0
     });
