@@ -290,9 +290,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     checksBeforeSwap(params, vammVarsStart);
 
     if (params.isFT) {
-      require(params.amountSpecified > 0, "AS>0");
+      require(params.amountSpecified > 0, "amount specified needs to be positive for an FT");
     } else {
-      require(params.amountSpecified < 0, "AS<0");
+      require(params.amountSpecified < 0, "amount specified needs to be negative for an VT");
     }
 
     if (params.isUnwind) {
@@ -594,10 +594,10 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       /// @dev if a trader is a VT, they consume variable in return for fixed
       /// @dev Movement from left to right along the VAMM, hence the sqrtPriceLimitX96 needs to be lower than the current sqrtPriceX96, but higher than the MIN_SQRT_RATIO
 
-      // Printer.printUint160("min price:     ", TickMath.MIN_SQRT_RATIO);
-      // Printer.printUint160("limit price:   ", params.sqrtPriceLimitX96);
-      // Printer.printUint160("current price: ", vammVarsStart.sqrtPriceX96);
-      // Printer.printEmptyLine();
+      Printer.printBool("isFT      ", params.isFT);
+      Printer.printUint160("limit price    ", params.sqrtPriceLimitX96);
+      Printer.printUint160("current price  ", vammVarsStart.sqrtPriceX96);
+      Printer.printEmptyLine();
 
       require(
           params.isFT

@@ -1,0 +1,130 @@
+----------------------------START----------------------------
+current timestamp: 1647451633
+
+current tick: 0
+sqrt price at current tick: 1
+
+current reserve normalised income: 1.008000000
+
+amount of available variable tokens: 0 (↑) ; 0 (↓)
+
+lower apy bound: 0.009617182841766879
+ historical apy: 0.101791461312499971
+upper apy bound: 0.1931833742864133
+variable factor: 0.0
+
+No of   Minters: 5
+No of Positions: 5
+POSITION 0
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 0
+         sqrt price at upper tick: 1
+                        liquidity: 0.0
+                           margin: 0.0
+   fixedTokenGrowthInsideLastX128: 0
+variableTokenGrowthInsideLastX128: 0
+                fixedTokenBalance: 0.0
+             variableTokenBalance: 0.0
+          feeGrowthInsideLastX128: 0
+                        isSettled: false
+             settlement cashflow: 0.0
+
+POSITION 1
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 0
+         sqrt price at upper tick: 1
+                        liquidity: 0.0
+                           margin: 0.0
+   fixedTokenGrowthInsideLastX128: 0
+variableTokenGrowthInsideLastX128: 0
+                fixedTokenBalance: 0.0
+             variableTokenBalance: 0.0
+          feeGrowthInsideLastX128: 0
+                        isSettled: false
+             settlement cashflow: 0.0
+
+POSITION 2
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 0
+         sqrt price at upper tick: 1
+                        liquidity: 0.0
+                           margin: 0.0
+   fixedTokenGrowthInsideLastX128: 0
+variableTokenGrowthInsideLastX128: 0
+                fixedTokenBalance: 0.0
+             variableTokenBalance: 0.0
+          feeGrowthInsideLastX128: 0
+                        isSettled: false
+             settlement cashflow: 0.0
+
+POSITION 3
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 0
+         sqrt price at upper tick: 1
+                        liquidity: 0.0
+                           margin: 0.0
+   fixedTokenGrowthInsideLastX128: 0
+variableTokenGrowthInsideLastX128: 0
+                fixedTokenBalance: 0.0
+             variableTokenBalance: 0.0
+          feeGrowthInsideLastX128: 0
+                        isSettled: false
+             settlement cashflow: 0.0
+
+POSITION 4
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 0
+         sqrt price at upper tick: 1
+                        liquidity: 0.0
+                           margin: 0.0
+   fixedTokenGrowthInsideLastX128: 0
+variableTokenGrowthInsideLastX128: 0
+                fixedTokenBalance: 0.0
+             variableTokenBalance: 0.0
+          feeGrowthInsideLastX128: 0
+                        isSettled: false
+             settlement cashflow: 0.0
+
+
+No of Traders: 5
+TRADER: 0
+              margin: 0.0
+   fixedTokenBalance: 0.0
+variableTokenBalance: 0.0
+           isSettled: false
+settlement cashflow: 0.0
+
+TRADER: 1
+              margin: 0.0
+   fixedTokenBalance: 0.0
+variableTokenBalance: 0.0
+           isSettled: false
+settlement cashflow: 0.0
+
+TRADER: 2
+              margin: 0.0
+   fixedTokenBalance: 0.0
+variableTokenBalance: 0.0
+           isSettled: false
+settlement cashflow: 0.0
+
+TRADER: 3
+              margin: 0.0
+   fixedTokenBalance: 0.0
+variableTokenBalance: 0.0
+           isSettled: false
+settlement cashflow: 0.0
+
+TRADER: 4
+              margin: 0.0
+   fixedTokenBalance: 0.0
+variableTokenBalance: 0.0
+           isSettled: false
+settlement cashflow: 0.0
+
+

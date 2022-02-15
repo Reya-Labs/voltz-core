@@ -1,17 +1,16 @@
 ----------------------------START----------------------------
-current timestamp: 1634841354
+current timestamp: 1647451750
 
 current tick: 0
 sqrt price at current tick: 1
 
 current reserve normalised income: 1.008000000
 
-amount of available    fixed tokens: 0 (↑) ; 0 (↓)
 amount of available variable tokens: 0 (↑) ; 0 (↓)
 
-lower apy bound: 0.008876098958379353
- historical apy: 0.1
-upper apy bound: 0.190904803521584035
+lower apy bound: 0.009618411910445046
+ historical apy: 0.101794640311787586
+upper apy bound: 0.193187467924658332
 variable factor: 0.0
 
 No of   Minters: 2
@@ -64,19 +63,18 @@ settlement cashflow: 0.0
 
 
 ----------------------------BEFORE FIRST SWAP----------------------------
-current timestamp: 1635014160
+current timestamp: 1647624557
 
 current tick: 0
 sqrt price at current tick: 1
 
 current reserve normalised income: 1.008100000
 
-amount of available    fixed tokens: 2995.354955910781 (↑) ; 3004.3540627419256 (↓)
 amount of available variable tokens: 3004.3540627419256 (↑) ; 2995.354955910781 (↓)
 
-lower apy bound: 0.009743381848622635
- historical apy: 0.1
-upper apy bound: 0.190349579101334628
+lower apy bound: 0.000723686450256055
+ historical apy: 0.077251642288338956
+upper apy bound: 0.160667705519502691
 variable factor: 0.000099206349206349
 
 No of   Minters: 2
@@ -129,19 +127,18 @@ settlement cashflow: 0.0
 
 
 ----------------------------AFTER FIRST SWAP----------------------------
-current timestamp: 1635014164
+current timestamp: 1647624561
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
 
 current reserve normalised income: 1.008100000
 
-amount of available    fixed tokens: 5999.709018652707 (↑) ; 0 (↓)
 amount of available variable tokens: 5999.709018652707 (↑) ; 0 (↓)
 
-lower apy bound: 0.009743402109343771
- historical apy: 0.1
-upper apy bound: 0.190349566040290477
+lower apy bound: 0.000723446600656561
+ historical apy: 0.077250951579659364
+upper apy bound: 0.160666767597111641
 variable factor: 0.000099206349206349
 
 No of   Minters: 2
@@ -153,13 +150,13 @@ POSITION 0
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
-   fixedTokenGrowthInsideLastX128: 0.0030577238649129868
+   fixedTokenGrowthInsideLastX128: 0.0030577233992516994
 variableTokenGrowthInsideLastX128: -0.0029949999880045652
-                fixedTokenBalance: 3057.72398821408032554
+                fixedTokenBalance: 3057.723601897597240924
              variableTokenBalance: -2994.999999999999999999
           feeGrowthInsideLastX128: 0
                         isSettled: false
-             settlement cashflow: 7.242470379723346437
+             settlement cashflow: 7.24246942716215527
 
 POSITION 1
                        lower tick: -180
@@ -180,10 +177,10 @@ variableTokenGrowthInsideLastX128: 0
 No of Traders: 2
 TRADER: 0
               margin: 1000.0
-   fixedTokenBalance: -3057.723988214080325541
+   fixedTokenBalance: -3057.723601897597240925
 variableTokenBalance: 2995.0
            isSettled: false
-settlement cashflow: -7.242470379723346437
+settlement cashflow: -7.24246942716215527
 
 TRADER: 1
               margin: 0.0
@@ -194,19 +191,18 @@ settlement cashflow: 0.0
 
 
 ----------------------------BEFORE SECOND SWAP----------------------------
-current timestamp: 1636223774
+current timestamp: 1648834171
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
 
 current reserve normalised income: 1.012500000
 
-amount of available    fixed tokens: 5999.709018652707 (↑) ; 30179.06836608595 (↓)
 amount of available variable tokens: 5999.709018652707 (↑) ; 29819.10166331881 (↓)
 
-lower apy bound: 0.016297291236018675
- historical apy: 0.1
-upper apy bound: 0.18591251255225021
+lower apy bound: 0.034913587467678992
+ historical apy: 0.137583602700363868
+upper apy bound: 0.232693128726883595
 variable factor: 0.004464285714285714
 
 No of   Minters: 2
@@ -218,13 +214,13 @@ POSITION 0
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
-   fixedTokenGrowthInsideLastX128: 0.0030577238649129868
+   fixedTokenGrowthInsideLastX128: 0.0030577233992516994
 variableTokenGrowthInsideLastX128: -0.0029949999880045652
-                fixedTokenBalance: 3057.72398821408032554
+                fixedTokenBalance: 3057.723601897597240924
              variableTokenBalance: -2994.999999999999999999
           feeGrowthInsideLastX128: 0
                         isSettled: false
-             settlement cashflow: -5.830942318689351737
+             settlement cashflow: -5.830943271250542904
 
 POSITION 1
                        lower tick: -180
@@ -233,7 +229,7 @@ POSITION 1
          sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
                            margin: 2000.0
-   fixedTokenGrowthInsideLastX128: -0.0030577238649129868
+   fixedTokenGrowthInsideLastX128: -0.0030577233992516994
 variableTokenGrowthInsideLastX128: 0.0029949999880045652
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -245,10 +241,10 @@ variableTokenGrowthInsideLastX128: 0.0029949999880045652
 No of Traders: 2
 TRADER: 0
               margin: 1000.0
-   fixedTokenBalance: -3057.723988214080325541
+   fixedTokenBalance: -3057.723601897597240925
 variableTokenBalance: 2995.0
            isSettled: false
-settlement cashflow: 5.830942318689351737
+settlement cashflow: 5.830943271250542904
 
 TRADER: 1
               margin: 0.0
@@ -259,19 +255,18 @@ settlement cashflow: 0.0
 
 
 ----------------------------AFTER SECOND SWAP----------------------------
-current timestamp: 1636223778
+current timestamp: 1648834175
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
 
 current reserve normalised income: 1.012500000
 
-amount of available    fixed tokens: 21318.10819530463 (↑) ; 17924.34902476441 (↓)
-amount of available variable tokens: 21180.108970917587 (↑) ; 17674.7817015069 (↓)
+amount of available variable tokens: 21180.108970917587 (↑) ; 14638.701711053925 (↓)
 
-lower apy bound: 0.0162973144324124
- historical apy: 0.1
-upper apy bound: 0.185912496122572058
+lower apy bound: 0.034913114468329283
+ historical apy: 0.137582632847812609
+upper apy bound: 0.232691935260233795
 variable factor: 0.004464285714285714
 
 No of   Minters: 2
@@ -283,13 +278,13 @@ POSITION 0
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
-   fixedTokenGrowthInsideLastX128: 0.003058660076931119
+   fixedTokenGrowthInsideLastX128: 0.0030586598441004753
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 3058.660247640195821241
+                fixedTokenBalance: 3058.659861277790435564
              variableTokenBalance: -2995.354955910780937672
           feeGrowthInsideLastX128: 0
                         isSettled: false
-             settlement cashflow: -5.83021835840474017
+             settlement cashflow: -5.830219311079164409
 
 POSITION 1
                        lower tick: -180
@@ -300,43 +295,42 @@ POSITION 1
                            margin: 2000.0
    fixedTokenGrowthInsideLastX128: 0.004862612811848521
 variableTokenGrowthInsideLastX128: -0.000004928791895508766
-                fixedTokenBalance: 39601.684439810302235909
+                fixedTokenBalance: 39601.682493378901387886
              variableTokenBalance: -14999.645044089219062325
           feeGrowthInsideLastX128: 0
                         isSettled: false
-             settlement cashflow: 30.685287939985219239
+             settlement cashflow: 30.685283140565326737
 
 
 No of Traders: 2
 TRADER: 0
               margin: 1000.0
-   fixedTokenBalance: -3057.723988214080325541
+   fixedTokenBalance: -3057.723601897597240925
 variableTokenBalance: 2995.0
            isSettled: false
-settlement cashflow: 5.830942318689351737
+settlement cashflow: 5.830943271250542904
 
 TRADER: 1
               margin: 1000.0
-   fixedTokenBalance: -39602.620699236417731612
+   fixedTokenBalance: -39602.618752759094582528
 variableTokenBalance: 15000.0
            isSettled: false
-settlement cashflow: -30.686011900269830806
+settlement cashflow: -30.686007100736705232
 
 
 ----------------------------BEFORE THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1636223780
+current timestamp: 1648834177
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
 
 current reserve normalised income: 1.012500000
 
-amount of available    fixed tokens: 21318.10819530463 (↑) ; 17924.34902476441 (↓)
-amount of available variable tokens: 21180.108970917587 (↑) ; 17674.7817015069 (↓)
+amount of available variable tokens: 21180.108970917587 (↑) ; 14638.701711053925 (↓)
 
-lower apy bound: 0.016297326030613346
- historical apy: 0.1
-upper apy bound: 0.185912487907728216
+lower apy bound: 0.034912877969069762
+ historical apy: 0.137582147921846721
+upper apy bound: 0.232691338526770591
 variable factor: 0.004464285714285714
 
 No of   Minters: 2
@@ -348,13 +342,13 @@ POSITION 0
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
-   fixedTokenGrowthInsideLastX128: 0.003058660076931119
+   fixedTokenGrowthInsideLastX128: 0.0030586598441004753
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 3058.660247640195821241
+                fixedTokenBalance: 3058.659861277790435564
              variableTokenBalance: -2995.354955910780937672
           feeGrowthInsideLastX128: 0
                         isSettled: false
-             settlement cashflow: -5.83021835840474017
+             settlement cashflow: -5.830219311079164409
 
 POSITION 1
                        lower tick: -180
@@ -365,43 +359,42 @@ POSITION 1
                            margin: 2000.0
    fixedTokenGrowthInsideLastX128: 0.004862612811848521
 variableTokenGrowthInsideLastX128: -0.000004928791895508766
-                fixedTokenBalance: 39601.684439810302235909
+                fixedTokenBalance: 39601.682493378901387886
              variableTokenBalance: -14999.645044089219062325
           feeGrowthInsideLastX128: 0
                         isSettled: false
-             settlement cashflow: 30.685287939985219239
+             settlement cashflow: 30.685283140565326737
 
 
 No of Traders: 2
 TRADER: 0
               margin: 1000.0
-   fixedTokenBalance: -3057.723988214080325541
+   fixedTokenBalance: -3057.723601897597240925
 variableTokenBalance: 2995.0
            isSettled: false
-settlement cashflow: 5.830942318689351737
+settlement cashflow: 5.830943271250542904
 
 TRADER: 1
               margin: 1000.0
-   fixedTokenBalance: -39602.620699236417731612
+   fixedTokenBalance: -39602.618752759094582528
 variableTokenBalance: 15000.0
            isSettled: false
-settlement cashflow: -30.686011900269830806
+settlement cashflow: -30.686007100736705232
 
 
 ----------------------------AFTER THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1636223783
+current timestamp: 1648834180
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836
 
 current reserve normalised income: 1.012500000
 
-amount of available    fixed tokens: 11267.983828408205 (↑) ; 25964.44851828155 (↓)
-amount of available variable tokens: 11230.974950983737 (↑) ; 25634.088917453984 (↓)
+amount of available variable tokens: 11230.974950983737 (↑) ; 24587.835730987776 (↓)
 
-lower apy bound: 0.016297343427919871
- historical apy: 0.1
-upper apy bound: 0.185912475585456492
+lower apy bound: 0.034912523220700169
+ historical apy: 0.137581420533286072
+upper apy bound: 0.232690443426404071
 variable factor: 0.004464285714285714
 
 No of   Minters: 2
@@ -413,13 +406,13 @@ POSITION 0
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
                            margin: 210.0
-   fixedTokenGrowthInsideLastX128: 0.003058660076931119
+   fixedTokenGrowthInsideLastX128: 0.0030586598441004753
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 3058.660247640195821241
+                fixedTokenBalance: 3058.659861277790435564
              variableTokenBalance: -2995.354955910780937672
           feeGrowthInsideLastX128: 0
                         isSettled: false
-             settlement cashflow: -5.83021835840474017
+             settlement cashflow: -5.830219311079164409
 
 POSITION 1
                        lower tick: -180
@@ -428,40 +421,39 @@ POSITION 1
          sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
                            margin: 2000.0
-   fixedTokenGrowthInsideLastX128: -0.0004194010980427265
+   fixedTokenGrowthInsideLastX128: -0.00041940086521208286
 variableTokenGrowthInsideLastX128: 0.0019950708374381065
-                fixedTokenBalance: 13191.613933109178895225
+                fixedTokenBalance: 13191.613285632187750144
              variableTokenBalance: -4999.645044089219062326
           feeGrowthInsideLastX128: 0
                         isSettled: false
-             settlement cashflow: 10.207423285497130117
+             settlement cashflow: 10.207421688978521814
 
 
 No of Traders: 2
 TRADER: 0
               margin: 1000.0
-   fixedTokenBalance: 23352.346518487043015144
+   fixedTokenBalance: 23352.345605849116396818
 variableTokenBalance: -7005.0
            isSettled: false
-settlement cashflow: 26.308806973177440859
+settlement cashflow: 26.308804722837347828
 
 TRADER: 1
               margin: 1000.0
-   fixedTokenBalance: -39602.620699236417731612
+   fixedTokenBalance: -39602.618752759094582528
 variableTokenBalance: 15000.0
            isSettled: false
-settlement cashflow: -30.686011900269830806
+settlement cashflow: -30.686007100736705232
 
 
 ----------------------------FINAL----------------------------
-current timestamp: 1642703799
+current timestamp: 1655314196
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836
 
 current reserve normalised income: 1.013200000
 
-amount of available    fixed tokens: 5268.274809755499 (↑) ; 24910.793556330453 (↓)
 amount of available variable tokens: 5231.265932331029 (↑) ; 24587.835730987776 (↓)
 
 No of   Minters: 2
@@ -472,8 +464,8 @@ POSITION 0
                        upper tick: 60
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 0.0
-                           margin: 202.089674033323882514
-   fixedTokenGrowthInsideLastX128: 0.003058660076931119
+                           margin: 202.089673080649458276
+   fixedTokenGrowthInsideLastX128: 0.0030586598441004753
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -487,8 +479,8 @@ POSITION 1
                        upper tick: -60
          sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
-                           margin: 2006.735447560435169657
-   fixedTokenGrowthInsideLastX128: -0.0004194010980427265
+                           margin: 2006.735445963916561354
+   fixedTokenGrowthInsideLastX128: -0.00041940086521208286
 variableTokenGrowthInsideLastX128: 0.0019950708374381065
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -499,14 +491,14 @@ variableTokenGrowthInsideLastX128: 0.0019950708374381065
 
 No of Traders: 2
 TRADER: 0
-              margin: 1021.444223639844103634
+              margin: 1021.444221389504010603
    fixedTokenBalance: 0.0
 variableTokenBalance: 0.0
            isSettled: true
 settlement cashflow: 0.0
 
 TRADER: 1
-              margin: 979.730654766396844194
+              margin: 979.730659565929969768
    fixedTokenBalance: 0.0
 variableTokenBalance: 0.0
            isSettled: true

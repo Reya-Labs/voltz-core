@@ -49,8 +49,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // print the maximum amount given the liquidity of Position 0
     await this.updateCurrentTick();
 
-    await this.getVT("below");
-
     // Trader 0 buys 2,995 VT
     await this.e2eSetup.swap({
       recipient: this.traders[0],
@@ -109,8 +107,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // print the maximum amount given the liquidity of Position 0
     await this.updateCurrentTick();
 
-    await this.getVT("below");
-
     // Trader 1 buys 15,000 VT
     await this.e2eSetup.swap({
       recipient: this.traders[1],
@@ -167,12 +163,12 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   }
 }
 
-it("scenario 0", async () => {
-  console.log("scenario", 0);
-  const e2eParams = e2eScenarios[0];
+it.skip("scenario 3", async () => {
+  console.log("scenario", 3);
+  const e2eParams = e2eScenarios[3];
   const scenario = new ScenarioRunnerInstance(
     e2eParams,
-    "test/end_to_end/general_setup/scenario0/console.txt"
+    "test/end_to_end/general_setup/scenario3/console.txt"
   );
   await scenario.init();
   await scenario.run();

@@ -63,6 +63,13 @@ contract TestRateOracle is AaveRateOracle {
         return latestObservedRateValue;
     }
 
+    function testGrow(uint16 _rateCardinalityNext) external {
+        oracleVars.rateCardinalityNext = observations.grow(
+            oracleVars.rateCardinalityNext,
+            _rateCardinalityNext
+        );
+    }
+
     function testGetRateFromTo(uint256 from, uint256 to)
         external
         returns (uint256)
@@ -130,7 +137,7 @@ contract TestRateOracle is AaveRateOracle {
     function rayValueIsCloseTo(
         uint256 observedValueInRay,
         uint256 expectedValueInRay
-    ) external view returns (bool) {
+    ) external pure returns (bool) {
         uint256 upperBoundFactor = 1000000001 * 1e18;
         uint256 lowerBoundFactor = 999999999 * 1e18;
         uint256 upperBound = WadRayMath.rayMul(
