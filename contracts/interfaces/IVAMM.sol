@@ -173,8 +173,6 @@ interface IVAMM is IPositionStructs {
     struct SwapCache {
         /// @dev liquidity at the beginning of the swap
         uint128 liquidityStart;
-        /// @dev the timestamp of the current block (in wei)
-        uint256 blockTimestamp;
         // the current protocol fee as a percentage of the swap fee taken on withdrawal
         // represented as an integer denominator (1/x)%
         uint8 feeProtocol;
