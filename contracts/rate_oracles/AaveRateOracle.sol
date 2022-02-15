@@ -65,15 +65,15 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
                 cardinality,
                 cardinalityNext
             );
-            emit OracleBufferWrite(
-                Time.blockTimestampScaled(),
-                address(this),
-                index,
-                blockTimestamp,
-                resultRay,
-                cardinality,
-                cardinalityNext
-            );
+        emit OracleBufferWrite(
+            Time.blockTimestampScaled(),
+            address(this),
+            index,
+            blockTimestamp,
+            resultRay,
+            cardinality,
+            cardinalityNext
+        );
     }
 
     /// @notice Calculates the observed interest returned by the underlying in a given period

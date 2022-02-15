@@ -20,7 +20,6 @@ library OracleBuffer {
         bool initialized;
     }
 
-
     /// @notice Creates an observation struct from the current timestamp and observed value
     /// @dev blockTimestamp _must_ be chronologically equal to or greater than last.blockTimestamp, safe for 0 or 1 overflows
     /// @param blockTimestamp The timestamp of the new observation
