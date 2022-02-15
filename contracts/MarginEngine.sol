@@ -394,7 +394,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external onlyVAMM override {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
-        updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper);
         position.updateLiquidity(params.liquidityDelta);
         emit LiquidityUpdate(Time.blockTimestampScaled(), address(this), position, position._liquidity);
 
@@ -408,8 +407,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         /// @dev this function can only be called by the vamm following a swap    
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
-
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
 
         if (cumulativeFeeIncurred > 0) {
             position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));

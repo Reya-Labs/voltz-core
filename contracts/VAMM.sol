@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "./core_libraries/Tick.sol";
 import "./interfaces/IVAMM.sol";
 import "./core_libraries/TickBitmap.sol";
-// import "./utils/Printer.sol";
 import "./utils/SafeCast.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
