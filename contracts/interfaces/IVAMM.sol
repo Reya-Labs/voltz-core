@@ -108,7 +108,11 @@ interface IVAMM is IPositionStructs {
         uint256 feeGrowthGlobalX128
     );
 
-    event ClearTick(uint256 blockTimestampScaled, address marginEngineAddress, int24 tick);
+    event ClearTick(
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
+        int24 tick
+    );
 
     // errors
 

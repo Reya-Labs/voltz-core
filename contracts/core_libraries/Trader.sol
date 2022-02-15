@@ -13,7 +13,6 @@ library Trader {
         bool isSettled;
     }
 
-
     function updateMarginViaDelta(Info storage self, int256 marginDelta)
         internal
     {

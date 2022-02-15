@@ -29,7 +29,6 @@ library Tick {
         bool initialized;
     }
 
-
     /// @dev Common checks for valid tick inputs.
     function checkTicks(int24 tickLower, int24 tickUpper) internal pure {
         require(tickLower < tickUpper, "TLU");
