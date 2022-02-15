@@ -7,10 +7,19 @@ pragma solidity ^0.8.0;
 /// @dev Margin Engine Computations: getApyFromTo is used by the MarginCalculator and MarginEngine
 /// @dev It is necessary to produce margin requirements for Trader and Liquidity Providers
 interface IRateOracle {
-    
+
     // events
     event MinSecondsSinceLastUpdateSet(uint256 _minSecondsSinceLastUpdate);
-    
+    event OracleBufferWrite(
+        uint256 blockTimestampScaled,
+        address source,
+        uint16 index,
+        uint32 blockTimestamp,
+        uint256 observedValue,
+        uint16 cardinality,
+        uint16 cardinalityNext
+    );
+
     /// @notice Emitted by the rate oracle for increases to the number of observations that can be stored
     /// @param observationCardinalityNextOld The previous value of the next observation cardinality
     /// @param observationCardinalityNextNew The updated value of the next observation cardinality
@@ -20,8 +29,8 @@ interface IRateOracle {
     );
 
     // view functions
-    
-    /// @notice Gets minimum number of seconds that need to pass since the last update to the rates array 
+
+    /// @notice Gets minimum number of seconds that need to pass since the last update to the rates array
     /// @dev This is a throttling mechanic that needs to ensure we don't run out of space in the rates array
     /// @dev The maximum size of the rates array is 65535 entries
     // AB: as long as this doesn't affect the termEndTimestamp rateValue too much
@@ -67,7 +76,7 @@ interface IRateOracle {
 
     // non-view functions
 
-    /// @notice Sets minSecondsSinceLastUpdate: The minimum number of seconds in wei that need to pass since the last update to the rates array 
+    /// @notice Sets minSecondsSinceLastUpdate: The minimum number of seconds in wei that need to pass since the last update to the rates array
     /// @dev Can only be set by the Factory Owner
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external; // @audit suffix param with Wad
 
