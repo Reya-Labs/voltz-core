@@ -7,7 +7,8 @@ import "./IPositionStructs.sol";
 interface IVAMM is IPositionStructs {
     // events
     event Swap(
-        address source,
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
         address indexed sender,
         address indexed recipient,
         uint160 sqrtPriceX96,
@@ -16,11 +17,12 @@ interface IVAMM is IPositionStructs {
     );
 
     /// @dev emitted after a given vamm is successfully initialized
-    event Initialize(address source, uint160 sqrtPriceX96, int24 tick);
+    event Initialize(uint256 blockTimestampScaled, address marginEngineAddress, uint160 sqrtPriceX96, int24 tick);
 
     /// @dev emitted after a successful minting of a given LP position
     event Mint(
-        address source,
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
         address sender,
         address indexed owner,
         int24 indexed tickLower,
@@ -30,7 +32,8 @@ interface IVAMM is IPositionStructs {
 
     /// @dev emitted after a successful burning of a given LP position
     event Burn(
-        address source,
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
         address sender,
         address indexed owner,
         int24 indexed tickLower,
@@ -39,17 +42,18 @@ interface IVAMM is IPositionStructs {
     );
 
     /// @dev emitted after setting feeProtocol
-    event SetFeeProtocol(address source, uint8 feeProtocol);
+    event SetFeeProtocol(uint256 blockTimestampScaled, address marginEngineAddress, uint8 feeProtocol);
 
     /// @dev emitted after setting tickSpacing
-    event SetTickSpacing(address source, int24 tickSpacing);
+    event SetTickSpacing(uint256 blockTimestampScaled, address marginEngineAddress, int24 tickSpacing);
 
-    event MaxLiquidityPerTickSet(address source, uint128 maxLiquidityPerTick);
+    event MaxLiquidityPerTickSet(uint256 blockTimestampScaled, address marginEngineAddress, uint128 maxLiquidityPerTick);
 
-    event FeeSet(address source, uint256 feeWad);
+    event FeeSet(uint256 blockTimestampScaled, address marginEngineAddress, uint256 feeWad);
 
     event ProtocolFeesUpdate(
-        address source,
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
         uint256 protocolFeesCollected,
         uint256 protocolFees
     );
