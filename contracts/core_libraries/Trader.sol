@@ -13,12 +13,6 @@ library Trader {
         bool isSettled;
     }
 
-    // Events
-    event BalancesViaDeltasUpdate(
-        Trader.Info info,
-        int256 fixedTokenBalanceDelta,
-        int256 variableTokenBalanceDelta
-    );
 
     function updateMarginViaDelta(Info storage self, int256 marginDelta)
         internal
@@ -45,10 +39,5 @@ library Trader {
 
         self.fixedTokenBalance = fixedTokenBalance;
         self.variableTokenBalance = variableTokenBalance;
-        emit BalancesViaDeltasUpdate(
-            self,
-            fixedTokenBalanceDelta,
-            variableTokenBalanceDelta
-        );
     }
 }

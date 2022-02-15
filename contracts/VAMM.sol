@@ -181,6 +181,18 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       false,
       maxLiquidityPerTick
     );
+    emit TickUpdate(
+        Time.blockTimestampScaled(),
+        marginEngineAddress,
+        params.tickLower,
+        vammVars.tick,
+        params.liquidityDelta,
+        fixedTokenGrowthGlobalX128,
+        variableTokenGrowthGlobalX128,
+        feeGrowthGlobalX128,
+        false,
+        maxLiquidityPerTick
+    );
     flippedUpper = ticks.update(
       params.tickUpper,
       vammVars.tick,
@@ -190,6 +202,18 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       feeGrowthGlobalX128,
       true,
       maxLiquidityPerTick
+    );
+    emit TickUpdate(
+        Time.blockTimestampScaled(),
+        marginEngineAddress,
+        params.tickUpper,
+        vammVars.tick,
+        params.liquidityDelta,
+        fixedTokenGrowthGlobalX128,
+        variableTokenGrowthGlobalX128,
+        feeGrowthGlobalX128,
+        true,
+        maxLiquidityPerTick
     );
 
     if (flippedLower) {
@@ -225,9 +249,11 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     if (params.liquidityDelta < 0) {
       if (flippedLower) {
         ticks.clear(params.tickLower);
+        emit ClearTick(Time.blockTimestampScaled(), marginEngineAddress, params.tickLower);
       }
       if (flippedUpper) {
         ticks.clear(params.tickUpper);
+        emit ClearTick(Time.blockTimestampScaled(), marginEngineAddress, params.tickLower);
       }
     }
 
@@ -464,6 +490,14 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         // if the tick is initialized, run the tick transition
         if (step.initialized) {
           int128 liquidityNet = ticks.cross(
+            step.tickNext,
+            state.fixedTokenGrowthGlobalX128,
+            state.variableTokenGrowthGlobalX128,
+            state.feeGrowthGlobalX128
+          );
+          emit CrossTick(
+            Time.blockTimestampScaled(),
+            marginEngineAddress,
             step.tickNext,
             state.fixedTokenGrowthGlobalX128,
             state.variableTokenGrowthGlobalX128,

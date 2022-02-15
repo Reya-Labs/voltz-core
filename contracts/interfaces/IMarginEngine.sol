@@ -110,9 +110,8 @@ interface IMarginEngine is IPositionStructs {
     event BalancesViaDeltasUpdate(
         uint256 blockTimestampScaled,
         address source,
-        Position.Info info,
-        int256 fixedTokenBalanceDelta,
-        int256 variableTokenBalanceDelta
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance
     );
     event FixedAndVariableTokenGrowthInsideUpdate(
         uint256 blockTimestampScaled,

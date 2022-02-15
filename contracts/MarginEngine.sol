@@ -322,7 +322,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         emit BalancesViaDeltasUpdate(
             Time.blockTimestampScaled(),
             address(this),
-            position,
             -position.fixedTokenBalance,
             -position.variableTokenBalance
         );
@@ -344,6 +343,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad));
 
         trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
+        emit BalancesViaDeltasUpdate(
+            Time.blockTimestampScaled(),
+            address(this),
+            trader.fixedTokenBalance,
+            trader.variableTokenBalance
+        );
         trader.updateMarginViaDelta(settlementCashflow);
         emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), trader, settlementCashflow);
         trader.settleTrader();
@@ -535,9 +540,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         emit BalancesViaDeltasUpdate(
             Time.blockTimestampScaled(),
             address(this),
-            position,
-            fixedTokenDelta,
-            variableTokenDelta
+            position.fixedTokenBalance,
+            position.variableTokenBalance
         );
 
         uint256 variableFactorWad = IRateOracle(rateOracleAddress).variableFactor(termStartTimestampWad, termEndTimestampWad);
@@ -585,6 +589,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         }
 
         trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
+        emit BalancesViaDeltasUpdate(
+            Time.blockTimestampScaled(),
+            address(this),
+            trader.fixedTokenBalance,
+            trader.variableTokenBalance
+        );
 
         int256 marginRequirement = int256(MarginCalculator.getTraderMarginRequirement(
             MarginCalculator.TraderMarginRequirementParams({
@@ -619,7 +629,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         emit BalancesViaDeltasUpdate(
             Time.blockTimestampScaled(),
             address(this),
-            position,
             position.fixedTokenBalance,
             position.variableTokenBalance
         );
@@ -891,9 +900,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             emit BalancesViaDeltasUpdate(
                 Time.blockTimestampScaled(),
                 address(this),
-                position,
-                _fixedTokenDelta,
-                _variableTokenDelta
+                position.fixedTokenBalance,
+                position.variableTokenBalance
             );
 
         }
@@ -964,6 +972,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             }
 
             trader.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
+            emit BalancesViaDeltasUpdate(
+                Time.blockTimestampScaled(),
+                address(this),
+                trader.fixedTokenBalance,
+                trader.variableTokenBalance
+            );
 
         }
 

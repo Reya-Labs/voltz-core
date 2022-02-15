@@ -79,7 +79,36 @@ interface IVAMM is IPositionStructs {
         uint256 protocolFees
     );
 
-    event FlipTick(uint256 blockTimestampScaled, address marginEngineAddress, int24 tick, int24 tickSpacing);
+    event FlipTick(
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
+        int24 tick,
+        int24 tickSpacing
+    );
+
+    event TickUpdate(
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
+        int24 tick,
+        int24 tickCurrent,
+        int128 liquidityDelta,
+        int256 fixedTokenGrowthGlobalX128,
+        int256 variableTokenGrowthGlobalX128,
+        uint256 feeGrowthGlobalX128,
+        bool upper,
+        uint128 maxLiquidity
+    );
+
+    event CrossTick(
+        uint256 blockTimestampScaled,
+        address marginEngineAddress,
+        int24 tick,
+        int256 fixedTokenGrowthGlobalX128,
+        int256 variableTokenGrowthGlobalX128,
+        uint256 feeGrowthGlobalX128
+    );
+
+    event ClearTick(uint256 blockTimestampScaled, address marginEngineAddress, int24 tick);
 
     // errors
 

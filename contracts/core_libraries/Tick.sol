@@ -29,24 +29,6 @@ library Tick {
         bool initialized;
     }
 
-    // Events
-    event TickUpdate(
-        int24 tick,
-        int24 tickCurrent,
-        int128 liquidityDelta,
-        int256 fixedTokenGrowthGlobalX128,
-        int256 variableTokenGrowthGlobalX128,
-        uint256 feeGrowthGlobalX128,
-        bool upper,
-        uint128 maxLiquidity
-    );
-    event ClearTick(int24 tick);
-    event CrossTick(
-        int24 tick,
-        int256 fixedTokenGrowthGlobalX128,
-        int256 variableTokenGrowthGlobalX128,
-        uint256 feeGrowthGlobalX128
-    );
 
     /// @dev Common checks for valid tick inputs.
     function checkTicks(int24 tickLower, int24 tickUpper) internal pure {
@@ -232,16 +214,6 @@ library Tick {
         info.liquidityNet = upper
             ? info.liquidityNet - liquidityDelta
             : info.liquidityNet + liquidityDelta;
-        emit TickUpdate(
-            tick,
-            tickCurrent,
-            liquidityDelta,
-            fixedTokenGrowthGlobalX128,
-            variableTokenGrowthGlobalX128,
-            feeGrowthGlobalX128,
-            upper,
-            maxLiquidity
-        );
     }
 
     /// @notice Clears tick data
@@ -251,7 +223,6 @@ library Tick {
         internal
     {
         delete self[tick];
-        emit ClearTick(tick);
     }
 
     /// @notice Transitions to next tick as needed by price movement
@@ -280,11 +251,5 @@ library Tick {
             info.variableTokenGrowthOutsideX128;
 
         liquidityNet = info.liquidityNet;
-        emit CrossTick(
-            tick,
-            fixedTokenGrowthGlobalX128,
-            variableTokenGrowthGlobalX128,
-            feeGrowthGlobalX128
-        );
     }
 }
