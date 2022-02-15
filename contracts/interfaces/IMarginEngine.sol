@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "./IVAMM.sol";
 import "./IPositionStructs.sol";
 import "../core_libraries/Position.sol";
-import "../core_libraries/Trader.sol";
 import "./rate_oracles/IRateOracle.sol";
 import "./IFCM.sol";
 
@@ -151,12 +150,6 @@ interface IMarginEngine is IPositionStructs {
         address source,
         Position.Info info,
         uint128 liquidity
-    );
-    event MarginViaDeltaUpdate(
-        uint256 blockTimestampScaled,
-        address source,
-        Trader.Info info,
-        int256 margin
     );
 
     // immutables

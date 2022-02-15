@@ -315,21 +315,24 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     checkCurrentTimestampTermEndTimestampDelta
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred)
   {
-    /// might be helpful to have a higher level peripheral function (initiateIRS) which then calls swap
 
     VAMMVars memory vammVarsStart = vammVars;
 
-    checksBeforeSwap(params, vammVarsStart);
+    bool isFT;
 
-    if (params.isFT) {
-      require(params.amountSpecified > 0, "amount specified needs to be positive for an FT");
+    if (params.amountSpecified > 0) {
+      // amount specified needs to be positive for an FT
+      isFT = true;
     } else {
-      require(params.amountSpecified < 0, "amount specified needs to be negative for an VT");
+      // amount specified needs to be negative for a VT
+      isFT = false;
     }
+    
+    checksBeforeSwap(params, vammVarsStart, isFT);
 
     if (params.isExternal) {
-      /// no need for checks since ME makes sure the values passed are correct
       require(msg.sender==address(marginEngine) || msg.sender==address(marginEngine.fcm()), "only ME or FCM");
+      Tick.checkTicks(params.tickLower, params.tickUpper);
     } else {
       require(msg.sender==params.recipient, "only sender");
       Tick.checkTicks(params.tickLower, params.tickUpper);
@@ -344,7 +347,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     // Uniswap implementation: feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4), where in our case isFT == !zeroForOne
     SwapCache memory cache = SwapCache({
       liquidityStart: liquidity,
-      blockTimestamp: Time.blockTimestampScaled(),
       feeProtocol: vammVars.feeProtocol
     });
 
@@ -387,7 +389,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       /// @dev if !isFT (variable taker) (moving left to right), the nextInitializedTick should be less than or equal to the current tick
       /// add a test for the statement that checks for the above two conditions
       (step.tickNext, step.initialized) = tickBitmap
-        .nextInitializedTickWithinOneWord(state.tick, tickSpacing, !params.isFT);
+        .nextInitializedTickWithinOneWord(state.tick, tickSpacing, !isFT);
 
       // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
       if (step.tickNext < TickMath.MIN_TICK) {
@@ -410,7 +412,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       ) = SwapMath.computeSwapStep(
         state.sqrtPriceX96,
         (
-          !params.isFT
+          !isFT
             ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
             : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
         )
@@ -468,7 +470,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
           state.fixedTokenGrowthGlobalX128,
           step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
-          params,
+          isFT,
           state,
           step,
           variableFactorWad,
@@ -479,8 +481,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
         state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
       }
-
-      // Printer.printInt256("after update state.variableTokenGrowthGlobalX128", state.variableTokenGrowthGlobalX128);
 
       // shift tick if we reached the next price
       if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
@@ -503,7 +503,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
           // if we're moving rightward (along the virtual amm), we interpret liquidityNet as the opposite sign
           // safe because liquidityNet cannot be type(int128).min
-          if (!params.isFT) liquidityNet = -liquidityNet;
+          if (!isFT) liquidityNet = -liquidityNet;
 
           state.liquidity = LiquidityMath.addDelta(
             state.liquidity,
@@ -512,7 +512,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
         }
 
-        state.tick = !params.isFT ? step.tickNext - 1 : step.tickNext;
+        state.tick = !isFT ? step.tickNext - 1 : step.tickNext;
       } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
         // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
         state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
@@ -603,7 +603,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   function checksBeforeSwap(
       SwapParams memory params,
-      VAMMVars memory vammVarsStart
+      VAMMVars memory vammVarsStart,
+      bool isFT
   ) internal view {
 
       if (params.amountSpecified == 0) {
@@ -621,13 +622,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       /// @dev if a trader is a VT, they consume variable in return for fixed
       /// @dev Movement from left to right along the VAMM, hence the sqrtPriceLimitX96 needs to be lower than the current sqrtPriceX96, but higher than the MIN_SQRT_RATIO
 
-      Printer.printBool("isFT      ", params.isFT);
-      Printer.printUint160("limit price    ", params.sqrtPriceLimitX96);
-      Printer.printUint160("current price  ", vammVarsStart.sqrtPriceX96);
-      Printer.printEmptyLine();
-
       require(
-          params.isFT
+          isFT
               ? params.sqrtPriceLimitX96 > vammVarsStart.sqrtPriceX96 &&
                   params.sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO
               : params.sqrtPriceLimitX96 < vammVarsStart.sqrtPriceX96 &&
@@ -638,7 +634,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
 
     function calculateUpdatedGlobalTrackerValues(
-        SwapParams memory params,
+        bool isFT,
         SwapState memory state,
         StepComputations memory step,
         uint256 variableFactorWad,
@@ -657,7 +653,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
         stateFeeGrowthGlobalX128 = state.feeGrowthGlobalX128 + FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
-        if (params.isFT) {
+        if (isFT) {
 
             /// @dev if the trader is a fixed taker then the variable token growth global should be incremented (since LPs are receiving variable tokens)
             /// @dev if the trader is a fixed taker then the fixed token growth global should decline (since LPs are providing fixed tokens)
