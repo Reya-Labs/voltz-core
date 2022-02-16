@@ -189,6 +189,12 @@ export class ScenarioRunner {
     );
 
     for (let i = 0; i < this.positions.length; i++) {
+      let positionInfo = await this.marginEngineTest.getPosition(
+        this.positions[i][0],
+        this.positions[i][1],
+        this.positions[i][2]
+      );
+
       await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         this.positions[i][0],
         this.positions[i][1],
@@ -196,10 +202,17 @@ export class ScenarioRunner {
       );
 
       fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
-      const positionInfo = await this.marginEngineTest.getPosition(
+      positionInfo = await this.marginEngineTest.getPosition(
         this.positions[i][0],
         this.positions[i][1],
         this.positions[i][2]
+      );
+
+      fs.appendFileSync(
+        this.outputFile,
+        "                       address   : " +
+          this.positions[i][0].toString() +
+          "\n"
       );
 
       fs.appendFileSync(
@@ -302,8 +315,8 @@ export class ScenarioRunner {
 
       const settlementCashflow =
         await this.testFixedAndVariableMath.calculateSettlementCashflow(
-          positionInfo[4],
-          positionInfo[5],
+          positionInfo.fixedTokenBalance,
+          positionInfo.variableTokenBalance,
           this.termStartTimestampBN,
           this.termEndTimestampBN,
           this.variableFactorWad

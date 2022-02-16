@@ -437,6 +437,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int24 tickLower,
         int24 tickUpper
         ) internal {
+        if (position._liquidity == 0) {
+            return;
+        }
+        
         (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
         (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
         uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);

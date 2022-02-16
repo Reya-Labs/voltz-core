@@ -53,8 +53,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       amountSpecified: toBn("-2995"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
       isExternal: false,
-      tickLower: 0,
-      tickUpper: 0,
+      tickLower: this.positions[2][1],
+      tickUpper: this.positions[2][2]
     });
 
     await this.exportSnapshot("AFTER FIRST SWAP");
@@ -79,6 +79,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       toBn("2000")
     );
 
+    console.log("ok so far");
+
     // add 5,000,000 liquidity to Position 1
     await this.e2eSetup.mint(
       this.positions[1][0],
@@ -86,6 +88,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[1][2],
       toBn("5000000")
     );
+
+    console.log("here?");
 
     // a week passes
     await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125);
@@ -108,8 +112,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       amountSpecified: toBn("-15000"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
       isExternal: false,
-      tickLower: 0,
-      tickUpper: 0,
+      tickLower: this.positions[3][1],
+      tickUpper: this.positions[3][2],
     });
 
     await this.exportSnapshot("AFTER SECOND SWAP");
@@ -124,8 +128,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       amountSpecified: toBn("10000"),
       sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
       isExternal: false,
-      tickLower: 0,
-      tickUpper: 0,
+      tickLower: this.positions[2][1],
+      tickUpper: this.positions[2][2],
     });
 
     await this.exportSnapshot("AFTER THIRD (REVERSE) SWAP");

@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1647546903
+current timestamp: 1647605050
 
 current tick: 0
 sqrt price at current tick: 1
@@ -16,6 +16,7 @@ variable factor: 0.0
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
+                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -31,6 +32,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 1
+                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -46,6 +48,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 2
+                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -61,6 +64,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 3
+                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -77,7 +81,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE FIRST SWAP----------------------------
-current timestamp: 1647719712
+current timestamp: 1647777859
 
 current tick: 0
 sqrt price at current tick: 1
@@ -94,6 +98,7 @@ variable factor: 0.000099206349206349
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
+                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -109,6 +114,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 1
+                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -124,6 +130,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 2
+                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -139,6 +146,89 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 3
+                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
+                        liquidity: 0.0
+                           margin: 0.0
+   fixedTokenGrowthInsideLastX128: 0
+variableTokenGrowthInsideLastX128: 0
+                fixedTokenBalance: 0.0
+             variableTokenBalance: 0.0
+          feeGrowthInsideLastX128: 0
+                        isSettled: false
+             settlement cashflow: 0.0
+
+
+----------------------------AFTER FIRST SWAP----------------------------
+current timestamp: 1647777865
+
+current tick: -60
+sqrt price at current tick: 0.9970046449452639
+
+current reserve normalised income: 1.008100000
+
+amount of available variable tokens: 5999.709018652707 (↑) ; 0 (↓)
+
+lower apy bound: 0.000723206752200674
+ historical apy: 0.077250260871422327
+upper apy bound: 0.160665829673687049
+variable factor: 0.000099206349206349
+
+No of   Actors: 4
+No of Positions: 4
+POSITION 0
+                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
+                        liquidity: 1000000.0
+                           margin: 210.0
+   fixedTokenGrowthInsideLastX128: 0.0030577220022678375
+variableTokenGrowthInsideLastX128: -0.0029949999880045652
+                fixedTokenBalance: 3057.722056631664902459
+             variableTokenBalance: -2994.999999999999999999
+          feeGrowthInsideLastX128: 0
+                        isSettled: false
+             settlement cashflow: 7.242465616917390599
+
+POSITION 1
+                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
+                       lower tick: -180
+         sqrt price at lower tick: 0.9910408246796578
+                       upper tick: -60
+         sqrt price at upper tick: 0.9970046449452639
+                        liquidity: 0.0
+                           margin: 0.0
+   fixedTokenGrowthInsideLastX128: 0
+variableTokenGrowthInsideLastX128: 0
+                fixedTokenBalance: 0.0
+             variableTokenBalance: 0.0
+          feeGrowthInsideLastX128: 0
+                        isSettled: false
+             settlement cashflow: 0.0
+
+POSITION 2
+                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
+                       lower tick: -60
+         sqrt price at lower tick: 0.9970046449452639
+                       upper tick: 60
+         sqrt price at upper tick: 1.0030043539591134
+                        liquidity: 0.0
+                           margin: 1000.0
+   fixedTokenGrowthInsideLastX128: 0
+variableTokenGrowthInsideLastX128: 0
+                fixedTokenBalance: -3057.72205663166490246
+             variableTokenBalance: 2995.0
+          feeGrowthInsideLastX128: 0
+                        isSettled: false
+             settlement cashflow: -7.242465616917390599
+
+POSITION 3
+                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60

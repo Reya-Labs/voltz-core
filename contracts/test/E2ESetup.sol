@@ -50,20 +50,7 @@ contract E2ESetup {
     mapping(bytes32 => uint256) public indexAllPositions;
     uint256 public sizeAllPositions = 0;
 
-    mapping(uint256 => address) public allTraders;
-    mapping(address => uint256) public indexAllTraders;
-    uint256 public sizeAllTraders = 0;
-
     int256 initialCashflow = 0;
-
-    function addTrader(address trader) public {
-        if (indexAllTraders[trader] > 0) {
-            return;
-        }
-        sizeAllTraders += 1;
-        allTraders[sizeAllTraders] = trader;
-        indexAllTraders[trader] = sizeAllTraders;
-    }
 
     function addPosition(
         address owner,
@@ -147,16 +134,6 @@ contract E2ESetup {
             params.tickLower,
             params.tickUpper
         );
-        // old
-        // if (params.isTrader) {
-        //     this.addTrader(params.recipient);
-        // } else {
-        //     this.addPosition(
-        //         params.recipient,
-        //         params.tickLower,
-        //         params.tickUpper
-        //     );
-        // }
         Actor(params.recipient).swap(VAMMAddress, params);
 
         if (!continuousInvariants()) {
@@ -197,18 +174,26 @@ contract E2ESetup {
         );
 
         for (uint256 i = 1; i <= sizeAllPositions; i++) {
+            console.log("position:", allPositions[i].owner);
+
             TestMarginEngine(MEAddress)
                 .updatePositionTokenBalancesAndAccountForFeesTest(
                     allPositions[i].owner,
                     allPositions[i].tickLower,
                     allPositions[i].tickUpper
                 );
+
             Position.Info memory position = IMarginEngine(MEAddress)
                 .getPosition(
                     allPositions[i].owner,
                     allPositions[i].tickLower,
                     allPositions[i].tickUpper
                 );
+
+            Printer.printInt256("   fixedTokenBalance:", position.fixedTokenBalance);
+            Printer.printInt256("variableTokenBalance:", position.variableTokenBalance);
+            Printer.printInt256("              margin:", position.margin);
+            
             totalFixedTokens += position.fixedTokenBalance;
             totalVariableTokens += position.variableTokenBalance;
             totalCashflow += position.margin;
@@ -220,26 +205,6 @@ contract E2ESetup {
                 variableFactor
             );
         }
-
-        // OLD
-        // for (uint256 i = 1; i <= sizeAllTraders; i++) {
-        //     (
-        //         int256 margin,
-        //         int256 fixedTokenBalance,
-        //         int256 variableTokenBalance,
-
-        //     ) = IMarginEngine(MEAddress).traders(allTraders[i]);
-        //     totalFixedTokens += fixedTokenBalance;
-        //     totalVariableTokens += variableTokenBalance;
-        //     totalCashflow += margin;
-        //     totalCashflow += FixedAndVariableMath.calculateSettlementCashflow(
-        //         fixedTokenBalance,
-        //         variableTokenBalance,
-        //         termStartTimestampWad,
-        //         termEndTimestampWad,
-        //         variableFactor
-        //     );
-        // }
 
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);
