@@ -745,9 +745,9 @@ describe("MarginEngine", () => {
       );
 
       // this should be close to zero!
-      // expect(sumOfTraderMarginDeltaAndPositionMarginDelta).to.be.near(
-      //   toBn("-0.191589240287870206")
-      // );
+      expect(sumOfTraderMarginDeltaAndPositionMarginDelta).to.be.near(
+        toBn("0")
+      );
 
       expect(positionInfoNew.isSettled).to.eq(true);
       expect(positionInfoNew.fixedTokenBalance).to.eq(toBn("0"));
