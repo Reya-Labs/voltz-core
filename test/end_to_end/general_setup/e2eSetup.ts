@@ -78,7 +78,7 @@ export const e2eScenarios: e2eParameters[] = [
 
   {
     duration: consts.ONE_MONTH.mul(3),
-    numActors: 10,
+    numActors: 5,
     marginCalculatorParams: {
       apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
       apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
@@ -116,11 +116,6 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -TICK_SPACING, 0],
       [3, -TICK_SPACING, 0],
       [4, -TICK_SPACING, 0],
-      [5, -TICK_SPACING, TICK_SPACING],
-      [6, -TICK_SPACING, TICK_SPACING],
-      [7, -TICK_SPACING, TICK_SPACING],
-      [8, -TICK_SPACING, TICK_SPACING],
-      [9, -TICK_SPACING, TICK_SPACING],
     ],
   },
 

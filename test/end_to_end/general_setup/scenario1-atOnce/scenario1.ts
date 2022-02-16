@@ -9,15 +9,12 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     await this.exportSnapshot("START");
 
-    await this.getAPYboundsAndPositionMargin(this.positions[0], toBn("505000"));
+    await this.getAPYboundsAndPositionMargin(this.positions[0]);
 
     await this.e2eSetup.updatePositionMargin(
-      {
-        owner: this.positions[0][0],
-        tickLower: this.positions[0][1],
-        tickUpper: this.positions[0][2],
-        liquidityDelta: 0,
-      },
+      this.positions[0][0], 
+      this.positions[0][1], 
+      this.positions[0][2],
       toBn("125")
     );
 
@@ -37,20 +34,24 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.exportSnapshot("AFTER MINT");
 
-    await this.e2eSetup.updateTraderMargin(this.traders[0], toBn("500"));
+    await this.e2eSetup.updatePositionMargin(
+      this.positions[0][0], 
+      this.positions[0][1], 
+      this.positions[0][2],
+      toBn("500")
+    );
 
     const sqrtPriceLimit = await this.testTickMath.getSqrtRatioAtTick(
       -TICK_SPACING
     );
     await this.e2eSetup.swap({
-      recipient: this.traders[0],
+      recipient: this.positions[0][0],
       isFT: false,
       amountSpecified: toBn("-1500"),
       sqrtPriceLimitX96: sqrtPriceLimit,
-      isUnwind: false,
-      isTrader: true,
-      tickLower: 0,
-      tickUpper: 0,
+      isExternal: false,
+      tickLower: this.positions[0][1],
+      tickUpper: this.positions[0][2],
     });
 
     await this.advanceAndUpdateApy(consts.ONE_DAY.mul(25), 1, 1.0015);
@@ -60,7 +61,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await advanceTimeAndBlock(consts.ONE_DAY.mul(40), 1);
 
     // settle positions and traders
-    await this.settlePositionsAndTraders(this.positions, this.traders);
+    await this.settlePositions();
 
     await this.exportSnapshot("FINAL");
   }

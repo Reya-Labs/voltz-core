@@ -12,6 +12,8 @@ contract TestMarginEngine is MarginEngine {
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
 
+    uint256 public margin;
+
     function updatePositionTokenBalancesAndAccountForFeesTest(
         address owner,
         int24 tickLower,
@@ -48,17 +50,26 @@ contract TestMarginEngine is MarginEngine {
     ) public {
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
 
+        uint128 originalLiquidity = position._liquidity;
+        int256 originalFixedTokenBalance = position.fixedTokenBalance;
+        int256 originalVariableTokenBalance = position.variableTokenBalance;
+        int256 originalMargin = position.margin;
+
         position._liquidity = counterfactualLiquidity;
         position.fixedTokenBalance = counterfactualFixedTokenBalance;
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        return
-            checkPositionMarginCanBeUpdated(
+        checkPositionMarginCanBeUpdated(
                 position,
                 tickLower,
                 tickUpper
             );
+
+        position._liquidity = originalLiquidity;
+        position.fixedTokenBalance = originalFixedTokenBalance;
+        position.variableTokenBalance = originalVariableTokenBalance;
+        position.margin = originalMargin;
     }
 
     function checkPositionMarginAboveRequirementTest(
@@ -72,17 +83,56 @@ contract TestMarginEngine is MarginEngine {
     ) public {
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
 
+        uint128 originalLiquidity = position._liquidity;
+        int256 originalFixedTokenBalance = position.fixedTokenBalance;
+        int256 originalVariableTokenBalance = position.variableTokenBalance;
+        int256 originalMargin = position.margin;
+
         position._liquidity = counterfactualLiquidity;
         position.fixedTokenBalance = counterfactualFixedTokenBalance;
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        return
-            checkPositionMarginAboveRequirement(
+        checkPositionMarginAboveRequirement(
                 position,
                 tickLower,
                 tickUpper
             );
+
+        position._liquidity = originalLiquidity;
+        position.fixedTokenBalance = originalFixedTokenBalance;
+        position.variableTokenBalance = originalVariableTokenBalance;
+        position.margin = originalMargin;
+    }
+
+    function getCounterfactualMarginRequirementTest(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 counterfactualLiquidity,
+        int256 counterfactualFixedTokenBalance,
+        int256 counterfactualVariableTokenBalance,
+        int256 counterfactualMargin,
+        bool isLM
+    ) external {
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+
+        uint128 originalLiquidity = position._liquidity;
+        int256 originalFixedTokenBalance = position.fixedTokenBalance;
+        int256 originalVariableTokenBalance = position.variableTokenBalance;
+        int256 originalMargin = position.margin;
+
+        position._liquidity = counterfactualLiquidity;
+        position.fixedTokenBalance = counterfactualFixedTokenBalance;
+        position.variableTokenBalance = counterfactualVariableTokenBalance;
+        position.margin = counterfactualMargin;
+
+        margin = getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
+
+        position._liquidity = originalLiquidity;
+        position.fixedTokenBalance = originalFixedTokenBalance;
+        position.variableTokenBalance = originalVariableTokenBalance;
+        position.margin = originalMargin;
     }
 
     function setPosition(
@@ -130,8 +180,12 @@ contract TestMarginEngine is MarginEngine {
         int24 tickLower,
         int24 tickUpper,
         bool isLM
-    ) external returns (uint256) {
+    ) external {
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        return getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
+        margin = getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
+    }
+
+    function getMargin() external view returns (uint256) {
+        return margin;
     }
 }

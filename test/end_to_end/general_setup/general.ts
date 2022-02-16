@@ -607,18 +607,19 @@ export class ScenarioRunner {
   ) {
     await this.updateAPYbounds();
 
-    const positionMarginRequirement =
-      await this.marginEngineTest.getPositionMarginRequirementTest(
+    await this.marginEngineTest.getPositionMarginRequirementTest(
         position[0], position[1], position[2], false
       );
 
+    const positionMarginRequirement = await this.marginEngineTest.getMargin();
+
     console.log(
       "position margin requirement: ",
-      utils.formatEther(positionMarginRequirement.value)
+      utils.formatEther(positionMarginRequirement)
     );
     console.log("");
 
-    return positionMarginRequirement.value;
+    return positionMarginRequirement;
   }
 
   async getVT(towards: string) {

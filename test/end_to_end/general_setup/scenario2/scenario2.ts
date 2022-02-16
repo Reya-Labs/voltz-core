@@ -11,12 +11,9 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.exportSnapshot("START");
 
     await this.e2eSetup.updatePositionMargin(
-      {
-        owner: this.positions[0][0],
-        tickLower: this.positions[0][1],
-        tickUpper: this.positions[0][2],
-        liquidityDelta: 0,
-      },
+      this.positions[0][0],
+      this.positions[0][1],
+      this.positions[0][2],
       toBn("21000")
     );
 
@@ -26,31 +23,39 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[0][2],
       toBn("100000000")
     );
-
-    await this.e2eSetup.updateTraderMargin(this.traders[0], toBn("1000"));
+    
+    await this.e2eSetup.updatePositionMargin(
+      this.positions[2][0],
+      this.positions[2][1],
+      this.positions[2][2],
+      toBn("1000")
+    );
 
     await this.e2eSetup.swap({
-      recipient: this.traders[0],
+      recipient: this.positions[2][0],
       isFT: false,
       amountSpecified: toBn("-2000"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-      isUnwind: false,
-      isTrader: true,
-      tickLower: 0,
-      tickUpper: 0,
+      isExternal: false,
+      tickLower: this.positions[2][1],
+      tickUpper: this.positions[2][2],
     });
 
-    await this.e2eSetup.updateTraderMargin(this.traders[1], toBn("1000"));
+    await this.e2eSetup.updatePositionMargin(
+      this.positions[3][0],
+      this.positions[3][1],
+      this.positions[3][2],
+      toBn("1000")
+    );
 
     await this.e2eSetup.swap({
-      recipient: this.traders[1],
+      recipient: this.positions[3][0],
       isFT: true,
       amountSpecified: toBn("2000"),
       sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
-      isUnwind: false,
-      isTrader: true,
-      tickLower: 0,
-      tickUpper: 0,
+      isExternal: false,
+      tickLower: this.positions[3][1],
+      tickUpper: this.positions[3][2],
     });
 
     for (let i = 0; i < 89; i++) {
@@ -68,7 +73,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await advanceTimeAndBlock(consts.ONE_DAY.mul(40), 1);
 
     // settle positions and traders
-    await this.settlePositionsAndTraders(this.positions, this.traders);
+    await this.settlePositions();
 
     await this.exportSnapshot("FINAL");
   }

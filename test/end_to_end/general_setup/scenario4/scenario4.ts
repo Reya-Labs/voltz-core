@@ -11,8 +11,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     await this.exportSnapshot("START");
 
-    for (const t of this.traders) {
-      await this.e2eSetup.updateTraderMargin(t, toBn("10000"));
+    for (const p of this.positions.slice(5, 8)) {
+      await this.e2eSetup.updatePositionMargin(p[0], p[1], p[2], toBn("10000"));
     }
 
     const length_of_series = 50;
@@ -33,29 +33,40 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
       if (action === 1) {
         // position mint
-        const p = this.positions[randomInt(0, this.positions.length)];
+        const p = this.positions[randomInt(0, 5)];
         const liquidityDelta = randomInt(10000, 100000);
         const liquidityDeltaBn = toBn(liquidityDelta.toString());
+        const positionInfo = await this.marginEngineTest.getPosition(p[0], p[1], p[2]);
 
-        const positionTraderRequirement =
-          await this.getAPYboundsAndPositionMargin(p, liquidityDeltaBn);
+        console.log("here?");
 
-        await this.e2eSetup.updatePositionMargin(
-          {
-            owner: p[0],
-            tickLower: p[1],
-            tickUpper: p[2],
-            liquidityDelta: 0,
-          },
-          positionTraderRequirement.add(toBn("1"))
+        await this.marginEngineTest.getCounterfactualMarginRequirementTest(
+          p[0],
+          p[1],
+          p[2],
+          liquidityDeltaBn,
+          positionInfo.fixedTokenBalance,
+          positionInfo.variableTokenBalance,
+          positionInfo.margin,
+          false
         );
 
+        const positionMarginRequirement = await this.marginEngineTest.getMargin();
+
+        await this.e2eSetup.updatePositionMargin(
+          p[0], p[1], p[2], positionMarginRequirement.add(toBn("1"))
+        );
+
+        console.log("here?");
+
         await this.e2eSetup.mint(p[0], p[1], p[2], liquidityDeltaBn);
+
+        console.log("here?");
       }
 
       if (action === 2) {
         // position burn
-        const p = this.positions[randomInt(0, this.positions.length)];
+        const p = this.positions[randomInt(0, 5)];
         const current_liquidity =
           (await this.marginEngineTest.getPosition(p[0], p[1], p[2]))._liquidity
             .div(BigNumber.from(10).pow(12))
@@ -71,7 +82,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
       if (action === 3) {
         // trader swap
-        const t = this.traders[randomInt(0, this.traders.length)];
+        const p = this.positions[randomInt(5, 8)];
 
         const min_vt = -Math.floor(await this.getVT("below"));
         const max_vt = Math.floor(await this.getVT("above"));
@@ -79,17 +90,16 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         console.log("vt:", min_vt, "->", amount, "->", max_vt);
 
         await this.e2eSetup.swap({
-          recipient: t,
+          recipient: p[0],
           isFT: amount > 0,
           amountSpecified: toBn(amount.toString()),
           sqrtPriceLimitX96:
             amount > 0
               ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
               : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
-          isUnwind: false,
-          isTrader: true,
-          tickLower: 0,
-          tickUpper: 0,
+          isExternal: false,
+          tickLower: p[1],
+          tickUpper: p[2],
         });
       }
     }
@@ -97,13 +107,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await advanceTimeAndBlock(consts.ONE_DAY.mul(90 - length_of_series), 2); // advance 5 days to reach maturity
 
     // settle positions and traders
-    await this.settlePositionsAndTraders(this.positions, this.traders);
+    await this.settlePositions();
 
     await this.exportSnapshot("FINAL");
   }
 }
 
-it.skip("scenario 4", async () => {
+it("scenario 4", async () => {
   console.log("scenario", 4);
   const e2eParams = e2eScenarios[4];
   const scenario = new ScenarioRunnerInstance(

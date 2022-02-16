@@ -79,8 +79,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       toBn("2000")
     );
 
-    console.log("ok so far");
-
     // add 5,000,000 liquidity to Position 1
     await this.e2eSetup.mint(
       this.positions[1][0],
@@ -88,8 +86,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[1][2],
       toBn("5000000")
     );
-
-    console.log("here?");
 
     // a week passes
     await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125);
