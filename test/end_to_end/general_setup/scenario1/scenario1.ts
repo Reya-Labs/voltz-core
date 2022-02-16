@@ -10,17 +10,9 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.exportSnapshot("START");
 
     for (const p of this.positions) {
-      await this.getAPYboundsAndPositionMargin(p, toBn("101000"));
+      await this.getAPYboundsAndPositionMargin(p);
 
-      await this.e2eSetup.updatePositionMargin(
-        {
-          owner: p[0],
-          tickLower: p[1],
-          tickUpper: p[2],
-          liquidityDelta: 0,
-        },
-        toBn("25")
-      );
+      await this.e2eSetup.updatePositionMargin(p[0], p[1], p[2], toBn("25"));
     }
 
     await this.rateOracleTest.increaseObservarionCardinalityNext(1000);
@@ -39,8 +31,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.exportSnapshot("AFTER 100 MINTS");
 
-    for (const t of this.traders) {
-      await this.e2eSetup.updateTraderMargin(t, toBn("100"));
+    for (const p of this.positions) {
+      await this.e2eSetup.updatePositionMargin(p[0], p[1], p[2], toBn("100"));
     }
 
     const sqrtPriceLimit = await this.testTickMath.getSqrtRatioAtTick(
@@ -48,16 +40,15 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     );
     for (let i = 0; i < 100; i++) {
       console.log("swap phase: ", i);
-      for (const t of this.traders) {
+      for (const p of this.positions) {
         await this.e2eSetup.swap({
-          recipient: t,
+          recipient: p[0],
           isFT: false,
           amountSpecified: toBn("-3"),
           sqrtPriceLimitX96: sqrtPriceLimit,
-          isUnwind: false,
-          isTrader: true,
-          tickLower: 0,
-          tickUpper: 0,
+          isExternal: false,
+          tickLower: p[1],
+          tickUpper: p[2],
         });
       }
     }
@@ -69,13 +60,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await advanceTimeAndBlock(consts.ONE_DAY.mul(40), 1);
 
     // settle positions and traders
-    await this.settlePositionsAndTraders(this.positions, this.traders);
+    await this.settlePositions();
 
     await this.exportSnapshot("FINAL");
   }
 }
 
-it.skip("scenario 1", async () => {
+it("scenario 1", async () => {
   console.log("scenario", 1);
   const e2eParams = e2eScenarios[1];
   const scenario = new ScenarioRunnerInstance(

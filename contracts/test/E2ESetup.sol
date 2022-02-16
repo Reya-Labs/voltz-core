@@ -174,8 +174,6 @@ contract E2ESetup {
         );
 
         for (uint256 i = 1; i <= sizeAllPositions; i++) {
-            console.log("position:", allPositions[i].owner);
-
             TestMarginEngine(MEAddress)
                 .updatePositionTokenBalancesAndAccountForFeesTest(
                     allPositions[i].owner,
