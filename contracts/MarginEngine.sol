@@ -7,6 +7,7 @@ import "./interfaces/IVAMM.sol";
 import "./core_libraries/Position.sol";
 import "./core_libraries/MarginCalculator.sol";
 import "./utils/SafeCast.sol";
+import "./utils/Printer.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IFCM.sol";
@@ -16,7 +17,6 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeCast for uint256;
@@ -228,7 +228,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 }
                 fcm.transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
             } else {
-                IERC20Minimal(underlyingToken).safeTransfer(_account, uint256(-_marginDelta));
+                IERC20Minimal(underlyingToken).transfer(_account, uint256(-_marginDelta));
             }
 
         }
@@ -245,7 +245,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
         
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
 
         require((position.margin + marginDelta) >= 0, "can't withdraw more than have");
         
@@ -290,7 +290,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             
         require(!position.isSettled, "already settled");
         
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
         
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad));
 
@@ -365,7 +365,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);  
 
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
         
         bool isLiquidatable = isLiquidatablePosition(position, tickLower, tickUpper);
 
@@ -396,7 +396,14 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external onlyVAMM override {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
-        updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper);
+        Printer.printUint128("position liquidity (before)", position._liquidity);
+        Printer.printInt256("position fixed balance (before)", position.fixedTokenBalance);
+        Printer.printInt256("position fixed balance (before)", position.fixedTokenBalance);
+
+        updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true);
+
+        Printer.printInt256("position fixed balance (after)", position.fixedTokenBalance);
+        Printer.printInt256("position fixed balance (after)", position.fixedTokenBalance);
         position.updateLiquidity(params.liquidityDelta);
         emit LiquidityUpdate(Time.blockTimestampScaled(), address(this), position, position._liquidity);
 
@@ -410,7 +417,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         /// @dev this function can only be called by the vamm following a swap    
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
 
         if (cumulativeFeeIncurred > 0) {
             position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
@@ -439,11 +446,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function updatePositionTokenBalancesAndAccountForFees(
         Position.Info storage position,
         int24 tickLower,
-        int24 tickUpper
+        int24 tickUpper,
+        bool isMintBurn
         ) internal {
 
         if (position._liquidity > 0) {
-              (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
+            (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
             (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
             uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
 
@@ -469,6 +477,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             emit FeeGrowthInsideUpdate(Time.blockTimestampScaled(), address(this), position, feeGrowthInsideX128);
 
             emit PositionTokenBalancesAndAccountForFeesUpdate(Time.blockTimestampScaled(), address(this), position, position.fixedTokenBalance, position.variableTokenBalance, feeDelta);
+        } else {
+            if (isMintBurn) {
+                (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
+                position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
+                position.updateFeeGrowthInside(feeGrowthInsideX128);
+            }
         }
     }
     

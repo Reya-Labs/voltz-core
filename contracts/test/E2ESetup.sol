@@ -180,7 +180,8 @@ contract E2ESetup {
                 .updatePositionTokenBalancesAndAccountForFeesTest(
                     allPositions[i].owner,
                     allPositions[i].tickLower,
-                    allPositions[i].tickUpper
+                    allPositions[i].tickUpper,
+                    false
                 );
 
             Position.Info memory position = IMarginEngine(MEAddress)

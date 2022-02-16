@@ -15,7 +15,8 @@ contract TestMarginEngine is MarginEngine {
     function updatePositionTokenBalancesAndAccountForFeesTest(
         address owner,
         int24 tickLower,
-        int24 tickUpper
+        int24 tickUpper,
+        bool isMintBurn
     ) external {
 
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
@@ -23,7 +24,8 @@ contract TestMarginEngine is MarginEngine {
         updatePositionTokenBalancesAndAccountForFees(
             position,
             tickLower,
-            tickUpper
+            tickUpper,
+            isMintBurn
         );
     }
 
