@@ -6,6 +6,7 @@ import "./IPositionStructs.sol";
 import "../core_libraries/Position.sol";
 import "./rate_oracles/IRateOracle.sol";
 import "./IFCM.sol";
+import "./IFactory.sol";
 
 interface IMarginEngine is IPositionStructs {
     // structs
@@ -155,6 +156,8 @@ interface IMarginEngine is IPositionStructs {
     // immutables
 
     function fcm() external view returns (IFCM);
+
+    function factory() external view returns (IFactory);
 
     // /// @notice The address of the underlying (non-yield bearing) pool token - e.g. USDC
     // /// @return The underlying pool token address

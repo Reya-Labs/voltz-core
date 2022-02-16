@@ -15,6 +15,8 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeCast for uint256;
@@ -23,6 +25,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
+
+    using SafeTransferLib for IERC20Minimal;
 
     /// @dev liquidatorReward (in wei) is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator
     /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
@@ -51,6 +55,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     address private deployer;
 
+    IFactory public override factory;
+
     bool public isInsuranceDepleted;
 
     IRateOracle public override rateOracle;
@@ -74,6 +80,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         termEndTimestampWad = _termEndTimestampWad;
 
         rateOracle = IRateOracle(_rateOracleAddress);
+        factory = IFactory(msg.sender);
 
         __Ownable_init();
         __Pausable_init();
@@ -209,21 +216,21 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
     function transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
-            IERC20Minimal(underlyingToken).transferFrom(_account, address(this), uint256(_marginDelta));
+            IERC20Minimal(underlyingToken).safeTransferFrom(_account, address(this), uint256(_marginDelta));
         } else {
-
             uint256 marginEngineBalance = IERC20Minimal(underlyingToken).balanceOf(address(this));
 
             if (uint256(-_marginDelta) > marginEngineBalance) {
                 uint256 remainingDeltaToCover = uint256(-_marginDelta);
                 if (marginEngineBalance > 0) {
                     remainingDeltaToCover = remainingDeltaToCover - marginEngineBalance;
-                    IERC20Minimal(underlyingToken).transfer(_account, marginEngineBalance);
+                    IERC20Minimal(underlyingToken).safeTransfer(_account, marginEngineBalance);
                 }
                 fcm.transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
+            } else {
+                IERC20Minimal(underlyingToken).safeTransfer(_account, uint256(-_marginDelta));
             }
 
-            IERC20Minimal(underlyingToken).transfer(_account, uint256(-_marginDelta));
         }
     }
 
@@ -239,7 +246,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
         
         if (position._liquidity > 0) {
-            /// check if can get rid of the below
             updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
         }
 
@@ -247,35 +253,31 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         if (marginDelta < 0) {
 
-            if (_owner != msg.sender) {
+            if (_owner != msg.sender || factory.isApproved(_owner, msg.sender)) {
                 revert OnlyOwnerCanUpdatePosition();
             }
 
-            if (isInsuranceDepleted) {
+            position.updateMarginViaDelta(marginDelta);
 
-                position.updateMarginViaDelta(marginDelta);
-                emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
+            checkPositionMarginCanBeUpdated(position, tickLower, tickUpper); 
 
-                transferMargin(msg.sender, marginDelta);
+            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
 
-            } else {
-            
-                int256 updatedMarginWouldBe = position.margin + marginDelta;
-
-                checkPositionMarginCanBeUpdated(position, updatedMarginWouldBe, tickLower, tickUpper); 
-
-                position.updateMarginViaDelta(marginDelta);
-                emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
-
-                transferMargin(msg.sender, marginDelta);
-            }
+            transferMargin(_owner, marginDelta);
 
         } else {
 
             position.updateMarginViaDelta(marginDelta);
             emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
 
-            transferMargin(msg.sender, marginDelta);
+            address depositor;
+            if (factory.isApproved(_owner, msg.sender)) {
+                depositor = _owner;
+            } else {
+                depositor = msg.sender;
+            }
+
+            transferMargin(depositor, marginDelta);
         }
 
     }
@@ -398,7 +400,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         emit LiquidityUpdate(Time.blockTimestampScaled(), address(this), position, position._liquidity);
 
         if (params.liquidityDelta>0) {
-            checkPositionMarginAboveRequirement(position, position.margin, params.tickLower, params.tickUpper);
+            checkPositionMarginAboveRequirement(position, params.tickLower, params.tickUpper);
         }
 
     }
@@ -472,7 +474,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     function checkPositionMarginAboveRequirement(
         Position.Info storage position,
-        int256 updatedMarginWouldBe,
         int24 tickLower,
         int24 tickUpper
     ) internal {
@@ -481,7 +482,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
 
-        if (updatedMarginWouldBe <= positionMarginRequirement) {
+        if (position.margin <= positionMarginRequirement) {
             revert MarginLessThanMinimum();
         }
     }
@@ -489,7 +490,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     function checkPositionMarginCanBeUpdated(
         Position.Info storage position,
-        int256 updatedMarginWouldBe,
         int24 tickLower,
         int24 tickUpper
     ) internal {
@@ -501,14 +501,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             if (!position.isSettled) {
                 revert PositionNotSettled();
             }
-            if (updatedMarginWouldBe < 0) {
+            if (position.margin < 0) {
                 revert WithdrawalExceedsCurrentMargin();
             }
         }
         else {
             checkPositionMarginAboveRequirement(
                 position,
-                updatedMarginWouldBe,
                 tickLower,
                 tickUpper
             );

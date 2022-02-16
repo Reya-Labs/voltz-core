@@ -36,7 +36,6 @@ contract TestMarginEngine is MarginEngine {
     }
 
     function checkPositionMarginCanBeUpdatedTest(
-        int256 updatedMarginWouldBe,
         address owner,
         int24 tickLower,
         int24 tickUpper
@@ -46,14 +45,12 @@ contract TestMarginEngine is MarginEngine {
         return
             checkPositionMarginCanBeUpdated(
                 position,
-                updatedMarginWouldBe,
                 tickLower,
                 tickUpper
             );
     }
 
     function checkPositionMarginAboveRequirementTest(
-        int256 updatedMarginWouldBe,
         address owner,
         int24 tickLower,
         int24 tickUpper
@@ -63,7 +60,6 @@ contract TestMarginEngine is MarginEngine {
         return
             checkPositionMarginAboveRequirement(
                 position,
-                updatedMarginWouldBe,
                 tickLower,
                 tickUpper
             );
