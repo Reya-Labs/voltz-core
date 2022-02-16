@@ -187,7 +187,7 @@ describe("MarginEngine", () => {
       await marginEngineTest.updatePositionMargin(wallet.address, -TICK_SPACING, TICK_SPACING, 1);
       // retrieve the trader info object
       const positionInfo = await marginEngineTest.getPosition(wallet.address, -TICK_SPACING, TICK_SPACING);
-      const positionMargin = positionInfo[1];
+      const positionMargin = positionInfo[2];
       expect(positionMargin).to.eq(1);
     });
 

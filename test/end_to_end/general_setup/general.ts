@@ -198,7 +198,8 @@ export class ScenarioRunner {
       await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         this.positions[i][0],
         this.positions[i][1],
-        this.positions[i][2]
+        this.positions[i][2],
+        false
       );
 
       fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
@@ -528,7 +529,8 @@ export class ScenarioRunner {
       await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         this.positions[i][0],
         this.positions[i][1],
-        this.positions[i][2]
+        this.positions[i][2],
+        false
       );
 
       console.log("POSITION: ", i + 1);
