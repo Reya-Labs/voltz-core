@@ -33,7 +33,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.e2eSetup.swap({
       recipient: this.positions[2][0],
-      isFT: false,
       amountSpecified: toBn("-2000"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
       isExternal: false,
@@ -50,7 +49,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.e2eSetup.swap({
       recipient: this.positions[3][0],
-      isFT: true,
       amountSpecified: toBn("2000"),
       sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
       isExternal: false,

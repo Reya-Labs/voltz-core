@@ -46,7 +46,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     );
     await this.e2eSetup.swap({
       recipient: this.positions[0][0],
-      isFT: false,
       amountSpecified: toBn("-1500"),
       sqrtPriceLimitX96: sqrtPriceLimit,
       isExternal: false,

@@ -1,27 +1,16 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { expect } from "../shared/expect";
-import { metaFixture } from "../shared/fixtures";
-// import {
-//   advanceTime,
-//   advanceTimeAndBlock,
-//   getCurrentTimestamp,
-//   setTimeNextBlock,
-// } from "../helpers/time";
+import { metaFixture, tickMathFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
-// import { consts } from "../helpers/constants";
-// import { sub, add } from "../shared/functions";
 import {
   ERC20Mock,
-  // Factory,
-  // TestRateOracle,
   TestVAMM,
   TestMarginEngine,
-  // MockAaveLendingPool,
+  MockAaveLendingPool,
+  TestRateOracle,
 } from "../../typechain";
 import {
-  // encodeSqrtRatioX96,
-  // getMaxLiquidityPerTick,
   TICK_SPACING,
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
@@ -37,24 +26,18 @@ import {
   getMaxLiquidityPerTick,
   MIN_SQRT_RATIO,
   encodeSqrtRatioX96,
-  // MAX_SQRT_RATIO,
-  // MIN_SQRT_RATIO,
 } from "../shared/utilities";
-// import { TickMath } from "../shared/tickMath";
-import { advanceTimeAndBlock } from "../helpers/time";
+import { advanceTime, advanceTimeAndBlock, getCurrentTimestamp, setTimeNextBlock } from "../helpers/time";
 import { consts } from "../helpers/constants";
-import { add, sub } from "../shared/functions";
+import { sub } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
 describe("MarginEngine", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
-  // let factory: Factory;
-  // let aaveLendingPool: MockAaveLendingPool;
-  // let rateOracleTest: TestRateOracle;
-  // let termStartTimestampBN: BigNumber;
-  // let termEndTimestampBN: BigNumber;
+  let aaveLendingPool: MockAaveLendingPool;
+  let rateOracleTest: TestRateOracle;
   let vammTest: TestVAMM;
   let marginEngineTest: TestMarginEngine;
 
@@ -63,16 +46,26 @@ describe("MarginEngine", () => {
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);
+
+    const { testTickMath } = await loadFixture(tickMathFixture);
+
+    const min_tick = -69100;
+    const max_tick = 69100;
+
+    const min_price = await testTickMath.getSqrtRatioAtTick(-69100);
+    const max_price = await testTickMath.getSqrtRatioAtTick(69100);
+
+      console.log(" min_tick :", min_tick.toString());
+      console.log("min_price :", min_price.toString());
+      console.log(" max_tick :", max_tick.toString());
+      console.log("max_price :", max_price.toString());
   });
 
   beforeEach("deploy fixture", async () => {
     ({
-      // factory,
       token,
-      // rateOracleTest,
-      // termStartTimestampBN,
-      // termEndTimestampBN,
-      // aaveLendingPool,
+      rateOracleTest,
+      aaveLendingPool,
       marginEngineTest,
       vammTest
     } = await loadFixture(metaFixture));
@@ -118,8 +111,6 @@ describe("MarginEngine", () => {
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
     await marginEngineTest.setLiquidatorReward(toBn("0.1"));
-
-    // await vammTest.initializeVAMM(TickMath.getSqrtRatioAtTick(TICK_SPACING).toString())
   });
 
   describe("#updatePositionMargin", () => {
@@ -710,17 +701,6 @@ describe("MarginEngine", () => {
 
       await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
 
-      const traderInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
-
-      console.log("trader variable token balance", traderInfo.variableTokenBalance.toString());
-      console.log("trader fixed token balance", traderInfo.fixedTokenBalance.toString());
-
-      const positionInfo = await marginEngineTest.getPosition(
-        wallet.address,
-        -1,
-        1
-      );
-
       await marginEngineTest.settlePosition(-1, 1, wallet.address);
 
       await marginEngineTest.settlePosition(-TICK_SPACING, TICK_SPACING, other.address);
@@ -733,20 +713,9 @@ describe("MarginEngine", () => {
         1
       );
 
-      const traderMarginDelta = sub(traderInfoNew.margin, traderInfo.margin);
-      const positionMarginDelta = sub(
-        positionInfoNew.margin,
-        positionInfo.margin
-      );
-
-      const sumOfTraderMarginDeltaAndPositionMarginDelta = add(
-        traderMarginDelta,
-        positionMarginDelta
-      );
-
       // this should be close to zero!
-      expect(sumOfTraderMarginDeltaAndPositionMarginDelta).to.be.near(
-        toBn("0")
+      expect(traderInfoNew.margin.add(positionInfoNew.margin)).to.be.near(
+        toBn("110000")
       );
 
       expect(positionInfoNew.isSettled).to.eq(true);
@@ -755,247 +724,234 @@ describe("MarginEngine", () => {
     });
   });
 
-  // describe("liquidations", async () => {
-  //   beforeEach("token approvals and updating position margin", async () => {
-  //     await token.mint(wallet.address, BigNumber.from(100).pow(27));
-  //     await token.approve(wallet.address, BigNumber.from(100).pow(27));
+  describe("liquidations", async () => {
+    beforeEach("token approvals and updating position margin", async () => {
+      await token.mint(wallet.address, BigNumber.from(100).pow(27));
+      await token.approve(wallet.address, BigNumber.from(100).pow(27));
 
-  //     await marginEngineTest.updatePositionMargin(
-  //       {
-  //         owner: wallet.address,
-  //         tickLower: -TICK_SPACING,
-  //         tickUpper: TICK_SPACING,
-  //         liquidityDelta: 0,
-  //       },
-  //       toBn("100000")
-  //     );
-  //   });
+      await marginEngineTest.updatePositionMargin(
+        wallet.address, -TICK_SPACING, TICK_SPACING, toBn("100000")
+      );
+    });
 
-  //   /// @audit tag: skipped this test because the underflow in price at min_tick
-  //   it.skip("scenario1: simple trader liquidation", async () => {
-  //     await vammTest.initializeVAMM(MIN_SQRT_RATIO);
+    it("scenario1: simple trader liquidation", async () => {
+      const min_price = BigNumber.from(encodeSqrtRatioX96(1, 10).toString());
+      await vammTest.initializeVAMM(min_price);
 
-  //     await vammTest.setMaxLiquidityPerTick(
-  //       getMaxLiquidityPerTick(TICK_SPACING)
-  //     );
-  //     await vammTest.setTickSpacing(TICK_SPACING);
+      await vammTest.setMaxLiquidityPerTick(
+        getMaxLiquidityPerTick(TICK_SPACING)
+      );
+      await vammTest.setTickSpacing(TICK_SPACING);
 
-  //     await vammTest.mint(
-  //       wallet.address,
-  //       -TICK_SPACING,
-  //       TICK_SPACING,
-  //       toBn("1000000000")
-  //     );
+      await vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1000000000")
+      );
 
-  //     await marginEngineTest.setTrader(
-  //       wallet.address,
-  //       toBn("0"),
-  //       toBn("-1000000"),
-  //       toBn("10"),
-  //       false
-  //     ); // clearly liquidatable
+      await marginEngineTest.setPosition(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("0"),
+        toBn("0"),
+        toBn("0"),
+        toBn("0"),
+        toBn("-1000000"),
+        toBn("10"),
+        toBn("0"),
+        false
+      ); // clearly liquidatable
 
-  //     await marginEngineTest.updateTraderMargin(wallet.address, toBn("1"));
+      await marginEngineTest.updatePositionMargin(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("1"));
 
-  //     const oldMarginEngineBalance = await token.balanceOf(
-  //       marginEngineTest.address
-  //     );
+      const oldMarginEngineBalance = await token.balanceOf(
+        marginEngineTest.address
+      );
 
-  //     const traderInfoOld = await marginEngineTest.traders(wallet.address);
-  //     expect(traderInfoOld.variableTokenBalance).to.eq(toBn("10"));
+      const traderInfoOld = await marginEngineTest.getPosition(wallet.address, -TICK_SPACING, TICK_SPACING);
+      expect(traderInfoOld.variableTokenBalance).to.eq(toBn("10"));
 
-  //     await marginEngineTest.connect(other).liquidateTrader(wallet.address);
+      await marginEngineTest.connect(other).liquidatePosition(-TICK_SPACING, TICK_SPACING, wallet.address);
 
-  //     const traderInfo = await marginEngineTest.traders(wallet.address);
+      const traderInfo = await marginEngineTest.getPosition(wallet.address, -TICK_SPACING, TICK_SPACING);
 
-  //     const balanceOther = await token.balanceOf(other.address);
-  //     // console.log("balanceOther", balanceOther.toString());
+      const balanceOther = await token.balanceOf(other.address);
+      // console.log("balanceOther", balanceOther.toString());
 
-  //     const balanceMarginEngine = await token.balanceOf(
-  //       marginEngineTest.address
-  //     );
+      const balanceMarginEngine = await token.balanceOf(
+        marginEngineTest.address
+      );
 
-  //     const marginEngineBalanceDelta = sub(
-  //       oldMarginEngineBalance,
-  //       balanceMarginEngine
-  //     );
+      const marginEngineBalanceDelta = sub(
+        oldMarginEngineBalance,
+        balanceMarginEngine
+      );
 
-  //     expect(balanceOther).to.eq(toBn("0.1"));
-  //     expect(marginEngineBalanceDelta).to.eq(toBn("0.1"));
+      expect(balanceOther).to.eq(toBn("0.1"));
+      expect(marginEngineBalanceDelta).to.eq(toBn("0.1"));
 
-  //     expect(traderInfo.variableTokenBalance).to.eq("0");
-  //     expect(traderInfo.margin).to.eq(toBn("0.9"));
-  //   });
+      expect(traderInfo.variableTokenBalance).to.eq("0");
+      expect(traderInfo.margin).to.eq(toBn("0.9"));
+    });
 
-  //   it("scenario 2: simple position liquidation", async () => {
-  //     await token.mint(other.address, BigNumber.from(10).pow(27));
-  //     await token.approve(other.address, BigNumber.from(10).pow(27));
+    it("scenario 2: simple position liquidation", async () => {
+      await token.mint(other.address, BigNumber.from(10).pow(27));
+      await token.approve(other.address, BigNumber.from(10).pow(27));
 
-  //     await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
+      await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-  //     await vammTest.setMaxLiquidityPerTick(
-  //       getMaxLiquidityPerTick(TICK_SPACING)
-  //     );
-  //     await vammTest.setTickSpacing(TICK_SPACING);
+      await vammTest.setMaxLiquidityPerTick(
+        getMaxLiquidityPerTick(TICK_SPACING)
+      );
+      await vammTest.setTickSpacing(TICK_SPACING);
 
-  //     await vammTest.mint(
-  //       wallet.address,
-  //       -TICK_SPACING,
-  //       TICK_SPACING,
-  //       toBn("1000000000")
-  //     );
+      await vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1000000000")
+      );
 
-  //     await marginEngineTest.setPosition(
-  //       other.address,
-  //       -TICK_SPACING,
-  //       TICK_SPACING,
-  //       toBn("1000"),
-  //       toBn("0"),
-  //       toBn("0"),
-  //       toBn("0"),
-  //       toBn("-1000000"),
-  //       toBn("-10"),
-  //       toBn("0"),
-  //       false
-  //     ); // clearly liquidatable
+      await marginEngineTest.setPosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1000"),
+        toBn("0"),
+        toBn("0"),
+        toBn("0"),
+        toBn("-1000000"),
+        toBn("-10"),
+        toBn("0"),
+        false
+      ); // clearly liquidatable
 
-  //     await marginEngineTest.updatePositionMargin(
-  //       {
-  //         owner: other.address,
-  //         tickLower: -TICK_SPACING,
-  //         tickUpper: TICK_SPACING,
-  //         liquidityDelta: 0,
-  //       },
-  //       toBn("1")
-  //     );
+      await marginEngineTest.updatePositionMargin(other.address, -TICK_SPACING, TICK_SPACING, toBn("1"));
 
-  //     const oldMarginEngineBalance = await token.balanceOf(
-  //       marginEngineTest.address
-  //     );
+      const oldMarginEngineBalance = await token.balanceOf(
+        marginEngineTest.address
+      );
 
-  //     const oldBalanceWallet = await token.balanceOf(wallet.address);
-  //     console.log("oldBalanceOther", oldBalanceWallet.toString());
+      const oldBalanceWallet = await token.balanceOf(wallet.address);
+      console.log("oldBalanceOther", oldBalanceWallet.toString());
 
-  //     const positionInfoOld = await marginEngineTest.getPosition(
-  //       other.address,
-  //       -TICK_SPACING,
-  //       TICK_SPACING
-  //     );
+      const positionInfoOld = await marginEngineTest.getPosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
 
-  //     expect(positionInfoOld.variableTokenBalance).to.eq(toBn("-10"));
+      expect(positionInfoOld.variableTokenBalance).to.eq(toBn("-10"));
 
-  //     // await marginEngineTest.connect(other).liquidateTrader(wallet.address);
-  //     await marginEngineTest.liquidatePosition({
-  //       owner: other.address,
-  //       tickLower: -TICK_SPACING,
-  //       tickUpper: TICK_SPACING,
-  //       liquidityDelta: 0,
-  //     });
+      // await marginEngineTest.connect(other).liquidateTrader(wallet.address);
+      await marginEngineTest.liquidatePosition(-TICK_SPACING, TICK_SPACING, other.address);
 
-  //     const positionInfo = await marginEngineTest.getPosition(
-  //       other.address,
-  //       -TICK_SPACING,
-  //       TICK_SPACING
-  //     );
+      const positionInfo = await marginEngineTest.getPosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
 
-  //     const balanceWallet = await token.balanceOf(wallet.address);
-  //     console.log("balabalanceWalletnceOther", balanceWallet.toString());
+      const balanceWallet = await token.balanceOf(wallet.address);
+      console.log("balabalanceWalletnceOther", balanceWallet.toString());
 
-  //     const balanceMarginEngine = await token.balanceOf(
-  //       marginEngineTest.address
-  //     );
+      const balanceMarginEngine = await token.balanceOf(
+        marginEngineTest.address
+      );
 
-  //     const marginEngineBalanceDelta = sub(
-  //       oldMarginEngineBalance,
-  //       balanceMarginEngine
-  //     );
-  //     const balanceWalletDelta = sub(balanceWallet, oldBalanceWallet);
+      const marginEngineBalanceDelta = sub(
+        oldMarginEngineBalance,
+        balanceMarginEngine
+      );
+      const balanceWalletDelta = sub(balanceWallet, oldBalanceWallet);
 
-  //     expect(balanceWalletDelta).to.eq(toBn("0.1"));
-  //     expect(marginEngineBalanceDelta).to.eq(toBn("0.1"));
+      expect(balanceWalletDelta).to.eq(toBn("0.1"));
+      expect(marginEngineBalanceDelta).to.eq(toBn("0.1"));
 
-  //     expect(positionInfo.variableTokenBalance).to.eq("0");
-  //     expect(positionInfo.margin).to.eq(toBn("0.9"));
-  //   });
-  // });
+      expect(positionInfo.variableTokenBalance).to.eq("0");
+      expect(positionInfo.margin).to.eq(toBn("0.9"));
+    });
+  });
 
-  // describe("#getHistoricalApy[ReadOnly]", async () => {
-  //   const oneInRay = toBn("1", consts.AAVE_RATE_DECIMALS);
-  //   const apy = toBn("1.370752688", consts.AAVE_RATE_DECIMALS); // This is equivalent to compounding by 1.00000001 per second for 365 days = 31536000 seconds
-  //   const secondsAgo = 86400;
-  //   const cachePeriod = 21600;
-  //   let startTime;
-  //   // const apy = toBn("1.371039921"); // This is equivalent to compounding by 1.00000001 per second for 365.2425 days = 31556952 seconds
+  describe("#getHistoricalApy[ReadOnly]", async () => {
+    const oneInRay = toBn("1", consts.AAVE_RATE_DECIMALS);
+    const apy = toBn("1.370752688", consts.AAVE_RATE_DECIMALS); // This is equivalent to compounding by 1.00000001 per second for 365 days = 31536000 seconds
+    const secondsAgo = 86400;
+    const cachePeriod = 21600;
+    let startTime;
+    // const apy = toBn("1.371039921"); // This is equivalent to compounding by 1.00000001 per second for 365.2425 days = 31556952 seconds
 
-  //   beforeEach("deploy and initialize test oracle", async () => {
-  //     await rateOracleTest.increaseObservarionCardinalityNext(10);
-  //     await aaveLendingPool.setReserveNormalizedIncome(token.address, oneInRay);
-  //     await rateOracleTest.writeOracleEntry();
+    beforeEach("deploy and initialize test oracle", async () => {
+      await rateOracleTest.increaseObservarionCardinalityNext(10);
+      await aaveLendingPool.setReserveNormalizedIncome(token.address, oneInRay);
+      await rateOracleTest.writeOracleEntry();
 
-  //     startTime = await getCurrentTimestamp();
+      startTime = await getCurrentTimestamp();
 
-  //     await marginEngineTest.setSecondsAgo(secondsAgo); // one day
-  //     await marginEngineTest.setCacheMaxAgeInSeconds(cachePeriod); // six hours
-  //     await aaveLendingPool.setReserveNormalizedIncome(token.address, apy);
-  //     await setTimeNextBlock(startTime + 31536000); // One year after first reading
-  //     await rateOracleTest.writeOracleEntry();
-  //   });
+      await marginEngineTest.setSecondsAgo(secondsAgo); // one day
+      await marginEngineTest.setCacheMaxAgeInSeconds(cachePeriod); // six hours
+      await aaveLendingPool.setReserveNormalizedIncome(token.address, apy);
+      await setTimeNextBlock(startTime + 31536000); // One year after first reading
+      await rateOracleTest.writeOracleEntry();
+    });
 
-  //   it("correctly computes historical apy without cache", async () => {
-  //     const realizedHistoricalApy1 =
-  //       await marginEngineTest.getHistoricalApyReadOnly();
-  //     expect(realizedHistoricalApy1, "matches input APY").to.be.closeTo(
-  //       apy.sub(oneInRay).div(1e9), // convert rate in ray to APY in wad
-  //       100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
-  //     );
-  //     const realizedHistoricalApy2 =
-  //       await marginEngineTest.callStatic.getHistoricalApy();
-  //     expect(
-  //       realizedHistoricalApy1,
-  //       "view and non-view give same answer"
-  //     ).to.eq(realizedHistoricalApy2);
-  //   });
+    it("correctly computes historical apy without cache", async () => {
+      const realizedHistoricalApy1 =
+        await marginEngineTest.getHistoricalApyReadOnly();
+      expect(realizedHistoricalApy1, "matches input APY").to.be.closeTo(
+        apy.sub(oneInRay).div(1e9), // convert rate in ray to APY in wad
+        100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
+      );
+      const realizedHistoricalApy2 =
+        await marginEngineTest.callStatic.getHistoricalApy();
+      expect(
+        realizedHistoricalApy1,
+        "view and non-view give same answer"
+      ).to.eq(realizedHistoricalApy2);
+    });
 
-  //   it("correctly caches historical apy", async () => {
-  //     // Fist write the cache. Note that the rate won't exactly match the APY because another block has elapsed but we have not updated reserveNormalizedIncome. This is OK because we are only testing caching.
-  //     await marginEngineTest.getHistoricalApy();
-  //     const realizedHistoricalApy1a =
-  //       await marginEngineTest.getHistoricalApyReadOnly();
-  //     const realizedHistoricalApy1b =
-  //       await marginEngineTest.callStatic.getHistoricalApy();
-  //     expect(
-  //       realizedHistoricalApy1a,
-  //       "view and non-view give same answer"
-  //     ).to.eq(realizedHistoricalApy1b);
+    it("correctly caches historical apy", async () => {
+      // Fist write the cache. Note that the rate won't exactly match the APY because another block has elapsed but we have not updated reserveNormalizedIncome. This is OK because we are only testing caching.
+      await marginEngineTest.getHistoricalApy();
+      const realizedHistoricalApy1a =
+        await marginEngineTest.getHistoricalApyReadOnly();
+      const realizedHistoricalApy1b =
+        await marginEngineTest.callStatic.getHistoricalApy();
+      expect(
+        realizedHistoricalApy1a,
+        "view and non-view give same answer"
+      ).to.eq(realizedHistoricalApy1b);
 
-  //     // Still within cache window so expect results unchanged
-  //     await advanceTime(cachePeriod - 100);
-  //     const realizedHistoricalApy2a =
-  //       await marginEngineTest.getHistoricalApyReadOnly();
-  //     const realizedHistoricalApy2b =
-  //       await marginEngineTest.callStatic.getHistoricalApy();
-  //     expect(realizedHistoricalApy2a, "cached value returned (2)").to.eq(
-  //       realizedHistoricalApy1a
-  //     );
-  //     expect(
-  //       realizedHistoricalApy2a,
-  //       "view and non-view give same answer (2)"
-  //     ).to.eq(realizedHistoricalApy2b);
+      // Still within cache window so expect results unchanged
+      await advanceTime(cachePeriod - 100);
+      const realizedHistoricalApy2a =
+        await marginEngineTest.getHistoricalApyReadOnly();
+      const realizedHistoricalApy2b =
+        await marginEngineTest.callStatic.getHistoricalApy();
+      expect(realizedHistoricalApy2a, "cached value returned (2)").to.eq(
+        realizedHistoricalApy1a
+      );
+      expect(
+        realizedHistoricalApy2a,
+        "view and non-view give same answer (2)"
+      ).to.eq(realizedHistoricalApy2b);
 
-  //     // Now moving outside the cache window so expect lower APY to be returned (because reserveNormalizedIncome has not been updated so interest has effectively stopped accruing throughout the cache period)
-  //     await advanceTime(101);
-  //     const realizedHistoricalApy3a =
-  //       await marginEngineTest.getHistoricalApyReadOnly();
-  //     const realizedHistoricalApy3b =
-  //       await marginEngineTest.callStatic.getHistoricalApy();
-  //     expect(
-  //       realizedHistoricalApy3a,
-  //       "value now is lower than what was cached before"
-  //     ).to.be.lt(realizedHistoricalApy2a);
-  //     expect(
-  //       realizedHistoricalApy3a,
-  //       "view and non-view give same answer (3)"
-  //     ).to.eq(realizedHistoricalApy3b);
-  //   });
-  // });
+      // Now moving outside the cache window so expect lower APY to be returned (because reserveNormalizedIncome has not been updated so interest has effectively stopped accruing throughout the cache period)
+      await advanceTime(101);
+      const realizedHistoricalApy3a =
+        await marginEngineTest.getHistoricalApyReadOnly();
+      const realizedHistoricalApy3b =
+        await marginEngineTest.callStatic.getHistoricalApy();
+      expect(
+        realizedHistoricalApy3a,
+        "value now is lower than what was cached before"
+      ).to.be.lt(realizedHistoricalApy2a);
+      expect(
+        realizedHistoricalApy3a,
+        "view and non-view give same answer (3)"
+      ).to.eq(realizedHistoricalApy3b);
+    });
+  });
 });

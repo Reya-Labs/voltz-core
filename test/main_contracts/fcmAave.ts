@@ -130,12 +130,9 @@ describe("VAMM", () => {
       const otherStartingBalance = await token.balanceOf(other.address);
       
       await marginEngineTest.connect(other).updatePositionMargin(
-        {
-          owner: other.address,
-          tickLower: -TICK_SPACING,
-          tickUpper: TICK_SPACING,
-          liquidityDelta: 0,
-        },
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING,
         "1121850791579727450"
       );
 
@@ -185,7 +182,7 @@ describe("VAMM", () => {
       console.log("historicalApyCached", utils.formatEther(historicalApyCached));
 
       expect(await fcmTest.getAaveLendingPool(), "aave lending pool expect").to.eq(aaveLendingPool.address);
-      expect(await fcmTest.marginEngineAddress(), "margin engine address expect").to.eq(marginEngineTest.address);
+      expect(await fcmTest.marginEngine(), "margin engine address expect").to.eq(marginEngineTest.address);
       expect(await fcmTest.getUnderlyingYieldBearingToken(), "underlying yield bearing token expect").to.eq(mockAToken.address);
       expect(await fcmTest.getVAMMAddress(), "vamm address expect").to.eq(vammTest.address);
       
@@ -232,28 +229,14 @@ describe("VAMM", () => {
       expect(traderAPY).to.be.near(toBn("0.010116042450876211")); // around 1% fixed apy secured as expected
 
       // lp settles and collects their margin
-      await marginEngineTest.settlePosition(
-        {
-          owner: other.address,
-          tickLower: -TICK_SPACING,
-          tickUpper: TICK_SPACING,
-          liquidityDelta: 0
-        }
-        
-      );
+      await marginEngineTest.settlePosition(-TICK_SPACING, TICK_SPACING, other.address);
 
       const positionInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
       const finalPositionMargin = positionInfo[1];
       console.log("finalPositionMargin", utils.formatEther(finalPositionMargin));
       
       await marginEngineTest.connect(other).updatePositionMargin(
-        {
-          owner: other.address,
-          tickLower: -TICK_SPACING,
-          tickUpper: TICK_SPACING,
-          liquidityDelta: 0
-        },
-        mul(finalPositionMargin, toBn("-1")) 
+        other.address, -TICK_SPACING, TICK_SPACING, mul(finalPositionMargin, toBn("-1")) 
       );
       
       const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);

@@ -10,8 +10,8 @@ import {
 } from "../shared/utilities";
 import Decimal from "decimal.js";
 
-const MIN_TICK = -887272;
-const MAX_TICK = 887272;
+const MIN_TICK = -69100;
+const MAX_TICK = 69100;
 
 Decimal.config({ toExpNeg: -500, toExpPos: 500 });
 
@@ -37,7 +37,7 @@ describe("TickMath", () => {
     });
 
     it("min tick", async () => {
-      expect(await tickMath.getSqrtRatioAtTick(MIN_TICK)).to.eq("4295128739");
+      expect(await tickMath.getSqrtRatioAtTick(MIN_TICK)).to.eq("2503036416286949174936592462");
     });
 
     it("min tick +1", async () => {
@@ -66,7 +66,7 @@ describe("TickMath", () => {
 
     it("max tick", async () => {
       expect(await tickMath.getSqrtRatioAtTick(MAX_TICK)).to.eq(
-        "1461446703485210103287273052203988822378723970342"
+        "2507794810551837817144115957740"
       );
     });
 

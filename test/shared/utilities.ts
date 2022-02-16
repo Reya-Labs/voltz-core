@@ -23,9 +23,9 @@ export const SECONDS_IN_YEAR: BigNumber = toBn("31536000");
 export const MaxUint128 = BigNumber.from(2).pow(128).sub(1);
 
 export const getMinTick = (tickSpacing: number) =>
-  Math.ceil(-887272 / tickSpacing) * tickSpacing;
+  Math.ceil(-69100 / tickSpacing) * tickSpacing;
 export const getMaxTick = (tickSpacing: number) =>
-  Math.floor(887272 / tickSpacing) * tickSpacing;
+  Math.floor(69100 / tickSpacing) * tickSpacing;
 
 export const getMaxLiquidityPerTick = (tickSpacing: number) =>
   BigNumber.from(2)
@@ -50,9 +50,9 @@ export function encodeSqrtRatioX96(
   return sqrt(ratioX192);
 }
 
-export const MIN_SQRT_RATIO = BigNumber.from("4295128739");
+export const MIN_SQRT_RATIO = BigNumber.from("2503036416286949174936592462");
 export const MAX_SQRT_RATIO = BigNumber.from(
-  "1461446703485210103287273052203988822378723970342"
+  "2507794810551837817144115957740"
 );
 
 export function expandTo18Decimals(n: number): BigNumber {
@@ -93,8 +93,8 @@ export const XI_UPPER: BigNumber = toBn("2.0");
 export const XI_LOWER: BigNumber = toBn("1.5");
 export const T_MAX: BigNumber = toBn("31536000"); // one year
 export const DEFAULT_TIME_FACTOR: BigNumber = toBn("0.1");
-export const MIN_TICK: number = -887272;
-export const MAX_TICK: number = 887272;
+export const MIN_TICK: number = -69100;
+export const MAX_TICK: number = 69100;
 
 export const DEV_MUL_LEFT_UNWIND_LM: BigNumber = BigNumber.from("12");
 export const DEV_MUL_RIGHT_UNWIND_LM: BigNumber = BigNumber.from("8");

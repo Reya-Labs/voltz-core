@@ -43,7 +43,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       for (const p of this.positions) {
         await this.e2eSetup.swap({
           recipient: p[0],
-          isFT: false,
           amountSpecified: toBn("-3"),
           sqrtPriceLimitX96: sqrtPriceLimit,
           isExternal: false,

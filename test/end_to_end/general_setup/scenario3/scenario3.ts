@@ -49,7 +49,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // Trader 0 buys 2,995 VT
     await this.e2eSetup.swap({
       recipient: this.positions[2][0],
-      isFT: false,
       amountSpecified: toBn("-2995"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
       isExternal: false,
@@ -104,7 +103,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // Trader 1 buys 15,000 VT
     await this.e2eSetup.swap({
       recipient: this.positions[3][0],
-      isFT: false,
       amountSpecified: toBn("-15000"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
       isExternal: false,
@@ -120,7 +118,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // Trader 0 sells 10,000 VT
     await this.e2eSetup.swap({
       recipient: this.positions[2][0],
-      isFT: true,
       amountSpecified: toBn("10000"),
       sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
       isExternal: false,

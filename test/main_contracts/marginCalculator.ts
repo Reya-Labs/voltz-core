@@ -693,6 +693,7 @@ describe("MarginCalculator", () => {
     let tickAt10p: number;
     let tickAt99p: number;
     let tickAt101p: number;
+    let tickAt1000p: number;
 
     let priceAt0001p: BigNumber;
     let priceAt1p: BigNumber;
@@ -701,6 +702,7 @@ describe("MarginCalculator", () => {
     let priceAt10p: BigNumber;
     let priceAt99p: BigNumber;
     let priceAt101p: BigNumber;
+    let priceAt1000p: BigNumber;
 
     let currentTimestampScaled: BigNumber;
     let termEndTimestampScaled: BigNumber;
@@ -754,6 +756,9 @@ describe("MarginCalculator", () => {
       tickAt101p = await testTickMath.getTickAtSqrtRatio(
         encodePriceSqrt(1, 101)
       ); // 101%
+      tickAt1000p = await testTickMath.getTickAtSqrtRatio(
+        encodePriceSqrt(1, 1000)
+      ); // 1000%
 
       priceAt0001p = await testTickMath.getSqrtRatioAtTick(tickAt0001p);
       priceAt1p = await testTickMath.getSqrtRatioAtTick(tickAt1p);
@@ -762,6 +767,12 @@ describe("MarginCalculator", () => {
       priceAt10p = await testTickMath.getSqrtRatioAtTick(tickAt10p);
       priceAt99p = await testTickMath.getSqrtRatioAtTick(tickAt99p);
       priceAt101p = await testTickMath.getSqrtRatioAtTick(tickAt101p);
+      priceAt1000p = await testTickMath.getSqrtRatioAtTick(tickAt1000p);
+
+      console.log(" tick at 0.001% :", tickAt0001p);
+      console.log("price at 0.001% :", priceAt0001p);
+      console.log(" tick at  1000% :", tickAt1000p);
+      console.log("price at  1000% :", priceAt1000p);
 
       const currentTimestamp = await getCurrentTimestamp(provider);
       currentTimestampScaled = toBn(currentTimestamp.toString());

@@ -91,7 +91,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
         await this.e2eSetup.swap({
           recipient: p[0],
-          isFT: amount > 0,
           amountSpecified: toBn(amount.toString()),
           sqrtPriceLimitX96:
             amount > 0

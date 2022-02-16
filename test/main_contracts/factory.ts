@@ -110,7 +110,7 @@ describe("Factory", () => {
     ).to.be.revertedWith("contract is already initialized");
 
     const underlyingAddress = await marginEngine1.underlyingToken();
-    const rateOracleAddress = await marginEngine1.rateOracleAddress();
+    const rateOracleAddress = await marginEngine1.rateOracle();
     const termStartTimestampBNERealised =
       await marginEngine1.termStartTimestampWad();
     const termEndTimestampBNRealised =
@@ -130,7 +130,7 @@ describe("Factory", () => {
       "contract is already initialized"
     );
 
-    const marginEngineAddressRealised = await vamm1.marginEngineAddress();
+    const marginEngineAddressRealised = await vamm1.marginEngine();
     expect(marginEngineAddressRealised).to.eq(marginEngine1.address);
   });
 });
