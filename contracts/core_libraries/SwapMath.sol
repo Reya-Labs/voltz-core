@@ -164,6 +164,5 @@ library SwapMath {
             timeToMaturityInSecondsWad,
             feePercentageWad
         );
-
     }
 }

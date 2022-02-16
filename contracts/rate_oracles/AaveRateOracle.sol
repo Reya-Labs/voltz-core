@@ -110,7 +110,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             oracleVars.rateCardinality
         );
 
-
         if (rateToRay > rateFromRay) {
             return
                 WadRayMath.rayToWad(
