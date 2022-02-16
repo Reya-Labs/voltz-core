@@ -15,6 +15,8 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeCast for uint256;
@@ -23,6 +25,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
+
+    using SafeTransferLib for IERC20Minimal;
 
     /// @dev liquidatorReward (in wei) is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator
     /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
@@ -212,7 +216,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
     function transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
-            IERC20Minimal(underlyingToken).transferFrom(_account, address(this), uint256(_marginDelta));
+            IERC20Minimal(underlyingToken).safeTransferFrom(_account, address(this), uint256(_marginDelta));
         } else {
 
             uint256 marginEngineBalance = IERC20Minimal(underlyingToken).balanceOf(address(this));
@@ -221,11 +225,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 uint256 remainingDeltaToCover = uint256(-_marginDelta);
                 if (marginEngineBalance > 0) {
                     remainingDeltaToCover = remainingDeltaToCover - marginEngineBalance;
-                    IERC20Minimal(underlyingToken).transfer(_account, marginEngineBalance);
+                    IERC20Minimal(underlyingToken).safeTransfer(_account, marginEngineBalance);
                 }
                 fcm.transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
             } else {
-                IERC20Minimal(underlyingToken).transfer(_account, uint256(-_marginDelta));
+                IERC20Minimal(underlyingToken).safeTransfer(_account, uint256(-_marginDelta));
             }
 
         }
