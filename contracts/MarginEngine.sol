@@ -216,7 +216,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
     function transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
-            IERC20Minimal(underlyingToken).safeTransferFrom(_account, address(this), uint256(_marginDelta));
+            IERC20Minimal(underlyingToken).transferFrom(_account, address(this), uint256(_marginDelta));
         } else {
             uint256 marginEngineBalance = IERC20Minimal(underlyingToken).balanceOf(address(this));
 
@@ -245,9 +245,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
         
-        if (position._liquidity > 0) {
-            updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
-        }
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
 
         require((position.margin + marginDelta) >= 0, "can't withdraw more than have");
         
@@ -366,6 +364,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Tick.checkTicks(tickLower,tickUpper);
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);  
+
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
         
         bool isLiquidatable = isLiquidatablePosition(position, tickLower, tickUpper);
 
@@ -396,6 +396,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external onlyVAMM override {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper);
         position.updateLiquidity(params.liquidityDelta);
         emit LiquidityUpdate(Time.blockTimestampScaled(), address(this), position, position._liquidity);
 
@@ -409,6 +410,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         /// @dev this function can only be called by the vamm following a swap    
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
 
         if (cumulativeFeeIncurred > 0) {
             position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
@@ -439,32 +441,35 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int24 tickLower,
         int24 tickUpper
         ) internal {
-        (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
-        (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
-        uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
 
-        position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
-        emit BalancesViaDeltasUpdate(
-            Time.blockTimestampScaled(),
-            address(this),
-            position.fixedTokenBalance,
-            position.variableTokenBalance
-        );
-        position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
-        emit FixedAndVariableTokenGrowthInsideUpdate(
-            Time.blockTimestampScaled(),
-            address(this),
-            position,
-            fixedTokenGrowthInsideX128,
-            variableTokenGrowthInsideX128
-        );
-        /// @dev collect fees
-        position.updateMarginViaDelta(int256(feeDelta));
-        emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
-        position.updateFeeGrowthInside(feeGrowthInsideX128);
-        emit FeeGrowthInsideUpdate(Time.blockTimestampScaled(), address(this), position, feeGrowthInsideX128);
+        if (position._liquidity > 0) {
+              (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
+            (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
+            uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
 
-        emit PositionTokenBalancesAndAccountForFeesUpdate(Time.blockTimestampScaled(), address(this), position, position.fixedTokenBalance, position.variableTokenBalance, feeDelta);
+            position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
+            emit BalancesViaDeltasUpdate(
+                Time.blockTimestampScaled(),
+                address(this),
+                position.fixedTokenBalance,
+                position.variableTokenBalance
+            );
+            position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
+            emit FixedAndVariableTokenGrowthInsideUpdate(
+                Time.blockTimestampScaled(),
+                address(this),
+                position,
+                fixedTokenGrowthInsideX128,
+                variableTokenGrowthInsideX128
+            );
+            /// @dev collect fees
+            position.updateMarginViaDelta(int256(feeDelta));
+            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
+            position.updateFeeGrowthInside(feeGrowthInsideX128);
+            emit FeeGrowthInsideUpdate(Time.blockTimestampScaled(), address(this), position, feeGrowthInsideX128);
+
+            emit PositionTokenBalancesAndAccountForFeesUpdate(Time.blockTimestampScaled(), address(this), position, position.fixedTokenBalance, position.variableTokenBalance, feeDelta);
+        }
     }
     
 
@@ -608,8 +613,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         uint256 variableFactorWad = rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad);
 
         if (position._liquidity > 0) {
-
-            updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper);
             /// simplify (2 scenarios from current to lower, from  current to upper)?
 
             PositionMarginRequirementLocalVars memory localVars;

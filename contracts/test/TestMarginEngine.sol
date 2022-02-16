@@ -38,9 +38,18 @@ contract TestMarginEngine is MarginEngine {
     function checkPositionMarginCanBeUpdatedTest(
         address owner,
         int24 tickLower,
-        int24 tickUpper
+        int24 tickUpper,
+        uint128 counterfactualLiquidity,
+        int256 counterfactualFixedTokenBalance,
+        int256 counterfactualVariableTokenBalance,
+        int256 counterfactualMargin
     ) public {
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+
+        position._liquidity = counterfactualLiquidity;
+        position.fixedTokenBalance = counterfactualFixedTokenBalance;
+        position.variableTokenBalance = counterfactualVariableTokenBalance;
+        position.margin = counterfactualMargin;
 
         return
             checkPositionMarginCanBeUpdated(
@@ -53,10 +62,19 @@ contract TestMarginEngine is MarginEngine {
     function checkPositionMarginAboveRequirementTest(
         address owner,
         int24 tickLower,
-        int24 tickUpper
+        int24 tickUpper,
+        uint128 counterfactualLiquidity,
+        int256 counterfactualFixedTokenBalance,
+        int256 counterfactualVariableTokenBalance,
+        int256 counterfactualMargin
     ) public {
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        
+
+        position._liquidity = counterfactualLiquidity;
+        position.fixedTokenBalance = counterfactualFixedTokenBalance;
+        position.variableTokenBalance = counterfactualVariableTokenBalance;
+        position.margin = counterfactualMargin;
+
         return
             checkPositionMarginAboveRequirement(
                 position,
