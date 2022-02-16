@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1647605050
+current timestamp: 1647606264
 
 current tick: 0
 sqrt price at current tick: 1
@@ -81,7 +81,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE FIRST SWAP----------------------------
-current timestamp: 1647777859
+current timestamp: 1647779073
 
 current tick: 0
 sqrt price at current tick: 1
@@ -163,7 +163,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------AFTER FIRST SWAP----------------------------
-current timestamp: 1647777865
+current timestamp: 1647779079
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
