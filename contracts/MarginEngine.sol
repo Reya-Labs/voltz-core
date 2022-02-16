@@ -218,7 +218,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (_marginDelta > 0) {
             IERC20Minimal(underlyingToken).safeTransferFrom(_account, address(this), uint256(_marginDelta));
         } else {
-
             uint256 marginEngineBalance = IERC20Minimal(underlyingToken).balanceOf(address(this));
 
             if (uint256(-_marginDelta) > marginEngineBalance) {

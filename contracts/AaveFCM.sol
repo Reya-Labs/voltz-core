@@ -19,6 +19,8 @@ import "./aave/AaveDataTypes.sol";
 
 // optional: margin topup function (in terms of yield bearing tokens)
 // use the same trader library as for the margin engine
+// introduce safe transfer
+// introduce approvals 
 
 contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
