@@ -165,8 +165,5 @@ library SwapMath {
             feePercentageWad
         );
 
-        Printer.printUint256("notional", notional);
-        Printer.printUint256("feeAmount", feeAmount);
-        Printer.printEmptyLine();
     }
 }

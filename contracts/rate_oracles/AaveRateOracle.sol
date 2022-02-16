@@ -110,9 +110,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             oracleVars.rateCardinality
         );
 
-        Printer.printUint256("rateFromRay", rateFromRay);
-        Printer.printUint256("rateToRay", rateToRay);
-        Printer.printUint32("to", to);
 
         if (rateToRay > rateFromRay) {
             return

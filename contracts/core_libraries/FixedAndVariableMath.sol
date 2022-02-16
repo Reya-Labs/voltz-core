@@ -221,8 +221,6 @@ library FixedAndVariableMath {
             termEndTimestampWad
         );
 
-        Printer.printInt256("excessBalanceWad:", excessBalanceWad);
-
         int256 fixedTokenBalanceWad = calculateFixedTokenBalance(
             amount0Wad,
             excessBalanceWad,

@@ -294,6 +294,17 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad));
 
+        
+        if (position._liquidity>0) {    
+            Printer.printInt256("LP position.fixedTokenBalance", position.fixedTokenBalance);
+            Printer.printInt256("LP position.variableTokenBalance", position.variableTokenBalance);
+            Printer.printInt256("LP settlementCashflow", settlementCashflow);
+        } else {
+            Printer.printInt256("Trader position.fixedTokenBalance", position.fixedTokenBalance);
+            Printer.printInt256("Trader position.variableTokenBalance", position.variableTokenBalance);
+            Printer.printInt256("Trader settlementCashflow", settlementCashflow);
+        }
+
         position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
         emit BalancesViaDeltasUpdate(
             Time.blockTimestampScaled(),
@@ -396,14 +407,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external onlyVAMM override {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
-        Printer.printUint128("position liquidity (before)", position._liquidity);
-        Printer.printInt256("position fixed balance (before)", position.fixedTokenBalance);
-        Printer.printInt256("position fixed balance (before)", position.fixedTokenBalance);
 
         updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true);
 
-        Printer.printInt256("position fixed balance (after)", position.fixedTokenBalance);
-        Printer.printInt256("position fixed balance (after)", position.fixedTokenBalance);
         position.updateLiquidity(params.liquidityDelta);
         emit LiquidityUpdate(Time.blockTimestampScaled(), address(this), position, position._liquidity);
 
@@ -565,7 +571,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
                     recipient: _owner,
-                    isFT: false,
                     amountSpecified: position.variableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1,
                     isExternal: true,
@@ -584,7 +589,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
                     recipient: _owner,
-                    isFT: true,
                     amountSpecified: position.variableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO - 1,
                     isExternal: true,

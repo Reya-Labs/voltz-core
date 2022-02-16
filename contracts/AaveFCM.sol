@@ -84,7 +84,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     // initiate a swap
     IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: address(this),
-        isFT: true,
         amountSpecified: int256(notional),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         isExternal: true,
@@ -127,7 +126,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     // initiate a swap
     IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: address(this),
-        isFT: false,
         amountSpecified: -int256(notionalToUnwind),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         isExternal: true,

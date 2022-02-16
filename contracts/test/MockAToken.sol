@@ -91,11 +91,7 @@ contract MockAToken is IAToken, ERC20 {
     ) external override returns (bool) {
         uint256 previousBalance = super.balanceOf(user);
 
-        Printer.printUint256("amount (not scaled)", amount);
-
         uint256 amountScaled = amount.rayDiv(index);
-        
-        Printer.printUint256("amount (scaled)", amountScaled);
 
         require(amountScaled != 0, "CT_INVALID_MINT_AMOUNT");
         _mint(user, amountScaled);

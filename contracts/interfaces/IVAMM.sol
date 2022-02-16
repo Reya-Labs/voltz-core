@@ -155,8 +155,6 @@ interface IVAMM is IPositionStructs {
     struct SwapParams {
         /// @dev Address of the trader initiating the swap
         address recipient;
-        /// @dev is a given swap initiated by a fixed taker vs. a variable taker
-        bool isFT;
         /// @dev The amount of the swap, which implicitly configures the swap as exact input (positive), or exact output (negative)
         int256 amountSpecified;
         /// @dev The Q64.96 sqrt price limit. If !isFT, the price cannot be less than this

@@ -461,8 +461,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         state.protocolFee += step.feeProtocolDelta;
       }
 
-      // Printer.printInt256("before update state.variableTokenGrowthGlobalX128", state.variableTokenGrowthGlobalX128);
-
       // update global fee tracker
       if (state.liquidity > 0) {
         uint256 variableFactorWad = rateOracle.variableFactor(
