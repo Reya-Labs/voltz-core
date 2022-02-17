@@ -60,13 +60,13 @@ interface IERC20Minimal {
         uint256 value
     );
 
-    function safeTransferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
+    // function safeTransferFrom(
+    //     address sender,
+    //     address recipient,
+    //     uint256 amount
+    // ) external returns (bool);
 
-    function safeTransfer(address recipient, uint256 amount)
-        external
-        returns (bool);
+    // function safeTransfer(address recipient, uint256 amount)
+    //     external
+    //     returns (bool);
 }

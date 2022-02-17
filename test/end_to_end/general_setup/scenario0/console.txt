@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1647608649
+current timestamp: 1647687537
 
 current tick: 0
 sqrt price at current tick: 1
@@ -27,7 +27,6 @@ POSITION 0
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
@@ -43,7 +42,6 @@ POSITION 1
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
@@ -59,7 +57,6 @@ POSITION 2
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
@@ -75,13 +72,12 @@ POSITION 3
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
 
 ----------------------------BEFORE FIRST SWAP----------------------------
-current timestamp: 1647781458
+current timestamp: 1647860346
 
 current tick: 0
 sqrt price at current tick: 1
@@ -109,7 +105,6 @@ POSITION 0
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
@@ -125,7 +120,6 @@ POSITION 1
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
@@ -141,7 +135,6 @@ POSITION 2
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
@@ -157,13 +150,12 @@ POSITION 3
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
 
 ----------------------------AFTER FIRST SWAP----------------------------
-current timestamp: 1647781464
+current timestamp: 1647860352
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
@@ -191,7 +183,6 @@ POSITION 0
 variableTokenGrowthInsideLastX128: -0.0029949999880045652
                 fixedTokenBalance: 3057.722056631664902459
              variableTokenBalance: -2994.999999999999999999
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 7.242465616917390599
 
@@ -207,7 +198,6 @@ POSITION 1
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
@@ -223,7 +213,6 @@ POSITION 2
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: -3057.72205663166490246
              variableTokenBalance: 2995.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: -7.242465616917390599
 
@@ -239,13 +228,12 @@ POSITION 3
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
 
 ----------------------------BEFORE SECOND SWAP----------------------------
-current timestamp: 1648991077
+current timestamp: 1649069965
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
@@ -273,7 +261,6 @@ POSITION 0
 variableTokenGrowthInsideLastX128: -0.0029949999880045652
                 fixedTokenBalance: 3057.722056631664902459
              variableTokenBalance: -2994.999999999999999999
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: -5.830947081495307575
 
@@ -289,7 +276,6 @@ POSITION 1
 variableTokenGrowthInsideLastX128: 0.0029949999880045652
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
@@ -305,7 +291,6 @@ POSITION 2
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: -3057.72205663166490246
              variableTokenBalance: 2995.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 5.830947081495307575
 
@@ -321,13 +306,12 @@ POSITION 3
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 0.0
 
 
 ----------------------------AFTER SECOND SWAP----------------------------
-current timestamp: 1648991083
+current timestamp: 1649069971
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
@@ -355,7 +339,6 @@ POSITION 0
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
                 fixedTokenBalance: 3058.658315598557386388
              variableTokenBalance: -2995.354955910780937672
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: -5.830223122343026722
 
@@ -371,7 +354,6 @@ POSITION 1
 variableTokenGrowthInsideLastX128: -0.000004928791895508766
                 fixedTokenBalance: 39601.664975496244649549
              variableTokenBalance: -14999.645044089219062325
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 30.685239945786173136
 
@@ -387,7 +369,6 @@ POSITION 2
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: -3057.72205663166490246
              variableTokenBalance: 2995.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 5.830947081495307575
 
@@ -403,13 +384,12 @@ POSITION 3
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: -39602.60123446313713348
              variableTokenBalance: 15000.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: -30.685963904938453988
 
 
 ----------------------------BEFORE THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1648991087
+current timestamp: 1649069975
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
@@ -437,7 +417,6 @@ POSITION 0
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
                 fixedTokenBalance: 3058.658315598557386388
              variableTokenBalance: -2995.354955910780937672
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: -5.830223122343026722
 
@@ -453,7 +432,6 @@ POSITION 1
 variableTokenGrowthInsideLastX128: -0.000004928791895508766
                 fixedTokenBalance: 39601.664975496244649549
              variableTokenBalance: -14999.645044089219062325
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 30.685239945786173136
 
@@ -469,7 +447,6 @@ POSITION 2
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: -3057.72205663166490246
              variableTokenBalance: 2995.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 5.830947081495307575
 
@@ -485,13 +462,12 @@ POSITION 3
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: -39602.60123446313713348
              variableTokenBalance: 15000.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: -30.685963904938453988
 
 
 ----------------------------AFTER THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1648991092
+current timestamp: 1649069980
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836
@@ -519,7 +495,6 @@ POSITION 0
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
                 fixedTokenBalance: 3058.658315598557386388
              variableTokenBalance: -2995.354955910780937672
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: -5.830223122343026722
 
@@ -535,7 +510,6 @@ POSITION 1
 variableTokenGrowthInsideLastX128: 0.0019950708374381065
                 fixedTokenBalance: 13191.612654156844860901
              variableTokenBalance: -4999.645044089219062326
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 10.207420131916032498
 
@@ -551,7 +525,6 @@ POSITION 2
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 23352.330264707734886189
              variableTokenBalance: -7005.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: 26.308766895365448213
 
@@ -567,13 +540,12 @@ POSITION 3
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: -39602.60123446313713348
              variableTokenBalance: 15000.0
-          feeGrowthInsideLastX128: 0
                         isSettled: false
              settlement cashflow: -30.685963904938453988
 
 
 ----------------------------FINAL----------------------------
-current timestamp: 1655471110
+current timestamp: 1655549998
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836
@@ -596,7 +568,6 @@ POSITION 0
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: true
              settlement cashflow: 0.0
 
@@ -612,7 +583,6 @@ POSITION 1
 variableTokenGrowthInsideLastX128: 0.0019950708374381065
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: true
              settlement cashflow: 0.0
 
@@ -628,7 +598,6 @@ POSITION 2
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: true
              settlement cashflow: 0.0
 
@@ -644,7 +613,6 @@ POSITION 3
 variableTokenGrowthInsideLastX128: 0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
-          feeGrowthInsideLastX128: 0
                         isSettled: true
              settlement cashflow: 0.0
 

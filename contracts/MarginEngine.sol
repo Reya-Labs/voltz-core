@@ -16,7 +16,7 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "./core_libraries/SafeTransferLib.sol";
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeCast for uint256;
@@ -31,8 +31,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev liquidatorReward (in wei) is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator
     /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
     uint256 public override liquidatorRewardWad;
-    /// @inheritdoc IMarginEngine
-    address public override underlyingToken;
+    IERC20Minimal public override underlyingToken;
+
     /// @inheritdoc IMarginEngine
     uint256 public override termStartTimestampWad;
     /// @inheritdoc IMarginEngine
@@ -75,7 +75,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         require(_termStartTimestampWad != 0, "TS must be set");
         require(_termEndTimestampWad != 0, "TE must be set");
 
-        underlyingToken = _underlyingToken;
+        underlyingToken = IERC20Minimal(_underlyingToken);
         termStartTimestampWad = _termStartTimestampWad;
         termEndTimestampWad = _termEndTimestampWad;
 
@@ -191,7 +191,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (amount > 0) {
             /// @dev if the amount exceeds the available balances, vamm.updateProtocolFees(amount) should be reverted as intended
             vamm.updateProtocolFees(amount);
-            IERC20Minimal(underlyingToken).transfer(
+            underlyingToken.safeTransfer(
                 recipient,
                 amount
             );
@@ -216,26 +216,26 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
     function transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
-            IERC20Minimal(underlyingToken).transferFrom(_account, address(this), uint256(_marginDelta));
+            underlyingToken.safeTransferFrom(_account, address(this), uint256(_marginDelta));
         } else {
-            uint256 marginEngineBalance = IERC20Minimal(underlyingToken).balanceOf(address(this));
+            uint256 marginEngineBalance = underlyingToken.balanceOf(address(this));
 
             if (uint256(-_marginDelta) > marginEngineBalance) {
                 uint256 remainingDeltaToCover = uint256(-_marginDelta);
                 if (marginEngineBalance > 0) {
                     remainingDeltaToCover = remainingDeltaToCover - marginEngineBalance;
-                    IERC20Minimal(underlyingToken).safeTransfer(_account, marginEngineBalance);
+                    underlyingToken.safeTransfer(_account, marginEngineBalance);
                 }
                 fcm.transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
             } else {
-                IERC20Minimal(underlyingToken).transfer(_account, uint256(-_marginDelta));
+                underlyingToken.safeTransfer(_account, uint256(-_marginDelta));
             }
 
         }
     }
 
     function transferMarginToFCMTrader(address _account, uint256 marginDelta) external onlyFCM override {
-        IERC20Minimal(underlyingToken).transfer(_account, marginDelta);
+        underlyingToken.safeTransfer(_account, marginDelta);
     }
 
 
@@ -387,7 +387,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     
         unwindPosition(position, _owner, tickLower, tickUpper);
 
-        IERC20Minimal(underlyingToken).transfer(msg.sender, liquidatorRewardValue);
+        underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
 
     }
 
