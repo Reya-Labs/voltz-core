@@ -65,10 +65,7 @@ interface IMarginEngine is IPositionStructs {
     }
 
     // Events
-    event HistoricalApyWindowSet(
-        uint256 secondsAgoOld,
-        uint256 secondsAgo
-    );
+    event HistoricalApyWindowSet(uint256 secondsAgoOld, uint256 secondsAgo);
     event CacheMaxAgeSet(
         uint256 cacheMaxAgeInSecondsOld,
         uint256 cacheMaxAgeInSeconds
@@ -77,11 +74,7 @@ interface IMarginEngine is IPositionStructs {
         bool isInsuranceDepletedOld,
         bool isInsuranceDepleted
     );
-    event CollectProtocol(
-        address sender,
-        address recipient,
-        uint256 amount
-    );
+    event CollectProtocol(address sender, address recipient, uint256 amount);
     event LiquidatorRewardSet(
         uint256 liquidatorRewardWadOld,
         uint256 liquidatorRewardWad
@@ -93,15 +86,9 @@ interface IMarginEngine is IPositionStructs {
         Position.Info info
     );
 
-    event VAMMSet(
-        IVAMM vammOld,
-        IVAMM vamm
-    );
+    event VAMMSet(IVAMM vammOld, IVAMM vamm);
 
-    event FCMSet(
-        IFCM fcmOld,
-        IFCM fcm
-    );
+    event FCMSet(IFCM fcmOld, IFCM fcm);
 
     event MarginCalculatorParametersSet(
         MarginCalculatorParameters marginCalculatorParametersOld,
@@ -141,7 +128,7 @@ interface IMarginEngine is IPositionStructs {
         int24 tickUpper,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        int256 margin   
+        int256 margin
     );
 
     event UpdatePositionPostMintBurn(
