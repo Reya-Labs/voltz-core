@@ -41,9 +41,18 @@ library SafeTransferLib {
             let freeMemoryPointer := mload(0x40)
 
             // Write the abi-encoded calldata to memory piece by piece:
-            mstore(freeMemoryPointer, 0x23b872dd00000000000000000000000000000000000000000000000000000000) // Begin with the function selector.
-            mstore(add(freeMemoryPointer, 4), and(from, 0xffffffffffffffffffffffffffffffffffffffff)) // Mask and append the "from" argument.
-            mstore(add(freeMemoryPointer, 36), and(to, 0xffffffffffffffffffffffffffffffffffffffff)) // Mask and append the "to" argument.
+            mstore(
+                freeMemoryPointer,
+                0x23b872dd00000000000000000000000000000000000000000000000000000000
+            ) // Begin with the function selector.
+            mstore(
+                add(freeMemoryPointer, 4),
+                and(from, 0xffffffffffffffffffffffffffffffffffffffff)
+            ) // Mask and append the "from" argument.
+            mstore(
+                add(freeMemoryPointer, 36),
+                and(to, 0xffffffffffffffffffffffffffffffffffffffff)
+            ) // Mask and append the "to" argument.
             mstore(add(freeMemoryPointer, 68), amount) // Finally append the "amount" argument. No mask as it's a full 32 byte value.
 
             // Call the token and store if it succeeded or not.
@@ -51,7 +60,10 @@ library SafeTransferLib {
             callStatus := call(gas(), token, 0, freeMemoryPointer, 100, 0, 0)
         }
 
-        require(didLastOptionalReturnCallSucceed(callStatus), "TRANSFER_FROM_FAILED");
+        require(
+            didLastOptionalReturnCallSucceed(callStatus),
+            "TRANSFER_FROM_FAILED"
+        );
     }
 
     function safeTransfer(
@@ -66,8 +78,14 @@ library SafeTransferLib {
             let freeMemoryPointer := mload(0x40)
 
             // Write the abi-encoded calldata to memory piece by piece:
-            mstore(freeMemoryPointer, 0xa9059cbb00000000000000000000000000000000000000000000000000000000) // Begin with the function selector.
-            mstore(add(freeMemoryPointer, 4), and(to, 0xffffffffffffffffffffffffffffffffffffffff)) // Mask and append the "to" argument.
+            mstore(
+                freeMemoryPointer,
+                0xa9059cbb00000000000000000000000000000000000000000000000000000000
+            ) // Begin with the function selector.
+            mstore(
+                add(freeMemoryPointer, 4),
+                and(to, 0xffffffffffffffffffffffffffffffffffffffff)
+            ) // Mask and append the "to" argument.
             mstore(add(freeMemoryPointer, 36), amount) // Finally append the "amount" argument. No mask as it's a full 32 byte value.
 
             // Call the token and store if it succeeded or not.
@@ -75,7 +93,10 @@ library SafeTransferLib {
             callStatus := call(gas(), token, 0, freeMemoryPointer, 68, 0, 0)
         }
 
-        require(didLastOptionalReturnCallSucceed(callStatus), "TRANSFER_FAILED");
+        require(
+            didLastOptionalReturnCallSucceed(callStatus),
+            "TRANSFER_FAILED"
+        );
     }
 
     function safeApprove(
@@ -90,8 +111,14 @@ library SafeTransferLib {
             let freeMemoryPointer := mload(0x40)
 
             // Write the abi-encoded calldata to memory piece by piece:
-            mstore(freeMemoryPointer, 0x095ea7b300000000000000000000000000000000000000000000000000000000) // Begin with the function selector.
-            mstore(add(freeMemoryPointer, 4), and(to, 0xffffffffffffffffffffffffffffffffffffffff)) // Mask and append the "to" argument.
+            mstore(
+                freeMemoryPointer,
+                0x095ea7b300000000000000000000000000000000000000000000000000000000
+            ) // Begin with the function selector.
+            mstore(
+                add(freeMemoryPointer, 4),
+                and(to, 0xffffffffffffffffffffffffffffffffffffffff)
+            ) // Mask and append the "to" argument.
             mstore(add(freeMemoryPointer, 36), amount) // Finally append the "amount" argument. No mask as it's a full 32 byte value.
 
             // Call the token and store if it succeeded or not.
@@ -106,7 +133,11 @@ library SafeTransferLib {
                          INTERNAL HELPER LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function didLastOptionalReturnCallSucceed(bool callStatus) private pure returns (bool success) {
+    function didLastOptionalReturnCallSucceed(bool callStatus)
+        private
+        pure
+        returns (bool success)
+    {
         assembly {
             // Get how many bytes the call returned.
             let returnDataSize := returndatasize()
