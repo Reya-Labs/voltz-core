@@ -32,7 +32,7 @@ describe("Position", () => {
       await positionTest.updateLiquidity(0);
       await positionTest.updateLiquidity(-10);
       const positionLiquidityUpdated = await positionTest.position();
-      expect(positionLiquidityUpdated[0]).to.eq(90);
+      expect(positionLiquidityUpdated._liquidity).to.eq(90);
     });
   });
 
@@ -42,7 +42,7 @@ describe("Position", () => {
       await positionTest.updateMargin(toBn("10"));
       await positionTest.updateMargin(toBn("-1"));
       const positionMarginUpdated = await positionTest.position();
-      expect(positionMarginUpdated[1]).to.eq(toBn("9"));
+      expect(positionMarginUpdated.margin).to.eq(toBn("9"));
     });
   });
 
@@ -52,8 +52,8 @@ describe("Position", () => {
       await positionTest.updateBalances(toBn("1000"), toBn("-2000"));
       await positionTest.updateBalances(toBn("2000"), toBn("-3000"));
       const positionBalancesUpdated = await positionTest.position();
-      expect(positionBalancesUpdated[4]).to.eq(toBn("3000"));
-      expect(positionBalancesUpdated[5]).to.eq(toBn("-5000"));
+      expect(positionBalancesUpdated.fixedTokenBalance).to.eq(toBn("3000"));
+      expect(positionBalancesUpdated.variableTokenBalance).to.eq(toBn("-5000"));
     });
   });
 

@@ -315,6 +315,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             // Cache is stale
             _refreshHistoricalApyCache();
         }
+        Printer.printUint256("historical apy", cachedHistoricalApy);
         return cachedHistoricalApy;
     }
 
@@ -779,6 +780,20 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     localVars.scenario2SqrtPriceX96 = sqrtPriceX96;
                 }
             }
+
+            Printer.printInt256("scenario1LPFixedTokenBalance", localVars.scenario1LPFixedTokenBalance);
+            Printer.printInt256("scenario1LPVariableTokenBalance", localVars.scenario1LPVariableTokenBalance);
+            Printer.printUint160("scenario1SqrtPriceX96", localVars.scenario1SqrtPriceX96);
+            Printer.printInt256("scenario2LPFixedTokenBalance", localVars.scenario2LPFixedTokenBalance);
+            Printer.printInt256("scenario2LPVariableTokenBalance", localVars.scenario2LPVariableTokenBalance);
+            Printer.printUint160("scenario2SqrtPriceX96", localVars.scenario2SqrtPriceX96);
+            Printer.printUint160("lower sqrtPriceX96", TickMath.getSqrtRatioAtTick(
+                    tickLower
+                ));
+            Printer.printUint160("sqrtPriceX96", sqrtPriceX96);
+            Printer.printUint160("upper sqrtPriceX96", TickMath.getSqrtRatioAtTick(
+                    tickUpper
+                ));
 
             localVars.scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
             localVars.scenario2MarginRequirement = getMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);

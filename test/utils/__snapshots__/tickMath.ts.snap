@@ -112,10 +112,6 @@ exports[`TickMath #getSqrtRatioAtTick tick 738203 gas 1`] = `2123`;
 
 exports[`TickMath #getSqrtRatioAtTick tick 738203 result 1`] = `"847134979253254120489401328389043031315994541"`;
 
-exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592462 gas 1`] = `4531`;
-
-exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592462 result 1`] = `-69100`;
-
 exports[`TickMath #getTickAtSqrtRatio ratio 79228162514264337593543 gas 1`] = `4424`;
 
 exports[`TickMath #getTickAtSqrtRatio ratio 79228162514264337593543 result 1`] = `-276325`;
@@ -123,6 +119,14 @@ exports[`TickMath #getTickAtSqrtRatio ratio 79228162514264337593543 result 1`] =
 exports[`TickMath #getTickAtSqrtRatio ratio 79228162514264337593543950 gas 1`] = `4424`;
 
 exports[`TickMath #getTickAtSqrtRatio ratio 79228162514264337593543950 result 1`] = `-138163`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592462 gas 1`] = `4531`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592463 gas 1`] = `4425`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592462 result 1`] = `-69100`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592463 result 1`] = `-69100`;
 
 exports[`TickMath #getTickAtSqrtRatio ratio 9903520314283042199192993792 gas 1`] = `2343`;
 
@@ -151,6 +155,10 @@ exports[`TickMath #getTickAtSqrtRatio ratio 224091083899144559674927752909 resul
 exports[`TickMath #getTickAtSqrtRatio ratio 633825300114114700748351602688 gas 1`] = `4323`;
 
 exports[`TickMath #getTickAtSqrtRatio ratio 633825300114114700748351602688 result 1`] = `41590`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 2507794810551837817144115957739 gas 1`] = `4445`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 2507794810551837817144115957739 result 1`] = `69099`;
 
 exports[`TickMath #getTickAtSqrtRatio ratio 79228162514264337593543950336000 gas 1`] = `4446`;
 

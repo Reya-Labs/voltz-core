@@ -77,7 +77,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   }
 }
 
-it("scenario 2", async () => {
+it.skip("scenario 2", async () => {
   console.log("scenario", 2);
   const e2eParams = e2eScenarios[2];
   const scenario = new ScenarioRunnerInstance(

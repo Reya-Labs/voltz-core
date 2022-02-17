@@ -42,25 +42,13 @@ describe("TickMath", () => {
 
     it("min tick +1", async () => {
       expect(await tickMath.getSqrtRatioAtTick(MIN_TICK + 1)).to.eq(
-        "4295343490"
+        "2503161564979124432035869129"
       );
     });
 
     it("max tick - 1", async () => {
       expect(await tickMath.getSqrtRatioAtTick(MAX_TICK - 1)).to.eq(
-        "1461373636630004318706518188784493106690254656249"
-      );
-    });
-
-    it("min tick ratio is less than js implementation", async () => {
-      expect(await tickMath.getSqrtRatioAtTick(MIN_TICK)).to.be.lt(
-        encodePriceSqrt(1, BigNumber.from(2).pow(127))
-      );
-    });
-
-    it("max tick ratio is greater than js implementation", async () => {
-      expect(await tickMath.getSqrtRatioAtTick(MAX_TICK)).to.be.gt(
-        encodePriceSqrt(BigNumber.from(2).pow(127), 1)
+        "2507669430214757147510696507320"
       );
     });
 
@@ -71,8 +59,7 @@ describe("TickMath", () => {
     });
 
     for (const absTick of [
-      50, 100, 250, 500, 1_000, 2_500, 3_000, 4_000, 5_000, 50_000, 150_000,
-      250_000, 500_000, 738_203,
+      50, 100, 250, 500, 1_000, 2_500, 3_000, 4_000, 5_000, 50_000
     ]) {
       for (const tick of [-absTick, absTick]) {
         describe(`tick ${tick}`, () => {
@@ -133,14 +120,14 @@ describe("TickMath", () => {
       expect(await tickMath.getTickAtSqrtRatio(MIN_SQRT_RATIO)).to.eq(MIN_TICK);
     });
     it("ratio of min tick + 1", async () => {
-      expect(await tickMath.getTickAtSqrtRatio("4295343490")).to.eq(
+      expect(await tickMath.getTickAtSqrtRatio("2503161564979124432035869129")).to.eq(
         MIN_TICK + 1
       );
     });
     it("ratio of max tick - 1", async () => {
       expect(
         await tickMath.getTickAtSqrtRatio(
-          "1461373636630004318706518188784493106690254656249"
+          "2507669430214757147510696507320"
         )
       ).to.eq(MAX_TICK - 1);
     });
@@ -151,9 +138,7 @@ describe("TickMath", () => {
     });
 
     for (const ratio of [
-      MIN_SQRT_RATIO,
-      encodePriceSqrt(BigNumber.from(10).pow(12), 1),
-      encodePriceSqrt(BigNumber.from(10).pow(6), 1),
+      MIN_SQRT_RATIO.add(1),
       encodePriceSqrt(1, 64),
       encodePriceSqrt(1, 8),
       encodePriceSqrt(1, 2),
@@ -161,8 +146,6 @@ describe("TickMath", () => {
       encodePriceSqrt(2, 1),
       encodePriceSqrt(8, 1),
       encodePriceSqrt(64, 1),
-      encodePriceSqrt(1, BigNumber.from(10).pow(6)),
-      encodePriceSqrt(1, BigNumber.from(10).pow(12)),
       MAX_SQRT_RATIO.sub(1),
     ]) {
       describe(`ratio ${ratio}`, () => {
