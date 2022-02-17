@@ -2,10 +2,8 @@ import { Wallet, BigNumber, utils } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { toBn } from "evm-bn";
 import {
-  fixedAndVariableMathFixture,
   marginCalculatorFixture,
   metaFixture,
-  sqrtPriceMathFixture,
   tickMathFixture,
 } from "../shared/fixtures";
 import {
@@ -28,8 +26,6 @@ import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import { getCurrentTimestamp } from "../helpers/time";
 import {
     ERC20Mock,
-  FixedAndVariableMathTest,
-  SqrtPriceMathTest,
   TestMarginEngine,
   TestVAMM,
   TickMathTest,
@@ -49,9 +45,7 @@ describe("MarginCalculator", () => {
   let marginEngineTest: TestMarginEngine;
   let token: ERC20Mock;
 
-  let testFixedAndVariableMath: FixedAndVariableMathTest;
   let testTickMath: TickMathTest;
-  let testSqrtPriceMath: SqrtPriceMathTest;
   let vammTest: TestVAMM;
 
   let margin_engine_params: any;
@@ -62,11 +56,7 @@ describe("MarginCalculator", () => {
     loadFixture = createFixtureLoader([wallet, other]);
 
     ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
-    ({ testFixedAndVariableMath } = await loadFixture(
-      fixedAndVariableMathFixture
-    ));
     ({ testTickMath } = await loadFixture(tickMathFixture));
-    ({ testSqrtPriceMath } = await loadFixture(sqrtPriceMathFixture));
   });
 
   beforeEach("deploy fixture", async () => {
@@ -443,16 +433,12 @@ describe("MarginCalculator", () => {
     let tickAt10p: number;
     let tickAt99p: number;
     let tickAt101p: number;
-    let tickAt1000p: number;
 
     let priceAt0001p: BigNumber;
     let priceAt1p: BigNumber;
     let priceAt2p: BigNumber;
     let priceAt4p: BigNumber;
     let priceAt10p: BigNumber;
-    let priceAt99p: BigNumber;
-    let priceAt101p: BigNumber;
-    let priceAt1000p: BigNumber;
 
     before("deploy calculator", async () => {
       tickAt0001p = await testTickMath.getTickAtSqrtRatio(
@@ -466,18 +452,12 @@ describe("MarginCalculator", () => {
       tickAt101p = await testTickMath.getTickAtSqrtRatio(
         encodePriceSqrt(1, 101)
       ); // 101%
-      tickAt1000p = await testTickMath.getTickAtSqrtRatio(
-        encodePriceSqrt(1, 1000)
-      ); // 1000%
-
+      
       priceAt0001p = await testTickMath.getSqrtRatioAtTick(tickAt0001p);
       priceAt1p = await testTickMath.getSqrtRatioAtTick(tickAt1p);
       priceAt2p = await testTickMath.getSqrtRatioAtTick(tickAt2p);
       priceAt4p = await testTickMath.getSqrtRatioAtTick(tickAt4p);
       priceAt10p = await testTickMath.getSqrtRatioAtTick(tickAt10p);
-      priceAt99p = await testTickMath.getSqrtRatioAtTick(tickAt99p);
-      priceAt101p = await testTickMath.getSqrtRatioAtTick(tickAt101p);
-      priceAt1000p = await testTickMath.getSqrtRatioAtTick(tickAt1000p);
     });
 
     it("current tick < lower tick: margin requirement for upper tick | no minimum", async () => {
