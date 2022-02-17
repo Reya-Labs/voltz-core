@@ -11,24 +11,14 @@ import "./IERC20Minimal.sol";
 
 interface IMarginEngine is IPositionStructs {
     // structs
-
-    struct PositionMarginRequirementLocalVars {
+    struct PositionMarginRequirementLocalVars2 {
+        int24 inRangeTick;
         int256 scenario1LPVariableTokenBalance;
         int256 scenario1LPFixedTokenBalance;
+        uint160 scenario1SqrtPriceX96;
         int256 scenario2LPVariableTokenBalance;
         int256 scenario2LPFixedTokenBalance;
-        int256 amount0FromTickLowerToTickUpper;
-        int256 amount1FromTickLowerToTickUpper;
-        int256 amount0FromCurrentTickToTickUpper;
-        int256 amount1FromCurrentTickToTickUpper;
-        int256 amount0FromCurrentTickToTickLower;
-        int256 amount1FromCurrentTickToTickLower;
-        int256 amount0FromTickUpperToTickLower;
-        int256 amount1FromTickUpperToTickLower;
-        uint160 scenario1SqrtPriceX96;
         uint160 scenario2SqrtPriceX96;
-        uint256 scenario1MarginRequirement;
-        uint256 scenario2MarginRequirement;
     }
 
     struct MarginCalculatorParameters {

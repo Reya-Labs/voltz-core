@@ -570,6 +570,32 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     }
 
+    function getExtraBalances(int24 from, int24 to, uint128 liquidity, uint256 variableFactorWad) internal view returns (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) {
+        if (from == to) return (0, 0);
+        
+        int256 amount0 = SqrtPriceMath.getAmount0Delta(
+            TickMath.getSqrtRatioAtTick(from),
+            TickMath.getSqrtRatioAtTick(to),
+            (from < to) ? -int128(liquidity) : int128(liquidity)
+        );
+
+        int256 amount1 = SqrtPriceMath.getAmount1Delta(
+            TickMath.getSqrtRatioAtTick(from),
+            TickMath.getSqrtRatioAtTick(to),
+            (from < to) ? int128(liquidity) : -int128(liquidity)
+        );
+
+        extraFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(
+                        amount0,
+                        amount1,
+                        variableFactorWad,
+                        termStartTimestampWad,
+                        termEndTimestampWad
+                    );
+
+        extraVariableTokenBalance = amount1;
+    }
+
     function getPositionMarginRequirement(
         Position.Info storage position,
         int24 tickLower,
@@ -583,225 +609,51 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         uint256 variableFactorWad = rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad);
 
         if (position._liquidity > 0) {
-            /// simplify (2 scenarios from current to lower, from  current to upper)?
+            PositionMarginRequirementLocalVars2 memory localVars;
+            localVars.inRangeTick = (tick < tickLower) ? tickLower : ((tick < tickUpper) ? tick : tickUpper);
 
-            PositionMarginRequirementLocalVars memory localVars;
+            // scenario 1: a trader comes in and trades all the liquidity all the way to the the upper tick
+            // scenario 2: a trader comes in and trades all the liquidity all the way to the the lower tick
+            
+            (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) = getExtraBalances(localVars.inRangeTick, tickUpper, position._liquidity, variableFactorWad);
+            localVars.scenario1LPVariableTokenBalance =
+                    position.variableTokenBalance + extraVariableTokenBalance;
 
-            if (tick < tickLower) {
-                /// @dev scenario 1: a trader comes in and trades all the liqudiity all the way to tickUpper given current liqudity of the LP
-                /// @dev scenario 2: current tick never reaches the tickLower (LP stays with their current fixed and variable token balances)
+            localVars.scenario1LPFixedTokenBalance =
+                    position.fixedTokenBalance + extraFixedTokenBalance;
 
-                /// @dev from the perspective of the LP (not the trader who is a Fixed Taker)
-                /// @dev Scenario 1
+            (extraFixedTokenBalance, extraVariableTokenBalance) = getExtraBalances(localVars.inRangeTick, tickLower, position._liquidity, variableFactorWad);
+            localVars.scenario2LPVariableTokenBalance =
+                    position.variableTokenBalance + extraVariableTokenBalance;
 
-                /// @dev this value is negative since the LP is a Variable Taker in this case
-                localVars.amount0FromTickLowerToTickUpper = SqrtPriceMath
-                    .getAmount0Delta(
-                        TickMath.getSqrtRatioAtTick(tickLower),
-                        TickMath.getSqrtRatioAtTick(tickUpper),
-                        -int128(position._liquidity)
-                    );
+            localVars.scenario2LPFixedTokenBalance =
+                    position.fixedTokenBalance + extraFixedTokenBalance;
 
-                /// @dev this value is positive since the LP is a Variable Taker in this case
-                localVars.amount1FromTickLowerToTickUpper = SqrtPriceMath
-                    .getAmount1Delta(
-                        TickMath.getSqrtRatioAtTick(tickLower),
-                        TickMath.getSqrtRatioAtTick(tickUpper),
-                        int128(position._liquidity)
-                    );
+            uint160 priceAtLowerTick = TickMath.getSqrtRatioAtTick(tickLower);
+            uint160 priceAtUpperTick = TickMath.getSqrtRatioAtTick(tickUpper);
+        
+            localVars.scenario1SqrtPriceX96 = (localVars.scenario1LPVariableTokenBalance > 0) 
+                ? ((sqrtPriceX96 > priceAtUpperTick) ? sqrtPriceX96 : priceAtUpperTick) 
+                : ((sqrtPriceX96 < priceAtLowerTick) ? sqrtPriceX96 : priceAtLowerTick);
 
-                localVars.scenario1LPVariableTokenBalance =
-                    position.variableTokenBalance +
-                    localVars.amount1FromTickLowerToTickUpper;
+            localVars.scenario2SqrtPriceX96 = (localVars.scenario2LPVariableTokenBalance > 0) 
+                ? ((sqrtPriceX96 > priceAtUpperTick) ? sqrtPriceX96 : priceAtUpperTick) 
+                : ((sqrtPriceX96 < priceAtLowerTick) ? sqrtPriceX96 : priceAtLowerTick);
 
-                localVars.scenario1LPFixedTokenBalance =
-                    position.fixedTokenBalance +
-                    FixedAndVariableMath.getFixedTokenBalance(
-                        localVars.amount0FromTickLowerToTickUpper,
-                        localVars.amount1FromTickLowerToTickUpper,
-                        variableFactorWad,
-                        termStartTimestampWad,
-                        termEndTimestampWad
-                    );
 
-                /// @dev Scenario 2
-                localVars.scenario2LPVariableTokenBalance = position.variableTokenBalance;
-                localVars.scenario2LPFixedTokenBalance = position.fixedTokenBalance;
-            } else if (tick < tickUpper) {
-                /// @dev scenario 1: a trader comes in and trades all the liquidity from currentTick to tickUpper given current liquidity of LP
-                /// @dev scenario 2: a trader comes in and trades all the liquidity from currentTick to tickLower given current liquidity of LP
+            uint256 scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
+            uint256 scenario2MarginRequirement = getMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
 
-                /// @dev from the perspective of the LP (not the trader who is a Fixed Taker)
-                /// @dev Scenario 1
-
-                /// @dev this value is negative since the LP is a Variable Taker in this case
-                localVars.amount0FromCurrentTickToTickUpper = SqrtPriceMath
-                    .getAmount0Delta(
-                        TickMath.getSqrtRatioAtTick(tick),
-                        TickMath.getSqrtRatioAtTick(tickUpper),
-                        -int128(position._liquidity)
-                    );
-
-                /// @dev this value is positive since the LP is a Variable Taker in this case
-                localVars.amount1FromCurrentTickToTickUpper = SqrtPriceMath
-                    .getAmount1Delta(
-                        TickMath.getSqrtRatioAtTick(tick),
-                        TickMath.getSqrtRatioAtTick(tickUpper),
-                        int128(position._liquidity)
-                    );
-
-                localVars.scenario1LPVariableTokenBalance =
-                    position.variableTokenBalance +
-                    localVars.amount1FromCurrentTickToTickUpper;
-                localVars.scenario1LPFixedTokenBalance =
-                    position.fixedTokenBalance +
-                    FixedAndVariableMath.getFixedTokenBalance(
-                        localVars.amount0FromCurrentTickToTickUpper,
-                        localVars.amount1FromCurrentTickToTickUpper,
-                        variableFactorWad,
-                        termStartTimestampWad,
-                        termEndTimestampWad
-                    );
-
-                /// @dev from the perspective of the LP (not the trader who is a Variable Taker)
-                /// @dev Scenario 2
-
-                /// @dev this value is positive since the LP is a Fixed Taker in this case
-                localVars.amount0FromCurrentTickToTickLower = SqrtPriceMath
-                    .getAmount0Delta(
-                        TickMath.getSqrtRatioAtTick(tick),
-                        TickMath.getSqrtRatioAtTick(tickLower),
-                        int128(position._liquidity)
-                    );
-
-                /// @dev this value is negative since the LP is a FixedTaker in this case
-                localVars.amount1FromCurrentTickToTickLower = SqrtPriceMath
-                    .getAmount1Delta(
-                        TickMath.getSqrtRatioAtTick(tick),
-                        TickMath.getSqrtRatioAtTick(tickLower),
-                        -int128(position._liquidity)
-                    );
-
-                localVars.scenario2LPVariableTokenBalance =
-                    position.variableTokenBalance +
-                    localVars.amount1FromCurrentTickToTickLower;
-                localVars.scenario2LPFixedTokenBalance =
-                    position.fixedTokenBalance +
-                    FixedAndVariableMath.getFixedTokenBalance(
-                        localVars.amount0FromCurrentTickToTickLower,
-                        localVars.amount1FromCurrentTickToTickLower,
-                        variableFactorWad,
-                        termStartTimestampWad,
-                        termEndTimestampWad
-                    );
+            if (scenario1MarginRequirement > scenario2MarginRequirement) {
+                return scenario1MarginRequirement;
             } else {
-                /// @dev scenario 1: a trader comes in and trades all the liqudiity all the way to tickLower given current liqudity of the LP
-                /// @dev scenario 2: current tick never reaches the tickUpper (LP stays with their current fixed and variable token balances)
-
-                /// @dev from the perspective of the LP (not the trader who is a Variable Taker)
-                /// @dev Scenario 1
-
-                /// @dev this value is positive since the LP is a Fixed Taker in this case
-                localVars.amount0FromTickUpperToTickLower = SqrtPriceMath
-                    .getAmount0Delta(
-                        TickMath.getSqrtRatioAtTick(tickUpper),
-                        TickMath.getSqrtRatioAtTick(tickLower),
-                        int128(position._liquidity)
-                    );
-
-                /// @dev this value is negative since the LP is a Fixed Taker in this case
-                localVars.amount1FromTickUpperToTickLower = SqrtPriceMath
-                    .getAmount1Delta(
-                        TickMath.getSqrtRatioAtTick(tickUpper),
-                        TickMath.getSqrtRatioAtTick(tickLower),
-                        -int128(position._liquidity)
-                    );
-
-                localVars.scenario1LPVariableTokenBalance =
-                    position.variableTokenBalance +
-                    localVars.amount1FromTickUpperToTickLower;
-                localVars.scenario1LPFixedTokenBalance =
-                    position.fixedTokenBalance +
-                    FixedAndVariableMath.getFixedTokenBalance(
-                        localVars.amount0FromTickUpperToTickLower,
-                        localVars.amount1FromTickUpperToTickLower,
-                        variableFactorWad,
-                        termStartTimestampWad,
-                        termEndTimestampWad
-                    );
-
-                /// @dev Scenario 2
-                localVars.scenario2LPVariableTokenBalance = position.variableTokenBalance;
-                localVars.scenario2LPFixedTokenBalance = position.fixedTokenBalance;
-            }
-
-            if (localVars.scenario1LPVariableTokenBalance > 0) {
-                // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
-                localVars.scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
-                    tickUpper
-                );
-                if (localVars.scenario1SqrtPriceX96 < sqrtPriceX96) {
-                    localVars.scenario1SqrtPriceX96 = sqrtPriceX96;
-                }
-            } else {
-                // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
-                localVars.scenario1SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
-                    tickLower
-                );
-                if (localVars.scenario1SqrtPriceX96 > sqrtPriceX96) {
-                    localVars.scenario1SqrtPriceX96 = sqrtPriceX96;
-                }
-            }
-
-            if (localVars.scenario2LPVariableTokenBalance > 0) {
-                // will engage in a (counterfactual) fixed taker unwind for minimum margin requirement
-                localVars.scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
-                    tickUpper
-                );
-
-                if (localVars.scenario2SqrtPriceX96 < sqrtPriceX96) {
-                    localVars.scenario2SqrtPriceX96 = sqrtPriceX96;
-                }
-            } else {
-                // will engage in a (counterfactual) variable taker unwind for minimum margin requirement
-                localVars.scenario2SqrtPriceX96 = TickMath.getSqrtRatioAtTick(
-                    tickLower
-                );
-
-                if (localVars.scenario2SqrtPriceX96 > sqrtPriceX96) {
-                    // this should theoretically never be the case
-                    localVars.scenario2SqrtPriceX96 = sqrtPriceX96;
-                }
-            }
-
-            Printer.printInt256("scenario1LPFixedTokenBalance", localVars.scenario1LPFixedTokenBalance);
-            Printer.printInt256("scenario1LPVariableTokenBalance", localVars.scenario1LPVariableTokenBalance);
-            Printer.printUint160("scenario1SqrtPriceX96", localVars.scenario1SqrtPriceX96);
-            Printer.printInt256("scenario2LPFixedTokenBalance", localVars.scenario2LPFixedTokenBalance);
-            Printer.printInt256("scenario2LPVariableTokenBalance", localVars.scenario2LPVariableTokenBalance);
-            Printer.printUint160("scenario2SqrtPriceX96", localVars.scenario2SqrtPriceX96);
-            Printer.printUint160("lower sqrtPriceX96", TickMath.getSqrtRatioAtTick(
-                    tickLower
-                ));
-            Printer.printUint160("sqrtPriceX96", sqrtPriceX96);
-            Printer.printUint160("upper sqrtPriceX96", TickMath.getSqrtRatioAtTick(
-                    tickUpper
-                ));
-
-            localVars.scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
-            localVars.scenario2MarginRequirement = getMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
-
-            if (localVars.scenario1MarginRequirement > localVars.scenario2MarginRequirement) {
-                return localVars.scenario1MarginRequirement;
-            } else {
-                return localVars.scenario2MarginRequirement;
+                return scenario2MarginRequirement;
             }
 
         } else {
             // directly get the trader margin requirement
             return getMarginRequirement(position.fixedTokenBalance, position.variableTokenBalance, isLM, sqrtPriceX96);
         }
-        
     }
 
     /// @notice Checks if a given position is liquidatable
