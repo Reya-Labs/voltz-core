@@ -8,6 +8,8 @@ import { metaFixture } from "../shared/fixtures";
 import { BigNumber } from "@ethersproject/bignumber";
 import { TestMarginEngine, TestVAMM } from "../../typechain";
 import { TICK_SPACING } from "../shared/utilities";
+import { add } from "../shared/functions";
+import { toBn } from "evm-bn";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -30,20 +32,11 @@ describe("Factory", () => {
       termStartTimestampBN,
       termEndTimestampBN,
     } = await loadFixture(metaFixture));
+
+    // change the term start timestamp to deploy a different instance from the one we have in the meta fixture
+    termStartTimestampBN = add(termStartTimestampBN, toBn("1"));
+
   });
-
-  // linter doesn't like these for some reason
-  // it("Check master margin engine was successfully deployed", async () => {
-  //   expect(marginEngineMasterTest.address).to.exist;
-  // });
-
-  // it("Check master vamm was successfully deployed", async () => {
-  //   expect(vammMasterTest.address).to.exist;
-  // });
-
-  // it("Check factory was successfully deployed", async () => {
-  //   expect(factory.address).to.exist;
-  // });
 
   it("Cannot deploy if not the owner", async () => {
     await expect(
@@ -76,6 +69,8 @@ describe("Factory", () => {
       TICK_SPACING
     );
 
+    const fcmAddress = await factory.getFCMAddress(token.address, rateOracleTest.address, termStartTimestampBN, termEndTimestampBN, TICK_SPACING);
+
     // Now deployand check the log
     await expect(
       factory.deployIrsInstance(
@@ -92,8 +87,10 @@ describe("Factory", () => {
         rateOracleTest.address,
         termStartTimestampBN,
         termEndTimestampBN,
+        TICK_SPACING,
         marginEngineAddress,
-        vammAddress
+        vammAddress,
+        fcmAddress
       );
 
     const marginEngineTestFactory = await ethers.getContractFactory(
