@@ -111,7 +111,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       revert NotEnoughFunds(protocolFeesCollected, protocolFees);
     }
     protocolFees = protocolFees - protocolFeesCollected;
-    emit ProtocolFeesUpdate(Time.blockTimestampScaled(), address(marginEngine), protocolFeesCollected, protocolFees);
   }
 
   /// @dev not locked because it initializes unlocked
@@ -126,17 +125,19 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     unlocked = true;
 
-    emit Initialize(Time.blockTimestampScaled(), address(marginEngine), sqrtPriceX96, tick);
+    emit InitializeVAMM(sqrtPriceX96, tick);
   }
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
+    uint8 feeProtocolOld = vammVars.feeProtocol;
     vammVars.feeProtocol = feeProtocol;
-    emit SetFeeProtocol(Time.blockTimestampScaled(), address(marginEngine), feeProtocol);
+    emit SetFeeProtocol(feeProtocolOld, feeProtocol);
   }
   
   function setFee(uint256 _feeWad) external override onlyOwner lock {
+    uint256 feeWadOld = feeWad;
     feeWad = _feeWad;
-    emit FeeSet(Time.blockTimestampScaled(), address(marginEngine), feeWad);
+    emit FeeSet(feeWadOld, feeWad);
   }
 
   function burn(
@@ -163,7 +164,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    emit Burn(Time.blockTimestampScaled(), address(marginEngine), msg.sender, recipient, tickLower, tickUpper, amount);
+    emit Burn(msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
   function flipTicks(ModifyPositionParams memory params)
@@ -181,19 +182,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       maxLiquidityPerTick
     );
 
-    emit TickUpdate(
-        Time.blockTimestampScaled(),
-        address(marginEngine),
-        params.tickLower,
-        vammVars.tick,
-        params.liquidityDelta,
-        fixedTokenGrowthGlobalX128,
-        variableTokenGrowthGlobalX128,
-        feeGrowthGlobalX128,
-        false,
-        maxLiquidityPerTick
-    );
-
     flippedUpper = ticks.update(
       params.tickUpper,
       vammVars.tick,
@@ -205,27 +193,12 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       maxLiquidityPerTick
     );
 
-    emit TickUpdate(
-        Time.blockTimestampScaled(),
-        address(marginEngine),
-        params.tickUpper,
-        vammVars.tick,
-        params.liquidityDelta,
-        fixedTokenGrowthGlobalX128,
-        variableTokenGrowthGlobalX128,
-        feeGrowthGlobalX128,
-        true,
-        maxLiquidityPerTick
-    );
-
     if (flippedLower) {
       tickBitmap.flipTick(params.tickLower, tickSpacing);
-      emit FlipTick(Time.blockTimestampScaled(), address(marginEngine), params.tickLower, tickSpacing);
     }
 
     if (flippedUpper) {
       tickBitmap.flipTick(params.tickUpper, tickSpacing);
-      emit FlipTick(Time.blockTimestampScaled(), address(marginEngine), params.tickUpper, tickSpacing);
     }
   }
 
@@ -252,11 +225,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     if (params.liquidityDelta < 0) {
       if (flippedLower) {
         ticks.clear(params.tickLower);
-        emit ClearTick(Time.blockTimestampScaled(), address(marginEngine), params.tickLower);
       }
       if (flippedUpper) {
         ticks.clear(params.tickUpper);
-        emit ClearTick(Time.blockTimestampScaled(), address(marginEngine), params.tickLower);
       }
     }
 
@@ -302,7 +273,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       })
     );
 
-    emit Mint(Time.blockTimestampScaled(), address(this), msg.sender, recipient, tickLower, tickUpper, amount);
+    emit Mint(msg.sender, recipient, tickLower, tickUpper, amount);
   }
 
 
@@ -489,14 +460,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             state.variableTokenGrowthGlobalX128,
             state.feeGrowthGlobalX128
           );
-          emit CrossTick(
-            Time.blockTimestampScaled(),
-            address(marginEngine),
-            step.tickNext,
-            state.fixedTokenGrowthGlobalX128,
-            state.variableTokenGrowthGlobalX128,
-            state.feeGrowthGlobalX128
-          );
 
           // if we're moving rightward (along the virtual amm), we interpret liquidityNet as the opposite sign
           // safe because liquidityNet cannot be type(int128).min
@@ -548,8 +511,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     /// more values in the swap event
     
     emit Swap(
-      Time.blockTimestampScaled(),
-      address(marginEngine),
       msg.sender,
       params.recipient,
       state.sqrtPriceX96,
