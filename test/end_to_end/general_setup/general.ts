@@ -298,15 +298,15 @@ export class ScenarioRunner {
           utils.formatEther(positionInfo.variableTokenBalance).toString() +
           "\n"
       );
-      fs.appendFileSync(
-        this.outputFile,
-        "          feeGrowthInsideLastX128: " +
-          (
-            positionInfo.feeGrowthInsideLastX128.div(BigNumber.from(2).pow(128 - 32)).toNumber() /
-            2 ** 32
-          ).toString() +
-          "\n"
-      );
+      // fs.appendFileSync(
+      //   this.outputFile,
+      //   "          feeGrowthInsideLastX128: " +
+      //     (
+      //       positionInfo.feeGrowthInsideLastX128.div(BigNumber.from(2).pow(128 - 32)).toNumber() /
+      //       2 ** 32
+      //     ).toString() +
+      //     "\n"
+      // );
       fs.appendFileSync(
         this.outputFile,
         "                        isSettled: " +

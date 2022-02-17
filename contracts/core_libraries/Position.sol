@@ -104,11 +104,13 @@ library Position {
     {
         Info memory _self = self;
 
-        _feeDelta = FullMath.mulDiv(
-            feeGrowthInsideX128 - _self.feeGrowthInsideLastX128,
-            _self._liquidity,
-            FixedPoint128.Q128
-        );
+        unchecked {
+            _feeDelta = FullMath.mulDiv(
+                feeGrowthInsideX128 - _self.feeGrowthInsideLastX128,
+                _self._liquidity,
+                FixedPoint128.Q128
+            );
+        }
     }
 
     /// @notice Returns Fixed and Variable Token Deltas

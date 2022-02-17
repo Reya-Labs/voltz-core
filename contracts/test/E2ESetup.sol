@@ -205,6 +205,8 @@ contract E2ESetup {
             );
         }
 
+        totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
+
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);
         Printer.printInt256("    initialCashflow:", initialCashflow);

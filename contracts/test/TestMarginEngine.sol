@@ -12,7 +12,7 @@ contract TestMarginEngine is MarginEngine {
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
 
-    uint256 public margin;
+    uint256 public keepInMindMargin;
 
     function updatePositionTokenBalancesAndAccountForFeesTest(
         address owner,
@@ -127,7 +127,7 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        margin = getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
+        keepInMindMargin = getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
 
         position._liquidity = originalLiquidity;
         position.fixedTokenBalance = originalFixedTokenBalance;
@@ -182,10 +182,14 @@ contract TestMarginEngine is MarginEngine {
         bool isLM
     ) external {
         Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        margin = getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
+        keepInMindMargin = getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
     }
 
     function getMargin() external view returns (uint256) {
-        return margin;
+        return keepInMindMargin;
+    }
+
+    function getMarginRequirementTest(int256 fixedTokenBalance, int256 variableTokenBalance, bool isLM, uint160 sqrtPriceX96) external {
+        keepInMindMargin = getMarginRequirement(fixedTokenBalance, variableTokenBalance, isLM, sqrtPriceX96);
     }
 }

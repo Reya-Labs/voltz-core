@@ -280,7 +280,7 @@ library MarginCalculator {
         uint256 tMaxWad,
         uint256 gammaWad,
         bool isFTUnwind
-    ) internal pure returns (uint256 fixedTokenDeltaUnbalanced) {
+    ) internal view returns (uint256 fixedTokenDeltaUnbalanced) {
         SimulatedUnwindLocalVars memory simulatedUnwindLocalVars;
 
         // todo: require checks
@@ -311,6 +311,9 @@ library MarginCalculator {
             simulatedUnwindLocalVars.upperDWad = fixedRateDeviationMinWad;
         }
 
+        Printer.printUint256("D:", simulatedUnwindLocalVars.upperDWad);
+        Printer.printUint256("current timestamp:", currentTimestampWad);
+
         // calculate d
 
         simulatedUnwindLocalVars.scaledTimeWad = PRBMathUD60x18.div(
@@ -331,6 +334,8 @@ library MarginCalculator {
             simulatedUnwindLocalVars.upperDWad,
             uint256(simulatedUnwindLocalVars.oneMinusTimeFactorWad)
         );
+
+        Printer.printUint256("deviation:", simulatedUnwindLocalVars.dWad);
 
         // calculate cfFixedRate
         simulatedUnwindLocalVars.fixedRateCFWad;
