@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "../aave/AaveDataTypes.sol";
+import "../interfaces/aave/IAToken.sol";
 
 /// @notice This Mock Aave pool can be used in 3 ways
 /// - change the rate to a fixed value (`setReserveNormalizedIncome`)
@@ -76,6 +77,48 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
     returns (AaveDataTypes.ReserveData memory)
   {
     return _reserves[asset];
+  }
+
+  function withdraw(
+    address asset,
+    uint256 amount,
+    address to
+  ) external override returns (uint256) {
+    
+    AaveDataTypes.ReserveData storage reserve = _reserves[asset];
+    address aToken = reserve.aTokenAddress;
+
+    uint256 userBalance = IAToken(aToken).balanceOf(msg.sender);
+
+    uint256 amountToWithdraw = amount;
+
+    if (amount == type(uint256).max) {
+      amountToWithdraw = userBalance;
+    }
+
+  //  ValidationLogic.validateWithdraw(
+  //   asset,
+  //   amountToWithdraw,
+  //   userBalance,
+  //   _reserves,
+  //   _usersConfig[msg.sender],
+  //   _reservesList,
+  //   _reservesCount,
+  //   _addressesProvider.getPriceOracle()
+  // );
+
+  // reserve.updateState();
+  // reserve.updateInterestRates(asset, aToken, 0, amountToWithdraw);
+
+  // if (amountToWithdraw == userBalance) {
+  //   _usersConfig[msg.sender].setUsingAsCollateral(reserve.id, false);
+  //   emit ReserveUsedAsCollateralDisabled(asset, msg.sender);
+  // }
+
+  IAToken(aToken).burn(msg.sender, to, amountToWithdraw, reserve.liquidityIndex);
+
+  return amountToWithdraw;
+
   }
   
 }

@@ -19,8 +19,6 @@ import "./aave/AaveDataTypes.sol";
 import "./core_libraries/SafeTransferLib.sol";
 
 // optional: margin topup function (in terms of yield bearing tokens)
-// use the same trader library as for the margin engine
-// introduce safe transfer
 // introduce approvals 
 
 contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable {
@@ -131,14 +129,16 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
     require(uint256(-trader.variableTokenBalance) >= notionalToUnwind, "notional to unwind > notional");
 
+    int24 tickSpacing = vamm.tickSpacing();
+
     // initiate a swap
     IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: address(this),
         amountSpecified: -int256(notionalToUnwind),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         isExternal: true,
-        tickLower: 0,
-        tickUpper: 0
+        tickLower: -tickSpacing,
+        tickUpper: tickSpacing
     });
 
     (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) = vamm.swap(params);
@@ -247,8 +247,14 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   }
 
   function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine override {
-    // in case of aave: 1aUSDC = 1USDC (1aToken = 1Token), hence no need for additional calculations
-    underlyingYieldBearingToken.safeTransfer(_account, marginDeltaInUnderlyingTokens);
+    /// @audit if aave's reserves are depleted the withdraw operation below will fail, in that scenario need to either withdraw as much as possible or transfer aTokens directly
+    withdrawUnderlying();
+    underlyingToken.safeTransfer(_account, marginDeltaInUnderlyingTokens);
+  }
+
+  function withdrawUnderlying() public onlyAfterMaturity {
+    uint256 aTokenBalanceOfFCM = underlyingYieldBearingToken.balanceOf(address(this));
+    aaveLendingPool.withdraw(address(underlyingToken), aTokenBalanceOfFCM, address(this));
   }
 
 }
