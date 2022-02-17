@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1647682688
+current timestamp: 1692631040
 
 current tick: 0
 sqrt price at current tick: 1
@@ -16,7 +16,7 @@ variable factor: 0.0
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
+                       address   : 0x43f48B2eAF8a3f2F573136F25C1aE3C6924F1E3e
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -31,7 +31,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
+                       address   : 0x65E001B67f1aD28FF337C4F6e1cA52F31F5Eb9Fd
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -46,7 +46,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
+                       address   : 0xD1586f4624775920121A0D58A785F46e9f91500d
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -61,7 +61,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
+                       address   : 0x8F9DedBD504580f9E966C006dad0E51EA8CC5A00
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -77,7 +77,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE FIRST SWAP----------------------------
-current timestamp: 1647855497
+current timestamp: 1692803849
 
 current tick: 0
 sqrt price at current tick: 1
@@ -94,7 +94,7 @@ variable factor: 0.000099206349206349
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
+                       address   : 0x43f48B2eAF8a3f2F573136F25C1aE3C6924F1E3e
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -109,7 +109,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
+                       address   : 0x65E001B67f1aD28FF337C4F6e1cA52F31F5Eb9Fd
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -124,7 +124,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
+                       address   : 0xD1586f4624775920121A0D58A785F46e9f91500d
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -139,7 +139,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
+                       address   : 0x8F9DedBD504580f9E966C006dad0E51EA8CC5A00
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -155,7 +155,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------AFTER FIRST SWAP----------------------------
-current timestamp: 1647855503
+current timestamp: 1692803855
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
@@ -172,7 +172,7 @@ variable factor: 0.000099206349206349
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
+                       address   : 0x43f48B2eAF8a3f2F573136F25C1aE3C6924F1E3e
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -187,7 +187,7 @@ variableTokenGrowthInsideLastX128: -0.0029949999880045652
              settlement cashflow: 7.242465616917390599
 
 POSITION 1
-                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
+                       address   : 0x65E001B67f1aD28FF337C4F6e1cA52F31F5Eb9Fd
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -202,7 +202,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
+                       address   : 0xD1586f4624775920121A0D58A785F46e9f91500d
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -217,7 +217,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: -7.242465616917390599
 
 POSITION 3
-                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
+                       address   : 0x8F9DedBD504580f9E966C006dad0E51EA8CC5A00
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -233,7 +233,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE SECOND SWAP----------------------------
-current timestamp: 1649065116
+current timestamp: 1694013468
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
@@ -250,7 +250,7 @@ variable factor: 0.004464285714285714
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
+                       address   : 0x43f48B2eAF8a3f2F573136F25C1aE3C6924F1E3e
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -265,7 +265,7 @@ variableTokenGrowthInsideLastX128: -0.0029949999880045652
              settlement cashflow: -5.830947081495307575
 
 POSITION 1
-                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
+                       address   : 0x65E001B67f1aD28FF337C4F6e1cA52F31F5Eb9Fd
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -280,7 +280,7 @@ variableTokenGrowthInsideLastX128: 0.0029949999880045652
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
+                       address   : 0xD1586f4624775920121A0D58A785F46e9f91500d
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -295,7 +295,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 5.830947081495307575
 
 POSITION 3
-                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
+                       address   : 0x8F9DedBD504580f9E966C006dad0E51EA8CC5A00
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -311,7 +311,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------AFTER SECOND SWAP----------------------------
-current timestamp: 1649065122
+current timestamp: 1694013474
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
@@ -328,7 +328,7 @@ variable factor: 0.004464285714285714
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
+                       address   : 0x43f48B2eAF8a3f2F573136F25C1aE3C6924F1E3e
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -343,7 +343,7 @@ variableTokenGrowthInsideLastX128: -0.0029953548219054937
              settlement cashflow: -5.830223122343026722
 
 POSITION 1
-                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
+                       address   : 0x65E001B67f1aD28FF337C4F6e1cA52F31F5Eb9Fd
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -358,7 +358,7 @@ variableTokenGrowthInsideLastX128: -0.000004928791895508766
              settlement cashflow: 30.685239945786173136
 
 POSITION 2
-                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
+                       address   : 0xD1586f4624775920121A0D58A785F46e9f91500d
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -373,7 +373,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 5.830947081495307575
 
 POSITION 3
-                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
+                       address   : 0x8F9DedBD504580f9E966C006dad0E51EA8CC5A00
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -389,7 +389,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1649065126
+current timestamp: 1694013478
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
@@ -406,7 +406,7 @@ variable factor: 0.004464285714285714
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
+                       address   : 0x43f48B2eAF8a3f2F573136F25C1aE3C6924F1E3e
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -421,7 +421,7 @@ variableTokenGrowthInsideLastX128: -0.0029953548219054937
              settlement cashflow: -5.830223122343026722
 
 POSITION 1
-                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
+                       address   : 0x65E001B67f1aD28FF337C4F6e1cA52F31F5Eb9Fd
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -436,7 +436,7 @@ variableTokenGrowthInsideLastX128: -0.000004928791895508766
              settlement cashflow: 30.685239945786173136
 
 POSITION 2
-                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
+                       address   : 0xD1586f4624775920121A0D58A785F46e9f91500d
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -451,7 +451,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 5.830947081495307575
 
 POSITION 3
-                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
+                       address   : 0x8F9DedBD504580f9E966C006dad0E51EA8CC5A00
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -467,7 +467,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------AFTER THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1649065131
+current timestamp: 1694013483
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836
@@ -484,7 +484,7 @@ variable factor: 0.004464285714285714
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
+                       address   : 0x43f48B2eAF8a3f2F573136F25C1aE3C6924F1E3e
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -499,7 +499,7 @@ variableTokenGrowthInsideLastX128: -0.0029953548219054937
              settlement cashflow: -5.830223122343026722
 
 POSITION 1
-                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
+                       address   : 0x65E001B67f1aD28FF337C4F6e1cA52F31F5Eb9Fd
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -514,7 +514,7 @@ variableTokenGrowthInsideLastX128: 0.0019950708374381065
              settlement cashflow: 10.207420131916032498
 
 POSITION 2
-                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
+                       address   : 0xD1586f4624775920121A0D58A785F46e9f91500d
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -529,7 +529,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 26.308766895365448213
 
 POSITION 3
-                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
+                       address   : 0x8F9DedBD504580f9E966C006dad0E51EA8CC5A00
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -545,7 +545,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------FINAL----------------------------
-current timestamp: 1655545149
+current timestamp: 1700493501
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836
@@ -557,7 +557,7 @@ amount of available variable tokens: 5231.265932331029 (↑) ; 24587.83573098777
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9
+                       address   : 0x43f48B2eAF8a3f2F573136F25C1aE3C6924F1E3e
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -572,7 +572,7 @@ variableTokenGrowthInsideLastX128: -0.0029953548219054937
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0xf5059a5D33d5853360D16C683c16e67980206f36
+                       address   : 0x65E001B67f1aD28FF337C4F6e1cA52F31F5Eb9Fd
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -587,7 +587,7 @@ variableTokenGrowthInsideLastX128: 0.0019950708374381065
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x70e0bA845a1A0F2DA3359C97E0285013525FFC49
+                       address   : 0xD1586f4624775920121A0D58A785F46e9f91500d
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -602,7 +602,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0E801D84Fa97b50751Dbf25036d067dCf18858bF
+                       address   : 0x8F9DedBD504580f9E966C006dad0E51EA8CC5A00
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60

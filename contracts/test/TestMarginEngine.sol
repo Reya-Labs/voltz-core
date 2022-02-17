@@ -192,4 +192,39 @@ contract TestMarginEngine is MarginEngine {
     function getMarginRequirementTest(int256 fixedTokenBalance, int256 variableTokenBalance, bool isLM, uint160 sqrtPriceX96) external {
         keepInMindMargin = getMarginRequirement(fixedTokenBalance, variableTokenBalance, isLM, sqrtPriceX96);
     }
+
+    bool keepInMindIsLiquidatable;
+
+    function isCounterfactualPositionLiquidatable(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 counterfactualLiquidity,
+        int256 counterfactualFixedTokenBalance,
+        int256 counterfactualVariableTokenBalance,
+        int256 counterfactualMargin
+    ) external {
+        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+
+        uint128 originalLiquidity = position._liquidity;
+        int256 originalFixedTokenBalance = position.fixedTokenBalance;
+        int256 originalVariableTokenBalance = position.variableTokenBalance;
+        int256 originalMargin = position.margin;
+
+        position._liquidity = counterfactualLiquidity;
+        position.fixedTokenBalance = counterfactualFixedTokenBalance;
+        position.variableTokenBalance = counterfactualVariableTokenBalance;
+        position.margin = counterfactualMargin;
+
+        keepInMindIsLiquidatable = isLiquidatablePosition(position, tickLower, tickUpper);
+
+        position._liquidity = originalLiquidity;
+        position.fixedTokenBalance = originalFixedTokenBalance;
+        position.variableTokenBalance = originalVariableTokenBalance;
+        position.margin = originalMargin;
+    }
+
+    function getIsLiquidatable() external view returns (bool) {
+        return keepInMindIsLiquidatable;
+    }
 }
