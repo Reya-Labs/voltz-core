@@ -10,7 +10,6 @@ import {
   MAX_SQRT_RATIO,
   MIN_SQRT_RATIO,
   encodeSqrtRatioX96,
-  getMaxLiquidityPerTick,
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
   MIN_DELTA_LM,

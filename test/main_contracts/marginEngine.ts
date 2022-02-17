@@ -23,7 +23,6 @@ import {
   XI_LOWER,
   T_MAX,
   MAX_SQRT_RATIO,
-  getMaxLiquidityPerTick,
   MIN_SQRT_RATIO,
   encodeSqrtRatioX96,
 } from "../shared/utilities";

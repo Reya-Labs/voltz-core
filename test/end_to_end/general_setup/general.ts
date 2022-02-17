@@ -8,7 +8,7 @@ import {
   tickMathFixture,
   createMetaFixtureE2E,
 } from "../../shared/fixtures";
-import { getMaxLiquidityPerTick, formatRay, TICK_SPACING } from "../../shared/utilities";
+import { formatRay, TICK_SPACING } from "../../shared/utilities";
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../../typechain/TestMarginEngine";
 import {

@@ -5,7 +5,6 @@ import { expect } from "../shared/expect";
 import { metaFixture } from "../shared/fixtures";
 import {
   TICK_SPACING,
-  getMaxLiquidityPerTick,
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
   MIN_DELTA_LM,

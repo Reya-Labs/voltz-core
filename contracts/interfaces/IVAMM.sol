@@ -231,7 +231,8 @@ interface IVAMM is IPositionStructs {
     }
 
     /// @dev "constructor" for proxy instances
-    function initialize(address _marginEngineAddress, int24 _tickSpacing) external;
+    function initialize(address _marginEngineAddress, int24 _tickSpacing)
+        external;
 
     // immutables
 
