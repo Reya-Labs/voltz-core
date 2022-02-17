@@ -7,7 +7,7 @@ import "../interfaces/IVAMM.sol";
 import "../utils/TickMath.sol";
 import "./peripheral_libraries/LiquidityAmounts.sol";
 
-// margin calculation
+// margin calculation functions
 contract Periphery {
     struct MintOrBurnParams {
         address marginEngineAddress;
@@ -100,6 +100,8 @@ contract Periphery {
 
         // what if tick lower and tick upper are zero
 
+        int24 tickSpacing = vamm.tickSpacing();
+
         IVAMM.SwapParams memory swapParams = IVAMM.SwapParams({
             recipient: msg.sender,
             amountSpecified: amountSpecified,
@@ -111,8 +113,8 @@ contract Periphery {
                 )
                 : params.sqrtPriceLimitX96,
             isExternal: false,
-            tickLower: params.tickLower,
-            tickUpper: params.tickUpper
+            tickLower: params.tickLower == 0 ? -tickSpacing : params.tickLower,
+            tickUpper: params.tickUpper == 0 ? tickSpacing : params.tickUpper
         });
 
         vamm.swap(swapParams);

@@ -34,9 +34,7 @@ import { add, div, mul, pow, sub } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
-// more vamm tests!
-
-describe("VAMM", () => {
+describe("FCM", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
   // let factory: Factory;
@@ -197,10 +195,10 @@ describe("VAMM", () => {
       const traderInfoPostSettlement = await fcmTest.traders(wallet.address);
       printTraderWithYieldBearingTokensInfo(traderInfoPostSettlement);
       
-      expect(traderInfoPostSettlement[0]).to.eq(0);
-      expect(traderInfoPostSettlement[1]).to.eq(0);
-      expect(traderInfoPostSettlement[2]).to.eq(0);
-      expect(traderInfoPostSettlement[3]).to.eq(true);
+      expect(traderInfoPostSettlement.fixedTokenBalance).to.eq(0);
+      expect(traderInfoPostSettlement.variableTokenBalance).to.eq(0);
+      expect(traderInfoPostSettlement.marginInScaledYieldBearingTokens).to.eq(0);
+      expect(traderInfoPostSettlement.isSettled).to.eq(true);
 
       const traderEndingBalanceInATokens = await mockAToken.balanceOf(wallet.address);
       const traderEndingBalanceInUnderlyingTokens = await token.balanceOf(wallet.address);
@@ -226,7 +224,7 @@ describe("VAMM", () => {
       await marginEngineTest.settlePosition(-TICK_SPACING, TICK_SPACING, other.address);
 
       const positionInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
-      const finalPositionMargin = positionInfo[1];
+      const finalPositionMargin = positionInfo.margin;
       console.log("finalPositionMargin", utils.formatEther(finalPositionMargin));
       
       await marginEngineTest.connect(other).updatePositionMargin(
@@ -234,7 +232,7 @@ describe("VAMM", () => {
       );
       
       const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
-      const finalPositionMarginPostUpdateMargin = positionInfoPostUpdateMargin[1];
+      const finalPositionMarginPostUpdateMargin = positionInfoPostUpdateMargin.margin;
       
       expect(finalPositionMarginPostUpdateMargin).to.eq(0);
 

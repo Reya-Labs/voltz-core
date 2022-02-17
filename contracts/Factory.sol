@@ -71,6 +71,10 @@ contract Factory is IFactory, Ownable {
   }
 
   function deployIrsInstance(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (address marginEngineProxy, address vammProxy, address fcmProxy) {
+    // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
+    // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
+    // 16384 ticks represents a >5x price change with ticks of 1 bips
+    require(_tickSpacing > 0 && _tickSpacing < 16384);
     bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing);
     IMarginEngine marginEngine = IMarginEngine(masterMarginEngine.cloneDeterministic(salt));
     IVAMM vamm = IVAMM(masterVAMM.cloneDeterministic(salt));
@@ -89,7 +93,7 @@ contract Factory is IFactory, Ownable {
       Ownable(address(fcm)).transferOwnership(msg.sender);
     }
 
-    emit IrsInstanceDeployed(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, address(marginEngine), address(vamm), address(fcm));
+    emit IrsInstanceDeployed(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing, address(marginEngine), address(vamm), address(fcm));
 
     // Transfer ownership of all instances to the factory owner
     Ownable(address(vamm)).transferOwnership(msg.sender);

@@ -164,8 +164,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         override
         onlyOwner
     {
+        uint256 secondsAgoOld = secondsAgo;
         secondsAgo = _secondsAgo;
-        emit HistoricalApyWindowSet(Time.blockTimestampScaled(), address(this), secondsAgo);
+        emit HistoricalApyWindowSet(secondsAgoOld, secondsAgo);
     }
 
     /// @notice Sets the maximum age that the cached historical APY value
@@ -174,13 +175,15 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         external
         onlyOwner
     {
+        uint256 cacheMaxAgeInSecondsOld = cacheMaxAgeInSeconds;
         cacheMaxAgeInSeconds = _cacheMaxAgeInSeconds;
-        emit CacheMaxAgeSet(Time.blockTimestampScaled(), address(this), cacheMaxAgeInSeconds);
+        emit CacheMaxAgeSet(cacheMaxAgeInSecondsOld, cacheMaxAgeInSeconds);
     }
 
     function setIsInsuranceDepleted(bool _isInsuranceDepleted) external override onlyOwner {
+        bool isInsuranceDepletedOld = isInsuranceDepleted;
         isInsuranceDepleted = _isInsuranceDepleted;
-        emit IsInsuranceDepletedSet(Time.blockTimestampScaled(), address(this), isInsuranceDepleted);
+        emit IsInsuranceDepletedSet(isInsuranceDepletedOld, isInsuranceDepleted);
     }
 
     function collectProtocol(address recipient, uint256 amount)
@@ -197,12 +200,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             );
         }
 
-        emit CollectProtocol(Time.blockTimestampScaled(), address(this), recipient, amount);
+        emit CollectProtocol(msg.sender, recipient, amount);
     }
 
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external override onlyOwner {
+        uint256 liquidatorRewardWadOld = liquidatorRewardWad;
         liquidatorRewardWad = _liquidatorRewardWad;
-        emit LiquidatorRewardSet(Time.blockTimestampScaled(), address(this), liquidatorRewardWad);
+        emit LiquidatorRewardSet(liquidatorRewardWadOld, liquidatorRewardWad);
     }
 
     /// @inheritdoc IMarginEngine
@@ -259,14 +263,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
             checkPositionMarginCanBeUpdated(position, tickLower, tickUpper); 
 
-            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
-
             transferMargin(_owner, marginDelta);
 
         } else {
 
             position.updateMarginViaDelta(marginDelta);
-            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
 
             address depositor;
             if (factory.isApproved(_owner, msg.sender)) {
@@ -277,6 +278,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
             transferMargin(depositor, marginDelta);
         }
+
+        emit UpdatePositionMargin(_owner, tickLower, tickUpper, position.margin);
 
     }
     
@@ -295,16 +298,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad));
 
         position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
-        emit BalancesViaDeltasUpdate(
-            Time.blockTimestampScaled(),
-            address(this),
-            -position.fixedTokenBalance,
-            -position.variableTokenBalance
-        );
         position.updateMarginViaDelta(settlementCashflow);
-        emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
         position.settlePosition();
-        emit SettlePosition(Time.blockTimestampScaled(), address(this), position);
+
+        emit SettlePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, position.isSettled);
+
     }
     
     /// @notice Computes the historical APY value of the RateOracle
@@ -379,7 +377,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         uint256 liquidatorRewardValue = PRBMathUD60x18.toUint(liquidatorRewardValueWad);
 
         position.updateMarginViaDelta(-int256(liquidatorRewardValue));
-        emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
 
         if (position._liquidity > 0) {
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
@@ -389,6 +386,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         unwindPosition(position, _owner, tickLower, tickUpper);
 
         underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
+
+        emit LiquidatePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, position._liquidity);
 
     }
 
@@ -401,11 +400,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true);
 
         position.updateLiquidity(params.liquidityDelta);
-        emit LiquidityUpdate(Time.blockTimestampScaled(), address(this), position, position._liquidity);
 
         if (params.liquidityDelta>0) {
             checkPositionMarginAboveRequirement(position, params.tickLower, params.tickUpper);
         }
+
+        emit UpdatePositionPostMintBurn(params.owner, params.tickLower, params.tickUpper, position._liquidity);
 
     }
 
@@ -417,16 +417,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         if (cumulativeFeeIncurred > 0) {
             position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
-            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
         }
 
         position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
-        emit BalancesViaDeltasUpdate(
-            Time.blockTimestampScaled(),
-            address(this),
-            position.fixedTokenBalance,
-            position.variableTokenBalance
-        );
 
         int256 positionMarginRequirement = int256(
             getPositionMarginRequirement(position, tickLower, tickUpper, false)
@@ -436,6 +429,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             revert MarginRequirementNotMet();
         }
 
+        emit UpdatePositionPostSwap(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin);
     }
     
 
@@ -452,27 +446,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
 
             position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
-            emit BalancesViaDeltasUpdate(
-                Time.blockTimestampScaled(),
-                address(this),
-                position.fixedTokenBalance,
-                position.variableTokenBalance
-            );
             position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
-            emit FixedAndVariableTokenGrowthInsideUpdate(
-                Time.blockTimestampScaled(),
-                address(this),
-                position,
-                fixedTokenGrowthInsideX128,
-                variableTokenGrowthInsideX128
-            );
             /// @dev collect fees
             position.updateMarginViaDelta(int256(feeDelta));
-            emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
             position.updateFeeGrowthInside(feeGrowthInsideX128);
-            emit FeeGrowthInsideUpdate(Time.blockTimestampScaled(), address(this), position, feeGrowthInsideX128);
-
-            emit PositionTokenBalancesAndAccountForFeesUpdate(Time.blockTimestampScaled(), address(this), position, position.fixedTokenBalance, position.variableTokenBalance, feeDelta);
         } else {
             if (isMintBurn) {
                 (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
@@ -592,18 +569,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             if (_cumulativeFeeIncurred > 0) {
                 /// @dev update position margin to account for the fees incurred while conducting a swap in order to unwind
                 position.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
-                emit MarginViaDeltaUpdate(Time.blockTimestampScaled(), address(this), position, position.margin);
             }
 
             /// @dev passes the _fixedTokenBalance and _variableTokenBalance deltas
             position.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
-            emit BalancesViaDeltasUpdate(
-                Time.blockTimestampScaled(),
-                address(this),
-                position.fixedTokenBalance,
-                position.variableTokenBalance
-            );
-
         }
 
     }

@@ -55,93 +55,77 @@ interface IMarginEngine is IPositionStructs {
     }
 
     // Events
-    event HistoricalApyWindowSet(
-        uint256 blockTimestampScaled,
-        address source,
-        uint256 secondsAgo
-    );
+    event HistoricalApyWindowSet(uint256 secondsAgoOld, uint256 secondsAgo);
     event CacheMaxAgeSet(
-        uint256 blockTimestampScaled,
-        address source,
+        uint256 cacheMaxAgeInSecondsOld,
         uint256 cacheMaxAgeInSeconds
     );
     event IsInsuranceDepletedSet(
-        uint256 blockTimestampScaled,
-        address source,
+        bool isInsuranceDepletedOld,
         bool isInsuranceDepleted
     );
-    event MinMarginToIncentiviseLiquidatorsSet(
-        uint256 blockTimestampScaled,
-        address source,
-        uint256 minMarginToIncentiviseLiquidators
-    );
-    event CollectProtocol(
-        uint256 blockTimestampScaled,
-        address source,
-        address recipient,
-        uint256 amount
-    );
+    event CollectProtocol(address sender, address recipient, uint256 amount);
     event LiquidatorRewardSet(
-        uint256 blockTimestampScaled,
-        address source,
+        uint256 liquidatorRewardWadOld,
         uint256 liquidatorRewardWad
     );
-    event TraderPostVAMMInducedSwapUpdate(
-        uint256 blockTimestampScaled,
-        address source,
-        address recipient,
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        uint256 cumulativeFeeIncurred
-    );
-    event PositionTokenBalancesAndAccountForFeesUpdate(
-        uint256 blockTimestampScaled,
-        address source,
-        Position.Info info,
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        uint256 feeDelta
-    );
-    event SettleTrader(
-        uint256 blockTimestampScaled,
-        address source,
-        address traderAddress
-    );
+
     event SettlePosition(
         uint256 blockTimestampScaled,
         address source,
         Position.Info info
     );
-    event BalancesViaDeltasUpdate(
-        uint256 blockTimestampScaled,
-        address source,
+
+    event VAMMSet(IVAMM vammOld, IVAMM vamm);
+
+    event FCMSet(IFCM fcmOld, IFCM fcm);
+
+    event MarginCalculatorParametersSet(
+        MarginCalculatorParameters marginCalculatorParametersOld,
+        MarginCalculatorParameters marginCalculatorParameters
+    );
+
+    event UpdatePositionMargin(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int256 positionMargin
+    );
+
+    event SettlePosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
         int256 fixedTokenBalance,
-        int256 variableTokenBalance
+        int256 variableTokenBalance,
+        int256 margin,
+        bool isSettled
     );
-    event FixedAndVariableTokenGrowthInsideUpdate(
-        uint256 blockTimestampScaled,
-        address source,
-        Position.Info info,
-        int256 fixedTokenGrowthInsideX128,
-        int256 variableTokenGrowthInsideX128
-    );
-    event FeeGrowthInsideUpdate(
-        uint256 blockTimestampScaled,
-        address source,
-        Position.Info info,
-        uint256 feeGrowthInsideX128
-    );
-    event LiquidityUpdate(
-        uint256 blockTimestampScaled,
-        address source,
-        Position.Info info,
+
+    event LiquidatePosition(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        int256 margin,
         uint128 liquidity
     );
-    event MarginViaDeltaUpdate(
-        uint256 blockTimestampScaled,
-        address source,
-        Position.Info info,
+
+    event UpdatePositionPostSwap(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
         int256 margin
+    );
+
+    event UpdatePositionPostMintBurn(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidity
     );
 
     // immutables

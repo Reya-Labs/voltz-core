@@ -10,6 +10,7 @@ interface IFactory {
         address indexed rateOracle,
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad,
+        int24 tickSpacing,
         address marginEngine,
         address vamm,
         address fcm
