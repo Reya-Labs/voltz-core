@@ -294,17 +294,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad));
 
-        
-        if (position._liquidity>0) {    
-            Printer.printInt256("LP position.fixedTokenBalance", position.fixedTokenBalance);
-            Printer.printInt256("LP position.variableTokenBalance", position.variableTokenBalance);
-            Printer.printInt256("LP settlementCashflow", settlementCashflow);
-        } else {
-            Printer.printInt256("Trader position.fixedTokenBalance", position.fixedTokenBalance);
-            Printer.printInt256("Trader position.variableTokenBalance", position.variableTokenBalance);
-            Printer.printInt256("Trader settlementCashflow", settlementCashflow);
-        }
-
         position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
         emit BalancesViaDeltasUpdate(
             Time.blockTimestampScaled(),

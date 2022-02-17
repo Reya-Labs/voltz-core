@@ -23,9 +23,7 @@ import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import {
   ERC20Mock,
-  Factory,
   MockAaveLendingPool,
-  TestRateOracle,
 } from "../../typechain";
 import { add, sub } from "../shared/functions";
 import { TickMath } from "../shared/tickMath";
@@ -37,10 +35,6 @@ const createFixtureLoader = waffle.createFixtureLoader;
 describe("VAMM", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
-  let factory: Factory;
-  let rateOracleTest: TestRateOracle;
-  let termStartTimestampBN: BigNumber;
-  let termEndTimestampBN: BigNumber;
   let vammTest: TestVAMM;
   let marginEngineTest: TestMarginEngine;
   let aaveLendingPool: MockAaveLendingPool;
@@ -54,42 +48,11 @@ describe("VAMM", () => {
 
   beforeEach("deploy fixture", async () => {
     ({
-      factory,
       token,
-      rateOracleTest,
       aaveLendingPool,
-      termStartTimestampBN,
-      termEndTimestampBN,
+      vammTest,
+      marginEngineTest
     } = await loadFixture(metaFixture));
-
-    // deploy a margin engine & vamm
-    await factory.deployIrsInstance(
-      token.address,
-      rateOracleTest.address,
-      termStartTimestampBN,
-      termEndTimestampBN
-    );
-    const marginEngineAddress = await factory.getMarginEngineAddress(
-      token.address,
-      rateOracleTest.address,
-      termStartTimestampBN,
-      termEndTimestampBN
-    );
-    const marginEngineTestFactory = await ethers.getContractFactory(
-      "TestMarginEngine"
-    );
-    marginEngineTest = marginEngineTestFactory.attach(
-      marginEngineAddress
-    ) as TestMarginEngine;
-    const vammAddress = await factory.getVAMMAddress(
-      token.address,
-      rateOracleTest.address,
-      termStartTimestampBN,
-      termEndTimestampBN
-    );
-    const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
-    await marginEngineTest.setVAMMAddress(vammTest.address);
 
     // update marginEngineTest allowance
     await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
@@ -133,19 +96,14 @@ describe("VAMM", () => {
   describe("#swapAndBurn", () => {
     beforeEach("initialize the pool at price of 1:1", async () => {
       await token.mint(wallet.address, BigNumber.from(10).pow(27));
-      await token.approve(wallet.address, BigNumber.from(10).pow(27));
+      await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
 
-      await marginEngineTest.updatePositionMargin(
-        {
-          owner: wallet.address,
-          tickLower: -TICK_SPACING,
-          tickUpper: TICK_SPACING,
-          liquidityDelta: 0,
-        },
-        toBn("100000")
-      );
+      await token.mint(other.address, BigNumber.from(10).pow(27));
+      await token.connect(other).approve(marginEngineTest.address, BigNumber.from(10).pow(27));
 
-      await marginEngineTest.updateTraderMargin(wallet.address, toBn("100000"));
+      await marginEngineTest.updatePositionMargin(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("100000"));
+      
+      await marginEngineTest.connect(other).updatePositionMargin(other.address, -TICK_SPACING, TICK_SPACING, toBn("100000"));
     });
 
     it("scenario1", async () => {
@@ -159,37 +117,33 @@ describe("VAMM", () => {
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.003"));
 
-      await vammTest.mint(
+      await vammTest.connect(wallet).mint(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING,
         toBn("100000")
       );
 
-      await vammTest.swap({
-        recipient: wallet.address,
-        isFT: true,
+      await vammTest.connect(other).swap({
+        recipient: other.address,
         amountSpecified: toBn("1"),
         sqrtPriceLimitX96: BigNumber.from(
           TickMath.getSqrtRatioAtTick(TICK_SPACING * 2).toString()
         ),
-        isUnwind: false,
-        isTrader: true,
-        tickLower: 0,
-        tickUpper: 0,
+        isExternal: false,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
       });
 
       // check trader balances
-      const traderInfo = await marginEngineTest.traders(wallet.address);
+      const traderInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
       const traderFixedTokenBalance = traderInfo.fixedTokenBalance;
       const traderVariableTokenBalance = traderInfo.variableTokenBalance;
 
       expect(traderInfo.variableTokenBalance).to.eq(toBn("-1"));
 
       await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-        wallet.address,
-        -TICK_SPACING,
-        TICK_SPACING
+        wallet.address, -TICK_SPACING, TICK_SPACING, false
       );
 
       // check position token balances
@@ -205,9 +159,6 @@ describe("VAMM", () => {
       console.log("PVTB", positionVariableTokenBalance.toString());
       console.log("TFTB", traderFixedTokenBalance.toString());
       console.log("TVTB", traderVariableTokenBalance.toString());
-
-      // note there is some discrepancy between the balances, they don't quite cancel each other
-      // investigate the implications of this
 
       const sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance = add(
         positionFixedTokenBalance,
@@ -225,6 +176,9 @@ describe("VAMM", () => {
       expect(
         sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance
       ).to.be.closeTo(toBn("0"), 10);
+      
+      console.log(sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance, "sumOfTraderFixedTokenBalanceAndPositionFixedTokenBalance");
+    
     });
 
     it("scenario 2: ", async () => {
@@ -238,26 +192,24 @@ describe("VAMM", () => {
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.003"));
 
-      await vammTest.mint(
+      await vammTest.connect(wallet).mint(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING,
         toBn("100000")
       );
 
-      await vammTest.swap({
-        recipient: wallet.address,
-        isFT: false,
+      await vammTest.connect(other).swap({
+        recipient: other.address,
         amountSpecified: toBn("-1"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-        isUnwind: false,
-        isTrader: true,
-        tickLower: 0,
-        tickUpper: 0,
+        isExternal: false,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
       });
 
       // check trader balances
-      const traderInfo = await marginEngineTest.traders(wallet.address);
+      const traderInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
       const traderFixedTokenBalance = traderInfo.fixedTokenBalance;
       const traderVariableTokenBalance = traderInfo.variableTokenBalance;
 
@@ -266,7 +218,8 @@ describe("VAMM", () => {
       await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         wallet.address,
         -TICK_SPACING,
-        TICK_SPACING
+        TICK_SPACING,
+        false
       );
 
       // check position token balances
@@ -316,22 +269,20 @@ describe("VAMM", () => {
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.5"));
 
-      await vammTest.mint(
+      await vammTest.connect(wallet).mint(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING,
         toBn("10000000")
       );
 
-      await vammTest.swap({
-        recipient: wallet.address,
-        isFT: false,
+      await vammTest.connect(other).swap({
+        recipient: other.address,
         amountSpecified: toBn("-100"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-        isUnwind: false,
-        isTrader: true,
-        tickLower: 0,
-        tickUpper: 0,
+        isExternal: false,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
       });
 
       const positionInfoOld = await marginEngineTest.getPosition(
@@ -343,7 +294,8 @@ describe("VAMM", () => {
       await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         wallet.address,
         -TICK_SPACING,
-        TICK_SPACING
+        TICK_SPACING,
+        false
       );
 
       const positionInfo = await marginEngineTest.getPosition(
@@ -372,22 +324,20 @@ describe("VAMM", () => {
       await vammTest.setFeeProtocol(2); // half of the fees go towards the protocol
       await vammTest.setFee(toBn("0.5"));
 
-      await vammTest.mint(
+      await vammTest.connect(wallet).mint(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING,
         toBn("10000000")
       );
 
-      await vammTest.swap({
-        recipient: wallet.address,
-        isFT: false,
+      await vammTest.connect(other).swap({
+        recipient: other.address,
         amountSpecified: toBn("-100"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-        isUnwind: false,
-        isTrader: true,
-        tickLower: 0,
-        tickUpper: 0,
+        isExternal: false,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
       });
 
       const positionInfoOld = await marginEngineTest.getPosition(
@@ -399,7 +349,8 @@ describe("VAMM", () => {
       await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         wallet.address,
         -TICK_SPACING,
-        TICK_SPACING
+        TICK_SPACING,
+        false
       );
 
       const positionInfo = await marginEngineTest.getPosition(
@@ -428,27 +379,25 @@ describe("VAMM", () => {
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.5"));
 
-      await vammTest.mint(
+      await vammTest.connect(wallet).mint(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING,
         toBn("10000000")
       );
 
-      const traderInfoOld = await marginEngineTest.traders(wallet.address);
+      const traderInfoOld = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
 
-      await vammTest.swap({
-        recipient: wallet.address,
-        isFT: false,
+      await vammTest.connect(other).swap({
+        recipient: other.address,
         amountSpecified: toBn("-100"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-        isUnwind: false,
-        isTrader: true,
-        tickLower: 0,
-        tickUpper: 0,
+        isExternal: false,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
       });
 
-      const traderInfo = await marginEngineTest.traders(wallet.address);
+      const traderInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
 
       const positionInfoOld = await marginEngineTest.getPosition(
         wallet.address,
@@ -459,7 +408,8 @@ describe("VAMM", () => {
       await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
         wallet.address,
         -TICK_SPACING,
-        TICK_SPACING
+        TICK_SPACING,
+        false
       );
 
       const positionInfo = await marginEngineTest.getPosition(
@@ -482,6 +432,5 @@ describe("VAMM", () => {
       expect(feesAccruedToLP).to.be.near(feesIncurredByTrader);
     });
 
-    // todo: scenario 6 --> settlement
   });
 });
