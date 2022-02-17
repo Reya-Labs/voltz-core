@@ -149,9 +149,9 @@ export function formatRay(value: BigNumber, decimals: number = 9): string {
 export function printTraderWithYieldBearingTokensInfo(
   traderInfo: any
 ) {
-  console.log("marginInScaledYieldBearingTokens: ", utils.formatEther(traderInfo[0]));
-  console.log("fixedTokenBalance: ", utils.formatEther(traderInfo[1]));
-  console.log("variableTokenBalance: ", utils.formatEther(traderInfo[2]));
-  console.log("isSettled: ", traderInfo[3].toString());
+  console.log("marginInScaledYieldBearingTokens: ", utils.formatEther(traderInfo.marginInScaledYieldBearingTokens));
+  console.log("fixedTokenBalance: ", utils.formatEther(traderInfo.fixedTokenBalance));
+  console.log("variableTokenBalance: ", utils.formatEther(traderInfo.variableTokenBalance));
+  console.log("isSettled: ", traderInfo.isSettled.toString());
   console.log("");
 }

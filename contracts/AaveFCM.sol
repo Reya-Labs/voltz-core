@@ -87,14 +87,16 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
     require(notional!=0, "notional = 0");
 
+    int24 tickSpacing = vamm.tickSpacing();
+
     // initiate a swap
     IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: address(this),
         amountSpecified: int256(notional),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         isExternal: true,
-        tickLower: 0,
-        tickUpper: 0
+        tickLower: -tickSpacing,
+        tickUpper: tickSpacing
     });
 
     (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) = vamm.swap(params);
