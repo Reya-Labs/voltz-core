@@ -57,8 +57,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     IFactory public override factory;
 
-    bool public isInsuranceDepleted;
-
     IRateOracle public override rateOracle;
 
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
@@ -180,12 +178,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         emit CacheMaxAgeSet(cacheMaxAgeInSecondsOld, cacheMaxAgeInSeconds);
     }
 
-    function setIsInsuranceDepleted(bool _isInsuranceDepleted) external override onlyOwner {
-        bool isInsuranceDepletedOld = isInsuranceDepleted;
-        isInsuranceDepleted = _isInsuranceDepleted;
-        emit IsInsuranceDepletedSet(isInsuranceDepletedOld, isInsuranceDepleted);
-    }
-
     function collectProtocol(address recipient, uint256 amount)
         external
         override
@@ -214,6 +206,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                          int24 tickLower,
                          int24 tickUpper)
         external override view returns (Position.Info memory position) {
+            /// @audit update position to account for fees
             return positions.get(_owner, tickLower, tickUpper);
     }
 

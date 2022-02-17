@@ -80,7 +80,6 @@ contract Periphery {
         bool isFT;
         uint256 notional;
         uint160 sqrtPriceLimitX96;
-        bool isTrader;
         int24 tickLower;
         int24 tickUpper;
     }

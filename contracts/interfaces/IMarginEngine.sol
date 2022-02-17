@@ -70,10 +70,7 @@ interface IMarginEngine is IPositionStructs {
         uint256 cacheMaxAgeInSecondsOld,
         uint256 cacheMaxAgeInSeconds
     );
-    event IsInsuranceDepletedSet(
-        bool isInsuranceDepletedOld,
-        bool isInsuranceDepleted
-    );
+    
     event CollectProtocol(address sender, address recipient, uint256 amount);
     event LiquidatorRewardSet(
         uint256 liquidatorRewardWadOld,
@@ -215,8 +212,6 @@ interface IMarginEngine is IPositionStructs {
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory _marginCalculatorParameters
     ) external;
-
-    function setIsInsuranceDepleted(bool _isInsuranceDepleted) external;
 
     // non-view functions
 

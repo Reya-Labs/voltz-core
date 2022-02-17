@@ -262,7 +262,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       revert LiquidityDeltaMustBePositiveInMint(amount);
     }
 
-    require(msg.sender==recipient || factory.isApproved(recipient, msg.sender), "only msg.sender can mint");
+    require(msg.sender==recipient || factory.isApproved(recipient, msg.sender), "only msg.sender or approved can mint");
 
     updatePosition(
       ModifyPositionParams({
