@@ -225,9 +225,73 @@ describe("Periphery", async () => {
   })
 
 
-  // it("swapping via periphery", async () => {
+  it("swapping via periphery", async () => {
 
-  // });
+
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    
+    await vammTest.initializeVAMM(TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()); 
+
+    await marginEngineTest.updatePositionMargin(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("100000"));
+    
+    const notionalMinted = toBn("10");
+    
+    await periphery.mintOrBurn(
+      {
+        marginEngineAddress: marginEngineTest.address,
+        recipient: wallet.address,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        notional: notionalMinted,
+        isMint: true
+      }
+    );
+    
+    await marginEngineTest.connect(other).updatePositionMargin(other.address, -TICK_SPACING, TICK_SPACING, toBn("100000"));
+    
+    await expect(
+      periphery.connect(wallet).swap(
+        {
+        marginEngineAddress: marginEngineTest.address,
+        recipient: other.address,
+        isFT: true,
+        notional: toBn("10"),
+        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(),
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING
+        }
+      )
+    ).to.be.revertedWith("msg.sender must be the recipient");
+
+    await periphery.connect(other).swap(
+      {
+      marginEngineAddress: marginEngineTest.address,
+      recipient: other.address,
+      isFT: true,
+      notional: toBn("10"),
+      sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(),
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING
+      }
+    )
+
+    await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(wallet.address, -TICK_SPACING, TICK_SPACING, false);
+
+    const lpInfo = await marginEngineTest.getPosition(wallet.address, -TICK_SPACING, TICK_SPACING);
+    const lpVariableTokenBalance = lpInfo.variableTokenBalance;
+
+    const traderInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
+
+    const traderVariableTokenBalance = traderInfo.variableTokenBalance;
+
+    console.log("lpVariableTokenBalance", utils.formatEther(lpVariableTokenBalance.toString()));
+
+    console.log("traderVariableTokenBalance", utils.formatEther(traderVariableTokenBalance.toString()));
+    
+    expect(lpVariableTokenBalance).to.be.closeTo(notionalMinted, 2);
+    expect(traderVariableTokenBalance).to.be.closeTo(mul(notionalMinted, toBn("-1")), 2)
+  });
 
 
 })

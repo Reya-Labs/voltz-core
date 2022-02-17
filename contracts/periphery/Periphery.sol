@@ -41,7 +41,10 @@ contract Periphery {
 
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params) external {
-        // require the recepient to be the message sender
+        require(
+            msg.sender == params.recipient,
+            "msg.sender must be the recipient"
+        );
 
         IVAMM vamm = getVAMM(params.marginEngineAddress);
 
@@ -85,7 +88,10 @@ contract Periphery {
     }
 
     function swap(SwapPeripheryParams memory params) external {
-        // require the recepient to be the message sender
+        require(
+            msg.sender == params.recipient,
+            "msg.sender must be the recipient"
+        );
 
         IVAMM vamm = getVAMM(params.marginEngineAddress);
 
@@ -96,8 +102,6 @@ contract Periphery {
         } else {
             amountSpecified = -int256(params.notional);
         }
-
-        // what if tick lower and tick upper are zero
 
         int24 tickSpacing = vamm.tickSpacing();
 

@@ -70,7 +70,7 @@ interface IMarginEngine is IPositionStructs {
         uint256 cacheMaxAgeInSecondsOld,
         uint256 cacheMaxAgeInSeconds
     );
-    
+
     event CollectProtocol(address sender, address recipient, uint256 amount);
     event LiquidatorRewardSet(
         uint256 liquidatorRewardWadOld,
