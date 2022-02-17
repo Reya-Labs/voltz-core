@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1658158417
+current timestamp: 1658162393
 
 current tick: 0
 sqrt price at current tick: 1
@@ -92,7 +92,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------AFTER MINT----------------------------
-current timestamp: 1660318429
+current timestamp: 1660322405
 
 current tick: 0
 sqrt price at current tick: 1
@@ -185,7 +185,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE SETTLEMENT----------------------------
-current timestamp: 1662478438
+current timestamp: 1662482414
 
 current tick: -61
 sqrt price at current tick: 0.9969547984655946
@@ -278,7 +278,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------FINAL----------------------------
-current timestamp: 1665934448
+current timestamp: 1665938424
 
 current tick: -61
 sqrt price at current tick: 0.9969547984655946
