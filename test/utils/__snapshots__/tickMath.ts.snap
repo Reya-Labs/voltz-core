@@ -122,7 +122,11 @@ exports[`TickMath #getTickAtSqrtRatio ratio 79228162514264337593543950 result 1`
 
 exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592462 gas 1`] = `4531`;
 
+exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592463 gas 1`] = `4425`;
+
 exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592462 result 1`] = `-69100`;
+
+exports[`TickMath #getTickAtSqrtRatio ratio 2503036416286949174936592463 result 1`] = `-69100`;
 
 exports[`TickMath #getTickAtSqrtRatio ratio 9903520314283042199192993792 gas 1`] = `2343`;
 
