@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1668523742
+current timestamp: 1668510141
 
 current tick: 0
 sqrt price at current tick: 1

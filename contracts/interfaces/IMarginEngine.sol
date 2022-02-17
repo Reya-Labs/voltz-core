@@ -7,6 +7,7 @@ import "../core_libraries/Position.sol";
 import "./rate_oracles/IRateOracle.sol";
 import "./IFCM.sol";
 import "./IFactory.sol";
+import "./IERC20Minimal.sol";
 
 interface IMarginEngine is IPositionStructs {
     // structs
@@ -161,7 +162,7 @@ interface IMarginEngine is IPositionStructs {
 
     // /// @notice The address of the underlying (non-yield bearing) pool token - e.g. USDC
     // /// @return The underlying pool token address
-    function underlyingToken() external view returns (address);
+    function underlyingToken() external view returns (IERC20Minimal);
 
     function rateOracle() external view returns (IRateOracle);
 

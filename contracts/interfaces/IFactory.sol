@@ -17,7 +17,7 @@ interface IFactory {
 
     function setApproval(address intAddress, bool allowIntegration) external;
 
-    function isApproved(address owner, address intAddress)
+    function isApproved(address _owner, address intAddress)
         external
         view
         returns (bool);
@@ -29,21 +29,24 @@ interface IFactory {
         address _underlyingToken,
         address _rateOracle,
         uint256 _termStartTimestampWad,
-        uint256 _termEndTimestampWad
+        uint256 _termEndTimestampWad,
+        int24 _tickSpacing
     ) external view returns (address);
 
     function getMarginEngineAddress(
         address _underlyingToken,
         address _rateOracle,
         uint256 _termStartTimestampWad,
-        uint256 _termEndTimestampWad
+        uint256 _termEndTimestampWad,
+        int24 _tickSpacing
     ) external view returns (address);
 
     function getFCMAddress(
         address _underlyingToken,
         address _rateOracle,
         uint256 _termStartTimestampWad,
-        uint256 _termEndTimestampWad
+        uint256 _termEndTimestampWad,
+        int24 _tickSpacing
     ) external view returns (address);
 
     function masterVAMM() external view returns (address);
@@ -55,7 +58,8 @@ interface IFactory {
         address _underlyingToken,
         address _rateOracle,
         uint256 _termStartTimestampWad,
-        uint256 _termEndTimestampWad
+        uint256 _termEndTimestampWad,
+        int24 _tickSpacing
     )
         external
         returns (

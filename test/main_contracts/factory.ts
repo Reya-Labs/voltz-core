@@ -7,6 +7,7 @@ import { expect } from "../shared/expect";
 import { metaFixture } from "../shared/fixtures";
 import { BigNumber } from "@ethersproject/bignumber";
 import { TestMarginEngine, TestVAMM } from "../../typechain";
+import { TICK_SPACING } from "../shared/utilities";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -52,7 +53,8 @@ describe("Factory", () => {
           token.address,
           rateOracleTest.address,
           termStartTimestampBN,
-          termEndTimestampBN
+          termEndTimestampBN,
+          TICK_SPACING
         )
     ).to.be.revertedWith("caller is not the owner");
   });
@@ -63,13 +65,15 @@ describe("Factory", () => {
       token.address,
       rateOracleTest.address,
       termStartTimestampBN,
-      termEndTimestampBN
+      termEndTimestampBN,
+      TICK_SPACING
     );
     const vammAddress = await factory.getVAMMAddress(
       token.address,
       rateOracleTest.address,
       termStartTimestampBN,
-      termEndTimestampBN
+      termEndTimestampBN,
+      TICK_SPACING
     );
 
     // Now deployand check the log
@@ -78,7 +82,8 @@ describe("Factory", () => {
         token.address,
         rateOracleTest.address,
         termStartTimestampBN,
-        termEndTimestampBN
+        termEndTimestampBN,
+        TICK_SPACING
       )
     )
       .to.emit(factory, "IrsInstanceDeployed")
@@ -126,7 +131,7 @@ describe("Factory", () => {
 
     expect(vamm1.address).to.eq(vammAddress);
 
-    await expect(vamm1.initialize(marginEngine1.address)).to.be.revertedWith(
+    await expect(vamm1.initialize(marginEngine1.address, TICK_SPACING)).to.be.revertedWith(
       "contract is already initialized"
     );
 

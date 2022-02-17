@@ -8,7 +8,7 @@ import {
   tickMathFixture,
   createMetaFixtureE2E,
 } from "../../shared/fixtures";
-import { getMaxLiquidityPerTick, formatRay, TICK_SPACING } from "../../shared/utilities";
+import { formatRay, TICK_SPACING } from "../../shared/utilities";
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../../typechain/TestMarginEngine";
 import {
@@ -354,7 +354,8 @@ export class ScenarioRunner {
       this.token.address,
       this.rateOracleTest.address,
       this.termStartTimestampBN,
-      this.termEndTimestampBN
+      this.termEndTimestampBN,
+      this.params.tickSpacing
     );
 
     // deploy margin engine test
@@ -362,7 +363,8 @@ export class ScenarioRunner {
       this.token.address,
       this.rateOracleTest.address,
       this.termStartTimestampBN,
-      this.termEndTimestampBN
+      this.termEndTimestampBN,
+      this.params.tickSpacing
     );
 
     const marginEngineTestFactory = await ethers.getContractFactory(
@@ -378,7 +380,8 @@ export class ScenarioRunner {
       this.token.address,
       this.rateOracleTest.address,
       this.termStartTimestampBN,
-      this.termEndTimestampBN
+      this.termEndTimestampBN, 
+      this.params.tickSpacing
     );
 
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
@@ -413,10 +416,6 @@ export class ScenarioRunner {
 
     // set VAMM parameters
     await this.vammTest.initializeVAMM(this.params.startingPrice.toString());
-    await this.vammTest.setMaxLiquidityPerTick(
-      getMaxLiquidityPerTick(this.params.tickSpacing)
-    );
-    await this.vammTest.setTickSpacing(this.params.tickSpacing);
     await this.vammTest.setFeeProtocol(this.params.feeProtocol);
     await this.vammTest.setFee(this.params.fee);
 

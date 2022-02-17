@@ -7,7 +7,6 @@ import {
   TICK_SPACING,
   MIN_SQRT_RATIO,
   MAX_SQRT_RATIO,
-  getMaxLiquidityPerTick,
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
   MIN_DELTA_LM,
@@ -109,11 +108,6 @@ describe("VAMM", () => {
     it("scenario1", async () => {
       await vammTest.initializeVAMM(MIN_SQRT_RATIO);
 
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
-
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.003"));
 
@@ -183,11 +177,6 @@ describe("VAMM", () => {
 
     it("scenario 2: ", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
-
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
 
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.003"));
@@ -261,11 +250,6 @@ describe("VAMM", () => {
     it("scenario 3: check fees (no protocol fees)", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
-
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.5"));
 
@@ -316,11 +300,6 @@ describe("VAMM", () => {
     it("scenario 4: check fees (with protocol fees)", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
-
       await vammTest.setFeeProtocol(2); // half of the fees go towards the protocol
       await vammTest.setFee(toBn("0.5"));
 
@@ -370,11 +349,6 @@ describe("VAMM", () => {
 
     it("scenario 5: check fees accrued = fees incurred", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
-
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
 
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.5"));

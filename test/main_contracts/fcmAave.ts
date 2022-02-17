@@ -5,7 +5,6 @@ import { expect } from "../shared/expect";
 import { metaFixture } from "../shared/fixtures";
 import {
   TICK_SPACING,
-  getMaxLiquidityPerTick,
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
   MIN_DELTA_LM,
@@ -137,11 +136,6 @@ describe("VAMM", () => {
       );
 
       await vammTest.initializeVAMM(TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString());
-
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
 
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0"));

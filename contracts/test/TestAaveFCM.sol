@@ -16,11 +16,11 @@ contract TestAaveFCM is AaveFCM {
     }
 
     function getUnderlyingYieldBearingToken() external view returns (address) {
-        return underlyingYieldBearingToken;
+        return address(underlyingYieldBearingToken);
     }
 
     function getAaveLendingPool() external view returns (address) {
-        return aaveLendingPool;
+        return address(aaveLendingPool);
     }
 
 }

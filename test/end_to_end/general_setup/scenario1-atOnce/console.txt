@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1658155655
+current timestamp: 1658142053
 
 current tick: 0
 sqrt price at current tick: 1
@@ -92,7 +92,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------AFTER MINT----------------------------
-current timestamp: 1660315667
+current timestamp: 1660302066
 
 current tick: 0
 sqrt price at current tick: 1
@@ -103,7 +103,7 @@ amount of available variable tokens: 0 (↑) ; 1499.175155433346 (↓)
 
 lower apy bound: 0.0
  historical apy: 0.0
-upper apy bound: 0.024394453914487188
+upper apy bound: 0.024394449946004834
 variable factor: 0.0
 
 No of   Actors: 5
@@ -185,7 +185,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE SETTLEMENT----------------------------
-current timestamp: 1662475676
+current timestamp: 1662462075
 
 current tick: -61
 sqrt price at current tick: 0.9969547984655946
@@ -196,7 +196,7 @@ amount of available variable tokens: 1499.175155433346 (↑) ; 0 (↓)
 
 lower apy bound: 0.0
  historical apy: 0.004383671253533277
-upper apy bound: 0.027418312080197893
+upper apy bound: 0.027418307706156377
 variable factor: 0.0
 
 No of   Actors: 5
@@ -208,8 +208,8 @@ POSITION 0
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 500500.0
-                           margin: 558.256578038354494215
-   fixedTokenGrowthInsideLastX128: 0.002169789047911763
+                           margin: 558.256589922987575808
+   fixedTokenGrowthInsideLastX128: 0.0021697888150811195
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
                 fixedTokenBalance: -0.000000000000000001
              variableTokenBalance: 0.000000000000000001
@@ -278,7 +278,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------FINAL----------------------------
-current timestamp: 1665931686
+current timestamp: 1665918085
 
 current tick: -61
 sqrt price at current tick: 0.9969547984655946
@@ -296,8 +296,8 @@ POSITION 0
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 500500.0
-                           margin: 558.256578038354494215
-   fixedTokenGrowthInsideLastX128: 0.002169789047911763
+                           margin: 558.256589922987575808
+   fixedTokenGrowthInsideLastX128: 0.0021697888150811195
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
