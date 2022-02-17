@@ -231,7 +231,7 @@ interface IVAMM is IPositionStructs {
     }
 
     /// @dev "constructor" for proxy instances
-    function initialize(address _marginEngineAddress) external;
+    function initialize(address _marginEngineAddress, int24 _tickSpacing) external;
 
     // immutables
 
@@ -295,12 +295,6 @@ interface IVAMM is IPositionStructs {
 
     /// @notice Function that sets the feeProtocol of the vamm
     function setFeeProtocol(uint8 feeProtocol) external;
-
-    /// @notice Function that sets the tickSpacing of the vamm
-    function setTickSpacing(int24 _tickSpacing) external;
-
-    /// @notice Function that sets the maxLiquidityPerTick of the vamm
-    function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external;
 
     /// @notice Function that sets fee of the vamm
     function setFee(uint256 _fee) external;

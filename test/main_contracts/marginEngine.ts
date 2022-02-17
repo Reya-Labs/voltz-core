@@ -331,11 +331,6 @@ describe("MarginEngine", () => {
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
-      
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
 
       await vammTest.mint(
         wallet.address,
@@ -391,11 +386,6 @@ describe("MarginEngine", () => {
 
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
-
       await vammTest.mint(
         wallet.address,
         -TICK_SPACING,
@@ -446,11 +436,6 @@ describe("MarginEngine", () => {
 
     it("unwinds Trader", async () => {
       await vammTest.initializeVAMM(MIN_SQRT_RATIO);
-
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
 
       await vammTest.mint(
         wallet.address,
@@ -672,8 +657,6 @@ describe("MarginEngine", () => {
       await vammTest.setVariableTokenGrowthGlobal(Q128Negative);
 
       await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
-      await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100));
-      await vammTest.setTickSpacing(TICK_SPACING);
     });
 
     it("scenario 1: position settlement", async () => {
@@ -738,11 +721,6 @@ describe("MarginEngine", () => {
       const min_price = BigNumber.from(encodeSqrtRatioX96(1, 10).toString());
       await vammTest.initializeVAMM(min_price);
 
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
-
       await vammTest.mint(
         wallet.address,
         -TICK_SPACING,
@@ -801,11 +779,6 @@ describe("MarginEngine", () => {
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
-
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
 
       await vammTest.mint(
         wallet.address,

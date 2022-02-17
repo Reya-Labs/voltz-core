@@ -177,9 +177,7 @@ describe("VAMM", () => {
     describe("after initialization", async () => {
       beforeEach("initialize the pool at price of 10:1", async () => {
         await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
-        await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100));
         await vammTest.setFeeProtocol(3);
-        await vammTest.setTickSpacing(TICK_SPACING);
 
         await token.mint(wallet.address, "1217962522535726055805955855889380600000000000000000000000000000000");
         await token.approve(marginEngineTest.address, "1217962522535726055805955855889380600000000000000000000000000000000");
@@ -368,41 +366,6 @@ describe("VAMM", () => {
     });
   });
 
-  describe("#setTickSpacing", () => {
-    it("check owner privilege ", async () => {
-      await expect(
-        vammTest.connect(other).setTickSpacing(100)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
-
-    it("check setTickSpacing", async () => {
-      expect(await vammTest.tickSpacing()).to.be.equal(0);
-      await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
-      await expect(vammTest.setTickSpacing(100)).to.not.be.reverted;
-      expect(await vammTest.tickSpacing()).to.be.equal(100);
-    });
-  });
-
-  describe("#setMaxLiquidityPerTick", () => {
-    it("check owner privilege ", async () => {
-      await expect(
-        vammTest
-          .connect(other)
-          .setMaxLiquidityPerTick(getMaxLiquidityPerTick(100))
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
-
-    it("check setMaxLiquidityPerTick", async () => {
-      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(0);
-      await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
-      await expect(vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100)))
-        .to.not.be.reverted;
-      expect(await vammTest.maxLiquidityPerTick()).to.be.equal(
-        getMaxLiquidityPerTick(100)
-      );
-    });
-  });
-
   describe("#setFee", () => {
     it("check owner privilege ", async () => {
       await expect(
@@ -427,9 +390,7 @@ describe("VAMM", () => {
     describe("after initialization", async () => {
       beforeEach("initialize the pool at price of 10:1", async () => {
         await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
-        await vammTest.setMaxLiquidityPerTick(getMaxLiquidityPerTick(100));
         await vammTest.setFeeProtocol(3);
-        await vammTest.setTickSpacing(TICK_SPACING);
 
         await token.mint(wallet.address, BigNumber.from(10).pow(27));
         await token.approve(wallet.address, BigNumber.from(10).pow(27));

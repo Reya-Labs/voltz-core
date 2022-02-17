@@ -26,8 +26,8 @@ contract Factory is IFactory, Ownable {
     _approvals[msg.sender][intAddress] = allowIntegration;
   }
   
-  function isApproved(address owner, address intAddress) external override view returns (bool) {
-    return _approvals[owner][intAddress];
+  function isApproved(address _owner, address intAddress) external override view returns (bool) {
+    return _approvals[_owner][intAddress];
   }
 
   constructor(address _masterMarginEngine, address _masterVAMM) {
@@ -47,35 +47,35 @@ contract Factory is IFactory, Ownable {
     }
   }
 
-  function getSalt(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) internal pure returns (bytes32 salt) {
-    return keccak256(abi.encode(_underlyingToken, _rateOracle,  _termStartTimestampWad, _termEndTimestampWad));
+  function getSalt(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) internal pure returns (bytes32 salt) {
+    return keccak256(abi.encode(_underlyingToken, _rateOracle,  _termStartTimestampWad, _termEndTimestampWad, _tickSpacing));
   }
 
-  function getVAMMAddress(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external view override returns (address) {
+  function getVAMMAddress(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external view override returns (address) {
     require(masterVAMM != address(0), "master VAMM must be set");
-    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
+    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing);
     return masterVAMM.predictDeterministicAddress(salt);
   }
 
-  function getMarginEngineAddress(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external view override returns (address) {
+  function getMarginEngineAddress(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external view override returns (address) {
     require(masterMarginEngine != address(0), "master MarginEngine must be set");
-    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
+    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing);
     return masterMarginEngine.predictDeterministicAddress(salt);
   }
 
-  function getFCMAddress(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external view override returns (address) {
+  function getFCMAddress(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external view override returns (address) {
     uint8 yieldBearingProtocolID = IRateOracle(_rateOracle).underlyingYieldBearingProtocolID();
     require(masterFCMs[yieldBearingProtocolID] != address(0), "master FCM must be set");
-    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
+    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing);
     return masterFCMs[yieldBearingProtocolID].predictDeterministicAddress(salt);
   }
 
-  function deployIrsInstance(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external override onlyOwner returns (address marginEngineProxy, address vammProxy, address fcmProxy) {
-    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
+  function deployIrsInstance(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (address marginEngineProxy, address vammProxy, address fcmProxy) {
+    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing);
     IMarginEngine marginEngine = IMarginEngine(masterMarginEngine.cloneDeterministic(salt));
     IVAMM vamm = IVAMM(masterVAMM.cloneDeterministic(salt));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
-    vamm.initialize(address(marginEngine));
+    vamm.initialize(address(marginEngine), _tickSpacing);
     marginEngine.setVAMM(address(vamm));
 
     uint8 yieldBearingProtocolID = IRateOracle(_rateOracle).underlyingYieldBearingProtocolID();

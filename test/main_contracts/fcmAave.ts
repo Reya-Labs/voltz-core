@@ -138,11 +138,6 @@ describe("VAMM", () => {
 
       await vammTest.initializeVAMM(TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString());
 
-      await vammTest.setMaxLiquidityPerTick(
-        getMaxLiquidityPerTick(TICK_SPACING)
-      );
-      await vammTest.setTickSpacing(TICK_SPACING);
-
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0"));
 

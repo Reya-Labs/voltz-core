@@ -67,11 +67,14 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     deployer = msg.sender;
   }
 
-  function initialize(address _marginEngineAddress) external override initializer {
+  function initialize(address _marginEngineAddress, int24 _tickSpacing) external override initializer {
     require(_marginEngineAddress != address(0), "ME must be set");
     marginEngine = IMarginEngine(_marginEngineAddress);
     rateOracle = marginEngine.rateOracle();
     factory = IFactory(msg.sender);
+    tickSpacing = _tickSpacing;
+    maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
+
     __Ownable_init();
     __Pausable_init();
   }
@@ -130,17 +133,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     vammVars.feeProtocol = feeProtocol;
     emit SetFeeProtocol(Time.blockTimestampScaled(), address(marginEngine), feeProtocol);
   }
-
-  function setTickSpacing(int24 _tickSpacing) external override onlyOwner lock {
-    tickSpacing = _tickSpacing;
-    emit SetTickSpacing(Time.blockTimestampScaled(), address(marginEngine), tickSpacing);
-  }
-
-  function setMaxLiquidityPerTick(uint128 _maxLiquidityPerTick) external override onlyOwner lock {
-    maxLiquidityPerTick = _maxLiquidityPerTick;
-    emit MaxLiquidityPerTickSet(Time.blockTimestampScaled(), address(marginEngine), maxLiquidityPerTick);
-  }
-
+  
   function setFee(uint256 _feeWad) external override onlyOwner lock {
     feeWad = _feeWad;
     emit FeeSet(Time.blockTimestampScaled(), address(marginEngine), feeWad);

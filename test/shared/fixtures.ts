@@ -23,6 +23,7 @@ import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 
 import { toBn } from "evm-bn";
 import { e2eParameters } from "../end_to_end/general_setup/e2eSetup";
+import { TICK_SPACING } from "./utilities";
 const { provider } = waffle;
 
 export async function mockATokenFixture(_aaveLendingPoolAddress: string, _underlyingAsset: string) {
@@ -233,14 +234,16 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     token.address,
     rateOracleTest.address,
     termStartTimestampBN,
-    termEndTimestampBN
+    termEndTimestampBN,
+    TICK_SPACING
   );
   
   const marginEngineAddress = await factory.getMarginEngineAddress(
     token.address,
     rateOracleTest.address,
     termStartTimestampBN,
-    termEndTimestampBN
+    termEndTimestampBN,
+    TICK_SPACING
   );
   const marginEngineTestFactory = await ethers.getContractFactory(
     "TestMarginEngine"
@@ -253,7 +256,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     token.address,
     rateOracleTest.address,
     termStartTimestampBN,
-    termEndTimestampBN
+    termEndTimestampBN,
+    TICK_SPACING
   );
   const vammTestFactory = await ethers.getContractFactory("TestVAMM");
   const vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
@@ -262,7 +266,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     token.address,
     rateOracleTest.address,
     termStartTimestampBN,
-    termEndTimestampBN
+    termEndTimestampBN,
+    TICK_SPACING
   );
   const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
   const fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
