@@ -822,8 +822,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 }
             }
 
-            localVars.scenario1MarginRequirement = getTraderMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
-            localVars.scenario2MarginRequirement = getTraderMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
+            localVars.scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
+            localVars.scenario2MarginRequirement = getMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
 
             if (localVars.scenario1MarginRequirement > localVars.scenario2MarginRequirement) {
                 return localVars.scenario1MarginRequirement;
@@ -833,7 +833,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         } else {
             // directly get the trader margin requirement
-            return getTraderMarginRequirement(position.fixedTokenBalance, position.variableTokenBalance, isLM, sqrtPriceX96);
+            return getMarginRequirement(position.fixedTokenBalance, position.variableTokenBalance, isLM, sqrtPriceX96);
         }
         
     }
@@ -862,13 +862,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
     /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
-    function getTraderMarginRequirement(
+    function getMarginRequirement(
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         bool isLM,
         uint160 sqrtPriceX96
     ) internal returns (uint256 margin) {    
-        margin = _getTraderMarginRequirement(
+        margin = _getMarginRequirement(
             fixedTokenBalance,
             variableTokenBalance,
             isLM
@@ -881,12 +881,15 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             sqrtPriceX96
         );
 
+        Printer.printUint256(" normal margin", margin);
+        Printer.printUint256("minimum margin", minimumMarginRequirement);
+
         if (margin < minimumMarginRequirement) {
             margin = minimumMarginRequirement;
         }
     }
 
-    function _getTraderMarginRequirement(
+    function _getMarginRequirement(
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         bool isLM
@@ -1030,7 +1033,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 updatedFixedTokenBalance = fixedTokenBalance +
             fixedTokenDelta;
 
-        margin = _getTraderMarginRequirement(
+        margin = _getMarginRequirement(
             updatedFixedTokenBalance,
             updatedVariableTokenBalance,
             isLM);

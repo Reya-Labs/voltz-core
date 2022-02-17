@@ -38,8 +38,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const liquidityDeltaBn = toBn(liquidityDelta.toString());
         const positionInfo = await this.marginEngineTest.getPosition(p[0], p[1], p[2]);
 
-        console.log("here?");
-
         await this.marginEngineTest.getCounterfactualMarginRequirementTest(
           p[0],
           p[1],
@@ -57,11 +55,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           p[0], p[1], p[2], positionMarginRequirement.add(toBn("1"))
         );
 
-        console.log("here?");
-
         await this.e2eSetup.mint(p[0], p[1], p[2], liquidityDeltaBn);
-
-        console.log("here?");
       }
 
       if (action === 2) {
