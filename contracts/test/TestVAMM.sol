@@ -46,8 +46,4 @@ contract TestVAMM is VAMM {
     function getCurrentTick() external view returns (int24 currentTick) {
         return vammVars.tick;
     }
-
-    function getGasLeft() external view returns (uint256 gas) {
-        return gasleft();
-    }
 }

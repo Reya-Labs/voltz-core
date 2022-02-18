@@ -30,6 +30,7 @@ import {
   TestVAMM,
   TickMathTest,
 } from "../../typechain";
+import snapshotGasCost from "../shared/snapshotGasCost";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
@@ -166,6 +167,29 @@ describe("MarginCalculator", () => {
           margin_engine_params
         )
       ).to.eq("24278147968583284");
+    });
+
+    it("correctly computes the Upper APY Bound", async () => {
+      const currentTimestamp = await getCurrentTimestamp(provider);
+
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp + 604800).toString() // add a week
+      );
+
+      const currentTimestampScaled = toBn(currentTimestamp.toString());
+
+      const historicalApy: BigNumber = toBn("0.02");
+      const isUpper: boolean = true;
+
+      const tx = testMarginCalculator.computeApyBound(
+        termEndTimestampScaled,
+        currentTimestampScaled,
+        historicalApy,
+        isUpper,
+        margin_engine_params
+      );
+
+      await snapshotGasCost(tx);
     });
 
     // passes

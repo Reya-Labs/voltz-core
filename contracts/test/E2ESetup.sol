@@ -35,6 +35,8 @@ contract Actor {
 }
 
 contract E2ESetup {
+    uint256 keepInMindGas;
+
     struct UniqueIdentifiersPosition {
         address owner;
         int24 tickLower;
@@ -95,6 +97,8 @@ contract E2ESetup {
         uint128 amount
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
+
+        uint256 gasBefore = gasleft();
         Actor(recipient).mint(
             VAMMAddress,
             recipient,
@@ -102,6 +106,7 @@ contract E2ESetup {
             tickUpper,
             amount
         );
+        keepInMindGas = gasBefore - gasleft();
 
         if (!continuousInvariants()) {
             revert("Invariants do not hold");
@@ -115,6 +120,8 @@ contract E2ESetup {
         uint128 amount
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
+
+        uint256 gasBefore = gasleft();
         Actor(recipient).burn(
             VAMMAddress,
             recipient,
@@ -122,6 +129,7 @@ contract E2ESetup {
             tickUpper,
             amount
         );
+        keepInMindGas = gasBefore - gasleft();
 
         if (!continuousInvariants()) {
             revert("Invariants do not hold");
@@ -134,7 +142,10 @@ contract E2ESetup {
             params.tickLower,
             params.tickUpper
         );
+        
+        uint256 gasBefore = gasleft();
         Actor(params.recipient).swap(VAMMAddress, params);
+        keepInMindGas = gasBefore - gasleft();
 
         if (!continuousInvariants()) {
             revert("Invariants do not hold");
@@ -148,7 +159,10 @@ contract E2ESetup {
         int256 marginDelta
     ) public {
         this.addPosition(_owner, tickLower, tickUpper);
+
+        uint256 gasBefore = gasleft();
         IMarginEngine(MEAddress).updatePositionMargin(_owner, tickLower, tickUpper, marginDelta);
+        keepInMindGas = gasBefore - gasleft();
         initialCashflow += marginDelta;
 
         if (!continuousInvariants()) {
@@ -228,5 +242,9 @@ contract E2ESetup {
         }
 
         return true;
+    }
+
+    function getGasConsumedAtLastTx() external view returns (uint256) {
+        return keepInMindGas;
     }
 }
