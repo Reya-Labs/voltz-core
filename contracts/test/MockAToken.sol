@@ -101,7 +101,6 @@ contract MockAToken is IAToken, ERC20 {
         return previousBalance == 0;
     }
 
-    // AB: only lending pool modifier removed from the original AToken implementation
     /**
      * @dev Burns aTokens from `user` and sends the equivalent amount of underlying to `receiverOfUnderlying`
      * - Only callable by the LendingPool, as extra state updates there need to be managed
@@ -115,7 +114,7 @@ contract MockAToken is IAToken, ERC20 {
         address receiverOfUnderlying,
         uint256 amount,
         uint256 index
-    ) external override {
+    ) external override onlyLendingPool {
         uint256 amountScaled = amount.rayDiv(index);
         require(amountScaled != 0, "CT_INVALID_BURN_AMOUNT");
         _burn(user, amountScaled);

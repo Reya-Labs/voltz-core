@@ -88,7 +88,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
     AaveDataTypes.ReserveData storage reserve = _reserves[asset];
     address aToken = reserve.aTokenAddress;
 
-    uint256 userBalance = IAToken(aToken).balanceOf(msg.sender);
+    uint256 userBalance = IERC20Minimal(aToken).balanceOf(msg.sender);
 
     uint256 amountToWithdraw = amount;
 

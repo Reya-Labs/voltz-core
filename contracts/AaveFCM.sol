@@ -81,9 +81,18 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     __Pausable_init();
   }
 
+  event InitiateFullyCollateralisedSwap(
+    uint256 marginInScaledYieldBearingTokens,
+    int256 fixedTokenBalance,
+    int256 variableTokenBalance
+  );
+  
   function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override {
 
     require(notional!=0, "notional = 0");
+
+    /// @audit add support for approvals and recipient
+    // add cumulative fees to the swap event in the core?
 
     int24 tickSpacing = vamm.tickSpacing();
 
@@ -116,6 +125,8 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     // transfer fees to the margin engine (in terms of the underlyingToken e.g. aUSDC)
     underlyingToken.safeTransferFrom(msg.sender, address(marginEngine), cumulativeFeeIncurred);
 
+    emit InitiateFullyCollateralisedSwap(trader.marginInScaledYieldBearingTokens, trader.fixedTokenBalance, trader.variableTokenBalance);
+
   }
 
   function getTraderMarginInYieldBearingTokens(TraderWithYieldBearingAssets.Info storage trader) internal view returns (uint256 marginInYieldBearingTokens) {
@@ -124,6 +135,8 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   }
 
   function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override {
+    
+    // add require statement and isApproval
     
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
@@ -240,6 +253,8 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
       trader.updateMarginInScaledYieldBearingTokens(updatedTraderMarginInScaledYieldBearingTokens);
     }
 
+    // if settlement happens late, additional variable yield beyond maturity will accrue to the trader
+
     uint256 traderMarginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(trader);
     trader.updateMarginInScaledYieldBearingTokens(0);    
     underlyingYieldBearingToken.safeTransfer(msg.sender, traderMarginInYieldBearingTokens);
@@ -248,13 +263,8 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
   function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine override {
     /// @audit if aave's reserves are depleted the withdraw operation below will fail, in that scenario need to either withdraw as much as possible or transfer aTokens directly
-    withdrawUnderlying();
-    underlyingToken.safeTransfer(_account, marginDeltaInUnderlyingTokens);
+    aaveLendingPool.withdraw(address(underlyingToken), marginDeltaInUnderlyingTokens, _account);
   }
 
-  function withdrawUnderlying() public onlyAfterMaturity {
-    uint256 aTokenBalanceOfFCM = underlyingYieldBearingToken.balanceOf(address(this));
-    aaveLendingPool.withdraw(address(underlyingToken), aTokenBalanceOfFCM, address(this));
-  }
 
 }
