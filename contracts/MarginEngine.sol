@@ -205,7 +205,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                          int24 tickLower,
                          int24 tickUpper)
         external override view returns (Position.Info memory position) {
-            /// @audit update position to account for fees
+            /// Costin: update position to account for fees?
             return positions.get(_owner, tickLower, tickUpper);
     }
 

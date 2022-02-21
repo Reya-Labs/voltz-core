@@ -42,6 +42,11 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   IFactory public override factory;
 
+
+  uint256 internal termStartTimestampWad;
+  uint256 internal termEndTimestampWad;
+
+
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
   modifier lock() {
@@ -55,8 +60,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
-    /// @audit Can't we "cache" the start/end timestamps from the margin engine in the VAMM to avoid these calls to the margin engine?
-    if (Time.isCloseToMaturityOrBeyondMaturity(marginEngine.termEndTimestampWad())) {
+    if (Time.isCloseToMaturityOrBeyondMaturity(termEndTimestampWad)) {
       revert("closeToOrBeyondMaturity");
     }
     _;
@@ -75,6 +79,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     factory = IFactory(msg.sender);
     tickSpacing = _tickSpacing;
     maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
+    termStartTimestampWad = marginEngine.termStartTimestampWad();
+    termEndTimestampWad = marginEngine.termEndTimestampWad();
 
     __Ownable_init();
     __Pausable_init();
@@ -384,7 +390,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         state.liquidity,
         state.amountSpecifiedRemaining,
         feeWad,
-        marginEngine.termEndTimestampWad() - Time.blockTimestampScaled()
+        termEndTimestampWad - Time.blockTimestampScaled()
       );
 
       if (params.amountSpecified > 0) {
@@ -422,8 +428,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       // update global fee tracker
       if (state.liquidity > 0) {
         uint256 variableFactorWad = rateOracle.variableFactor(
-          marginEngine.termStartTimestampWad(),
-          marginEngine.termEndTimestampWad()
+          termStartTimestampWad,
+          termEndTimestampWad
         );
 
         (
@@ -436,8 +442,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
           state,
           step,
           variableFactorWad,
-          marginEngine.termStartTimestampWad(),
-          marginEngine.termEndTimestampWad()
+          termStartTimestampWad,
+          termEndTimestampWad
         );
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
