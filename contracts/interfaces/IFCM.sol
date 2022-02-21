@@ -5,8 +5,6 @@ pragma solidity ^0.8.0;
 import "./IMarginEngine.sol";
 
 interface IFCM {
-    
-
     /// @notice Initiate a Fully Collateralised Fixed Taker Swap
     /// @param notional amount of notional (in terms of the underlying token) to trade
     /// @param sqrtPriceLimitX96 the sqrtPriceLimit (in binary fixed point math notation) beyond which swaps won't be executed
@@ -18,7 +16,6 @@ interface IFCM {
         uint160 sqrtPriceLimitX96
     ) external;
 
-
     /// @notice Unwind a Fully Collateralised Fixed Taker Swap
     /// @param notionalToUnwind The amount of notional of the original Fully Collateralised Fixed Taker swap to be unwound at the current VAMM fixed rates
     /// @param sqrtPriceLimitX96 the sqrtPriceLimit (in binary fixed point math notation) beyond which the unwind swaps won't be executed
@@ -29,11 +26,10 @@ interface IFCM {
         uint160 sqrtPriceLimitX96
     ) external;
 
-
     /// @notice Settle Trader
     /// @dev this function in the fcm let's traders settle with the MarginEngine based on their settlement cashflows which is a functon of their fixed and variable token balances
     function settleTrader() external;
-    
+
     /// @notice
     /// @param _account address of the position owner from the MarginEngine who wishes to settle with the FCM in underlying tokens
     /// @param marginDeltaInUnderlyingTokens amount in terms of underlying tokens that needs to be settled with the trader from the MarginEngine
