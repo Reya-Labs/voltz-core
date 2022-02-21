@@ -142,7 +142,7 @@ interface IMarginEngine is IPositionStructs {
     /// @return The underlying ERC20 token (e.g. USDC)
     function underlyingToken() external view returns (IERC20Minimal);
 
-    /// @notice The rateOracle contract which lets the protocol access historical apys in the yield bearing pools it is built on top of 
+    /// @notice The rateOracle contract which lets the protocol access historical apys in the yield bearing pools it is built on top of
     /// @return The underlying ERC20 token (e.g. USDC)
     function rateOracle() external view returns (IRateOracle);
 
@@ -177,14 +177,12 @@ interface IMarginEngine is IPositionStructs {
     ) external;
 
     // view functions
-    
-    
+
     /// @notice The liquidator Reward Percentage (in Wad)
     /// @dev liquidatorReward (in wad) is the percentage of the margin (of a liquidated position) that is sent to the liquidator
     /// @dev following a successful liquidation that results in a trader/position unwind; example value:  2 * 10**16 => 2% of position margin is used to cover liquidator reward
     /// @return Liquidator Reward in Wad
     function liquidatorRewardWad() external view returns (uint256);
-    
 
     /// @notice VAMM (Virtual Automated Market Maker) linked to the MarginEngine
     /// @dev The VAMM is responsible for pricing only (determining the effective fixed rate at which a given Interest Rate Swap notional will be executed)
@@ -207,7 +205,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev The look-back window is seconds from the current timestamp
     /// @dev This value is only settable by the the Factory owner and may be unique for each MarginEngine
     /// @dev When setting secondAgo, the setter needs to take into consideration the underlying volatility of the APYs in the reference yield-bearing pool (e.g. Aave v2 USDC)
-    function secondsAgo() external view returns (uint256); 
+    function secondsAgo() external view returns (uint256);
 
     // non-view functions
 
@@ -216,16 +214,14 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Can only be set by the Factory Owner
     function setSecondsAgo(uint256 _secondsAgo) external;
 
-    /// @notice Sets marginCalculatorParameteres 
+    /// @notice Sets marginCalculatorParameteres
     /// @dev marginCalculatorParameteres is of type MarginCalculatorParameters (refer to the definition of the struct for elaboration on what each parameter means)
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory _marginCalculatorParameters
     ) external;
-    
 
     /// @notice Sets the liquidator reward: proportion of liquidated position's margin paid as a reward to the liquidator
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external;
-
 
     /// @notice updates the margin account of a position which can be uniquily identified with its _owner, tickLower, tickUpper
     /// @dev if the position has positive liquidity then before the margin update, we call the updatePositionTokenBalancesAndAccountForFees functon that calculates up to date
@@ -280,7 +276,6 @@ interface IMarginEngine is IPositionStructs {
         IPositionStructs.ModifyPositionParams memory params
     ) external;
 
-
     // @notive Update a position post VAMM induced swap
     /// @dev Since every position can also engage in swaps with the VAMM, this function needs to be invoked after non-external calls are made to the VAMM's swap function
     /// @dev This purpose of this function is to:
@@ -308,10 +303,10 @@ interface IMarginEngine is IPositionStructs {
 
     /// @notice sets the Full Collateralisation Module
     function setFCM(address _fcm) external;
-    
+
     /// @notice transfers margin in terms of underlying tokens to a trader from the Full Collateralisation Module
     /// @dev post maturity date of the MarginEngine, the traders from the Full Collateralisation module will be able to settle with the MarginEngine
-    /// @dev to ensure their fixed yield is guaranteed, in order to collect the funds from the MarginEngine, the FCM needs to invoke the transferMarginToFCMTrader function whcih is only callable by the FCM attached to a particular Margin Engine 
+    /// @dev to ensure their fixed yield is guaranteed, in order to collect the funds from the MarginEngine, the FCM needs to invoke the transferMarginToFCMTrader function whcih is only callable by the FCM attached to a particular Margin Engine
     function transferMarginToFCMTrader(address _account, uint256 marginDelta)
         external;
 }
