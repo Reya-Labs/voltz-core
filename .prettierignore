@@ -5,4 +5,3 @@ coverage*
 gasReporterOutput.json
 typechain
 docs
-test

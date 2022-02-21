@@ -195,10 +195,15 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   }
 
   
+  /// @notice Check Margin Requirement post unwind of a fully collateralised fixed taker
   function checkMarginRequirement(TraderWithYieldBearingAssets.Info storage trader) internal {
   
     // variable token balance should never be positive
-    // margin should cover the variable leg from now to maturity
+    // margin in scaled tokens should cover the variable leg from now to maturity
+
+    /// @dev we can be confident the variable token balance of a fully collateralised fixed taker is always going to be negative (or zero)
+    /// @dev hence, we can assume that the variable cashflows from now to maturity is covered by a portion of the trader's collateral in yield bearing tokens 
+    /// @dev one future variable cashflows are covered, we need to check if the remaining settlement cashflow is covered by the remaining margin in yield bearing tokens
 
     uint256 marginToCoverVariableLegFromNowToMaturity = uint256(trader.variableTokenBalance);
     uint256 marginToCoverRemainingSettlementCashflow = getTraderMarginInYieldBearingTokens(trader) - marginToCoverVariableLegFromNowToMaturity;
@@ -215,6 +220,8 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
   }
 
+
+  /// @notice Calculate remaining settlement cashflow
   function calculateRemainingSettlementCashflow(TraderWithYieldBearingAssets.Info storage trader) internal returns (int256 remainingSettlementCashflow) {
     
     int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(trader.fixedTokenBalance);
@@ -223,6 +230,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
         trader.variableTokenBalance
     );
 
+    /// @dev fixed cashflow based on the full term of the margin engine
     int256 fixedCashflowWad = PRBMathSD59x18.mul(
       fixedTokenBalanceWad,
       int256(
@@ -235,11 +243,13 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
       marginEngine.termEndTimestampWad()
     ));
     
+    /// @dev variable cashflow based on the term from start to now since the cashflow from now to maturity is fully collateralised by the yield bearing tokens
     int256 variableCashflowWad = PRBMathSD59x18.mul(
       variableTokenBalanceWad,
       variableFactorFromTermStartTimestampToNow
     );
 
+    /// @dev the total cashflows as a sum of fixed and variable cashflows
     int256 cashflowWad = fixedCashflowWad + variableCashflowWad;
 
     /// @dev convert back to non-fixed point representation
@@ -254,7 +264,12 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     _;
   }
 
-  // only after maturity
+  /// @notice Settle Trader
+  /// @dev This function lets us settle a fully collateralised fixed taker position post term end timestamp of the MarginEngine
+  /// @dev the settlement cashflow is calculated by invoking the calculateSettlementCashflow function of FixedAndVariableMath.sol (based on the fixed and variable token balance)
+  /// @dev if the settlement cashflow of the trader is positive, then the settleTrader() function invokes the transferMarginToFCMTrader function of the MarginEngine which transfers the settlement cashflow the trader in terms of the underlying tokens
+  /// @dev if settlement cashflow of the trader is negative, we need to update trader's margin in terms of scaled yield bearing tokens to account the settlement casflow
+  /// @dev once settlement cashflows are accounted for, we safeTransfer the scaled yield bearing tokens in the margin account of the trader back to their wallet address
   function settleTrader() external override onlyAfterMaturity { 
     
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
@@ -280,6 +295,9 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     trader.settleTrader();
   }
 
+
+  /// @notice Transfer Margin (in underlying tokens) from the FCM to a MarginEngine trader
+  /// @dev in case of aave this is done by withdrawing aTokens from the aaveLendingPools resulting in burning of the aTokens in exchange for the ability to transfer underlying tokens to the margin engine trader
   function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine override {
     /// if aave's reserves are depleted the withdraw operation below will fail, in that scenario need to either withdraw as much as possible or transfer aTokens directly
     aaveLendingPool.withdraw(address(underlyingToken), marginDeltaInUnderlyingTokens, _account);
