@@ -46,7 +46,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   uint256 internal termStartTimestampWad;
   uint256 internal termEndTimestampWad;
 
-
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
   modifier lock() {
@@ -98,7 +97,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   uint256 public override protocolFees;
 
-  // address public override marginEngineAddress;
   IMarginEngine public override marginEngine;
 
   

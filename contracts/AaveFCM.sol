@@ -18,7 +18,6 @@ import "./aave/AaveDataTypes.sol";
 import "./core_libraries/SafeTransferLib.sol";
 
 // optional: margin topup function (in terms of yield bearing tokens)
-// introduce approvals 
 
 contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
@@ -59,6 +58,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
   }
   
+  /// @dev modifier which checks if the msg.sender is not equal to the address of the MarginEngine, if that's the case, a revert is raised
   modifier onlyMarginEngine () {
     if (msg.sender != address(marginEngine)) {
         revert OnlyMarginEngine();
@@ -66,7 +66,9 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     _;
   }
   
+  /// @dev in the initialize function we set the vamm and the margiEngine associated with the fcm
   function initialize(address _vammAddress, address _marginEngineAddress) external override initializer {
+    /// @dev we additionally cache the rateOracle, aaveLendingPool, underlyingToken, underlyingYieldBearingToken
     vamm = IVAMM(_vammAddress);
     marginEngine = IMarginEngine(_marginEngineAddress);
     rateOracle = marginEngine.rateOracle();
@@ -86,19 +88,21 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     int256 variableTokenBalance
   );
   
-  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override {
 
-    // rayDiv only works with Ray values
-    // consider converting wad to ray and ray to wad?
+  /// @notice Initiate a Fully Collateralised Fixed Taker Swap
+  /// @param notional Notional that cover by a fully collateralised fixed taker interest rate swap
+  /// @param sqrtPriceLimitX96 The binary fixed point math representation of the sqrtPriceLimit beyond which the fixed taker swap will not be executed with the VAMM
+  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override {
     
     require(notional!=0, "notional = 0");
-
-    /// add support for approvals and recipient
-    // add cumulative fees to the swap event in the core?
+ 
+    /// add support for approvals and recipient (similar to how it is implemented in the MarginEngine)
 
     int24 tickSpacing = vamm.tickSpacing();
 
     // initiate a swap
+    // the default tick range for a Position associated with the FCM is tickLower: -tickSpacing and tickUpper: tickSpacing
+    // isExternal is true since the state updates following a VAMM insuced swap are done in the FCM (below)
     IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: address(this),
         amountSpecified: int256(notional),
@@ -110,7 +114,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
     (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) = vamm.swap(params);
 
-    // deposit notional executed in terms of aTokens (e.g. aUSDC)
+    // deposit notional executed in terms of aTokens (e.g. aUSDC) to fully collateralise your position
     underlyingYieldBearingToken.safeTransferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
@@ -121,7 +125,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
     
     // update trader fixed and variable token balances
-
     trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
     // transfer fees to the margin engine (in terms of the underlyingToken e.g. aUSDC)
@@ -131,22 +134,34 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
   }
 
+  /// @notice Get Trader Margin In Yield Bearing Tokens
+  /// @dev this function takes the scaledBalance associated with a trader and multiplies it by the current Reserve Normalised Income to get the balance (margin) in terms of the underlying token
+  /// @param trader The TraderWithYieldBearingAssets.Info object that stores the data about the scaled tokens balances of the trader's margin account 
   function getTraderMarginInYieldBearingTokens(TraderWithYieldBearingAssets.Info storage trader) internal view returns (uint256 marginInYieldBearingTokens) {
     uint256 currentRNI = aaveLendingPool.getReserveNormalizedIncome(address(marginEngine.underlyingToken()));
     marginInYieldBearingTokens = trader.marginInScaledYieldBearingTokens.rayMul(currentRNI);
   }
 
+
+  /// @notice Unwind Fully Collateralised Fixed Taker Swap
+  /// @param notionalToUnwind The amount of notional to unwind (stop securing with a fixed rate)
+  /// @param sqrtPriceLimitX96 The sqrt price limit (binary fixed point notation) beyond which the unwind cannot progress
   function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override {
     
     // add require statement and isApproval
     
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
+    /// @dev it is impossible to unwind more variable token exposure than the user already has
+    /// @dev hencel, the notionalToUnwind needs to be <= absolute value of the variable token balance of the trader
     require(uint256(-trader.variableTokenBalance) >= notionalToUnwind, "notional to unwind > notional");
 
+    /// retrieve the tick spacing of the VAMM
     int24 tickSpacing = vamm.tickSpacing();
 
     // initiate a swap
+    /// @dev as convention, specify the tickLower to be equal to -tickSpacing and tickUpper to be equal to tickSpacing
+    // since the unwind is in the Variable Taker direction, the amountSpecified needs to be exact output => needs to be negative = -int256(notionalToUnwind),
     IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: address(this),
         amountSpecified: -int256(notionalToUnwind),
@@ -174,12 +189,14 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens - uint256(variableTokenDelta).rayDiv(currentRNI);
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
 
+    // check the margin requirement of the trader post unwind, if the current balances still support the unwind, they it can happen, otherwise the unwind will get reverted
     checkMarginRequirement(trader);
 
   }
 
   
   function checkMarginRequirement(TraderWithYieldBearingAssets.Info storage trader) internal {
+  
     // variable token balance should never be positive
     // margin should cover the variable leg from now to maturity
 
