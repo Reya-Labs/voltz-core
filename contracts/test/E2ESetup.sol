@@ -35,6 +35,8 @@ contract Actor {
 }
 
 contract E2ESetup {
+    uint256 keepInMindGas;
+
     struct UniqueIdentifiersPosition {
         address owner;
         int24 tickLower;
@@ -95,6 +97,8 @@ contract E2ESetup {
         uint128 amount
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
+
+        uint256 gasBefore = gasleft();
         Actor(recipient).mint(
             VAMMAddress,
             recipient,
@@ -102,10 +106,9 @@ contract E2ESetup {
             tickUpper,
             amount
         );
+        keepInMindGas = gasBefore - gasleft();
 
-        if (!continuousInvariants()) {
-            revert("Invariants do not hold");
-        }
+        continuousInvariants();
     }
 
     function burn(
@@ -115,6 +118,8 @@ contract E2ESetup {
         uint128 amount
     ) public {
         this.addPosition(recipient, tickLower, tickUpper);
+
+        uint256 gasBefore = gasleft();
         Actor(recipient).burn(
             VAMMAddress,
             recipient,
@@ -122,10 +127,9 @@ contract E2ESetup {
             tickUpper,
             amount
         );
+        keepInMindGas = gasBefore - gasleft();
 
-        if (!continuousInvariants()) {
-            revert("Invariants do not hold");
-        }
+        continuousInvariants();
     }
 
     function swap(IVAMM.SwapParams memory params) public {
@@ -134,11 +138,12 @@ contract E2ESetup {
             params.tickLower,
             params.tickUpper
         );
+        
+        uint256 gasBefore = gasleft();
         Actor(params.recipient).swap(VAMMAddress, params);
+        keepInMindGas = gasBefore - gasleft();
 
-        if (!continuousInvariants()) {
-            revert("Invariants do not hold");
-        }
+        continuousInvariants();
     }
 
     function updatePositionMargin(
@@ -148,15 +153,16 @@ contract E2ESetup {
         int256 marginDelta
     ) public {
         this.addPosition(_owner, tickLower, tickUpper);
+
+        uint256 gasBefore = gasleft();
         IMarginEngine(MEAddress).updatePositionMargin(_owner, tickLower, tickUpper, marginDelta);
+        keepInMindGas = gasBefore - gasleft();
         initialCashflow += marginDelta;
 
-        if (!continuousInvariants()) {
-            revert("Invariants do not hold");
-        }
+        continuousInvariants();
     }
 
-    function continuousInvariants() public returns (bool) {
+    function continuousInvariants() public {
         int256 totalFixedTokens = 0;
         int256 totalVariableTokens = 0;
         int256 totalCashflow = 0;
@@ -209,24 +215,21 @@ contract E2ESetup {
 
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);
-        Printer.printInt256("    initialCashflow:", initialCashflow);
-        Printer.printInt256("      totalCashflow:", totalCashflow);
+        Printer.printInt256("      deltaCashflow:", totalCashflow - initialCashflow);
         Printer.printEmptyLine();
 
         // ideally, this should be 0
-        uint256 approximation = 100000;
-        if (abs(totalFixedTokens) > approximation) {
-            return false;
-        }
+        int256 approximation = 100000;
 
-        if (abs(totalVariableTokens) > approximation) {
-            return false;
-        }
+        Printer.printUint256("      app:", uint256(approximation));
 
-        if (abs(totalCashflow - initialCashflow) > approximation) {
-            return false;
-        }
+        require(abs(totalFixedTokens) < uint256(approximation), "fixed tokens don't net out");
+        require(abs(totalVariableTokens) < uint256(approximation), "variable tokens don't net out");
+        require(initialCashflow <= totalCashflow, "system loss: undercollateralized");
+        require(totalCashflow - initialCashflow < approximation, "cashflows don't net out");
+    }
 
-        return true;
+    function getGasConsumedAtLastTx() external view returns (uint256) {
+        return keepInMindGas;
     }
 }

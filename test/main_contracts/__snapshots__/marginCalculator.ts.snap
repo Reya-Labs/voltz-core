@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MarginCalculator #computeApyBound correctly computes the Upper APY Bound 1`] = `
+Object {
+  "hex": "0x5640d8d178c674",
+  "type": "BigNumber",
+}
+`;
