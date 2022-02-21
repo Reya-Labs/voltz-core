@@ -20,7 +20,7 @@ interface IFactory {
         address masterFCMAddressOld,
         address masterFCMAddress,
         uint8 yieldBearingProtocolID
-    )
+    );
 
     function setApproval(address intAddress, bool allowIntegration) external;
 

@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1648076241
+current timestamp: 1648076700
 
 current tick: 0
 sqrt price at current tick: 1
@@ -77,7 +77,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE FIRST SWAP----------------------------
-current timestamp: 1648249050
+current timestamp: 1648249509
 
 current tick: 0
 sqrt price at current tick: 1
@@ -155,7 +155,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------AFTER FIRST SWAP----------------------------
-current timestamp: 1648249056
+current timestamp: 1648249515
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
@@ -233,7 +233,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE SECOND SWAP----------------------------
-current timestamp: 1649458669
+current timestamp: 1649459128
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
@@ -311,7 +311,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------AFTER SECOND SWAP----------------------------
-current timestamp: 1649458675
+current timestamp: 1649459134
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
@@ -389,7 +389,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------BEFORE THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1649458679
+current timestamp: 1649459138
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
@@ -467,7 +467,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------AFTER THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1649458684
+current timestamp: 1649459143
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836
@@ -545,7 +545,7 @@ variableTokenGrowthInsideLastX128: 0
 
 
 ----------------------------FINAL----------------------------
-current timestamp: 1655938702
+current timestamp: 1655939161
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836

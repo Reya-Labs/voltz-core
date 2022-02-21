@@ -40,8 +40,8 @@ contract Factory is IFactory, Ownable {
     require(_rateOracle != address(0), "rate oracle must exist");
     require(masterFCMAddress != address(0), "master fcm must exist");
 
-    address masterFCMAddressOld = masterFCMs[yieldBearingProtocolID];
     uint8 yieldBearingProtocolID = IRateOracle(_rateOracle).underlyingYieldBearingProtocolID();
+    address masterFCMAddressOld = masterFCMs[yieldBearingProtocolID];
     masterFCMs[yieldBearingProtocolID] = masterFCMAddress;
     emit MasterFCMSet(masterFCMAddressOld, masterFCMAddress, yieldBearingProtocolID);
   }
