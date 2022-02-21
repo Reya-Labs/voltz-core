@@ -11,7 +11,6 @@ import "./Position.sol";
 import "./Tick.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
-import "../utils/Printer.sol";
 import "../utils/FullMath.sol";
 import "../utils/FixedPoint96.sol";
 
@@ -311,9 +310,6 @@ library MarginCalculator {
             simulatedUnwindLocalVars.upperDWad = fixedRateDeviationMinWad;
         }
 
-        Printer.printUint256("D:", simulatedUnwindLocalVars.upperDWad);
-        Printer.printUint256("current timestamp:", currentTimestampWad);
-
         // calculate d
 
         simulatedUnwindLocalVars.scaledTimeWad = PRBMathUD60x18.div(
@@ -334,8 +330,6 @@ library MarginCalculator {
             simulatedUnwindLocalVars.upperDWad,
             uint256(simulatedUnwindLocalVars.oneMinusTimeFactorWad)
         );
-
-        Printer.printUint256("deviation:", simulatedUnwindLocalVars.dWad);
 
         // calculate cfFixedRate
         simulatedUnwindLocalVars.fixedRateCFWad;

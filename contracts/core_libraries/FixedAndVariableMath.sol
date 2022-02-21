@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathSD59x18.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./Time.sol";
-import "../utils/Printer.sol";
 
 /// @title A utility library for mathematics of fixed and variable token amounts.
 library FixedAndVariableMath {

@@ -151,7 +151,7 @@ describe("FCM", () => {
 
   });
 
-  describe("#fcm", () => {
+  describe.skip("#fcm", () => {
     beforeEach("initialize the pool at price of 1:1", async () => {
 
       await token.mint(other.address, BigNumber.from(10).pow(27));

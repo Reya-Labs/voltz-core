@@ -7,7 +7,6 @@ import "./interfaces/IVAMM.sol";
 import "./core_libraries/Position.sol";
 import "./core_libraries/MarginCalculator.sol";
 import "./utils/SafeCast.sol";
-import "./utils/Printer.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IFCM.sol";
@@ -308,7 +307,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             // Cache is stale
             _refreshHistoricalApyCache();
         }
-        Printer.printUint256("historical apy", cachedHistoricalApy);
         return cachedHistoricalApy;
     }
 
@@ -698,9 +696,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             isLM,
             sqrtPriceX96
         );
-
-        Printer.printUint256(" normal margin", margin);
-        Printer.printUint256("minimum margin", minimumMarginRequirement);
 
         if (margin < minimumMarginRequirement) {
             margin = minimumMarginRequirement;

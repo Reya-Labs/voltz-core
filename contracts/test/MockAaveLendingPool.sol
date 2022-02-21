@@ -116,8 +116,6 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
   //   emit ReserveUsedAsCollateralDisabled(asset, msg.sender);
   // }
 
-  Printer.printUint256("amountToWithdraw", amountToWithdraw);
-
   IAToken(aToken).burn(msg.sender, to, amountToWithdraw, reserve.liquidityIndex);
 
   return amountToWithdraw;

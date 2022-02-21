@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "../utils/Printer.sol";
 import "../utils/FullMath.sol";
 import "../utils/SqrtPriceMath.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
