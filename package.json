@@ -85,7 +85,8 @@
     "format:ts:check": "npx prettier '**/*.{json,js,ts,md}' --check",
     "format:check": "npm run format:sol:check && npm run format:ts:check",
     "prepare": "husky install",
-    "deploy:localhost": "npx hardhat node --tags Factory,Mocks,RateOracles --export localhostDeployment.json"
+    "deploy:localhost": "npx hardhat node --tags Factory,Mocks,RateOracles --export localhostDeployment.json",
+    "createTestIrs:localhost": "npx hardhat deploy --network localhost --tags IrsInstance"
   },
   "husky": {
     "hooks": {
