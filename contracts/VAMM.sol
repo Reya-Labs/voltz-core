@@ -55,6 +55,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
+    /// @audit Can't we "cache" the start/end timestamps from the margin engine in the VAMM to avoid these calls to the margin engine?
     if (Time.isCloseToMaturityOrBeyondMaturity(marginEngine.termEndTimestampWad())) {
       revert("closeToOrBeyondMaturity");
     }
@@ -288,25 +289,17 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     VAMMVars memory vammVarsStart = vammVars;
 
-    bool isFT;
-
-    if (params.amountSpecified > 0) {
-      // amount specified needs to be positive for an FT
-      isFT = true;
-    } else {
-      // amount specified needs to be negative for a VT
-      isFT = false;
-    }
+    // amount specified needs to be positive for an FT and negative for a VT
+    bool isFT = (params.amountSpecified > 0) ? true : false;
     
     checksBeforeSwap(params, vammVarsStart, isFT);
 
     if (params.isExternal) {
       require(msg.sender==address(marginEngine) || msg.sender==address(marginEngine.fcm()), "only ME or FCM");
-      Tick.checkTicks(params.tickLower, params.tickUpper);
     } else {
       require(msg.sender==params.recipient || factory.isApproved(params.recipient, msg.sender), "only sender or approved integration");
-      Tick.checkTicks(params.tickLower, params.tickUpper);
     }
+    Tick.checkTicks(params.tickLower, params.tickUpper);
 
     /// @dev lock the vamm while the swap is taking place
 
@@ -420,6 +413,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
+        /// @audit here we should round towards protocol fees (+ ((step.feeAmount % cache.feeProtocol == 0) ? 0 : 1)) ?
         step.feeProtocolDelta = step.feeAmount / cache.feeProtocol;
         step.feeAmount -= step.feeProtocolDelta;
         state.protocolFee += step.feeProtocolDelta;
@@ -640,7 +634,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             /// @dev if a trader is a variable taker, the fixed token growth should increase (since the LPs are receiving fixed tokens)
             /// @dev if a trader is a variable taker amountIn is in terms of variable tokens
 
-
             stateVariableTokenGrowthGlobalX128= state.variableTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
 
             /// @dev fixed token delta should be positive (for LPs)
@@ -657,7 +650,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             );
 
             stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
-
         }
     }
 

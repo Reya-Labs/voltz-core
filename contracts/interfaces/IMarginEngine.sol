@@ -67,12 +67,6 @@ interface IMarginEngine is IPositionStructs {
         uint256 liquidatorRewardWad
     );
 
-    event SettlePosition(
-        uint256 blockTimestampScaled,
-        address source,
-        Position.Info info
-    );
-
     event VAMMSet(IVAMM vammOld, IVAMM vamm);
 
     event FCMSet(IFCM fcmOld, IFCM fcm);

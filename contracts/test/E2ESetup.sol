@@ -108,9 +108,7 @@ contract E2ESetup {
         );
         keepInMindGas = gasBefore - gasleft();
 
-        if (!continuousInvariants()) {
-            revert("Invariants do not hold");
-        }
+        continuousInvariants();
     }
 
     function burn(
@@ -131,9 +129,7 @@ contract E2ESetup {
         );
         keepInMindGas = gasBefore - gasleft();
 
-        if (!continuousInvariants()) {
-            revert("Invariants do not hold");
-        }
+        continuousInvariants();
     }
 
     function swap(IVAMM.SwapParams memory params) public {
@@ -147,9 +143,7 @@ contract E2ESetup {
         Actor(params.recipient).swap(VAMMAddress, params);
         keepInMindGas = gasBefore - gasleft();
 
-        if (!continuousInvariants()) {
-            revert("Invariants do not hold");
-        }
+        continuousInvariants();
     }
 
     function updatePositionMargin(
@@ -165,12 +159,10 @@ contract E2ESetup {
         keepInMindGas = gasBefore - gasleft();
         initialCashflow += marginDelta;
 
-        if (!continuousInvariants()) {
-            revert("Invariants do not hold");
-        }
+        continuousInvariants();
     }
 
-    function continuousInvariants() public returns (bool) {
+    function continuousInvariants() public {
         int256 totalFixedTokens = 0;
         int256 totalVariableTokens = 0;
         int256 totalCashflow = 0;
@@ -223,25 +215,18 @@ contract E2ESetup {
 
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);
-        Printer.printInt256("    initialCashflow:", initialCashflow);
-        Printer.printInt256("      totalCashflow:", totalCashflow);
+        Printer.printInt256("      deltaCashflow:", totalCashflow - initialCashflow);
         Printer.printEmptyLine();
 
         // ideally, this should be 0
-        uint256 approximation = 100000;
-        if (abs(totalFixedTokens) > approximation) {
-            return false;
-        }
+        int256 approximation = 100000;
 
-        if (abs(totalVariableTokens) > approximation) {
-            return false;
-        }
+        Printer.printUint256("      app:", uint256(approximation));
 
-        if (abs(totalCashflow - initialCashflow) > approximation) {
-            return false;
-        }
-
-        return true;
+        require(abs(totalFixedTokens) < uint256(approximation), "fixed tokens don't net out");
+        require(abs(totalVariableTokens) < uint256(approximation), "variable tokens don't net out");
+        require(initialCashflow <= totalCashflow, "system loss: undercollateralized");
+        require(totalCashflow - initialCashflow < approximation, "cashflows don't net out");
     }
 
     function getGasConsumedAtLastTx() external view returns (uint256) {

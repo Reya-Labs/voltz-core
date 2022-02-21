@@ -30,7 +30,6 @@ import {
   TestVAMM,
   TickMathTest,
 } from "../../typechain";
-import snapshotGasCost from "../shared/snapshotGasCost";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
@@ -181,15 +180,13 @@ describe("MarginCalculator", () => {
       const historicalApy: BigNumber = toBn("0.02");
       const isUpper: boolean = true;
 
-      const tx = testMarginCalculator.computeApyBound(
+      await testMarginCalculator.computeApyBound(
         termEndTimestampScaled,
         currentTimestampScaled,
         historicalApy,
         isUpper,
         margin_engine_params
       );
-
-      await snapshotGasCost(tx);
     });
 
     // passes

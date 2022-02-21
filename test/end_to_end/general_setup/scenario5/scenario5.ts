@@ -43,8 +43,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       -TICK_SPACING
     );
 
-    let gasForSwap = toBn("0");
-        await this.e2eSetup.swap({
+    await this.e2eSetup.swap({
           recipient: this.positions[0][0],
           amountSpecified: toBn("-1000"),
           sqrtPriceLimitX96: sqrtPriceLimit,
@@ -54,9 +53,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         });
 
     console.log("gas consumed for swap: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
-    gasForSwap = gasForSwap.add(await this.e2eSetup.getGasConsumedAtLastTx());
-
-    console.log("gas consumed for swaps in average: ", (gasForSwap).toString());
 
     await this.advanceAndUpdateApy(consts.ONE_DAY.mul(25), 1, 1.0015);
 
@@ -71,7 +67,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   }
 }
 
-it("scenario 5", async () => {
+it.skip("scenario 5", async () => {
   console.log("scenario", 5);
   const e2eParams = e2eScenarios[5];
   const scenario = new ScenarioRunnerInstance(
