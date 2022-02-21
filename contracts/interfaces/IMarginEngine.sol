@@ -214,7 +214,8 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Can only be set by the Factory Owner
     function setSecondsAgo(uint256 _secondsAgo) external;
 
-    /// @notice Sets marginCalculatorParameteres
+    /// @notice Set the MarginCalculatorParameters (each margin engine can have its own custom set of margin calculator parameters)
+    /// @param _marginCalculatorParameters the MarginCalculatorParameters to set
     /// @dev marginCalculatorParameteres is of type MarginCalculatorParameters (refer to the definition of the struct for elaboration on what each parameter means)
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory _marginCalculatorParameters
@@ -309,4 +310,8 @@ interface IMarginEngine is IPositionStructs {
     /// @dev to ensure their fixed yield is guaranteed, in order to collect the funds from the MarginEngine, the FCM needs to invoke the transferMarginToFCMTrader function whcih is only callable by the FCM attached to a particular Margin Engine
     function transferMarginToFCMTrader(address _account, uint256 marginDelta)
         external;
+
+    /// @notice Sets the maximum age that the cached historical APY value
+    /// @param _cacheMaxAgeInSeconds The new maximum age that the historical APY cache can be before being considered stale
+    function setCacheMaxAgeInSeconds(uint256 _cacheMaxAgeInSeconds) external;
 }

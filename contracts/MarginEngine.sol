@@ -53,9 +53,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     uint256 public cacheMaxAgeInSeconds;
 
     address private deployer;
-
+    /// @inheritdoc IMarginEngine
     IFactory public override factory;
-
+    /// @inheritdoc IMarginEngine
     IRateOracle public override rateOracle;
 
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
@@ -109,13 +109,15 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         _;
     }
 
+    /// @dev Modifier that ensures only the VAMM can execute certain actions
     modifier onlyVAMM () {
         if (msg.sender != address(vamm)) {
             revert OnlyVAMM();
         }
         _;
     }
-
+    
+    /// @dev Modifier that reverts if the msg.sender is not the Full Collateralisation Module
     modifier onlyFCM () {
         if (msg.sender != address(fcm)) {
             revert OnlyFCM();
@@ -123,6 +125,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         _;
     }
     
+    /// @dev Modifier that reverts if the termEndTimestamp is higher than the current block timestamp
+    /// @dev This modifier ensures that actions such as settlePosition (can only be done after maturity)
     modifier onlyAfterMaturity () {
         if (termEndTimestampWad > Time.blockTimestampScaled()) {
             revert CannotSettleBeforeMaturity();
@@ -139,18 +143,18 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         _;
     }
 
-    /// @notice Set the per-oracle MarginCalculatorParameters
-    /// @param _marginCalculatorParameters the MarginCalculatorParameters to set
+    /// @inheritdoc IMarginEngine
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory _marginCalculatorParameters
     ) external override onlyOwner {
         marginCalculatorParameters = _marginCalculatorParameters;
     }
-
+    
+    /// @inheritdoc IMarginEngine
     function setVAMM(address _vAMMAddress) external override onlyOwner {
         vamm = IVAMM(_vAMMAddress);
     }
-
+    /// @inheritdoc IMarginEngine
     function setFCM(address _fcm) external override onlyOwner {
         fcm = IFCM(_fcm);
     }
@@ -166,10 +170,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         emit HistoricalApyWindowSet(secondsAgoOld, secondsAgo);
     }
 
-    /// @notice Sets the maximum age that the cached historical APY value
-    /// @param _cacheMaxAgeInSeconds The new maximum age that the historical APY cache can be before being considered stale
+    /// @inheritdoc IMarginEngine
     function setCacheMaxAgeInSeconds(uint256 _cacheMaxAgeInSeconds)
         external
+        override 
         onlyOwner
     {
         uint256 cacheMaxAgeInSecondsOld = cacheMaxAgeInSeconds;
@@ -177,6 +181,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         emit CacheMaxAgeSet(cacheMaxAgeInSecondsOld, cacheMaxAgeInSeconds);
     }
 
+    /// @inheritdoc IMarginEngine
     function collectProtocol(address recipient, uint256 amount)
         external
         override
@@ -194,6 +199,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         emit CollectProtocol(msg.sender, recipient, amount);
     }
 
+    /// @inheritdoc IMarginEngine
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external override onlyOwner {
         uint256 liquidatorRewardWadOld = liquidatorRewardWad;
         liquidatorRewardWad = _liquidatorRewardWad;
@@ -209,7 +215,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             return positions.get(_owner, tickLower, tickUpper);
     }
 
+    /// @notice transferMargin function which:
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
+    /// @dev if the margiDelta is positive, we conduct a safe transfer from the _account address to the address of the MarginEngine
+    /// @dev if the marginDelta is negative, the user wishes to withdraw underlying tokens from the MarginEngine,
+    /// @dev in that case we first check the balance of the marginEngine in terms of the underlying tokens, if the balance is sufficient to cover the margin transfer, then we cover it via a safeTransfer
+    /// @dev if the marginEngineBalance is not sufficient to cover the marginDelta then we cover the remainingDelta by invoking the transferMarginToMarginEngineTrader function of the fcm which in case of Aave will calls the Aave withdraw function to settle with the MarginEngine in underlying tokens
     function transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
             underlyingToken.safeTransferFrom(_account, address(this), uint256(_marginDelta));
@@ -230,11 +241,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         }
     }
 
+
+    /// @inheritdoc IMarginEngine
     function transferMarginToFCMTrader(address _account, uint256 marginDelta) external onlyFCM override {
         underlyingToken.safeTransfer(_account, marginDelta);
     }
 
-
+    /// @inheritdoc IMarginEngine
     function updatePositionMargin(address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta) external nonZeroDelta(marginDelta) override {
         
         Tick.checkTicks(tickLower, tickUpper);
@@ -400,6 +413,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     }
 
+    /// @inheritdoc IMarginEngine
     function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) external onlyVAMM override {
         /// @dev this function can only be called by the vamm following a swap    
 
@@ -424,6 +438,14 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
     
 
+    /// @notice update position token balances and account for fees
+    /// @dev if the _liquidity of the position supplied to this function is >0 then we
+    /// @dev 1. retrieve the fixed, variable and fee Growth variables from the vamm by invoking the computeGrowthInside function of the VAMM
+    /// @dev 2. calculate the deltas that need to be applied to the position's fixed and variable token balances by taking into account trads that took place in the VAMM since the last mint/poke/burn that invoked this function
+    /// @dev 3. update the fixed and variable token balances and the margin of the positioin to account for deltas (outlined above) and fees generated by the active liquidity supplied by the position
+    /// @dev 4. additionally, we need to update the last growth inside variables in the Position.Info struct so that we take a note that we've accounted for the changes up until this point 
+    /// @dev if _liquidity of the position supplied to this function is zero, then we need to check if isMintBurn is set to true (if it is set to true) then we know thsi function was called post a mint/burn event,
+    /// @dev meaning we still need to correctly update the last fixed, variable and fee growth variables in the Position.Info struct
     function updatePositionTokenBalancesAndAccountForFees(
         Position.Info storage position,
         int24 tickLower,
@@ -451,6 +473,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
     
 
+    /// @notice Internal function that checks if the position's current margin is above the requirement
+    /// @param position Position.Info of the position of interest, updates to position, edit it in storage
+    /// @param tickLower Lower Tick of the position
+    /// @param tickUpper Upper Tick of the position
+    /// @dev This function calculates the position margin requirement, compares it with the position.margin and reverts if the current position margin is below the requirement
     function checkPositionMarginAboveRequirement(
         Position.Info storage position,
         int24 tickLower,
@@ -467,6 +494,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
 
+    /// @notice Check the position margin can be updated
+    /// @param position Position.Info of the position of interest, updates to position, edit it in storage
+    /// @param tickLower Lower Tick of the position
+    /// @param tickUpper Upper Tick of the position
     function checkPositionMarginCanBeUpdated(
         Position.Info storage position,
         int24 tickLower,
@@ -475,7 +506,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
         /// @dev their margin is to withdraw it completely. If so, the position needs to be settled
-
         if (Time.blockTimestampScaled() >= termEndTimestampWad) {
             if (!position.isSettled) {
                 revert PositionNotSettled();
@@ -485,6 +515,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             }
         }
         else {
+            /// @dev if we haven't reached maturity yet, then check if the positon margin requirement is satisfied if not then the position margin update will also revert
             checkPositionMarginAboveRequirement(
                 position,
                 tickLower,
@@ -496,8 +527,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     
     /// @notice Unwind a position
     /// @dev Before unwinding a position, need to check if it is even necessary to unwind it, i.e. check if the most up to date variable token balance of a position is non-zero
-    /// @dev If the current fixed token balance of a position is positive, this implies the position is a net Fixed Taker,
-    /// @dev Hence to unwind need to enter into a Variable Taker IRS contract with notional = abs(current variable token balance)
+    /// @dev If the current variable token balance is negative, then it means the position is a net Fixed Taker
+    /// @dev Hence to unwind, we need to enter into a Variable Taker IRS contract with notional = abs(current variable token balance of the position)
     /// @param _owner the owner of the position
     /// @param tickLower the lower tick of the position's tick range
     /// @param tickUpper the upper tick of the position's tick range
@@ -522,10 +553,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
             if (isFT) {
 
-                /// @dev get into a Variable Taker swap (the opposite of LP's current position) --> hence isFT is set to false
-                /// @dev amountSpecified needs to be negative
+                /// @dev get into a Variable Taker swap (the opposite of LP's current position) --> hence params.isFT is set to false for the vamm swap call
+                /// @dev amountSpecified needs to be negative (since getting into a variable taker swap)
                 /// @dev since the position.variableTokenBalance is already negative, pass position.variableTokenBalance as amountSpecified
-                /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO
+                /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO + 1
+                /// @dev isExternal is a boolean that ensures the state updates to the position are handled directly in the body of the unwind call
+                /// @dev that's more efficient than letting the swap call the margin engine again to update position fixed and varaible token balances + account for fees
 
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
                     recipient: _owner,
@@ -536,14 +569,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-                // check the outputs are correct
                 (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred) = vamm.swap(params);
             } else {
 
-                /// @dev get into a Fixed Taker swap (the opposite of LP's current position), hence isFT is set to true in SwapParams
-                /// @dev amountSpecified needs to be positive
+                /// @dev get into a Fixed Taker swap (the opposite of LP's current position)
+                /// @dev amountSpecified needs to be positive, since we are executing a fixedd taker swap
                 /// @dev since the position.variableTokenBalance is already positive, pass position.variableTokenBalance as amountSpecified
-                /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO
+                /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO - 1
 
                 IVAMM.SwapParams memory params = IVAMM.SwapParams({
                     recipient: _owner,
@@ -568,6 +600,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     }
 
+    
     function getExtraBalances(int24 from, int24 to, uint128 liquidity, uint256 variableFactorWad) internal view returns (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) {
         if (from == to) return (0, 0);
         
@@ -594,6 +627,15 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         extraVariableTokenBalance = amount1;
     }
 
+
+    /// @notice Get Position Margin Requirement
+    /// @dev if the position has no active liquidity in the VAMM, then we can compute its margin requirement by just passing its current fixed and variable token balances to teh getMarginRequirement function
+    /// @dev however, if the current _liquidity of the position is positive, it means that the position can potentially enter into interest rate swap positions with traders in their tick range
+    /// @dev to account for that possibility, we analyse two scenarios:
+    /// @dev scenario 1: a trader comes in and trades all the liquidity all the way to the the upper tick
+    /// @dev scenario 2: a trader comes in and trades all the liquidity all the way to the the lower tick
+    /// @dev one the fixed and variable token balances are calculated for each counterfactual scenarios, their margin requiremnets can be obtained by calling getMarginrRequirement for each scenario
+    /// @dev finally, the output is the max of the margin requirements from two of the scenarios considered
     function getPositionMarginRequirement(
         Position.Info storage position,
         int24 tickLower,
@@ -676,8 +718,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
 
-    /// @notice Returns either the Liquidation or Initial Margin Requirement of a given trader
-    /// @return margin Either Liquidation or Initial Margin Requirement of a given trader in terms of the underlying tokens
+    /// @notice Returns either the Liquidation or Initial Margin Requirement given a fixed and variable token balance as well as the isLM boolean
+    /// @return margin  either liquidation or initial margin requirement of a given trader in terms of the underlying tokens
     function getMarginRequirement(
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
@@ -702,6 +744,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         }
     }
 
+    /// @notice get margin requirement based on a fixed and variable token balance and isLM boolean
     function _getMarginRequirement(
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
@@ -721,6 +764,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         uint256 timeInSecondsFromStartToMaturityWad = termEndTimestampWad - termStartTimestampWad;
 
+
+        /// exp1 = fixedTokenBalance*timeInYearsFromTermStartToTermEnd*0.01
+        // this can either be negative or positive depending on the sign of the fixedTokenBalance
         int256 exp1Wad = PRBMathSD59x18.mul(
             fixedTokenBalanceWad,
             int256(
@@ -731,7 +777,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 )
             )
         );
-
+        
+        /// exp2 = variableTokenBalance*worstCaseVariableFactor(from term start to term end)
         int256 exp2Wad = PRBMathSD59x18.mul(
             variableTokenBalanceWad,
             int256(
@@ -747,8 +794,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             )
         );
 
+        // this is the worst case settlement cashflow expected by the position to cover
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
 
+        // hence if maxCashflowDeltaToCoverPostMaturity is negative then the margin needs to be sufficient to cover it
+        // if maxCashflowDeltaToCoverPostMaturity is non-negative then it means according to this model the even in the worst case, the settlement cashflow is expected to be non-negative
+        // hence, returning zero as the margin requirement
         if (maxCashflowDeltaToCoverPostMaturity < 0) {
             margin = PRBMathUD60x18.toUint(
                 uint256(-maxCashflowDeltaToCoverPostMaturity)
@@ -758,6 +809,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         }
     }
 
+
+    /// @notice Get Minimum Margin Requirement
+    // given the fixed and variable balances and a starting sqrtPriceX96
+    // we calculate the minimum marign requirement by simulating a counterfactual unwind at fixed rate that is a function of the current fixed rate (sqrtPriceX96) (details in the litepaper)
+    // if the variable token balance is 0 or if the variable token balance is >0 and the fixed token balace >0 then the minimum margin requirement is zero
     function getMinimumMarginRequirement(
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
@@ -790,7 +846,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     .fixedRateDeviationMinLeftUnwindIMWad;
             }
 
-            // simulate an adversarial unwind (cumulative position is a VT --> simulate FT unwind --> movement to the left along the VAMM)
+            // simulate an adversarial unwind (cumulative position is a Variable Taker --> simulate FT unwind --> movement to the left along the VAMM)
+            // fixedTokenDelta unbalanced that results from the simulated unwind
             fixedTokenDeltaUnbalanced = int256(
                 MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
                     uint256(variableTokenBalance),

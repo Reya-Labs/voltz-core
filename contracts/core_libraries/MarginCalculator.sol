@@ -269,6 +269,15 @@ library MarginCalculator {
     }
 
     // simulation of a swap without the need to involve the swap function
+    /// @notice calculates the absolute fixed token delta unbalanced resulting from a simulated counterfactual unwind necessary to determine the minimum margin requirement of a trader
+    /// @param variableTokenDeltaAbsolute absolute value of the variableTokenDelta for which the unwind is simulated
+    /// @param sqrtRatioCurrX96 sqrtRatio necessary to calculate the starting fixed rate which is used to calculate the counterfactual unwind fixed rate
+    /// @param startingFixedRateMultiplierWad the multiplier (lambda from the litepaper - minimum margin requirement equation) that is multiplied by the starting fixed rate to determine the deviation applied to the starting fixed rate (in Wad)
+    /// @param termEndTimestampWad term end timestamp in wad
+    /// @param currentTimestampWad current timestamp in wad
+    /// @param tMaxWad the maximum duration for a Voltz Protocol IRS AMM
+    /// @param gammaWad adjustable parameter that controls the rate of time decay applied to the deviation depending on time from now to maturity
+    /// @param isFTUnwind isFTUnwind == true => the counterfactual unwind is in the Fixed Taker direction (from left to right along the VAMM), the opposite is true if isFTUnwind == false
     function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
         uint256 variableTokenDeltaAbsolute,
         uint160 sqrtRatioCurrX96,
@@ -282,9 +291,9 @@ library MarginCalculator {
     ) internal view returns (uint256 fixedTokenDeltaUnbalanced) {
         SimulatedUnwindLocalVars memory simulatedUnwindLocalVars;
 
-        // todo: require checks
+        // require checks
 
-        // calculate f_start
+        // calculate fixedRateStart
         simulatedUnwindLocalVars.sqrtRatioCurrWad = FullMath.mulDiv(
             PRBMathUD60x18.fromUint(1),
             sqrtRatioCurrX96,
@@ -299,8 +308,7 @@ library MarginCalculator {
             )
         );
 
-        // calculate D
-
+        // calculate D (from the litepaper)
         simulatedUnwindLocalVars.upperDWad = PRBMathUD60x18.mul(
             simulatedUnwindLocalVars.fixedRateStartWad,
             startingFixedRateMultiplierWad
@@ -310,7 +318,7 @@ library MarginCalculator {
             simulatedUnwindLocalVars.upperDWad = fixedRateDeviationMinWad;
         }
 
-        // calculate d
+        // calculate d (from the litepaper)
 
         simulatedUnwindLocalVars.scaledTimeWad = PRBMathUD60x18.div(
             (termEndTimestampWad - currentTimestampWad),
@@ -331,8 +339,7 @@ library MarginCalculator {
             uint256(simulatedUnwindLocalVars.oneMinusTimeFactorWad)
         );
 
-        // calculate cfFixedRate
-        simulatedUnwindLocalVars.fixedRateCFWad;
+        // calculate counterfactual fixed rate
 
         if (isFTUnwind) {
             if (
