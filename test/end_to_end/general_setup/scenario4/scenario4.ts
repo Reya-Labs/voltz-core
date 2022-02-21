@@ -13,7 +13,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     for (const p of this.positions.slice(5, 8)) {
       await this.e2eSetup.updatePositionMargin(p[0], p[1], p[2], toBn("10000"));
-      console.log("gas consumed for update position margin: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+      console.log(
+        "gas consumed for update position margin: ",
+        (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+      );
     }
 
     const length_of_series = 50;
@@ -37,7 +40,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const p = this.positions[randomInt(0, 5)];
         const liquidityDelta = randomInt(10000, 100000);
         const liquidityDeltaBn = toBn(liquidityDelta.toString());
-        const positionInfo = await this.marginEngineTest.getPosition(p[0], p[1], p[2]);
+        const positionInfo = await this.marginEngineTest.getPosition(
+          p[0],
+          p[1],
+          p[2]
+        );
 
         await this.marginEngineTest.getCounterfactualMarginRequirementTest(
           p[0],
@@ -50,15 +57,25 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           false
         );
 
-        const positionMarginRequirement = await this.marginEngineTest.getMargin();
+        const positionMarginRequirement =
+          await this.marginEngineTest.getMargin();
 
         await this.e2eSetup.updatePositionMargin(
-          p[0], p[1], p[2], positionMarginRequirement.add(toBn("1"))
+          p[0],
+          p[1],
+          p[2],
+          positionMarginRequirement.add(toBn("1"))
         );
-        console.log("gas consumed for update position margin: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+        console.log(
+          "gas consumed for update position margin: ",
+          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+        );
 
         await this.e2eSetup.mint(p[0], p[1], p[2], liquidityDeltaBn);
-        console.log("gas consumed for mint: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+        console.log(
+          "gas consumed for mint: ",
+          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+        );
       }
 
       if (action === 2) {
@@ -75,7 +92,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         if (liquidityDelta <= 0) continue;
 
         await this.e2eSetup.burn(p[0], p[1], p[2], liquidityDeltaBn);
-        console.log("gas consumed for burn: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+        console.log(
+          "gas consumed for burn: ",
+          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+        );
       }
 
       if (action === 3) {
@@ -98,7 +118,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           tickLower: p[1],
           tickUpper: p[2],
         });
-        console.log("gas consumed for swap: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+        console.log(
+          "gas consumed for swap: ",
+          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+        );
       }
     }
 

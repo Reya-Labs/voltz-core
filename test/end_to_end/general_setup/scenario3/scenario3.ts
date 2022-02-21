@@ -13,14 +13,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // add 1,000,000 liquidity to Position 0
 
     // print the position margin requirement
-    await this.getAPYboundsAndPositionMargin(
-      this.positions[0]
-    );
+    await this.getAPYboundsAndPositionMargin(this.positions[0]);
 
     // update the position margin with 210
-    await this.e2eSetup.updatePositionMargin(this.positions[0][0],
-        this.positions[0][1],
-        this.positions[0][2],
+    await this.e2eSetup.updatePositionMargin(
+      this.positions[0][0],
+      this.positions[0][1],
+      this.positions[0][2],
       toBn("420")
     );
 
@@ -39,7 +38,12 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.exportSnapshot("BEFORE FIRST SWAP");
 
     // update the trader margin with 1,000
-    await this.e2eSetup.updatePositionMargin(this.positions[2][0], this.positions[2][1], this.positions[2][2], toBn("2000"));
+    await this.e2eSetup.updatePositionMargin(
+      this.positions[2][0],
+      this.positions[2][1],
+      this.positions[2][2],
+      toBn("2000")
+    );
 
     // print the maximum amount given the liquidity of Position 0
     await this.updateCurrentTick();
@@ -53,7 +57,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
       isExternal: false,
       tickLower: this.positions[2][1],
-      tickUpper: this.positions[2][2]
+      tickUpper: this.positions[2][2],
     });
 
     await this.exportSnapshot("AFTER FIRST SWAP");
@@ -66,9 +70,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // add 5,000,000 liquidity to Position 1
 
     // print the position margin requirement
-    await this.getAPYboundsAndPositionMargin(
-      this.positions[1]
-    );
+    await this.getAPYboundsAndPositionMargin(this.positions[1]);
 
     // update the position margin with 2,000
     await this.e2eSetup.updatePositionMargin(
@@ -93,7 +95,12 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.exportSnapshot("BEFORE SECOND SWAP");
 
     // update the trader margin with 1,000
-    await this.e2eSetup.updatePositionMargin(this.positions[3][0], this.positions[3][1], this.positions[3][2], toBn("2000"));
+    await this.e2eSetup.updatePositionMargin(
+      this.positions[3][0],
+      this.positions[3][1],
+      this.positions[3][2],
+      toBn("2000")
+    );
 
     // print the maximum amount given the liquidity of Position 0
     await this.updateCurrentTick();

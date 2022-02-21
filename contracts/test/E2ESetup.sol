@@ -133,12 +133,8 @@ contract E2ESetup {
     }
 
     function swap(IVAMM.SwapParams memory params) public {
-        this.addPosition(
-            params.recipient,
-            params.tickLower,
-            params.tickUpper
-        );
-        
+        this.addPosition(params.recipient, params.tickLower, params.tickUpper);
+
         uint256 gasBefore = gasleft();
         Actor(params.recipient).swap(VAMMAddress, params);
         keepInMindGas = gasBefore - gasleft();
@@ -155,7 +151,12 @@ contract E2ESetup {
         this.addPosition(_owner, tickLower, tickUpper);
 
         uint256 gasBefore = gasleft();
-        IMarginEngine(MEAddress).updatePositionMargin(_owner, tickLower, tickUpper, marginDelta);
+        IMarginEngine(MEAddress).updatePositionMargin(
+            _owner,
+            tickLower,
+            tickUpper,
+            marginDelta
+        );
         keepInMindGas = gasBefore - gasleft();
         initialCashflow += marginDelta;
 
@@ -195,10 +196,16 @@ contract E2ESetup {
                     allPositions[i].tickUpper
                 );
 
-            Printer.printInt256("   fixedTokenBalance:", position.fixedTokenBalance);
-            Printer.printInt256("variableTokenBalance:", position.variableTokenBalance);
+            Printer.printInt256(
+                "   fixedTokenBalance:",
+                position.fixedTokenBalance
+            );
+            Printer.printInt256(
+                "variableTokenBalance:",
+                position.variableTokenBalance
+            );
             Printer.printInt256("              margin:", position.margin);
-            
+
             totalFixedTokens += position.fixedTokenBalance;
             totalVariableTokens += position.variableTokenBalance;
             totalCashflow += position.margin;
@@ -215,7 +222,10 @@ contract E2ESetup {
 
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);
-        Printer.printInt256("      deltaCashflow:", totalCashflow - initialCashflow);
+        Printer.printInt256(
+            "      deltaCashflow:",
+            totalCashflow - initialCashflow
+        );
         Printer.printEmptyLine();
 
         // ideally, this should be 0
@@ -223,10 +233,22 @@ contract E2ESetup {
 
         Printer.printUint256("      app:", uint256(approximation));
 
-        require(abs(totalFixedTokens) < uint256(approximation), "fixed tokens don't net out");
-        require(abs(totalVariableTokens) < uint256(approximation), "variable tokens don't net out");
-        require(initialCashflow <= totalCashflow, "system loss: undercollateralized");
-        require(totalCashflow - initialCashflow < approximation, "cashflows don't net out");
+        require(
+            abs(totalFixedTokens) < uint256(approximation),
+            "fixed tokens don't net out"
+        );
+        require(
+            abs(totalVariableTokens) < uint256(approximation),
+            "variable tokens don't net out"
+        );
+        require(
+            initialCashflow <= totalCashflow,
+            "system loss: undercollateralized"
+        );
+        require(
+            totalCashflow - initialCashflow < approximation,
+            "cashflows don't net out"
+        );
     }
 
     function getGasConsumedAtLastTx() external view returns (uint256) {

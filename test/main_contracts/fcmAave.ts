@@ -40,7 +40,6 @@ const createFixtureLoader = waffle.createFixtureLoader;
 // proceed to write more e2e scenarios with new conditions
 // add new invariants to the scenarios --> use modular code
 
-
 describe("FCM", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
@@ -56,18 +55,30 @@ describe("FCM", () => {
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
-  
   async function getTraderBalance(walletAddress: string) {
-
     const traderBalanceInATokens = await mockAToken.balanceOf(walletAddress);
-    const traderBalanceInUnderlyingTokens = await token.balanceOf(walletAddress);
+    const traderBalanceInUnderlyingTokens = await token.balanceOf(
+      walletAddress
+    );
     // can add since 1aToken=1Token
-    const traderOverallBalanceInUnderlyingTokens = add(traderBalanceInATokens, traderBalanceInUnderlyingTokens);  
-  
-    console.log("traderBalanceInATokens", utils.formatEther(traderBalanceInATokens));
-    console.log("traderBalanceInUnderlyingTokens", utils.formatEther(traderBalanceInUnderlyingTokens));
-    console.log("traderOverallBalanceInUnderlyingTokens", utils.formatEther(traderOverallBalanceInUnderlyingTokens));
-    
+    const traderOverallBalanceInUnderlyingTokens = add(
+      traderBalanceInATokens,
+      traderBalanceInUnderlyingTokens
+    );
+
+    console.log(
+      "traderBalanceInATokens",
+      utils.formatEther(traderBalanceInATokens)
+    );
+    console.log(
+      "traderBalanceInUnderlyingTokens",
+      utils.formatEther(traderBalanceInUnderlyingTokens)
+    );
+    console.log(
+      "traderOverallBalanceInUnderlyingTokens",
+      utils.formatEther(traderOverallBalanceInUnderlyingTokens)
+    );
+
     return traderOverallBalanceInUnderlyingTokens;
   }
 
@@ -79,23 +90,34 @@ describe("FCM", () => {
     console.log("historicalApyCached", utils.formatEther(historicalApyCached));
   }
 
-  function getTraderApy(traderStartingOverallBalanceInUnderlyingTokens: BigNumber, traderEndingOverallBalanceInUnderlyingTokens: BigNumber) {
-    
+  function getTraderApy(
+    traderStartingOverallBalanceInUnderlyingTokens: BigNumber,
+    traderEndingOverallBalanceInUnderlyingTokens: BigNumber
+  ) {
     // todo: add more arguments to this function
-    
-    const traderAbsoluteReturn = sub(traderEndingOverallBalanceInUnderlyingTokens, traderStartingOverallBalanceInUnderlyingTokens);
+
+    const traderAbsoluteReturn = sub(
+      traderEndingOverallBalanceInUnderlyingTokens,
+      traderStartingOverallBalanceInUnderlyingTokens
+    );
     const traderReturn = div(traderAbsoluteReturn, toBn("100"));
-    
-    console.log("traderAbsoluteReturn", utils.formatEther(traderAbsoluteReturn));
+
+    console.log(
+      "traderAbsoluteReturn",
+      utils.formatEther(traderAbsoluteReturn)
+    );
     console.log("traderReturn", utils.formatEther(traderReturn));
 
-    const traderAPY = sub(pow(add(toBn("1.0"), traderReturn), toBn("52.1775")), toBn("1.0"));
-    
+    const traderAPY = sub(
+      pow(add(toBn("1.0"), traderReturn), toBn("52.1775")),
+      toBn("1.0")
+    );
+
     console.log("traderAPY", utils.formatEther(traderAPY));
 
     return traderAPY;
   }
-  
+
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);
@@ -112,7 +134,7 @@ describe("FCM", () => {
       mockAToken,
       marginEngineTest,
       vammTest,
-      fcmTest
+      fcmTest,
     } = await loadFixture(metaFixture));
 
     // update marginEngineTest allowance
@@ -148,84 +170,108 @@ describe("FCM", () => {
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
     await marginEngineTest.setSecondsAgo(86400);
-
   });
 
   describe.skip("#fcm", () => {
     beforeEach("initialize the pool at price of 1:1", async () => {
-
       await token.mint(other.address, BigNumber.from(10).pow(27));
-      await token.connect(other).approve(marginEngineTest.address, BigNumber.from(10).pow(27));
+      await token
+        .connect(other)
+        .approve(marginEngineTest.address, BigNumber.from(10).pow(27));
 
-      
       // mint underlyings to the mock aToken
       await token.mint(mockAToken.address, BigNumber.from(10).pow(27));
-      const currentReserveNormalisedIncome = await aaveLendingPool.getReserveNormalizedIncome(token.address);
+      const currentReserveNormalisedIncome =
+        await aaveLendingPool.getReserveNormalizedIncome(token.address);
 
       // mint aTokens
-      await mockAToken.mint(wallet.address, toBn("100"), currentReserveNormalisedIncome);
+      await mockAToken.mint(
+        wallet.address,
+        toBn("100"),
+        currentReserveNormalisedIncome
+      );
       await mockAToken.approve(fcmTest.address, toBn("100"));
     });
 
     it("scenario1", async () => {
-
       const otherStartingBalance = await token.balanceOf(other.address);
-      
-      await marginEngineTest.connect(other).updatePositionMargin(
-        other.address,
-        -TICK_SPACING,
-        TICK_SPACING,
-        "1121850791579727450"
-      );
 
-      await vammTest.initializeVAMM(TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString());
+      await marginEngineTest
+        .connect(other)
+        .updatePositionMargin(
+          other.address,
+          -TICK_SPACING,
+          TICK_SPACING,
+          "1121850791579727450"
+        );
+
+      await vammTest.initializeVAMM(
+        TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
+      );
 
       await vammTest.setFeeProtocol(0);
       await vammTest.setFee(0);
 
-      await vammTest.connect(other).mint(
-        other.address,
-        -TICK_SPACING,
-        TICK_SPACING,
-        toBn("100000")
-      );
+      await vammTest
+        .connect(other)
+        .mint(other.address, -TICK_SPACING, TICK_SPACING, toBn("100000"));
 
-      const traderStartingOverallBalanceInUnderlyingTokens = await getTraderBalance(wallet.address);
+      const traderStartingOverallBalanceInUnderlyingTokens =
+        await getTraderBalance(wallet.address);
 
       // engage in a fixed taker swap via the fcm
-      await fcmTest.connect(wallet).initiateFullyCollateralisedFixedTakerSwap(toBn("100"), TickMath.getSqrtRatioAtTick(TICK_SPACING).toString());
+      await fcmTest
+        .connect(wallet)
+        .initiateFullyCollateralisedFixedTakerSwap(
+          toBn("100"),
+          TickMath.getSqrtRatioAtTick(TICK_SPACING).toString()
+        );
 
       // do a full scenario with checks
       const traderInfo = await fcmTest.traders(wallet.address);
       printTraderWithYieldBearingTokensInfo(traderInfo);
 
       expect(traderInfo.variableTokenBalance).to.eq(toBn("-100")); // variable token balance the opposite of notional
-        
+
       // time passes, trader's margin in yield bearing tokens should be the same as the atoken balance of the fcm
       await advanceTime(604800); // advance time by one week
       await aaveLendingPool.setReserveNormalizedIncome(
         token.address,
-        Math.floor(1.0015 * 10000 + 0.5).toString() +
-          "0".repeat(23)
+        Math.floor(1.0015 * 10000 + 0.5).toString() + "0".repeat(23)
       );
       await rateOracleTest.writeOracleEntry();
-      
+
       await printHistoricalApy();
 
-      expect(await fcmTest.getAaveLendingPool(), "aave lending pool expect").to.eq(aaveLendingPool.address);
-      expect(await fcmTest.marginEngine(), "margin engine address expect").to.eq(marginEngineTest.address);
-      expect(await fcmTest.getUnderlyingYieldBearingToken(), "underlying yield bearing token expect").to.eq(mockAToken.address);
-      expect(await fcmTest.getVAMMAddress(), "vamm address expect").to.eq(vammTest.address);
-      
+      expect(
+        await fcmTest.getAaveLendingPool(),
+        "aave lending pool expect"
+      ).to.eq(aaveLendingPool.address);
+      expect(
+        await fcmTest.marginEngine(),
+        "margin engine address expect"
+      ).to.eq(marginEngineTest.address);
+      expect(
+        await fcmTest.getUnderlyingYieldBearingToken(),
+        "underlying yield bearing token expect"
+      ).to.eq(mockAToken.address);
+      expect(await fcmTest.getVAMMAddress(), "vamm address expect").to.eq(
+        vammTest.address
+      );
+
       // check a token balance of the fcm
       const aTokenBalanceOfFCM = await mockAToken.balanceOf(fcmTest.address);
-      
+
       console.log("aTokenBalanceOfFCM", utils.formatEther(aTokenBalanceOfFCM));
 
       // check trader balance
-      const aTokenBalanceOfTrader = await fcmTest.getTraderMarginInYieldBearingTokensTest(wallet.address);
+      const aTokenBalanceOfTrader =
+        await fcmTest.getTraderMarginInYieldBearingTokensTest(wallet.address);
 
-      console.log("aTokenBalanceOfTrader", utils.formatEther(aTokenBalanceOfTrader));
+      console.log(
+        "aTokenBalanceOfTrader",
+        utils.formatEther(aTokenBalanceOfTrader)
+      );
 
       expect(aTokenBalanceOfFCM).to.eq(aTokenBalanceOfTrader);
 
@@ -233,42 +279,71 @@ describe("FCM", () => {
 
       const traderInfoPostSettlement = await fcmTest.traders(wallet.address);
       printTraderWithYieldBearingTokensInfo(traderInfoPostSettlement);
-      
+
       expect(traderInfoPostSettlement.fixedTokenBalance).to.eq(0);
       expect(traderInfoPostSettlement.variableTokenBalance).to.eq(0);
-      expect(traderInfoPostSettlement.marginInScaledYieldBearingTokens).to.eq(0);
+      expect(traderInfoPostSettlement.marginInScaledYieldBearingTokens).to.eq(
+        0
+      );
       expect(traderInfoPostSettlement.isSettled).to.eq(true);
 
-      const traderEndingOverallBalanceInUnderlyingTokens = await getTraderBalance(wallet.address);
+      const traderEndingOverallBalanceInUnderlyingTokens =
+        await getTraderBalance(wallet.address);
 
-      const traderAPY = getTraderApy(traderStartingOverallBalanceInUnderlyingTokens, traderEndingOverallBalanceInUnderlyingTokens);
+      const traderAPY = getTraderApy(
+        traderStartingOverallBalanceInUnderlyingTokens,
+        traderEndingOverallBalanceInUnderlyingTokens
+      );
 
       expect(traderAPY).to.be.near(toBn("0.010116042450876211")); // around 1% fixed apy secured as expected
 
       // lp settles and collects their margin
-      await marginEngineTest.settlePosition(-TICK_SPACING, TICK_SPACING, other.address);
-
-      const positionInfo = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
-      const finalPositionMargin = positionInfo.margin;
-      console.log("finalPositionMargin", utils.formatEther(finalPositionMargin));
-      
-      await marginEngineTest.connect(other).updatePositionMargin(
-        other.address, -TICK_SPACING, TICK_SPACING, mul(finalPositionMargin, toBn("-1")) 
+      await marginEngineTest.settlePosition(
+        -TICK_SPACING,
+        TICK_SPACING,
+        other.address
       );
-      
-      const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(other.address, -TICK_SPACING, TICK_SPACING);
-      const finalPositionMarginPostUpdateMargin = positionInfoPostUpdateMargin.margin;
-      
+
+      const positionInfo = await marginEngineTest.getPosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
+      const finalPositionMargin = positionInfo.margin;
+      console.log(
+        "finalPositionMargin",
+        utils.formatEther(finalPositionMargin)
+      );
+
+      await marginEngineTest
+        .connect(other)
+        .updatePositionMargin(
+          other.address,
+          -TICK_SPACING,
+          TICK_SPACING,
+          mul(finalPositionMargin, toBn("-1"))
+        );
+
+      const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
+      const finalPositionMarginPostUpdateMargin =
+        positionInfoPostUpdateMargin.margin;
+
       expect(finalPositionMarginPostUpdateMargin).to.eq(0);
 
       // calculate the return of the LP
-      
-      const positionEndingOverallBalanceInUnderlyingTokens = await getTraderBalance(other.address);
-      const positionAPY = getTraderApy(otherStartingBalance, positionEndingOverallBalanceInUnderlyingTokens);
-    
+
+      const positionEndingOverallBalanceInUnderlyingTokens =
+        await getTraderBalance(other.address);
+      const positionAPY = getTraderApy(
+        otherStartingBalance,
+        positionEndingOverallBalanceInUnderlyingTokens
+      );
+
       console.log("positionAPY", utils.formatEther(positionAPY));
-
     });
-
   });
 });

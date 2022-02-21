@@ -245,7 +245,7 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -3 * TICK_SPACING, TICK_SPACING],
       [3, -TICK_SPACING, TICK_SPACING],
       [4, -TICK_SPACING, TICK_SPACING],
-      [5, -TICK_SPACING, TICK_SPACING]
+      [5, -TICK_SPACING, TICK_SPACING],
     ],
   },
 
@@ -283,6 +283,12 @@ export const e2eScenarios: e2eParameters[] = [
     feeProtocol: 2,
     fee: toBn("0.5"),
     tickSpacing: TICK_SPACING,
-    positions: Array(100).fill(0).map((_, index) => [0, -(index+1)*TICK_SPACING, (index+1)*TICK_SPACING]),
+    positions: Array(100)
+      .fill(0)
+      .map((_, index) => [
+        0,
+        -(index + 1) * TICK_SPACING,
+        (index + 1) * TICK_SPACING,
+      ]),
   },
 ];

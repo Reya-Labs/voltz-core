@@ -23,10 +23,7 @@ import {
 } from "../shared/utilities";
 import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
-import {
-  ERC20Mock,
-  MockAaveLendingPool,
-} from "../../typechain";
+import { ERC20Mock, MockAaveLendingPool } from "../../typechain";
 import { advanceTimeAndBlock } from "../helpers/time";
 import { consts } from "../helpers/constants";
 import { sub } from "../shared/functions";
@@ -54,12 +51,9 @@ describe("VAMM", () => {
   });
 
   beforeEach("deploy fixture", async () => {
-    ({
-      token,
-      aaveLendingPool,
-      vammTest,
-      marginEngineTest
-    } = await loadFixture(metaFixture));
+    ({ token, aaveLendingPool, vammTest, marginEngineTest } = await loadFixture(
+      metaFixture
+    ));
 
     // update marginEngineTest allowance
     await token.approve(marginEngineTest.address, BigNumber.from(10).pow(27));
@@ -145,20 +139,25 @@ describe("VAMM", () => {
   describe("#initialize", async () => {
     it("fails if already initialized", async () => {
       await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
-      await expect(vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString()))
-        .to.be.revertedWith("ExpectedSqrtPriceZeroBeforeInit");
+      await expect(
+        vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString())
+      ).to.be.revertedWith("ExpectedSqrtPriceZeroBeforeInit");
     });
 
     it("fails if starting price is too low", async () => {
       await expect(vammTest.initializeVAMM(1)).to.be.revertedWith("R");
-      await expect(vammTest.initializeVAMM(MIN_SQRT_RATIO.sub(1))).to.be
-        .revertedWith("R");
+      await expect(
+        vammTest.initializeVAMM(MIN_SQRT_RATIO.sub(1))
+      ).to.be.revertedWith("R");
     });
 
     it("fails if starting price is too high", async () => {
-      await expect(vammTest.initializeVAMM(MAX_SQRT_RATIO)).to.be.revertedWith("R");
-      await expect(vammTest.initializeVAMM(BigNumber.from(2).pow(160).sub(1)))
-        .to.be.revertedWith("R");
+      await expect(vammTest.initializeVAMM(MAX_SQRT_RATIO)).to.be.revertedWith(
+        "R"
+      );
+      await expect(
+        vammTest.initializeVAMM(BigNumber.from(2).pow(160).sub(1))
+      ).to.be.revertedWith("R");
     });
 
     it("can be initialized at MIN_SQRT_RATIO", async () => {
@@ -178,11 +177,27 @@ describe("VAMM", () => {
         await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
         await vammTest.setFeeProtocol(3);
 
-        await token.mint(wallet.address, "1217962522535726055805955855889380600000000000000000000000000000000");
-        await token.approve(marginEngineTest.address, "1217962522535726055805955855889380600000000000000000000000000000000");
+        await token.mint(
+          wallet.address,
+          "1217962522535726055805955855889380600000000000000000000000000000000"
+        );
+        await token.approve(
+          marginEngineTest.address,
+          "1217962522535726055805955855889380600000000000000000000000000000000"
+        );
 
-        await marginEngineTest.updatePositionMargin(wallet.address, minTick, maxTick, "1217962522535726055805955855889380600");
-        await marginEngineTest.updatePositionMargin(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, "1217962522535726055805955855889380600");
+        await marginEngineTest.updatePositionMargin(
+          wallet.address,
+          minTick,
+          maxTick,
+          "1217962522535726055805955855889380600"
+        );
+        await marginEngineTest.updatePositionMargin(
+          wallet.address,
+          minTick + tickSpacing,
+          maxTick - tickSpacing,
+          "1217962522535726055805955855889380600"
+        );
 
         await vammTest.mint(wallet.address, minTick, maxTick, 3161);
       });
@@ -193,13 +208,15 @@ describe("VAMM", () => {
         });
 
         it("fails if tickLower less than min tick", async () => {
-          await expect(vammTest.mint(wallet.address, -887273, 0, 1)).to.be
-            .revertedWith("TLM");
+          await expect(
+            vammTest.mint(wallet.address, -887273, 0, 1)
+          ).to.be.revertedWith("TLM");
         });
 
         it("fails if tickUpper greater than max tick", async () => {
-          await expect(vammTest.mint(wallet.address, 0, 887273, 1)).to.be
-            .revertedWith("TUM");
+          await expect(
+            vammTest.mint(wallet.address, 0, 887273, 1)
+          ).to.be.revertedWith("TUM");
         });
 
         it("fails if amount exceeds the max", async () => {
@@ -212,16 +229,33 @@ describe("VAMM", () => {
               maxLiquidityGross.add(1)
             )
           ).to.be.revertedWith("LO");
-          await expect(vammTest.mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(10000))).to.not.be.reverted;
+          await expect(
+            vammTest.mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              maxLiquidityGross.sub(10000)
+            )
+          ).to.not.be.reverted;
         });
 
         it("fails if total amount at tick exceeds the max", async () => {
-          await vammTest.mint(wallet.address, minTick+tickSpacing, maxTick-tickSpacing, 1000);
+          await vammTest.mint(
+            wallet.address,
+            minTick + tickSpacing,
+            maxTick - tickSpacing,
+            1000
+          );
           const maxLiquidityGross = await vammTest.maxLiquidityPerTick();
           await expect(
-            vammTest.mint(wallet.address, minTick + tickSpacing, maxTick - tickSpacing, maxLiquidityGross.sub(1000).add(1))
+            vammTest.mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              maxLiquidityGross.sub(1000).add(1)
+            )
           ).to.be.reverted;
-        })
+        });
       });
 
       describe("success cases", async () => {
@@ -230,9 +264,11 @@ describe("VAMM", () => {
         });
 
         it("adds liquidity to liquidityGross", async () => {
-
           await marginEngineTest.updatePositionMargin(
-            wallet.address, -240, 0, toBn("100000")
+            wallet.address,
+            -240,
+            0,
+            toBn("100000")
           );
 
           await vammTest.mint(wallet.address, -240, 0, 100);
@@ -248,7 +284,10 @@ describe("VAMM", () => {
           expect(liquidityGross3).to.eq(0);
 
           await marginEngineTest.updatePositionMargin(
-            wallet.address, -240, tickSpacing, toBn("100000")
+            wallet.address,
+            -240,
+            tickSpacing,
+            toBn("100000")
           );
 
           await vammTest.mint(wallet.address, -240, tickSpacing, 150);
@@ -264,7 +303,10 @@ describe("VAMM", () => {
           expect(liquidityGross7).to.eq(0);
 
           await marginEngineTest.updatePositionMargin(
-            wallet.address, 0, tickSpacing * 2, toBn("100000")
+            wallet.address,
+            0,
+            tickSpacing * 2,
+            toBn("100000")
           );
 
           await vammTest.mint(wallet.address, 0, tickSpacing * 2, 60);
@@ -281,48 +323,48 @@ describe("VAMM", () => {
         });
 
         it("removes liquidity from liquidityGross", async () => {
-
           await marginEngineTest.updatePositionMargin(
-            wallet.address, -240, 0, toBn("100000")
+            wallet.address,
+            -240,
+            0,
+            toBn("100000")
           );
 
           await vammTest.mint(wallet.address, -240, 0, 100);
           await vammTest.mint(wallet.address, -240, 0, 40);
           await vammTest.burn(wallet.address, -240, 0, 90);
-          expect((await vammTest.ticks(-240)).liquidityGross).to.eq(50)
-          expect((await vammTest.ticks(0)).liquidityGross).to.eq(50)
+          expect((await vammTest.ticks(-240)).liquidityGross).to.eq(50);
+          expect((await vammTest.ticks(0)).liquidityGross).to.eq(50);
         });
       });
+    });
+  });
 
+  describe("#checkCurrentTimestampTermEndTimestampDelta", () => {
+    it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
+      advanceTimeAndBlock(
+        sub(sub(consts.ONE_WEEK, consts.ONE_DAY), consts.ONE_DAY),
+        1
+      );
+      await expect(vammTest.checkMaturityDuration()).to.not.be.reverted;
     });
 
+    it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
+      advanceTimeAndBlock(sub(consts.ONE_WEEK, consts.ONE_DAY), 1);
+      await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
+        "closeToOrBeyondMaturity"
+      );
     });
 
-    describe("#checkCurrentTimestampTermEndTimestampDelta", () => {
-      it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
-        advanceTimeAndBlock(
-          sub(sub(consts.ONE_WEEK, consts.ONE_DAY), consts.ONE_DAY),
-          1
-        );
-        await expect(vammTest.checkMaturityDuration()).to.not.be.reverted;
-      });
-  
-      it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
-        advanceTimeAndBlock(sub(consts.ONE_WEEK, consts.ONE_DAY), 1);
-        await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
-          "closeToOrBeyondMaturity"
-        );
-      });
-  
-      it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
-        advanceTimeAndBlock(consts.ONE_WEEK, 1);
-        await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
-          "closeToOrBeyondMaturity"
-        );
-      });
+    it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
+      advanceTimeAndBlock(consts.ONE_WEEK, 1);
+      await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
+        "closeToOrBeyondMaturity"
+      );
     });
+  });
 
-      describe("#updateProtocolFees", () => {
+  describe("#updateProtocolFees", () => {
     it("check MarginEngine privilege ", async () => {
       await expect(vammTest.updateProtocolFees(toBn("1"))).to.be.revertedWith(
         "OnlyMarginEngine"
@@ -350,7 +392,7 @@ describe("VAMM", () => {
     });
   });
 
-    describe("#setFeeProtocol", () => {
+  describe("#setFeeProtocol", () => {
     it("check owner privilege ", async () => {
       await expect(
         vammTest.connect(other).setFeeProtocol(5)
@@ -380,7 +422,7 @@ describe("VAMM", () => {
     });
   });
 
-    describe("#burn", () => {
+  describe("#burn", () => {
     it("fails if not initialized", async () => {
       await expect(vammTest.mint(wallet.address, -tickSpacing, tickSpacing, 1))
         .to.be.reverted;
@@ -394,7 +436,12 @@ describe("VAMM", () => {
         await token.mint(wallet.address, BigNumber.from(10).pow(27));
         await token.approve(wallet.address, BigNumber.from(10).pow(27));
 
-        await marginEngineTest.updatePositionMargin(wallet.address, minTick, maxTick, toBn("100000"));
+        await marginEngineTest.updatePositionMargin(
+          wallet.address,
+          minTick,
+          maxTick,
+          toBn("100000")
+        );
 
         await vammTest.mint(wallet.address, minTick, maxTick, 3161);
       });
@@ -406,14 +453,16 @@ describe("VAMM", () => {
 
         it("fails if tickLower less than min tick", async () => {
           // should be TLM but...hardhat
-          await expect(vammTest.burn(wallet.address, -887273, 0, 1)).to.be
-            .revertedWith("TLM");
+          await expect(
+            vammTest.burn(wallet.address, -887273, 0, 1)
+          ).to.be.revertedWith("TLM");
         });
 
         it("fails if tickUpper greater than max tick", async () => {
           // should be TUM but...hardhat
-          await expect(vammTest.burn(wallet.address, 0, 887273, 1)).to.be
-            .revertedWith("TUM");
+          await expect(
+            vammTest.burn(wallet.address, 0, 887273, 1)
+          ).to.be.revertedWith("TUM");
         });
       });
 
@@ -423,16 +472,30 @@ describe("VAMM", () => {
         });
 
         it("adds liquidity to liquidityGross", async () => {
-
-          await marginEngineTest.updatePositionMargin(wallet.address, -240, 0, toBn("100000"));
+          await marginEngineTest.updatePositionMargin(
+            wallet.address,
+            -240,
+            0,
+            toBn("100000")
+          );
 
           await vammTest.mint(wallet.address, -240, 0, 100);
 
-          await marginEngineTest.updatePositionMargin(wallet.address, -240, 60, toBn("100000"));
+          await marginEngineTest.updatePositionMargin(
+            wallet.address,
+            -240,
+            60,
+            toBn("100000")
+          );
 
           await vammTest.mint(wallet.address, -240, 60, 150);
 
-          await marginEngineTest.updatePositionMargin(wallet.address, 0, 120, toBn("100000"));
+          await marginEngineTest.updatePositionMargin(
+            wallet.address,
+            0,
+            120,
+            toBn("100000")
+          );
 
           await vammTest.mint(wallet.address, 0, 120, 60);
 
@@ -458,6 +521,5 @@ describe("VAMM", () => {
         });
       });
     });
-
   });
 });

@@ -26,19 +26,20 @@ import { e2eParameters } from "../end_to_end/general_setup/e2eSetup";
 import { TICK_SPACING } from "./utilities";
 const { provider } = waffle;
 
-export async function mockATokenFixture(_aaveLendingPoolAddress: string, _underlyingAsset: string) {
+export async function mockATokenFixture(
+  _aaveLendingPoolAddress: string,
+  _underlyingAsset: string
+) {
   const mockATokenFactory = await ethers.getContractFactory("MockAToken");
 
-  const mockAToken = (
-    await mockATokenFactory.deploy(
-      _aaveLendingPoolAddress,
-      _underlyingAsset,
-      "Voltz aUSD",
-      "aVUSD"
-    ) as MockAToken
-  );
+  const mockAToken = (await mockATokenFactory.deploy(
+    _aaveLendingPoolAddress,
+    _underlyingAsset,
+    "Voltz aUSD",
+    "aVUSD"
+  )) as MockAToken;
 
-  return { mockAToken }
+  return { mockAToken };
 }
 
 export async function mockERC20Fixture() {
@@ -137,7 +138,6 @@ export async function ActorFixture() {
   return { actor };
 }
 
-
 export async function tickMathFixture() {
   const TickMathFactury = await ethers.getContractFactory("TickMathTest");
 
@@ -204,8 +204,11 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     token.address
   );
 
-  const { mockAToken } = await mockATokenFixture(aaveLendingPool.address, token.address);
-  
+  const { mockAToken } = await mockATokenFixture(
+    aaveLendingPool.address,
+    token.address
+  );
+
   await aaveLendingPool.setReserveNormalizedIncome(
     token.address,
     BigNumber.from(10).pow(27)
@@ -228,7 +231,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
 
   // set master fcm for aave
   await factory.setMasterFCM(fcmMasterTest.address, rateOracleTest.address);
-  
+
   // deploy a margin engine & vamm
   await factory.deployIrsInstance(
     token.address,
@@ -237,7 +240,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termEndTimestampBN,
     TICK_SPACING
   );
-  
+
   const marginEngineAddress = await factory.getMarginEngineAddress(
     token.address,
     rateOracleTest.address,
@@ -284,7 +287,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     mockAToken,
     marginEngineTest,
     vammTest,
-    fcmTest
+    fcmTest,
   };
 };
 

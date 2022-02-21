@@ -14,7 +14,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
     mapping(address => uint256) internal factorPerSecondInRay; // E.g. 1000000001000000000000000000 for 0.0000001% per second = ~3.2% APY
 
     mapping(address => AaveDataTypes.ReserveData) internal _reserves;
-    
+
     function getReserveNormalizedIncome(address _underlyingAsset)
         public
         view
@@ -53,72 +53,72 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
         factorPerSecondInRay[_underlyingAsset] = _factorPerSecondInRay;
     }
 
+    function initReserve(address asset, address aTokenAddress)
+        external
+        override
+    {
+        AaveDataTypes.ReserveData memory reserveData;
+        reserveData.aTokenAddress = aTokenAddress;
 
-  function initReserve(
-    address asset,
-    address aTokenAddress
-  ) external override {
-    
-    AaveDataTypes.ReserveData memory reserveData;
-    reserveData.aTokenAddress = aTokenAddress;
-
-    _reserves[asset] = reserveData;
-  }
-
-    /**
-    * @dev Returns the state and configuration of the reserve
-    * @param asset The address of the underlying asset of the reserve
-    * @return The state of the reserve
-    **/
-  function getReserveData(address asset)
-    external
-    view
-    override
-    returns (AaveDataTypes.ReserveData memory)
-  {
-    return _reserves[asset];
-  }
-
-  function withdraw(
-    address asset,
-    uint256 amount,
-    address to
-  ) external override returns (uint256) {
-    
-    AaveDataTypes.ReserveData storage reserve = _reserves[asset];
-    address aToken = reserve.aTokenAddress;
-
-    uint256 userBalance = IERC20Minimal(aToken).balanceOf(msg.sender);
-
-    uint256 amountToWithdraw = amount;
-
-    if (amount == type(uint256).max) {
-      amountToWithdraw = userBalance;
+        _reserves[asset] = reserveData;
     }
 
-  //  ValidationLogic.validateWithdraw(
-  //   asset,
-  //   amountToWithdraw,
-  //   userBalance,
-  //   _reserves,
-  //   _usersConfig[msg.sender],
-  //   _reservesList,
-  //   _reservesCount,
-  //   _addressesProvider.getPriceOracle()
-  // );
+    /**
+     * @dev Returns the state and configuration of the reserve
+     * @param asset The address of the underlying asset of the reserve
+     * @return The state of the reserve
+     **/
+    function getReserveData(address asset)
+        external
+        view
+        override
+        returns (AaveDataTypes.ReserveData memory)
+    {
+        return _reserves[asset];
+    }
 
-  // reserve.updateState();
-  // reserve.updateInterestRates(asset, aToken, 0, amountToWithdraw);
+    function withdraw(
+        address asset,
+        uint256 amount,
+        address to
+    ) external override returns (uint256) {
+        AaveDataTypes.ReserveData storage reserve = _reserves[asset];
+        address aToken = reserve.aTokenAddress;
 
-  // if (amountToWithdraw == userBalance) {
-  //   _usersConfig[msg.sender].setUsingAsCollateral(reserve.id, false);
-  //   emit ReserveUsedAsCollateralDisabled(asset, msg.sender);
-  // }
+        uint256 userBalance = IERC20Minimal(aToken).balanceOf(msg.sender);
 
-  IAToken(aToken).burn(msg.sender, to, amountToWithdraw, reserve.liquidityIndex);
+        uint256 amountToWithdraw = amount;
 
-  return amountToWithdraw;
+        if (amount == type(uint256).max) {
+            amountToWithdraw = userBalance;
+        }
 
-  }
-  
+        //  ValidationLogic.validateWithdraw(
+        //   asset,
+        //   amountToWithdraw,
+        //   userBalance,
+        //   _reserves,
+        //   _usersConfig[msg.sender],
+        //   _reservesList,
+        //   _reservesCount,
+        //   _addressesProvider.getPriceOracle()
+        // );
+
+        // reserve.updateState();
+        // reserve.updateInterestRates(asset, aToken, 0, amountToWithdraw);
+
+        // if (amountToWithdraw == userBalance) {
+        //   _usersConfig[msg.sender].setUsingAsCollateral(reserve.id, false);
+        //   emit ReserveUsedAsCollateralDisabled(asset, msg.sender);
+        // }
+
+        IAToken(aToken).burn(
+            msg.sender,
+            to,
+            amountToWithdraw,
+            reserve.liquidityIndex
+        );
+
+        return amountToWithdraw;
+    }
 }

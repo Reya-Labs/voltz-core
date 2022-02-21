@@ -37,7 +37,9 @@ describe("TickMath", () => {
     });
 
     it("min tick", async () => {
-      expect(await tickMath.getSqrtRatioAtTick(MIN_TICK)).to.eq("2503036416286949174936592462");
+      expect(await tickMath.getSqrtRatioAtTick(MIN_TICK)).to.eq(
+        "2503036416286949174936592462"
+      );
     });
 
     it("min tick +1", async () => {
@@ -59,7 +61,7 @@ describe("TickMath", () => {
     });
 
     for (const absTick of [
-      50, 100, 250, 500, 1_000, 2_500, 3_000, 4_000, 5_000, 50_000
+      50, 100, 250, 500, 1_000, 2_500, 3_000, 4_000, 5_000, 50_000,
     ]) {
       for (const tick of [-absTick, absTick]) {
         describe(`tick ${tick}`, () => {
@@ -120,15 +122,13 @@ describe("TickMath", () => {
       expect(await tickMath.getTickAtSqrtRatio(MIN_SQRT_RATIO)).to.eq(MIN_TICK);
     });
     it("ratio of min tick + 1", async () => {
-      expect(await tickMath.getTickAtSqrtRatio("2503161564979124432035869129")).to.eq(
-        MIN_TICK + 1
-      );
+      expect(
+        await tickMath.getTickAtSqrtRatio("2503161564979124432035869129")
+      ).to.eq(MIN_TICK + 1);
     });
     it("ratio of max tick - 1", async () => {
       expect(
-        await tickMath.getTickAtSqrtRatio(
-          "2507669430214757147510696507320"
-        )
+        await tickMath.getTickAtSqrtRatio("2507669430214757147510696507320")
       ).to.eq(MAX_TICK - 1);
     });
     it("ratio closest to max tick", async () => {

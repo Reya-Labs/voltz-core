@@ -272,7 +272,9 @@ export class ScenarioRunner {
         this.outputFile,
         "   fixedTokenGrowthInsideLastX128: " +
           (
-            positionInfo.fixedTokenGrowthInsideLastX128.div(BigNumber.from(2).pow(128 - 32)).toNumber() /
+            positionInfo.fixedTokenGrowthInsideLastX128
+              .div(BigNumber.from(2).pow(128 - 32))
+              .toNumber() /
             2 ** 32
           ).toString() +
           "\n"
@@ -281,7 +283,9 @@ export class ScenarioRunner {
         this.outputFile,
         "variableTokenGrowthInsideLastX128: " +
           (
-            positionInfo.variableTokenGrowthInsideLastX128.div(BigNumber.from(2).pow(128 - 32)).toNumber() /
+            positionInfo.variableTokenGrowthInsideLastX128
+              .div(BigNumber.from(2).pow(128 - 32))
+              .toNumber() /
             2 ** 32
           ).toString() +
           "\n"
@@ -380,7 +384,7 @@ export class ScenarioRunner {
       this.token.address,
       this.rateOracleTest.address,
       this.termStartTimestampBN,
-      this.termEndTimestampBN, 
+      this.termEndTimestampBN,
       this.params.tickSpacing
     );
 
@@ -601,14 +605,15 @@ export class ScenarioRunner {
     await this.updateAPYbounds();
   }
 
-  async getAPYboundsAndPositionMargin(
-    position: [string, number, number]
-  ) {
+  async getAPYboundsAndPositionMargin(position: [string, number, number]) {
     await this.updateAPYbounds();
 
     await this.marginEngineTest.getPositionMarginRequirementTest(
-        position[0], position[1], position[2], false
-      );
+      position[0],
+      position[1],
+      position[2],
+      false
+    );
 
     const positionMarginRequirement = await this.marginEngineTest.getMargin();
 

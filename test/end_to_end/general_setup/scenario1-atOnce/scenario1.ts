@@ -12,8 +12,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.getAPYboundsAndPositionMargin(this.positions[0]);
 
     await this.e2eSetup.updatePositionMargin(
-      this.positions[0][0], 
-      this.positions[0][1], 
+      this.positions[0][0],
+      this.positions[0][1],
       this.positions[0][2],
       toBn("125")
     );
@@ -35,8 +35,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.exportSnapshot("AFTER MINT");
 
     await this.e2eSetup.updatePositionMargin(
-      this.positions[0][0], 
-      this.positions[0][1], 
+      this.positions[0][0],
+      this.positions[0][1],
       this.positions[0][2],
       toBn("500")
     );

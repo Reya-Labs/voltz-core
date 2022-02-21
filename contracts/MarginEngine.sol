@@ -260,7 +260,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         if (marginDelta < 0) {
 
-            if (_owner != msg.sender || factory.isApproved(_owner, msg.sender)) {
+            if (_owner != msg.sender && !factory.isApproved(_owner, msg.sender)) {
                 revert OnlyOwnerCanUpdatePosition();
             }
 

@@ -237,7 +237,6 @@ interface IVAMM is IPositionStructs {
     /// @param sqrtPriceX96 the initial sqrt price of the vamm as a Q64.96
     function initializeVAMM(uint160 sqrtPriceX96) external;
 
-
     /// @notice removes liquidity given recipient/tickLower/tickUpper of the position
     /// @param recipient The address for which the liquidity will be created
     /// @param tickLower The lower tick of the position in which to add liquidity

@@ -57,7 +57,9 @@ export abstract class TickMath {
   /**
    * The sqrt ratio corresponding to the minimum tick that could be used on any pool.
    */
-  public static MIN_SQRT_RATIO: JSBI = JSBI.BigInt("2503036416286949174936592462");
+  public static MIN_SQRT_RATIO: JSBI = JSBI.BigInt(
+    "2503036416286949174936592462"
+  );
   /**
    * The sqrt ratio corresponding to the maximum tick that could be used on any pool.
    */

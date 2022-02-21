@@ -8,7 +8,6 @@ import "../MarginEngine.sol";
 import "../core_libraries/Position.sol";
 
 contract TestMarginEngine is MarginEngine {
-
     using Position for mapping(bytes32 => Position.Info);
     using Position for Position.Info;
 
@@ -20,8 +19,11 @@ contract TestMarginEngine is MarginEngine {
         int24 tickUpper,
         bool isMintBurn
     ) external {
-
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        Position.Info storage position = positions.get(
+            owner,
+            tickLower,
+            tickUpper
+        );
 
         updatePositionTokenBalancesAndAccountForFees(
             position,
@@ -48,7 +50,11 @@ contract TestMarginEngine is MarginEngine {
         int256 counterfactualVariableTokenBalance,
         int256 counterfactualMargin
     ) public {
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        Position.Info storage position = positions.get(
+            owner,
+            tickLower,
+            tickUpper
+        );
 
         uint128 originalLiquidity = position._liquidity;
         int256 originalFixedTokenBalance = position.fixedTokenBalance;
@@ -60,11 +66,7 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        checkPositionMarginCanBeUpdated(
-                position,
-                tickLower,
-                tickUpper
-            );
+        checkPositionMarginCanBeUpdated(position, tickLower, tickUpper);
 
         position._liquidity = originalLiquidity;
         position.fixedTokenBalance = originalFixedTokenBalance;
@@ -81,7 +83,11 @@ contract TestMarginEngine is MarginEngine {
         int256 counterfactualVariableTokenBalance,
         int256 counterfactualMargin
     ) public {
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        Position.Info storage position = positions.get(
+            owner,
+            tickLower,
+            tickUpper
+        );
 
         uint128 originalLiquidity = position._liquidity;
         int256 originalFixedTokenBalance = position.fixedTokenBalance;
@@ -93,11 +99,7 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        checkPositionMarginAboveRequirement(
-                position,
-                tickLower,
-                tickUpper
-            );
+        checkPositionMarginAboveRequirement(position, tickLower, tickUpper);
 
         position._liquidity = originalLiquidity;
         position.fixedTokenBalance = originalFixedTokenBalance;
@@ -115,7 +117,11 @@ contract TestMarginEngine is MarginEngine {
         int256 counterfactualMargin,
         bool isLM
     ) external {
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        Position.Info storage position = positions.get(
+            owner,
+            tickLower,
+            tickUpper
+        );
 
         uint128 originalLiquidity = position._liquidity;
         int256 originalFixedTokenBalance = position.fixedTokenBalance;
@@ -127,7 +133,12 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        keepInMindMargin = getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
+        keepInMindMargin = getPositionMarginRequirement(
+            position,
+            tickLower,
+            tickUpper,
+            isLM
+        );
 
         position._liquidity = originalLiquidity;
         position.fixedTokenBalance = originalFixedTokenBalance;
@@ -167,7 +178,11 @@ contract TestMarginEngine is MarginEngine {
         int24 tickLower,
         int24 tickUpper
     ) public {
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        Position.Info storage position = positions.get(
+            owner,
+            tickLower,
+            tickUpper
+        );
         unwindPosition(position, owner, tickLower, tickUpper);
     }
 
@@ -181,16 +196,35 @@ contract TestMarginEngine is MarginEngine {
         int24 tickUpper,
         bool isLM
     ) external {
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
-        keepInMindMargin = getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
+        Position.Info storage position = positions.get(
+            owner,
+            tickLower,
+            tickUpper
+        );
+        keepInMindMargin = getPositionMarginRequirement(
+            position,
+            tickLower,
+            tickUpper,
+            isLM
+        );
     }
 
     function getMargin() external view returns (uint256) {
         return keepInMindMargin;
     }
 
-    function getMarginRequirementTest(int256 fixedTokenBalance, int256 variableTokenBalance, bool isLM, uint160 sqrtPriceX96) external {
-        keepInMindMargin = getMarginRequirement(fixedTokenBalance, variableTokenBalance, isLM, sqrtPriceX96);
+    function getMarginRequirementTest(
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        bool isLM,
+        uint160 sqrtPriceX96
+    ) external {
+        keepInMindMargin = getMarginRequirement(
+            fixedTokenBalance,
+            variableTokenBalance,
+            isLM,
+            sqrtPriceX96
+        );
     }
 
     bool keepInMindIsLiquidatable;
@@ -204,7 +238,11 @@ contract TestMarginEngine is MarginEngine {
         int256 counterfactualVariableTokenBalance,
         int256 counterfactualMargin
     ) external {
-        Position.Info storage position = positions.get(owner, tickLower, tickUpper);
+        Position.Info storage position = positions.get(
+            owner,
+            tickLower,
+            tickUpper
+        );
 
         uint128 originalLiquidity = position._liquidity;
         int256 originalFixedTokenBalance = position.fixedTokenBalance;
@@ -216,7 +254,11 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        keepInMindIsLiquidatable = isLiquidatablePosition(position, tickLower, tickUpper);
+        keepInMindIsLiquidatable = isLiquidatablePosition(
+            position,
+            tickLower,
+            tickUpper
+        );
 
         position._liquidity = originalLiquidity;
         position.fixedTokenBalance = originalFixedTokenBalance;

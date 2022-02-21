@@ -13,7 +13,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       await this.getAPYboundsAndPositionMargin(p);
 
       await this.e2eSetup.updatePositionMargin(p[0], p[1], p[2], toBn("25"));
-      console.log("gas consumed for update position margin: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+      console.log(
+        "gas consumed for update position margin: ",
+        (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+      );
     }
 
     await this.rateOracleTest.increaseObservarionCardinalityNext(1000);
@@ -24,11 +27,19 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       console.log("mint phase: ", i);
       for (const p of this.positions) {
         await this.e2eSetup.mint(p[0], p[1], p[2], toBn("1001"));
-        console.log("gas consumed for mint: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
-        gasForMints = gasForMints.add(await this.e2eSetup.getGasConsumedAtLastTx());
+        console.log(
+          "gas consumed for mint: ",
+          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+        );
+        gasForMints = gasForMints.add(
+          await this.e2eSetup.getGasConsumedAtLastTx()
+        );
       }
     }
-    console.log("gas consumed for mints in average: ", (gasForMints.div(100)).toString());
+    console.log(
+      "gas consumed for mints in average: ",
+      gasForMints.div(100).toString()
+    );
 
     await this.advanceAndUpdateApy(consts.ONE_DAY.mul(25), 1, 1.0012);
 
@@ -36,7 +47,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     for (const p of this.positions) {
       await this.e2eSetup.updatePositionMargin(p[0], p[1], p[2], toBn("100"));
-      console.log("gas consumed for update position margin: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+      console.log(
+        "gas consumed for update position margin: ",
+        (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+      );
     }
 
     const sqrtPriceLimit = await this.testTickMath.getSqrtRatioAtTick(
@@ -44,15 +58,18 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     );
 
     await this.e2eSetup.swap({
-          recipient: this.positions[0][0],
-          amountSpecified: toBn("-1000"),
-          sqrtPriceLimitX96: sqrtPriceLimit,
-          isExternal: false,
-          tickLower: this.positions[0][1],
-          tickUpper: this.positions[0][2],
-        });
+      recipient: this.positions[0][0],
+      amountSpecified: toBn("-1000"),
+      sqrtPriceLimitX96: sqrtPriceLimit,
+      isExternal: false,
+      tickLower: this.positions[0][1],
+      tickUpper: this.positions[0][2],
+    });
 
-    console.log("gas consumed for swap: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    console.log(
+      "gas consumed for swap: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     await this.advanceAndUpdateApy(consts.ONE_DAY.mul(25), 1, 1.0015);
 

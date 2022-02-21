@@ -51,9 +51,7 @@ export function encodeSqrtRatioX96(
 }
 
 export const MIN_SQRT_RATIO = BigNumber.from("2503036416286949174936592462");
-export const MAX_SQRT_RATIO = BigNumber.from(
-  "2507794810551837817144115957740"
-);
+export const MAX_SQRT_RATIO = BigNumber.from("2507794810551837817144115957740");
 
 export function expandTo18Decimals(n: number): BigNumber {
   return expandToDecimals(n, 18);
@@ -146,12 +144,19 @@ export function formatRay(value: BigNumber, decimals: number = 9): string {
   return result;
 }
 
-export function printTraderWithYieldBearingTokensInfo(
-  traderInfo: any
-) {
-  console.log("marginInScaledYieldBearingTokens: ", utils.formatEther(traderInfo.marginInScaledYieldBearingTokens));
-  console.log("fixedTokenBalance: ", utils.formatEther(traderInfo.fixedTokenBalance));
-  console.log("variableTokenBalance: ", utils.formatEther(traderInfo.variableTokenBalance));
+export function printTraderWithYieldBearingTokensInfo(traderInfo: any) {
+  console.log(
+    "marginInScaledYieldBearingTokens: ",
+    utils.formatEther(traderInfo.marginInScaledYieldBearingTokens)
+  );
+  console.log(
+    "fixedTokenBalance: ",
+    utils.formatEther(traderInfo.fixedTokenBalance)
+  );
+  console.log(
+    "variableTokenBalance: ",
+    utils.formatEther(traderInfo.variableTokenBalance)
+  );
   console.log("isSettled: ", traderInfo.isSettled.toString());
   console.log("");
 }

@@ -8,8 +8,6 @@ import { metaFixture } from "../shared/fixtures";
 import { BigNumber } from "@ethersproject/bignumber";
 import { TestMarginEngine, TestVAMM } from "../../typechain";
 import { TICK_SPACING } from "../shared/utilities";
-import { add } from "../shared/functions";
-import { toBn } from "evm-bn";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -34,8 +32,7 @@ describe("Factory", () => {
     } = await loadFixture(metaFixture));
 
     // change the term start timestamp to deploy a different instance from the one we have in the meta fixture
-    termStartTimestampBN = add(termStartTimestampBN, toBn("1"));
-
+    termStartTimestampBN = termEndTimestampBN.add(1);
   });
 
   it("Cannot deploy if not the owner", async () => {
@@ -69,7 +66,13 @@ describe("Factory", () => {
       TICK_SPACING
     );
 
-    const fcmAddress = await factory.getFCMAddress(token.address, rateOracleTest.address, termStartTimestampBN, termEndTimestampBN, TICK_SPACING);
+    const fcmAddress = await factory.getFCMAddress(
+      token.address,
+      rateOracleTest.address,
+      termStartTimestampBN,
+      termEndTimestampBN,
+      TICK_SPACING
+    );
 
     // Now deployand check the log
     await expect(
@@ -128,9 +131,9 @@ describe("Factory", () => {
 
     expect(vamm1.address).to.eq(vammAddress);
 
-    await expect(vamm1.initialize(marginEngine1.address, TICK_SPACING)).to.be.revertedWith(
-      "contract is already initialized"
-    );
+    await expect(
+      vamm1.initialize(marginEngine1.address, TICK_SPACING)
+    ).to.be.revertedWith("contract is already initialized");
 
     const marginEngineAddressRealised = await vamm1.marginEngine();
     expect(marginEngineAddressRealised).to.eq(marginEngine1.address);

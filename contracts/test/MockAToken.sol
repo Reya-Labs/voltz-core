@@ -223,6 +223,5 @@ contract MockAToken is IAToken, ERC20 {
         uint256 index = pool.getReserveNormalizedIncome(underlyingAsset);
 
         super._transfer(from, to, amount.rayDiv(index));
-
     }
 }

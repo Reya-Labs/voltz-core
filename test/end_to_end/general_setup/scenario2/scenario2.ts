@@ -23,7 +23,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[0][2],
       toBn("100000000")
     );
-    
+
     await this.e2eSetup.updatePositionMargin(
       this.positions[2][0],
       this.positions[2][1],

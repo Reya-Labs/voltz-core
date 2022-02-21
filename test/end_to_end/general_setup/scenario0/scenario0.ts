@@ -13,17 +13,19 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // add 1,000,000 liquidity to Position 0
 
     // print the position margin requirement
-    await this.getAPYboundsAndPositionMargin(
-      this.positions[0]
-    );
+    await this.getAPYboundsAndPositionMargin(this.positions[0]);
 
     // update the position margin with 210
-    await this.e2eSetup.updatePositionMargin(this.positions[0][0],
-        this.positions[0][1],
-        this.positions[0][2],
+    await this.e2eSetup.updatePositionMargin(
+      this.positions[0][0],
+      this.positions[0][1],
+      this.positions[0][2],
       toBn("210")
     );
-    console.log("gas consumed at update position margin: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    console.log(
+      "gas consumed at update position margin: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     // add 1,000,000 liquidity to Position 0
     await this.e2eSetup.mint(
@@ -32,7 +34,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[0][2],
       toBn("1000000")
     );
-    console.log("gas consumed at first mint: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    console.log(
+      "gas consumed at first mint: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     // two days pass and set reserve normalised income
     await this.advanceAndUpdateApy(consts.ONE_DAY.mul(2), 1, 1.0081); // advance 2 days
@@ -41,8 +46,16 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.exportSnapshot("BEFORE FIRST SWAP");
 
     // update the trader margin with 1,000
-    await this.e2eSetup.updatePositionMargin(this.positions[2][0], this.positions[2][1], this.positions[2][2], toBn("1000"));
-    console.log("gas consumed at update position margin: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    await this.e2eSetup.updatePositionMargin(
+      this.positions[2][0],
+      this.positions[2][1],
+      this.positions[2][2],
+      toBn("1000")
+    );
+    console.log(
+      "gas consumed at update position margin: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     // print the maximum amount given the liquidity of Position 0
     await this.updateCurrentTick();
@@ -56,9 +69,12 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
       isExternal: false,
       tickLower: this.positions[2][1],
-      tickUpper: this.positions[2][2]
+      tickUpper: this.positions[2][2],
     });
-    console.log("gas consumed at first swap: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    console.log(
+      "gas consumed at first swap: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     await this.exportSnapshot("AFTER FIRST SWAP");
 
@@ -70,9 +86,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // add 5,000,000 liquidity to Position 1
 
     // print the position margin requirement
-    await this.getAPYboundsAndPositionMargin(
-      this.positions[1]
-    );
+    await this.getAPYboundsAndPositionMargin(this.positions[1]);
 
     // update the position margin with 2,000
     await this.e2eSetup.updatePositionMargin(
@@ -81,7 +95,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[1][2],
       toBn("2000")
     );
-    console.log("gas consumed at update position margin: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    console.log(
+      "gas consumed at update position margin: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     // add 5,000,000 liquidity to Position 1
     await this.e2eSetup.mint(
@@ -90,7 +107,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[1][2],
       toBn("5000000")
     );
-    console.log("gas consumed at second mint: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    console.log(
+      "gas consumed at second mint: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     // a week passes
     await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125);
@@ -99,8 +119,16 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.exportSnapshot("BEFORE SECOND SWAP");
 
     // update the trader margin with 1,000
-    await this.e2eSetup.updatePositionMargin(this.positions[3][0], this.positions[3][1], this.positions[3][2], toBn("1000"));
-    console.log("gas consumed at update position margin: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    await this.e2eSetup.updatePositionMargin(
+      this.positions[3][0],
+      this.positions[3][1],
+      this.positions[3][2],
+      toBn("1000")
+    );
+    console.log(
+      "gas consumed at update position margin: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     // print the maximum amount given the liquidity of Position 0
     await this.updateCurrentTick();
@@ -116,7 +144,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       tickLower: this.positions[3][1],
       tickUpper: this.positions[3][2],
     });
-    console.log("gas consumed at second swap: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    console.log(
+      "gas consumed at second swap: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     await this.exportSnapshot("AFTER SECOND SWAP");
 
@@ -132,7 +163,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       tickLower: this.positions[2][1],
       tickUpper: this.positions[2][2],
     });
-    console.log("gas consumed at third swap: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    console.log(
+      "gas consumed at third swap: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     await this.exportSnapshot("AFTER THIRD (REVERSE) SWAP");
 
@@ -148,7 +182,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[0][2],
       toBn("1000000")
     );
-    console.log("gas consumed at first burn: ", (await this.e2eSetup.getGasConsumedAtLastTx()).toString());
+    console.log(
+      "gas consumed at first burn: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
     await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(8), 4, 1.0132); // advance eight weeks (4 days before maturity)
 
