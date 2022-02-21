@@ -89,6 +89,9 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   
   function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override {
 
+    // rayDiv only works with Ray values
+    // consider converting wad to ray and ray to wad?
+    
     require(notional!=0, "notional = 0");
 
     /// @audit add support for approvals and recipient

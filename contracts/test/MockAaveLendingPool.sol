@@ -3,6 +3,7 @@ import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "../aave/AaveDataTypes.sol";
 import "../interfaces/aave/IAToken.sol";
+import "../utils/Printer.sol";
 
 /// @notice This Mock Aave pool can be used in 3 ways
 /// - change the rate to a fixed value (`setReserveNormalizedIncome`)
@@ -114,6 +115,8 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
   //   _usersConfig[msg.sender].setUsingAsCollateral(reserve.id, false);
   //   emit ReserveUsedAsCollateralDisabled(asset, msg.sender);
   // }
+
+  Printer.printUint256("amountToWithdraw", amountToWithdraw);
 
   IAToken(aToken).burn(msg.sender, to, amountToWithdraw, reserve.liquidityIndex);
 
