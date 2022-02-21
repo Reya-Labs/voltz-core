@@ -419,7 +419,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
-        /// @audit here we should round towards protocol fees (+ ((step.feeAmount % cache.feeProtocol == 0) ? 0 : 1)) ?
+        /// here we should round towards protocol fees (+ ((step.feeAmount % cache.feeProtocol == 0) ? 0 : 1)) ?
         step.feeProtocolDelta = step.feeAmount / cache.feeProtocol;
         step.feeAmount -= step.feeProtocolDelta;
         state.protocolFee += step.feeProtocolDelta;

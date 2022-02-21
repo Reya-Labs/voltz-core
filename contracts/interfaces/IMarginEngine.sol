@@ -186,7 +186,7 @@ interface IMarginEngine is IPositionStructs {
     /// @dev This value is only settable by the the Factory owner and may be unique for each MarginEngine
     /// @dev When setting secondAgo, the setter needs to take into consideration the underlying volatility of the APYs in the reference yield-bearing pool (e.g. Aave v2 USDC)
     /// @return secondsAgo in seconds
-    function secondsAgo() external view returns (uint256); // @audit suffix with Wad
+    function secondsAgo() external view returns (uint256); // suffix with Wad
 
     /// @notice Sets secondsAgo: The look-back window size used to calculate the historical APY for margin purposes
     /// @param _secondsAgo the duration of the lookback window in seconds

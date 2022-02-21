@@ -93,7 +93,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     
     require(notional!=0, "notional = 0");
 
-    /// @audit add support for approvals and recipient
+    /// add support for approvals and recipient
     // add cumulative fees to the swap event in the core?
 
     int24 tickSpacing = vamm.tickSpacing();
@@ -264,7 +264,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   }
 
   function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine override {
-    /// @audit if aave's reserves are depleted the withdraw operation below will fail, in that scenario need to either withdraw as much as possible or transfer aTokens directly
+    /// if aave's reserves are depleted the withdraw operation below will fail, in that scenario need to either withdraw as much as possible or transfer aTokens directly
     aaveLendingPool.withdraw(address(underlyingToken), marginDeltaInUnderlyingTokens, _account);
   }
 

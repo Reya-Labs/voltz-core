@@ -84,7 +84,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @return The "floating rate" expressed in Wad, e.g. 4% is encoded as 0.04*10**18 = 4*10**16
     function getRateFromTo(
         uint256 _from,
-        uint256 _to // @audit - move docs to IRateOracle. Add additional parameter to use cache and implement cache.
+        uint256 _to //  move docs to IRateOracle. Add additional parameter to use cache and implement cache.
     ) public view override(BaseRateOracle, IRateOracle) returns (uint256) {
         if (_from == _to) {
             return 0;
@@ -118,7 +118,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
                     )
                 );
         } else {
-            /// @audit is this precise, have there been instances where the aave rate is negative?
+            /// is this precise, have there been instances where the aave rate is negative?
             return 0;
         }
     }
@@ -192,7 +192,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
             uint256 rateFromBeforeOrAtToAtOrAfterWad;
 
-            // @audit - more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
+            // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
                 uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath

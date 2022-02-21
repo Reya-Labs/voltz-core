@@ -26,7 +26,6 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
             uint256 secondsSinceNormalizedIncomeSet = block.timestamp -
                 startTime[_underlyingAsset];
             return
-                /// @audit isn't reserve normalised income in terms of ray, how can we use this?
                 PRBMathUD60x18.mul(
                     reserveNormalizedIncome[_underlyingAsset],
                     PRBMathUD60x18.pow(

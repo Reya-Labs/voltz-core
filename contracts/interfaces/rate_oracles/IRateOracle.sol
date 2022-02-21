@@ -36,7 +36,7 @@ interface IRateOracle {
     // AB: as long as this doesn't affect the termEndTimestamp rateValue too much
     // AB: can have a different minSecondsSinceLastUpdate close to termEndTimestamp to have more granularity for settlement purposes
     /// @return minSecondsSinceLastUpdate in seconds
-    function minSecondsSinceLastUpdate() external view returns (uint256); // @audit: suffix with Wad
+    function minSecondsSinceLastUpdate() external view returns (uint256); //  suffix with Wad
 
     /// @notice Gets the address of the underlying token of the RateOracle
     /// @return underlying The address of the underlying token
@@ -68,7 +68,7 @@ interface IRateOracle {
     /// @param from The timestamp of the start of the period, in seconds
     /// @param to The timestamp of the end of the period, in seconds
     /// @dev Reverts if we have no data point for either timestamp
-    // @audit - how is the returned rate encoded? Floating rate?
+    //  how is the returned rate encoded? Floating rate?
     function getApyFromTo(uint256 from, uint256 to)
         external
         view
@@ -78,7 +78,7 @@ interface IRateOracle {
 
     /// @notice Sets minSecondsSinceLastUpdate: The minimum number of seconds in wei that need to pass since the last update to the rates array
     /// @dev Can only be set by the Factory Owner
-    function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external; // @audit suffix param with Wad
+    function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external; // suffix param with Wad
 
     /// @notice Increase the maximum number of rates observations that this RateOracle will store
     /// @dev This method is no-op if the RateOracle already has an observationCardinalityNext greater than or equal to
