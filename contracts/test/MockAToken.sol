@@ -123,7 +123,6 @@ contract MockAToken is IAToken, ERC20 {
         IERC20Minimal(_underlyingAsset).transfer(receiverOfUnderlying, amount);
 
         emit Transfer(user, address(0), amount);
-        emit Burn(user, receiverOfUnderlying, amount, index);
     }
 
     /**
@@ -225,6 +224,5 @@ contract MockAToken is IAToken, ERC20 {
 
         super._transfer(from, to, amount.rayDiv(index));
 
-        emit BalanceTransfer(from, to, amount, index);
     }
 }

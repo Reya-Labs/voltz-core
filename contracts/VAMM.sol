@@ -25,25 +25,29 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   using Tick for mapping(int24 => Tick.Info);
   using TickBitmap for mapping(int16 => uint256);
 
+  /// @inheritdoc IVAMM
   uint256 public override feeWad;
-
+  /// @inheritdoc IVAMM
   int24 public override tickSpacing;
-
+  /// @inheritdoc IVAMM
   uint128 public override maxLiquidityPerTick;
-
+  /// @inheritdoc IVAMM
   mapping(int24 => Tick.Info) public override ticks;
+  /// @inheritdoc IVAMM
   mapping(int16 => uint256) public override tickBitmap;
-
+  /// @inheritdoc IVAMM
   bool public override unlocked;
 
   address private deployer;
 
   IRateOracle internal rateOracle;
-
+  
+  /// @inheritdoc IVAMM
   IFactory public override factory;
 
-
+  // cached termStartTimstampWad from the MarginEngine associated with the VAMM
   uint256 internal termStartTimestampWad;
+  // cached termEndTimestampWad from the MarginEngine associated with the VAMM
   uint256 internal termEndTimestampWad;
 
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
@@ -71,6 +75,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     deployer = msg.sender;
   }
 
+  /// @inheritdoc IVAMM
   function initialize(address _marginEngineAddress, int24 _tickSpacing) external override initializer {
     require(_marginEngineAddress != address(0), "ME must be set");
     marginEngine = IMarginEngine(_marginEngineAddress);
@@ -84,22 +89,29 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     __Ownable_init();
     __Pausable_init();
   }
-
+  
+  /// @inheritdoc IVAMM
   VAMMVars public override vammVars;
 
+  /// @inheritdoc IVAMM
   int256 public override fixedTokenGrowthGlobalX128;
-
+  
+  /// @inheritdoc IVAMM
   int256 public override variableTokenGrowthGlobalX128;
 
+  /// @inheritdoc IVAMM
   uint256 public override feeGrowthGlobalX128;
-
+  
+  /// @inheritdoc IVAMM
   uint128 public override liquidity;
-
+  
+  /// @inheritdoc IVAMM
   uint256 public override protocolFees;
 
+  /// @inheritdoc IVAMM
   IMarginEngine public override marginEngine;
 
-  
+  /// @dev modifier that ensures the 
   modifier onlyMarginEngine () {
     if (msg.sender != address(marginEngine)) {
         revert OnlyMarginEngine();

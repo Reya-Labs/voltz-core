@@ -39,6 +39,7 @@ interface IVAMM is IPositionStructs {
     /// @dev emitted after setting feeProtocol
     event SetFeeProtocol(uint8 feeProtocolOld, uint8 feeProtocol);
 
+    /// @dev emitted after fee is set
     event FeeSet(uint256 feeWadOld, uint256 feeWad);
 
     // errors
@@ -64,6 +65,7 @@ interface IVAMM is IPositionStructs {
     /// @dev Error which ensures the VAMM is unlocked
     error CanOnlyTradeIfUnlocked(bool unlocked);
 
+    /// @dev only the margin engine can run a certain function
     error OnlyMarginEngine();
 
     // structs
@@ -235,6 +237,12 @@ interface IVAMM is IPositionStructs {
     /// @param sqrtPriceX96 the initial sqrt price of the vamm as a Q64.96
     function initializeVAMM(uint160 sqrtPriceX96) external;
 
+
+    /// @notice removes liquidity given recipient/tickLower/tickUpper of the position
+    /// @param recipient The address for which the liquidity will be created
+    /// @param tickLower The lower tick of the position in which to add liquidity
+    /// @param tickUpper The upper tick of the position in which to add liquidity
+    /// @param amount The amount of liquidity to burn
     function burn(
         address recipient,
         int24 tickLower,

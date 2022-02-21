@@ -86,32 +86,6 @@ contract MarginCalculatorTest {
             );
     }
 
-    // function isLiquidatablePosition(
-    //     MarginCalculator.PositionMarginRequirementParams memory params,
-    //     int256 currentMargin,
-    //     IMarginEngine.MarginCalculatorParameters
-    //         memory _marginCalculatorParameters
-    // ) external view returns (bool _isLiquidatable) {
-    //     return
-    //         MarginCalculator.isLiquidatablePosition(
-    //             params,
-    //             currentMargin,
-    //             _marginCalculatorParameters
-    //         );
-    // }
-
-    // function getPositionMarginRequirementTest(
-    //     MarginCalculator.PositionMarginRequirementParams memory params,
-    //     IMarginEngine.MarginCalculatorParameters
-    //         memory _marginCalculatorParameters
-    // ) external view returns (uint256 margin) {
-    //     return
-    //         MarginCalculator.getPositionMarginRequirement(
-    //             params,
-    //             _marginCalculatorParameters
-    //         );
-    // }
-
     function getFixedTokenBalanceFromMCTest(
         int256 amount0,
         int256 amount1,
