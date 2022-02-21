@@ -38,8 +38,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   IERC20Minimal internal underlyingToken;
   IERC20Minimal internal underlyingYieldBearingToken;
 
-  // add getter
-  mapping(address => TraderWithYieldBearingAssets.Info) public override traders;
+  mapping(address => TraderWithYieldBearingAssets.Info) public traders;
 
   /// The resulting margin does not meet minimum requirements
   error MarginRequirementNotMet();

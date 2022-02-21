@@ -8,6 +8,7 @@ docs
 contracts/.DS_Store
 localhostDeployment.json
 deployments/localhost/
+test/end_to_end/general_setup/scenario0/console.txt
 
 #Hardhat files
 cache

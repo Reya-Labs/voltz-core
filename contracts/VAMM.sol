@@ -170,7 +170,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       revert LiquidityDeltaMustBePositiveInBurn(amount);
     }
 
-    require((msg.sender==recipient) || factory.isApproved(recipient, msg.sender) || (msg.sender == address(marginEngine)), "MS or ME");
+    require((msg.sender==recipient) || (msg.sender == address(marginEngine)) || factory.isApproved(recipient, msg.sender) , "MS or ME");
 
     updatePosition(
       ModifyPositionParams({
