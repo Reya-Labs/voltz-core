@@ -40,8 +40,10 @@ contract Factory is IFactory, Ownable {
     require(_rateOracle != address(0), "rate oracle must exist");
     require(masterFCMAddress != address(0), "master fcm must exist");
 
+    address masterFCMAddressOld = masterFCMs[yieldBearingProtocolID];
     uint8 yieldBearingProtocolID = IRateOracle(_rateOracle).underlyingYieldBearingProtocolID();
     masterFCMs[yieldBearingProtocolID] = masterFCMAddress;
+    emit MasterFCMSet(masterFCMAddressOld, masterFCMAddress, yieldBearingProtocolID);
   }
 
   function getSalt(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) internal pure returns (bytes32 salt) {

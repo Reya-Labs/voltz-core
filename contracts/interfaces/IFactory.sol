@@ -16,6 +16,12 @@ interface IFactory {
         address fcm
     );
 
+    event MasterFCMSet(
+        address masterFCMAddressOld,
+        address masterFCMAddress,
+        uint8 yieldBearingProtocolID
+    )
+
     function setApproval(address intAddress, bool allowIntegration) external;
 
     function isApproved(address _owner, address intAddress)
