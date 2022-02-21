@@ -27,8 +27,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     using SafeTransferLib for IERC20Minimal;
 
-    /// @dev liquidatorReward (in wei) is the percentage of the margin (of a liquidated trader/liquidity provider) that is sent to the liquidator
-    /// @dev following a successful liquidation that results in a trader/position unwind, example value:  2 * 10**15;
     uint256 public override liquidatorRewardWad;
     IERC20Minimal public override underlyingToken;
 
@@ -36,10 +34,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     uint256 public override termStartTimestampWad;
     /// @inheritdoc IMarginEngine
     uint256 public override termEndTimestampWad;
-
-    IFCM public override fcm; // full collateralisation module
+    
+    /// @inheritdoc IMarginEngine
+    IFCM public override fcm;
 
     mapping(bytes32 => Position.Info) internal positions;
+    
     IVAMM public override vamm;
 
     MarginCalculatorParameters internal marginCalculatorParameters;

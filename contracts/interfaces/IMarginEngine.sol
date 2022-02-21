@@ -38,19 +38,25 @@ interface IMarginEngine is IPositionStructs {
         int256 xiLowerWad;
         /// @dev Max term possible for a Voltz IRS AMM in seconds (18 decimals)
         int256 tMaxWad;
-        /// @dev
+        /// @dev multiplier of the starting fixed rate (refer to the litepaper) if simulating a counterfactual fixed taker unwind (moving to the left along the VAMM) for purposes of calculating liquidation margin requirement
         uint256 devMulLeftUnwindLMWad;
+        /// @dev multiplier of the starting fixed rate (refer to the litepaper) if simulating a counterfactual variable taker unwind (moving to the right along the VAMM) for purposes of calculating liquidation margin requirement
         uint256 devMulRightUnwindLMWad;
+        /// @dev same as devMulLeftUnwindLMWad but for purposes of calculating the initial margin requirement
         uint256 devMulLeftUnwindIMWad;
+        /// @dev same as devMulRightUnwindLMWad but for purposes of calculating the initial margin requirement
         uint256 devMulRightUnwindIMWad;
-        /// @dev
-
+        /// @dev r_min from the litepaper eq. 11 for a scenario where counterfactual is a simulated fixed taker unwind (left unwind along the VAMM), used for liquidation margin calculation
         uint256 fixedRateDeviationMinLeftUnwindLMWad;
+        /// @dev r_min from the litepaper eq. 11 for a scenario where counterfactual is a simulated variable taker unwind (right unwind along the VAMM), used for liquidation margin calculation
         uint256 fixedRateDeviationMinRightUnwindLMWad;
+        /// @dev same as fixedRateDeviationMinLeftUnwindLMWad but for Initial Margin Requirement
         uint256 fixedRateDeviationMinLeftUnwindIMWad;
+        /// @dev same as fixedRateDeviationMinRightUnwindLMWad but for Initial Margin Requirement
         uint256 fixedRateDeviationMinRightUnwindIMWad;
-        /// @dev
+        /// @dev gamma from eqn. 12 [append this logic to the litepaper] from the litepaper, gamma is an adjustable parameter necessary to calculate scaled deviations to the fixed rate in counterfactual unwinds for minimum margin requirement calculations
         uint256 gammaWad;
+        /// @dev settable parameter that ensures that minimumMarginRequirement is always above or equal to the minMarginToIncentiviseLiquidators which ensures there is always sufficient incentive for liquidators to liquidate positions given the fact their income is a proportion of position margin
         uint256 minMarginToIncentiviseLiquidators;
     }
 
@@ -121,18 +127,31 @@ interface IMarginEngine is IPositionStructs {
 
     // immutables
 
+    /// @notice The Full Collateralisation Module (FCM)
+    /// @dev The FCM is a smart contract that acts as an intermediary Position between the Voltz Core and traders who wish to take fully collateralised fixed taker positions
+    /// @dev An example FCM is the AaveFCM.sol module which inherits from the IFCM interface, it lets fixed takers deposit underlying yield bearing tokens (e.g.) aUSDC as margin to enter into a fixed taker swap without the need to worry about liquidations
+    /// @dev since the MarginEngine is confident the FCM is always fully collateralised, it does not let liquidators liquidate the FCM Position
+    /// @return The Full Collateralisation Module linked to the MarginEngine
     function fcm() external view returns (IFCM);
 
+    /// @notice The Factory
+    /// @dev the factory that deployed the master Margin Engine
     function factory() external view returns (IFactory);
 
-    // /// @notice The address of the underlying (non-yield bearing) pool token - e.g. USDC
-    // /// @return The underlying pool token address
+    /// @notice The address of the underlying (non-yield bearing) token - e.g. USDC
+    /// @return The underlying ERC20 token (e.g. USDC)
     function underlyingToken() external view returns (IERC20Minimal);
 
+    /// @notice The rateOracle contract which lets the protocol access historical apys in the yield bearing pools it is built on top of 
+    /// @return The underlying ERC20 token (e.g. USDC)
     function rateOracle() external view returns (IRateOracle);
 
+    /// @notice The unix termStartTimestamp of the MarginEngine in Wad
+    /// @return Term Start Timestamp in Wad
     function termStartTimestampWad() external view returns (uint256);
 
+    /// @notice The unix termEndTimestamp of the MarginEngine in Wad
+    /// @return Term End Timestamp in Wad
     function termEndTimestampWad() external view returns (uint256);
 
     // errors
@@ -143,14 +162,8 @@ interface IMarginEngine is IPositionStructs {
     /// @dev Cannot have less margin than the minimum requirement
     error MarginLessThanMinimum();
 
-    /// @dev Trader's margin cannot be updated unless the trader is settled
-    error TraderNotSettled();
-
     /// @dev We can't withdraw more margin than we have
     error WithdrawalExceedsCurrentMargin();
-
-    /// @dev Position must be burned after AMM has reached maturity
-    error PositionNotBurned();
 
     /// @dev Position must be settled after AMM has reached maturity
     error PositionNotSettled();
@@ -164,16 +177,25 @@ interface IMarginEngine is IPositionStructs {
     ) external;
 
     // view functions
-
+    
+    
+    /// @notice The liquidator Reward Percentage (in Wad)
+    /// @dev liquidatorReward (in wad) is the percentage of the margin (of a liquidated position) that is sent to the liquidator
+    /// @dev following a successful liquidation that results in a trader/position unwind; example value:  2 * 10**16 => 2% of position margin is used to cover liquidator reward
+    /// @return Liquidator Reward in Wad
     function liquidatorRewardWad() external view returns (uint256);
+    
 
+    /// @notice VAMM (Virtual Automated Market Maker) linked to the MarginEngine
+    /// @dev The VAMM is responsible for pricing only (determining the effective fixed rate at which a given Interest Rate Swap notional will be executed)
+    /// @return The VAMM
     function vamm() external view returns (IVAMM);
 
     /// @notice Returns the information about a position by the position's key
     /// @param _owner The address of the position owner
     /// @param tickLower The lower tick boundary of the position
     /// @param tickUpper The upper tick boundary of the position
-    /// Returns position The Position.Info corresponding to the equested position
+    /// Returns position The Position.Info corresponding to the requested position
     function getPosition(
         address _owner,
         int24 tickLower,
@@ -185,22 +207,34 @@ interface IMarginEngine is IPositionStructs {
     /// @dev The look-back window is seconds from the current timestamp
     /// @dev This value is only settable by the the Factory owner and may be unique for each MarginEngine
     /// @dev When setting secondAgo, the setter needs to take into consideration the underlying volatility of the APYs in the reference yield-bearing pool (e.g. Aave v2 USDC)
-    /// @return secondsAgo in seconds
-    function secondsAgo() external view returns (uint256); // suffix with Wad
+    function secondsAgo() external view returns (uint256); 
+
+    // non-view functions
 
     /// @notice Sets secondsAgo: The look-back window size used to calculate the historical APY for margin purposes
     /// @param _secondsAgo the duration of the lookback window in seconds
     /// @dev Can only be set by the Factory Owner
     function setSecondsAgo(uint256 _secondsAgo) external;
 
+    /// @notice Sets marginCalculatorParameteres 
+    /// @dev marginCalculatorParameteres is of type MarginCalculatorParameters (refer to the definition of the struct for elaboration on what each parameter means)
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory _marginCalculatorParameters
     ) external;
+    
 
-    // non-view functions
-
+    /// @notice Sets the liquidator reward: proportion of liquidated position's margin paid as a reward to the liquidator
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external;
 
+
+    /// @notice updates the margin account of a position which can be uniquily identified with its _owner, tickLower, tickUpper
+    /// @dev if the position has positive liquidity then before the margin update, we call the updatePositionTokenBalancesAndAccountForFees functon that calculates up to date
+    /// @dev margin, fixed and variable token balances by taking into account the fee income from their tick range and fixed and variable deltas settled along their tick range
+    /// @dev marginDelta is the delta applied to the current margin of a positioin, if the marginDelta is negative, the position is withdrawing margin, if the marginDelta is positive, the position is depositing funds in terms of the underlying tokens
+    /// @dev if marginDelta is negative, we need to check if the msg.sender is either the _owner of the position or the msg.sender is apporved by the _owner to act on their behalf in Voltz Protocol
+    /// @dev the approval logic is implemented in the Factory.sol
+    /// @dev if marginDelta is negative, we additionally need to check if post the initial margin requirement is still satisfied post withdrawal
+    /// @dev if marginDelta is positive, the depositor of the margin is either the msg.sender or the owner who interacted through an approved peripheral contract
     function updatePositionMargin(
         address _owner,
         int24 tickLower,
@@ -226,27 +260,34 @@ interface IMarginEngine is IPositionStructs {
 
     /// @notice Liquidate a Position
     /// @dev Steps to liquidate: update position's fixed and variable token balances to account for balances accumulated throughout the trades made since the last mint/burn/poke,
-    /// @dev Check if the position is liquidatable by calling the isLiquidatablePosition function of the calculator,
     /// @dev Check if the position is liquidatable by calling the isLiquidatablePosition function of the calculator, revert if that is not the case,
     /// @dev Calculate the liquidation reward = current margin of the position * liquidatorReward, subtract the liquidator reward from the position margin,
-    /// @dev Burn the position's liquidity ==> not going to enter into new IRS contracts until the AMM maturity, transfer the reward to the liquidator
+    /// @dev Burn the position's liquidity, unwind unnetted fixed and variable balances of a position, transfer the reward to the liquidator
     function liquidatePosition(
         int24 tickLower,
         int24 tickUpper,
         address _owner
     ) external;
 
-    /// @notice Update a Position
+    /// @notice Update a Position post VAMM induced mint or burn
     /// @dev Steps taken:
     /// @dev 1. Update position liquidity based on params.liquidityDelta
     /// @dev 2. Update fixed and variable token balances of the position based on how much has been accumulated since the last mint/burn/poke
-    /// @dev 3. Update position's margin by taking into account the position accumulated fees since the last mint/burnpoke
+    /// @dev 3. Update position's margin by taking into account the position accumulated fees since the last mint/burn/poke
     /// @dev 4. Update fixed and variable token growth + fee growth in the position info struct for future interactions with the position
-    /// @param params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _)
+    /// @param params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _) and the liquidity delta that needs to be applied to position._liquidity
     function updatePositionPostVAMMInducedMintBurn(
         IPositionStructs.ModifyPositionParams memory params
     ) external;
 
+
+    // @notive Update a position post VAMM induced swap
+    /// @dev Since every position can also engage in swaps with the VAMM, this function needs to be invoked after non-external calls are made to the VAMM's swap function
+    /// @dev This purpose of this function is to:
+    /// @dev 1. updatePositionTokenBalancesAndAccountForFees
+    /// @dev 2. update position margin to account for fees paid to execute the swap
+    /// @dev 3. calculate the position margin requrement given the swap, check if the position marigin satisfies the most up to date requirement
+    /// @dev 4. if all the requirements are satisfied then position gets updated to take into account the swap that it just entered, if the minimum margin requirement is not satisfied then the transaction will revert
     function updatePositionPostVAMMInducedSwap(
         address _owner,
         int24 tickLower,
@@ -256,12 +297,21 @@ interface IMarginEngine is IPositionStructs {
         uint256 cumulativeFeeIncurred
     ) external;
 
+    /// @notice function that can only be called by the owner enables collection of protocol generated fees from any give margin engine
+    /// @param recipient the address which collects the protocol generated fees
+    /// @param amount the amount in terms of underlying tokens collected from the protocol's earnings
     function collectProtocol(address recipient, uint256 amount) external;
 
+    /// @notice sets the Virtual Automated Market Maker (VAMM) attached to the MarginEngine
+    /// @dev the VAMM is responsible for price discovery, whereas the management of the underlying collateral and liquidations are handled by the Margin Engine
     function setVAMM(address _vAMMAddress) external;
 
+    /// @notice sets the Full Collateralisation Module
     function setFCM(address _fcm) external;
-
+    
+    /// @notice transfers margin in terms of underlying tokens to a trader from the Full Collateralisation Module
+    /// @dev post maturity date of the MarginEngine, the traders from the Full Collateralisation module will be able to settle with the MarginEngine
+    /// @dev to ensure their fixed yield is guaranteed, in order to collect the funds from the MarginEngine, the FCM needs to invoke the transferMarginToFCMTrader function whcih is only callable by the FCM attached to a particular Margin Engine 
     function transferMarginToFCMTrader(address _account, uint256 marginDelta)
         external;
 }
