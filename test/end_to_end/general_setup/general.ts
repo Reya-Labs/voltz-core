@@ -1,4 +1,4 @@
-import { ethers, waffle } from "hardhat";
+import { deployments, ethers, waffle, getNamedAccounts } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
 import { TestVAMM } from "../../../typechain/TestVAMM";
 import {
@@ -9,7 +9,6 @@ import {
   createMetaFixtureE2E,
 } from "../../shared/fixtures";
 import { formatRay, TICK_SPACING } from "../../shared/utilities";
-import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../../typechain/TestMarginEngine";
 import {
   Actor,
@@ -25,6 +24,8 @@ import {
 import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 import { e2eParameters } from "./e2eSetup";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { toBn } from "../../helpers/toBn";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -36,7 +37,7 @@ export class ScenarioRunner {
 
   params: e2eParameters;
 
-  owner!: Wallet;
+  owner!: SignerWithAddress;
   factory!: Factory;
   token!: ERC20Mock;
   rateOracleTest!: TestRateOracle;
@@ -62,7 +63,7 @@ export class ScenarioRunner {
 
   outputFile!: string;
 
-  loadFixture!: ReturnType<typeof createFixtureLoader>;
+  // loadFixture!: ReturnType<typeof createFixtureLoader>;
 
   // global variables (to avoid recomputing them)
   lowerApyBound: BigNumber = toBn("0");
@@ -337,21 +338,30 @@ export class ScenarioRunner {
     fs.appendFileSync(this.outputFile, "\n");
   }
 
+  async getAlreadyDeployedContracts() {
+    this.factory = (await ethers.getContract("Factory")) as Factory;
+    this.token = (await ethers.getContract("ERC20Mock")) as ERC20Mock;
+    this.rateOracleTest = (await ethers.getContract(
+      "TestRateOracle"
+    )) as TestRateOracle;
+    this.aaveLendingPool = (await ethers.getContract(
+      "MockAaveLendingPool"
+    )) as MockAaveLendingPool;
+  }
+
   async init() {
-    this.owner = provider.getWallets()[0];
-    provider.getSigner();
+    const { deployer } = await getNamedAccounts();
 
-    this.loadFixture = createFixtureLoader([this.owner]);
+    this.owner = (await ethers.getSigners())[0];
+    // this.loadFixture = createFixtureLoader([this.owner]);
 
-    ({
-      factory: this.factory,
-      token: this.token,
-      rateOracleTest: this.rateOracleTest,
-      aaveLendingPool: this.aaveLendingPool,
-      termStartTimestampBN: this.termStartTimestampBN,
-      termEndTimestampBN: this.termEndTimestampBN,
-      testMarginCalculator: this.testMarginCalculator,
-    } = await this.loadFixture(await createMetaFixtureE2E(this.params)));
+    // this.owner = provider.getWallets()[0];
+    // provider.getSigner();
+
+    await this.getAlreadyDeployedContracts();
+
+    this.termStartTimestampBN = toBn(100);
+    this.termEndTimestampBN = toBn(100000000);
 
     // deploy an IRS instance
     await this.factory.deployIrsInstance(
@@ -393,20 +403,17 @@ export class ScenarioRunner {
 
     // deploy Fixed and Variable Math test
     ({ testFixedAndVariableMath: this.testFixedAndVariableMath } =
-      await this.loadFixture(fixedAndVariableMathFixture));
+      await fixedAndVariableMathFixture());
 
     // deploy Tick Math Test
-    ({ testTickMath: this.testTickMath } = await this.loadFixture(
-      tickMathFixture
-    ));
+    ({ testTickMath: this.testTickMath } = await tickMathFixture());
 
     // deploy Sqrt Price Math Test
-    ({ testSqrtPriceMath: this.testSqrtPriceMath } = await this.loadFixture(
-      sqrtPriceMathFixture
-    ));
+    ({ testSqrtPriceMath: this.testSqrtPriceMath } =
+      await sqrtPriceMathFixture());
 
     // deploy the setup for E2E testing
-    ({ e2eSetup: this.e2eSetup } = await this.loadFixture(E2ESetupFixture));
+    ({ e2eSetup: this.e2eSetup } = await E2ESetupFixture());
 
     // set the parameters of margin calculator
     this.marginCalculatorParams = this.params.marginCalculatorParams;
