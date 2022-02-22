@@ -29,8 +29,10 @@ contract Actor {
 
     function swap(address VAMMAddress, IVAMM.SwapParams memory params)
         external
+        returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced)
     {
-        IVAMM(VAMMAddress).swap(params);
+
+        (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, _fixedTokenDeltaUnbalanced) = IVAMM(VAMMAddress).swap(params);
     }
 }
 
@@ -52,6 +54,15 @@ contract E2ESetup {
         int256 variableTokenBalance;
     }
 
+    struct SwapSnapshot {
+        uint256 swapInitiationTimestampWad;
+        uint256 termEndTimestampWad;
+        uint256 notional;
+        bool isFT;
+        uint256 fixedRateWad;
+        uint256 feePaidInUnderlyingTokens;
+    }
+
     function abs(int256 value) public pure returns (uint256) {
         if (value < 0) return uint256(-value);
         else return uint256(value);
@@ -65,10 +76,53 @@ contract E2ESetup {
         public positionHistory;
     mapping(bytes32 => uint256) public sizeOfPositionHistory;
 
+    mapping(bytes32 => mapping(uint256 => SwapSnapshot))
+        public positionSwapsHistory;
+    mapping(bytes32 => uint256) public sizeOfPositionSwapsHistory;
+
+
+
     int256 public initialCashflow = 0;
 
     uint256 public keepInMindGas;
 
+    function addSwapSnapshot(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int256 variableTokenDelta,
+        int256 fixedTokenDeltaUnbalanced,
+        uint256 cumulativeFeeIncurred
+    ) public {
+        
+        bytes32 hashedPositon = keccak256(
+                abi.encodePacked(
+                    owner,
+                    tickLower,
+                    tickUpper
+                )
+            );
+        
+        uint256 termEndTimestampWad = IMarginEngine(MEAddress).termEndTimestampWad();
+
+        uint256 fixedRateWad = PRBMathUD60x18.div(PRBMathUD60x18.div(PRBMathUD60x18.fromUint(abs(fixedTokenDeltaUnbalanced)), PRBMathUD60x18.fromUint(abs(variableTokenDelta))), PRBMathUD60x18.fromUint(100));
+
+        SwapSnapshot memory swapSnapshot = SwapSnapshot({
+            swapInitiationTimestampWad:Time.blockTimestampScaled(),
+            termEndTimestampWad: termEndTimestampWad,
+            notional: abs(variableTokenDelta),
+            isFT: variableTokenDelta > 0 ? false : true,
+            fixedRateWad: fixedRateWad,
+            feePaidInUnderlyingTokens: cumulativeFeeIncurred
+        });
+        
+        sizeOfPositionSwapsHistory[hashedPositon] += 1;
+        positionSwapsHistory[hashedPositon][
+            sizeOfPositionSwapsHistory[hashedPositon]
+        ] = swapSnapshot;   
+
+    }
+    
     function addPosition(
         address owner,
         int24 tickLower,
@@ -151,29 +205,31 @@ contract E2ESetup {
         this.addPosition(params.recipient, params.tickLower, params.tickUpper);
 
         uint256 gasBefore = gasleft();
-        Actor(params.recipient).swap(VAMMAddress, params);
+        (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced) = Actor(params.recipient).swap(VAMMAddress, params);
         keepInMindGas = gasBefore - gasleft();
 
         continuousInvariants();
+
+        this.addSwapSnapshot(params.recipient, params.tickLower, params.tickUpper, _fixedTokenDeltaUnbalanced, _variableTokenDelta, _cumulativeFeeIncurred);
     }
 
-    function computeEstimatedVariableFactorAtMaturity()
+    function estimatedVariableFactorFromStartToMaturity()
         internal
-        returns (uint256 estimatedVariableFactorFromStartToMaturity)
+        returns (uint256 _estimatedVariableFactorFromStartToMaturity)
     {
         uint256 historicalAPYWad = IMarginEngine(MEAddress).getHistoricalApy();
 
         uint256 termStartTimestampWad = IMarginEngine(MEAddress)
             .termStartTimestampWad();
         uint256 termEndTimestampWad = IMarginEngine(MEAddress)
-            .termEndimestampWad();
+            .termEndTimestampWad();
 
         uint256 termInYears = FixedAndVariableMath.accrualFact(
             termEndTimestampWad - termStartTimestampWad
         );
 
         // calculate the estimated variable factor from start to maturity
-        estimatedVariableFactorFromStartToMaturity =
+        _estimatedVariableFactorFromStartToMaturity =
             PRBMathUD60x18.pow(
                 (PRBMathUD60x18.fromUint(1) + historicalAPYWad),
                 termInYears

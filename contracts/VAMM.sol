@@ -300,7 +300,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     override
     whenNotPaused
     checkCurrentTimestampTermEndTimestampDelta
-    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred)
+    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced)
   {
 
     VAMMVars memory vammVarsStart = vammVars;
@@ -348,7 +348,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       protocolFee: 0,
       cumulativeFeeIncurred: 0,
       fixedTokenDeltaCumulative: 0, // for Trader (user invoking the swap)
-      variableTokenDeltaCumulative: 0 // for Trader (user invoking the swap)
+      variableTokenDeltaCumulative: 0, // for Trader (user invoking the swap),
+      fixedTokenDeltaUnbalancedCumulative: 0 //  for Trader (user invoking the swap)
     });
 
     /// @dev write an entry to the rate oracle (given no throttling)
@@ -458,6 +459,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
         state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
+        
+        // necessary for testing purposes, also handy to quickly compute the fixed rate at which an interest rate swap is created
+        state.fixedTokenDeltaUnbalancedCumulative -= step.fixedTokenDeltaUnbalanced;
       }
 
       // shift tick if we reached the next price
@@ -508,6 +512,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     _cumulativeFeeIncurred = state.cumulativeFeeIncurred;
     _fixedTokenDelta = state.fixedTokenDeltaCumulative;
     _variableTokenDelta = state.variableTokenDeltaCumulative;
+    _fixedTokenDeltaUnbalanced = state.fixedTokenDeltaUnbalancedCumulative;
 
     if (state.protocolFee > 0) {
       protocolFees += state.protocolFee;

@@ -127,10 +127,12 @@ interface IVAMM is IPositionStructs {
         uint256 protocolFee;
         /// @dev cumulative fee incurred while initiating a swap
         uint256 cumulativeFeeIncurred;
-        /// @dev ...
+        /// @dev fixedTokenDelta that will be applied to the fixed token balance of the position executing the swap (recipient)
         int256 fixedTokenDeltaCumulative;
-        /// @dev ...
+        /// @dev variableTokenDelta that will be applied to the variable token balance of the position executing the swap (recipient)
         int256 variableTokenDeltaCumulative;
+        /// @dev fixed token delta cumulative but without rebalancings applied
+        int256 fixedTokenDeltaUnbalancedCumulative;
     }
 
     struct StepComputations {
@@ -271,7 +273,8 @@ interface IVAMM is IPositionStructs {
         returns (
             int256 _fixedTokenDelta,
             int256 _variableTokenDelta,
-            uint256 _cumulativeFeeIncurred
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced
         );
 
     /// @notice Look up information about a specific tick in the amm
