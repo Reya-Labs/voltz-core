@@ -315,7 +315,6 @@ interface IMarginEngine is IPositionStructs {
     /// @param _cacheMaxAgeInSeconds The new maximum age that the historical APY cache can be before being considered stale
     function setCacheMaxAgeInSeconds(uint256 _cacheMaxAgeInSeconds) external;
 
-    
     /// @notice Get Historical APY
     /// @dev The lookback window used by this function is determined by the secondsAgo state variable
     /// @dev refresh the historical apy cache if necessary
