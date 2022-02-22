@@ -45,12 +45,9 @@ contract E2ESetup {
         uint256 currentTimestampWad;
         uint256 termStartTimestampWad;
         uint256 termEndTimestampWad;
-
         int256 margin;
         uint256 marginRequirement;
-
         int256 estimatedSettlementCashflow;
-
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
     }
@@ -64,7 +61,8 @@ contract E2ESetup {
     mapping(bytes32 => uint256) public indexAllPositions;
     uint256 public sizeAllPositions = 0;
 
-    mapping(bytes32 => mapping (uint256 => PositionSnapshot)) public positionHistory;
+    mapping(bytes32 => mapping(uint256 => PositionSnapshot))
+        public positionHistory;
     mapping(bytes32 => uint256) public sizeOfPositionHistory;
 
     int256 public initialCashflow = 0;
@@ -224,15 +222,21 @@ contract E2ESetup {
             );
             Printer.printInt256("              margin:", position.margin);
 
-            int256 estimatedSettlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(
-                position.fixedTokenBalance,
-                position.variableTokenBalance,
-                termStartTimestampWad,
-                termEndTimestampWad,
-                variableFactor
-            );
+            int256 estimatedSettlementCashflow = FixedAndVariableMath
+                .calculateSettlementCashflow(
+                    position.fixedTokenBalance,
+                    position.variableTokenBalance,
+                    termStartTimestampWad,
+                    termEndTimestampWad,
+                    variableFactor
+                );
 
-            TestMarginEngine(MEAddress).getPositionMarginRequirementTest(allPositions[i].owner, allPositions[i].tickLower, allPositions[i].tickUpper, true);
+            TestMarginEngine(MEAddress).getPositionMarginRequirementTest(
+                allPositions[i].owner,
+                allPositions[i].tickLower,
+                allPositions[i].tickUpper,
+                true
+            );
             uint256 marginRequirement = TestMarginEngine(MEAddress).getMargin();
 
             if (int256(marginRequirement) > position.margin) {
@@ -240,9 +244,11 @@ contract E2ESetup {
             }
 
             bytes32 hashedPositon = keccak256(
-                abi.encodePacked(allPositions[i].owner,
+                abi.encodePacked(
+                    allPositions[i].owner,
                     allPositions[i].tickLower,
-                    allPositions[i].tickUpper)
+                    allPositions[i].tickUpper
+                )
             );
 
             PositionSnapshot memory positionSnapshot;
@@ -254,13 +260,17 @@ contract E2ESetup {
             positionSnapshot.termEndTimestampWad = termEndTimestampWad;
             positionSnapshot.currentTimestampWad = Time.blockTimestampScaled();
 
-            positionSnapshot.estimatedSettlementCashflow = estimatedSettlementCashflow;
+            positionSnapshot
+                .estimatedSettlementCashflow = estimatedSettlementCashflow;
 
             positionSnapshot.fixedTokenBalance = position.fixedTokenBalance;
-            positionSnapshot.variableTokenBalance = position.variableTokenBalance;
+            positionSnapshot.variableTokenBalance = position
+                .variableTokenBalance;
 
             sizeOfPositionHistory[hashedPositon] += 1;
-            positionHistory[hashedPositon][sizeOfPositionHistory[hashedPositon]] = positionSnapshot;
+            positionHistory[hashedPositon][
+                sizeOfPositionHistory[hashedPositon]
+            ] = positionSnapshot;
 
             totalFixedTokens += position.fixedTokenBalance;
             totalVariableTokens += position.variableTokenBalance;
@@ -303,15 +313,19 @@ contract E2ESetup {
         );
     }
 
-    function getPositionHistory(address owner, int24 tickLower, int24 tickUpper) public view returns (PositionSnapshot[] memory) {
+    function getPositionHistory(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) public view returns (PositionSnapshot[] memory) {
         bytes32 hashedPositon = keccak256(
-                abi.encodePacked(owner, tickLower, tickUpper)
-            );
+            abi.encodePacked(owner, tickLower, tickUpper)
+        );
         uint256 len = sizeOfPositionHistory[hashedPositon];
         PositionSnapshot[] memory snapshots = new PositionSnapshot[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            snapshots[i] = positionHistory[hashedPositon][i+1];
+            snapshots[i] = positionHistory[hashedPositon][i + 1];
         }
 
         return snapshots;
