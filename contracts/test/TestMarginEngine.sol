@@ -187,7 +187,7 @@ contract TestMarginEngine is MarginEngine {
     }
 
     function getCachedHistoricalApy() external view returns (uint256) {
-        return cachedHistoricalApy;
+        return cachedHistoricalApyWad;
     }
 
     function getPositionMarginRequirementTest(

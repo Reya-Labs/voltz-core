@@ -47,8 +47,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @inheritdoc IMarginEngine
     uint256 public override secondsAgo;
 
-    uint256 internal cachedHistoricalApy;
-    uint256 private cachedHistoricalApyRefreshTimestamp;
+    uint256 internal cachedHistoricalApyWad;
+    uint256 private cachedHistoricalApyWadRefreshTimestamp;
 
     uint256 public cacheMaxAgeInSeconds;
 
@@ -310,17 +310,17 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     }
     
-    /// @notice Computes the historical APY value of the RateOracle
-    /// @dev The lookback window used by this function is determined by the secondsAgo state variable
+    /// @inheritdoc IMarginEngine
     function getHistoricalApy()
         public
+        override
         returns (uint256)
     {
-        if (cachedHistoricalApyRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
+        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
             // Cache is stale
             _refreshHistoricalApyCache();
         }
-        return cachedHistoricalApy;
+        return cachedHistoricalApyWad;
     }
 
     /// @notice Computes the historical APY value of the RateOracle
@@ -330,11 +330,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         view
         returns (uint256)
     {
-        if (cachedHistoricalApyRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
+        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
             // Cache is stale
             return _getHistoricalApy();
         }
-        return cachedHistoricalApy;
+        return cachedHistoricalApyWad;
     }
 
     /// @notice Computes the historical APY value of the RateOracle
@@ -354,8 +354,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function _refreshHistoricalApyCache()
         internal
     {
-        cachedHistoricalApy = _getHistoricalApy();
-        cachedHistoricalApyRefreshTimestamp = block.timestamp;
+        cachedHistoricalApyWad = _getHistoricalApy();
+        cachedHistoricalApyWadRefreshTimestamp = block.timestamp;
     }
 
 
