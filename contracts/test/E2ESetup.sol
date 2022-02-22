@@ -29,10 +29,19 @@ contract Actor {
 
     function swap(address VAMMAddress, IVAMM.SwapParams memory params)
         external
-        returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced)
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced
+        )
     {
-
-        (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, _fixedTokenDeltaUnbalanced) = IVAMM(VAMMAddress).swap(params);
+        (
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced
+        ) = IVAMM(VAMMAddress).swap(params);
     }
 }
 
@@ -80,8 +89,6 @@ contract E2ESetup {
         public positionSwapsHistory;
     mapping(bytes32 => uint256) public sizeOfPositionSwapsHistory;
 
-
-
     int256 public initialCashflow = 0;
 
     uint256 public keepInMindGas;
@@ -94,35 +101,36 @@ contract E2ESetup {
         int256 fixedTokenDeltaUnbalanced,
         uint256 cumulativeFeeIncurred
     ) public {
-        
         bytes32 hashedPositon = keccak256(
-                abi.encodePacked(
-                    owner,
-                    tickLower,
-                    tickUpper
-                )
-            );
-        
-        uint256 termEndTimestampWad = IMarginEngine(MEAddress).termEndTimestampWad();
+            abi.encodePacked(owner, tickLower, tickUpper)
+        );
 
-        uint256 fixedRateWad = PRBMathUD60x18.div(PRBMathUD60x18.div(PRBMathUD60x18.fromUint(abs(fixedTokenDeltaUnbalanced)), PRBMathUD60x18.fromUint(abs(variableTokenDelta))), PRBMathUD60x18.fromUint(100));
+        uint256 termEndTimestampWad = IMarginEngine(MEAddress)
+            .termEndTimestampWad();
+
+        uint256 fixedRateWad = PRBMathUD60x18.div(
+            PRBMathUD60x18.div(
+                PRBMathUD60x18.fromUint(abs(fixedTokenDeltaUnbalanced)),
+                PRBMathUD60x18.fromUint(abs(variableTokenDelta))
+            ),
+            PRBMathUD60x18.fromUint(100)
+        );
 
         SwapSnapshot memory swapSnapshot = SwapSnapshot({
-            swapInitiationTimestampWad:Time.blockTimestampScaled(),
+            swapInitiationTimestampWad: Time.blockTimestampScaled(),
             termEndTimestampWad: termEndTimestampWad,
             notional: abs(variableTokenDelta),
             isFT: variableTokenDelta > 0 ? false : true,
             fixedRateWad: fixedRateWad,
             feePaidInUnderlyingTokens: cumulativeFeeIncurred
         });
-        
+
         sizeOfPositionSwapsHistory[hashedPositon] += 1;
         positionSwapsHistory[hashedPositon][
             sizeOfPositionSwapsHistory[hashedPositon]
-        ] = swapSnapshot;   
-
+        ] = swapSnapshot;
     }
-    
+
     function addPosition(
         address owner,
         int24 tickLower,
@@ -205,12 +213,24 @@ contract E2ESetup {
         this.addPosition(params.recipient, params.tickLower, params.tickUpper);
 
         uint256 gasBefore = gasleft();
-        (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced) = Actor(params.recipient).swap(VAMMAddress, params);
+        (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced
+        ) = Actor(params.recipient).swap(VAMMAddress, params);
         keepInMindGas = gasBefore - gasleft();
 
         continuousInvariants();
 
-        this.addSwapSnapshot(params.recipient, params.tickLower, params.tickUpper, _fixedTokenDeltaUnbalanced, _variableTokenDelta, _cumulativeFeeIncurred);
+        this.addSwapSnapshot(
+            params.recipient,
+            params.tickLower,
+            params.tickUpper,
+            _fixedTokenDeltaUnbalanced,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred
+        );
     }
 
     function estimatedVariableFactorFromStartToMaturity()
