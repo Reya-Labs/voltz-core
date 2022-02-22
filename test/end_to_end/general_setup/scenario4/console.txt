@@ -1654,3 +1654,5 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 
+amount of available variable tokens: 683.0344694644517 (↑) ; 5055.774034586004 (↓)
+
