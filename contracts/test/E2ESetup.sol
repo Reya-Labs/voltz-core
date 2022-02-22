@@ -35,12 +35,24 @@ contract Actor {
 }
 
 contract E2ESetup {
-    uint256 keepInMindGas;
-
     struct UniqueIdentifiersPosition {
         address owner;
         int24 tickLower;
         int24 tickUpper;
+    }
+
+    struct PositionSnapshot {
+        uint256 currentTimestampWad;
+        uint256 termStartTimestampWad;
+        uint256 termEndTimestampWad;
+
+        int256 margin;
+        uint256 marginRequirement;
+
+        int256 estimatedSettlementCashflow;
+
+        int256 fixedTokenBalance;
+        int256 variableTokenBalance;
     }
 
     function abs(int256 value) public pure returns (uint256) {
@@ -52,7 +64,12 @@ contract E2ESetup {
     mapping(bytes32 => uint256) public indexAllPositions;
     uint256 public sizeAllPositions = 0;
 
-    int256 initialCashflow = 0;
+    mapping(bytes32 => mapping (uint256 => PositionSnapshot)) public positionHistory;
+    mapping(bytes32 => uint256) public sizeOfPositionHistory;
+
+    int256 public initialCashflow = 0;
+
+    uint256 public keepInMindGas;
 
     function addPosition(
         address owner,
@@ -180,6 +197,7 @@ contract E2ESetup {
             termEndTimestampWad
         );
 
+        int256 liquidatablePositions = 0;
         for (uint256 i = 1; i <= sizeAllPositions; i++) {
             TestMarginEngine(MEAddress)
                 .updatePositionTokenBalancesAndAccountForFeesTest(
@@ -206,16 +224,48 @@ contract E2ESetup {
             );
             Printer.printInt256("              margin:", position.margin);
 
-            totalFixedTokens += position.fixedTokenBalance;
-            totalVariableTokens += position.variableTokenBalance;
-            totalCashflow += position.margin;
-            totalCashflow += FixedAndVariableMath.calculateSettlementCashflow(
+            int256 estimatedSettlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(
                 position.fixedTokenBalance,
                 position.variableTokenBalance,
                 termStartTimestampWad,
                 termEndTimestampWad,
                 variableFactor
             );
+
+            TestMarginEngine(MEAddress).getPositionMarginRequirementTest(allPositions[i].owner, allPositions[i].tickLower, allPositions[i].tickUpper, true);
+            uint256 marginRequirement = TestMarginEngine(MEAddress).getMargin();
+
+            if (int256(marginRequirement) > position.margin) {
+                liquidatablePositions += 1;
+            }
+
+            bytes32 hashedPositon = keccak256(
+                abi.encodePacked(allPositions[i].owner,
+                    allPositions[i].tickLower,
+                    allPositions[i].tickUpper)
+            );
+
+            PositionSnapshot memory positionSnapshot;
+
+            positionSnapshot.margin = position.margin;
+            positionSnapshot.marginRequirement = marginRequirement;
+
+            positionSnapshot.termStartTimestampWad = termStartTimestampWad;
+            positionSnapshot.termEndTimestampWad = termEndTimestampWad;
+            positionSnapshot.currentTimestampWad = Time.blockTimestampScaled();
+
+            positionSnapshot.estimatedSettlementCashflow = estimatedSettlementCashflow;
+
+            positionSnapshot.fixedTokenBalance = position.fixedTokenBalance;
+            positionSnapshot.variableTokenBalance = position.variableTokenBalance;
+
+            sizeOfPositionHistory[hashedPositon] += 1;
+            positionHistory[hashedPositon][sizeOfPositionHistory[hashedPositon]] = positionSnapshot;
+
+            totalFixedTokens += position.fixedTokenBalance;
+            totalVariableTokens += position.variableTokenBalance;
+            totalCashflow += position.margin;
+            totalCashflow += estimatedSettlementCashflow;
         }
 
         totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
@@ -226,6 +276,7 @@ contract E2ESetup {
             "      deltaCashflow:",
             totalCashflow - initialCashflow
         );
+        Printer.printInt256("liquidatable Positions", liquidatablePositions);
         Printer.printEmptyLine();
 
         // ideally, this should be 0
@@ -241,14 +292,29 @@ contract E2ESetup {
             abs(totalVariableTokens) < uint256(approximation),
             "variable tokens don't net out"
         );
+        /// @audit the following should hold
+        // require(
+        //     initialCashflow <= totalCashflow,
+        //     "system loss: undercollateralized"
+        // );
         require(
-            initialCashflow <= totalCashflow,
-            "system loss: undercollateralized"
-        );
-        require(
-            totalCashflow - initialCashflow < approximation,
+            abs(totalCashflow - initialCashflow) < uint256(approximation),
             "cashflows don't net out"
         );
+    }
+
+    function getPositionHistory(address owner, int24 tickLower, int24 tickUpper) public view returns (PositionSnapshot[] memory) {
+        bytes32 hashedPositon = keccak256(
+                abi.encodePacked(owner, tickLower, tickUpper)
+            );
+        uint256 len = sizeOfPositionHistory[hashedPositon];
+        PositionSnapshot[] memory snapshots = new PositionSnapshot[](len);
+
+        for (uint256 i = 0; i < len; i++) {
+            snapshots[i] = positionHistory[hashedPositon][i+1];
+        }
+
+        return snapshots;
     }
 
     function getGasConsumedAtLastTx() external view returns (uint256) {
