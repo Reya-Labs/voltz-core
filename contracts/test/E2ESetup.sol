@@ -157,6 +157,18 @@ contract E2ESetup {
         continuousInvariants();
     }
 
+    function computeEstimatedVariableFactorAtMaturity() internal returns (uint256 estimatedVariableFactorFromStartToMaturity) {
+        uint256 historicalAPYWad = IMarginEngine(MEAddress).getHistoricalApy();
+
+        uint256 termStartTimestampWad = IMarginEngine(MEAddress).termStartTimestampWad();
+        uint256 termEndTimestampWad = IMarginEngine(MEAddress).termEndimestampWad();
+        
+        uint256 termInYears = FixedAndVariableMath.accrualFact(termEndTimestampWad-termStartTimestampWad);
+
+        // calculate the estimated variable factor from start to maturity
+        estimatedVariableFactorFromStartToMaturity = PRBMathUD60x18.pow((PRBMathUD60x18.fromUint(1)+historicalAPYWad), termInYears)-PRBMathUD60x18.fromUint(1);
+    }
+    
     function updatePositionMargin(
         address _owner,
         int24 tickLower,
@@ -228,8 +240,9 @@ contract E2ESetup {
                     position.variableTokenBalance,
                     termStartTimestampWad,
                     termEndTimestampWad,
-                    variableFactor
+                    estimatedVariableFactorFromStartToMaturity()
                 );
+            
 
             TestMarginEngine(MEAddress).getPositionMarginRequirementTest(
                 allPositions[i].owner,
