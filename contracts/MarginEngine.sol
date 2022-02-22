@@ -569,7 +569,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred) = vamm.swap(params);
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred,) = vamm.swap(params);
             } else {
 
                 /// @dev get into a Fixed Taker swap (the opposite of LP's current position)
@@ -586,7 +586,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred) = vamm.swap(params);
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred,) = vamm.swap(params);
             }
 
             if (_cumulativeFeeIncurred > 0) {
