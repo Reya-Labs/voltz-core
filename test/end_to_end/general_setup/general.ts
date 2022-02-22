@@ -1,21 +1,22 @@
-import { deployments, ethers, waffle, getNamedAccounts } from "hardhat";
-import { BigNumber, utils, Wallet } from "ethers";
+import { ethers, waffle } from "hardhat";
+import { BigNumber, utils } from "ethers";
 import { TestVAMM } from "../../../typechain/TestVAMM";
 import {
   E2ESetupFixture,
   fixedAndVariableMathFixture,
   sqrtPriceMathFixture,
   tickMathFixture,
-  createMetaFixtureE2E,
+  // createMetaFixtureE2E,
+  marginCalculatorFixture,
 } from "../../shared/fixtures";
 import { formatRay, TICK_SPACING } from "../../shared/utilities";
-import { TestMarginEngine } from "../../../typechain/TestMarginEngine";
 import {
   Actor,
   E2ESetup,
   ERC20Mock,
   Factory,
   FixedAndVariableMathTest,
+  MarginEngine,
   MockAaveLendingPool,
   SqrtPriceMathTest,
   TestRateOracle,
@@ -26,8 +27,7 @@ import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 import { e2eParameters } from "./e2eSetup";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { toBn } from "../../helpers/toBn";
-
-const createFixtureLoader = waffle.createFixtureLoader;
+import { consts } from "../../helpers/constants";
 
 const { provider } = waffle;
 
@@ -46,7 +46,7 @@ export class ScenarioRunner {
   termEndTimestampBN!: BigNumber;
 
   vammTest!: TestVAMM;
-  marginEngineTest!: TestMarginEngine;
+  marginEngineTest!: MarginEngine;
   aaveLendingPool!: MockAaveLendingPool;
 
   testMarginCalculator!: MarginCalculatorTest;
@@ -196,14 +196,14 @@ export class ScenarioRunner {
         this.positions[i][2]
       );
 
-      await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-        this.positions[i][0],
-        this.positions[i][1],
-        this.positions[i][2],
-        false
-      );
+      // await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
+      //   this.positions[i][0],
+      //   this.positions[i][1],
+      //   this.positions[i][2],
+      //   false
+      // );
 
-      fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
+      // fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
       positionInfo = await this.marginEngineTest.getPosition(
         this.positions[i][0],
         this.positions[i][1],
@@ -350,18 +350,46 @@ export class ScenarioRunner {
   }
 
   async init() {
-    const { deployer } = await getNamedAccounts();
-
     this.owner = (await ethers.getSigners())[0];
     // this.loadFixture = createFixtureLoader([this.owner]);
 
     // this.owner = provider.getWallets()[0];
     // provider.getSigner();
 
+    ({ testMarginCalculator: this.testMarginCalculator } =
+      await marginCalculatorFixture());
     await this.getAlreadyDeployedContracts();
 
-    this.termStartTimestampBN = toBn(100);
-    this.termEndTimestampBN = toBn(100000000);
+    await this.aaveLendingPool.setReserveNormalizedIncome(
+      this.token.address,
+      "1000000000000000000000000000" // 10^27
+    );
+
+    // await rateOracleTest.testGrow(100);
+    await this.rateOracleTest.increaseObservarionCardinalityNext(100);
+    // write oracle entry
+    await this.rateOracleTest.writeOracleEntry();
+    // advance time after first write to the oracle
+    await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
+
+    await this.aaveLendingPool.setReserveNormalizedIncome(
+      this.token.address,
+      "1008000000000000000000000000" // 10^27 * 1.008
+    );
+
+    await this.rateOracleTest.writeOracleEntry();
+
+    const termStartTimestamp: number = await getCurrentTimestamp(provider);
+    const termEndTimestamp: number =
+      termStartTimestamp + this.params.duration.toNumber();
+    this.termStartTimestampBN = toBn(termStartTimestamp.toString());
+    this.termEndTimestampBN = toBn(termEndTimestamp.toString());
+
+    // console.log(`factory: ${this.factory.address}`);
+    // console.log(`masterVAMM: ${await this.factory.masterVAMM()}`);
+    // console.log(
+    //   `masterMarginEngine: ${await this.factory.masterMarginEngine()}`
+    // );
 
     // deploy an IRS instance
     await this.factory.deployIrsInstance(
@@ -381,13 +409,11 @@ export class ScenarioRunner {
       this.params.tickSpacing
     );
 
-    const marginEngineTestFactory = await ethers.getContractFactory(
-      "TestMarginEngine"
-    );
+    const marginEngineFactory = await ethers.getContractFactory("MarginEngine");
 
-    this.marginEngineTest = marginEngineTestFactory.attach(
+    this.marginEngineTest = marginEngineFactory.attach(
       marginEngineAddress
-    ) as TestMarginEngine;
+    ) as MarginEngine;
 
     // deploy VAMM test
     const vammAddress = await this.factory.getVAMMAddress(
@@ -535,25 +561,23 @@ export class ScenarioRunner {
 
   // print the position and trader information
   async printPositionsInfo() {
-    for (let i = 0; i < this.positions.length; i++) {
-      await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-        this.positions[i][0],
-        this.positions[i][1],
-        this.positions[i][2],
-        false
-      );
-
-      console.log("POSITION: ", i + 1);
-      console.log("TICK LOWER", this.positions[i][1]);
-      console.log("TICK UPPER", this.positions[i][2]);
-      const positionInfo = await this.marginEngineTest.getPosition(
-        this.positions[i][0],
-        this.positions[i][1],
-        this.positions[i][2]
-      );
-
-      await this.printPositionInfo(positionInfo);
-    }
+    // for (let i = 0; i < this.positions.length; i++) {
+    //   await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
+    //     this.positions[i][0],
+    //     this.positions[i][1],
+    //     this.positions[i][2],
+    //     false
+    //   );
+    //   console.log("POSITION: ", i + 1);
+    //   console.log("TICK LOWER", this.positions[i][1]);
+    //   console.log("TICK UPPER", this.positions[i][2]);
+    //   const positionInfo = await this.marginEngineTest.getPosition(
+    //     this.positions[i][0],
+    //     this.positions[i][1],
+    //     this.positions[i][2]
+    //   );
+    //   await this.printPositionInfo(positionInfo);
+    // }
   }
 
   // print the current normalized income
@@ -612,25 +636,21 @@ export class ScenarioRunner {
     await this.updateAPYbounds();
   }
 
-  async getAPYboundsAndPositionMargin(position: [string, number, number]) {
-    await this.updateAPYbounds();
-
-    await this.marginEngineTest.getPositionMarginRequirementTest(
-      position[0],
-      position[1],
-      position[2],
-      false
-    );
-
-    const positionMarginRequirement = await this.marginEngineTest.getMargin();
-
-    console.log(
-      "position margin requirement: ",
-      utils.formatEther(positionMarginRequirement)
-    );
-    console.log("");
-
-    return positionMarginRequirement;
+  async getAPYboundsAndPositionMargin(_: [string, number, number]) {
+    // await this.updateAPYbounds();
+    // await this.marginEngineTest.getPositionMarginRequirementTest(
+    //   position[0],
+    //   position[1],
+    //   position[2],
+    //   false
+    // );
+    // const positionMarginRequirement = await this.marginEngineTest.getMargin();
+    // console.log(
+    //   "position margin requirement: ",
+    //   utils.formatEther(positionMarginRequirement)
+    // );
+    // console.log("");
+    // return positionMarginRequirement;
   }
 
   async getVT(towards: string) {
@@ -691,7 +711,8 @@ export class ScenarioRunner {
   }
 
   async updateCurrentTick() {
-    this.currentTick = await this.vammTest.getCurrentTick();
+    this.currentTick = (await this.vammTest.vammVars()).tick;
+    // this.currentTick = await this.vammTest.getCurrentTick();
   }
 
   async run() {}
