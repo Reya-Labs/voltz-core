@@ -3,6 +3,7 @@ import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import { toBn } from "../test/helpers/toBn";
 const DURATION_IN_SECONDS = 2592000; // 2592000 seconds = 30 days
+const TICK_SPACING = 1000;
 
 const func: DeployFunction = async function (_: HardhatRuntimeEnvironment) {
   // Simple script for testing purposes only
@@ -26,7 +27,8 @@ const func: DeployFunction = async function (_: HardhatRuntimeEnvironment) {
       mockToken.address,
       rateOracleForMockedToken.address,
       toBn(startTimestamp), // converting to wad
-      toBn(endTimestamp) // converting to wad
+      toBn(endTimestamp), // converting to wad
+      TICK_SPACING
     );
     const receipt = await deployTrx.wait();
     // console.log(receipt);
