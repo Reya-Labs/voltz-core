@@ -33,6 +33,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
         ) = observations.initialize(blockTimestamp, result);
+        
     }
 
     /// @notice Store the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
