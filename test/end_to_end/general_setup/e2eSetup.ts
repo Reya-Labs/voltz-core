@@ -2,6 +2,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { toBn } from "evm-bn";
 import JSBI from "jsbi";
 import { consts } from "../../helpers/constants";
+import { TickMath } from "../../shared/tickMath";
 import {
   ALPHA,
   APY_LOWER_MULTIPLIER,
@@ -290,5 +291,46 @@ export const e2eScenarios: e2eParameters[] = [
         -(index + 1) * TICK_SPACING,
         (index + 1) * TICK_SPACING,
       ]),
+  },
+
+  {
+    duration: consts.ONE_MONTH.mul(3),
+    numActors: 6,
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+      apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+      minDeltaLMWad: MIN_DELTA_LM,
+      minDeltaIMWad: MIN_DELTA_IM,
+      sigmaSquaredWad: toBn("0.15"),
+      alphaWad: ALPHA,
+      betaWad: BETA,
+      xiUpperWad: XI_UPPER,
+      xiLowerWad: XI_LOWER,
+      tMaxWad: T_MAX,
+
+      devMulLeftUnwindLMWad: toBn("0.5"),
+      devMulRightUnwindLMWad: toBn("0.5"),
+      devMulLeftUnwindIMWad: toBn("0.8"),
+      devMulRightUnwindIMWad: toBn("0.8"),
+
+      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+      gammaWad: toBn("1.0"),
+      minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+    },
+    lookBackWindowAPY: consts.ONE_WEEK,
+    startingPrice: encodeSqrtRatioX96(1, 1),
+    feeProtocol: 0,
+    fee: toBn("0"),
+    tickSpacing: TICK_SPACING,
+    positions: [
+      [0, TickMath.getTickAtSqrtRatio(encodeSqrtRatioX96(1, 8)), TickMath.getTickAtSqrtRatio(encodeSqrtRatioX96(1, 4))], // 4% -- 8%
+      [1, TickMath.getTickAtSqrtRatio(encodeSqrtRatioX96(1, 10)), TickMath.getTickAtSqrtRatio(encodeSqrtRatioX96(1, 6))], // 6% -- 10%
+      [2, -TICK_SPACING, TICK_SPACING], // swapper
+    ],
   },
 ];

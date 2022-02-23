@@ -427,7 +427,7 @@ contract E2ESetup {
 
             require(
                 abs(delta) < uint256(approximation),
-                "settlement cashflows from swap snapshots "
+                "settlement cashflows from swap snapshots"
             );
         }
     }
