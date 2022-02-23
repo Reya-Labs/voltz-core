@@ -603,6 +603,22 @@ contract E2ESetup {
         return snapshots;
     }
 
+    function getSwapsHistory(address owner,
+        int24 tickLower,
+        int24 tickUpper) public view returns (SwapSnapshot[] memory) {
+        bytes32 hashedPositon = keccak256(
+            abi.encodePacked(owner, tickLower, tickUpper)
+        );
+        uint256 len = sizeOfPositionSwapsHistory[hashedPositon];
+        SwapSnapshot[] memory snapshots = new SwapSnapshot[](len);
+
+        for (uint256 i = 0; i < len; i++) {
+            snapshots[i] = positionSwapsHistory[hashedPositon][i + 1];
+        }
+
+        return snapshots;
+    }
+
     function getGasConsumedAtLastTx() external view returns (uint256) {
         return keepInMindGas;
     }
