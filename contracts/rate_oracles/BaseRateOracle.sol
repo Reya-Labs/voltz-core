@@ -15,8 +15,6 @@ import "../core_libraries/Time.sol";
 abstract contract BaseRateOracle is IRateOracle, Ownable {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
-    uint256 public constant ONE_WEI = 10**18;
-
     /// @notice a cache of settlement rates for interest rate swaps associated with this rate oracle, indexed by start time and then end time
     mapping(uint32 => mapping(uint32 => uint256)) public settlementRateCache;
     struct OracleVars {
@@ -89,12 +87,12 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         if (rateFromToWad == 0) {
             return 0;
         }
-        uint256 exponentWad = PRBMathUD60x18.div(ONE_WEI, timeInYearsWad);
+        uint256 exponentWad = PRBMathUD60x18.div(PRBMathUD60x18.fromUint(1), timeInYearsWad);
         uint256 apyPlusOneWad = PRBMathUD60x18.pow(
-            (ONE_WEI + rateFromToWad),
+            (PRBMathUD60x18.fromUint(1) + rateFromToWad),
             exponentWad
         );
-        apyWad = apyPlusOneWad - ONE_WEI;
+        apyWad = apyPlusOneWad - PRBMathUD60x18.fromUint(1);
     }
 
     /// @inheritdoc IRateOracle
