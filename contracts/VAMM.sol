@@ -236,7 +236,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       (flippedLower, flippedUpper) = flipTicks(params);
     }
 
-    marginEngine.updatePositionPostVAMMInducedMintBurn(params);
+    if (msg.sender != address(marginEngine)) { 
+      marginEngine.updatePositionPostVAMMInducedMintBurn(params);
+    }
 
     // clear any tick data that is no longer needed
     if (params.liquidityDelta < 0) {

@@ -16,6 +16,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
+import "contracts/utils/Printer.sol";
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeCast for uint256;
@@ -284,6 +285,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             transferMargin(depositor, marginDelta);
         }
 
+        position.rewardPerAmount = 0;
+
         emit UpdatePositionMargin(_owner, tickLower, tickUpper, position.margin);
 
     }
@@ -376,23 +379,38 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             revert CannotLiquidate();
         }
 
-        uint256 liquidatorRewardValueWad = PRBMathUD60x18.mul(PRBMathUD60x18.fromUint(uint256(position.margin)), liquidatorRewardWad);
-
-        uint256 liquidatorRewardValue = PRBMathUD60x18.toUint(liquidatorRewardValueWad);
-
-        position.updateMarginViaDelta(-int256(liquidatorRewardValue));
+        if (position.rewardPerAmount == 0) {
+            if (position.variableTokenBalance < 0) {
+                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(-position.variableTokenBalance));
+            }
+            else {
+                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(position.variableTokenBalance));
+            }
+        }
 
         if (position._liquidity > 0) {
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
             vamm.burn(_owner, tickLower, tickUpper, position._liquidity);
         }
     
-        unwindPosition(position, _owner, tickLower, tickUpper);
+        int256 _variableTokenDelta = unwindPosition(position, _owner, tickLower, tickUpper);
 
+        Printer.printInt256("variableTokenBalance", position.variableTokenBalance);
+        Printer.printInt256("_variableTokenDelta", _variableTokenDelta);
+        Printer.printUint256("rewardPerAmount", position.rewardPerAmount);
+
+        if (_variableTokenDelta == 0) return;
+
+        uint256 liquidatorRewardValue = (_variableTokenDelta < 0)
+            ? PRBMathUD60x18.mul(uint256(-_variableTokenDelta), position.rewardPerAmount)
+            : PRBMathUD60x18.mul(uint256(_variableTokenDelta), position.rewardPerAmount);
+
+        Printer.printUint256("liquidatorRewardValue", liquidatorRewardValue);
+
+        position.updateMarginViaDelta(-int256(liquidatorRewardValue));
         underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
 
         emit LiquidatePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, position._liquidity);
-
     }
 
 
@@ -408,6 +426,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (params.liquidityDelta>0) {
             checkPositionMarginAboveRequirement(position, params.tickLower, params.tickUpper);
         }
+
+        position.rewardPerAmount = 0;
 
         emit UpdatePositionPostMintBurn(params.owner, params.tickLower, params.tickUpper, position._liquidity);
 
@@ -433,6 +453,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (positionMarginRequirement > position.margin) {
             revert MarginRequirementNotMet();
         }
+
+        position.rewardPerAmount = 0;
 
         emit UpdatePositionPostSwap(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin);
     }
@@ -537,14 +559,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         address _owner,
         int24 tickLower,
         int24 tickUpper
-    ) internal {
+    ) internal returns (int256 _variableTokenDelta) {
 
         Tick.checkTicks(tickLower, tickUpper);
 
         if (position.variableTokenBalance != 0 ) {
 
             int256 _fixedTokenDelta;
-            int256 _variableTokenDelta;
             uint256 _cumulativeFeeIncurred;
 
             /// @dev initiate a swap
