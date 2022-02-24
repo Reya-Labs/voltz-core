@@ -12,7 +12,9 @@ interface IVAMM is IPositionStructs {
         address indexed recipient,
         uint160 sqrtPriceX96,
         uint128 liquidity,
-        int24 tick
+        int24 tick,
+        int24 indexed tickLower,
+        int24 indexed tickUpper
     );
 
     /// @dev emitted after a given vamm is successfully initialized
