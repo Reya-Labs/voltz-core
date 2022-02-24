@@ -1014,7 +1014,6 @@ describe("MarginEngine", () => {
 
       expect(positionInfoOld.variableTokenBalance).to.eq(toBn("-10"));
 
-      // await marginEngineTest.connect(other).liquidateTrader(wallet.address);
       await marginEngineTest.liquidatePosition(
         -TICK_SPACING,
         TICK_SPACING,

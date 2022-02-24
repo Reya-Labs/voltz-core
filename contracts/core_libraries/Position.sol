@@ -39,6 +39,8 @@ library Position {
         int256 variableTokenBalance;
         // fee growth per unit of liquidity as of the last update to liquidity or fees owed (via the margin)
         uint256 feeGrowthInsideLastX128;
+        // amount of variable tokens at the initiation of liquidity
+        uint256 rewardPerAmount;
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries

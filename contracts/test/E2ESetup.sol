@@ -47,6 +47,15 @@ contract Actor {
             _fixedTokenDeltaUnbalanced
         ) = IVAMM(VAMMAddress).swap(params);
     }
+
+    function liquidatePosition(
+        address MEAddress,
+        int24 tickLower,
+        int24 tickUpper,
+        address owner
+    ) external {
+        IMarginEngine(MEAddress).liquidatePosition(tickLower, tickUpper, owner);
+    }
 }
 
 contract E2ESetup {
@@ -98,6 +107,7 @@ contract E2ESetup {
     mapping(bytes32 => uint256) public sizeOfPositionSwapsHistory;
 
     int256 public initialCashflow = 0;
+    int256 public liquidationRewards = 0;
 
     uint256 public keepInMindGas;
 
@@ -255,6 +265,39 @@ contract E2ESetup {
             _variableTokenDelta,
             _cumulativeFeeIncurred
         );
+    }
+
+    function liquidatePosition(
+        int24 lowerTickLiquidator,
+        int24 upperTickLiquidator,
+        address liquidator,
+        int24 tickLower,
+        int24 tickUpper,
+        address owner
+    ) external {
+        this.addPosition(liquidator, lowerTickLiquidator, upperTickLiquidator);
+        this.addPosition(owner, tickLower, tickUpper);
+
+        uint256 liquidatorBalanceBefore = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(liquidator);
+
+        Actor(liquidator).liquidatePosition(
+            MEAddress,
+            tickLower,
+            tickUpper,
+            owner
+        );
+
+        uint256 liquidatorBalanceAfter = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(liquidator);
+
+        liquidationRewards +=
+            int256(liquidatorBalanceAfter) -
+            int256(liquidatorBalanceBefore);
+
+        continuousInvariants();
     }
 
     function estimatedVariableFactorFromStartToMaturity()
@@ -492,6 +535,7 @@ contract E2ESetup {
                 true
             );
             uint256 marginRequirement = TestMarginEngine(MEAddress).getMargin();
+            Printer.printUint256("  margin requirement:", marginRequirement);
 
             if (int256(marginRequirement) > position.margin) {
                 liquidatablePositions += 1;
@@ -533,6 +577,7 @@ contract E2ESetup {
         }
 
         totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
+        totalCashflow += int256(liquidationRewards);
 
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);
@@ -603,9 +648,11 @@ contract E2ESetup {
         return snapshots;
     }
 
-    function getSwapsHistory(address owner,
+    function getSwapsHistory(
+        address owner,
         int24 tickLower,
-        int24 tickUpper) public view returns (SwapSnapshot[] memory) {
+        int24 tickUpper
+    ) public view returns (SwapSnapshot[] memory) {
         bytes32 hashedPositon = keccak256(
             abi.encodePacked(owner, tickLower, tickUpper)
         );
