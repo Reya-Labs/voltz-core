@@ -41,7 +41,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   address private deployer;
 
   IRateOracle internal rateOracle;
-  
+
   /// @inheritdoc IVAMM
   IFactory public override factory;
 
@@ -89,29 +89,29 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     __Ownable_init();
     __Pausable_init();
   }
-  
+
   /// @inheritdoc IVAMM
   VAMMVars public override vammVars;
 
   /// @inheritdoc IVAMM
   int256 public override fixedTokenGrowthGlobalX128;
-  
+
   /// @inheritdoc IVAMM
   int256 public override variableTokenGrowthGlobalX128;
 
   /// @inheritdoc IVAMM
   uint256 public override feeGrowthGlobalX128;
-  
+
   /// @inheritdoc IVAMM
   uint128 public override liquidity;
-  
+
   /// @inheritdoc IVAMM
   uint256 public override protocolFees;
 
   /// @inheritdoc IVAMM
   IMarginEngine public override marginEngine;
 
-  /// @dev modifier that ensures the 
+  /// @dev modifier that ensures the
   modifier onlyMarginEngine () {
     if (msg.sender != address(marginEngine)) {
         revert OnlyMarginEngine();
@@ -150,7 +150,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     vammVars.feeProtocol = feeProtocol;
     emit SetFeeProtocol(feeProtocolOld, feeProtocol);
   }
-  
+
   function setFee(uint256 _feeWad) external override onlyOwner lock {
     uint256 feeWadOld = feeWad;
     feeWad = _feeWad;
@@ -307,7 +307,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     // amount specified needs to be positive for an FT and negative for a VT
     bool isFT = (params.amountSpecified > 0) ? true : false;
-    
+
     checksBeforeSwap(params, vammVarsStart, isFT);
 
     if (params.isExternal) {
@@ -517,13 +517,15 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     if (!params.isExternal) {
       marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred);
     }
-    
+
     emit Swap(
       msg.sender,
       params.recipient,
       state.sqrtPriceX96,
       state.liquidity,
-      state.tick
+      state.tick,
+      params.tickLower,
+      params.tickUpper
     );
 
     unlocked = true;
