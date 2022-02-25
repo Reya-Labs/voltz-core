@@ -410,7 +410,7 @@ describe("MarginEngine", () => {
       );
     });
 
-    it("unwinds LP", async () => {
+    it("liquidate and unwind LP", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
@@ -458,25 +458,23 @@ describe("MarginEngine", () => {
         );
       }
 
-      await marginEngineTest.unwindPositionTest(
+      await marginEngineTest.liquidatePosition(
+        -TICK_SPACING,
+        TICK_SPACING,
+        other.address
+      );
+
+      const positionInfo = await marginEngineTest.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
       );
 
-      {
-        const positionInfo = await marginEngineTest.getPosition(
-          other.address,
-          -TICK_SPACING,
-          TICK_SPACING
-        );
-
-        console.log(
-          "variable token balance:",
-          utils.formatEther(positionInfo.variableTokenBalance)
-        );
-        expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
-      }
+      console.log(
+        "variable token balance:",
+        utils.formatEther(positionInfo.variableTokenBalance)
+      );
+      expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
     });
 
     it("not enough liquidity to unwind position", async () => {
