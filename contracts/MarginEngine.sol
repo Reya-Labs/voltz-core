@@ -211,9 +211,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function getPosition(address _owner,
                          int24 tickLower,
                          int24 tickUpper)
-        external override view returns (Position.Info memory position) {
-            /// Costin: update position to account for fees?
-            return positions.get(_owner, tickLower, tickUpper);
+        external override returns (Position.Info memory) {
+            Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
+            updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
+            return position;
     }
 
     /// @notice transferMargin function which:
@@ -288,7 +289,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         position.rewardPerAmount = 0;
 
         emit UpdatePositionMargin(_owner, tickLower, tickUpper, position.margin);
-
     }
     
     
