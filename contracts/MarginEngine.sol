@@ -211,10 +211,21 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function getPosition(address _owner,
                          int24 tickLower,
                          int24 tickUpper)
-        external override returns (Position.Info memory) {
-            Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
-            updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
-            return position;
+        external override view returns (Position.Info memory positionMemory) {
+            
+            positionMemory =  positions.get(_owner, tickLower, tickUpper);
+
+            if (positionMemory._liquidity > 0) {
+                Position.Info storage positionStorage = positions.get(_owner, tickLower, tickUpper);
+                (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
+                (int256 fixedTokenDelta, int256 variableTokenDelta) = positionStorage.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
+                uint256 feeDelta = positionStorage.calculateFeeDelta(feeGrowthInsideX128);
+                positionMemory.fixedTokenBalance += fixedTokenDelta;
+                positionMemory.variableTokenBalance += variableTokenDelta;
+                positionMemory.margin += int256(feeDelta);
+            }    
+
+            return positionMemory;
     }
 
     /// @notice transferMargin function which:

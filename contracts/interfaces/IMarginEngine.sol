@@ -198,7 +198,7 @@ interface IMarginEngine is IPositionStructs {
         address _owner,
         int24 tickLower,
         int24 tickUpper
-    ) external returns (Position.Info memory position);
+    ) external view returns (Position.Info memory position);
 
     /// @notice Gets the look-back window size that's used to request the historical APY from the rate Oracle
     /// @dev The historical APY of the Rate Oracle is necessary for MarginEngine computations
