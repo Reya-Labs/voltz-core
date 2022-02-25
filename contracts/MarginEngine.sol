@@ -391,6 +391,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (position._liquidity > 0) {
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
             vamm.burn(_owner, tickLower, tickUpper, position._liquidity);
+            position.updateLiquidity(-int128(position._liquidity));
         }
     
         int256 _variableTokenDelta = unwindPosition(position, _owner, tickLower, tickUpper);
@@ -410,6 +411,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         position.updateMarginViaDelta(-int256(liquidatorRewardValue));
         underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
 
+        // todo: add msg.sender to the event (as the initiator of the liquidation)
         emit LiquidatePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, position._liquidity);
     }
 
