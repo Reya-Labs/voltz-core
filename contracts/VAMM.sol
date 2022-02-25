@@ -456,9 +456,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
           isFT,
           state,
           step,
-          variableFactorWad,
-          termStartTimestampWad,
-          termEndTimestampWad
+          variableFactorWad
         );
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
@@ -612,9 +610,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
         bool isFT,
         SwapState memory state,
         StepComputations memory step,
-        uint256 variableFactorWad,
-        uint256 termStartTimestampWad,
-        uint256 termEndTimestampWad
+        uint256 variableFactorWad
     )
         internal
         view
