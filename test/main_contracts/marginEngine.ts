@@ -1,5 +1,5 @@
 import { ethers, waffle } from "hardhat";
-import { BigNumber, Wallet } from "ethers";
+import { BigNumber, utils, Wallet } from "ethers";
 import { expect } from "../shared/expect";
 import { metaFixture, tickMathFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
@@ -451,6 +451,11 @@ describe("MarginEngine", () => {
           TICK_SPACING
         );
         expect(positionInfo.variableTokenBalance).to.not.be.equal(0);
+
+        console.log(
+          "variable token balance:",
+          utils.formatEther(positionInfo.variableTokenBalance)
+        );
       }
 
       await marginEngineTest.unwindPositionTest(
@@ -465,7 +470,12 @@ describe("MarginEngine", () => {
           -TICK_SPACING,
           TICK_SPACING
         );
-        expect(positionInfo.variableTokenBalance).to.be.equal(0);
+
+        console.log(
+          "variable token balance:",
+          utils.formatEther(positionInfo.variableTokenBalance)
+        );
+        expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
       }
     });
 
