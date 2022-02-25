@@ -237,6 +237,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     }
 
     if (msg.sender != address(marginEngine)) { 
+      // this only happens if the margin engine triggers a liquidation which in turn triggers a burn
+      // the state updated in the margin engine in that case are done directly in the liquidatePosition function
       marginEngine.updatePositionPostVAMMInducedMintBurn(params);
     }
 
