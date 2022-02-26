@@ -12,3 +12,4 @@ deployments/localhost/
 #Hardhat files
 cache
 artifacts
+.txt

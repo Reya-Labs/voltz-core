@@ -106,6 +106,7 @@ library Position {
     {
         Info memory _self = self;
 
+        // 0xZenus: The multiplication overflows, need to wrap the below expression in an unchecked block.
         unchecked {
             _feeDelta = FullMath.mulDiv(
                 feeGrowthInsideX128 - _self.feeGrowthInsideLastX128,
