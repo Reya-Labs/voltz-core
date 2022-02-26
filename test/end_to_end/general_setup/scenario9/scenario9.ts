@@ -19,7 +19,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    const length_of_series = 50;
+    const length_of_series = 12;
     const actions = [1, 2, 3];
 
     await this.rateOracleTest.increaseObservarionCardinalityNext(1000);
@@ -157,7 +157,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     const length_of_liquidation_series = 20;
 
     for (let step = 0; step < length_of_liquidation_series; step++) {
-      accumulatedReserveNormalizedIncome += random(0.0005, 0.001);
+      accumulatedReserveNormalizedIncome += random(-0.0006, 0.0006);
       await this.advanceAndUpdateApy(
         consts.ONE_DAY,
         1,
@@ -197,7 +197,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   }
 }
 
-it.skip("scenario 9", async () => {
+const test = async () => {
   console.log("scenario", 9);
   const e2eParams = e2eScenarios[9];
   const scenario = new ScenarioRunnerInstance(
@@ -206,4 +206,10 @@ it.skip("scenario 9", async () => {
   );
   await scenario.init();
   await scenario.run();
-});
+};
+
+if (e2eScenarios[9].skipped) {
+  it.skip("scenario 9", test);
+} else {
+  it("scenario 9", test);
+}

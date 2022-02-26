@@ -1,5 +1,5 @@
 ----------------------------START----------------------------
-current timestamp: 1647773720
+current timestamp: 1658924586
 
 current tick: 0
 sqrt price at current tick: 1
@@ -16,7 +16,7 @@ variable factor: 0.0
 No of   Actors: 5
 No of Positions: 5
 POSITION 0
-                       address   : 0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB
+                       address   : 0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -31,7 +31,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8
+                       address   : 0xB0f05d25e41FbC2b52013099ED9616f1206Ae21B
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -46,7 +46,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x19cEcCd6942ad38562Ee10bAfd44776ceB67e923
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -61,7 +61,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x4826533B4897376654Bb4d4AD88B7faFD0C98528
+                       address   : 0x927b167526bAbB9be047421db732C663a0b77B11
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -76,7 +76,7 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 POSITION 4
-                       address   : 0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf
+                       address   : 0x02b0B4EFd909240FCB2Eb5FAe060dC60D112E3a4
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -91,8 +91,8 @@ variableTokenGrowthInsideLastX128: 0
              settlement cashflow: 0.0
 
 
-----------------------------AFTER 100 MINTS----------------------------
-current timestamp: 1649934239
+----------------------------AFTER 100 MINT PHASES----------------------------
+current timestamp: 1661085105
 
 current tick: 0
 sqrt price at current tick: 1
@@ -109,7 +109,7 @@ variable factor: 0.0
 No of   Actors: 5
 No of Positions: 5
 POSITION 0
-                       address   : 0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB
+                       address   : 0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -118,13 +118,13 @@ POSITION 0
                            margin: 25.0
    fixedTokenGrowthInsideLastX128: 0
 variableTokenGrowthInsideLastX128: 0
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.0000000000000006
+             variableTokenBalance: -0.0000000000000006
                         isSettled: false
-             settlement cashflow: 0.0
+             settlement cashflow: -0.000000000000000001
 
 POSITION 1
-                       address   : 0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8
+                       address   : 0xB0f05d25e41FbC2b52013099ED9616f1206Ae21B
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -133,13 +133,13 @@ POSITION 1
                            margin: 25.0
    fixedTokenGrowthInsideLastX128: 0
 variableTokenGrowthInsideLastX128: 0
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.000000000000000599
+             variableTokenBalance: -0.000000000000000599
                         isSettled: false
-             settlement cashflow: 0.0
+             settlement cashflow: -0.000000000000000001
 
 POSITION 2
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x19cEcCd6942ad38562Ee10bAfd44776ceB67e923
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -148,13 +148,13 @@ POSITION 2
                            margin: 25.0
    fixedTokenGrowthInsideLastX128: 0
 variableTokenGrowthInsideLastX128: 0
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.000000000000000598
+             variableTokenBalance: -0.000000000000000598
                         isSettled: false
-             settlement cashflow: 0.0
+             settlement cashflow: -0.000000000000000001
 
 POSITION 3
-                       address   : 0x4826533B4897376654Bb4d4AD88B7faFD0C98528
+                       address   : 0x927b167526bAbB9be047421db732C663a0b77B11
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -163,13 +163,13 @@ POSITION 3
                            margin: 25.0
    fixedTokenGrowthInsideLastX128: 0
 variableTokenGrowthInsideLastX128: 0
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.000000000000000597
+             variableTokenBalance: -0.000000000000000597
                         isSettled: false
-             settlement cashflow: 0.0
+             settlement cashflow: -0.000000000000000001
 
 POSITION 4
-                       address   : 0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf
+                       address   : 0x02b0B4EFd909240FCB2Eb5FAe060dC60D112E3a4
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
@@ -178,14 +178,14 @@ POSITION 4
                            margin: 25.0
    fixedTokenGrowthInsideLastX128: 0
 variableTokenGrowthInsideLastX128: 0
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.000000000000000596
+             variableTokenBalance: -0.000000000000000596
                         isSettled: false
-             settlement cashflow: 0.0
+             settlement cashflow: -0.000000000000000001
 
 
 ----------------------------BEFORE SETTLEMENT----------------------------
-current timestamp: 1652094751
+current timestamp: 1663246498
 
 current tick: -61
 sqrt price at current tick: 0.9969547984655946
@@ -195,90 +195,90 @@ current reserve normalised income: 1.001500000
 amount of available variable tokens: 1499.175155433346 (↑) ; 0 (↓)
 
 lower apy bound: 0.0
- historical apy: 0.004383671253533277
-upper apy bound: 0.027413902877908745
+ historical apy: 0.004383583796832343
+upper apy bound: 0.027409844345811159
 variable factor: 0.0
 
 No of   Actors: 5
 No of Positions: 5
 POSITION 0
-                       address   : 0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB
+                       address   : 0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.638422440025896846
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.639628030810629942
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: -0.114698605862890406
-             variableTokenBalance: 0.164968913330828638
+                fixedTokenBalance: -0.114921492025381872
+             variableTokenBalance: 0.164968913330827431
                         isSettled: false
-             settlement cashflow: -0.000282818480209866
+             settlement cashflow: -0.000283368062528338
 
 POSITION 1
-                       address   : 0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8
+                       address   : 0xB0f05d25e41FbC2b52013099ED9616f1206Ae21B
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.63842719649469441
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.639660993139397064
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: -0.117268587587587851
-             variableTokenBalance: 0.164968913330828638
+                fixedTokenBalance: -0.117261914596507547
+             variableTokenBalance: 0.164968913330827432
                         isSettled: false
-             settlement cashflow: -0.000289155421448846
+             settlement cashflow: -0.000289138967498237
 
 POSITION 2
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x19cEcCd6942ad38562Ee10bAfd44776ceB67e923
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.638431952963491977
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.639677402956748664
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: -0.119838615363085667
-             variableTokenBalance: 0.164968913330828638
+                fixedTokenBalance: -0.119736977965267944
+             variableTokenBalance: 0.164968913330827433
                         isSettled: false
-             settlement cashflow: -0.000295492476237745
+             settlement cashflow: -0.000295241863476003
 
 POSITION 3
-                       address   : 0x4826533B4897376654Bb4d4AD88B7faFD0C98528
+                       address   : 0x927b167526bAbB9be047421db732C663a0b77B11
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.638436709432289541
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.639682159425546228
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: -0.122408689190483184
-             variableTokenBalance: 0.164968913330828638
+                fixedTokenBalance: -0.122306809301082007
+             variableTokenBalance: 0.164968913330827434
                         isSettled: false
-             settlement cashflow: -0.000301829644579273
+             settlement cashflow: -0.000301578433893078
 
 POSITION 4
-                       address   : 0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf
+                       address   : 0x02b0B4EFd909240FCB2Eb5FAe060dC60D112E3a4
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.711872602171796255
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.713107092947859002
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 0.474214498004045679
-             variableTokenBalance: -0.659875653323312056
+                fixedTokenBalance: 0.474227193888231863
+             variableTokenBalance: -0.659875653323313259
                         isSettled: false
-             settlement cashflow: 0.001169296022475728
+             settlement cashflow: 0.00116932732739564
 
 
 ----------------------------FINAL----------------------------
-current timestamp: 1655550761
+current timestamp: 1666702512
 
 current tick: -61
 sqrt price at current tick: 0.9969547984655946
@@ -290,77 +290,77 @@ amount of available variable tokens: 1499.175155433346 (↑) ; 0 (↓)
 No of   Actors: 5
 No of Positions: 5
 POSITION 0
-                       address   : 0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB
+                       address   : 0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.63813962154568698
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.639344662748101604
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.000000000000000001
+             variableTokenBalance: -0.000000000000000001
                         isSettled: true
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8
+                       address   : 0xB0f05d25e41FbC2b52013099ED9616f1206Ae21B
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.638138041073245564
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.639371854171898827
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.000000000000000001
+             variableTokenBalance: -0.000000000000000001
                         isSettled: true
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x19cEcCd6942ad38562Ee10bAfd44776ceB67e923
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.638136460487254232
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.639382161093272661
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.000000000000000001
+             variableTokenBalance: -0.000000000000000001
                         isSettled: true
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x4826533B4897376654Bb4d4AD88B7faFD0C98528
+                       address   : 0x927b167526bAbB9be047421db732C663a0b77B11
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.638134879787710268
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.63938058099165315
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.000000000000000001
+             variableTokenBalance: -0.000000000000000001
                         isSettled: true
              settlement cashflow: 0.0
 
 POSITION 4
-                       address   : 0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf
+                       address   : 0x02b0B4EFd909240FCB2Eb5FAe060dC60D112E3a4
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 0
          sqrt price at upper tick: 1
                         liquidity: 100100.0
-                           margin: 111.713041898194271983
-   fixedTokenGrowthInsideLastX128: 0.002169495914131403
+                           margin: 111.714276420275254642
+   fixedTokenGrowthInsideLastX128: 0.002169295446947217
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 0.0
-             variableTokenBalance: 0.0
+                fixedTokenBalance: -0.000000000000000001
+             variableTokenBalance: -0.000000000000000001
                         isSettled: true
              settlement cashflow: 0.0
 

@@ -338,7 +338,7 @@ describe("MarginEngine", () => {
         -1,
         1,
         1,
-        1000,
+        toBn("1000"),
         0,
         0,
         0,
@@ -347,13 +347,18 @@ describe("MarginEngine", () => {
         false
       );
 
-      await marginEngineTest.updatePositionMargin(wallet.address, -1, 1, 1);
+      await marginEngineTest.updatePositionMargin(
+        wallet.address,
+        -1,
+        1,
+        toBn("1")
+      );
       const positionInfo = await marginEngineTest.getPosition(
         wallet.address,
         -1,
         1
       );
-      expect(positionInfo.margin).to.eq(1001);
+      expect(positionInfo.margin).to.be.near(toBn("1001"));
     });
 
     it("check token balance correctly updated", async () => {
@@ -670,7 +675,7 @@ describe("MarginEngine", () => {
         wallet.address,
         -1,
         1,
-        1,
+        toBn("1"),
         toBn("10.0"),
         toBn("0"),
         toBn("0"),
@@ -693,8 +698,8 @@ describe("MarginEngine", () => {
         1
       );
 
-      expect(positionInfo.fixedTokenBalance).to.eq(1);
-      expect(positionInfo.variableTokenBalance).to.eq(-1);
+      expect(positionInfo.fixedTokenBalance).to.be.near(toBn("1"));
+      expect(positionInfo.variableTokenBalance).to.be.near(toBn("-1"));
     });
   });
 
@@ -1020,7 +1025,7 @@ describe("MarginEngine", () => {
         TICK_SPACING
       );
 
-      expect(positionInfoOld.variableTokenBalance).to.eq(toBn("-10"));
+      expect(positionInfoOld.variableTokenBalance).to.be.near(toBn("-10"));
 
       await marginEngineTest.liquidatePosition(
         -TICK_SPACING,
@@ -1047,11 +1052,11 @@ describe("MarginEngine", () => {
       );
       const balanceWalletDelta = sub(balanceWallet, oldBalanceWallet);
 
-      expect(balanceWalletDelta).to.eq(toBn("0.1"));
-      expect(marginEngineBalanceDelta).to.eq(toBn("0.1"));
+      expect(balanceWalletDelta).to.be.near(toBn("0.1"));
+      expect(marginEngineBalanceDelta).to.be.near(toBn("0.1"));
 
-      expect(positionInfo.variableTokenBalance).to.eq("0");
-      expect(positionInfo.margin).to.eq(toBn("0.9"));
+      expect(positionInfo.variableTokenBalance).to.be.near(toBn("0"));
+      expect(positionInfo.margin).to.be.near(toBn("0.9"));
     });
   });
 

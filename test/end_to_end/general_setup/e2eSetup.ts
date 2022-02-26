@@ -32,6 +32,8 @@ export interface e2eParameters {
   fee: BigNumber;
 
   positions: [number, number, number][]; // list of [index of actor, lower tick, upper tick]
+
+  skipped: boolean;
 }
 
 export const e2eScenarios: e2eParameters[] = [
@@ -75,6 +77,7 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -TICK_SPACING, TICK_SPACING],
       [3, -TICK_SPACING, TICK_SPACING],
     ],
+    skipped: true,
   },
 
   {
@@ -118,6 +121,7 @@ export const e2eScenarios: e2eParameters[] = [
       [3, -TICK_SPACING, 0],
       [4, -TICK_SPACING, 0],
     ],
+    skipped: true,
   },
 
   {
@@ -160,6 +164,7 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -TICK_SPACING, TICK_SPACING],
       [3, -TICK_SPACING, TICK_SPACING],
     ],
+    skipped: true,
   },
 
   {
@@ -202,6 +207,7 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -TICK_SPACING, TICK_SPACING],
       [3, -TICK_SPACING, TICK_SPACING],
     ],
+    skipped: true,
   },
 
   {
@@ -248,6 +254,7 @@ export const e2eScenarios: e2eParameters[] = [
       [4, -TICK_SPACING, TICK_SPACING],
       [5, -TICK_SPACING, TICK_SPACING],
     ],
+    skipped: true,
   },
 
   {
@@ -291,6 +298,7 @@ export const e2eScenarios: e2eParameters[] = [
         -(index + 1) * TICK_SPACING,
         (index + 1) * TICK_SPACING,
       ]),
+    skipped: true,
   },
 
   {
@@ -348,6 +356,7 @@ export const e2eScenarios: e2eParameters[] = [
       ], // 6% -- 10%
       [2, -TICK_SPACING, TICK_SPACING], // swapper
     ],
+    skipped: true,
   },
 
   {
@@ -390,6 +399,7 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -TICK_SPACING, TICK_SPACING],
       [3, -TICK_SPACING, TICK_SPACING],
     ],
+    skipped: true,
   },
 
   {
@@ -432,6 +442,7 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -TICK_SPACING, TICK_SPACING],
       [3, -TICK_SPACING, TICK_SPACING],
     ],
+    skipped: true,
   },
 
   {
@@ -478,5 +489,6 @@ export const e2eScenarios: e2eParameters[] = [
       [4, -TICK_SPACING, TICK_SPACING],
       [5, -TICK_SPACING, TICK_SPACING],
     ],
+    skipped: true,
   },
 ];
