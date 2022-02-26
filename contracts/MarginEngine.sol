@@ -605,7 +605,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     recipient: _owner,
                     amountSpecified: position.variableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1,
-                    isExternal: true,
+                    
                     tickLower: tickLower,
                     tickUpper: tickUpper
                 });
@@ -622,7 +622,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     recipient: _owner,
                     amountSpecified: position.variableTokenBalance,
                     sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO - 1,
-                    isExternal: true,
+                    
                     tickLower: tickLower,
                     tickUpper: tickUpper
                 });

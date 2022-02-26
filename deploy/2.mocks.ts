@@ -11,7 +11,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Mock contracts that should/need not be deployed on mainnet
   const mockERC20Deploy = await deploy("ERC20Mock", {
     from: deployer,
-    args: ["Voltz USD", "VUSD", 6],
+    args: ["Voltz USD", "VUSD"],
     log: doLogging,
   });
   await deploy("MockAaveLendingPool", {

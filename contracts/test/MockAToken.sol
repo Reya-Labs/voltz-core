@@ -4,12 +4,10 @@ import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/aave/IAToken.sol";
 import "../utils/WayRayMath.sol";
 import "../utils/Printer.sol";
-import "./ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MockAToken is IAToken, ERC20 {
     using WadRayMath for uint256;
-    // using SafeERC20 for IERC20;
-
     IAaveV2LendingPool internal _pool;
     address internal _underlyingAsset;
 

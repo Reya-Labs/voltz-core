@@ -53,7 +53,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       recipient: this.positions[2][0],
       amountSpecified: toBn("-1000"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-      isExternal: false,
+      
       tickLower: this.positions[2][1],
       tickUpper: this.positions[2][2],
     });

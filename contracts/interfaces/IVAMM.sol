@@ -89,8 +89,6 @@ interface IVAMM is IPositionStructs {
         int256 amountSpecified;
         /// @dev The Q64.96 sqrt price limit. If !isFT, the price cannot be less than this
         uint160 sqrtPriceLimitX96;
-        /// @dev Is the swap triggered following a liquidation event resulting in an unwind or swap triggered by the FCM
-        bool isExternal;
         /// @dev Is the swap triggered by a trader. If this is false then this is only possible in a scenario where a liquidity provider's position is liquidated
         /// @dev leading to an unwind of a liquidity provider
         /// @dev lower tick of the liquidity provider (needs to be set if isTrader is false)

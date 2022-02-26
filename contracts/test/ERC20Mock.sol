@@ -5,16 +5,15 @@
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
-import "./ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // mock class using ERC20
 contract ERC20Mock is ERC20 {
     constructor(
         string memory name,
-        string memory symbol,
-        uint8 _decimals
+        string memory symbol
     ) payable ERC20(name, symbol) {
-        _setupDecimals(_decimals);
+        // be default 18 decimals: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/abdb20a6bdb1700d58ea9e01b7471dafdef52a68/contracts/token/ERC20/ERC20.sol#L48 
         mint(msg.sender, 1e12);
     }
 

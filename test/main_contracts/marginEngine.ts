@@ -852,7 +852,7 @@ describe("MarginEngine", () => {
         recipient: other.address,
         amountSpecified: toBn("1"),
         sqrtPriceLimitX96: MAX_SQRT_RATIO.sub(1),
-        isExternal: false,
+        
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
       });
