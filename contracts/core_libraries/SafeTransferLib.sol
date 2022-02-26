@@ -4,6 +4,8 @@ pragma solidity >=0.8.0;
 import "../interfaces/IERC20Minimal.sol";
 
 // FROM https://github.com/Rari-Capital/solmate
+// AB: replaced all instances of ERC20 in the original implenentation in the repo above with IERC20Minimal
+// CR: ideally should be used as an npm package
 /// @notice Safe ETH and ERC20 transfer library that gracefully handles missing return values.
 /// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/utils/SafeTransferLib.sol)
 /// @author Modified from Gnosis (https://github.com/gnosis/gp-v2-contracts/blob/main/src/contracts/libraries/GPv2SafeERC20.sol)
