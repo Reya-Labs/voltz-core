@@ -283,7 +283,7 @@ describe("Periphery", async () => {
       utils.formatEther(traderVariableTokenBalance.toString())
     );
 
-    expect(lpVariableTokenBalance).to.be.closeTo(notioanlLeft, 2);
+    expect(lpVariableTokenBalance).to.be.closeTo(notioanlLeft, 10);
     expect(traderVariableTokenBalance).to.be.closeTo(
       mul(notioanlLeft, toBn("-1")),
       2

@@ -1,6 +1,6 @@
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { toBn } from "evm-bn";
-import { randomInt } from "mathjs";
+import { random, randomInt } from "mathjs";
 import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
 import { TICK_SPACING } from "../../../shared/utilities";
@@ -19,16 +19,40 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    const length_of_series = 50;
+    const length_of_series = 12;
     const actions = [1, 2, 3];
 
     await this.rateOracleTest.increaseObservarionCardinalityNext(1000);
     await this.rateOracleTest.increaseObservarionCardinalityNext(2000);
 
+    let accumulatedReserveNormalizedIncome = 1.0001;
     for (let step = 0; step < length_of_series * 4; step++) {
-      // await advanceAndUpdateApy(consts.ONE_HOUR, 1, 1.010 + step * 0.00001);
-      // await this.advanceAndUpdateApy(consts.ONE_HOUR, 1, 1.01);
+      // accumulatedReserveNormalizedIncome += random(0.0003, 0.0006);
+      // await this.advanceAndUpdateApy(consts.ONE_HOUR.mul(6), 1, accumulatedReserveNormalizedIncome);
       await advanceTimeAndBlock(consts.ONE_HOUR.mul(6), 1);
+
+      for (const p of this.positions) {
+        await this.marginEngineTest.isLiquidatablePositionTest(
+          p[0],
+          p[1],
+          p[2]
+        );
+        const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
+
+        try {
+          if (isLiquidatable) {
+            await this.e2eSetup.liquidatePosition(
+              this.positions[0][1],
+              this.positions[0][2],
+              this.positions[0][0],
+              p[1],
+              p[2],
+              p[0]
+            );
+            console.log("is liquidatable");
+          }
+        } catch (_) {}
+      }
 
       const action = step < 5 ? 1 : actions[randomInt(0, actions.length)];
       await this.exportSnapshot(
@@ -60,6 +84,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const positionMarginRequirement =
           await this.marginEngineTest.getMargin();
 
+        console.log(
+          "margin delta:",
+          utils.formatEther(positionMarginRequirement.add(toBn("1")))
+        );
         await this.e2eSetup.updatePositionMargin(
           p[0],
           p[1],
@@ -105,6 +133,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const min_vt = -Math.floor(await this.getVT("below"));
         const max_vt = Math.floor(await this.getVT("above"));
         const amount = randomInt(min_vt, max_vt);
+        if (amount === 0) continue;
         console.log("vt:", min_vt, "->", amount, "->", max_vt);
 
         await this.e2eSetup.swap({
@@ -125,7 +154,41 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       }
     }
 
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(90 - length_of_series), 2); // advance 5 days to reach maturity
+    const length_of_liquidation_series = 20;
+
+    for (let step = 0; step < length_of_liquidation_series; step++) {
+      accumulatedReserveNormalizedIncome += random(-0.0006, 0.0006);
+      await this.advanceAndUpdateApy(
+        consts.ONE_DAY,
+        1,
+        accumulatedReserveNormalizedIncome
+      );
+
+      for (const p of this.positions) {
+        await this.marginEngineTest.isLiquidatablePositionTest(
+          p[0],
+          p[1],
+          p[2]
+        );
+        const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
+
+        try {
+          if (isLiquidatable) {
+            await this.e2eSetup.liquidatePosition(
+              this.positions[0][1],
+              this.positions[0][2],
+              this.positions[0][0],
+              p[1],
+              p[2],
+              p[0]
+            );
+            console.log("is liquidatable");
+          }
+        } catch (_) {}
+      }
+    }
+
+    await advanceTimeAndBlock(this.params.duration, 4);
 
     // settle positions and traders
     await this.settlePositions();
@@ -135,18 +198,18 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 }
 
 const test = async () => {
-  console.log("scenario", 4);
-  const e2eParams = e2eScenarios[4];
+  console.log("scenario", 9);
+  const e2eParams = e2eScenarios[9];
   const scenario = new ScenarioRunnerInstance(
     e2eParams,
-    "test/end_to_end/general_setup/scenario4/console.txt"
+    "test/end_to_end/general_setup/scenario9/console.txt"
   );
   await scenario.init();
   await scenario.run();
 };
 
-if (e2eScenarios[4].skipped) {
-  it.skip("scenario 4", test);
+if (e2eScenarios[9].skipped) {
+  it.skip("scenario 9", test);
 } else {
-  it("scenario 4", test);
+  it("scenario 9", test);
 }

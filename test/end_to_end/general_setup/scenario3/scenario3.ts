@@ -159,7 +159,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   }
 }
 
-it.skip("scenario 3", async () => {
+const test = async () => {
   console.log("scenario", 3);
   const e2eParams = e2eScenarios[3];
   const scenario = new ScenarioRunnerInstance(
@@ -168,4 +168,10 @@ it.skip("scenario 3", async () => {
   );
   await scenario.init();
   await scenario.run();
-});
+};
+
+if (e2eScenarios[3].skipped) {
+  it.skip("scenario 3", test);
+} else {
+  it("scenario 3", test);
+}

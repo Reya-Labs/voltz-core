@@ -1,5 +1,5 @@
 import { ethers, waffle } from "hardhat";
-import { BigNumber, Wallet } from "ethers";
+import { BigNumber, utils, Wallet } from "ethers";
 import { expect } from "../shared/expect";
 import { metaFixture, tickMathFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
@@ -338,7 +338,7 @@ describe("MarginEngine", () => {
         -1,
         1,
         1,
-        1000,
+        toBn("1000"),
         0,
         0,
         0,
@@ -347,13 +347,18 @@ describe("MarginEngine", () => {
         false
       );
 
-      await marginEngineTest.updatePositionMargin(wallet.address, -1, 1, 1);
+      await marginEngineTest.updatePositionMargin(
+        wallet.address,
+        -1,
+        1,
+        toBn("1")
+      );
       const positionInfo = await marginEngineTest.getPosition(
         wallet.address,
         -1,
         1
       );
-      expect(positionInfo.margin).to.eq(1001);
+      expect(positionInfo.margin).to.be.near(toBn("1001"));
     });
 
     it("check token balance correctly updated", async () => {
@@ -406,11 +411,12 @@ describe("MarginEngine", () => {
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING,
+
         toBn("100000")
       );
     });
 
-    it("unwinds LP", async () => {
+    it("liquidate and unwind LP", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
@@ -451,22 +457,30 @@ describe("MarginEngine", () => {
           TICK_SPACING
         );
         expect(positionInfo.variableTokenBalance).to.not.be.equal(0);
+
+        console.log(
+          "variable token balance:",
+          utils.formatEther(positionInfo.variableTokenBalance)
+        );
       }
 
-      await marginEngineTest.unwindPositionTest(
+      await marginEngineTest.liquidatePosition(
+        -TICK_SPACING,
+        TICK_SPACING,
+        other.address
+      );
+
+      const positionInfo = await marginEngineTest.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
       );
 
-      {
-        const positionInfo = await marginEngineTest.getPosition(
-          other.address,
-          -TICK_SPACING,
-          TICK_SPACING
-        );
-        expect(positionInfo.variableTokenBalance).to.be.equal(0);
-      }
+      console.log(
+        "variable token balance:",
+        utils.formatEther(positionInfo.variableTokenBalance)
+      );
+      expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
     });
 
     it("not enough liquidity to unwind position", async () => {
@@ -540,8 +554,8 @@ describe("MarginEngine", () => {
 
       await marginEngineTest.setPosition(
         other.address,
-        -TICK_SPACING,
-        TICK_SPACING,
+        -1,
+        1,
         toBn("0"),
         toBn("0"),
         toBn("0"),
@@ -550,26 +564,22 @@ describe("MarginEngine", () => {
         toBn("10"),
         toBn("0"),
         false
-      ); // clearly liquidatable
+      );
 
       await marginEngineTest.updatePositionMargin(
         wallet.address,
-        -TICK_SPACING,
-        TICK_SPACING,
+        -1,
+        1,
         toBn("1")
       );
 
-      await marginEngineTest.unwindPositionTest(
-        wallet.address,
-        -TICK_SPACING,
-        TICK_SPACING
-      );
+      await marginEngineTest.unwindPositionTest(wallet.address, -1, 1);
 
       {
         const positionInfo = await marginEngineTest.getPosition(
           other.address,
-          -TICK_SPACING,
-          TICK_SPACING
+          -1,
+          1
         );
         expect(positionInfo.variableTokenBalance).to.not.be.equal(0);
       }
@@ -662,7 +672,7 @@ describe("MarginEngine", () => {
         wallet.address,
         -1,
         1,
-        1,
+        toBn("1"),
         toBn("10.0"),
         toBn("0"),
         toBn("0"),
@@ -685,8 +695,8 @@ describe("MarginEngine", () => {
         1
       );
 
-      expect(positionInfo.fixedTokenBalance).to.eq(1);
-      expect(positionInfo.variableTokenBalance).to.eq(-1);
+      expect(positionInfo.fixedTokenBalance).to.be.near(toBn("1"));
+      expect(positionInfo.variableTokenBalance).to.be.near(toBn("-1"));
     });
   });
 
@@ -1012,9 +1022,8 @@ describe("MarginEngine", () => {
         TICK_SPACING
       );
 
-      expect(positionInfoOld.variableTokenBalance).to.eq(toBn("-10"));
+      expect(positionInfoOld.variableTokenBalance).to.be.near(toBn("-10"));
 
-      // await marginEngineTest.connect(other).liquidateTrader(wallet.address);
       await marginEngineTest.liquidatePosition(
         -TICK_SPACING,
         TICK_SPACING,
@@ -1040,11 +1049,11 @@ describe("MarginEngine", () => {
       );
       const balanceWalletDelta = sub(balanceWallet, oldBalanceWallet);
 
-      expect(balanceWalletDelta).to.eq(toBn("0.1"));
-      expect(marginEngineBalanceDelta).to.eq(toBn("0.1"));
+      expect(balanceWalletDelta).to.be.near(toBn("0.1"));
+      expect(marginEngineBalanceDelta).to.be.near(toBn("0.1"));
 
-      expect(positionInfo.variableTokenBalance).to.eq("0");
-      expect(positionInfo.margin).to.eq(toBn("0.9"));
+      expect(positionInfo.variableTokenBalance).to.be.near(toBn("0"));
+      expect(positionInfo.margin).to.be.near(toBn("0.9"));
     });
   });
 

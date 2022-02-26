@@ -169,7 +169,8 @@ contract TestMarginEngine is MarginEngine {
             fixedTokenBalance: fixedTokenBalance,
             variableTokenBalance: variableTokenBalance,
             feeGrowthInsideLastX128: feeGrowthInsideLastX128,
-            isSettled: isSettled
+            isSettled: isSettled,
+            rewardPerAmount: 0
         });
     }
 
@@ -187,7 +188,7 @@ contract TestMarginEngine is MarginEngine {
     }
 
     function getCachedHistoricalApy() external view returns (uint256) {
-        return cachedHistoricalApy;
+        return cachedHistoricalApyWad;
     }
 
     function getPositionMarginRequirementTest(
@@ -264,6 +265,24 @@ contract TestMarginEngine is MarginEngine {
         position.fixedTokenBalance = originalFixedTokenBalance;
         position.variableTokenBalance = originalVariableTokenBalance;
         position.margin = originalMargin;
+    }
+
+    function isLiquidatablePositionTest(
+        address owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) external {
+        Position.Info storage position = positions.get(
+            owner,
+            tickLower,
+            tickUpper
+        );
+
+        keepInMindIsLiquidatable = isLiquidatablePosition(
+            position,
+            tickLower,
+            tickUpper
+        );
     }
 
     function getIsLiquidatable() external view returns (bool) {

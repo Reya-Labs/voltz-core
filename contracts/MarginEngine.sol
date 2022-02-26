@@ -16,6 +16,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
+import "contracts/utils/Printer.sol";
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeCast for uint256;
@@ -47,8 +48,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @inheritdoc IMarginEngine
     uint256 public override secondsAgo;
 
-    uint256 internal cachedHistoricalApy;
-    uint256 private cachedHistoricalApyRefreshTimestamp;
+    uint256 internal cachedHistoricalApyWad;
+    uint256 private cachedHistoricalApyWadRefreshTimestamp;
 
     uint256 public cacheMaxAgeInSeconds;
 
@@ -210,9 +211,28 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function getPosition(address _owner,
                          int24 tickLower,
                          int24 tickUpper)
-        external override view returns (Position.Info memory position) {
-            /// Costin: update position to account for fees?
-            return positions.get(_owner, tickLower, tickUpper);
+        external override view returns (Position.Info memory positionMemory) {
+            
+            positionMemory = positions.get(_owner, tickLower, tickUpper);
+
+            if (positionMemory._liquidity > 0) {
+                Position.Info storage positionStorage = positions.get(_owner, tickLower, tickUpper);
+                (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
+                (int256 fixedTokenDelta, int256 variableTokenDelta) = positionStorage.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
+                uint256 feeDelta = positionStorage.calculateFeeDelta(feeGrowthInsideX128);
+
+                positionMemory.fixedTokenBalance += fixedTokenDelta;
+                positionMemory.variableTokenBalance += variableTokenDelta;
+
+                positionMemory.fixedTokenGrowthInsideLastX128 = fixedTokenGrowthInsideX128;
+                positionMemory.variableTokenGrowthInsideLastX128 = variableTokenGrowthInsideX128;
+
+                positionMemory.margin += int256(feeDelta);
+
+                positionMemory.feeGrowthInsideLastX128 = feeGrowthInsideX128;
+            }    
+
+            return positionMemory;
     }
 
     /// @notice transferMargin function which:
@@ -284,8 +304,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             transferMargin(depositor, marginDelta);
         }
 
-        emit UpdatePositionMargin(_owner, tickLower, tickUpper, position.margin);
+        position.rewardPerAmount = 0;
 
+        emit UpdatePositionMargin(_owner, tickLower, tickUpper, position.margin);
     }
     
     
@@ -310,17 +331,17 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     }
     
-    /// @notice Computes the historical APY value of the RateOracle
-    /// @dev The lookback window used by this function is determined by the secondsAgo state variable
+    /// @inheritdoc IMarginEngine
     function getHistoricalApy()
         public
+        override
         returns (uint256)
     {
-        if (cachedHistoricalApyRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
+        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
             // Cache is stale
             _refreshHistoricalApyCache();
         }
-        return cachedHistoricalApy;
+        return cachedHistoricalApyWad;
     }
 
     /// @notice Computes the historical APY value of the RateOracle
@@ -330,11 +351,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         view
         returns (uint256)
     {
-        if (cachedHistoricalApyRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
+        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
             // Cache is stale
             return _getHistoricalApy();
         }
-        return cachedHistoricalApy;
+        return cachedHistoricalApyWad;
     }
 
     /// @notice Computes the historical APY value of the RateOracle
@@ -354,8 +375,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function _refreshHistoricalApyCache()
         internal
     {
-        cachedHistoricalApy = _getHistoricalApy();
-        cachedHistoricalApyRefreshTimestamp = block.timestamp;
+        cachedHistoricalApyWad = _getHistoricalApy();
+        cachedHistoricalApyWadRefreshTimestamp = block.timestamp;
     }
 
 
@@ -376,23 +397,40 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             revert CannotLiquidate();
         }
 
-        uint256 liquidatorRewardValueWad = PRBMathUD60x18.mul(PRBMathUD60x18.fromUint(uint256(position.margin)), liquidatorRewardWad);
-
-        uint256 liquidatorRewardValue = PRBMathUD60x18.toUint(liquidatorRewardValueWad);
-
-        position.updateMarginViaDelta(-int256(liquidatorRewardValue));
+        if (position.rewardPerAmount == 0) {
+            if (position.variableTokenBalance < 0) {
+                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(-position.variableTokenBalance));
+            }
+            else {
+                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(position.variableTokenBalance));
+            }
+        }
 
         if (position._liquidity > 0) {
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
             vamm.burn(_owner, tickLower, tickUpper, position._liquidity);
+            position.updateLiquidity(-int128(position._liquidity));
         }
     
-        unwindPosition(position, _owner, tickLower, tickUpper);
+        int256 _variableTokenDelta = unwindPosition(position, _owner, tickLower, tickUpper);
 
+        Printer.printInt256("variableTokenBalance", position.variableTokenBalance);
+        Printer.printInt256("_variableTokenDelta", _variableTokenDelta);
+        Printer.printUint256("rewardPerAmount", position.rewardPerAmount);
+
+        if (_variableTokenDelta == 0) return;
+
+        uint256 liquidatorRewardValue = (_variableTokenDelta < 0)
+            ? PRBMathUD60x18.mul(uint256(-_variableTokenDelta), position.rewardPerAmount)
+            : PRBMathUD60x18.mul(uint256(_variableTokenDelta), position.rewardPerAmount);
+
+        Printer.printUint256("liquidatorRewardValue", liquidatorRewardValue);
+
+        position.updateMarginViaDelta(-int256(liquidatorRewardValue));
         underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
 
+        // todo: add msg.sender to the event (as the initiator of the liquidation)
         emit LiquidatePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, position._liquidity);
-
     }
 
 
@@ -408,6 +446,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (params.liquidityDelta>0) {
             checkPositionMarginAboveRequirement(position, params.tickLower, params.tickUpper);
         }
+
+        position.rewardPerAmount = 0;
 
         emit UpdatePositionPostMintBurn(params.owner, params.tickLower, params.tickUpper, position._liquidity);
 
@@ -434,6 +474,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             revert MarginRequirementNotMet();
         }
 
+        position.rewardPerAmount = 0;
+
         emit UpdatePositionPostSwap(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin);
     }
     
@@ -458,10 +500,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
             uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
 
-            position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
+            position.updateBalancesViaDeltas(fixedTokenDelta - 1, variableTokenDelta - 1);
             position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
             /// @dev collect fees
-            position.updateMarginViaDelta(int256(feeDelta));
+            position.updateMarginViaDelta(int256(feeDelta) - 1);
             position.updateFeeGrowthInside(feeGrowthInsideX128);
         } else {
             if (isMintBurn) {
@@ -537,14 +579,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         address _owner,
         int24 tickLower,
         int24 tickUpper
-    ) internal {
+    ) internal returns (int256 _variableTokenDelta) {
 
         Tick.checkTicks(tickLower, tickUpper);
 
         if (position.variableTokenBalance != 0 ) {
 
             int256 _fixedTokenDelta;
-            int256 _variableTokenDelta;
             uint256 _cumulativeFeeIncurred;
 
             /// @dev initiate a swap
@@ -569,7 +610,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred) = vamm.swap(params);
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred,) = vamm.swap(params);
             } else {
 
                 /// @dev get into a Fixed Taker swap (the opposite of LP's current position)
@@ -586,7 +627,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred) = vamm.swap(params);
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred,) = vamm.swap(params);
             }
 
             if (_cumulativeFeeIncurred > 0) {

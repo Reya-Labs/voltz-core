@@ -189,6 +189,14 @@ export class ScenarioRunner {
     );
 
     for (let i = 0; i < this.positions.length; i++) {
+      const positionHistory = await this.e2eSetup.getPositionHistory(
+        this.positions[i][0],
+        this.positions[i][1],
+        this.positions[i][2]
+      );
+
+      console.log("position history:", positionHistory.length);
+
       let positionInfo = await this.marginEngineTest.getPosition(
         this.positions[i][0],
         this.positions[i][1],

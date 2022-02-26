@@ -281,26 +281,13 @@ describe("VAMM", () => {
         tickUpper: TICK_SPACING,
       });
 
-      const positionInfoOld = await marginEngineTest.getPosition(
-        wallet.address,
-        -TICK_SPACING,
-        TICK_SPACING
-      );
-
-      await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-        wallet.address,
-        -TICK_SPACING,
-        TICK_SPACING,
-        false
-      );
-
       const positionInfo = await marginEngineTest.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
       );
 
-      const feesAccruedToLP = sub(positionInfo.margin, positionInfoOld.margin);
+      const feesAccruedToLP = sub(positionInfo.margin, toBn("100000"));
       console.log("FATLP", feesAccruedToLP.toString());
 
       /// Expected fees = toBn("100") * 0.5 * timeUntilMaturityInYears (approx the whole term which is a week)
@@ -328,26 +315,13 @@ describe("VAMM", () => {
         tickUpper: TICK_SPACING,
       });
 
-      const positionInfoOld = await marginEngineTest.getPosition(
-        wallet.address,
-        -TICK_SPACING,
-        TICK_SPACING
-      );
-
-      await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-        wallet.address,
-        -TICK_SPACING,
-        TICK_SPACING,
-        false
-      );
-
       const positionInfo = await marginEngineTest.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
       );
 
-      const feesAccruedToLP = sub(positionInfo.margin, positionInfoOld.margin);
+      const feesAccruedToLP = sub(positionInfo.margin, toBn("100000"));
       console.log("FATLP", feesAccruedToLP.toString());
 
       /// Expected fees = toBn("100") * 0.5 * timeUntilMaturityInYears (approx the whole term which is a week)
@@ -387,26 +361,13 @@ describe("VAMM", () => {
         TICK_SPACING
       );
 
-      const positionInfoOld = await marginEngineTest.getPosition(
-        wallet.address,
-        -TICK_SPACING,
-        TICK_SPACING
-      );
-
-      await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-        wallet.address,
-        -TICK_SPACING,
-        TICK_SPACING,
-        false
-      );
-
       const positionInfo = await marginEngineTest.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
       );
 
-      const feesAccruedToLP = sub(positionInfo.margin, positionInfoOld.margin);
+      const feesAccruedToLP = sub(positionInfo.margin, toBn("100000"));
       console.log("FATLP", feesAccruedToLP.toString());
 
       const feesIncurredByTrader = sub(traderInfoOld.margin, traderInfo.margin);
