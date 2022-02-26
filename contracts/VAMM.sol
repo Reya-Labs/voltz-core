@@ -309,16 +309,18 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     VAMMVars memory vammVarsStart = vammVars;
 
-    // amount specified needs to be positive for an FT and negative for a VT
-    bool isFT = (params.amountSpecified > 0) ? true : false;
+    checksBeforeSwap(params, vammVarsStart, params.amountSpecified > 0);
 
-    checksBeforeSwap(params, vammVarsStart, isFT);
+    bool isExternal;
 
-    if (params.isExternal) {
-      require(msg.sender==address(marginEngine) || msg.sender==address(marginEngine.fcm()), "only ME or FCM");
-    } else {
+    if (msg.sender == address(marginEngine) || msg.sender==address(marginEngine.fcm())) {
+      isExternal = true;
+    }
+    
+    if (!isExternal) {
       require(msg.sender==params.recipient || factory.isApproved(params.recipient, msg.sender), "only sender or approved integration");
     }
+
     Tick.checkTicks(params.tickLower, params.tickUpper);
 
     /// @dev lock the vamm while the swap is taking place
@@ -373,7 +375,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       /// @dev if !isFT (variable taker) (moving left to right), the nextInitializedTick should be less than or equal to the current tick
       /// add a test for the statement that checks for the above two conditions
       (step.tickNext, step.initialized) = tickBitmap
-        .nextInitializedTickWithinOneWord(state.tick, tickSpacing, !isFT);
+        .nextInitializedTickWithinOneWord(state.tick, tickSpacing, !(params.amountSpecified > 0));
 
       // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
       if (step.tickNext < TickMath.MIN_TICK) {
@@ -396,7 +398,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       ) = SwapMath.computeSwapStep(
         state.sqrtPriceX96,
         (
-          !isFT
+          !(params.amountSpecified > 0)
             ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
             : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
         )
@@ -453,7 +455,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
           state.fixedTokenGrowthGlobalX128,
           step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
-          isFT,
+          params.amountSpecified > 0,
           state,
           step,
           variableFactorWad
@@ -479,7 +481,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
           // if we're moving rightward (along the virtual amm), we interpret liquidityNet as the opposite sign
           // safe because liquidityNet cannot be type(int128).min
-          if (!isFT) liquidityNet = -liquidityNet;
+          if (!(params.amountSpecified > 0)) liquidityNet = -liquidityNet;
 
           state.liquidity = LiquidityMath.addDelta(
             state.liquidity,
@@ -488,7 +490,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
         }
 
-        state.tick = !isFT ? step.tickNext - 1 : step.tickNext;
+        state.tick = !(params.amountSpecified > 0) ? step.tickNext - 1 : step.tickNext;
       } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
         // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
         state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
@@ -521,7 +523,9 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     }
 
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
-    if (!params.isExternal) {
+    /// @dev additionally, if the swap is invoked by the fcm, the necessary state changes will also be performed in the fcm to avoid
+    // an unnecessary external call
+    if (!isExternal) {
       marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred);
     }
 

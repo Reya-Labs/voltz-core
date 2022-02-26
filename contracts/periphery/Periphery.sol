@@ -115,7 +115,6 @@ contract Periphery {
                         : TickMath.MAX_SQRT_RATIO - 1
                 )
                 : params.sqrtPriceLimitX96,
-            isExternal: false,
             tickLower: params.tickLower == 0 ? -tickSpacing : params.tickLower,
             tickUpper: params.tickUpper == 0 ? tickSpacing : params.tickUpper
         });

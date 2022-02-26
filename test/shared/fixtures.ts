@@ -47,8 +47,7 @@ export async function mockERC20Fixture() {
 
   const token = (await MockERC20Factory.deploy(
     "Voltz USD",
-    "VUSD",
-    6
+    "VUSD"
   )) as ERC20Mock;
 
   return { token };

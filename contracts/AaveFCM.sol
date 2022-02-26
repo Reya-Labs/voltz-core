@@ -96,7 +96,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
         recipient: address(this),
         amountSpecified: int256(notional),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
-        isExternal: true,
         tickLower: -tickSpacing,
         tickUpper: tickSpacing
     });
@@ -155,7 +154,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
         recipient: address(this),
         amountSpecified: -int256(notionalToUnwind),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
-        isExternal: true,
+        
         tickLower: -tickSpacing,
         tickUpper: tickSpacing
     });
