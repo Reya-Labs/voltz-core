@@ -33,8 +33,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   IAaveV2LendingPool internal aaveLendingPool;
   IRateOracle internal rateOracle;
 
-  address private deployer;
-
   IERC20Minimal internal underlyingToken;
   IERC20Minimal internal underlyingYieldBearingToken;
 
@@ -48,14 +46,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   
   // can only be called by the marginEngine
   error OnlyMarginEngine();
-  
-  // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
-  /// @custom:oz-upgrades-unsafe-allow constructor
-  constructor() initializer {  
-
-      deployer = msg.sender; /// this is presumably the factory
-
-  }
   
   /// @dev modifier which checks if the msg.sender is not equal to the address of the MarginEngine, if that's the case, a revert is raised
   modifier onlyMarginEngine () {
