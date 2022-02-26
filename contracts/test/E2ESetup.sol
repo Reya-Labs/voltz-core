@@ -293,6 +293,11 @@ contract E2ESetup {
             IMarginEngine(MEAddress).underlyingToken()
         ).balanceOf(liquidator);
 
+        require(
+            liquidatorBalanceBefore <= liquidatorBalanceAfter,
+            "liquidation reward should be positive"
+        );
+
         liquidationRewards +=
             int256(liquidatorBalanceAfter) -
             int256(liquidatorBalanceBefore);
@@ -594,22 +599,31 @@ contract E2ESetup {
         Printer.printUint256("      app:", uint256(approximation));
 
         require(
-            abs(totalFixedTokens) < uint256(approximation),
+            -approximation < totalFixedTokens && totalFixedTokens <= 0,
             "fixed tokens don't net out"
         );
         require(
-            abs(totalVariableTokens) < uint256(approximation),
+            -approximation < totalVariableTokens && totalVariableTokens <= 0,
             "variable tokens don't net out"
         );
-        /// @audit the following should hold
-        // require(
-        //     initialCashflow <= totalCashflow,
-        //     "system loss: undercollateralized"
-        // );
         require(
-            abs(totalCashflow - initialCashflow) < uint256(approximation),
-            "cashflows don't net out"
+            initialCashflow >= totalCashflow &&
+                totalCashflow > initialCashflow - approximation,
+            "system loss: undercollateralized"
         );
+
+        // require(
+        //     abs(totalFixedTokens) < uint256(approximation),
+        //     "fixed tokens don't net out"
+        // );
+        // require(
+        //     abs(totalVariableTokens) < uint256(approximation),
+        //     "variable tokens don't net out"
+        // );
+        // require(
+        //     abs(totalCashflow - initialCashflow) < uint256(approximation),
+        //     "cashflows don't net out"
+        // );
     }
 
     function getPositionSwapsHistory(

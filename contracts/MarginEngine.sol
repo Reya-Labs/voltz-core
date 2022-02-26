@@ -500,10 +500,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
             uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
 
-            position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
+            position.updateBalancesViaDeltas(fixedTokenDelta - 1, variableTokenDelta - 1);
             position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
             /// @dev collect fees
-            position.updateMarginViaDelta(int256(feeDelta));
+            position.updateMarginViaDelta(int256(feeDelta) - 1);
             position.updateFeeGrowthInside(feeGrowthInsideX128);
         } else {
             if (isMintBurn) {
