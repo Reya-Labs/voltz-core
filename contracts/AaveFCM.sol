@@ -130,6 +130,19 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     marginInYieldBearingTokens = trader.marginInScaledYieldBearingTokens.rayMul(currentRNI);
   }
 
+  function getTraderMarginInATokens(address traderAddress)
+        external
+        view
+        returns (uint256 marginInYieldBearingTokens)
+    {
+        TraderWithYieldBearingAssets.Info storage trader = traders[
+            traderAddress
+        ];
+        marginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(
+            trader
+        );
+    }
+
 
   /// @notice Unwind Fully Collateralised Fixed Taker Swap
   /// @param notionalToUnwind The amount of notional to unwind (stop securing with a fixed rate)

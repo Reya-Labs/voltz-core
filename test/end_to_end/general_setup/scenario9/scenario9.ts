@@ -143,7 +143,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
             amount > 0
               ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
               : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
-          
+
           tickLower: p[1],
           tickUpper: p[2],
         });

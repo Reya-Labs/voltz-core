@@ -129,7 +129,7 @@ describe("VAMM", () => {
         sqrtPriceLimitX96: BigNumber.from(
           TickMath.getSqrtRatioAtTick(TICK_SPACING * 2).toString()
         ),
-        
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
       });
@@ -203,7 +203,7 @@ describe("VAMM", () => {
         recipient: other.address,
         amountSpecified: toBn("-1"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-        
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
       });
@@ -276,7 +276,7 @@ describe("VAMM", () => {
         recipient: other.address,
         amountSpecified: toBn("-100"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-        
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
       });
@@ -310,7 +310,7 @@ describe("VAMM", () => {
         recipient: other.address,
         amountSpecified: toBn("-100"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-        
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
       });
@@ -350,7 +350,7 @@ describe("VAMM", () => {
         recipient: other.address,
         amountSpecified: toBn("-100"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-        
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
       });

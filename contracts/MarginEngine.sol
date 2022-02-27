@@ -275,13 +275,19 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
         
         updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
-
-        require((position.margin + marginDelta) >= 0, "can't withdraw more than have");
         
         if (marginDelta < 0) {
 
             if (_owner != msg.sender && !factory.isApproved(_owner, msg.sender)) {
                 revert OnlyOwnerCanUpdatePosition();
+            }
+
+            if (position.margin + marginDelta < 0) {
+                if (position.margin < 0) {
+                    marginDelta = 0;
+                } else {
+                    marginDelta = -position.margin;
+                }
             }
 
             position.updateMarginViaDelta(marginDelta);

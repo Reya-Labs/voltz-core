@@ -55,7 +55,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         recipient: this.positions[2][0],
         amountSpecified: toBn("-16506"),
         sqrtPriceLimitX96: encodePriceSqrt(1, 10),
-        
+
         tickLower: this.positions[2][1],
         tickUpper: this.positions[2][2],
       });

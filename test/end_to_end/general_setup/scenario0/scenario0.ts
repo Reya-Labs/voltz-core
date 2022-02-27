@@ -67,7 +67,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       recipient: this.positions[2][0],
       amountSpecified: toBn("-2995"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-      
+
       tickLower: this.positions[2][1],
       tickUpper: this.positions[2][2],
     });
@@ -140,7 +140,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       recipient: this.positions[3][0],
       amountSpecified: toBn("-15000"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-      
+
       tickLower: this.positions[3][1],
       tickUpper: this.positions[3][2],
     });
@@ -159,7 +159,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       recipient: this.positions[2][0],
       amountSpecified: toBn("10000"),
       sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
-      
+
       tickLower: this.positions[2][1],
       tickUpper: this.positions[2][2],
     });
