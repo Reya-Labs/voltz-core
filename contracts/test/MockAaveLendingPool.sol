@@ -112,11 +112,12 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
         //   emit ReserveUsedAsCollateralDisabled(asset, msg.sender);
         // }
 
+        // AB: replaced reserve.liquidityIndex with getReserveNormalizedIncome()
         IAToken(aToken).burn(
             msg.sender,
             to,
             amountToWithdraw,
-            reserve.liquidityIndex
+            getReserveNormalizedIncome(asset)
         );
 
         return amountToWithdraw;

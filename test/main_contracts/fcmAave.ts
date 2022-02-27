@@ -172,7 +172,7 @@ describe("FCM", () => {
     await marginEngineTest.setSecondsAgo(86400);
   });
 
-  describe.skip("#fcm", () => {
+  describe("#fcm", () => {
     beforeEach("initialize the pool at price of 1:1", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token
@@ -265,8 +265,9 @@ describe("FCM", () => {
       console.log("aTokenBalanceOfFCM", utils.formatEther(aTokenBalanceOfFCM));
 
       // check trader balance
-      const aTokenBalanceOfTrader =
-        await fcmTest.getTraderMarginInYieldBearingTokensTest(wallet.address);
+      const aTokenBalanceOfTrader = await fcmTest.getTraderMarginInATokens(
+        wallet.address
+      );
 
       console.log(
         "aTokenBalanceOfTrader",
@@ -298,11 +299,9 @@ describe("FCM", () => {
       expect(traderAPY).to.be.near(toBn("0.010116042450876211")); // around 1% fixed apy secured as expected
 
       // lp settles and collects their margin
-      await marginEngineTest.settlePosition(
-        -TICK_SPACING,
-        TICK_SPACING,
-        other.address
-      );
+      await marginEngineTest
+        .connect(other)
+        .settlePosition(-TICK_SPACING, TICK_SPACING, other.address);
 
       const positionInfo = await marginEngineTest.getPosition(
         other.address,
@@ -338,12 +337,27 @@ describe("FCM", () => {
 
       const positionEndingOverallBalanceInUnderlyingTokens =
         await getTraderBalance(other.address);
+      // apy relative to notional, not margin
+
       const positionAPY = getTraderApy(
         otherStartingBalance,
         positionEndingOverallBalanceInUnderlyingTokens
       );
 
       console.log("positionAPY", utils.formatEther(positionAPY));
+
+      // APYs are calculated relative to notionals (not margin accounts)
+      // if trader gets: variable APY - variable APY + fixed APY
+      // the LP gets: (variable APY - fixed APY)
+      // sum of trader and LP apy is = variable APY
+
+      const sumOfTraderAndLPAPY = add(traderAPY, positionAPY);
+
+      console.log(
+        "sumOfTraderAndLPAPY",
+        utils.formatEther(sumOfTraderAndLPAPY)
+      );
+      await printHistoricalApy();
     });
   });
 });
