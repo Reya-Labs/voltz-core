@@ -21,16 +21,14 @@ import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import {
   ERC20Mock,
-  // Factory,
   MockAaveLendingPool,
   MockAToken,
-  TestAaveFCM,
+  AaveFCM,
   TestRateOracle,
-  // TestRateOracle,
 } from "../../typechain";
 import { TickMath } from "../shared/tickMath";
 import { advanceTime } from "../helpers/time";
-import { add, div, mul, pow, sub } from "../shared/functions";
+import { add, div, pow, sub } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -43,15 +41,12 @@ const createFixtureLoader = waffle.createFixtureLoader;
 describe("FCM", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
-  // let factory: Factory;
   let rateOracleTest: TestRateOracle;
-  // let termStartTimestampBN: BigNumber;
-  // let termEndTimestampBN: BigNumber;
   let vammTest: TestVAMM;
   let marginEngineTest: TestMarginEngine;
   let aaveLendingPool: MockAaveLendingPool;
   let mockAToken: MockAToken;
-  let fcmTest: TestAaveFCM;
+  let fcmTest: AaveFCM;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
@@ -243,19 +238,18 @@ describe("FCM", () => {
 
       await printHistoricalApy();
 
-      expect(
-        await fcmTest.getAaveLendingPool(),
-        "aave lending pool expect"
-      ).to.eq(aaveLendingPool.address);
+      expect(await fcmTest.aaveLendingPool(), "aave lending pool expect").to.eq(
+        aaveLendingPool.address
+      );
       expect(
         await fcmTest.marginEngine(),
         "margin engine address expect"
       ).to.eq(marginEngineTest.address);
       expect(
-        await fcmTest.getUnderlyingYieldBearingToken(),
+        await fcmTest.underlyingYieldBearingToken(),
         "underlying yield bearing token expect"
       ).to.eq(mockAToken.address);
-      expect(await fcmTest.getVAMMAddress(), "vamm address expect").to.eq(
+      expect(await fcmTest.vamm(), "vamm address expect").to.eq(
         vammTest.address
       );
 
@@ -320,7 +314,7 @@ describe("FCM", () => {
           other.address,
           -TICK_SPACING,
           TICK_SPACING,
-          mul(finalPositionMargin, toBn("-1"))
+          "-1252572675131652946"
         );
 
       const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(

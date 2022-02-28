@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import "./interfaces/IFCM.sol";
+import "./interfaces/fcms/IFCM.sol";
+import "./interfaces/fcms/IFCM.sol";
+import "./interfaces/fcms/IAaveFCM.sol";
 import "./core_libraries/TraderWithYieldBearingAssets.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IVAMM.sol";
@@ -19,7 +21,7 @@ import "./core_libraries/SafeTransferLib.sol";
 
 // optional: margin topup function (in terms of yield bearing tokens)
 
-contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable {
+contract AaveFCM is IFCM, IAaveFCM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   using WadRayMath for uint256;
 
@@ -29,14 +31,16 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
   IMarginEngine public override marginEngine;
   
-  IVAMM internal vamm;
-  IAaveV2LendingPool internal aaveLendingPool;
-  IRateOracle internal rateOracle;
+  IVAMM public override vamm;
+  IAaveV2LendingPool public override aaveLendingPool;
+  IRateOracle public override rateOracle;
 
-  IERC20Minimal internal underlyingToken;
-  IERC20Minimal internal underlyingYieldBearingToken;
+  IERC20Minimal public override underlyingToken;
+  IERC20Minimal public override underlyingYieldBearingToken;
 
   mapping(address => TraderWithYieldBearingAssets.Info) public traders;
+
+  int24 internal tickSpacing;
 
   /// The resulting margin does not meet minimum requirements
   error MarginRequirementNotMet();
@@ -66,6 +70,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     underlyingToken = IERC20Minimal(underlyingTokenAddress);
     AaveDataTypes.ReserveData memory aaveReserveData = aaveLendingPool.getReserveData(underlyingTokenAddress);
     underlyingYieldBearingToken = IERC20Minimal(aaveReserveData.aTokenAddress);
+    tickSpacing = vamm.tickSpacing(); // retrieve tick spacing of the VAM
 
     __Ownable_init();
     __Pausable_init();
@@ -87,8 +92,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
  
     /// add support for approvals and recipient (similar to how it is implemented in the MarginEngine)
 
-    int24 tickSpacing = vamm.tickSpacing();
-
     // initiate a swap
     // the default tick range for a Position associated with the FCM is tickLower: -tickSpacing and tickUpper: tickSpacing
     // isExternal is true since the state updates following a VAMM insuced swap are done in the FCM (below)
@@ -102,9 +105,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
     (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred,) = vamm.swap(params);
 
-    // deposit notional executed in terms of aTokens (e.g. aUSDC) to fully collateralise your position
-    underlyingYieldBearingToken.safeTransferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
-
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
     uint256 currentRNI = aaveLendingPool.getReserveNormalizedIncome(address(marginEngine.underlyingToken()));
@@ -114,6 +114,9 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     
     // update trader fixed and variable token balances
     trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
+
+    // deposit notional executed in terms of aTokens (e.g. aUSDC) to fully collateralise your position
+    underlyingYieldBearingToken.safeTransferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
 
     // transfer fees to the margin engine (in terms of the underlyingToken e.g. aUSDC)
     underlyingToken.safeTransferFrom(msg.sender, address(marginEngine), cumulativeFeeIncurred);
@@ -157,9 +160,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     /// @dev hencel, the notionalToUnwind needs to be <= absolute value of the variable token balance of the trader
     require(uint256(-trader.variableTokenBalance) >= notionalToUnwind, "notional to unwind > notional");
 
-    /// retrieve the tick spacing of the VAMM
-    int24 tickSpacing = vamm.tickSpacing();
-
     // initiate a swap
     /// @dev as convention, specify the tickLower to be equal to -tickSpacing and tickUpper to be equal to tickSpacing
     // since the unwind is in the Variable Taker direction, the amountSpecified needs to be exact output => needs to be negative = -int256(notionalToUnwind),
@@ -178,13 +178,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     
     trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
-    // transfer fees to the margin engine
-    underlyingToken.safeTransferFrom(msg.sender, address(marginEngine), cumulativeFeeIncurred);
-
-    // transfer the yield bearing tokens to trader address and update margin in terms of yield bearing tokens
-    // variable token delta should be positive
-    underlyingYieldBearingToken.safeTransfer(msg.sender, uint256(variableTokenDelta));
-
     uint256 currentRNI = aaveLendingPool.getReserveNormalizedIncome(address(underlyingToken));
 
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens - uint256(variableTokenDelta).rayDiv(currentRNI);
@@ -192,6 +185,13 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
     // check the margin requirement of the trader post unwind, if the current balances still support the unwind, they it can happen, otherwise the unwind will get reverted
     checkMarginRequirement(trader);
+    
+    // transfer fees to the margin engine
+    underlyingToken.safeTransferFrom(msg.sender, address(marginEngine), cumulativeFeeIncurred);
+
+    // transfer the yield bearing tokens to trader address and update margin in terms of yield bearing tokens
+    // variable token delta should be positive
+    underlyingYieldBearingToken.safeTransfer(msg.sender, uint256(variableTokenDelta));
 
   }
 
@@ -273,27 +273,30 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   /// @dev once settlement cashflows are accounted for, we safeTransfer the scaled yield bearing tokens in the margin account of the trader back to their wallet address
   function settleTrader() external override onlyAfterMaturity { 
     
+    // todo: recipient as input to the function
+
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
-    require(!trader.isSettled, "not settled");
     
     int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, marginEngine.termStartTimestampWad(), marginEngine.termEndTimestampWad(), rateOracle.variableFactor(marginEngine.termStartTimestampWad(), marginEngine.termEndTimestampWad()));
     trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
     
-    if (settlementCashflow > 0) {
-      // transfers margin in terms of underlying tokens (e.g. USDC) from 
-      marginEngine.transferMarginToFCMTrader(msg.sender, uint256(settlementCashflow));
-    } else {
+    if (settlementCashflow < 0) {
       uint256 currentRNI = aaveLendingPool.getReserveNormalizedIncome(address(marginEngine.underlyingToken()));
       uint256 updatedTraderMarginInScaledYieldBearingTokens = trader.marginInScaledYieldBearingTokens - uint256(-settlementCashflow).rayDiv(currentRNI);
       trader.updateMarginInScaledYieldBearingTokens(updatedTraderMarginInScaledYieldBearingTokens);
     }
 
     // if settlement happens late, additional variable yield beyond maturity will accrue to the trader
-
     uint256 traderMarginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(trader);
     trader.updateMarginInScaledYieldBearingTokens(0);    
-    underlyingYieldBearingToken.safeTransfer(msg.sender, traderMarginInYieldBearingTokens);
     trader.settleTrader();
+    underlyingYieldBearingToken.safeTransfer(msg.sender, traderMarginInYieldBearingTokens);
+    if (settlementCashflow > 0) {
+      // transfers margin in terms of underlying tokens (e.g. USDC) from the margin engine to the msg.sender
+      // as long as the margin engine is active and solvent it shoudl be able to cover the settlement cashflows of the fully collateralised traders
+      marginEngine.transferMarginToFCMTrader(msg.sender, uint256(settlementCashflow));
+    }
+
   }
 
 

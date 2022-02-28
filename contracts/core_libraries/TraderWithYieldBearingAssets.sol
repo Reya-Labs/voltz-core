@@ -4,11 +4,13 @@ pragma solidity ^0.8.0;
 import "./FixedAndVariableMath.sol";
 
 /// @title Trader
-// works for Aave
+// todo: split this lib into aave only and common functionalities
 library TraderWithYieldBearingAssets {
     // info stored for each user's position
     struct Info {
-        uint256 marginInScaledYieldBearingTokens; // in terms of scaled aUSDC
+        // For Aave v2 The scaled balance is the sum of all the
+        // updated stored balance divided by the reserve's liquidity index at the moment of the update
+        uint256 marginInScaledYieldBearingTokens;
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
         bool isSettled;
@@ -23,6 +25,7 @@ library TraderWithYieldBearingAssets {
     }
 
     function settleTrader(Info storage self) internal {
+        require(!self.isSettled, "already settled");
         self.isSettled = true;
     }
 

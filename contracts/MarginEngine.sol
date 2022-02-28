@@ -9,7 +9,7 @@ import "./core_libraries/MarginCalculator.sol";
 import "./utils/SafeCast.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IERC20Minimal.sol";
-import "./interfaces/IFCM.sol";
+import "./interfaces/fcms/IFCM.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -282,14 +282,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 revert OnlyOwnerCanUpdatePosition();
             }
 
-            if (position.margin + marginDelta < 0) {
-                if (position.margin < 0) {
-                    marginDelta = 0;
-                } else {
-                    marginDelta = -position.margin;
-                }
-            }
-
+            Printer.printInt256("position.margin", position.margin); 
+            
             position.updateMarginViaDelta(marginDelta);
 
             checkPositionMarginCanBeUpdated(position, tickLower, tickUpper); 
@@ -322,8 +316,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Tick.checkTicks(tickLower, tickUpper);
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper); 
-            
-        require(!position.isSettled, "already settled");
         
         updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
         

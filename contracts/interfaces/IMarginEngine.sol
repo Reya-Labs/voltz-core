@@ -5,7 +5,7 @@ import "./IVAMM.sol";
 import "./IPositionStructs.sol";
 import "../core_libraries/Position.sol";
 import "./rate_oracles/IRateOracle.sol";
-import "./IFCM.sol";
+import "./fcms/IFCM.sol";
 import "./IFactory.sol";
 import "./IERC20Minimal.sol";
 

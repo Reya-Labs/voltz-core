@@ -3,7 +3,7 @@ import { TestVAMM } from "../../typechain/TestVAMM";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { BigNumber } from "@ethersproject/bignumber";
 import { TestRateOracle } from "../../typechain/TestRateOracle";
-import { TestAaveFCM } from "../../typechain/TestAaveFCM";
+import { AaveFCM } from "../../typechain/AaveFCM";
 
 import {
   E2ESetup,
@@ -65,8 +65,8 @@ export async function mockAaveLendingPoolFixture() {
 }
 
 export async function fcmMasterTestFixture() {
-  const fcmMasterTestFactory = await ethers.getContractFactory("TestAaveFCM");
-  const fcmMasterTest = (await fcmMasterTestFactory.deploy()) as TestAaveFCM;
+  const fcmMasterTestFactory = await ethers.getContractFactory("AaveFCM");
+  const fcmMasterTest = (await fcmMasterTestFactory.deploy()) as AaveFCM;
 
   return { fcmMasterTest };
 }
@@ -185,7 +185,7 @@ interface MetaFixture {
   mockAToken: MockAToken;
   marginEngineTest: TestMarginEngine;
   vammTest: TestVAMM;
-  fcmTest: TestAaveFCM;
+  fcmTest: AaveFCM;
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
@@ -271,8 +271,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termEndTimestampBN,
     TICK_SPACING
   );
-  const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
-  const fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
+  const fcmTestFactory = await ethers.getContractFactory("AaveFCM");
+  const fcmTest = fcmTestFactory.attach(fcmAddress) as AaveFCM;
 
   return {
     factory,
