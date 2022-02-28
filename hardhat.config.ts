@@ -49,6 +49,25 @@ const config: HardhatUserConfig = {
       // },
       allowUnlimitedContractSize: true,
     },
+    mainnet: {
+      url: `${process.env.MAINNET_URL}`,
+    },
+    // ropsten: {
+    //   url: `${process.env.ROPSTEN_URL}`,
+    // },
+    // rinkeby: {
+    //   url: `${process.env.RINKEBY_URL}`,
+    // },
+    // goerli: {
+    //   url: `${process.env.GOERLI_URL}`,
+    // },
+    kovan: {
+      url: `${process.env.KOVAN_URL}`,
+      // gasPrice: 1,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
+    },
   },
   namedAccounts: {
     deployer: {

@@ -22,6 +22,7 @@
     "decimal.js": "^10.3.1",
     "decimal.js-light": "^2.5.1",
     "dotenv": "^10.0.0",
+    "env-prompt": "^2.0.3",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-config-standard": "^16.0.3",
@@ -64,6 +65,7 @@
     "web3": "^1.6.1"
   },
   "scripts": {
+    "postinstall": "env-prompt -d .env.example",
     "compile": "npx hardhat compile",
     "clean": "npx hardhat clean",
     "test": "npx hardhat test",
@@ -84,7 +86,8 @@
     "format:ts:check": "npx prettier '**/*.{json,js,ts,md}' --check",
     "format:check": "npm run format:sol:check && npm run format:ts:check",
     "prepare": "husky install",
-    "deploy:localhost": "npx hardhat node --tags Factory,Mocks,RateOracles --export localhostDeployment.json"
+    "deploy:localhost": "npx hardhat node --tags Factory,Mocks,RateOracles --export localhostDeployment.json",
+    "deploy:kovan": "hardhat deploy --network kovan --tags Factory,RateOracles --export kovanDeployment.json"
   },
   "husky": {
     "hooks": {
