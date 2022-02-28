@@ -9,4 +9,4 @@ package.json
 tsconfig.json
 test/shared
 coverage.json
-deployments
+deployments/**
