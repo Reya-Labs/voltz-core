@@ -17,8 +17,9 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "contracts/utils/Printer.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
+contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
@@ -53,7 +54,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     uint256 public cacheMaxAgeInSeconds;
 
-    address private deployer;
     /// @inheritdoc IMarginEngine
     IFactory public override factory;
     /// @inheritdoc IMarginEngine
@@ -61,11 +61,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {
-
-        deployer = msg.sender; /// this is presumably the factory
-
-    }
+    constructor() initializer {}
 
     function initialize(address _underlyingToken, address _rateOracleAddress, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external override initializer {
         require(_underlyingToken != address(0), "UT must be set");
@@ -82,8 +78,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         __Ownable_init();
         __Pausable_init();
+        __UUPSUpgradeable_init();
     }
     
+    // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.   
+    // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786 
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+
     modifier nonZeroDelta (int256 marginDelta) {
         if (marginDelta == 0) {
             revert InvalidMarginDelta();
