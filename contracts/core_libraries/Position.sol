@@ -61,6 +61,7 @@ library Position {
     }
 
     function settlePosition(Info storage self) internal {
+        require(!self.isSettled, "already settled");
         self.isSettled = true;
     }
 

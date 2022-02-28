@@ -3,9 +3,9 @@
 pragma solidity ^0.8.0;
 import "./interfaces/IFactory.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
-import "./interfaces//IMarginEngine.sol";
-import "./interfaces//IVAMM.sol";
-import "./interfaces//IFCM.sol";
+import "./interfaces/IMarginEngine.sol";
+import "./interfaces/IVAMM.sol";
+import "./interfaces/fcms/IFCM.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -73,7 +73,7 @@ contract Factory is IFactory, Ownable {
     // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
     // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
     // 16384 ticks represents a >5x price change with ticks of 1 bips
-    require(_tickSpacing > 0 && _tickSpacing < 16384);
+    require(_tickSpacing > 0 && _tickSpacing < 16384, "TSOOB");
     bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing);
     IMarginEngine marginEngine = IMarginEngine(masterMarginEngine.cloneDeterministic(salt));
     IVAMM vamm = IVAMM(masterVAMM.cloneDeterministic(salt));

@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "./IMarginEngine.sol";
+import "../IMarginEngine.sol";
+import "../IVAMM.sol";
+import "../IERC20Minimal.sol";
 
 interface IFCM {
     /// @notice Initiate a Fully Collateralised Fixed Taker Swap
@@ -48,4 +50,14 @@ interface IFCM {
     /// @notice Margine Engine linked to the Full Collateralisation Module
     /// @return marginEngine Margine Engine linked to the Full Collateralisation Module
     function marginEngine() external view returns (IMarginEngine);
+    
+    /// @notice VAMM linked to the Full Collateralisation Module
+    /// @return VAMM linked to the Full Collateralisation Module
+    function vamm() external view returns (IVAMM);
+
+    /// @notice Rate Oracle linked to the Full Collateralisation Module
+    /// @return Rate Oracle linked to the Full Collateralisation Module
+    function rateOracle() external view returns (IRateOracle);
+
+    function underlyingToken() external view returns (IERC20Minimal);
 }

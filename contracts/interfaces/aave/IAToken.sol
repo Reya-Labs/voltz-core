@@ -60,16 +60,4 @@ interface IAToken {
   **/
   function UNDERLYING_ASSET_ADDRESS() external view returns (address);
 
-  // function transferFrom(
-  //     address sender,
-  //     address recipient,
-  //     uint256 amount
-  // ) external returns (bool);
-
-  // function transfer(address recipient, uint256 amount)
-  //   external
-  //   returns (bool);
-  
-  // function balanceOf(address account) external view returns (uint256);
-
 }
