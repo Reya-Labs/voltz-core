@@ -373,6 +373,7 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
   const metaFixtureE2E = async function (): Promise<MetaFixtureE2E> {
     const { marginEngineMasterTest } = await marginEngineMasterTestFixture();
     const { vammMasterTest } = await vammMasterTestFixture();
+    const { fcmMasterTest } = await fcmMasterTestFixture();
     const { factory } = await factoryFixture(
       marginEngineMasterTest.address,
       vammMasterTest.address
@@ -410,6 +411,9 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
       termStartTimestamp + e2eParams.duration.toNumber();
     const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+
+    // set master fcm for aave
+    await factory.setMasterFCM(fcmMasterTest.address, rateOracleTest.address);
 
     return {
       factory,

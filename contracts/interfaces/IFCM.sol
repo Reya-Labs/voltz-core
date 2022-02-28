@@ -3,8 +3,14 @@
 pragma solidity ^0.8.0;
 
 import "./IMarginEngine.sol";
+import "./../core_libraries/TraderWithYieldBearingAssets.sol";
 
 interface IFCM {
+    function getTraderWithYieldBearingAssets(address trader)
+        external
+        view
+        returns (TraderWithYieldBearingAssets.Info memory traderInfo);
+
     /// @notice Initiate a Fully Collateralised Fixed Taker Swap
     /// @param notional amount of notional (in terms of the underlying token) to trade
     /// @param sqrtPriceLimitX96 the sqrtPriceLimit (in binary fixed point math notation) beyond which swaps won't be executed

@@ -19,6 +19,7 @@ import {
   FixedAndVariableMathTest,
   MockAaveLendingPool,
   SqrtPriceMathTest,
+  TestAaveFCM,
   TestRateOracle,
   TickMathTest,
 } from "../../../typechain";
@@ -44,6 +45,7 @@ export class ScenarioRunner {
   termStartTimestampBN!: BigNumber;
   termEndTimestampBN!: BigNumber;
 
+  fcmTest!: TestAaveFCM;
   vammTest!: TestVAMM;
   marginEngineTest!: TestMarginEngine;
   aaveLendingPool!: MockAaveLendingPool;
@@ -399,6 +401,17 @@ export class ScenarioRunner {
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
     this.vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
 
+    const fcmAddress = await this.factory.getFCMAddress(
+      this.token.address,
+      this.rateOracleTest.address,
+      this.termStartTimestampBN,
+      this.termEndTimestampBN,
+      this.params.tickSpacing
+    );
+
+    const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
+    this.fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
+
     // deploy Fixed and Variable Math test
     ({ testFixedAndVariableMath: this.testFixedAndVariableMath } =
       await this.loadFixture(fixedAndVariableMathFixture));
@@ -434,6 +447,7 @@ export class ScenarioRunner {
     // set e2e setup parameters
     await this.e2eSetup.setMEAddress(this.marginEngineTest.address);
     await this.e2eSetup.setVAMMAddress(this.vammTest.address);
+    await this.e2eSetup.setFCMAddress(this.fcmTest.address);
     await this.e2eSetup.setRateOracleAddress(this.rateOracleTest.address);
 
     // mint and approve the addresses

@@ -86,6 +86,12 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     int256 fixedTokenBalance,
     int256 variableTokenBalance
   );
+
+  function getTraderWithYieldBearingAssets(
+        address trader
+    ) external override view returns (TraderWithYieldBearingAssets.Info memory traderInfo) {
+      return traders[trader];
+    }
   
 
   /// @notice Initiate a Fully Collateralised Fixed Taker Swap
@@ -101,7 +107,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
     // initiate a swap
     // the default tick range for a Position associated with the FCM is tickLower: -tickSpacing and tickUpper: tickSpacing
-    // isExternal is true since the state updates following a VAMM insuced swap are done in the FCM (below)
+    // isExternal is true since the state updates following a VAMM induced swap are done in the FCM (below)
     IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: address(this),
         amountSpecified: int256(notional),
@@ -190,7 +196,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
     // check the margin requirement of the trader post unwind, if the current balances still support the unwind, they it can happen, otherwise the unwind will get reverted
     checkMarginRequirement(trader);
-
   }
 
   

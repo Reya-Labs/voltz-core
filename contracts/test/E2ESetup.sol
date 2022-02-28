@@ -56,6 +56,28 @@ contract Actor {
     ) external {
         IMarginEngine(MEAddress).liquidatePosition(tickLower, tickUpper, owner);
     }
+
+    function initiateFullyCollateralisedFixedTakerSwap(
+        address FCMAddress,
+        uint256 notional,
+        uint160 sqrtPriceLimitX96
+    ) external {
+        IFCM(FCMAddress).initiateFullyCollateralisedFixedTakerSwap(
+            notional,
+            sqrtPriceLimitX96
+        );
+    }
+
+    function unwindFullyCollateralisedFixedTakerSwap(
+        address FCMAddress,
+        uint256 notionalToUnwind,
+        uint160 sqrtPriceLimitX96
+    ) external {
+        IFCM(FCMAddress).unwindFullyCollateralisedFixedTakerSwap(
+            notionalToUnwind,
+            sqrtPriceLimitX96
+        );
+    }
 }
 
 contract E2ESetup {
@@ -97,6 +119,10 @@ contract E2ESetup {
     mapping(uint256 => UniqueIdentifiersPosition) public allPositions;
     mapping(bytes32 => uint256) public indexAllPositions;
     uint256 public sizeAllPositions = 0;
+
+    mapping(uint256 => address) public allYBATraders;
+    mapping(address => uint256) public indexAllYBATraders;
+    uint256 public sizeAllYBATraders = 0;
 
     mapping(bytes32 => mapping(uint256 => PositionSnapshot))
         public positionHistory;
@@ -185,8 +211,18 @@ contract E2ESetup {
         indexAllPositions[hashedPositon] = sizeAllPositions;
     }
 
+    function addYBATrader(address trader) public {
+        if (indexAllYBATraders[trader] > 0) {
+            return;
+        }
+        sizeAllYBATraders += 1;
+        allYBATraders[sizeAllYBATraders] = trader;
+        indexAllYBATraders[trader] = sizeAllYBATraders;
+    }
+
     address public MEAddress;
     address public VAMMAddress;
+    address public FCMAddress;
     address public rateOracleAddress;
 
     function setMEAddress(address _MEAddress) public {
@@ -197,8 +233,58 @@ contract E2ESetup {
         VAMMAddress = _VAMMAddress;
     }
 
+    function setFCMAddress(address _FCMAddress) public {
+        FCMAddress = _FCMAddress;
+    }
+
     function setRateOracleAddress(address _rateOracleAddress) public {
         rateOracleAddress = _rateOracleAddress;
+    }
+
+    function initiateFullyCollateralisedFixedTakerSwap(
+        address trader,
+        uint256 notional,
+        uint160 sqrtPriceLimitX96
+    ) external {
+        addYBATrader(trader);
+
+        TraderWithYieldBearingAssets.Info memory traderInfo = IFCM(FCMAddress)
+            .getTraderWithYieldBearingAssets(trader);
+        initialCashflow -= int256(traderInfo.marginInScaledYieldBearingTokens);
+
+        Actor(trader).initiateFullyCollateralisedFixedTakerSwap(
+            FCMAddress,
+            notional,
+            sqrtPriceLimitX96
+        );
+
+        traderInfo = IFCM(FCMAddress).getTraderWithYieldBearingAssets(trader);
+        initialCashflow += int256(traderInfo.marginInScaledYieldBearingTokens);
+
+        continuousInvariants();
+    }
+
+    function unwindFullyCollateralisedFixedTakerSwap(
+        address trader,
+        uint256 notionalToUnwind,
+        uint160 sqrtPriceLimitX96
+    ) external {
+        addYBATrader(trader);
+
+        TraderWithYieldBearingAssets.Info memory traderInfo = IFCM(FCMAddress)
+            .getTraderWithYieldBearingAssets(trader);
+        initialCashflow += int256(traderInfo.marginInScaledYieldBearingTokens);
+
+        Actor(trader).unwindFullyCollateralisedFixedTakerSwap(
+            FCMAddress,
+            notionalToUnwind,
+            sqrtPriceLimitX96
+        );
+
+        traderInfo = IFCM(FCMAddress).getTraderWithYieldBearingAssets(trader);
+        initialCashflow -= int256(traderInfo.marginInScaledYieldBearingTokens);
+
+        continuousInvariants();
     }
 
     function mint(
@@ -578,6 +664,25 @@ contract E2ESetup {
             totalFixedTokens += position.fixedTokenBalance;
             totalVariableTokens += position.variableTokenBalance;
             totalCashflow += position.margin;
+            totalCashflow += estimatedSettlementCashflow;
+        }
+
+        for (uint256 i = 1; i <= sizeAllYBATraders; i++) {
+            TraderWithYieldBearingAssets.Info memory trader = IFCM(FCMAddress)
+                .getTraderWithYieldBearingAssets(allYBATraders[i]);
+            totalFixedTokens += trader.fixedTokenBalance;
+            totalVariableTokens += trader.variableTokenBalance;
+
+            int256 estimatedSettlementCashflow = FixedAndVariableMath
+                .calculateSettlementCashflow(
+                    trader.fixedTokenBalance,
+                    int256(trader.variableTokenBalance),
+                    termStartTimestampWad,
+                    termEndTimestampWad,
+                    variableFactor
+                );
+
+            totalCashflow += int256(trader.marginInScaledYieldBearingTokens);
             totalCashflow += estimatedSettlementCashflow;
         }
 
