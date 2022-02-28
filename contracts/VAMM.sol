@@ -17,9 +17,10 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./utils/FixedPoint128.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 
-contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
+contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
   using SafeCast for uint256;
   using SafeCast for int256;
   using Tick for mapping(int24 => Tick.Info);
@@ -37,8 +38,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   mapping(int16 => uint256) public override tickBitmap;
   /// @inheritdoc IVAMM
   bool public override unlocked;
-
-  address private deployer;
 
   IRateOracle internal rateOracle;
 
@@ -71,9 +70,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
   // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
   /// @custom:oz-upgrades-unsafe-allow constructor
-  constructor () initializer {
-    deployer = msg.sender;
-  }
+  constructor () initializer {}
 
   /// @inheritdoc IVAMM
   function initialize(address _marginEngineAddress, int24 _tickSpacing) external override initializer {
@@ -88,7 +85,12 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     __Ownable_init();
     __Pausable_init();
+    __UUPSUpgradeable_init();
   }
+
+  // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.   
+  // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786 
+  function _authorizeUpgrade(address) internal override onlyOwner {}
 
   /// @inheritdoc IVAMM
   VAMMVars public override vammVars;
