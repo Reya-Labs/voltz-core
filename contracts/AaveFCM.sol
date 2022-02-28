@@ -19,10 +19,9 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./aave/AaveDataTypes.sol";
 import "./core_libraries/SafeTransferLib.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-// optional: margin topup function (in terms of yield bearing tokens)
-
-contract AaveFCM is IFCM, IAaveFCM, Initializable, OwnableUpgradeable, PausableUpgradeable {
+contract AaveFCM is IFCM, IAaveFCM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
 
   using WadRayMath for uint256;
 
@@ -60,6 +59,10 @@ contract AaveFCM is IFCM, IAaveFCM, Initializable, OwnableUpgradeable, PausableU
     _;
   }
   
+  // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor () initializer {}
+
   /// @dev in the initialize function we set the vamm and the margiEngine associated with the fcm
   function initialize(address _vammAddress, address _marginEngineAddress) external override initializer {
     /// @dev we additionally cache the rateOracle, aaveLendingPool, underlyingToken, underlyingYieldBearingToken
@@ -75,7 +78,12 @@ contract AaveFCM is IFCM, IAaveFCM, Initializable, OwnableUpgradeable, PausableU
 
     __Ownable_init();
     __Pausable_init();
+    __UUPSUpgradeable_init();
   }
+
+  // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.   
+  // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786 
+  function _authorizeUpgrade(address) internal override onlyOwner {}
 
   event InitiateFullyCollateralisedSwap(
     uint256 marginInScaledYieldBearingTokens,
