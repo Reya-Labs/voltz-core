@@ -2,6 +2,32 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import { getAaveLendingPoolAddress, getAaveTokens } from "./config";
+import { AaveRateOracle } from "../typechain";
+
+const checkBufferSize = async (r: AaveRateOracle, minSize: number) => {
+  const currentSize = (await r.oracleVars())[2];
+  // console.log(`currentSize of ${r.address} is ${currentSize}`);
+
+  if (currentSize < minSize) {
+    await r.increaseObservarionCardinalityNext(minSize);
+    console.log(`Increased size of ${r.address}'s buffer to ${minSize}`);
+  }
+};
+
+const checkMinSecondsSinceLastUpdate = async (
+  r: AaveRateOracle,
+  minSeconds: number
+) => {
+  const currentVal = (await r.minSecondsSinceLastUpdate()).toNumber();
+  // console.log( `current minSecondsSinceLastUpdate of ${r.address} is ${currentVal}` );
+
+  if (currentVal !== minSeconds) {
+    await r.setMinSecondsSinceLastUpdate(minSeconds);
+    console.log(
+      `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSeconds}`
+    );
+  }
+};
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
@@ -20,11 +46,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     for (const token of aaveTokens) {
       const rateOracleIdentifier = `AaveRateOracle_${token.name}`;
-      const alreadyDeployed = await ethers.getContractOrNull(
-        rateOracleIdentifier
-      );
+      let rateOracle = await ethers.getContractOrNull(rateOracleIdentifier);
 
-      if (!alreadyDeployed) {
+      if (rateOracle) {
+        // Check the buffer size and increase if required
+      } else {
         // There is no Aave rate oracle already deployed for this token. Deploy one now.
         // But first, do a sanity check
         const normalizedIncome =
@@ -44,8 +70,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           console.log(
             `Created ${token.name} (${token.address}) rate oracle for Aave lending pool ${aaveLendingPool.address}`
           );
+
+          rateOracle = (await ethers.getContract(
+            rateOracleIdentifier
+          )) as AaveRateOracle;
+
+          // This is a new rate oracle, so we write an entry to the rate buffer
+          await rateOracle.writeOracleEntry();
         }
       }
+
+      // Ensure the buffer is big enough
+      await checkBufferSize(
+        rateOracle as AaveRateOracle,
+        token.rateOracleBufferSize
+      );
+      await checkMinSecondsSinceLastUpdate(
+        rateOracle as AaveRateOracle,
+        token.minSecondsSinceLastUpdate
+      );
     }
   }
 
@@ -64,8 +107,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log: doLogging,
     });
   }
-
-  // TODO: should probably also grow bugger of all deployed rate oracles, and read first data point
 };
 func.tags = ["RateOracles"];
 export default func;

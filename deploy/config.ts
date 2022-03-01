@@ -1,14 +1,15 @@
 import { network } from "hardhat";
 
 // Manage addresses for third-party contracts
-interface TokenIdentifier {
+interface TokenConfig {
   name: string;
   address: string;
+  rateOracleBufferSize: number;
+  minSecondsSinceLastUpdate: number;
 }
 interface ContractsConfig {
   aaveLendingPool: string;
-  aaveTokens: TokenIdentifier[];
-  rateOracleBufferSize: number;
+  aaveTokens: TokenConfig[];
 }
 interface ContractsConfigMap {
   [key: string]: ContractsConfig;
@@ -30,10 +31,10 @@ const config: ContractsConfigMap = {
       {
         name: "USDT",
         address: "0x13512979ADE267AB5100878E2e0f485B568328a4",
+        rateOracleBufferSize: 135,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],
-
-    rateOracleBufferSize: 5,
   },
 };
 
@@ -44,9 +45,7 @@ export const getAaveLendingPoolAddress = (
   return config[networkName] ? config[networkName].aaveLendingPool : null;
 };
 
-export const getAaveTokens = (
-  _networkName?: string
-): TokenIdentifier[] | null => {
+export const getAaveTokens = (_networkName?: string): TokenConfig[] | null => {
   const networkName = _networkName || network.name;
 
   const aaveTokens = config[networkName]
@@ -57,9 +56,4 @@ export const getAaveTokens = (
     throw Error(`Duplicate token names configured for network ${network.name}`);
   }
   return aaveTokens;
-};
-
-export const getRateOracleBufferSize = (_networkName?: string): number => {
-  const networkName = _networkName || network.name;
-  return config[networkName] ? config[networkName].rateOracleBufferSize : 1;
 };
