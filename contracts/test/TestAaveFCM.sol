@@ -29,4 +29,28 @@ contract TestAaveFCM is AaveFCM {
     function getAaveLendingPool() external view returns (address) {
         return address(aaveLendingPool);
     }
+
+    function estimateSettlementCashflow(
+        address traderAddress,
+        uint256 termStartTimestampWad,
+        uint256 termEndTimestampWad,
+        uint256 variableFactorWad
+    ) external view returns (int256) {
+        TraderWithYieldBearingAssets.Info storage trader = traders[
+            traderAddress
+        ];
+
+        int256 settlementCashflow = FixedAndVariableMath
+            .calculateSettlementCashflow(
+                trader.fixedTokenBalance,
+                trader.variableTokenBalance,
+                termStartTimestampWad,
+                termEndTimestampWad,
+                variableFactorWad
+            );
+
+        // if settlement happens late, additional variable yield beyond maturity will accrue to the trader
+
+        return settlementCashflow;
+    }
 }

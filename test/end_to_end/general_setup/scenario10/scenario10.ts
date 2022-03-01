@@ -163,6 +163,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.exportSnapshot("AFTER THIRD (REVERSE) SWAP");
 
+    await this.e2eSetup.unwindFullyCollateralisedFixedTakerSwap(
+      this.positions[2][0],
+      toBn("10000"),
+      BigNumber.from(MIN_SQRT_RATIO.add(1))
+    );
+
+    await this.exportSnapshot("AFTER UNWINDING THIRD (REVERSE) SWAP");
+
     await this.updateCurrentTick();
 
     // two weeks pass

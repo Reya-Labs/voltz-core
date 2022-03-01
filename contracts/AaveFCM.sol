@@ -136,7 +136,6 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     underlyingToken.safeTransferFrom(msg.sender, address(marginEngine), cumulativeFeeIncurred);
 
     emit InitiateFullyCollateralisedSwap(trader.marginInScaledYieldBearingTokens, trader.fixedTokenBalance, trader.variableTokenBalance);
-
   }
 
   /// @notice Get Trader Margin In Yield Bearing Tokens

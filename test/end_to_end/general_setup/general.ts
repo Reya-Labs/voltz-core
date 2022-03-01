@@ -343,6 +343,64 @@ export class ScenarioRunner {
           "\n"
       );
       fs.appendFileSync(this.outputFile, "\n");
+
+      {
+        fs.appendFileSync(this.outputFile, "TRADER YBA " + i.toString() + "\n");
+        const traderYBAInfo =
+          await this.fcmTest.getTraderWithYieldBearingAssets(
+            this.positions[i][0]
+          );
+
+        fs.appendFileSync(
+          this.outputFile,
+          "                       address   : " +
+            this.positions[i][0].toString() +
+            "\n"
+        );
+
+        fs.appendFileSync(
+          this.outputFile,
+          "                           margin: " +
+            utils
+              .formatEther(traderYBAInfo.marginInScaledYieldBearingTokens)
+              .toString() +
+            "\n"
+        );
+        fs.appendFileSync(
+          this.outputFile,
+          "                fixedTokenBalance: " +
+            utils.formatEther(traderYBAInfo.fixedTokenBalance).toString() +
+            "\n"
+        );
+        fs.appendFileSync(
+          this.outputFile,
+          "             variableTokenBalance: " +
+            utils.formatEther(traderYBAInfo.variableTokenBalance).toString() +
+            "\n"
+        );
+        fs.appendFileSync(
+          this.outputFile,
+          "                        isSettled: " +
+            traderYBAInfo.isSettled.toString() +
+            "\n"
+        );
+
+        const settlementCashflow =
+          await this.testFixedAndVariableMath.calculateSettlementCashflow(
+            traderYBAInfo.fixedTokenBalance,
+            traderYBAInfo.variableTokenBalance,
+            this.termStartTimestampBN,
+            this.termEndTimestampBN,
+            this.variableFactorWad
+          );
+        fs.appendFileSync(
+          this.outputFile,
+          "             settlement cashflow: " +
+            utils.formatEther(settlementCashflow).toString() +
+            "\n"
+        );
+        fs.appendFileSync(this.outputFile, "\n");
+      }
     }
     fs.appendFileSync(this.outputFile, "\n");
   }

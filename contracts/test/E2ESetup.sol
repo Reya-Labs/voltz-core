@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "contracts/test/TestMarginEngine.sol";
 import "contracts/test/TestVAMM.sol";
+import "contracts/test/TestAaveFCM.sol";
 import "contracts/utils/Printer.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
@@ -248,18 +249,11 @@ contract E2ESetup {
     ) external {
         addYBATrader(trader);
 
-        TraderWithYieldBearingAssets.Info memory traderInfo = IFCM(FCMAddress)
-            .getTraderWithYieldBearingAssets(trader);
-        initialCashflow -= int256(traderInfo.marginInScaledYieldBearingTokens);
-
         Actor(trader).initiateFullyCollateralisedFixedTakerSwap(
             FCMAddress,
             notional,
             sqrtPriceLimitX96
         );
-
-        traderInfo = IFCM(FCMAddress).getTraderWithYieldBearingAssets(trader);
-        initialCashflow += int256(traderInfo.marginInScaledYieldBearingTokens);
 
         continuousInvariants();
     }
@@ -271,18 +265,11 @@ contract E2ESetup {
     ) external {
         addYBATrader(trader);
 
-        TraderWithYieldBearingAssets.Info memory traderInfo = IFCM(FCMAddress)
-            .getTraderWithYieldBearingAssets(trader);
-        initialCashflow += int256(traderInfo.marginInScaledYieldBearingTokens);
-
         Actor(trader).unwindFullyCollateralisedFixedTakerSwap(
             FCMAddress,
             notionalToUnwind,
             sqrtPriceLimitX96
         );
-
-        traderInfo = IFCM(FCMAddress).getTraderWithYieldBearingAssets(trader);
-        initialCashflow -= int256(traderInfo.marginInScaledYieldBearingTokens);
 
         continuousInvariants();
     }
@@ -578,11 +565,6 @@ contract E2ESetup {
             IMarginEngine(MEAddress).termEndTimestampWad()
         );
 
-        uint256 variableFactor = IRateOracle(rateOracleAddress).variableFactor(
-            termStartTimestampWad,
-            termEndTimestampWad
-        );
-
         int256 liquidatablePositions = 0;
         for (uint256 i = 1; i <= sizeAllPositions; i++) {
             TestMarginEngine(MEAddress)
@@ -665,6 +647,11 @@ contract E2ESetup {
             totalVariableTokens += position.variableTokenBalance;
             totalCashflow += position.margin;
             totalCashflow += estimatedSettlementCashflow;
+
+            Printer.printInt256(
+                "              esc:",
+                estimatedSettlementCashflow
+            );
         }
 
         for (uint256 i = 1; i <= sizeAllYBATraders; i++) {
@@ -679,18 +666,31 @@ contract E2ESetup {
                     int256(trader.variableTokenBalance),
                     termStartTimestampWad,
                     termEndTimestampWad,
-                    variableFactor
+                    estimatedVariableFactorFromStartToMaturity()
                 );
 
-            totalCashflow += int256(trader.marginInScaledYieldBearingTokens);
             totalCashflow += estimatedSettlementCashflow;
+
+            Printer.printInt256(
+                "   fixedTokenBalance:",
+                trader.fixedTokenBalance
+            );
+            Printer.printInt256(
+                "variableTokenBalance:",
+                trader.variableTokenBalance
+            );
+            Printer.printInt256(
+                "              YBA esc:",
+                estimatedSettlementCashflow
+            );
         }
 
-        totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
-        totalCashflow += int256(liquidationRewards);
+        // totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
+        // totalCashflow += int256(liquidationRewards);
 
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);
+        Printer.printInt256("   initialCashflow:", initialCashflow);
         Printer.printInt256(
             "      deltaCashflow:",
             totalCashflow - initialCashflow
