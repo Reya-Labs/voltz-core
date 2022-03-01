@@ -76,7 +76,7 @@ interface IRateOracle {
 
     // non-view functions
 
-    /// @notice Sets minSecondsSinceLastUpdate: The minimum number of seconds in wei that need to pass since the last update to the rates array
+    /// @notice Sets minSecondsSinceLastUpdate: The minimum number of seconds that need to pass since the last update to the rates array
     /// @dev Can only be set by the Factory Owner
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external;
 
