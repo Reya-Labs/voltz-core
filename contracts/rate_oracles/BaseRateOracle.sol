@@ -43,7 +43,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         onlyOwner
     {
-        minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate; // in wei
+        minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate;
 
         emit MinSecondsSinceLastUpdateSet(_minSecondsSinceLastUpdate);
     }
