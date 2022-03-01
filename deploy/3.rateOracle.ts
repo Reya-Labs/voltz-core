@@ -1,41 +1,51 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { ethers, network } from "hardhat";
-import { config } from "./config";
+import { ethers } from "hardhat";
+import { getAaveLendingPoolAddress, getAaveTokens } from "./config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
 
-  // If our network has a pre-deployed (e.g. by Aave) lending pool, set up a rate oracle for that
-  const networkContracts = config[network.name];
-  const existingAaveLendingPoolAddress = networkContracts
-    ? networkContracts.aaveLendingPool
-    : null;
-  const testToken = networkContracts ? networkContracts.testToken : null;
-  if (existingAaveLendingPoolAddress) {
+  // Set up rate oracles for the Aave lending pool, if one exists
+  const existingAaveLendingPoolAddress = getAaveLendingPoolAddress();
+  const aaveTokens = getAaveTokens();
+
+  if (existingAaveLendingPoolAddress && aaveTokens) {
     const aaveLendingPool = await ethers.getContractAt(
       "IAaveV2LendingPool",
       existingAaveLendingPoolAddress
     );
-    const normalizedIncome = await aaveLendingPool.getReserveNormalizedIncome(
-      testToken
-    );
 
-    if (!normalizedIncome) {
-      console.error(
-        `Could not find data for token ${testToken} in Aaave contract ${aaveLendingPool.address}. Ignorning.`
+    for (const token of aaveTokens) {
+      const rateOracleIdentifier = `AaveRateOracle_${token.name}`;
+      const alreadyDeployed = await ethers.getContractOrNull(
+        rateOracleIdentifier
       );
-    } else {
-      const rateOracleDeploy = await deploy("AaveRateOracle", {
-        from: deployer,
-        args: [aaveLendingPool.address, testToken],
-        log: doLogging,
-      });
-      console.log(
-        `Created rate oracle for Aave pool ${aaveLendingPool.address}`
-      );
+
+      if (!alreadyDeployed) {
+        // There is no Aave rate oracle already deployed for this token. Deploy one now.
+        // But first, do a sanity check
+        const normalizedIncome =
+          await aaveLendingPool.getReserveNormalizedIncome(token.address);
+
+        if (!normalizedIncome) {
+          throw Error(
+            `Could not find data for token ${token.name} (${token.address}) in Aaave contract ${aaveLendingPool.address}.`
+          );
+        } else {
+          await deploy(rateOracleIdentifier, {
+            contract: "AaveRateOracle",
+            from: deployer,
+            args: [aaveLendingPool.address, token.address],
+            log: doLogging,
+          });
+          console.log(
+            `Created ${token.name} (${token.address}) rate oracle for Aave lending pool ${aaveLendingPool.address}`
+          );
+        }
+      }
     }
   }
 
@@ -48,7 +58,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log(
       `Deploy rate oracle for mocked {token, aave}: {${mockToken.address}, ${mockAaveLendingPool.address}}`
     );
-    await deploy("AaveRateOracle", {
+    await deploy("TestRateOracle", {
       from: deployer,
       args: [mockAaveLendingPool.address, mockToken.address],
       log: doLogging,
