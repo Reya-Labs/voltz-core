@@ -121,12 +121,14 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred,) = vamm.swap(params);
 
     // deposit notional executed in terms of aTokens (e.g. aUSDC) to fully collateralise your position
+    /// @audit-casting variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
     underlyingYieldBearingToken.safeTransferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
     uint256 currentRNI = aaveLendingPool.getReserveNormalizedIncome(address(marginEngine.underlyingToken()));
 
+    /// @audit-casting variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens + uint256(-variableTokenDelta).rayDiv(currentRNI);
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
     
@@ -169,6 +171,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
     /// @dev it is impossible to unwind more variable token exposure than the user already has
     /// @dev hencel, the notionalToUnwind needs to be <= absolute value of the variable token balance of the trader
+    /// @audit-casting variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
     require(uint256(-trader.variableTokenBalance) >= notionalToUnwind, "notional to unwind > notional");
 
     /// retrieve the tick spacing of the VAMM
@@ -197,10 +200,12 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
 
     // transfer the yield bearing tokens to trader address and update margin in terms of yield bearing tokens
     // variable token delta should be positive
+    /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
     underlyingYieldBearingToken.safeTransfer(msg.sender, uint256(variableTokenDelta));
 
     uint256 currentRNI = aaveLendingPool.getReserveNormalizedIncome(address(underlyingToken));
 
+    /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens - uint256(variableTokenDelta).rayDiv(currentRNI);
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
 
@@ -219,6 +224,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     /// @dev hence, we can assume that the variable cashflows from now to maturity is covered by a portion of the trader's collateral in yield bearing tokens 
     /// @dev one future variable cashflows are covered, we need to check if the remaining settlement cashflow is covered by the remaining margin in yield bearing tokens
 
+    /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
     uint256 marginToCoverVariableLegFromNowToMaturity = uint256(-trader.variableTokenBalance);
     Printer.printUint256("getTraderMarginInYieldBearingTokens(trader)", getTraderMarginInYieldBearingTokens(trader));
     Printer.printUint256("marginToCoverVariableLegFromNowToMaturity", marginToCoverVariableLegFromNowToMaturity);

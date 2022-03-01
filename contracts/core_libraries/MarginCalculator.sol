@@ -334,6 +334,7 @@ library MarginCalculator {
             PRBMathSD59x18.fromInt(1) -
             PRBMathSD59x18.exp(simulatedUnwindLocalVars.expInputWad);
 
+        /// @audit-casting simulatedUnwindLocalVars.oneMinusTimeFactorWad is expected to be positive here, but what if goes below 0 due to rounding imprecision?
         simulatedUnwindLocalVars.dWad = PRBMathUD60x18.mul(
             simulatedUnwindLocalVars.upperDWad,
             uint256(simulatedUnwindLocalVars.oneMinusTimeFactorWad)

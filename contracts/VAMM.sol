@@ -630,6 +630,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             /// @dev if the trader is a fixed taker then the fixed token growth global should decline (since LPs are providing fixed tokens)
             /// @dev if the trader is a fixed taker amountOut is in terms of variable tokens (it is a positive value)
 
+            /// @audit-casting step.variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
             stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
 
             /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
@@ -645,6 +646,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
               termEndTimestampWad
             );
 
+            /// @audit-casting fixedTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
             stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
 
         } else {
@@ -653,6 +655,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
             /// @dev if a trader is a variable taker, the fixed token growth should increase (since the LPs are receiving fixed tokens)
             /// @dev if a trader is a variable taker amountIn is in terms of variable tokens
 
+            /// @audit-casting step.variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
             stateVariableTokenGrowthGlobalX128= state.variableTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
 
             /// @dev fixed token delta should be positive (for LPs)
@@ -668,6 +671,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
               termEndTimestampWad
             );
 
+            /// @audit-casting fixedTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
             stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
         }
     }

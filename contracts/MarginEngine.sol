@@ -399,10 +399,20 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         if (position.rewardPerAmount == 0) {
             if (position.variableTokenBalance < 0) {
-                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(-position.variableTokenBalance));
+                if (position.margin > 0) {
+                    position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(-position.variableTokenBalance));
+                }
+                else {
+                    position.rewardPerAmount = 0;
+                }
             }
             else {
-                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(position.variableTokenBalance));
+                if (position.margin > 0) {
+                    position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(position.variableTokenBalance));
+                }
+                else {
+                    position.rewardPerAmount = 0;
+                }
             }
         }
 
