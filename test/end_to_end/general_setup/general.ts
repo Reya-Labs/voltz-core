@@ -520,11 +520,23 @@ export class ScenarioRunner {
       const actor = (await ActorFactory.deploy()) as Actor;
       this.actors.push(actor);
       await this.mintAndApprove(actor.address);
+
+      await this.token.approveInternal(
+        actor.address,
+        this.fcmTest.address,
+        BigNumber.from(10).pow(27)
+      );
     }
 
     await this.token.approveInternal(
       this.e2eSetup.address,
       this.marginEngineTest.address,
+      BigNumber.from(10).pow(27)
+    );
+
+    await this.token.approveInternal(
+      this.e2eSetup.address,
+      this.fcmTest.address,
       BigNumber.from(10).pow(27)
     );
 

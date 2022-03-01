@@ -20,7 +20,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[0][0],
       this.positions[0][1],
       this.positions[0][2],
-      toBn("210")
+      toBn("420")
     );
     console.log(
       "gas consumed at update position margin: ",
@@ -50,7 +50,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[2][0],
       this.positions[2][1],
       this.positions[2][2],
-      toBn("1000")
+      toBn("2000")
     );
     console.log(
       "gas consumed at update position margin: ",
@@ -93,7 +93,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[1][0],
       this.positions[1][1],
       this.positions[1][2],
-      toBn("2000")
+      toBn("4000")
     );
     console.log(
       "gas consumed at update position margin: ",
@@ -123,7 +123,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[3][0],
       this.positions[3][1],
       this.positions[3][2],
-      toBn("1000")
+      toBn("2000")
     );
     console.log(
       "gas consumed at update position margin: ",
@@ -163,13 +163,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.exportSnapshot("AFTER THIRD (REVERSE) SWAP");
 
-    await this.e2eSetup.unwindFullyCollateralisedFixedTakerSwap(
-      this.positions[2][0],
-      toBn("10000"),
-      BigNumber.from(MIN_SQRT_RATIO.add(1))
-    );
+    // await this.e2eSetup.unwindFullyCollateralisedFixedTakerSwap(
+    //   this.positions[2][0],
+    //   toBn("10000"),
+    //   BigNumber.from(MIN_SQRT_RATIO.add(1))
+    // );
 
-    await this.exportSnapshot("AFTER UNWINDING THIRD (REVERSE) SWAP");
+    // await this.exportSnapshot("AFTER UNWINDING THIRD (REVERSE) SWAP");
 
     await this.updateCurrentTick();
 

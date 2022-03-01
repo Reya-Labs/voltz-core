@@ -11,6 +11,7 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./utils/WayRayMath.sol";
+import "./utils/Printer.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -133,6 +134,16 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
     // transfer fees to the margin engine (in terms of the underlyingToken e.g. aUSDC)
+    console.log("address of msg.sender", msg.sender);
+    Printer.printUint256("balance of msg.sender", IERC20Minimal(
+            underlyingToken
+        ).balanceOf(msg.sender));
+    console.log("address of msg.sender", address(this));
+    Printer.printUint256("balance of msg.sender", IERC20Minimal(
+            underlyingToken
+        ).balanceOf(address(this)));
+    Printer.printUint256("cumulativeFeeIncurred", cumulativeFeeIncurred);
+
     underlyingToken.safeTransferFrom(msg.sender, address(marginEngine), cumulativeFeeIncurred);
 
     emit InitiateFullyCollateralisedSwap(trader.marginInScaledYieldBearingTokens, trader.fixedTokenBalance, trader.variableTokenBalance);
@@ -208,14 +219,17 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     /// @dev hence, we can assume that the variable cashflows from now to maturity is covered by a portion of the trader's collateral in yield bearing tokens 
     /// @dev one future variable cashflows are covered, we need to check if the remaining settlement cashflow is covered by the remaining margin in yield bearing tokens
 
-    uint256 marginToCoverVariableLegFromNowToMaturity = uint256(trader.variableTokenBalance);
-    uint256 marginToCoverRemainingSettlementCashflow = getTraderMarginInYieldBearingTokens(trader) - marginToCoverVariableLegFromNowToMaturity;
+    uint256 marginToCoverVariableLegFromNowToMaturity = uint256(-trader.variableTokenBalance);
+    Printer.printUint256("getTraderMarginInYieldBearingTokens(trader)", getTraderMarginInYieldBearingTokens(trader));
+    Printer.printUint256("marginToCoverVariableLegFromNowToMaturity", marginToCoverVariableLegFromNowToMaturity);
+    Printer.printEmptyLine();
+    int256 marginToCoverRemainingSettlementCashflow = int256(getTraderMarginInYieldBearingTokens(trader)) - int256(marginToCoverVariableLegFromNowToMaturity);
 
     int256 remainingSettlementCashflow = calculateRemainingSettlementCashflow(trader);
 
     if (remainingSettlementCashflow < 0) {
     
-      if (uint256(-remainingSettlementCashflow) > marginToCoverRemainingSettlementCashflow) {
+      if (-remainingSettlementCashflow > marginToCoverRemainingSettlementCashflow) {
         revert MarginRequirementNotMet();
       }
     

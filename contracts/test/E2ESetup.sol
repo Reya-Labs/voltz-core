@@ -135,6 +135,7 @@ contract E2ESetup {
 
     int256 public initialCashflow = 0;
     int256 public liquidationRewards = 0;
+    int256 public fcmFees = 0;
 
     uint256 public keepInMindGas;
 
@@ -249,11 +250,21 @@ contract E2ESetup {
     ) external {
         addYBATrader(trader);
 
+        uint256 MEBalanceBefore = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(MEAddress);
+
         Actor(trader).initiateFullyCollateralisedFixedTakerSwap(
             FCMAddress,
             notional,
             sqrtPriceLimitX96
         );
+
+        uint256 MEBalanceAfter = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(MEAddress);
+
+        fcmFees += int256(MEBalanceAfter) - int256(MEBalanceBefore);
 
         continuousInvariants();
     }
@@ -265,11 +276,21 @@ contract E2ESetup {
     ) external {
         addYBATrader(trader);
 
+        uint256 MEBalanceBefore = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(MEAddress);
+
         Actor(trader).unwindFullyCollateralisedFixedTakerSwap(
             FCMAddress,
             notionalToUnwind,
             sqrtPriceLimitX96
         );
+
+        uint256 MEBalanceAfter = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(MEAddress);
+
+        fcmFees += int256(MEBalanceAfter) - int256(MEBalanceBefore);
 
         continuousInvariants();
     }
@@ -685,9 +706,11 @@ contract E2ESetup {
             );
         }
 
-        // totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
-        // totalCashflow += int256(liquidationRewards);
+        totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
+        totalCashflow += int256(liquidationRewards);
+        totalCashflow -= fcmFees;
 
+        Printer.printInt256("fcmFees", fcmFees);
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);
         Printer.printInt256("   initialCashflow:", initialCashflow);
