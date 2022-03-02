@@ -115,6 +115,8 @@ describe("MarginEngine", () => {
   describe("#updatePositionMargin", () => {
     it("reverts if margin delta is zero", async () => {
       // address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta
+      // await expect( marginEngineTest.updatePositionMargin( wallet.address, -TICK_SPACING, TICK_SPACING, 0 ) ).to.be.revertedWith("InvalidMarginDelta");
+      // at the time of writing, waffle won't decipher custom errors thrown via proxies
       await expect(
         marginEngineTest.updatePositionMargin(
           wallet.address,
@@ -122,7 +124,7 @@ describe("MarginEngine", () => {
           TICK_SPACING,
           0
         )
-      ).to.be.revertedWith("InvalidMarginDelta");
+      ).to.be.reverted;
     });
   });
 
@@ -154,6 +156,8 @@ describe("MarginEngine", () => {
       const tickUpper = 1;
       const counterfactualLiquidity = 10;
 
+      // await expect( marginEngineTest.checkPositionMarginAboveRequirementTest( owner, tickLower, tickUpper, counterfactualLiquidity, 0, 0, 0 ) ).to.be.revertedWith("MarginLessThanMinimum");
+      // at the time of writing, waffle won't decipher custom errors thrown via proxies
       await expect(
         marginEngineTest.checkPositionMarginAboveRequirementTest(
           owner,
@@ -164,7 +168,7 @@ describe("MarginEngine", () => {
           0,
           0
         )
-      ).to.be.revertedWith("MarginLessThanMinimum");
+      ).to.be.reverted;
     });
 
     it("check position margin can be updated reverted", async () => {
@@ -173,6 +177,8 @@ describe("MarginEngine", () => {
       const tickUpper = 1;
       const counterfactualLiquidity = toBn("10");
 
+      // await expect( marginEngineTest.checkPositionMarginCanBeUpdatedTest( owner, tickLower, tickUpper, counterfactualLiquidity, 0, 0, 0 ) ).to.be.revertedWith("MarginLessThanMinimum");
+      // at the time of writing, waffle won't decipher custom errors thrown via proxies
       await expect(
         marginEngineTest.checkPositionMarginCanBeUpdatedTest(
           owner,
@@ -183,7 +189,7 @@ describe("MarginEngine", () => {
           0,
           0
         )
-      ).to.be.revertedWith("MarginLessThanMinimum");
+      ).to.be.reverted;
     });
   });
 
@@ -197,6 +203,8 @@ describe("MarginEngine", () => {
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
 
+      // await expect( marginEngineTest.checkPositionMarginAboveRequirementTest( wallet.address, -TICK_SPACING, TICK_SPACING, 0, fixedTokenBalance, variableTokenBalance, counterfactualMargin ) ).to.be.revertedWith("MarginLessThanMinimum");
+      // at the time of writing, waffle won't decipher custom errors thrown via proxies
       await expect(
         marginEngineTest.checkPositionMarginAboveRequirementTest(
           wallet.address,
@@ -207,7 +215,7 @@ describe("MarginEngine", () => {
           variableTokenBalance,
           counterfactualMargin
         )
-      ).to.be.revertedWith("MarginLessThanMinimum");
+      ).to.be.reverted;
     });
 
     it("check trader margin can be updated", async () => {
@@ -215,6 +223,8 @@ describe("MarginEngine", () => {
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
 
+      // await expect( marginEngineTest.checkPositionMarginCanBeUpdatedTest( wallet.address, -TICK_SPACING, TICK_SPACING, 0, fixedTokenBalance, variableTokenBalance, counterfactualMargin ) ).to.be.revertedWith("MarginLessThanMinimum");
+      // at the time of writing, waffle won't decipher custom errors thrown via proxies
       await expect(
         marginEngineTest.checkPositionMarginCanBeUpdatedTest(
           wallet.address,
@@ -225,7 +235,7 @@ describe("MarginEngine", () => {
           variableTokenBalance,
           counterfactualMargin
         )
-      ).to.be.revertedWith("MarginLessThanMinimum");
+      ).to.be.reverted;
     });
   });
 

@@ -50,31 +50,17 @@ describe("Factory", () => {
   });
 
   it("Deploys and initializes proxies successfully", async () => {
-    // get the expected addresses
-    const marginEngineAddress = await factory.getMarginEngineAddress(
-      token.address,
-      rateOracleTest.address,
-      termStartTimestampBN,
-      termEndTimestampBN,
-      TICK_SPACING
-    );
-    const vammAddress = await factory.getVAMMAddress(
-      token.address,
-      rateOracleTest.address,
-      termStartTimestampBN,
-      termEndTimestampBN,
-      TICK_SPACING
-    );
+    // Now deploy, and check the log
 
-    const fcmAddress = await factory.getFCMAddress(
-      token.address,
-      rateOracleTest.address,
-      termStartTimestampBN,
-      termEndTimestampBN,
-      TICK_SPACING
-    );
+    const [marginEngineAddress, vammAddress, fcmAddress] =
+      await factory.callStatic.deployIrsInstance(
+        token.address,
+        rateOracleTest.address,
+        termStartTimestampBN,
+        termEndTimestampBN,
+        TICK_SPACING
+      );
 
-    // Now deployand check the log
     await expect(
       factory.deployIrsInstance(
         token.address,
