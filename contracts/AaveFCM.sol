@@ -42,7 +42,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   mapping(address => TraderWithYieldBearingAssets.Info) public traders;
 
   /// The resulting margin does not meet minimum requirements
-  error MarginRequirementNotMet();
+  error MarginRequirementNotMet(int256 marginRequirement);
 
   /// Positions and Traders cannot be settled before the applicable interest rate swap has matured 
   error CannotSettleBeforeMaturity();
@@ -236,9 +236,9 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
     if (remainingSettlementCashflow < 0) {
     
       if (-remainingSettlementCashflow > marginToCoverRemainingSettlementCashflow) {
-        revert MarginRequirementNotMet();
+        revert MarginRequirementNotMet(int256(marginToCoverVariableLegFromNowToMaturity) + remainingSettlementCashflow);
       }
-    
+      
     }
 
   }

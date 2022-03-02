@@ -101,7 +101,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     error CannotLiquidate();
 
     /// The resulting margin does not meet minimum requirements
-    error MarginRequirementNotMet();
+    error MarginRequirementNotMet(int256 marginRequirement, int24 tick);
 
     modifier nonZeroDelta (int256 marginDelta) {
         if (marginDelta == 0) {
@@ -481,7 +481,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         );
 
         if (positionMarginRequirement > position.margin) {
-            revert MarginRequirementNotMet();
+            (, int24 tick, ) = vamm.vammVars();
+            revert MarginRequirementNotMet(positionMarginRequirement, tick);
         }
 
         position.rewardPerAmount = 0;
@@ -968,5 +969,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         }
     }
 
-
+    error Negative(int256);
+    function revertWithReason(int256 a) external pure returns (uint256) {
+        if (a < 0) revert Negative(a);
+        else return uint256(a);
+    } 
 }

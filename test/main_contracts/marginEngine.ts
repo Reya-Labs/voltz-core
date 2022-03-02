@@ -630,6 +630,16 @@ describe("MarginEngine", () => {
       await vammTest.setVariableTokenGrowthGlobal(Q128Negative);
     });
 
+    it("test", async () => {
+      const value = -1;
+      try {
+        const result = await marginEngineTest.revertWithReason(value);
+        console.log(result);
+      } catch (reason) {
+        console.log(reason);
+      }
+    });
+
     it("correctly updates position token balances (growth inside last)", async () => {
       await marginEngineTest.setPosition(
         wallet.address,

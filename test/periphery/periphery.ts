@@ -22,6 +22,8 @@ import {
   XI_LOWER,
   T_MAX,
   TICK_SPACING,
+  MIN_SQRT_RATIO,
+  encodeSqrtRatioX96,
 } from "../shared/utilities";
 import { TickMath } from "../shared/tickMath";
 import { mul, sub } from "../shared/functions";
@@ -90,6 +92,34 @@ describe("Periphery", async () => {
     const peripheryFactory = await ethers.getContractFactory("Periphery");
 
     periphery = (await peripheryFactory.deploy()) as Periphery;
+  });
+
+  it("swap quoter", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await marginEngineTest.updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+    await vammTest
+      .connect(wallet)
+      .mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("10000000"));
+
+    const result = await periphery.connect(other).callStatic.swapQouter({
+      marginEngineAddress: marginEngineTest.address,
+      recipient: other.address,
+      isFT: false,
+      notional: toBn("10000"),
+      sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+      tickLower: 0,
+      tickUpper: 0,
+    });
+
+    console.log(utils.formatEther(result[0]), result[1], result[2]);
   });
 
   it("approvals work as expected", async () => {

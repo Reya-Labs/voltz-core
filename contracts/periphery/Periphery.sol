@@ -6,6 +6,7 @@ import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
 import "../utils/TickMath.sol";
 import "./peripheral_libraries/LiquidityAmounts.sol";
+import "hardhat/console.sol";
 
 // margin calculation functions
 contract Periphery {
@@ -121,5 +122,59 @@ contract Periphery {
         });
 
         vamm.swap(swapParams);
+    }
+
+    // should be called only with callStatic
+    function swapQouter(SwapPeripheryParams memory params)
+        external
+        returns (
+            int256 marginRequirement,
+            int24 tickBefore,
+            int24 tickAfter
+        )
+    {
+        require(
+            msg.sender == params.recipient || msg.sender == address(this),
+            "msg.sender must be the recipient"
+        );
+
+        IVAMM vamm = getVAMM(params.marginEngineAddress);
+        (, tickBefore, ) = vamm.vammVars();
+
+        int256 amountSpecified;
+
+        if (params.isFT) {
+            amountSpecified = int256(params.notional);
+        } else {
+            amountSpecified = -int256(params.notional);
+        }
+
+        int24 tickSpacing = vamm.tickSpacing();
+
+        IVAMM.SwapParams memory swapParams = IVAMM.SwapParams({
+            recipient: msg.sender,
+            amountSpecified: amountSpecified,
+            sqrtPriceLimitX96: params.sqrtPriceLimitX96 == 0
+                ? (
+                    !params.isFT
+                        ? TickMath.MIN_SQRT_RATIO + 1
+                        : TickMath.MAX_SQRT_RATIO - 1
+                )
+                : params.sqrtPriceLimitX96,
+            isExternal: false,
+            tickLower: params.tickLower == 0 ? -tickSpacing : params.tickLower,
+            tickUpper: params.tickUpper == 0 ? tickSpacing : params.tickUpper
+        });
+
+        try vamm.swap(swapParams) {} catch (bytes memory reason) {
+            assembly {
+                reason := add(reason, 0x04)
+            }
+            (marginRequirement, tickAfter) = abi.decode(
+                reason,
+                (int256, int24)
+            );
+        }
+        return (marginRequirement, tickBefore, tickAfter);
     }
 }
