@@ -76,6 +76,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         rateOracle = IRateOracle(_rateOracleAddress);
         factory = IFactory(msg.sender);
 
+        // Todo: set default values for things like secondsAgo, cacheMaxAge.
+        // We should see if we need to do any similar defaulting for VAMM, FCM
+        // secondsAgo = 2 weeks; // can be changed by owner
+        // cacheMaxAgeInSeconds = 6 hours; // can be changed by owner
+
         __Ownable_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
