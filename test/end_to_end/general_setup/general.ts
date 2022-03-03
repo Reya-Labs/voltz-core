@@ -481,7 +481,7 @@ export class ScenarioRunner {
     // console.log("log", log);
     const marginEngineAddress = log.args.marginEngine;
     const vammAddress = log.args.vamm;
-    // const fcmAddress = log.args.fcm;
+    const fcmAddress = log.args.fcm;
 
     const marginEngineFactory = await ethers.getContractFactory("MarginEngine");
 
@@ -491,14 +491,6 @@ export class ScenarioRunner {
 
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
     this.vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
-
-    const fcmAddress = await this.factory.getFCMAddress(
-      this.token.address,
-      this.rateOracleTest.address,
-      this.termStartTimestampBN,
-      this.termEndTimestampBN,
-      this.params.tickSpacing
-    );
 
     const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
     this.fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
