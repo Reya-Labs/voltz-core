@@ -116,7 +116,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
             msg.sender,
             to,
             amountToWithdraw,
-            reserve.liquidityIndex
+            getReserveNormalizedIncome(asset)
         );
 
         return amountToWithdraw;
