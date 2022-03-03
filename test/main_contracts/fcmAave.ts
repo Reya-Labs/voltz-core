@@ -21,10 +21,12 @@ import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import {
   ERC20Mock,
+  // Factory,
   MockAaveLendingPool,
   MockAToken,
   AaveFCM,
   TestRateOracle,
+  // TestRateOracle,
 } from "../../typechain";
 import { TickMath } from "../shared/tickMath";
 import { advanceTime } from "../helpers/time";
@@ -41,7 +43,10 @@ const createFixtureLoader = waffle.createFixtureLoader;
 describe("FCM", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
+  // let factory: Factory;
   let rateOracleTest: TestRateOracle;
+  // let termStartTimestampBN: BigNumber;
+  // let termEndTimestampBN: BigNumber;
   let vammTest: TestVAMM;
   let marginEngineTest: TestMarginEngine;
   let aaveLendingPool: MockAaveLendingPool;
@@ -185,10 +190,25 @@ describe("FCM", () => {
         toBn("100"),
         currentReserveNormalisedIncome
       );
-      await mockAToken.approve(fcmTest.address, toBn("100"));
+      await mockAToken.connect(wallet).approve(fcmTest.address, toBn("100"));
     });
 
     it("scenario1", async () => {
+      expect(await fcmTest.aaveLendingPool(), "aave lending pool expect").to.eq(
+        aaveLendingPool.address
+      );
+      expect(
+        await fcmTest.marginEngine(),
+        "margin engine address expect"
+      ).to.eq(marginEngineTest.address);
+      expect(
+        await fcmTest.underlyingYieldBearingToken(),
+        "underlying yield bearing token expect"
+      ).to.eq(mockAToken.address);
+      expect(await fcmTest.vamm(), "vamm address expect").to.eq(
+        vammTest.address
+      );
+
       const otherStartingBalance = await token.balanceOf(other.address);
 
       await marginEngineTest
@@ -214,6 +234,11 @@ describe("FCM", () => {
       const traderStartingOverallBalanceInUnderlyingTokens =
         await getTraderBalance(wallet.address);
 
+      const allowance = await mockAToken
+        .connect(wallet)
+        .allowance(wallet.address, fcmTest.address);
+      console.log("allowance", allowance.toString());
+
       // engage in a fixed taker swap via the fcm
       await fcmTest
         .connect(wallet)
@@ -237,21 +262,6 @@ describe("FCM", () => {
       await rateOracleTest.writeOracleEntry();
 
       await printHistoricalApy();
-
-      expect(await fcmTest.aaveLendingPool(), "aave lending pool expect").to.eq(
-        aaveLendingPool.address
-      );
-      expect(
-        await fcmTest.marginEngine(),
-        "margin engine address expect"
-      ).to.eq(marginEngineTest.address);
-      expect(
-        await fcmTest.underlyingYieldBearingToken(),
-        "underlying yield bearing token expect"
-      ).to.eq(mockAToken.address);
-      expect(await fcmTest.vamm(), "vamm address expect").to.eq(
-        vammTest.address
-      );
 
       // check a token balance of the fcm
       const aTokenBalanceOfFCM = await mockAToken.balanceOf(fcmTest.address);
@@ -293,9 +303,11 @@ describe("FCM", () => {
       expect(traderAPY).to.be.near(toBn("0.010116042450876211")); // around 1% fixed apy secured as expected
 
       // lp settles and collects their margin
-      await marginEngineTest
-        .connect(other)
-        .settlePosition(-TICK_SPACING, TICK_SPACING, other.address);
+      await marginEngineTest.settlePosition(
+        -TICK_SPACING,
+        TICK_SPACING,
+        other.address
+      );
 
       const positionInfo = await marginEngineTest.getPosition(
         other.address,
@@ -317,6 +329,7 @@ describe("FCM", () => {
           mul(finalPositionMargin, toBn("-1")).add(1)
         );
 
+      console.log("here?");
       const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(
         other.address,
         -TICK_SPACING,
@@ -331,27 +344,12 @@ describe("FCM", () => {
 
       const positionEndingOverallBalanceInUnderlyingTokens =
         await getTraderBalance(other.address);
-      // apy relative to notional, not margin
-
       const positionAPY = getTraderApy(
         otherStartingBalance,
         positionEndingOverallBalanceInUnderlyingTokens
       );
 
       console.log("positionAPY", utils.formatEther(positionAPY));
-
-      // APYs are calculated relative to notionals (not margin accounts)
-      // if trader gets: variable APY - variable APY + fixed APY
-      // the LP gets: (variable APY - fixed APY)
-      // sum of trader and LP apy is = variable APY
-
-      const sumOfTraderAndLPAPY = add(traderAPY, positionAPY);
-
-      console.log(
-        "sumOfTraderAndLPAPY",
-        utils.formatEther(sumOfTraderAndLPAPY)
-      );
-      await printHistoricalApy();
     });
   });
 });

@@ -97,7 +97,7 @@ contract AaveFCM is IFCM, IAaveFCM, Initializable, OwnableUpgradeable, PausableU
     
     require(notional!=0, "notional = 0");
  
-    /// add support for approvals and recipient (similar to how it is implemented in the MarginEngine)
+    /// todo: (URGENT) add support for approvals and recipient (similar to how it is implemented in the MarginEngine)
 
     // initiate a swap
     // the default tick range for a Position associated with the FCM is tickLower: -tickSpacing and tickUpper: tickSpacing
@@ -110,11 +110,7 @@ contract AaveFCM is IFCM, IAaveFCM, Initializable, OwnableUpgradeable, PausableU
         tickUpper: tickSpacing
     });
 
-    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, ,) = vamm.swap(params);
-
-    // deposit notional executed in terms of aTokens (e.g. aUSDC) to fully collateralise your position
-    /// @audit-casting variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
-    underlyingYieldBearingToken.safeTransferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
+    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, ,) = vamm.swap(params); 
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 

@@ -65,7 +65,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const p = this.positions[randomInt(0, 5)];
         const liquidityDelta = randomInt(10000, 100000);
         const liquidityDeltaBn = toBn(liquidityDelta.toString());
-<<<<<<< HEAD
         // const positionInfo = await this.marginEngineTest.getPosition(
         //   p[0],
         //   p[1],
@@ -86,27 +85,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         // const positionMarginRequirement =
         //   await this.marginEngineTest.getMargin();
         const positionMarginRequirement = BigNumber.from(0);
-=======
-        const positionInfo = await this.marginEngineTest.getPosition(
-          p[0],
-          p[1],
-          p[2]
-        );
-
-        await this.marginEngineTest.getCounterfactualMarginRequirementTest(
-          p[0],
-          p[1],
-          p[2],
-          liquidityDeltaBn,
-          positionInfo.fixedTokenBalance,
-          positionInfo.variableTokenBalance,
-          positionInfo.margin,
-          false
-        );
-
-        const positionMarginRequirement =
-          await this.marginEngineTest.getMargin();
->>>>>>> 4e903f13541f3e641a398f6210fc8640b966f49e
 
         console.log(
           "margin delta:",
@@ -167,11 +145,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
             amount > 0
               ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
               : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
-<<<<<<< HEAD
-
-=======
-          isExternal: false,
->>>>>>> 4e903f13541f3e641a398f6210fc8640b966f49e
           tickLower: p[1],
           tickUpper: p[2],
         });
@@ -193,7 +166,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
 
       for (const p of this.positions) {
-<<<<<<< HEAD
         // AB: bring back the below
         // await this.marginEngineTest.isLiquidatablePositionTest(
         //   p[0],
@@ -202,14 +174,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         // );
         // const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
         const isLiquidatable = false;
-=======
-        await this.marginEngineTest.isLiquidatablePositionTest(
-          p[0],
-          p[1],
-          p[2]
-        );
-        const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
->>>>>>> 4e903f13541f3e641a398f6210fc8640b966f49e
 
         try {
           if (isLiquidatable) {

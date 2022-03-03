@@ -38,25 +38,26 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const p = this.positions[randomInt(0, 5)];
         const liquidityDelta = randomInt(10000, 100000);
         const liquidityDeltaBn = toBn(liquidityDelta.toString());
-        const positionInfo = await this.marginEngineTest.getPosition(
-          p[0],
-          p[1],
-          p[2]
-        );
+        // const positionInfo = await this.marginEngineTest.getPosition(
+        //   p[0],
+        //   p[1],
+        //   p[2]
+        // );
 
-        await this.marginEngineTest.getCounterfactualMarginRequirementTest(
-          p[0],
-          p[1],
-          p[2],
-          liquidityDeltaBn,
-          positionInfo.fixedTokenBalance,
-          positionInfo.variableTokenBalance,
-          positionInfo.margin,
-          false
-        );
+        // await this.marginEngineTest.getCounterfactualMarginRequirementTest(
+        //   p[0],
+        //   p[1],
+        //   p[2],
+        //   liquidityDeltaBn,
+        //   positionInfo.fixedTokenBalance,
+        //   positionInfo.variableTokenBalance,
+        //   positionInfo.margin,
+        //   false
+        // );
 
-        const positionMarginRequirement =
-          await this.marginEngineTest.getMargin();
+        // const positionMarginRequirement =
+        //   await this.marginEngineTest.getMargin();
+        const positionMarginRequirement = BigNumber.from(0);
 
         await this.e2eSetup.updatePositionMargin(
           p[0],
@@ -114,7 +115,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
             amount > 0
               ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
               : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
-          isExternal: false,
           tickLower: p[1],
           tickUpper: p[2],
         });
