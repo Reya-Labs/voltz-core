@@ -13,7 +13,8 @@ interface IFactory {
         int24 tickSpacing,
         address marginEngine,
         address vamm,
-        address fcm
+        address fcm,
+        uint8 yieldBearingProtocolID
     );
 
     event MasterFCMSet(

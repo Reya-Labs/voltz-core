@@ -93,7 +93,8 @@ describe("Factory", () => {
         TICK_SPACING,
         marginEngineAddress,
         vammAddress,
-        fcmAddress
+        fcmAddress,
+        1
       );
 
     const marginEngineTestFactory = await ethers.getContractFactory(

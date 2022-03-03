@@ -92,7 +92,7 @@ contract Factory is IFactory, Ownable {
       Ownable(address(fcm)).transferOwnership(msg.sender);
     }
 
-    emit IrsInstanceDeployed(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing, address(marginEngine), address(vamm), address(fcm));
+    emit IrsInstanceDeployed(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing, address(marginEngine), address(vamm), address(fcm), yieldBearingProtocolID);
 
     // Transfer ownership of all instances to the factory owner
     Ownable(address(vamm)).transferOwnership(msg.sender);
