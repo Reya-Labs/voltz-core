@@ -86,8 +86,10 @@
     "format:ts:check": "npx prettier '**/*.{json,js,ts,md}' --check",
     "format:check": "npm run format:sol:check && npm run format:ts:check",
     "prepare": "husky install",
-    "deploy:localhost": "npx hardhat node --tags Factory,Mocks,RateOracles --export deployments/localhostDeployment.json",
-    "deploy:kovan": "hardhat deploy --network kovan --tags Factory,RateOracles --export deployments/kovanDeployment.json"
+    "deploy:kovan": "hardhat deploy --network kovan --tags Factory,RateOracles --export deployments/kovanDeployment.json",
+    "deploy:localhost": "npx hardhat node --tags Factory,Mocks,RateOracles --export localhostDeployment.json --hostname 0.0.0.0",
+    "createTestIrs:localhost": "npx hardhat deploy --network localhost --tags IrsInstance",
+    "generateEndToEndActivity:localhost": "npx hardhat test --network localhost test/end_to_end/general_setup/scenario0/scenario0.ts"
   },
   "husky": {
     "hooks": {

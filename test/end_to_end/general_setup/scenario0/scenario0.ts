@@ -12,8 +12,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // add 1,000,000 liquidity to Position 0
 
+    console.log("A");
+
     // print the position margin requirement
-    await this.getAPYboundsAndPositionMargin(this.positions[0]);
+    // await this.getAPYboundsAndPositionMargin(this.positions[0]);
 
     // update the position margin with 210
     await this.e2eSetup.updatePositionMargin(
@@ -86,7 +88,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // add 5,000,000 liquidity to Position 1
 
     // print the position margin requirement
-    await this.getAPYboundsAndPositionMargin(this.positions[1]);
+    // await this.getAPYboundsAndPositionMargin(this.positions[1]);
 
     // update the position margin with 2,000
     await this.e2eSetup.updatePositionMargin(
