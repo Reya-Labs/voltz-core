@@ -485,8 +485,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         );
 
         if (positionMarginRequirement > position.margin) {
-            (, int24 tick, ) = _vamm.vammVars();
-            revert MarginRequirementNotMet(positionMarginRequirement, tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
+            IVAMM.VAMMVars memory v = _vamm.vammVars();
+            revert MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
         }
 
         position.rewardPerAmount = 0;
@@ -700,7 +700,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     ) internal returns (uint256 margin) {
         Tick.checkTicks(tickLower, tickUpper);
 
-        (uint160 sqrtPriceX96, int24 tick, ) = _vamm.vammVars();
+        IVAMM.VAMMVars memory vammVars = _vamm.vammVars();
+        uint160 sqrtPriceX96 = vammVars.sqrtPriceX96;
+        int24 tick = vammVars.tick;
 
         uint256 variableFactorWad = _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad);
 

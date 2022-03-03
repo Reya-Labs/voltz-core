@@ -12,38 +12,38 @@ contract TestVAMM is VAMM {
         returns (uint256 currentTimestamp, uint256 termEndTimestamp)
     {
         currentTimestamp = Time.blockTimestampScaled();
-        termEndTimestamp = marginEngine.termEndTimestampWad();
+        termEndTimestamp = termEndTimestampWad;
     }
 
     function testGetAMMTermEndTimestamp() external view returns (uint256) {
-        return marginEngine.termEndTimestampWad();
+        return termEndTimestampWad;
     }
 
-    function setTestProtocolFees(uint256 _protocolFees) external {
-        protocolFees = _protocolFees;
+    function setTestProtocolFees(uint256 newProtocolFees) external {
+        _protocolFees = newProtocolFees;
     }
 
     function getProtocolFees() external view returns (uint256) {
-        return protocolFees;
+        return _protocolFees;
     }
 
-    function setVariableTokenGrowthGlobal(int256 _variableTokenGrowthGlobalX128)
-        external
-    {
-        variableTokenGrowthGlobalX128 = _variableTokenGrowthGlobalX128;
+    function setVariableTokenGrowthGlobal(
+        int256 newVariableTokenGrowthGlobalX128
+    ) external {
+        _variableTokenGrowthGlobalX128 = newVariableTokenGrowthGlobalX128;
     }
 
-    function setFixedTokenGrowthGlobal(int256 _fixedTokenGrowthGlobalX128)
+    function setFixedTokenGrowthGlobal(int256 newFixedTokenGrowthGlobalX128)
         external
     {
-        fixedTokenGrowthGlobalX128 = _fixedTokenGrowthGlobalX128;
+        _fixedTokenGrowthGlobalX128 = newFixedTokenGrowthGlobalX128;
     }
 
     function setTickTest(int24 tick, Tick.Info memory info) external {
-        ticks[tick] = info;
+        _ticks[tick] = info;
     }
 
     function getCurrentTick() external view returns (int24 currentTick) {
-        return vammVars.tick;
+        return _vammVars.tick;
     }
 }
