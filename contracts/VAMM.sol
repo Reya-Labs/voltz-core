@@ -311,14 +311,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     VAMMVars memory vammVarsStart = vammVars;
 
     checksBeforeSwap(params, vammVarsStart, params.amountSpecified > 0);
-
-    bool isExternal;
-
-    if (msg.sender == address(marginEngine) || msg.sender==address(marginEngine.fcm())) {
-      isExternal = true;
-    }
     
-    if (!isExternal) {
+    if (!(msg.sender == address(marginEngine) || msg.sender==address(marginEngine.fcm()))) {
       require(msg.sender==params.recipient || factory.isApproved(params.recipient, msg.sender), "only sender or approved integration");
     }
 
@@ -445,11 +439,6 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
       // update global fee tracker
       if (state.liquidity > 0) {
-        uint256 variableFactorWad = rateOracle.variableFactor(
-          termStartTimestampWad,
-          termEndTimestampWad
-        );
-
         (
           state.feeGrowthGlobalX128,
           state.variableTokenGrowthGlobalX128,
@@ -459,7 +448,10 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
           params.amountSpecified > 0,
           state,
           step,
-          variableFactorWad
+          rateOracle.variableFactor(
+          termStartTimestampWad,
+          termEndTimestampWad
+          )
         );
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
@@ -524,15 +516,8 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     }
 
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
-<<<<<<< HEAD
-    /// @dev additionally, if the swap is invoked by the fcm, the necessary state changes will also be performed in the fcm to avoid
-    // an unnecessary external call
-    if (!isExternal) {
-      marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred);
-=======
-    if (!params.isExternal) {
+    if (!(msg.sender == address(marginEngine) || msg.sender==address(marginEngine.fcm()))) {
       _marginRequirement = marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, state.fixedTokenDeltaUnbalancedCumulative);
->>>>>>> 4e903f13541f3e641a398f6210fc8640b966f49e
     }
 
     emit Swap(

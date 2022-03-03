@@ -378,12 +378,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         if (position.rewardPerAmount == 0) {
             if (position.variableTokenBalance < 0) {
-<<<<<<< HEAD
-                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(-position.variableTokenBalance));
-            }
-            else {
-                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(position.variableTokenBalance));
-=======
                 if (position.margin > 0) {
                     position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(-position.variableTokenBalance));
                 }
@@ -398,7 +392,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 else {
                     position.rewardPerAmount = 0;
                 }
->>>>>>> 4e903f13541f3e641a398f6210fc8640b966f49e
             }
         }
 
@@ -608,11 +601,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-<<<<<<< HEAD
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred,) = vamm.swap(params);
-=======
                 (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = vamm.swap(params);
->>>>>>> 4e903f13541f3e641a398f6210fc8640b966f49e
             } else {
 
                 /// @dev get into a Fixed Taker swap (the opposite of LP's current position)
@@ -629,11 +618,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-<<<<<<< HEAD
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred,) = vamm.swap(params);
-=======
                 (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = vamm.swap(params);
->>>>>>> 4e903f13541f3e641a398f6210fc8640b966f49e
             }
 
             if (_cumulativeFeeIncurred > 0) {

@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "../IMarginEngine.sol";
 import "../IVAMM.sol";
 import "../IERC20Minimal.sol";
-import "./../core_libraries/TraderWithYieldBearingAssets.sol";
+import "../../core_libraries/TraderWithYieldBearingAssets.sol";
 
 interface IFCM {
     function getTraderWithYieldBearingAssets(address trader)
