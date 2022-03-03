@@ -173,6 +173,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     function collectProtocol(address recipient, uint256 amount)
         external
         override
+        whenNotPaused
         onlyOwner{
 
         if (amount > 0) {
@@ -250,12 +251,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
 
     /// @inheritdoc IMarginEngine
-    function transferMarginToFCMTrader(address _account, uint256 marginDelta) external onlyFCM override {
+    function transferMarginToFCMTrader(address _account, uint256 marginDelta) external whenNotPaused onlyFCM override {
         underlyingToken.safeTransfer(_account, marginDelta);
     }
 
     /// @inheritdoc IMarginEngine
-    function updatePositionMargin(address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta) external nonZeroDelta(marginDelta) override {
+    function updatePositionMargin(address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta) external whenNotPaused nonZeroDelta(marginDelta) override {
         
         Tick.checkTicks(tickLower, tickUpper);
         
@@ -366,7 +367,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
 
     /// @inheritdoc IMarginEngine
-    function liquidatePosition(int24 tickLower, int24 tickUpper, address _owner) external checkCurrentTimestampTermEndTimestampDelta override {
+    function liquidatePosition(int24 tickLower, int24 tickUpper, address _owner) external whenNotPaused checkCurrentTimestampTermEndTimestampDelta override {
 
         /// @dev can only happen before maturity, this is checked when an unwind is triggered which in turn triggers a swap which checks for this condition
 
@@ -430,8 +431,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
 
     /// @inheritdoc IMarginEngine
-    function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external onlyVAMM override returns(int256 positionMarginRequirement) {
-
+    function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external whenNotPaused onlyVAMM override returns(int256 positionMarginRequirement) {
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
 
         updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true);
@@ -450,7 +450,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
     /// @inheritdoc IMarginEngine
-    function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) external onlyVAMM override returns(int256 positionMarginRequirement) {
+    function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) external whenNotPaused onlyVAMM override returns(int256 positionMarginRequirement) {
         /// @dev this function can only be called by the vamm following a swap    
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
