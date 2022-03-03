@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "contracts/test/TestMarginEngine.sol";
 import "contracts/test/TestVAMM.sol";
+import "contracts/test/TestAaveFCM.sol";
 import "contracts/utils/Printer.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
@@ -44,7 +45,8 @@ contract Actor {
             _fixedTokenDelta,
             _variableTokenDelta,
             _cumulativeFeeIncurred,
-            _fixedTokenDeltaUnbalanced
+            _fixedTokenDeltaUnbalanced,
+
         ) = IVAMM(VAMMAddress).swap(params);
     }
 
@@ -55,6 +57,28 @@ contract Actor {
         address owner
     ) external {
         IMarginEngine(MEAddress).liquidatePosition(tickLower, tickUpper, owner);
+    }
+
+    function initiateFullyCollateralisedFixedTakerSwap(
+        address FCMAddress,
+        uint256 notional,
+        uint160 sqrtPriceLimitX96
+    ) external {
+        IFCM(FCMAddress).initiateFullyCollateralisedFixedTakerSwap(
+            notional,
+            sqrtPriceLimitX96
+        );
+    }
+
+    function unwindFullyCollateralisedFixedTakerSwap(
+        address FCMAddress,
+        uint256 notionalToUnwind,
+        uint160 sqrtPriceLimitX96
+    ) external {
+        IFCM(FCMAddress).unwindFullyCollateralisedFixedTakerSwap(
+            notionalToUnwind,
+            sqrtPriceLimitX96
+        );
     }
 }
 
@@ -98,6 +122,10 @@ contract E2ESetup {
     mapping(bytes32 => uint256) public indexAllPositions;
     uint256 public sizeAllPositions = 0;
 
+    mapping(uint256 => address) public allYBATraders;
+    mapping(address => uint256) public indexAllYBATraders;
+    uint256 public sizeAllYBATraders = 0;
+
     mapping(bytes32 => mapping(uint256 => PositionSnapshot))
         public positionHistory;
     mapping(bytes32 => uint256) public sizeOfPositionHistory;
@@ -108,6 +136,7 @@ contract E2ESetup {
 
     int256 public initialCashflow = 0;
     int256 public liquidationRewards = 0;
+    int256 public fcmFees = 0;
 
     uint256 public keepInMindGas;
 
@@ -185,8 +214,18 @@ contract E2ESetup {
         indexAllPositions[hashedPositon] = sizeAllPositions;
     }
 
+    function addYBATrader(address trader) public {
+        if (indexAllYBATraders[trader] > 0) {
+            return;
+        }
+        sizeAllYBATraders += 1;
+        allYBATraders[sizeAllYBATraders] = trader;
+        indexAllYBATraders[trader] = sizeAllYBATraders;
+    }
+
     address public MEAddress;
     address public VAMMAddress;
+    address public FCMAddress;
     address public rateOracleAddress;
 
     function setMEAddress(address _MEAddress) public {
@@ -197,8 +236,64 @@ contract E2ESetup {
         VAMMAddress = _VAMMAddress;
     }
 
+    function setFCMAddress(address _FCMAddress) public {
+        FCMAddress = _FCMAddress;
+    }
+
     function setRateOracleAddress(address _rateOracleAddress) public {
         rateOracleAddress = _rateOracleAddress;
+    }
+
+    function initiateFullyCollateralisedFixedTakerSwap(
+        address trader,
+        uint256 notional,
+        uint160 sqrtPriceLimitX96
+    ) external {
+        addYBATrader(trader);
+
+        uint256 MEBalanceBefore = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(MEAddress);
+
+        Actor(trader).initiateFullyCollateralisedFixedTakerSwap(
+            FCMAddress,
+            notional,
+            sqrtPriceLimitX96
+        );
+
+        uint256 MEBalanceAfter = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(MEAddress);
+
+        fcmFees += int256(MEBalanceAfter) - int256(MEBalanceBefore);
+
+        continuousInvariants();
+    }
+
+    function unwindFullyCollateralisedFixedTakerSwap(
+        address trader,
+        uint256 notionalToUnwind,
+        uint160 sqrtPriceLimitX96
+    ) external {
+        addYBATrader(trader);
+
+        uint256 MEBalanceBefore = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(MEAddress);
+
+        Actor(trader).unwindFullyCollateralisedFixedTakerSwap(
+            FCMAddress,
+            notionalToUnwind,
+            sqrtPriceLimitX96
+        );
+
+        uint256 MEBalanceAfter = IERC20Minimal(
+            IMarginEngine(MEAddress).underlyingToken()
+        ).balanceOf(MEAddress);
+
+        fcmFees += int256(MEBalanceAfter) - int256(MEBalanceBefore);
+
+        continuousInvariants();
     }
 
     function mint(
@@ -492,11 +587,6 @@ contract E2ESetup {
             IMarginEngine(MEAddress).termEndTimestampWad()
         );
 
-        uint256 variableFactor = IRateOracle(rateOracleAddress).variableFactor(
-            termStartTimestampWad,
-            termEndTimestampWad
-        );
-
         int256 liquidatablePositions = 0;
         for (uint256 i = 1; i <= sizeAllPositions; i++) {
             TestMarginEngine(MEAddress)
@@ -579,13 +669,52 @@ contract E2ESetup {
             totalVariableTokens += position.variableTokenBalance;
             totalCashflow += position.margin;
             totalCashflow += estimatedSettlementCashflow;
+
+            Printer.printInt256(
+                "              esc:",
+                estimatedSettlementCashflow
+            );
+        }
+
+        for (uint256 i = 1; i <= sizeAllYBATraders; i++) {
+            TraderWithYieldBearingAssets.Info memory trader = IFCM(FCMAddress)
+                .getTraderWithYieldBearingAssets(allYBATraders[i]);
+            totalFixedTokens += trader.fixedTokenBalance;
+            totalVariableTokens += trader.variableTokenBalance;
+
+            int256 estimatedSettlementCashflow = FixedAndVariableMath
+                .calculateSettlementCashflow(
+                    trader.fixedTokenBalance,
+                    int256(trader.variableTokenBalance),
+                    termStartTimestampWad,
+                    termEndTimestampWad,
+                    estimatedVariableFactorFromStartToMaturity()
+                );
+
+            totalCashflow += estimatedSettlementCashflow;
+
+            Printer.printInt256(
+                "   fixedTokenBalance:",
+                trader.fixedTokenBalance
+            );
+            Printer.printInt256(
+                "variableTokenBalance:",
+                trader.variableTokenBalance
+            );
+            Printer.printInt256(
+                "              YBA esc:",
+                estimatedSettlementCashflow
+            );
         }
 
         totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
         totalCashflow += int256(liquidationRewards);
+        totalCashflow -= fcmFees;
 
+        Printer.printInt256("fcmFees", fcmFees);
         Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
         Printer.printInt256("totalVariableTokens:", totalVariableTokens);
+        Printer.printInt256("   initialCashflow:", initialCashflow);
         Printer.printInt256(
             "      deltaCashflow:",
             totalCashflow - initialCashflow

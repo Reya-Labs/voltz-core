@@ -249,7 +249,7 @@ interface IVAMM is IPositionStructs {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external;
+    ) external returns (int256 positionMarginRequirement);
 
     /// @notice Adds liquidity for the given recipient/tickLower/tickUpper position
     /// @param recipient The address for which the liquidity will be created
@@ -261,7 +261,7 @@ interface IVAMM is IPositionStructs {
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) external;
+    ) external returns (int256 positionMarginRequirement);
 
     /// @notice Initiate an Interest Rate Swap
     /// @param params SwapParams necessary to initiate an Interest Rate Swap
@@ -274,7 +274,8 @@ interface IVAMM is IPositionStructs {
             int256 _fixedTokenDelta,
             int256 _variableTokenDelta,
             uint256 _cumulativeFeeIncurred,
-            int256 _fixedTokenDeltaUnbalanced
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement
         );
 
     /// @notice Look up information about a specific tick in the amm

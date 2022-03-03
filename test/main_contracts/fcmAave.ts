@@ -28,7 +28,7 @@ import {
 } from "../../typechain";
 import { TickMath } from "../shared/tickMath";
 import { advanceTime } from "../helpers/time";
-import { add, div, pow, sub } from "../shared/functions";
+import { add, div, mul, pow, sub } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -314,7 +314,7 @@ describe("FCM", () => {
           other.address,
           -TICK_SPACING,
           TICK_SPACING,
-          "-1252572675131652946"
+          mul(finalPositionMargin, toBn("-1")).add(1)
         );
 
       const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(
@@ -325,7 +325,7 @@ describe("FCM", () => {
       const finalPositionMarginPostUpdateMargin =
         positionInfoPostUpdateMargin.margin;
 
-      expect(finalPositionMarginPostUpdateMargin).to.eq(0);
+      expect(finalPositionMarginPostUpdateMargin).to.be.near(toBn("0"));
 
       // calculate the return of the LP
 

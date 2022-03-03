@@ -255,7 +255,7 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        keepInMindIsLiquidatable = isLiquidatablePosition(
+        (keepInMindIsLiquidatable, ) = isLiquidatablePosition(
             position,
             tickLower,
             tickUpper
@@ -278,7 +278,7 @@ contract TestMarginEngine is MarginEngine {
             tickUpper
         );
 
-        keepInMindIsLiquidatable = isLiquidatablePosition(
+        (keepInMindIsLiquidatable, ) = isLiquidatablePosition(
             position,
             tickLower,
             tickUpper

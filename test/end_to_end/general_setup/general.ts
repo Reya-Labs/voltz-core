@@ -19,6 +19,7 @@ import {
   MarginEngine,
   MockAaveLendingPool,
   SqrtPriceMathTest,
+  TestAaveFCM,
   TestRateOracle,
   TickMathTest,
 } from "../../../typechain";
@@ -45,6 +46,7 @@ export class ScenarioRunner {
   termStartTimestampBN!: BigNumber;
   termEndTimestampBN!: BigNumber;
 
+  fcmTest!: TestAaveFCM;
   vammTest!: TestVAMM;
   marginEngineTest!: MarginEngine;
   aaveLendingPool!: MockAaveLendingPool;
@@ -342,6 +344,64 @@ export class ScenarioRunner {
           "\n"
       );
       fs.appendFileSync(this.outputFile, "\n");
+
+      {
+        fs.appendFileSync(this.outputFile, "TRADER YBA " + i.toString() + "\n");
+        const traderYBAInfo =
+          await this.fcmTest.getTraderWithYieldBearingAssets(
+            this.positions[i][0]
+          );
+
+        fs.appendFileSync(
+          this.outputFile,
+          "                       address   : " +
+            this.positions[i][0].toString() +
+            "\n"
+        );
+
+        fs.appendFileSync(
+          this.outputFile,
+          "                           margin: " +
+            utils
+              .formatEther(traderYBAInfo.marginInScaledYieldBearingTokens)
+              .toString() +
+            "\n"
+        );
+        fs.appendFileSync(
+          this.outputFile,
+          "                fixedTokenBalance: " +
+            utils.formatEther(traderYBAInfo.fixedTokenBalance).toString() +
+            "\n"
+        );
+        fs.appendFileSync(
+          this.outputFile,
+          "             variableTokenBalance: " +
+            utils.formatEther(traderYBAInfo.variableTokenBalance).toString() +
+            "\n"
+        );
+        fs.appendFileSync(
+          this.outputFile,
+          "                        isSettled: " +
+            traderYBAInfo.isSettled.toString() +
+            "\n"
+        );
+
+        const settlementCashflow =
+          await this.testFixedAndVariableMath.calculateSettlementCashflow(
+            traderYBAInfo.fixedTokenBalance,
+            traderYBAInfo.variableTokenBalance,
+            this.termStartTimestampBN,
+            this.termEndTimestampBN,
+            this.variableFactorWad
+          );
+        fs.appendFileSync(
+          this.outputFile,
+          "             settlement cashflow: " +
+            utils.formatEther(settlementCashflow).toString() +
+            "\n"
+        );
+        fs.appendFileSync(this.outputFile, "\n");
+      }
     }
     fs.appendFileSync(this.outputFile, "\n");
   }
@@ -435,6 +495,17 @@ export class ScenarioRunner {
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
     this.vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
 
+    const fcmAddress = await this.factory.getFCMAddress(
+      this.token.address,
+      this.rateOracleTest.address,
+      this.termStartTimestampBN,
+      this.termEndTimestampBN,
+      this.params.tickSpacing
+    );
+
+    const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
+    this.fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
+
     // deploy Fixed and Variable Math test
     ({ testFixedAndVariableMath: this.testFixedAndVariableMath } =
       await fixedAndVariableMathFixture());
@@ -467,6 +538,7 @@ export class ScenarioRunner {
     // set e2e setup parameters
     await this.e2eSetup.setMEAddress(this.marginEngineTest.address);
     await this.e2eSetup.setVAMMAddress(this.vammTest.address);
+    await this.e2eSetup.setFCMAddress(this.fcmTest.address);
     await this.e2eSetup.setRateOracleAddress(this.rateOracleTest.address);
 
     // mint and approve the addresses
@@ -481,11 +553,23 @@ export class ScenarioRunner {
       const actor = (await ActorFactory.deploy()) as Actor;
       this.actors.push(actor);
       await this.mintAndApprove(actor.address);
+
+      await this.token.approveInternal(
+        actor.address,
+        this.fcmTest.address,
+        BigNumber.from(10).pow(27)
+      );
     }
 
     await this.token.approveInternal(
       this.e2eSetup.address,
       this.marginEngineTest.address,
+      BigNumber.from(10).pow(27)
+    );
+
+    await this.token.approveInternal(
+      this.e2eSetup.address,
+      this.fcmTest.address,
       BigNumber.from(10).pow(27)
     );
 

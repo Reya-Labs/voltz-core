@@ -22,6 +22,8 @@ import {
   XI_LOWER,
   T_MAX,
   TICK_SPACING,
+  MIN_SQRT_RATIO,
+  encodeSqrtRatioX96,
 } from "../shared/utilities";
 import { TickMath } from "../shared/tickMath";
 import { mul, sub } from "../shared/functions";
@@ -90,6 +92,491 @@ describe("Periphery", async () => {
     const peripheryFactory = await ethers.getContractFactory("Periphery");
 
     periphery = (await peripheryFactory.deploy()) as Periphery;
+  });
+
+  it("swap quoter on revert: margin requirement not met", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await marginEngineTest.updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+    await vammTest
+      .connect(wallet)
+      .mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("10000000"));
+
+    const tickBefore = await vammTest.getCurrentTick();
+    let marginRequirement: number = 0;
+    let tickAfter: number = 0;
+    let fixedTokenDelta: number = 0;
+    let variableTokenDelta: number = 0;
+    let feeIncured: number = 0;
+    let fixedTokenDeltaUnbalanced: number = 0;
+
+    await periphery
+      .connect(other)
+      .callStatic.swap({
+        marginEngineAddress: marginEngineTest.address,
+        recipient: other.address,
+        isFT: false,
+        notional: toBn("10000"),
+        sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+        tickLower: 0,
+        tickUpper: 0,
+      })
+      .then(
+        async (result) => {
+          marginRequirement = parseFloat(utils.formatEther(result[4]));
+          tickAfter = await vammTest.getCurrentTick();
+          fixedTokenDelta = parseFloat(utils.formatEther(result[0]));
+          variableTokenDelta = parseFloat(utils.formatEther(result[1]));
+          feeIncured = parseFloat(utils.formatEther(result[2]));
+          fixedTokenDeltaUnbalanced = parseFloat(utils.formatEther(result[3]));
+        },
+        (error) => {
+          if (error.message.includes("MarginRequirementNotMet")) {
+            const args: string[] = error.message
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = parseFloat(utils.formatEther(args[0]));
+            tickAfter = parseInt(args[1]);
+            fixedTokenDelta = parseFloat(utils.formatEther(args[2]));
+            variableTokenDelta = parseFloat(utils.formatEther(args[3]));
+            feeIncured = parseFloat(utils.formatEther(args[4]));
+            fixedTokenDeltaUnbalanced = parseFloat(utils.formatEther(args[5]));
+          } else {
+            console.error(error.message);
+          }
+        }
+      );
+
+    console.log("          margin requirement:", marginRequirement);
+    console.log("                 tick before:", tickBefore);
+    console.log("                  tick after:", tickAfter);
+    console.log("           fixed token delta:", fixedTokenDelta);
+    console.log("        variable token delta:", variableTokenDelta);
+    console.log("                fee incurred:", feeIncured);
+    console.log("fixed token delta unbalanced:", fixedTokenDeltaUnbalanced);
+  });
+
+  it("swap quoter on success", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await marginEngineTest.updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+
+    await marginEngineTest.updatePositionMargin(
+      other.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+
+    await vammTest
+      .connect(wallet)
+      .mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("10000000"));
+
+    const tickBefore = await vammTest.getCurrentTick();
+    let marginRequirement: number = 0;
+    let tickAfter: number = 0;
+    let fixedTokenDelta: number = 0;
+    let variableTokenDelta: number = 0;
+    let feeIncured: number = 0;
+    let fixedTokenDeltaUnbalanced: number = 0;
+
+    await periphery
+      .connect(other)
+      .callStatic.swap({
+        marginEngineAddress: marginEngineTest.address,
+        recipient: other.address,
+        isFT: false,
+        notional: toBn("10000"),
+        sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+      })
+      .then(
+        async (result) => {
+          marginRequirement = parseFloat(utils.formatEther(result[4]));
+          tickAfter = await vammTest.getCurrentTick();
+          fixedTokenDelta = parseFloat(utils.formatEther(result[0]));
+          variableTokenDelta = parseFloat(utils.formatEther(result[1]));
+          feeIncured = parseFloat(utils.formatEther(result[2]));
+          fixedTokenDeltaUnbalanced = parseFloat(utils.formatEther(result[3]));
+        },
+        (error) => {
+          if (error.message.includes("MarginRequirementNotMet")) {
+            const args: string[] = error.message
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = parseFloat(utils.formatEther(args[0]));
+            tickAfter = parseInt(args[1]);
+            fixedTokenDelta = parseFloat(utils.formatEther(args[2]));
+            variableTokenDelta = parseFloat(utils.formatEther(args[3]));
+            feeIncured = parseFloat(utils.formatEther(args[4]));
+            fixedTokenDeltaUnbalanced = parseFloat(utils.formatEther(args[5]));
+          } else {
+            console.error(error.message);
+          }
+        }
+      );
+
+    console.log("          margin requirement:", marginRequirement);
+    console.log("                 tick before:", tickBefore);
+    console.log("                  tick after:", tickAfter);
+    console.log("           fixed token delta:", fixedTokenDelta);
+    console.log("        variable token delta:", variableTokenDelta);
+    console.log("                fee incurred:", feeIncured);
+    console.log("fixed token delta unbalanced:", fixedTokenDeltaUnbalanced);
+  });
+
+  it("swap quoter on different revert", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await marginEngineTest.updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+    await vammTest
+      .connect(wallet)
+      .mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("10000000"));
+
+    const tickBefore = await vammTest.getCurrentTick();
+    let marginRequirement: number = 0;
+    let tickAfter: number = 0;
+    let fixedTokenDelta: number = 0;
+    let variableTokenDelta: number = 0;
+    let feeIncured: number = 0;
+    let fixedTokenDeltaUnbalanced: number = 0;
+
+    await periphery
+      .connect(other)
+      .callStatic.swap({
+        marginEngineAddress: marginEngineTest.address,
+        recipient: other.address,
+        isFT: false,
+        notional: toBn("0"),
+        sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+        tickLower: 0,
+        tickUpper: 0,
+      })
+      .then(
+        async (result) => {
+          marginRequirement = parseFloat(utils.formatEther(result[4]));
+          tickAfter = await vammTest.getCurrentTick();
+          fixedTokenDelta = parseFloat(utils.formatEther(result[0]));
+          variableTokenDelta = parseFloat(utils.formatEther(result[1]));
+          feeIncured = parseFloat(utils.formatEther(result[2]));
+          fixedTokenDeltaUnbalanced = parseFloat(utils.formatEther(result[3]));
+        },
+        (error) => {
+          if (error.message.includes("MarginRequirementNotMet")) {
+            const args: string[] = error.message
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = parseFloat(utils.formatEther(args[0]));
+            tickAfter = parseInt(args[1]);
+            fixedTokenDelta = parseFloat(utils.formatEther(args[2]));
+            variableTokenDelta = parseFloat(utils.formatEther(args[3]));
+            feeIncured = parseFloat(utils.formatEther(args[4]));
+            fixedTokenDeltaUnbalanced = parseFloat(utils.formatEther(args[5]));
+          } else {
+            console.error(error.message);
+          }
+        }
+      );
+
+    console.log("          margin requirement:", marginRequirement);
+    console.log("                 tick before:", tickBefore);
+    console.log("                  tick after:", tickAfter);
+    console.log("           fixed token delta:", fixedTokenDelta);
+    console.log("        variable token delta:", variableTokenDelta);
+    console.log("                fee incurred:", feeIncured);
+    console.log("fixed token delta unbalanced:", fixedTokenDeltaUnbalanced);
+  });
+
+  it("mint quoter on revert", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    let marginRequirement: number = 0;
+    await periphery
+      .connect(wallet)
+      .callStatic.mintOrBurn({
+        marginEngineAddress: marginEngineTest.address,
+        recipient: wallet.address,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        notional: toBn("59997"), // equivalent to approximately 10,000,000 liquidity
+        isMint: true,
+      })
+      .then(
+        (result) => {
+          console.log("on success");
+          marginRequirement = parseFloat(utils.formatEther(result));
+        },
+        (error) => {
+          console.log("on revert");
+          if (error.message.includes("MarginLessThanMinimum")) {
+            const args: string[] = error.message
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = parseFloat(utils.formatEther(args[0]));
+          } else {
+            console.error(error);
+          }
+        }
+      );
+
+    console.log("          margin requirement:", marginRequirement);
+  });
+
+  it("mint quoter on success", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await marginEngineTest.updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+
+    let marginRequirement: number = 0;
+    await periphery
+      .connect(wallet)
+      .callStatic.mintOrBurn({
+        marginEngineAddress: marginEngineTest.address,
+        recipient: wallet.address,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        notional: toBn("59997"), // equivalent to approximately 10,000,000 liquidity
+        isMint: true,
+      })
+      .then(
+        (result) => {
+          console.log("on success");
+          marginRequirement = parseFloat(utils.formatEther(result));
+        },
+        (error) => {
+          console.log("on revert");
+          if (error.message.includes("MarginLessThanMinimum")) {
+            const args: string[] = error.message
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = parseFloat(utils.formatEther(args[0]));
+          } else {
+            console.error(error);
+          }
+        }
+      );
+
+    console.log("          margin requirement:", marginRequirement);
+  });
+
+  it("mint quoter from vamm", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await marginEngineTest.updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+
+    let marginRequirement: number = 0;
+    await vammTest
+      .connect(wallet)
+      .callStatic.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("10000000")
+      )
+      .then(
+        (result) => {
+          console.log("on success");
+          marginRequirement = parseFloat(utils.formatEther(result));
+        },
+        (error) => {
+          console.log("on revert");
+          if (error.message.includes("MarginLessThanMinimum")) {
+            const args: string[] = error.message
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = parseFloat(utils.formatEther(args[0]));
+          } else {
+            console.error(error);
+          }
+        }
+      );
+
+    console.log("          margin requirement:", marginRequirement);
+  });
+
+  it("mint quoter on different revert", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    let marginRequirement: number = 0;
+    await periphery
+      .connect(wallet)
+      .callStatic.mintOrBurn({
+        marginEngineAddress: marginEngineTest.address,
+        recipient: wallet.address,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        notional: toBn("0"),
+        isMint: true,
+      })
+      .then(
+        (result) => {
+          console.log("on success");
+          marginRequirement = parseFloat(utils.formatEther(result));
+        },
+        (error) => {
+          console.log("on revert");
+          if (error.message.includes("MarginLessThanMinimum")) {
+            const args: string[] = error.message
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = parseFloat(utils.formatEther(args[0]));
+          } else {
+            console.error(error);
+          }
+        }
+      );
+
+    console.log("          margin requirement:", marginRequirement);
+  });
+
+  it("update position margin on revert", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await marginEngineTest.updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+
+    await vammTest
+      .connect(wallet)
+      .mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("10000000"));
+
+    let marginRequirement: number = 0;
+    await marginEngineTest.callStatic
+      .updatePositionMargin(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("-999")
+      )
+      .then(
+        (_) => {
+          console.log("on success");
+        },
+        (error) => {
+          console.log("on revert");
+          if (error.message.includes("MarginLessThanMinimum")) {
+            const args: string[] = error.message
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = parseFloat(utils.formatEther(args[0]));
+          } else {
+            console.error(error);
+          }
+        }
+      );
+
+    console.log("          margin requirement:", marginRequirement);
+  });
+
+  it("update position margin on revert", async () => {
+    await factory.connect(wallet).setApproval(periphery.address, true);
+    await factory.connect(other).setApproval(periphery.address, true);
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await marginEngineTest.updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+
+    await vammTest
+      .connect(wallet)
+      .mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("10000000"));
+
+    let liquidationThreshold: number = 0;
+    await marginEngineTest.callStatic
+      .liquidatePosition(-TICK_SPACING, TICK_SPACING, wallet.address)
+      .then(
+        (_) => {
+          console.log("on success");
+        },
+        (error) => {
+          console.log("on revert");
+          if (error.message.includes("CannotLiquidate")) {
+            const args: string[] = error.message
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            liquidationThreshold = parseFloat(utils.formatEther(args[0]));
+          } else {
+            console.error(error);
+          }
+        }
+      );
+
+    console.log("liquidation threshion:", liquidationThreshold);
   });
 
   it("approvals work as expected", async () => {
