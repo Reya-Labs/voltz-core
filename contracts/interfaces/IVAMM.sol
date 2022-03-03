@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./IMarginEngine.sol";
 import "./IFactory.sol";
 import "./IPositionStructs.sol";
+import "../core_libraries/Tick.sol";
 
 interface IVAMM is IPositionStructs {
     // events
@@ -73,9 +74,9 @@ interface IVAMM is IPositionStructs {
     // structs
 
     struct VAMMVars {
-        /// @dev the current sqrt price in the vamm
+        /// @dev The current price of the pool as a sqrt(variableToken/fixedToken) Q64.96 value
         uint160 sqrtPriceX96;
-        /// @dev the current tick in the vamm
+        /// @dev The current tick of the vamm, i.e. according to the last tick transition that was run.
         int24 tick;
         // the current protocol fee as a percentage of the swap fee taken on withdrawal
         // represented as an integer denominator (1/x)%
@@ -170,10 +171,6 @@ interface IVAMM is IPositionStructs {
     /// @return The fee in wei
     function feeWad() external view returns (uint256);
 
-    /// @notice whether the vamm is locked
-    /// @return The boolean, true if the vamm is unlocked
-    function unlocked() external view returns (bool);
-
     /// @notice The vamm tick spacing
     /// @dev Ticks can only be used at multiples of this value, minimum of 1 and always positive
     /// e.g.: a tickSpacing of 3 means ticks can be initialized every 3rd tick, i.e., ..., -6, -3, 0, 3, 6, ...
@@ -189,17 +186,8 @@ interface IVAMM is IPositionStructs {
 
     // state variables
 
-    /// @return sqrtPriceX96 The current price of the pool as a sqrt(variableToken/fixedToken) Q64.96 value
-    /// @return tick The current tick of the vamm, i.e. according to the last tick transition that was run.
-    /// @return feeProtocol feeProtocol
-    function vammVars()
-        external
-        view
-        returns (
-            uint160 sqrtPriceX96,
-            int24 tick,
-            uint8 feeProtocol
-        );
+    /// @return The current VAMM Vars (see struct definition for semantics)
+    function vammVars() external view returns (VAMMVars memory);
 
     /// @notice The fixed token growth in wei, accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
@@ -280,22 +268,10 @@ interface IVAMM is IPositionStructs {
 
     /// @notice Look up information about a specific tick in the amm
     /// @param tick The tick to look up
-    /// @return liquidityGross the total amount of position liquidity that uses the vamm either as tick lower or
-    /// tick upper,
-    /// liquidityNet how much liquidity changes when the vamm price crosses the tick,
-    /// feeGrowthOutsideX128 the fee growth on the other side of the tick from the current tick in underlying token
-    /// i.e. if liquidityGross is greater than 0. In addition, these values are only relative.
-    function ticks(int24 tick)
-        external
-        view
-        returns (
-            uint128 liquidityGross,
-            int128 liquidityNet,
-            int256 fixedTokenGrowthOutside,
-            int256 variableTokenGrowthOutside,
-            uint256 feeGrowthOutside,
-            bool initialized
-        );
+    /// @return liquidityGross: the total amount of position liquidity that uses the vamm either as tick lower or tick upper,
+    /// liquidityNet: how much liquidity changes when the vamm price crosses the tick,
+    /// feeGrowthOutsideX128: the fee growth on the other side of the tick from the current tick in underlying token. i.e. if liquidityGross is greater than 0. In addition, these values are only relative.
+    function ticks(int24 tick) external view returns (Tick.Info memory);
 
     /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
     function tickBitmap(int16 wordPosition) external view returns (uint256);

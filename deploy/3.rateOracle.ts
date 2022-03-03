@@ -46,9 +46,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     for (const token of aaveTokens) {
       const rateOracleIdentifier = `AaveRateOracle_${token.name}`;
-      let rateOracle = await ethers.getContractOrNull(rateOracleIdentifier);
+      let rateOracleContract = await ethers.getContractOrNull(
+        rateOracleIdentifier
+      );
 
-      if (rateOracle) {
+      if (rateOracleContract) {
         // Check the buffer size and increase if required
       } else {
         // There is no Aave rate oracle already deployed for this token. Deploy one now.
@@ -71,7 +73,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             `Created ${token.name} (${token.address}) rate oracle for Aave lending pool ${aaveLendingPool.address}`
           );
 
-          rateOracle = (await ethers.getContract(
+          const rateOracle = (await ethers.getContract(
             rateOracleIdentifier
           )) as AaveRateOracle;
 
@@ -82,11 +84,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       // Ensure the buffer is big enough
       await checkBufferSize(
-        rateOracle as AaveRateOracle,
+        rateOracleContract as AaveRateOracle,
         token.rateOracleBufferSize
       );
       await checkMinSecondsSinceLastUpdate(
-        rateOracle as AaveRateOracle,
+        rateOracleContract as AaveRateOracle,
         token.minSecondsSinceLastUpdate
       );
     }
