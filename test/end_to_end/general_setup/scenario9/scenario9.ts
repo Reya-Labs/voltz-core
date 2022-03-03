@@ -32,12 +32,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       await advanceTimeAndBlock(consts.ONE_HOUR.mul(6), 1);
 
       for (const p of this.positions) {
-        await this.marginEngineTest.isLiquidatablePositionTest(
-          p[0],
-          p[1],
-          p[2]
-        );
-        const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
+        // await this.marginEngineTest.isLiquidatablePositionTest(
+        //   p[0],
+        //   p[1],
+        //   p[2]
+        // );
+        // const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
+        const isLiquidatable = false;
 
         try {
           if (isLiquidatable) {
@@ -64,25 +65,26 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const p = this.positions[randomInt(0, 5)];
         const liquidityDelta = randomInt(10000, 100000);
         const liquidityDeltaBn = toBn(liquidityDelta.toString());
-        const positionInfo = await this.marginEngineTest.getPosition(
-          p[0],
-          p[1],
-          p[2]
-        );
+        // const positionInfo = await this.marginEngineTest.getPosition(
+        //   p[0],
+        //   p[1],
+        //   p[2]
+        // );
 
-        await this.marginEngineTest.getCounterfactualMarginRequirementTest(
-          p[0],
-          p[1],
-          p[2],
-          liquidityDeltaBn,
-          positionInfo.fixedTokenBalance,
-          positionInfo.variableTokenBalance,
-          positionInfo.margin,
-          false
-        );
+        // await this.marginEngineTest.getCounterfactualMarginRequirementTest(
+        //   p[0],
+        //   p[1],
+        //   p[2],
+        //   liquidityDeltaBn,
+        //   positionInfo.fixedTokenBalance,
+        //   positionInfo.variableTokenBalance,
+        //   positionInfo.margin,
+        //   false
+        // );
 
-        const positionMarginRequirement =
-          await this.marginEngineTest.getMargin();
+        // const positionMarginRequirement =
+        //   await this.marginEngineTest.getMargin();
+        const positionMarginRequirement = BigNumber.from(0);
 
         console.log(
           "margin delta:",
@@ -165,12 +167,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
 
       for (const p of this.positions) {
-        await this.marginEngineTest.isLiquidatablePositionTest(
-          p[0],
-          p[1],
-          p[2]
-        );
-        const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
+        // AB: bring back the below
+        // await this.marginEngineTest.isLiquidatablePositionTest(
+        //   p[0],
+        //   p[1],
+        //   p[2]
+        // );
+        // const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
+        const isLiquidatable = false;
 
         try {
           if (isLiquidatable) {

@@ -90,12 +90,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         utils.formatEther(this.variableFactorWad)
       );
 
-      await this.marginEngineTest.isLiquidatablePositionTest(
-        this.positions[0][0],
-        this.positions[0][1],
-        this.positions[0][2]
-      );
-      const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
+      // AB: bring back
+      // await this.marginEngineTest.isLiquidatablePositionTest(
+      //   this.positions[0][0],
+      //   this.positions[0][1],
+      //   this.positions[0][2]
+      // );
+      // const isLiquidatable = await this.marginEngineTest.getIsLiquidatable();
+      const isLiquidatable = false;
 
       if (isLiquidatable) {
         await this.e2eSetup.liquidatePosition(
