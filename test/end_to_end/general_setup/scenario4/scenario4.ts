@@ -40,11 +40,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const p = this.positions[randomInt(0, 5)];
         const liquidityDelta = randomInt(10000, 100000);
         const liquidityDeltaBn = toBn(liquidityDelta.toString());
-        const positionInfo = await this.marginEngineTest.getPosition(
-          p[0],
-          p[1],
-          p[2]
-        );
+        // const positionInfo = await this.marginEngineTest.getPosition(
+        //   p[0],
+        //   p[1],
+        //   p[2]
+        // );
 
         // await this.marginEngineTest.getCounterfactualMarginRequirementTest(
         //   p[0],
@@ -59,8 +59,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
         // const positionMarginRequirement =
         //   await this.marginEngineTest.getMargin();
-        const positionMarginRequirement = BigNumber.from(0) // ab: this needs to be fixed asap (temporary work around since the test is skipped)
-          
+        const positionMarginRequirement = BigNumber.from(0); // ab: this needs to be fixed asap (temporary work around since the test is skipped)
+
         await this.e2eSetup.updatePositionMargin(
           p[0],
           p[1],
