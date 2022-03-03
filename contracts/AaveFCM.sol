@@ -118,7 +118,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
         tickUpper: tickSpacing
     });
 
-    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred,) = vamm.swap(params);
+    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, ,) = vamm.swap(params);
 
     // deposit notional executed in terms of aTokens (e.g. aUSDC) to fully collateralise your position
     /// @audit-casting variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
@@ -189,7 +189,7 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
         tickUpper: tickSpacing
     });
 
-    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred,) = vamm.swap(params);
+    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, ,) = vamm.swap(params);
         
     // update trader fixed and variable token balances
     
@@ -323,7 +323,9 @@ contract AaveFCM is IFCM, Initializable, OwnableUpgradeable, PausableUpgradeable
   /// @dev in case of aave this is done by withdrawing aTokens from the aaveLendingPools resulting in burning of the aTokens in exchange for the ability to transfer underlying tokens to the margin engine trader
   function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine override {
     /// if aave's reserves are depleted the withdraw operation below will fail, in that scenario need to either withdraw as much as possible or transfer aTokens directly
+    console.log("here 2?");
     aaveLendingPool.withdraw(address(underlyingToken), marginDeltaInUnderlyingTokens, _account);
+    console.log("here 3?");
   }
 
 

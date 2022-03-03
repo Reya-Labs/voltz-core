@@ -172,7 +172,7 @@ describe("FCM", () => {
     await marginEngineTest.setSecondsAgo(86400);
   });
 
-  describe.skip("#fcm", () => {
+  describe("#fcm", () => {
     beforeEach("initialize the pool at price of 1:1", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token
@@ -321,9 +321,10 @@ describe("FCM", () => {
           other.address,
           -TICK_SPACING,
           TICK_SPACING,
-          mul(finalPositionMargin, toBn("-1"))
+          mul(finalPositionMargin, toBn("-1")).add(1)
         );
 
+      console.log("here?");
       const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(
         other.address,
         -TICK_SPACING,
@@ -332,7 +333,7 @@ describe("FCM", () => {
       const finalPositionMarginPostUpdateMargin =
         positionInfoPostUpdateMargin.margin;
 
-      expect(finalPositionMarginPostUpdateMargin).to.eq(0);
+      expect(finalPositionMarginPostUpdateMargin).to.be.near(toBn("0"));
 
       // calculate the return of the LP
 

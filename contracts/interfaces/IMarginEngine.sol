@@ -160,13 +160,41 @@ interface IMarginEngine is IPositionStructs {
     error PositionNetZero();
 
     /// @dev Cannot have less margin than the minimum requirement
-    error MarginLessThanMinimum();
+    error MarginLessThanMinimum(int256 marginRequirement);
 
     /// @dev We can't withdraw more margin than we have
     error WithdrawalExceedsCurrentMargin();
 
     /// @dev Position must be settled after AMM has reached maturity
     error PositionNotSettled();
+
+    /// The resulting margin does not meet minimum requirements
+    error MarginRequirementNotMet(
+        int256 marginRequirement,
+        int24 tick,
+        int256 fixedTokenDelta,
+        int256 variableTokenDelta,
+        uint256 cumulativeFeeIncurred,
+        int256 fixedTokenDeltaUnbalanced
+    );
+
+    /// The position/trader needs to be below the liquidation threshold to be liquidated
+    error CannotLiquidate(uint256 marginRequirement);
+
+    /// Only the position/trade owner can update the LP/Trader margin
+    error OnlyOwnerCanUpdatePosition();
+
+    error OnlyVAMM();
+
+    error OnlyFCM();
+
+    /// Margin delta must not equal zero
+    error InvalidMarginDelta();
+
+    /// Positions and Traders cannot be settled before the applicable interest rate swap has matured
+    error CannotSettleBeforeMaturity();
+
+    error closeToOrBeyondMaturity();
 
     /// @dev "constructor" for proxy instances
     function initialize(
@@ -275,7 +303,7 @@ interface IMarginEngine is IPositionStructs {
     /// @param params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _) and the liquidity delta that needs to be applied to position._liquidity
     function updatePositionPostVAMMInducedMintBurn(
         IPositionStructs.ModifyPositionParams memory params
-    ) external;
+    ) external returns (int256 positionMarginRequirement);
 
     // @notive Update a position post VAMM induced swap
     /// @dev Since every position can also engage in swaps with the VAMM, this function needs to be invoked after non-external calls are made to the VAMM's swap function
@@ -290,8 +318,9 @@ interface IMarginEngine is IPositionStructs {
         int24 tickUpper,
         int256 fixedTokenDelta,
         int256 variableTokenDelta,
-        uint256 cumulativeFeeIncurred
-    ) external;
+        uint256 cumulativeFeeIncurred,
+        int256 fixedTokenDeltaUnbalanced
+    ) external returns (int256 positionMarginRequirement);
 
     /// @notice function that can only be called by the owner enables collection of protocol generated fees from any give margin engine
     /// @param recipient the address which collects the protocol generated fees

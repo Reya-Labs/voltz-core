@@ -83,26 +83,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         __Ownable_init();
         __Pausable_init();
     }
-
-    /// Only the position/trade owner can update the LP/Trader margin
-    error OnlyOwnerCanUpdatePosition();
-
-    error OnlyVAMM();
-
-    error OnlyFCM();
-
-    /// Margin delta must not equal zero
-    error InvalidMarginDelta();
-
-    /// Positions and Traders cannot be settled before the applicable interest rate swap has matured
-    error CannotSettleBeforeMaturity();
-
-    /// The position/trader needs to be below the liquidation threshold to be liquidated
-    error CannotLiquidate();
-
-    /// The resulting margin does not meet minimum requirements
-    error MarginRequirementNotMet(int256 marginRequirement, int24 tick);
-
+    
     modifier nonZeroDelta (int256 marginDelta) {
         if (marginDelta == 0) {
             revert InvalidMarginDelta();
@@ -139,7 +120,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
     modifier checkCurrentTimestampTermEndTimestampDelta() {
         if (Time.isCloseToMaturityOrBeyondMaturity(termEndTimestampWad)) {
-        revert("closeToOrBeyondMaturity");
+            revert closeToOrBeyondMaturity();
         }
         _;
     }
@@ -276,6 +257,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
 
+        Printer.printInt256("position margin", position.margin);
+        Printer.printInt256("   margin delta", marginDelta);
         require((position.margin + marginDelta) >= 0, "can't withdraw more than have");
         
         if (marginDelta < 0) {
@@ -391,10 +374,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
         
-        bool isLiquidatable = isLiquidatablePosition(position, tickLower, tickUpper);
+        (bool isLiquidatable, uint256 marginRequirement) = isLiquidatablePosition(position, tickLower, tickUpper);
 
         if (!isLiquidatable) {
-            revert CannotLiquidate();
+            revert CannotLiquidate(marginRequirement);
         }
 
         if (position.rewardPerAmount == 0) {
@@ -445,7 +428,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
 
     /// @inheritdoc IMarginEngine
-    function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external onlyVAMM override {
+    function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external onlyVAMM override returns(int256 positionMarginRequirement) {
 
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
 
@@ -453,8 +436,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         position.updateLiquidity(params.liquidityDelta);
 
+        positionMarginRequirement = 0;
         if (params.liquidityDelta>0) {
-            checkPositionMarginAboveRequirement(position, params.tickLower, params.tickUpper);
+            positionMarginRequirement = checkPositionMarginAboveRequirement(position, params.tickLower, params.tickUpper);
         }
 
         position.rewardPerAmount = 0;
@@ -464,7 +448,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
     /// @inheritdoc IMarginEngine
-    function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred) external onlyVAMM override {
+    function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) external onlyVAMM override returns(int256 positionMarginRequirement) {
         /// @dev this function can only be called by the vamm following a swap    
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
@@ -476,13 +460,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
-        int256 positionMarginRequirement = int256(
+        positionMarginRequirement = int256(
             getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
 
         if (positionMarginRequirement > position.margin) {
             (, int24 tick, ) = vamm.vammVars();
-            revert MarginRequirementNotMet(positionMarginRequirement, tick);
+            revert MarginRequirementNotMet(positionMarginRequirement, tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
         }
 
         position.rewardPerAmount = 0;
@@ -535,14 +519,14 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper
-    ) internal {
+    ) internal returns(int256 positionMarginRequirement) {
     
-        int256 positionMarginRequirement = int256(
+        positionMarginRequirement = int256(
             getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
 
         if (position.margin <= positionMarginRequirement) {
-            revert MarginLessThanMinimum();
+            revert MarginLessThanMinimum(positionMarginRequirement);
         }
     }
 
@@ -621,7 +605,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred,) = vamm.swap(params);
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = vamm.swap(params);
             } else {
 
                 /// @dev get into a Fixed Taker swap (the opposite of LP's current position)
@@ -638,7 +622,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred,) = vamm.swap(params);
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = vamm.swap(params);
             }
 
             if (_cumulativeFeeIncurred > 0) {
@@ -755,8 +739,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper
-    ) internal returns (bool _isLiquidatable) {
-        uint256 marginRequirement = getPositionMarginRequirement(
+    ) internal returns (bool _isLiquidatable, uint256 marginRequirement) {
+        marginRequirement = getPositionMarginRequirement(
             position,
             tickLower,
             tickUpper,
@@ -968,10 +952,4 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                 .minMarginToIncentiviseLiquidators;
         }
     }
-
-    error Negative(int256);
-    function revertWithReason(int256 a) external pure returns (uint256) {
-        if (a < 0) revert Negative(a);
-        else return uint256(a);
-    } 
 }

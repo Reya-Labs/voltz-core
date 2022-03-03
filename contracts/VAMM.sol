@@ -162,7 +162,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override whenNotPaused lock {
+  ) external override whenNotPaused lock returns(int256 positionMarginRequirement) {
 
     /// @dev if msg.sender is the MarginEngine, it is a burn induced by a position liquidation
 
@@ -172,7 +172,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     require((msg.sender==recipient) || (msg.sender == address(marginEngine)) || factory.isApproved(recipient, msg.sender) , "MS or ME");
 
-    updatePosition(
+    positionMarginRequirement = updatePosition(
       ModifyPositionParams({
         owner: recipient,
         tickLower: tickLower,
@@ -220,7 +220,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
   }
 
 
-  function updatePosition(ModifyPositionParams memory params) private {
+  function updatePosition(ModifyPositionParams memory params) private returns(int256 positionMarginRequirement) {
 
     /// @dev give a more descriptive name
 
@@ -236,10 +236,11 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
       (flippedLower, flippedUpper) = flipTicks(params);
     }
 
+    positionMarginRequirement = 0;
     if (msg.sender != address(marginEngine)) { 
       // this only happens if the margin engine triggers a liquidation which in turn triggers a burn
       // the state updated in the margin engine in that case are done directly in the liquidatePosition function
-      marginEngine.updatePositionPostVAMMInducedMintBurn(params);
+      positionMarginRequirement = marginEngine.updatePositionPostVAMMInducedMintBurn(params);
     }
 
     // clear any tick data that is no longer needed
@@ -275,7 +276,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock {
+  ) external override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock returns(int256 positionMarginRequirement) {
 
     /// might be helpful to have a higher level peripheral function for minting a given amount given a certain amount of notional an LP wants to support
 
@@ -285,7 +286,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     require(msg.sender==recipient || factory.isApproved(recipient, msg.sender), "only msg.sender or approved can mint");
 
-    updatePosition(
+    positionMarginRequirement = updatePosition(
       ModifyPositionParams({
         owner: recipient,
         tickLower: tickLower,
@@ -304,7 +305,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
     override
     whenNotPaused
     checkCurrentTimestampTermEndTimestampDelta
-    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced)
+    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced, int256 _marginRequirement)
   {
 
     VAMMVars memory vammVarsStart = vammVars;
@@ -522,7 +523,7 @@ contract VAMM is IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
     if (!params.isExternal) {
-      marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred);
+      _marginRequirement = marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, state.fixedTokenDeltaUnbalancedCumulative);
     }
     
     emit Swap(

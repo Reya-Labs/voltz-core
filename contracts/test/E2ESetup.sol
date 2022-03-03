@@ -45,7 +45,8 @@ contract Actor {
             _fixedTokenDelta,
             _variableTokenDelta,
             _cumulativeFeeIncurred,
-            _fixedTokenDeltaUnbalanced
+            _fixedTokenDeltaUnbalanced,
+
         ) = IVAMM(VAMMAddress).swap(params);
     }
 

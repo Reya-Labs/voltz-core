@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "../utils/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
+import "../utils/Printer.sol";
 
 // import "../utils/Printer.sol";
 
@@ -197,6 +198,11 @@ library Tick {
         Tick.Info storage info = self[tick];
 
         uint128 liquidityGrossBefore = info.liquidityGross;
+        Printer.printInt128("liquidityDelta", liquidityDelta);
+        require(
+            int128(info.liquidityGross) + liquidityDelta >= 0,
+            "not enough liquidity to burn"
+        );
         uint128 liquidityGrossAfter = LiquidityMath.addDelta(
             liquidityGrossBefore,
             liquidityDelta
