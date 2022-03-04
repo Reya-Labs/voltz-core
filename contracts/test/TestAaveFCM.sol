@@ -19,15 +19,15 @@ contract TestAaveFCM is AaveFCM {
     }
 
     function getVAMMAddress() external view returns (address) {
-        return address(vamm);
+        return address(_vamm);
     }
 
     function getUnderlyingYieldBearingToken() external view returns (address) {
-        return address(underlyingYieldBearingToken);
+        return address(_underlyingYieldBearingToken);
     }
 
     function getAaveLendingPool() external view returns (address) {
-        return address(aaveLendingPool);
+        return address(_aaveLendingPool);
     }
 
     function estimateSettlementCashflow(

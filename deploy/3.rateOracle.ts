@@ -46,7 +46,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     for (const token of aaveTokens) {
       const rateOracleIdentifier = `AaveRateOracle_${token.name}`;
-      let rateOracleContract = await ethers.getContractOrNull(
+      const rateOracleContract = await ethers.getContractOrNull(
         rateOracleIdentifier
       );
 
