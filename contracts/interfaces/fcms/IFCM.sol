@@ -64,6 +64,4 @@ interface IFCM {
     /// @notice Rate Oracle linked to the Full Collateralisation Module
     /// @return Rate Oracle linked to the Full Collateralisation Module
     function rateOracle() external view returns (IRateOracle);
-
-    function underlyingToken() external view returns (IERC20Minimal);
 }
