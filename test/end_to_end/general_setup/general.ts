@@ -65,8 +65,6 @@ export class ScenarioRunner {
 
   outputFile!: string;
 
-  // loadFixture!: ReturnType<typeof createFixtureLoader>;
-
   // global variables (to avoid recomputing them)
   lowerApyBound: BigNumber = toBn("0");
   historicalApyWad: BigNumber = toBn("0");
@@ -77,6 +75,7 @@ export class ScenarioRunner {
   currentTick: number = 0;
 
   async mintAndApprove(address: string) {
+    // todo: consider adding an extra argument to this function amount so that the amount minted and approved is not hardcoded for more granular tests
     await this.token.mint(address, BigNumber.from(10).pow(27));
     await this.token.approve(address, BigNumber.from(10).pow(27));
   }
