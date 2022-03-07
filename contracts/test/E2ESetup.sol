@@ -13,31 +13,39 @@ import "../interfaces/IPeriphery.sol";
 import "../utils/WayRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-
 // todo: need a separate file for the actor contract: convention is 1 file per contract
 contract Actor {
-    
     function mintOrBurnViaPeriphery(
         address peripheryAddress,
         IPeriphery.MintOrBurnParams memory params
     ) external returns (int256 positionMarginRequirement) {
-        positionMarginRequirement = IPeriphery(peripheryAddress).mintOrBurn(params);
+        positionMarginRequirement = IPeriphery(peripheryAddress).mintOrBurn(
+            params
+        );
     }
 
     function swapViaPeriphery(
-       address peripheryAddress,
-       IPeriphery.SwapPeripheryParams memory params
-    ) external returns (
-        int256 _fixedTokenDelta,
-        int256 _variableTokenDelta,
-        uint256 _cumulativeFeeIncurred,
-        int256 _fixedTokenDeltaUnbalanced,
-        int256 _marginRequirement
-        ) 
+        address peripheryAddress,
+        IPeriphery.SwapPeripheryParams memory params
+    )
+        external
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement
+        )
     {
-        (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, _fixedTokenDeltaUnbalanced, _marginRequirement) = IPeriphery(peripheryAddress).swap(params);
+        (
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced,
+            _marginRequirement
+        ) = IPeriphery(peripheryAddress).swap(params);
     }
-    
+
     function mint(
         address VAMMAddress,
         address recipient,
@@ -77,7 +85,9 @@ contract Actor {
     }
 
     function setIntegrationApproval(
-       address MEAddress, address intAddress, bool allowIntegration
+        address MEAddress,
+        address intAddress,
+        bool allowIntegration
     ) external {
         // get the factory
         IFactory factory = IMarginEngine(MEAddress).factory();
@@ -336,27 +346,26 @@ contract E2ESetup {
         continuousInvariants();
     }
 
-
-    function mintOrBurnViaPeriphery(IPeriphery.MintOrBurnParams memory params) public returns (int256 positionMarginRequirement) { 
-        
-        positionMarginRequirement = Actor(params.recipient).mintOrBurnViaPeriphery(
-            peripheryAddress,
-            params
-        );
-
-    }
-
-    function swapViaPeriphery(IPeriphery.SwapPeripheryParams memory params) public returns (int256 positionMarginRequirement, uint256 cumulativeFeeIncurred)
+    function mintOrBurnViaPeriphery(IPeriphery.MintOrBurnParams memory params)
+        public
+        returns (int256 positionMarginRequirement)
     {
-        
-        (,,cumulativeFeeIncurred,,positionMarginRequirement) = Actor(params.recipient).swapViaPeriphery(
-            peripheryAddress,
-            params
-        );
-
+        positionMarginRequirement = Actor(params.recipient)
+            .mintOrBurnViaPeriphery(peripheryAddress, params);
     }
 
-    
+    function swapViaPeriphery(IPeriphery.SwapPeripheryParams memory params)
+        public
+        returns (
+            int256 positionMarginRequirement,
+            uint256 cumulativeFeeIncurred
+        )
+    {
+        (, , cumulativeFeeIncurred, , positionMarginRequirement) = Actor(
+            params.recipient
+        ).swapViaPeriphery(peripheryAddress, params);
+    }
+
     function mint(
         address recipient,
         int24 tickLower,

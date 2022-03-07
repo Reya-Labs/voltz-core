@@ -616,10 +616,10 @@ export const e2eScenarios: e2eParameters[] = [
     fee: toBn("0.0005"),
     tickSpacing: TICK_SPACING,
     positions: [
-      // lower tick: 8% -> 1.0001^(UPPER_TICK) = price = 1/(fixed rate), if fixed rate is 8%, 1.0001^(UPPER_TICK)=1/8 => UPPER_TICK approx. = -20795 
+      // lower tick: 8% -> 1.0001^(UPPER_TICK) = price = 1/(fixed rate), if fixed rate is 8%, 1.0001^(UPPER_TICK)=1/8 => UPPER_TICK approx. = -20795
       // upper tick: 12% -> if fixed rate is 12%, 1.0001^(UPPER_TICK)=1/12 => UPPER_TICK approx. = -24850
       [0, -24840, -20700],
-      [1, -24840, -20700]
+      [1, -24840, -20700],
     ],
     skipped: false,
   },

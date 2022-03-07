@@ -9,9 +9,7 @@ import "../utils/TickMath.sol";
 import "./peripheral_libraries/LiquidityAmounts.sol";
 import "hardhat/console.sol";
 
-
 contract Periphery is IPeriphery {
-
     function getMarginEngine(address marginEngineAddress)
         public
         pure
@@ -123,5 +121,4 @@ contract Periphery is IPeriphery {
 
         return vamm.swap(swapParams);
     }
-
 }

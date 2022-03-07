@@ -1,5 +1,5 @@
 import { ethers, waffle } from "hardhat";
-import { BigNumber, Signer, utils, Wallet } from "ethers";
+import { BigNumber, utils, Wallet } from "ethers";
 import { TestVAMM } from "../../../typechain/TestVAMM";
 import {
   E2ESetupFixture,
@@ -27,7 +27,7 @@ import {
 import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 import { e2eParameters } from "./e2eSetup";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+// import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { toBn } from "../../helpers/toBn";
 import { consts } from "../../helpers/constants";
 import { createFixtureLoader } from "ethereum-waffle";
@@ -197,11 +197,11 @@ export class ScenarioRunner {
     );
 
     for (let i = 0; i < this.positions.length; i++) {
-      const positionHistory = await this.e2eSetup.getPositionHistory(
-        this.positions[i][0],
-        this.positions[i][1],
-        this.positions[i][2]
-      );
+      // const positionHistory = await this.e2eSetup.getPositionHistory(
+      //   this.positions[i][0],
+      //   this.positions[i][1],
+      //   this.positions[i][2]
+      // );
 
       let positionInfo = await this.marginEngineTest.getPosition(
         this.positions[i][0],
@@ -421,7 +421,6 @@ export class ScenarioRunner {
   }
 
   async init(isProd: boolean = false) {
-
     this.owner = provider.getWallets()[0];
     provider.getSigner();
 
@@ -457,19 +456,19 @@ export class ScenarioRunner {
         this.token.address,
         "1000000000000000000000000000" // 10^27
       );
-  
+
       // await rateOracleTest.testGrow(100);
       await this.rateOracleTest.increaseObservationCardinalityNext(100);
       // write oracle entry
       await this.rateOracleTest.writeOracleEntry();
       // advance time after first write to the oracle
       await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
-  
+
       await this.aaveLendingPool.setReserveNormalizedIncome(
         this.token.address,
         "1008000000000000000000000000" // 10^27 * 1.008
       );
-  
+
       await this.rateOracleTest.writeOracleEntry();
     }
 
@@ -581,8 +580,11 @@ export class ScenarioRunner {
       );
 
       // set approval for the periphery to act on belalf of the actor
-      await actor.setIntegrationApproval(this.marginEngineTest.address, this.periphery.address, true)
-
+      await actor.setIntegrationApproval(
+        this.marginEngineTest.address,
+        this.periphery.address,
+        true
+      );
     }
 
     await this.token.approveInternal(
@@ -767,9 +769,6 @@ export class ScenarioRunner {
     // );
     // console.log("");
     // return positionMarginRequirement;
-
-    
-
   }
 
   async getVT(towards: string) {
