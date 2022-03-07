@@ -216,7 +216,7 @@ export class ScenarioRunner {
       //   false
       // );
 
-      // fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
+      fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
       positionInfo = await this.marginEngineTest.getPosition(
         this.positions[i][0],
         this.positions[i][1],

@@ -1,6 +1,7 @@
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
+import { advanceTimeAndBlock } from "../../../helpers/time";
 import { add } from "../../../shared/functions";
 import { TickMath } from "../../../shared/tickMath";
 import { e2eScenarios } from "../e2eSetup";
@@ -52,6 +53,12 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         this.positions[positionIndex][2],
         marginRequirement
       );
+
+      const local_fs = require("fs");
+      local_fs.appendFileSync(
+        "test/end_to_end/general_setup/apySims/margin_requirements.txt",
+        "initial margin: " + utils.formatEther(marginRequirement) + "\n"
+      );
     }
 
     // mint liquidity
@@ -66,6 +73,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   }
 
   async executeSwap(
+    day: number,
     positionIndex: number,
     isFT: boolean,
     sqrtPriceLimitX96: string
@@ -86,7 +94,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       })
       .then(
         // todo: add interface for the result to avoid using [] notation to query result elements
-        async (_: any) => {
+        async (result) => {
+          // console.log(result);
+          marginRequirement = result[0].toString();
+          cumulativeFees = result[1].toString();
+
           // Do nothing since the margin requirement is already satisfied (proven by a successful simulation of the swap)
         },
         (error: any) => {
@@ -114,9 +126,21 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         this.positions[positionIndex][0],
         this.positions[positionIndex][1],
         this.positions[positionIndex][2],
-        add(BigNumber.from(marginRequirement), BigNumber.from(cumulativeFees)) // add margin requirement and fees to get the amount to deposit
+        add(
+          add(
+            BigNumber.from(marginRequirement),
+            BigNumber.from(cumulativeFees)
+          ),
+          toBn("100")
+        ) // add margin requirement and fees to get the amount to deposit
       );
     }
+
+    const local_fs = require("fs");
+    local_fs.appendFileSync(
+      "test/end_to_end/general_setup/apySims/fees.txt",
+      "day " + day.toString() + ":" + utils.formatEther(cumulativeFees) + "\n"
+    );
 
     // swap
     await this.e2eSetup.swapViaPeriphery({
@@ -136,23 +160,62 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.rateOracleTest.increaseObservationCardinalityNext(1000);
     await this.rateOracleTest.increaseObservationCardinalityNext(2000);
 
+    const local_fs = require("fs");
+    local_fs.writeFileSync(
+      "test/end_to_end/general_setup/apySims/fees.txt",
+      ""
+    );
+    local_fs.writeFileSync(
+      "test/end_to_end/general_setup/apySims/margin_requirements.txt",
+      ""
+    );
+
     await this.executeMint(0);
 
     // advance one day per step
     for (let i = 0; i < 364; i++) {
+      console.log("day", i);
       await this.exportSnapshot("step " + i.toString());
 
       await this.executeSwap(
+        i,
         1,
         true,
         TickMath.getSqrtRatioAtTick(this.positions[0][2]).toString()
       );
       // reverse swap
       await this.executeSwap(
+        i,
         1,
         false,
         TickMath.getSqrtRatioAtTick(this.positions[0][1]).toString()
       );
+
+      //   const minter_position_margin_requirement = await this.e2eSetup.callStatic.mintOrBurnViaPeriphery(this.positions[0][0], this.positions[0][1], this.positions[0][2], true, toBn("0.000001"));
+      //   let minter_liquidation_threshold = 0;
+      //   await this.marginEngineTest.callStatic
+      //   .liquidatePosition(this.positions[1][1], this.positions[1][2], this.positions[1][0])
+      //   .then(
+      //     (_) => {
+      //       console.log("on success");
+      //     },
+      //     (error) => {
+      //       console.log("on revert");
+      //       if (error.message.includes("CannotLiquidate")) {
+      //         const args: string[] = error.message
+      //           .split("(")[1]
+      //           .split(")")[0]
+      //           .replaceAll(" ", "")
+      //           .split(",");
+
+      //           minter_liquidation_threshold = parseFloat(utils.formatEther(args[0]));
+      //       } else {
+      //         console.error(error);
+      //       }
+      //     }
+      //   );
+
+      // local_fs.appendFileSync("test/end_to_end/general_setup/apySims/margin_requirements.txt", "day " + i.toString() + ":" + minter_position_margin_requirement.toString() + " , " + minter_liquidation_threshold.toString());
 
       await this.advanceAndUpdateApy(consts.ONE_DAY, 1, 1.001 + i * 0.0001);
     }
@@ -160,10 +223,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // export snapshot before settlement
     await this.exportSnapshot("BEFORE SETTLEMENT");
 
-    // await advanceTime(40);
+    await advanceTimeAndBlock(consts.ONE_DAY.mul(40), 4);
 
     // settle positions and traders
-    // await this.settlePositions();
+    await this.settlePositions();
+    await this.exportSnapshot("FINAL");
   }
 }
 

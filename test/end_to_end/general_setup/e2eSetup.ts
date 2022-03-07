@@ -579,7 +579,7 @@ export const e2eScenarios: e2eParameters[] = [
       [4, -TICK_SPACING, TICK_SPACING],
       [5, -TICK_SPACING, TICK_SPACING],
     ],
-    skipped: false,
+    skipped: true,
   },
   {
     duration: consts.ONE_YEAR,
