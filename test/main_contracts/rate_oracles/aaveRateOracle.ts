@@ -130,7 +130,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("increases the cardinality next for the first call", async () => {
-      await testRateOracle.increaseObservarionCardinalityNext(5);
+      await testRateOracle.increaseObservationCardinalityNext(5);
       const [rateIndex, rateCardinality, rateCardinalityNext] =
         await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(0);
@@ -139,8 +139,8 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("is no op if oracle is already gte that size", async () => {
-      await testRateOracle.increaseObservarionCardinalityNext(5);
-      await testRateOracle.increaseObservarionCardinalityNext(3);
+      await testRateOracle.increaseObservationCardinalityNext(5);
+      await testRateOracle.increaseObservationCardinalityNext(3);
       const [rateIndex, rateCardinality, rateCardinalityNext] =
         await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(0);
@@ -168,8 +168,8 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("grows cardinality if writing past", async () => {
-      await testRateOracle.increaseObservarionCardinalityNext(2);
-      await testRateOracle.increaseObservarionCardinalityNext(4);
+      await testRateOracle.increaseObservationCardinalityNext(2);
+      await testRateOracle.increaseObservationCardinalityNext(4);
       let [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(0);
       expect(rateCardinality).to.eq(1);
@@ -195,8 +195,8 @@ describe("Aave Rate Oracle", () => {
 
     it("does not grow cardinality if insufficient time has passed", async () => {
       await testRateOracle.setMinSecondsSinceLastUpdate(7200); // two hours
-      await testRateOracle.increaseObservarionCardinalityNext(2);
-      await testRateOracle.increaseObservarionCardinalityNext(4);
+      await testRateOracle.increaseObservationCardinalityNext(2);
+      await testRateOracle.increaseObservationCardinalityNext(4);
       let [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
       expect(rateIndex).to.eq(0);
       expect(rateCardinality).to.eq(1);
@@ -228,7 +228,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("correctly calculates rate from one timestamp to the next", async () => {
-      await testRateOracle.increaseObservarionCardinalityNext(4);
+      await testRateOracle.increaseObservationCardinalityNext(4);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const rateFromTimestamp = (await getCurrentTimestamp(provider)) + 1;
@@ -269,7 +269,7 @@ describe("Aave Rate Oracle", () => {
         oracleFixture
       ));
 
-      await testRateOracle.increaseObservarionCardinalityNext(10);
+      await testRateOracle.increaseObservationCardinalityNext(10);
       await aaveLendingPool.setReserveNormalizedIncome(token.address, oneInRay);
       await testRateOracle.writeOracleEntry();
       startTime = await getCurrentTimestamp();
@@ -439,7 +439,7 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("binary search works as expected", async () => {
-      await testRateOracle.increaseObservarionCardinalityNext(4);
+      await testRateOracle.increaseObservationCardinalityNext(4);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const beforeOrAtTimestamp = (await getCurrentTimestamp(provider)) + 1;
@@ -480,7 +480,7 @@ describe("Aave Rate Oracle", () => {
         oracleFixture
       ));
 
-      await testRateOracle.increaseObservarionCardinalityNext(6);
+      await testRateOracle.increaseObservationCardinalityNext(6);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       beforeOrAtTimestamp = (await getCurrentTimestamp(provider)) + 1;
@@ -580,7 +580,7 @@ describe("Aave Rate Oracle", () => {
         oracleFixture
       ));
 
-      await testRateOracle.increaseObservarionCardinalityNext(10);
+      await testRateOracle.increaseObservationCardinalityNext(10);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       firstTimestamp = (await getCurrentTimestamp(provider)) + 1;

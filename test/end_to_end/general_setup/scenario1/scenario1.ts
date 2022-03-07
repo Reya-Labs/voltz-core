@@ -19,8 +19,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.rateOracleTest.increaseObservarionCardinalityNext(1000);
-    await this.rateOracleTest.increaseObservarionCardinalityNext(2000);
+    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
+    await this.rateOracleTest.increaseObservationCardinalityNext(2000);
 
     // each LP deposits 1,010 liquidity 100 times
 

@@ -462,6 +462,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         if (positionMarginRequirement > position.margin) {
             (, int24 tick, ) = vamm.vammVars();
+            Printer.printInt256("position.margin", position.margin);
             revert MarginRequirementNotMet(positionMarginRequirement, tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
         }
 
@@ -522,6 +523,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         );
 
         if (position.margin <= positionMarginRequirement) {
+            Printer.printInt256("position.margin", position.margin);
             revert MarginLessThanMinimum(positionMarginRequirement);
         }
     }

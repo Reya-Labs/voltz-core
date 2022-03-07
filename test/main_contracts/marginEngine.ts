@@ -1066,7 +1066,7 @@ describe("MarginEngine", () => {
     // const apy = toBn("1.371039921"); // This is equivalent to compounding by 1.00000001 per second for 365.2425 days = 31556952 seconds
 
     beforeEach("deploy and initialize test oracle", async () => {
-      await rateOracleTest.increaseObservarionCardinalityNext(10);
+      await rateOracleTest.increaseObservationCardinalityNext(10);
       await aaveLendingPool.setReserveNormalizedIncome(token.address, oneInRay);
       await rateOracleTest.writeOracleEntry();
 

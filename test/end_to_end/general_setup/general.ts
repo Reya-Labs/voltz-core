@@ -1,12 +1,12 @@
 import { ethers, waffle } from "hardhat";
-import { BigNumber, utils } from "ethers";
+import { BigNumber, Signer, utils, Wallet } from "ethers";
 import { TestVAMM } from "../../../typechain/TestVAMM";
 import {
   E2ESetupFixture,
   fixedAndVariableMathFixture,
   sqrtPriceMathFixture,
   tickMathFixture,
-  // createMetaFixtureE2E,
+  createMetaFixtureE2E,
   marginCalculatorFixture,
 } from "../../shared/fixtures";
 import { formatRay, TICK_SPACING } from "../../shared/utilities";
@@ -18,6 +18,7 @@ import {
   FixedAndVariableMathTest,
   MarginEngine,
   MockAaveLendingPool,
+  Periphery,
   SqrtPriceMathTest,
   TestAaveFCM,
   TestRateOracle,
@@ -29,6 +30,7 @@ import { e2eParameters } from "./e2eSetup";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { toBn } from "../../helpers/toBn";
 import { consts } from "../../helpers/constants";
+import { createFixtureLoader } from "ethereum-waffle";
 
 const { provider } = waffle;
 
@@ -38,13 +40,15 @@ export class ScenarioRunner {
 
   params: e2eParameters;
 
-  owner!: SignerWithAddress;
+  // owner!: SignerWithAddress;
+  owner!: Wallet;
   factory!: Factory;
   token!: ERC20Mock;
   rateOracleTest!: TestRateOracle;
 
   termStartTimestampBN!: BigNumber;
   termEndTimestampBN!: BigNumber;
+  periphery!: Periphery;
 
   fcmTest!: TestAaveFCM;
   vammTest!: TestVAMM;
@@ -64,6 +68,8 @@ export class ScenarioRunner {
   positions: [string, number, number][] = [];
 
   outputFile!: string;
+
+  loadFixture!: ReturnType<typeof createFixtureLoader>;
 
   // global variables (to avoid recomputing them)
   lowerApyBound: BigNumber = toBn("0");
@@ -196,8 +202,6 @@ export class ScenarioRunner {
         this.positions[i][1],
         this.positions[i][2]
       );
-
-      console.log("position history:", positionHistory.length);
 
       let positionInfo = await this.marginEngineTest.getPosition(
         this.positions[i][0],
@@ -416,47 +420,58 @@ export class ScenarioRunner {
     )) as MockAaveLendingPool;
   }
 
-  async init() {
-    this.owner = (await ethers.getSigners())[0];
-    // this.loadFixture = createFixtureLoader([this.owner]);
+  async init(isProd: boolean = false) {
 
-    // this.owner = provider.getWallets()[0];
-    // provider.getSigner();
+    this.owner = provider.getWallets()[0];
+    provider.getSigner();
 
-    ({ testMarginCalculator: this.testMarginCalculator } =
-      await marginCalculatorFixture());
-    await this.getAlreadyDeployedContracts();
+    if (!isProd) {
+      this.loadFixture = createFixtureLoader([this.owner]);
+      // manually do the prerequsite deployments for the scenario
+      ({
+        factory: this.factory,
+        token: this.token,
+        rateOracleTest: this.rateOracleTest,
+        aaveLendingPool: this.aaveLendingPool,
+        termStartTimestampBN: this.termStartTimestampBN,
+        termEndTimestampBN: this.termEndTimestampBN,
+        testMarginCalculator: this.testMarginCalculator,
+      } = await this.loadFixture(await createMetaFixtureE2E(this.params)));
 
-    await this.aaveLendingPool.setReserveNormalizedIncome(
-      this.token.address,
-      "1000000000000000000000000000" // 10^27
-    );
-
-    // await rateOracleTest.testGrow(100);
-    await this.rateOracleTest.increaseObservarionCardinalityNext(100);
-    // write oracle entry
-    await this.rateOracleTest.writeOracleEntry();
-    // advance time after first write to the oracle
-    await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
-
-    await this.aaveLendingPool.setReserveNormalizedIncome(
-      this.token.address,
-      "1008000000000000000000000000" // 10^27 * 1.008
-    );
-
-    await this.rateOracleTest.writeOracleEntry();
-
-    const termStartTimestamp: number = await getCurrentTimestamp(provider);
-    const termEndTimestamp: number =
-      termStartTimestamp + this.params.duration.toNumber();
-    this.termStartTimestampBN = toBn(termStartTimestamp.toString());
-    this.termEndTimestampBN = toBn(termEndTimestamp.toString());
-
-    // console.log(`factory: ${this.factory.address}`);
-    // console.log(`masterVAMM: ${await this.factory.masterVAMM()}`);
-    // console.log(
-    //   `masterMarginEngine: ${await this.factory.masterMarginEngine()}`
-    // );
+      console.log(`factory: ${this.factory.address}`);
+      console.log(`masterVAMM: ${await this.factory.masterVAMM()}`);
+      console.log(
+        `masterMarginEngine: ${await this.factory.masterMarginEngine()}`
+      );
+    } else {
+      await this.getAlreadyDeployedContracts();
+      const termStartTimestamp: number = await getCurrentTimestamp(provider);
+      const termEndTimestamp: number =
+        termStartTimestamp + this.params.duration.toNumber();
+      this.termStartTimestampBN = toBn(termStartTimestamp.toString());
+      this.termEndTimestampBN = toBn(termEndTimestamp.toString());
+      ({ testMarginCalculator: this.testMarginCalculator } =
+        await marginCalculatorFixture());
+      // partial repetition of createMetaFixtureE2E (needs to be more DRY)
+      await this.aaveLendingPool.setReserveNormalizedIncome(
+        this.token.address,
+        "1000000000000000000000000000" // 10^27
+      );
+  
+      // await rateOracleTest.testGrow(100);
+      await this.rateOracleTest.increaseObservationCardinalityNext(100);
+      // write oracle entry
+      await this.rateOracleTest.writeOracleEntry();
+      // advance time after first write to the oracle
+      await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
+  
+      await this.aaveLendingPool.setReserveNormalizedIncome(
+        this.token.address,
+        "1008000000000000000000000000" // 10^27 * 1.008
+      );
+  
+      await this.rateOracleTest.writeOracleEntry();
+    }
 
     // deploy an IRS instance
     await this.factory.deployIrsInstance(
@@ -505,6 +520,10 @@ export class ScenarioRunner {
     const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
     this.fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
 
+    // deploy the periphery
+    const peripheryFactory = await ethers.getContractFactory("Periphery");
+    this.periphery = (await peripheryFactory.deploy()) as Periphery;
+
     // deploy Fixed and Variable Math test
     ({ testFixedAndVariableMath: this.testFixedAndVariableMath } =
       await fixedAndVariableMathFixture());
@@ -539,6 +558,7 @@ export class ScenarioRunner {
     await this.e2eSetup.setVAMMAddress(this.vammTest.address);
     await this.e2eSetup.setFCMAddress(this.fcmTest.address);
     await this.e2eSetup.setRateOracleAddress(this.rateOracleTest.address);
+    await this.e2eSetup.setPeripheryAddress(this.periphery.address);
 
     // mint and approve the addresses
     await this.mintAndApprove(this.owner.address);
@@ -553,11 +573,16 @@ export class ScenarioRunner {
       this.actors.push(actor);
       await this.mintAndApprove(actor.address);
 
+      // ab: why do we need to do it via the approveInternal function call>
       await this.token.approveInternal(
         actor.address,
         this.fcmTest.address,
         BigNumber.from(10).pow(27)
       );
+
+      // set approval for the periphery to act on belalf of the actor
+      await actor.setIntegrationApproval(this.marginEngineTest.address, this.periphery.address, true)
+
     }
 
     await this.token.approveInternal(
@@ -742,6 +767,9 @@ export class ScenarioRunner {
     // );
     // console.log("");
     // return positionMarginRequirement;
+
+    
+
   }
 
   async getVT(towards: string) {
