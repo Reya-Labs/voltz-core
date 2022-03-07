@@ -473,7 +473,7 @@ export class ScenarioRunner {
     }
 
     // deploy an IRS instance
-    await this.factory.deployIrsInstance(
+    const deployTrx = await this.factory.deployIrsInstance(
       this.token.address,
       this.rateOracleTest.address,
       this.termStartTimestampBN,
@@ -481,14 +481,20 @@ export class ScenarioRunner {
       this.params.tickSpacing
     );
 
-    // deploy margin engine test
-    const marginEngineAddress = await this.factory.getMarginEngineAddress(
-      this.token.address,
-      this.rateOracleTest.address,
-      this.termStartTimestampBN,
-      this.termEndTimestampBN,
-      this.params.tickSpacing
+    const receiptLogs = (await deployTrx.wait()).logs;
+    // console.log("receiptLogs", receiptLogs);
+    const log = this.factory.interface.parseLog(
+      receiptLogs[receiptLogs.length - 3]
     );
+    if (log.name !== "IrsInstanceDeployed") {
+      throw Error(
+        "IrsInstanceDeployed log not found has it moved to a different position in the array?)"
+      );
+    }
+    // console.log("log", log);
+    const marginEngineAddress = log.args.marginEngine;
+    const vammAddress = log.args.vamm;
+    const fcmAddress = log.args.fcm;
 
     const marginEngineFactory = await ethers.getContractFactory("MarginEngine");
 
@@ -496,25 +502,8 @@ export class ScenarioRunner {
       marginEngineAddress
     ) as MarginEngine;
 
-    // deploy VAMM test
-    const vammAddress = await this.factory.getVAMMAddress(
-      this.token.address,
-      this.rateOracleTest.address,
-      this.termStartTimestampBN,
-      this.termEndTimestampBN,
-      this.params.tickSpacing
-    );
-
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
     this.vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
-
-    const fcmAddress = await this.factory.getFCMAddress(
-      this.token.address,
-      this.rateOracleTest.address,
-      this.termStartTimestampBN,
-      this.termEndTimestampBN,
-      this.params.tickSpacing
-    );
 
     const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
     this.fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;

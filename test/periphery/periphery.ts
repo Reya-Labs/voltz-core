@@ -733,7 +733,6 @@ describe("Periphery", async () => {
       recipient: other.address,
       amountSpecified: mul(notionalMinted, toBn("10")), // trying to swap more than available
       sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(),
-
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
     });
