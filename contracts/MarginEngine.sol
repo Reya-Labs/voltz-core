@@ -16,7 +16,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
-import "contracts/utils/Printer.sol";
+// import "contracts/utils/Printer.sol";
 
 contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeCast for uint256;
@@ -262,8 +262,6 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             if (_owner != msg.sender && !factory.isApproved(_owner, msg.sender)) {
                 revert OnlyOwnerCanUpdatePosition();
             }
-
-            Printer.printInt256("position.margin", position.margin); 
             
             position.updateMarginViaDelta(marginDelta);
 
@@ -403,17 +401,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     
         int256 _variableTokenDelta = unwindPosition(position, _owner, tickLower, tickUpper);
 
-        Printer.printInt256("variableTokenBalance", position.variableTokenBalance);
-        Printer.printInt256("_variableTokenDelta", _variableTokenDelta);
-        Printer.printUint256("rewardPerAmount", position.rewardPerAmount);
-
         if (_variableTokenDelta == 0) return;
 
         uint256 liquidatorRewardValue = (_variableTokenDelta < 0)
             ? PRBMathUD60x18.mul(uint256(-_variableTokenDelta), position.rewardPerAmount)
             : PRBMathUD60x18.mul(uint256(_variableTokenDelta), position.rewardPerAmount);
-
-        Printer.printUint256("liquidatorRewardValue", liquidatorRewardValue);
 
         position.updateMarginViaDelta(-int256(liquidatorRewardValue));
         underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
@@ -457,12 +449,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
         positionMarginRequirement = int256(
-            getPositionMarginRequirement(position, tickLower, tickUpper, false)
+            _getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
 
         if (positionMarginRequirement > position.margin) {
             (, int24 tick, ) = vamm.vammVars();
-            Printer.printInt256("position.margin", position.margin);
             revert MarginRequirementNotMet(positionMarginRequirement, tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
         }
 
@@ -519,11 +510,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     ) internal returns(int256 positionMarginRequirement) {
     
         positionMarginRequirement = int256(
-            getPositionMarginRequirement(position, tickLower, tickUpper, false)
+            _getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
 
         if (position.margin <= positionMarginRequirement) {
-            Printer.printInt256("position.margin", position.margin);
             revert MarginLessThanMinimum(positionMarginRequirement);
         }
     }
@@ -670,7 +660,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev scenario 2: a trader comes in and trades all the liquidity all the way to the the lower tick
     /// @dev one the fixed and variable token balances are calculated for each counterfactual scenarios, their margin requiremnets can be obtained by calling getMarginrRequirement for each scenario
     /// @dev finally, the output is the max of the margin requirements from two of the scenarios considered
-    function getPositionMarginRequirement(
+    function _getPositionMarginRequirement(
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper,
@@ -682,6 +672,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         uint256 variableFactorWad = rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad);
 
+        // Printer.printInt24("tick", tick);
+        // Printer.printInt256("fixedTokenBalance", position.fixedTokenBalance);
+        // Printer.printInt256("variableTokenBalance", position.variableTokenBalance);
         if (position._liquidity > 0) {
             PositionMarginRequirementLocalVars2 memory localVars;
             localVars.inRangeTick = (tick < tickLower) ? tickLower : ((tick < tickUpper) ? tick : tickUpper);
@@ -718,6 +711,15 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             uint256 scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
             uint256 scenario2MarginRequirement = getMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
 
+            // Printer.printEmptyLine();
+            // Printer.printInt256("scenario1LPFixedTokenBalance", localVars.scenario1LPFixedTokenBalance);
+            // Printer.printInt256("scenario1LPVariableTokenBalance", localVars.scenario1LPVariableTokenBalance);
+            // Printer.printUint256("scenario1MarginRequirement", scenario1MarginRequirement);
+            // Printer.printEmptyLine();
+            // Printer.printInt256("scenario2LPFixedTokenBalance", localVars.scenario2LPFixedTokenBalance);
+            // Printer.printInt256("scenario2LPVariableTokenBalance", localVars.scenario2LPVariableTokenBalance);
+            // Printer.printUint256("scenario2MarginRequirement", scenario2MarginRequirement);
+
             if (scenario1MarginRequirement > scenario2MarginRequirement) {
                 return scenario1MarginRequirement;
             } else {
@@ -738,7 +740,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int24 tickLower,
         int24 tickUpper
     ) internal returns (bool _isLiquidatable, uint256 marginRequirement) {
-        marginRequirement = getPositionMarginRequirement(
+        marginRequirement = _getPositionMarginRequirement(
             position,
             tickLower,
             tickUpper,
@@ -772,6 +774,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             isLM,
             sqrtPriceX96
         );
+
+        // Printer.printBool("isLM", isLM);
+        // Printer.printUint256("margin NORMAL", margin);
+        // Printer.printUint256("   margin MIN", minimumMarginRequirement);
+        // Printer.printEmptyLine();
 
         if (margin < minimumMarginRequirement) {
             margin = minimumMarginRequirement;
@@ -828,6 +835,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             )
         );
 
+        // Printer.printInt256("exp2Wad", exp2Wad);
         // this is the worst case settlement cashflow expected by the position to cover
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
 
@@ -949,5 +957,21 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             margin = marginCalculatorParameters
                 .minMarginToIncentiviseLiquidators;
         }
+    }
+
+    function getPositionMarginRequirement(
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        bool isLM
+    ) override external returns (uint256 margin) {
+        Position.Info storage position = positions.get(
+            recipient,
+            tickLower,
+            tickUpper
+        );
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, true);
+
+        return _getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
     }
 }

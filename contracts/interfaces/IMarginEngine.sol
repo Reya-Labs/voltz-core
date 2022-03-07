@@ -349,4 +349,11 @@ interface IMarginEngine is IPositionStructs {
     /// @dev refresh the historical apy cache if necessary
     /// @return historicalAPY (Wad)
     function getHistoricalApy() external returns (uint256);
+
+    function getPositionMarginRequirement(
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        bool isLM
+    ) external returns (uint256 margin);
 }

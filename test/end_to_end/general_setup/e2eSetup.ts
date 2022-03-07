@@ -607,7 +607,7 @@ export const e2eScenarios: e2eParameters[] = [
       fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
       fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
 
-      gammaWad: toBn("1.0"),
+      gammaWad: toBn("0.05"),
       minMarginToIncentiviseLiquidators: 0,
     },
     lookBackWindowAPY: consts.ONE_WEEK,

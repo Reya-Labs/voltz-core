@@ -674,15 +674,15 @@ contract E2ESetup {
                     allPositions[i].tickUpper
                 );
 
-            Printer.printInt256(
-                "   fixedTokenBalance:",
-                position.fixedTokenBalance
-            );
-            Printer.printInt256(
-                "variableTokenBalance:",
-                position.variableTokenBalance
-            );
-            Printer.printInt256("              margin:", position.margin);
+            // Printer.printInt256(
+            //     "   fixedTokenBalance:",
+            //     position.fixedTokenBalance
+            // );
+            // Printer.printInt256(
+            //     "variableTokenBalance:",
+            //     position.variableTokenBalance
+            // );
+            // Printer.printInt256("              margin:", position.margin);
 
             int256 estimatedSettlementCashflow = FixedAndVariableMath
                 .calculateSettlementCashflow(
@@ -700,7 +700,7 @@ contract E2ESetup {
                 true
             );
             uint256 marginRequirement = TestMarginEngine(MEAddress).getMargin();
-            Printer.printUint256("  margin requirement:", marginRequirement);
+            // Printer.printUint256("  margin requirement:", marginRequirement);
 
             if (int256(marginRequirement) > position.margin) {
                 liquidatablePositions += 1;
@@ -740,10 +740,10 @@ contract E2ESetup {
             totalCashflow += position.margin;
             totalCashflow += estimatedSettlementCashflow;
 
-            Printer.printInt256(
-                "              esc:",
-                estimatedSettlementCashflow
-            );
+            // Printer.printInt256(
+            //     "              esc:",
+            //     estimatedSettlementCashflow
+            // );
         }
 
         for (uint256 i = 1; i <= sizeAllYBATraders; i++) {
@@ -763,39 +763,39 @@ contract E2ESetup {
 
             totalCashflow += estimatedSettlementCashflow;
 
-            Printer.printInt256(
-                "   fixedTokenBalance:",
-                trader.fixedTokenBalance
-            );
-            Printer.printInt256(
-                "variableTokenBalance:",
-                trader.variableTokenBalance
-            );
-            Printer.printInt256(
-                "              YBA esc:",
-                estimatedSettlementCashflow
-            );
+            // Printer.printInt256(
+            //     "   fixedTokenBalance:",
+            //     trader.fixedTokenBalance
+            // );
+            // Printer.printInt256(
+            //     "variableTokenBalance:",
+            //     trader.variableTokenBalance
+            // );
+            // Printer.printInt256(
+            //     "              YBA esc:",
+            //     estimatedSettlementCashflow
+            // );
         }
 
         totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
         totalCashflow += int256(liquidationRewards);
         totalCashflow -= fcmFees;
 
-        Printer.printInt256("fcmFees", fcmFees);
-        Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
-        Printer.printInt256("totalVariableTokens:", totalVariableTokens);
-        Printer.printInt256("   initialCashflow:", initialCashflow);
-        Printer.printInt256(
-            "      deltaCashflow:",
-            totalCashflow - initialCashflow
-        );
-        Printer.printInt256("liquidatable Positions", liquidatablePositions);
-        Printer.printEmptyLine();
+        // Printer.printInt256("fcmFees", fcmFees);
+        // Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
+        // Printer.printInt256("totalVariableTokens:", totalVariableTokens);
+        // Printer.printInt256("   initialCashflow:", initialCashflow);
+        // Printer.printInt256(
+        //     "      deltaCashflow:",
+        //     totalCashflow - initialCashflow
+        // );
+        // Printer.printInt256("liquidatable Positions", liquidatablePositions);
+        // Printer.printEmptyLine();
 
         // ideally, this should be 0
         int256 approximation = 100000;
 
-        Printer.printUint256("      app:", uint256(approximation));
+        // Printer.printUint256("      app:", uint256(approximation));
 
         require(
             -approximation < totalFixedTokens && totalFixedTokens <= 0,

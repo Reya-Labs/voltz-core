@@ -57,7 +57,6 @@ contract Periphery is IPeriphery {
             params.notional
         );
 
-        console.log("liquidity TO BE MINTED", liquidity);
         positionMarginRequirement = 0;
         if (params.isMint) {
             positionMarginRequirement = vamm.mint(
