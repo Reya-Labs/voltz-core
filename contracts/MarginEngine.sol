@@ -8,7 +8,6 @@ import "./core_libraries/Position.sol";
 import "./core_libraries/MarginCalculator.sol";
 import "./utils/SafeCast.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
-import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/fcms/IFCM.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
@@ -16,8 +15,13 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
+import "./storage/MarginEngineStorage.sol";
 
-contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, PausableUpgradeable {
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+contract MarginEngine is MarginEngineStorage, IMarginEngine,
+ Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+
     using SafeCast for uint256;
     using SafeCast for int256;
     using Tick for mapping(int24 => Tick.Info);
@@ -27,62 +31,38 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     using SafeTransferLib for IERC20Minimal;
 
-    uint256 public override liquidatorRewardWad;
-    IERC20Minimal public override underlyingToken;
-
-    /// @inheritdoc IMarginEngine
-    uint256 public override termStartTimestampWad;
-    /// @inheritdoc IMarginEngine
-    uint256 public override termEndTimestampWad;
-    
-    /// @inheritdoc IMarginEngine
-    IFCM public override fcm;
-
-    mapping(bytes32 => Position.Info) internal positions;
-    
-    IVAMM public override vamm;
-
-    MarginCalculatorParameters internal marginCalculatorParameters;
-
-    /// @inheritdoc IMarginEngine
-    uint256 public override secondsAgo;
-
-    uint256 internal cachedHistoricalApyWad;
-    uint256 private cachedHistoricalApyWadRefreshTimestamp;
-
-    uint256 public cacheMaxAgeInSeconds;
-
-    address private deployer;
-    /// @inheritdoc IMarginEngine
-    IFactory public override factory;
-    /// @inheritdoc IMarginEngine
-    IRateOracle public override rateOracle;
 
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {
+    constructor() initializer {}
 
-        deployer = msg.sender; /// this is presumably the factory
-
-    }
-
-    function initialize(address _underlyingToken, address _rateOracleAddress, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad) external override initializer {
-        require(_underlyingToken != address(0), "UT must be set");
+    function initialize(address __underlyingToken, address _rateOracleAddress, uint256 __termStartTimestampWad, uint256 __termEndTimestampWad) external override initializer {
+        require(__underlyingToken != address(0), "UT must be set");
         require(_rateOracleAddress != address(0), "RO must be set");
-        require(_termStartTimestampWad != 0, "TS must be set");
-        require(_termEndTimestampWad != 0, "TE must be set");
+        require(__termStartTimestampWad != 0, "TS must be set");
+        require(__termEndTimestampWad != 0, "TE must be set");
 
-        underlyingToken = IERC20Minimal(_underlyingToken);
-        termStartTimestampWad = _termStartTimestampWad;
-        termEndTimestampWad = _termEndTimestampWad;
+        _underlyingToken = IERC20Minimal(__underlyingToken);
+        _termStartTimestampWad = __termStartTimestampWad;
+        _termEndTimestampWad = __termEndTimestampWad;
 
-        rateOracle = IRateOracle(_rateOracleAddress);
-        factory = IFactory(msg.sender);
+        _rateOracle = IRateOracle(_rateOracleAddress);
+        _factory = IFactory(msg.sender);
+
+        // Todo: set default values for things like _secondsAgo, cacheMaxAge.
+        // We should see if we need to do any similar defaulting for VAMM, FCM
+        // _secondsAgo = 2 weeks; // can be changed by owner
+        // _cacheMaxAgeInSeconds = 6 hours; // can be changed by owner
 
         __Ownable_init();
         __Pausable_init();
+        __UUPSUpgradeable_init();
     }
     
+    // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.   
+    // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786 
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+
     modifier nonZeroDelta (int256 marginDelta) {
         if (marginDelta == 0) {
             revert InvalidMarginDelta();
@@ -92,7 +72,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
     /// @dev Modifier that ensures only the VAMM can execute certain actions
     modifier onlyVAMM () {
-        if (msg.sender != address(vamm)) {
+        if (msg.sender != address(_vamm)) {
             revert OnlyVAMM();
         }
         _;
@@ -100,7 +80,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     
     /// @dev Modifier that reverts if the msg.sender is not the Full Collateralisation Module
     modifier onlyFCM () {
-        if (msg.sender != address(fcm)) {
+        if (msg.sender != address(_fcm)) {
             revert OnlyFCM();
         }
         _;
@@ -109,7 +89,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev Modifier that reverts if the termEndTimestamp is higher than the current block timestamp
     /// @dev This modifier ensures that actions such as settlePosition (can only be done after maturity)
     modifier onlyAfterMaturity () {
-        if (termEndTimestampWad > Time.blockTimestampScaled()) {
+        if (_termEndTimestampWad > Time.blockTimestampScaled()) {
             revert CannotSettleBeforeMaturity();
         }
         _;
@@ -118,11 +98,55 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
     /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
     modifier checkCurrentTimestampTermEndTimestampDelta() {
-        if (Time.isCloseToMaturityOrBeyondMaturity(termEndTimestampWad)) {
+        if (Time.isCloseToMaturityOrBeyondMaturity(_termEndTimestampWad)) {
             revert closeToOrBeyondMaturity();
         }
         _;
     }
+
+    // GETTERS FOR STORAGE SLOTS
+    // Not auto-generated by public variables in the storage contract, cos solidity doesn't support that for functions that implement an interface
+    /// @inheritdoc IMarginEngine
+    function termStartTimestampWad() external view override returns (uint256) {
+        return _termStartTimestampWad;
+    }
+    /// @inheritdoc IMarginEngine
+    function termEndTimestampWad() external view override returns (uint256) {
+        return _termEndTimestampWad;
+    }
+    /// @inheritdoc IMarginEngine
+    function secondsAgo() external view override returns (uint256) {
+        return _secondsAgo;
+    }
+    /// @inheritdoc IMarginEngine
+    function cacheMaxAgeInSeconds() external view override returns (uint256) {
+        return _cacheMaxAgeInSeconds;
+    }
+    /// @inheritdoc IMarginEngine
+    function liquidatorRewardWad() external view override returns (uint256) {
+        return _liquidatorRewardWad;
+    }
+    /// @inheritdoc IMarginEngine
+    function underlyingToken() external view override returns (IERC20Minimal) {
+        return _underlyingToken;
+    }
+    /// @inheritdoc IMarginEngine
+    function fcm() external view override returns (IFCM) {
+        return _fcm;
+    }
+    /// @inheritdoc IMarginEngine
+    function vamm() external view override returns (IVAMM) {
+        return _vamm;
+    }
+    /// @inheritdoc IMarginEngine
+    function factory() external view override returns (IFactory) {
+        return _factory;
+    }
+    /// @inheritdoc IMarginEngine
+    function rateOracle() external view override returns (IRateOracle) {
+        return _rateOracle;
+    }
+
 
     /// @inheritdoc IMarginEngine
     function setMarginCalculatorParameters(
@@ -130,48 +154,49 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     ) external override onlyOwner {
         marginCalculatorParameters = _marginCalculatorParameters;
     }
-    
+
     /// @inheritdoc IMarginEngine
     function setVAMM(address _vAMMAddress) external override onlyOwner {
-        vamm = IVAMM(_vAMMAddress);
+        _vamm = IVAMM(_vAMMAddress);
     }
     /// @inheritdoc IMarginEngine
-    function setFCM(address _fcm) external override onlyOwner {
-        fcm = IFCM(_fcm);
+    function setFCM(address _newFcm) external override onlyOwner {
+        _fcm = IFCM(_newFcm);
     }
 
     /// @inheritdoc IMarginEngine
-    function setSecondsAgo(uint256 _secondsAgo)
+    function setSecondsAgo(uint256 _newSecondsAgo)
         external
         override
         onlyOwner
     {
-        uint256 secondsAgoOld = secondsAgo;
-        secondsAgo = _secondsAgo;
-        emit HistoricalApyWindowSet(secondsAgoOld, secondsAgo);
+        uint256 secondsAgoOld = _secondsAgo;
+        _secondsAgo = _newSecondsAgo;
+        emit HistoricalApyWindowSet(secondsAgoOld, _secondsAgo);
     }
 
     /// @inheritdoc IMarginEngine
-    function setCacheMaxAgeInSeconds(uint256 _cacheMaxAgeInSeconds)
+    function setCacheMaxAgeInSeconds(uint256 _newCacheMaxAgeInSeconds)
         external
         override 
         onlyOwner
     {
-        uint256 cacheMaxAgeInSecondsOld = cacheMaxAgeInSeconds;
-        cacheMaxAgeInSeconds = _cacheMaxAgeInSeconds;
-        emit CacheMaxAgeSet(cacheMaxAgeInSecondsOld, cacheMaxAgeInSeconds);
+        uint256 cacheMaxAgeInSecondsOld = _cacheMaxAgeInSeconds;
+        _cacheMaxAgeInSeconds = _newCacheMaxAgeInSeconds;
+        emit CacheMaxAgeSet(cacheMaxAgeInSecondsOld, _cacheMaxAgeInSeconds);
     }
 
     /// @inheritdoc IMarginEngine
     function collectProtocol(address recipient, uint256 amount)
         external
         override
+        whenNotPaused
         onlyOwner{
 
         if (amount > 0) {
-            /// @dev if the amount exceeds the available balances, vamm.updateProtocolFees(amount) should be reverted as intended
-            vamm.updateProtocolFees(amount);
-            underlyingToken.safeTransfer(
+            /// @dev if the amount exceeds the available balances, _vamm.updateProtocolFees(amount) should be reverted as intended
+            _vamm.updateProtocolFees(amount);
+            _underlyingToken.safeTransfer(
                 recipient,
                 amount
             );
@@ -181,10 +206,10 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
     /// @inheritdoc IMarginEngine
-    function setLiquidatorReward(uint256 _liquidatorRewardWad) external override onlyOwner {
-        uint256 liquidatorRewardWadOld = liquidatorRewardWad;
-        liquidatorRewardWad = _liquidatorRewardWad;
-        emit LiquidatorRewardSet(liquidatorRewardWadOld, liquidatorRewardWad);
+    function setLiquidatorReward(uint256 _newLiquidatorRewardWad) external override onlyOwner {
+        uint256 liquidatorRewardWadOld = _liquidatorRewardWad;
+        _liquidatorRewardWad = _newLiquidatorRewardWad;
+        emit LiquidatorRewardSet(liquidatorRewardWadOld, _liquidatorRewardWad);
     }
 
     /// @inheritdoc IMarginEngine
@@ -197,7 +222,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
             if (positionMemory._liquidity > 0) {
                 Position.Info storage positionStorage = positions.get(_owner, tickLower, tickUpper);
-                (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
+                (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = _vamm.computeGrowthInside(tickLower, tickUpper);
                 (int256 fixedTokenDelta, int256 variableTokenDelta) = positionStorage.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
                 uint256 feeDelta = positionStorage.calculateFeeDelta(feeGrowthInsideX128);
 
@@ -223,19 +248,19 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     /// @dev if the marginEngineBalance is not sufficient to cover the marginDelta then we cover the remainingDelta by invoking the transferMarginToMarginEngineTrader function of the fcm which in case of Aave will calls the Aave withdraw function to settle with the MarginEngine in underlying tokens
     function transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
-            underlyingToken.safeTransferFrom(_account, address(this), uint256(_marginDelta));
+            _underlyingToken.safeTransferFrom(_account, address(this), uint256(_marginDelta));
         } else {
-            uint256 marginEngineBalance = underlyingToken.balanceOf(address(this));
+            uint256 marginEngineBalance = _underlyingToken.balanceOf(address(this));
 
             if (uint256(-_marginDelta) > marginEngineBalance) {
                 uint256 remainingDeltaToCover = uint256(-_marginDelta);
                 if (marginEngineBalance > 0) {
                     remainingDeltaToCover = remainingDeltaToCover - marginEngineBalance;
-                    underlyingToken.safeTransfer(_account, marginEngineBalance);
+                    _underlyingToken.safeTransfer(_account, marginEngineBalance);
                 }
-                fcm.transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
+                _fcm.transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
             } else {
-                underlyingToken.safeTransfer(_account, uint256(-_marginDelta));
+                _underlyingToken.safeTransfer(_account, uint256(-_marginDelta));
             }
 
         }
@@ -243,12 +268,12 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
 
     /// @inheritdoc IMarginEngine
-    function transferMarginToFCMTrader(address _account, uint256 marginDelta) external onlyFCM override {
-        underlyingToken.safeTransfer(_account, marginDelta);
+    function transferMarginToFCMTrader(address _account, uint256 marginDelta) external whenNotPaused onlyFCM override {
+        _underlyingToken.safeTransfer(_account, marginDelta);
     }
 
     /// @inheritdoc IMarginEngine
-    function updatePositionMargin(address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta) external nonZeroDelta(marginDelta) override {
+    function updatePositionMargin(address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta) external whenNotPaused nonZeroDelta(marginDelta) override {
         
         Tick.checkTicks(tickLower, tickUpper);
         
@@ -258,7 +283,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         if (marginDelta < 0) {
 
-            if (_owner != msg.sender && !factory.isApproved(_owner, msg.sender)) {
+            if (_owner != msg.sender && !_factory.isApproved(_owner, msg.sender)) {
                 revert OnlyOwnerCanUpdatePosition();
             }
 
@@ -275,7 +300,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             position.updateMarginViaDelta(marginDelta);
 
             address depositor;
-            if (factory.isApproved(_owner, msg.sender)) {
+            if (_factory.isApproved(_owner, msg.sender)) {
                 depositor = _owner;
             } else {
                 depositor = msg.sender;
@@ -299,7 +324,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         
         updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
         
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, termStartTimestampWad, termEndTimestampWad, rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad));
+        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, _termStartTimestampWad, _termEndTimestampWad, _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad));
 
         position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMarginViaDelta(settlementCashflow);
@@ -315,7 +340,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         override
         returns (uint256)
     {
-        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
+        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - _cacheMaxAgeInSeconds) {
             // Cache is stale
             _refreshHistoricalApyCache();
         }
@@ -323,13 +348,13 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
     /// @notice Computes the historical APY value of the RateOracle
-    /// @dev The lookback window used by this function is determined by the secondsAgo state variable
+    /// @dev The lookback window used by this function is determined by the _secondsAgo state variable
     function getHistoricalApyReadOnly()
         public
         view
         returns (uint256)
     {
-        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - cacheMaxAgeInSeconds) {
+        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - _cacheMaxAgeInSeconds) {
             // Cache is stale
             return _getHistoricalApy();
         }
@@ -337,16 +362,16 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
     /// @notice Computes the historical APY value of the RateOracle
-    /// @dev The lookback window used by this function is determined by the secondsAgo state variable
+    /// @dev The lookback window used by this function is determined by the _secondsAgo state variable
     function _getHistoricalApy()
         internal
         view
         returns (uint256)
     {
         uint256 to = block.timestamp;
-        uint256 from = to - secondsAgo;
+        uint256 from = to - _secondsAgo;
 
-        return rateOracle.getApyFromTo(from, to);
+        return _rateOracle.getApyFromTo(from, to);
     }
 
     /// @notice Updates the cached historical APY value of the RateOracle even if the cache is not stale
@@ -359,7 +384,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
 
     /// @inheritdoc IMarginEngine
-    function liquidatePosition(int24 tickLower, int24 tickUpper, address _owner) external checkCurrentTimestampTermEndTimestampDelta override {
+    function liquidatePosition(int24 tickLower, int24 tickUpper, address _owner) external whenNotPaused checkCurrentTimestampTermEndTimestampDelta override {
 
         /// @dev can only happen before maturity, this is checked when an unwind is triggered which in turn triggers a swap which checks for this condition
 
@@ -378,7 +403,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         if (position.rewardPerAmount == 0) {
             if (position.variableTokenBalance < 0) {
                 if (position.margin > 0) {
-                    position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(-position.variableTokenBalance));
+                    position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), _liquidatorRewardWad), uint256(-position.variableTokenBalance));
                 }
                 else {
                     position.rewardPerAmount = 0;
@@ -386,7 +411,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             }
             else {
                 if (position.margin > 0) {
-                    position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), liquidatorRewardWad), uint256(position.variableTokenBalance));
+                    position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), _liquidatorRewardWad), uint256(position.variableTokenBalance));
                 }
                 else {
                     position.rewardPerAmount = 0;
@@ -396,7 +421,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         if (position._liquidity > 0) {
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
-            vamm.burn(_owner, tickLower, tickUpper, position._liquidity);
+            _vamm.burn(_owner, tickLower, tickUpper, position._liquidity);
             position.updateLiquidity(-int128(position._liquidity));
         }
     
@@ -415,7 +440,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         Printer.printUint256("liquidatorRewardValue", liquidatorRewardValue);
 
         position.updateMarginViaDelta(-int256(liquidatorRewardValue));
-        underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
+        _underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
 
         // todo: add msg.sender to the event (as the initiator of the liquidation)
         emit LiquidatePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, position._liquidity);
@@ -423,8 +448,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
 
     /// @inheritdoc IMarginEngine
-    function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external onlyVAMM override returns(int256 positionMarginRequirement) {
-
+    function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external whenNotPaused onlyVAMM override returns(int256 positionMarginRequirement) {
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
 
         updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true);
@@ -443,7 +467,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     }
 
     /// @inheritdoc IMarginEngine
-    function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) external onlyVAMM override returns(int256 positionMarginRequirement) {
+    function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) external whenNotPaused onlyVAMM override returns(int256 positionMarginRequirement) {
         /// @dev this function can only be called by the vamm following a swap    
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
@@ -460,8 +484,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         );
 
         if (positionMarginRequirement > position.margin) {
-            (, int24 tick, ) = vamm.vammVars();
-            revert MarginRequirementNotMet(positionMarginRequirement, tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
+            IVAMM.VAMMVars memory v = _vamm.vammVars();
+            revert MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
         }
 
         position.rewardPerAmount = 0;
@@ -486,7 +510,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         ) internal {
 
         if (position._liquidity > 0) {
-            (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
+            (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = _vamm.computeGrowthInside(tickLower, tickUpper);
             (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
             uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
 
@@ -497,7 +521,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             position.updateFeeGrowthInside(feeGrowthInsideX128);
         } else {
             if (isMintBurn) {
-                (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = vamm.computeGrowthInside(tickLower, tickUpper);
+                (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = _vamm.computeGrowthInside(tickLower, tickUpper);
                 position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
                 position.updateFeeGrowthInside(feeGrowthInsideX128);
             }
@@ -538,7 +562,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
 
         /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
         /// @dev their margin is to withdraw it completely. If so, the position needs to be settled
-        if (Time.blockTimestampScaled() >= termEndTimestampWad) {
+        if (Time.blockTimestampScaled() >= _termEndTimestampWad) {
             if (!position.isSettled) {
                 revert PositionNotSettled();
             }
@@ -600,7 +624,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = vamm.swap(params);
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = _vamm.swap(params);
             } else {
 
                 /// @dev get into a Fixed Taker swap (the opposite of LP's current position)
@@ -617,7 +641,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     tickUpper: tickUpper
                 });
 
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = vamm.swap(params);
+                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = _vamm.swap(params);
             }
 
             if (_cumulativeFeeIncurred > 0) {
@@ -651,8 +675,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                         amount0,
                         amount1,
                         variableFactorWad,
-                        termStartTimestampWad,
-                        termEndTimestampWad
+                        _termStartTimestampWad,
+                        _termEndTimestampWad
                     );
 
         extraVariableTokenBalance = amount1;
@@ -675,9 +699,11 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
     ) internal returns (uint256 margin) {
         Tick.checkTicks(tickLower, tickUpper);
 
-        (uint160 sqrtPriceX96, int24 tick, ) = vamm.vammVars();
+        IVAMM.VAMMVars memory vammVars = _vamm.vammVars();
+        uint160 sqrtPriceX96 = vammVars.sqrtPriceX96;
+        int24 tick = vammVars.tick;
 
-        uint256 variableFactorWad = rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad);
+        uint256 variableFactorWad = _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad);
 
         if (position._liquidity > 0) {
             PositionMarginRequirementLocalVars2 memory localVars;
@@ -793,7 +819,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             variableTokenBalance
         );
 
-        uint256 timeInSecondsFromStartToMaturityWad = termEndTimestampWad - termStartTimestampWad;
+        uint256 timeInSecondsFromStartToMaturityWad = _termEndTimestampWad - _termStartTimestampWad;
 
 
         /// exp1 = fixedTokenBalance*timeInYearsFromTermStartToTermEnd*0.01
@@ -803,8 +829,8 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             int256(
                 FixedAndVariableMath.fixedFactor(
                     true,
-                    termStartTimestampWad,
-                    termEndTimestampWad
+                    _termStartTimestampWad,
+                    _termEndTimestampWad
                 )
             )
         );
@@ -815,7 +841,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
             int256(
                 MarginCalculator.worstCaseVariableFactorAtMaturity(
                     timeInSecondsFromStartToMaturityWad,
-                    termEndTimestampWad,
+                    _termEndTimestampWad,
                     Time.blockTimestampScaled(),
                     variableTokenBalance < 0,
                     isLM,
@@ -885,7 +911,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     sqrtPriceX96,
                     devMulWad,
                     fixedRateDeviationMinWad,
-                    termEndTimestampWad,
+                    _termEndTimestampWad,
                     Time.blockTimestampScaled(),
                     uint256(marginCalculatorParameters.tMaxWad),
                     marginCalculatorParameters.gammaWad,
@@ -910,7 +936,7 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
                     sqrtPriceX96,
                     devMulWad,
                     fixedRateDeviationMinWad,
-                    termEndTimestampWad,
+                    _termEndTimestampWad,
                     Time.blockTimestampScaled(),
                     uint256(marginCalculatorParameters.tMaxWad),
                     marginCalculatorParameters.gammaWad,
@@ -924,9 +950,9 @@ contract MarginEngine is IMarginEngine, Initializable, OwnableUpgradeable, Pausa
         int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
             fixedTokenDeltaUnbalanced,
             variableTokenDelta,
-            rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad),
-            termStartTimestampWad,
-            termEndTimestampWad
+            _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad),
+            _termStartTimestampWad,
+            _termEndTimestampWad
         );
 
         int256 updatedVariableTokenBalance = variableTokenBalance +

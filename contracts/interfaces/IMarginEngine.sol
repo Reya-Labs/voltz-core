@@ -340,6 +340,9 @@ interface IMarginEngine is IPositionStructs {
     function transferMarginToFCMTrader(address _account, uint256 marginDelta)
         external;
 
+    /// @notice Gets the maximum age of the cached historical APY value can be without being refreshed
+    function cacheMaxAgeInSeconds() external view returns (uint256);
+
     /// @notice Sets the maximum age that the cached historical APY value
     /// @param _cacheMaxAgeInSeconds The new maximum age that the historical APY cache can be before being considered stale
     function setCacheMaxAgeInSeconds(uint256 _cacheMaxAgeInSeconds) external;

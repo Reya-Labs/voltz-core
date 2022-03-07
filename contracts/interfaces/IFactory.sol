@@ -33,30 +33,6 @@ interface IFactory {
     function setMasterFCM(address masterFCMAddress, address _rateOracle)
         external;
 
-    function getVAMMAddress(
-        address _underlyingToken,
-        address _rateOracle,
-        uint256 _termStartTimestampWad,
-        uint256 _termEndTimestampWad,
-        int24 _tickSpacing
-    ) external view returns (address);
-
-    function getMarginEngineAddress(
-        address _underlyingToken,
-        address _rateOracle,
-        uint256 _termStartTimestampWad,
-        uint256 _termEndTimestampWad,
-        int24 _tickSpacing
-    ) external view returns (address);
-
-    function getFCMAddress(
-        address _underlyingToken,
-        address _rateOracle,
-        uint256 _termStartTimestampWad,
-        uint256 _termEndTimestampWad,
-        int24 _tickSpacing
-    ) external view returns (address);
-
     function masterVAMM() external view returns (address);
 
     function masterMarginEngine() external view returns (address);
