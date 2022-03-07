@@ -263,7 +263,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       // the state updated in the margin engine in that case are done directly in the liquidatePosition function
       positionMarginRequirement = _marginEngine.updatePositionPostVAMMInducedMintBurn(params);
     }
-
+    
     // clear any tick data that is no longer needed
     if (params.liquidityDelta < 0) {
       if (flippedLower) {
@@ -307,6 +307,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     require(msg.sender==recipient || _factory.isApproved(recipient, msg.sender), "only msg.sender or approved can mint");
 
+    console.log("here?");
     positionMarginRequirement = updatePosition(
       ModifyPositionParams({
         owner: recipient,

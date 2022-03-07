@@ -275,6 +275,7 @@ contract E2ESetup {
     address public peripheryAddress;
 
     function setPeripheryAddress(address _peripheryAddress) public {
+        console.log("set _peripheryAddress", _peripheryAddress);
         peripheryAddress = _peripheryAddress;
     }
 
@@ -350,6 +351,7 @@ contract E2ESetup {
         public
         returns (int256 positionMarginRequirement)
     {
+        addPosition(params.recipient, params.tickLower, params.tickUpper);
         positionMarginRequirement = Actor(params.recipient)
             .mintOrBurnViaPeriphery(peripheryAddress, params);
     }
@@ -361,6 +363,7 @@ contract E2ESetup {
             uint256 cumulativeFeeIncurred
         )
     {
+        addPosition(params.recipient, params.tickLower, params.tickUpper);
         (, , cumulativeFeeIncurred, , positionMarginRequirement) = Actor(
             params.recipient
         ).swapViaPeriphery(peripheryAddress, params);

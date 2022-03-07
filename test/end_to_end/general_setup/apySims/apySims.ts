@@ -7,7 +7,7 @@ import { e2eScenarios } from "../e2eSetup";
 import { ScenarioRunner } from "../general";
 
 class ScenarioRunnerInstance extends ScenarioRunner {
-  // notional traded in this scenario\
+  // notional traded in this scenario
   // 100M of notional
   NOTIONAL: BigNumber = toBn("100000000");
 
