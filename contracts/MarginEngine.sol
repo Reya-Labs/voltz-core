@@ -477,11 +477,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         if (positionMarginRequirement > position.margin) {
             IVAMM.VAMMVars memory v = _vamm.vammVars();
-<<<<<<< HEAD
-            revert MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
-=======
             revert CustomErrors.MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
->>>>>>> b5bfd72689ea2c3eba89bf6829817ebda39dbd60
         }
 
         position.rewardPerAmount = 0;
