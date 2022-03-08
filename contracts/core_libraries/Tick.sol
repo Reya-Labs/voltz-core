@@ -16,17 +16,17 @@ library Tick {
 
     // info stored for each initialized individual tick
     struct Info {
-        // the total position liquidity that references this tick
+        /// @dev the total position liquidity that references this tick (either as tick lower or tick upper)
         uint128 liquidityGross;
-        // amount of net liquidity added (subtracted) when tick is crossed from left to right (right to left),
+        /// @dev amount of net liquidity added (subtracted) when tick is crossed from left to right (right to left),
         int128 liquidityNet;
-        // fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
-        // only has relative meaning, not absolute — the value depends on when the tick is initialized
+        /// @dev fee growth per unit of liquidity on the _other_ side of this tick (relative to the current tick)
+        /// @dev only has relative meaning, not absolute — the value depends on when the tick is initialized
         int256 fixedTokenGrowthOutsideX128;
         int256 variableTokenGrowthOutsideX128;
         uint256 feeGrowthOutsideX128;
-        // true iff the tick is initialized, i.e. the value is exactly equivalent to the expression liquidityGross != 0
-        // these 8 bits are set to prevent fresh sstores when crossing newly initialized ticks
+        /// @dev true iff the tick is initialized, i.e. the value is exactly equivalent to the expression liquidityGross != 0
+        /// @dev these 8 bits are set to prevent fresh sstores when crossing newly initialized ticks
         bool initialized;
     }
 

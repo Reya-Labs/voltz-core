@@ -232,21 +232,26 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   await factory.setMasterFCM(fcmMasterTest.address, rateOracleTest.address);
 
   // deploy a margin engine & vamm
-  await factory.deployIrsInstance(
+  const deployTrx = await factory.deployIrsInstance(
     token.address,
     rateOracleTest.address,
     termStartTimestampBN,
     termEndTimestampBN,
     TICK_SPACING
   );
+  const receiptLogs = (await deployTrx.wait()).logs;
+  // console.log("receiptLogs", receiptLogs);
+  const log = factory.interface.parseLog(receiptLogs[receiptLogs.length - 3]);
+  if (log.name !== "IrsInstanceDeployed") {
+    throw Error(
+      "IrsInstanceDeployed log not found. Has it moved to a different position in the array?"
+    );
+  }
+  // console.log("log", log);
+  const marginEngineAddress = log.args.marginEngine;
+  const vammAddress = log.args.vamm;
+  const fcmAddress = log.args.fcm;
 
-  const marginEngineAddress = await factory.getMarginEngineAddress(
-    token.address,
-    rateOracleTest.address,
-    termStartTimestampBN,
-    termEndTimestampBN,
-    TICK_SPACING
-  );
   const marginEngineTestFactory = await ethers.getContractFactory(
     "TestMarginEngine"
   );
@@ -254,23 +259,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     marginEngineAddress
   ) as TestMarginEngine;
 
-  const vammAddress = await factory.getVAMMAddress(
-    token.address,
-    rateOracleTest.address,
-    termStartTimestampBN,
-    termEndTimestampBN,
-    TICK_SPACING
-  );
   const vammTestFactory = await ethers.getContractFactory("TestVAMM");
   const vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
 
-  const fcmAddress = await factory.getFCMAddress(
-    token.address,
-    rateOracleTest.address,
-    termStartTimestampBN,
-    termEndTimestampBN,
-    TICK_SPACING
-  );
   const fcmTestFactory = await ethers.getContractFactory("AaveFCM");
   const fcmTest = fcmTestFactory.attach(fcmAddress) as AaveFCM;
 
