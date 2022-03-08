@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
 import { add } from "../../../shared/functions";
@@ -52,6 +52,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         this.positions[positionIndex][2],
         marginRequirement
       );
+
+      console.log("margin requirement:", utils.formatEther(marginRequirement));
     }
 
     // mint liquidity
@@ -140,6 +142,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // advance one day per step
     for (let i = 0; i < 364; i++) {
+      console.log("day", i);
       await this.exportSnapshot("step " + i.toString());
 
       await this.executeSwap(

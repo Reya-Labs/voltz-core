@@ -8,6 +8,11 @@ import "./interfaces/IVAMM.sol";
 import "./interfaces/fcms/IFCM.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "contracts/utils/CustomErrors.sol";
+
+contract VoltzERC1967Proxy is ERC1967Proxy, CustomErrors {
+  constructor(address _logic, bytes memory _data) payable ERC1967Proxy(_logic, _data) {}
+}
 
 
 /// @title Voltz Factory Contract
@@ -54,9 +59,9 @@ contract Factory is IFactory, Ownable {
     require(_tickSpacing > 0 && _tickSpacing < 16384, "TSOOB");
     bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing);
     // IMarginEngine marginEngine = IMarginEngine(masterMarginEngine.cloneDeterministic(salt));
-    IMarginEngine marginEngine = IMarginEngine(address(new ERC1967Proxy(masterMarginEngine, "")));
+    IMarginEngine marginEngine = IMarginEngine(address(new VoltzERC1967Proxy(masterMarginEngine, "")));
     // IVAMM vamm = IVAMM(masterVAMM.cloneDeterministic(salt));
-    IVAMM vamm = IVAMM(address(new ERC1967Proxy(masterVAMM, "")));
+    IVAMM vamm = IVAMM(address(new VoltzERC1967Proxy(masterVAMM, "")));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     vamm.initialize(address(marginEngine), _tickSpacing);
     marginEngine.setVAMM(address(vamm));
@@ -67,7 +72,7 @@ contract Factory is IFactory, Ownable {
     if (masterFCMs[yieldBearingProtocolID] != address(0)) {
       address masterFCM = masterFCMs[yieldBearingProtocolID];
       // fcm = IFCM(masterFCM.cloneDeterministic(salt));
-      fcm = IFCM(address(new ERC1967Proxy(masterFCM, "")));
+      fcm = IFCM(address(new VoltzERC1967Proxy(masterFCM, "")));
       fcm.initialize(address(vamm), address(marginEngine));
       marginEngine.setFCM(address(fcm));
       Ownable(address(fcm)).transferOwnership(msg.sender);
