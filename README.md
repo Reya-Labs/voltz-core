@@ -72,3 +72,15 @@ By default, we install a pre-push hook to run `npm run check` before each push. 
 - `npm run format:sol:check` - Check the formatting of all Solidity files.
 - `npm run format:ts:check` - Check the formatting of all TypeScript files.
 - `npm run format:check` - Check the formatting of all files.
+
+### Deploy an IRS Instance
+
+`npx hardhat createIrsInstance --network <networkName> --rate-oracle <rateOracleName> [--tick-spacing <tickSpacingValue>]`
+
+### List IRS Instances
+
+`npx hardhat listIrsInstances --network <networkName>`
+
+For humans, some post-processing can be useful. E.g. in bash:
+
+`npx hardhat listIrsInstances --network <networkName> | column -s, -t`
