@@ -8,8 +8,9 @@ import "./rate_oracles/IRateOracle.sol";
 import "./fcms/IFCM.sol";
 import "./IFactory.sol";
 import "./IERC20Minimal.sol";
+import "contracts/utils/CustomErrors.sol";
 
-interface IMarginEngine is IPositionStructs {
+interface IMarginEngine is IPositionStructs, CustomErrors {
     // structs
     struct PositionMarginRequirementLocalVars2 {
         int24 inRangeTick;
@@ -153,48 +154,6 @@ interface IMarginEngine is IPositionStructs {
     /// @notice The unix termEndTimestamp of the MarginEngine in Wad
     /// @return Term End Timestamp in Wad
     function termEndTimestampWad() external view returns (uint256);
-
-    // errors
-
-    /// @dev No need to unwind a net zero position
-    error PositionNetZero();
-
-    /// @dev Cannot have less margin than the minimum requirement
-    error MarginLessThanMinimum(int256 marginRequirement);
-
-    /// @dev We can't withdraw more margin than we have
-    error WithdrawalExceedsCurrentMargin();
-
-    /// @dev Position must be settled after AMM has reached maturity
-    error PositionNotSettled();
-
-    /// The resulting margin does not meet minimum requirements
-    error MarginRequirementNotMet(
-        int256 marginRequirement,
-        int24 tick,
-        int256 fixedTokenDelta,
-        int256 variableTokenDelta,
-        uint256 cumulativeFeeIncurred,
-        int256 fixedTokenDeltaUnbalanced
-    );
-
-    /// The position/trader needs to be below the liquidation threshold to be liquidated
-    error CannotLiquidate(uint256 marginRequirement);
-
-    /// Only the position/trade owner can update the LP/Trader margin
-    error OnlyOwnerCanUpdatePosition();
-
-    error OnlyVAMM();
-
-    error OnlyFCM();
-
-    /// Margin delta must not equal zero
-    error InvalidMarginDelta();
-
-    /// Positions and Traders cannot be settled before the applicable interest rate swap has matured
-    error CannotSettleBeforeMaturity();
-
-    error closeToOrBeyondMaturity();
 
     /// @dev "constructor" for proxy instances
     function initialize(

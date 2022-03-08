@@ -61,6 +61,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         "test/end_to_end/general_setup/apySims/margin_requirements.txt",
         "initial margin: " + utils.formatEther(marginRequirement) + "\n"
       );
+
+      console.log("margin requirement:", utils.formatEther(marginRequirement));
     }
 
     // mint liquidity
