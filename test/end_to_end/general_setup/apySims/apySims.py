@@ -8,6 +8,7 @@ final_trader_yba = {}
 lower_apy_bound = {}
 historical_apy = {}
 upper_apy_bound = {}
+rni = {}
 
 with open('test/end_to_end/general_setup/apySims/console.txt') as f:
     lines = f.readlines()
@@ -29,6 +30,8 @@ with open('test/end_to_end/general_setup/apySims/console.txt') as f:
             # print(day_data)
             for i, l in enumerate(phase):
                 # print(l)
+                if l.startswith("current reserve normalised income"):
+                    rni[day_data] = float(l.split(" ")[-1])
                 if l.startswith("lower apy bound"):
                     lower_apy_bound[day_data] = float(l.split(" ")[-1])
                 if l.startswith(" historical apy"):
@@ -123,7 +126,7 @@ with open('test/end_to_end/general_setup/apySims/margin_requirements.txt') as f:
         margin_requirements[int(l.split(" ")[1])] = float(l.split(" ")[3])
         liquidation_thresholds[int(l.split(" ")[1])] = float(l.split(" ")[5])
 
-print("final margin of position 0: " + str(final_position_info[0]["margin"]))
+# print("final margin of position 0: " + str(final_position_info[0]["margin"]))
 
 current_margin = {}
 for day in position_info[0].keys():
@@ -155,4 +158,12 @@ plt.ylabel("apy")
 plt.title("Apy bounds")
 plt.legend(['lower apy bound', 'historical apy', 'upper apy bound'])
 plt.savefig("test/end_to_end/general_setup/apySims/apy_bounds.png")
+plt.clf()
+
+plt.plot(rni.keys(), rni.values())
+plt.xlabel("day")
+plt.ylabel("rni")
+plt.title("Reserve normalized income per day")
+plt.legend(['Reserve normalized income'])
+plt.savefig("test/end_to_end/general_setup/apySims/rni.png")
 plt.clf()

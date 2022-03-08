@@ -198,7 +198,6 @@ library Tick {
         Tick.Info storage info = self[tick];
 
         uint128 liquidityGrossBefore = info.liquidityGross;
-        Printer.printInt128("liquidityDelta", liquidityDelta);
         require(
             int128(info.liquidityGross) + liquidityDelta >= 0,
             "not enough liquidity to burn"

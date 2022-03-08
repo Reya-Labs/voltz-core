@@ -1,5 +1,6 @@
 import { BigNumber, utils } from "ethers";
 import { toBn } from "evm-bn";
+import { random } from "mathjs";
 import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
 import { add } from "../../../shared/functions";
@@ -178,28 +179,19 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       ""
     );
 
+    let acc = 1.001
+    let min_rate_once = -0.0007
+    let max_rate_once = 0.001
     const rate_oracle_loading_days = 10;
     for (let i = 0; i < rate_oracle_loading_days; i++) {
-      await this.advanceAndUpdateApy(
-        consts.ONE_HOUR.mul(6),
-        1,
-        1.001 + i * 0.0001
-      );
-      await this.advanceAndUpdateApy(
-        consts.ONE_HOUR.mul(6),
-        1,
-        1.001 + (i + 0.25) * 0.0001
-      );
-      await this.advanceAndUpdateApy(
-        consts.ONE_HOUR.mul(6),
-        1,
-        1.001 + (i + 0.5) * 0.0001
-      );
-      await this.advanceAndUpdateApy(
-        consts.ONE_HOUR.mul(6),
-        1,
-        1.001 + (i + 0.75) * 0.0001
-      );
+      for (let j = 0; j < 4; j++){
+        acc += random(min_rate_once, max_rate_once)
+        await this.advanceAndUpdateApy(
+          consts.ONE_HOUR.mul(6),
+          1,
+          acc
+        );
+      }
     }
 
     await this.executeMint(0);
@@ -255,26 +247,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           "\n"
       );
 
-      await this.advanceAndUpdateApy(
-        consts.ONE_HOUR.mul(6),
-        1,
-        1.001 + i * 0.0001
-      );
-      await this.advanceAndUpdateApy(
-        consts.ONE_HOUR.mul(6),
-        1,
-        1.001 + (i + 0.25) * 0.0001
-      );
-      await this.advanceAndUpdateApy(
-        consts.ONE_HOUR.mul(6),
-        1,
-        1.001 + (i + 0.5) * 0.0001
-      );
-      await this.advanceAndUpdateApy(
-        consts.ONE_HOUR.mul(6),
-        1,
-        1.001 + (i + 0.75) * 0.0001
-      );
+      for (let j = 0; j < 4; j++){
+        acc += random(min_rate_once, max_rate_once)
+        await this.advanceAndUpdateApy(
+          consts.ONE_HOUR.mul(6),
+          1,
+          acc
+        );
+      }
     }
 
     // export snapshot before settlement
