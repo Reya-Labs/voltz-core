@@ -37,10 +37,10 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     constructor() initializer {}
 
     function initialize(address __underlyingToken, address _rateOracleAddress, uint256 __termStartTimestampWad, uint256 __termEndTimestampWad) external override initializer {
-        require(__underlyingToken != address(0), "UT must be set");
-        require(_rateOracleAddress != address(0), "RO must be set");
-        require(__termStartTimestampWad != 0, "TS must be set");
-        require(__termEndTimestampWad != 0, "TE must be set");
+        require(__underlyingToken != address(0), "UT");
+        require(_rateOracleAddress != address(0), "RO");
+        require(__termStartTimestampWad != 0, "TS");
+        require(__termEndTimestampWad != 0, "TE");
 
         _underlyingToken = IERC20Minimal(__underlyingToken);
         _termStartTimestampWad = __termStartTimestampWad;
@@ -286,7 +286,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             if (_owner != msg.sender && !_factory.isApproved(_owner, msg.sender)) {
                 revert CustomErrors.OnlyOwnerCanUpdatePosition();
             }
-            
+          
             position.updateMarginViaDelta(marginDelta);
 
             checkPositionMarginCanBeUpdated(position, tickLower, tickUpper); 
@@ -399,21 +399,12 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         }
 
         if (position.rewardPerAmount == 0) {
-            if (position.variableTokenBalance < 0) {
-                if (position.margin > 0) {
-                    position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), _liquidatorRewardWad), uint256(-position.variableTokenBalance));
-                }
-                else {
-                    position.rewardPerAmount = 0;
-                }
+            uint256 absVariableTokenBalance = position.variableTokenBalance < 0 ? uint256(-position.variableTokenBalance) :  uint256(position.variableTokenBalance);
+            if (position.margin > 0) {
+                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), _liquidatorRewardWad), absVariableTokenBalance);
             }
             else {
-                if (position.margin > 0) {
-                    position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), _liquidatorRewardWad), uint256(position.variableTokenBalance));
-                }
-                else {
-                    position.rewardPerAmount = 0;
-                }
+                position.rewardPerAmount = 0;
             }
         }
 
@@ -537,7 +528,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         );
 
         if (position.margin <= positionMarginRequirement) {
-            Printer.printInt256("position.margin", position.margin);
+            // Printer.printInt256("position.margin", position.margin);
             // @audit:  Error: VM Exception while processing transaction: reverted with an unrecognized custom error
             // at ERC1967Proxy.functionDelegateCall (@openzeppelin/contracts/utils/Address.sol:184)
             revert CustomErrors.MarginLessThanMinimum(positionMarginRequirement);
@@ -724,16 +715,18 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             localVars.scenario2LPFixedTokenBalance =
                     position.fixedTokenBalance + extraFixedTokenBalance;
 
-            uint160 priceAtLowerTick = TickMath.getSqrtRatioAtTick(tickLower);
-            uint160 priceAtUpperTick = TickMath.getSqrtRatioAtTick(tickUpper);
-        
+            uint160 lowPrice = TickMath.getSqrtRatioAtTick(tickLower);
+            uint160 highPrice = TickMath.getSqrtRatioAtTick(tickUpper);
+            lowPrice = sqrtPriceX96 < lowPrice ? sqrtPriceX96 : lowPrice;
+            highPrice = sqrtPriceX96 > highPrice ? sqrtPriceX96 : highPrice;
+
             localVars.scenario1SqrtPriceX96 = (localVars.scenario1LPVariableTokenBalance > 0) 
-                ? ((sqrtPriceX96 > priceAtUpperTick) ? sqrtPriceX96 : priceAtUpperTick) 
-                : ((sqrtPriceX96 < priceAtLowerTick) ? sqrtPriceX96 : priceAtLowerTick);
+                ? highPrice
+                : lowPrice;
 
             localVars.scenario2SqrtPriceX96 = (localVars.scenario2LPVariableTokenBalance > 0) 
-                ? ((sqrtPriceX96 > priceAtUpperTick) ? sqrtPriceX96 : priceAtUpperTick) 
-                : ((sqrtPriceX96 < priceAtLowerTick) ? sqrtPriceX96 : priceAtLowerTick);
+                ? highPrice
+                : lowPrice;
 
 
             uint256 scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
