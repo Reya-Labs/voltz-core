@@ -23,6 +23,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     mockERC20Deploy.address,
     BigNumber.from(2).pow(27)
   );
+  return true; // Only execute once
 };
 func.tags = ["Mocks"];
+func.id = "Mocks";
 export default func;

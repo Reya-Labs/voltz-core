@@ -20,6 +20,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [masterMarginEngineDeploy.address, masterVammDeploy.address],
     log: doLogging,
   });
+  return true; // Only execute once
 };
 func.tags = ["Factory"];
+func.id = "Factory";
 export default func;
