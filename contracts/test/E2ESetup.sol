@@ -12,9 +12,10 @@ import "../interfaces/IFactory.sol";
 import "../interfaces/IPeriphery.sol";
 import "../utils/WayRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "contracts/utils/CustomErrors.sol";
 
 // todo: need a separate file for the actor contract: convention is 1 file per contract
-contract Actor {
+contract Actor is CustomErrors {
     function mintOrBurnViaPeriphery(
         address peripheryAddress,
         IPeriphery.MintOrBurnParams memory params
@@ -127,7 +128,7 @@ contract Actor {
     }
 }
 
-contract E2ESetup {
+contract E2ESetup is CustomErrors {
     struct UniqueIdentifiersPosition {
         address owner;
         int24 tickLower;

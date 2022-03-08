@@ -2,8 +2,9 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
+import "contracts/utils/CustomErrors.sol";
 
-interface IPeriphery {
+interface IPeriphery is CustomErrors {
     struct MintOrBurnParams {
         address marginEngineAddress;
         address recipient;

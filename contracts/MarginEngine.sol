@@ -65,7 +65,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
     modifier nonZeroDelta (int256 marginDelta) {
         if (marginDelta == 0) {
-            revert InvalidMarginDelta();
+            revert CustomErrors.InvalidMarginDelta();
         }
         _;
     }
@@ -73,7 +73,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev Modifier that ensures only the VAMM can execute certain actions
     modifier onlyVAMM () {
         if (msg.sender != address(_vamm)) {
-            revert OnlyVAMM();
+            revert CustomErrors.OnlyVAMM();
         }
         _;
     }
@@ -81,7 +81,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev Modifier that reverts if the msg.sender is not the Full Collateralisation Module
     modifier onlyFCM () {
         if (msg.sender != address(_fcm)) {
-            revert OnlyFCM();
+            revert CustomErrors.OnlyFCM();
         }
         _;
     }
@@ -90,7 +90,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev This modifier ensures that actions such as settlePosition (can only be done after maturity)
     modifier onlyAfterMaturity () {
         if (_termEndTimestampWad > Time.blockTimestampScaled()) {
-            revert CannotSettleBeforeMaturity();
+            revert CustomErrors.CannotSettleBeforeMaturity();
         }
         _;
     }
@@ -99,7 +99,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
     modifier checkCurrentTimestampTermEndTimestampDelta() {
         if (Time.isCloseToMaturityOrBeyondMaturity(_termEndTimestampWad)) {
-            revert closeToOrBeyondMaturity();
+            revert CustomErrors.closeToOrBeyondMaturity();
         }
         _;
     }
@@ -284,7 +284,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         if (marginDelta < 0) {
 
             if (_owner != msg.sender && !_factory.isApproved(_owner, msg.sender)) {
-                revert OnlyOwnerCanUpdatePosition();
+                revert CustomErrors.OnlyOwnerCanUpdatePosition();
             }
 
             Printer.printInt256("position.margin", position.margin); 
@@ -397,7 +397,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         (bool isLiquidatable, uint256 marginRequirement) = isLiquidatablePosition(position, tickLower, tickUpper);
 
         if (!isLiquidatable) {
-            revert CannotLiquidate(marginRequirement);
+            revert CustomErrors.CannotLiquidate(marginRequirement);
         }
 
         if (position.rewardPerAmount == 0) {
@@ -485,7 +485,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         if (positionMarginRequirement > position.margin) {
             IVAMM.VAMMVars memory v = _vamm.vammVars();
-            revert MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
+            revert CustomErrors.MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
         }
 
         position.rewardPerAmount = 0;
@@ -548,7 +548,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             Printer.printInt256("position.margin", position.margin);
             // @audit:  Error: VM Exception while processing transaction: reverted with an unrecognized custom error
             // at ERC1967Proxy.functionDelegateCall (@openzeppelin/contracts/utils/Address.sol:184)
-            revert MarginLessThanMinimum(positionMarginRequirement);
+            revert CustomErrors.MarginLessThanMinimum(positionMarginRequirement);
         }
     }
 
@@ -567,10 +567,10 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         /// @dev their margin is to withdraw it completely. If so, the position needs to be settled
         if (Time.blockTimestampScaled() >= _termEndTimestampWad) {
             if (!position.isSettled) {
-                revert PositionNotSettled();
+                revert CustomErrors.PositionNotSettled();
             }
             if (position.margin < 0) {
-                revert WithdrawalExceedsCurrentMargin();
+                revert CustomErrors.WithdrawalExceedsCurrentMargin();
             }
         }
         else {
