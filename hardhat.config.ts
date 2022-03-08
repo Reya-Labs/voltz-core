@@ -13,12 +13,23 @@ import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
-import "./tasks/createIrsInstance";
-import "./tasks/listIrsInstances";
-import "./tasks/mintTestTokens";
 // import "@primitivefi/hardhat-dodoc"; bring back on demand
 
 dotenv.config();
+
+// We can't import some tasks unless we've already built the solidity code and generated types with typechain
+// Luckily we don't need these tasks, and can ignore them, if types are missing
+const loadModuleIgnoreErrors = async (modulePath: string) => {
+  try {
+    return await import(modulePath);
+  } catch (e) {
+    // Ignore
+  }
+};
+
+loadModuleIgnoreErrors("./tasks/createIrsInstance");
+loadModuleIgnoreErrors("./tasks/listIrsInstances");
+loadModuleIgnoreErrors("./tasks/mintTestTokens");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
