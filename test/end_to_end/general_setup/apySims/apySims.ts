@@ -179,18 +179,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       ""
     );
 
-    let acc = 1.001
-    let min_rate_once = -0.0007
-    let max_rate_once = 0.001
+    let acc = 1.001;
+    const min_rate_once = -0.0007;
+    const max_rate_once = 0.001;
     const rate_oracle_loading_days = 10;
     for (let i = 0; i < rate_oracle_loading_days; i++) {
-      for (let j = 0; j < 4; j++){
-        acc += random(min_rate_once, max_rate_once)
-        await this.advanceAndUpdateApy(
-          consts.ONE_HOUR.mul(6),
-          1,
-          acc
-        );
+      for (let j = 0; j < 4; j++) {
+        acc += random(min_rate_once, max_rate_once);
+        await this.advanceAndUpdateApy(consts.ONE_HOUR.mul(6), 1, acc);
       }
     }
 
@@ -247,13 +243,9 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           "\n"
       );
 
-      for (let j = 0; j < 4; j++){
-        acc += random(min_rate_once, max_rate_once)
-        await this.advanceAndUpdateApy(
-          consts.ONE_HOUR.mul(6),
-          1,
-          acc
-        );
+      for (let j = 0; j < 4; j++) {
+        acc += random(min_rate_once, max_rate_once);
+        await this.advanceAndUpdateApy(consts.ONE_HOUR.mul(6), 1, acc);
       }
     }
 
