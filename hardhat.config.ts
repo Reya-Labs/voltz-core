@@ -15,6 +15,7 @@ import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "./tasks/createIrsInstance";
 import "./tasks/listIrsInstances";
+import "./tasks/mintTestTokens";
 // import "@primitivefi/hardhat-dodoc"; bring back on demand
 
 dotenv.config();

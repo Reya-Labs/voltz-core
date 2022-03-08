@@ -73,14 +73,34 @@ By default, we install a pre-push hook to run `npm run check` before each push. 
 - `npm run format:ts:check` - Check the formatting of all TypeScript files.
 - `npm run format:check` - Check the formatting of all files.
 
-### Deploy an IRS Instance
+### Deployment and Testing
 
-`npx hardhat createIrsInstance --network <networkName> --rate-oracle <rateOracleName> [--tick-spacing <tickSpacingValue>]`
+#### Create a local deployment for testing
 
-### List IRS Instances
+To start a local blockchain (hardhat node) and deploy our contracts to it, run:
+
+`npm run deploy:localhost`
+
+#### Deploy to kovan
+
+To desploy our contracts to the kovan testnet, first check the configuration for kovan in [the deployment config](./deploy/config.ts), and once it is correct run:
+
+`npm run deploy:kovan`
+
+#### Mint tokens for testing
+
+There is a task for this. Run `npx hardhat help mintTestTokens` for task usage.
+
+#### Deploy an IRS Instance
+
+Run: `npx hardhat createIrsInstance --network <networkName> --rate-oracle <rateOracleName> [--tick-spacing <tickSpacingValue>]`
+
+Where `rateOracleName` is the name of a rate oracle instance as defined in the `deployments/<networkName>` directory. E.g. it might be "TestRateOracle" on localhost, or "AaveRateOracle_USDT" on kovan.
+
+#### List IRS Instances
 
 `npx hardhat listIrsInstances --network <networkName>`
 
-For humans, some post-processing can be useful. E.g. in bash:
+For humans, some post-processing can be useful to make the output more readable. E.g. in bash:
 
 `npx hardhat listIrsInstances --network <networkName> | column -s, -t`
