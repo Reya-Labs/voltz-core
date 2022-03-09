@@ -1,6 +1,17 @@
 import { task, types } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
-import { IRateOracle } from "../typechain";
+import { IRateOracle, MarginEngine } from "../typechain";
+import {   
+  APY_UPPER_MULTIPLIER,
+  APY_LOWER_MULTIPLIER,
+  MIN_DELTA_LM,
+  MIN_DELTA_IM,
+  SIGMA_SQUARED,
+  ALPHA,
+  BETA,
+  XI_UPPER,
+  XI_LOWER,
+  T_MAX } from "../test/shared/utilities";
 
 task(
   "createIrsInstance",
@@ -46,7 +57,9 @@ task(
     const tomorrow = new Date(today); // today
     tomorrow.setDate(today.getDate() + 1); // tomorrow
     tomorrow.setUTCHours(0, 0, 0, 0); // midnight tomorrow
-    const startTimestamp = tomorrow.getTime() / 1000;
+    // ab: changed for the start timestamp to be today for testing purposes, todo: need to change back for actual deployments!
+    // const startTimestamp = tomorrow.getTime() / 1000;
+    const startTimestamp = today.getTime() / 1000;
     const endDay = new Date(tomorrow);
     endDay.setDate(tomorrow.getDate() + taskArgs.daysDuration);
     const endTimestamp = endDay.getTime() / 1000; // N.B. May not be midnight if clocks have changed
@@ -72,6 +85,44 @@ task(
       )[0];
       //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
       console.log(`IRS created successfully. Event args were: ${event.args}`);
+      
+      // set margin calculator parameters
+      const margin_engine_params = {
+        apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+        apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+        minDeltaLMWad: MIN_DELTA_LM,
+        minDeltaIMWad: MIN_DELTA_IM,
+        sigmaSquaredWad: SIGMA_SQUARED,
+        alphaWad: ALPHA,
+        betaWad: BETA,
+        xiUpperWad: XI_UPPER,
+        xiLowerWad: XI_LOWER,
+        tMaxWad: T_MAX,
+  
+        devMulLeftUnwindLMWad: toBn("0.5"),
+        devMulRightUnwindLMWad: toBn("0.5"),
+        devMulLeftUnwindIMWad: toBn("0.8"),
+        devMulRightUnwindIMWad: toBn("0.8"),
+  
+        fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+        fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+  
+        fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+        fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+  
+        gammaWad: toBn("1.0"),
+        minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+      };
+
+      const marginEngineAddress = event.args[5];
+
+      const marginEngine = await hre.ethers.getContractAt(
+        "MarginEngine",
+        marginEngineAddress
+      ) as MarginEngine;
+
+      await marginEngine.setMarginCalculatorParameters(margin_engine_params);
+
     }
   });
 
