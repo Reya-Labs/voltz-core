@@ -15,15 +15,10 @@ task(
     "tokenAddress",
     "The address of the token to mint (default: the mock token deployed by us)"
   )
-  .addOptionalParam(
-    "amount",
-    "The amount to mint to each beneficiary",
-    "100"
-  )
+  .addOptionalParam("amount", "The amount to mint to each beneficiary", "100")
   .setAction(async (taskArgs, hre) => {
+    const amount = toBn(taskArgs.amount);
 
-    const amount = toBn(taskArgs.amount)
-    
     const accounts = taskArgs.beneficiaries
       .split(",")
       .map((a: string) => utils.getAddress(a));

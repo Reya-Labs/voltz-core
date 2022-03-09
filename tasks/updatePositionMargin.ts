@@ -27,7 +27,7 @@ task("updatePositionMargin", "Updates position margin")
     // approve the me
 
     // get the token address
-    const tokenAddress: string = await marginEngine.underlyingToken()
+    const tokenAddress: string = await marginEngine.underlyingToken();
 
     const token = (await hre.ethers.getContractAt(
       "ERC20Mock",
@@ -42,8 +42,6 @@ task("updatePositionMargin", "Updates position margin")
       tickUpper,
       marginDelta
     );
-
   });
-
 
 module.exports = {};
