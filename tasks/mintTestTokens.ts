@@ -1,6 +1,7 @@
 import { BigNumber, utils } from "ethers";
 import { task } from "hardhat/config";
 import { ERC20Mock } from "../typechain";
+import { toBn } from "../test/helpers/toBn";
 
 task(
   "mintTestTokens",
@@ -15,12 +16,14 @@ task(
     "The address of the token to mint (default: the mock token deployed by us)"
   )
   .addOptionalParam(
-    "wei",
-    "The amount to mint to each beneficiary, in token wei",
-    "1000000000000"
+    "amount",
+    "The amount to mint to each beneficiary",
+    "100"
   )
   .setAction(async (taskArgs, hre) => {
-    const amount = BigNumber.from(taskArgs.wei);
+
+    const amount = toBn(taskArgs.amount)
+    
     const accounts = taskArgs.beneficiaries
       .split(",")
       .map((a: string) => utils.getAddress(a));

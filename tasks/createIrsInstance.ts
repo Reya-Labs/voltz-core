@@ -112,7 +112,7 @@ task(
         fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
 
         gammaWad: toBn("1.0"),
-        minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+        minMarginToIncentiviseLiquidators: 0,
       };
 
       const marginEngineAddress = event.args[5];
