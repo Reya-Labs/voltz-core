@@ -52,7 +52,7 @@ interface IRateOracle {
     /// @return result The variable factor
     /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). No caching takes place.
     /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
-    function variableFactorNoCache(uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns(uint256 result);
+    function variableFactorNoCache(uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256 result);
 
     /// @notice Calculates the observed interest returned by the underlying in a given period
     /// @dev Reverts if we have no data point for either timestamp
@@ -61,7 +61,6 @@ interface IRateOracle {
     /// @return The "floating rate" expressed in Wad, e.g. 4% is encoded as 0.04*10**18 = 4*10*16
     function getRateFromTo(uint256 from, uint256 to)
         external
-        view
         returns (uint256);
 
     /// @notice Calculates the observed APY returned by the rate oracle in a given period
@@ -71,7 +70,6 @@ interface IRateOracle {
     //  how is the returned rate encoded? Floating rate?
     function getApyFromTo(uint256 from, uint256 to)
         external
-        view
         returns (uint256 apyFromTo);
 
     // non-view functions
