@@ -72,6 +72,15 @@ const config: ContractsConfigMap = {
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],
+    // See tokens list at https://compound.finance/docs#networks
+    compoundTokens: [
+      {
+        name: "USDT",
+        address: "0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9",
+        rateOracleBufferSize: 135,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
   },
   localhost: {
     maxIrsDurationInSeconds: 60 * 60 * 24 * 30, // 30 days. Do not increase without checking that rate oracle buffers are large enough
@@ -107,9 +116,28 @@ export const getAaveTokens = (
     : undefined;
   // Check for duplicate token names. These must be unique because they are used to name the deployed contracts
   if (aaveTokens && duplicateExists(aaveTokens?.map((t) => t.name))) {
-    throw Error(`Duplicate token names configured for network ${_networkName}`);
+    throw Error(
+      `Duplicate token names configured for Aave on network ${_networkName}`
+    );
   }
   return aaveTokens;
+};
+
+export const getCompoundTokens = (
+  _networkName?: string
+): TokenConfig[] | null => {
+  const networkName = _networkName;
+
+  const compoundTokens = config[networkName]
+    ? config[networkName].compoundTokens
+    : null;
+  // Check for duplicate token names. These must be unique because they are used to name the deployed contracts
+  if (compoundTokens && duplicateExists(compoundTokens?.map((t) => t.name))) {
+    throw Error(
+      `Duplicate token names configured for Compound on network ${_networkName}`
+    );
+  }
+  return compoundTokens;
 };
 
 export const getConfigDefaults = (_networkName: string): ConfigDefaults => {
