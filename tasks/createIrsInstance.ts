@@ -1,7 +1,7 @@
 import { task, types } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
 import { IRateOracle, MarginEngine } from "../typechain";
-import {   
+import {
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
   MIN_DELTA_LM,
@@ -11,7 +11,8 @@ import {
   BETA,
   XI_UPPER,
   XI_LOWER,
-  T_MAX } from "../test/shared/utilities";
+  T_MAX,
+} from "../test/shared/utilities";
 
 task(
   "createIrsInstance",
@@ -85,7 +86,7 @@ task(
       )[0];
       //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
       console.log(`IRS created successfully. Event args were: ${event.args}`);
-      
+
       // set margin calculator parameters
       const margin_engine_params = {
         apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
@@ -98,31 +99,30 @@ task(
         xiUpperWad: XI_UPPER,
         xiLowerWad: XI_LOWER,
         tMaxWad: T_MAX,
-  
+
         devMulLeftUnwindLMWad: toBn("0.5"),
         devMulRightUnwindLMWad: toBn("0.5"),
         devMulLeftUnwindIMWad: toBn("0.8"),
         devMulRightUnwindIMWad: toBn("0.8"),
-  
+
         fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
         fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
-  
+
         fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
         fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
-  
+
         gammaWad: toBn("1.0"),
         minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
       };
 
       const marginEngineAddress = event.args[5];
 
-      const marginEngine = await hre.ethers.getContractAt(
+      const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
         marginEngineAddress
-      ) as MarginEngine;
+      )) as MarginEngine;
 
       await marginEngine.setMarginCalculatorParameters(margin_engine_params);
-
     }
   });
 
