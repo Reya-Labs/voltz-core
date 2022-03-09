@@ -75,6 +75,9 @@ interface CustomErrors {
     /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
     error AavePoolGetReserveNormalizedIncomeReturnedZero();
 
+    /// @dev ctoken.exchangeRateStored() returned zero for a given Compound ctoken. Oracle only supports active Compound assets.
+    error CTokenExchangeRateReturnedZero();
+
     /// @dev currentTime < queriedTime
     error OOO();
 }

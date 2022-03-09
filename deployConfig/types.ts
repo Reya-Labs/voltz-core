@@ -47,6 +47,7 @@ export interface ContractsConfig {
   maxIrsDurationInSeconds: number; // TODO: make sure that the oracle buffer will last this long
   configDefaults: ConfigDefaults;
   aaveTokens?: TokenConfig[];
+  compoundTokens?: TokenConfig[];
 }
 export interface ContractsConfigMap {
   [key: string]: ContractsConfig;
