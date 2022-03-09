@@ -6,3 +6,4 @@ gasReporterOutput.json
 typechain
 docs
 deployments/**
+localhostDeployment.json

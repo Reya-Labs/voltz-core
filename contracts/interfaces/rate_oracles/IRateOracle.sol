@@ -82,7 +82,7 @@ interface IRateOracle {
     /// @dev This method is no-op if the RateOracle already has an observationCardinalityNext greater than or equal to
     /// the input observationCardinalityNext.
     /// @param rateCardinalityNext The desired minimum number of observations for the pool to store
-    function increaseObservarionCardinalityNext(uint16 rateCardinalityNext) external;
+    function increaseObservationCardinalityNext(uint16 rateCardinalityNext) external;
 
     /// @notice Writes a rate observation to the rates array given the current rate cardinality, rate index and rate cardinality next
     /// Write oracle entry is called whenever a new position is minted via the vamm or when a swap is initiated via the vamm

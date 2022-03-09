@@ -146,16 +146,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     _underlyingYieldBearingToken.safeTransferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
 
     // transfer fees to the margin engine (in terms of the underlyingToken e.g. aUSDC)
-    console.log("address of msg.sender", msg.sender);
-    Printer.printUint256("balance of msg.sender", IERC20Minimal(
-            underlyingToken
-        ).balanceOf(msg.sender));
-    console.log("address of msg.sender", address(this));
-    Printer.printUint256("balance of msg.sender", IERC20Minimal(
-            underlyingToken
-        ).balanceOf(address(this)));
-    Printer.printUint256("cumulativeFeeIncurred", cumulativeFeeIncurred);
-
     underlyingToken.safeTransferFrom(msg.sender, address(_marginEngine), cumulativeFeeIncurred);
 
     emit InitiateFullyCollateralisedSwap(trader.marginInScaledYieldBearingTokens, trader.fixedTokenBalance, trader.variableTokenBalance);

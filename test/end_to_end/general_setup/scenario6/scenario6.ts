@@ -11,7 +11,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     await this.exportSnapshot("START");
 
-    await this.rateOracleTest.increaseObservarionCardinalityNext(1000);
+    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
 
     await this.e2eSetup.updatePositionMargin(
       this.positions[0][0],

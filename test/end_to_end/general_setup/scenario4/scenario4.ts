@@ -22,8 +22,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     const length_of_series = 50;
     const actions = [1, 2, 3];
 
-    await this.rateOracleTest.increaseObservarionCardinalityNext(1000);
-    await this.rateOracleTest.increaseObservarionCardinalityNext(2000);
+    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
+    await this.rateOracleTest.increaseObservationCardinalityNext(2000);
 
     for (let step = 0; step < length_of_series * 4; step++) {
       // await advanceAndUpdateApy(consts.ONE_HOUR, 1, 1.010 + step * 0.00001);

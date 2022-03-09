@@ -54,7 +54,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
     // AB: lock the amm when calling this function?
     /// @inheritdoc IRateOracle
-    function increaseObservarionCardinalityNext(uint16 rateCardinalityNext)
+    function increaseObservationCardinalityNext(uint16 rateCardinalityNext)
         external
         override
     {

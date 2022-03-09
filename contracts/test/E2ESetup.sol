@@ -8,10 +8,45 @@ import "contracts/test/TestAaveFCM.sol";
 import "contracts/utils/Printer.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
+import "../interfaces/IFactory.sol";
+import "../interfaces/IPeriphery.sol";
 import "../utils/WayRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "contracts/utils/CustomErrors.sol";
 
-contract Actor {
+// todo: need a separate file for the actor contract: convention is 1 file per contract
+contract Actor is CustomErrors {
+    function mintOrBurnViaPeriphery(
+        address peripheryAddress,
+        IPeriphery.MintOrBurnParams memory params
+    ) external returns (int256 positionMarginRequirement) {
+        positionMarginRequirement = IPeriphery(peripheryAddress).mintOrBurn(
+            params
+        );
+    }
+
+    function swapViaPeriphery(
+        address peripheryAddress,
+        IPeriphery.SwapPeripheryParams memory params
+    )
+        external
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement
+        )
+    {
+        (
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced,
+            _marginRequirement
+        ) = IPeriphery(peripheryAddress).swap(params);
+    }
+
     function mint(
         address VAMMAddress,
         address recipient,
@@ -50,6 +85,17 @@ contract Actor {
         ) = IVAMM(VAMMAddress).swap(params);
     }
 
+    function setIntegrationApproval(
+        address MEAddress,
+        address intAddress,
+        bool allowIntegration
+    ) external {
+        // get the factory
+        IFactory factory = IMarginEngine(MEAddress).factory();
+        // set integration approval
+        factory.setApproval(intAddress, allowIntegration);
+    }
+
     function liquidatePosition(
         address MEAddress,
         int24 tickLower,
@@ -82,7 +128,7 @@ contract Actor {
     }
 }
 
-contract E2ESetup {
+contract E2ESetup is CustomErrors {
     struct UniqueIdentifiersPosition {
         address owner;
         int24 tickLower;
@@ -227,6 +273,12 @@ contract E2ESetup {
     address public VAMMAddress;
     address public FCMAddress;
     address public rateOracleAddress;
+    address public peripheryAddress;
+
+    function setPeripheryAddress(address _peripheryAddress) public {
+        console.log("set _peripheryAddress", _peripheryAddress);
+        peripheryAddress = _peripheryAddress;
+    }
 
     function setMEAddress(address _MEAddress) public {
         MEAddress = _MEAddress;
@@ -294,6 +346,28 @@ contract E2ESetup {
         fcmFees += int256(MEBalanceAfter) - int256(MEBalanceBefore);
 
         continuousInvariants();
+    }
+
+    function mintOrBurnViaPeriphery(IPeriphery.MintOrBurnParams memory params)
+        public
+        returns (int256 positionMarginRequirement)
+    {
+        addPosition(params.recipient, params.tickLower, params.tickUpper);
+        positionMarginRequirement = Actor(params.recipient)
+            .mintOrBurnViaPeriphery(peripheryAddress, params);
+    }
+
+    function swapViaPeriphery(IPeriphery.SwapPeripheryParams memory params)
+        public
+        returns (
+            int256 positionMarginRequirement,
+            uint256 cumulativeFeeIncurred
+        )
+    {
+        addPosition(params.recipient, params.tickLower, params.tickUpper);
+        (, , cumulativeFeeIncurred, , positionMarginRequirement) = Actor(
+            params.recipient
+        ).swapViaPeriphery(peripheryAddress, params);
     }
 
     function mint(
@@ -604,15 +678,15 @@ contract E2ESetup {
                     allPositions[i].tickUpper
                 );
 
-            Printer.printInt256(
-                "   fixedTokenBalance:",
-                position.fixedTokenBalance
-            );
-            Printer.printInt256(
-                "variableTokenBalance:",
-                position.variableTokenBalance
-            );
-            Printer.printInt256("              margin:", position.margin);
+            // Printer.printInt256(
+            //     "   fixedTokenBalance:",
+            //     position.fixedTokenBalance
+            // );
+            // Printer.printInt256(
+            //     "variableTokenBalance:",
+            //     position.variableTokenBalance
+            // );
+            // Printer.printInt256("              margin:", position.margin);
 
             int256 estimatedSettlementCashflow = FixedAndVariableMath
                 .calculateSettlementCashflow(
@@ -630,7 +704,7 @@ contract E2ESetup {
                 true
             );
             uint256 marginRequirement = TestMarginEngine(MEAddress).getMargin();
-            Printer.printUint256("  margin requirement:", marginRequirement);
+            // Printer.printUint256("  margin requirement:", marginRequirement);
 
             if (int256(marginRequirement) > position.margin) {
                 liquidatablePositions += 1;
@@ -670,10 +744,10 @@ contract E2ESetup {
             totalCashflow += position.margin;
             totalCashflow += estimatedSettlementCashflow;
 
-            Printer.printInt256(
-                "              esc:",
-                estimatedSettlementCashflow
-            );
+            // Printer.printInt256(
+            //     "              esc:",
+            //     estimatedSettlementCashflow
+            // );
         }
 
         for (uint256 i = 1; i <= sizeAllYBATraders; i++) {
@@ -693,39 +767,39 @@ contract E2ESetup {
 
             totalCashflow += estimatedSettlementCashflow;
 
-            Printer.printInt256(
-                "   fixedTokenBalance:",
-                trader.fixedTokenBalance
-            );
-            Printer.printInt256(
-                "variableTokenBalance:",
-                trader.variableTokenBalance
-            );
-            Printer.printInt256(
-                "              YBA esc:",
-                estimatedSettlementCashflow
-            );
+            // Printer.printInt256(
+            //     "   fixedTokenBalance:",
+            //     trader.fixedTokenBalance
+            // );
+            // Printer.printInt256(
+            //     "variableTokenBalance:",
+            //     trader.variableTokenBalance
+            // );
+            // Printer.printInt256(
+            //     "              YBA esc:",
+            //     estimatedSettlementCashflow
+            // );
         }
 
         totalCashflow += int256(IVAMM(VAMMAddress).protocolFees());
         totalCashflow += int256(liquidationRewards);
         totalCashflow -= fcmFees;
 
-        Printer.printInt256("fcmFees", fcmFees);
-        Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
-        Printer.printInt256("totalVariableTokens:", totalVariableTokens);
-        Printer.printInt256("   initialCashflow:", initialCashflow);
-        Printer.printInt256(
-            "      deltaCashflow:",
-            totalCashflow - initialCashflow
-        );
-        Printer.printInt256("liquidatable Positions", liquidatablePositions);
-        Printer.printEmptyLine();
+        // Printer.printInt256("fcmFees", fcmFees);
+        // Printer.printInt256("   totalFixedTokens:", totalFixedTokens);
+        // Printer.printInt256("totalVariableTokens:", totalVariableTokens);
+        // Printer.printInt256("   initialCashflow:", initialCashflow);
+        // Printer.printInt256(
+        //     "      deltaCashflow:",
+        //     totalCashflow - initialCashflow
+        // );
+        // Printer.printInt256("liquidatable Positions", liquidatablePositions);
+        // Printer.printEmptyLine();
 
         // ideally, this should be 0
         int256 approximation = 100000;
 
-        Printer.printUint256("      app:", uint256(approximation));
+        // Printer.printUint256("      app:", uint256(approximation));
 
         require(
             -approximation < totalFixedTokens && totalFixedTokens <= 0,

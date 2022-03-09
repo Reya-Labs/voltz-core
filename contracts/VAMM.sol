@@ -135,7 +135,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   /// @dev modifier that ensures the
   modifier onlyMarginEngine () {
     if (msg.sender != address(_marginEngine)) {
-        revert OnlyMarginEngine();
+        revert CustomErrors.OnlyMarginEngine();
     }
     _;
   }
@@ -146,7 +146,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     onlyMarginEngine
   {
     if (_protocolFees < protocolFeesCollected) {
-      revert NotEnoughFunds(protocolFeesCollected, _protocolFees);
+      revert CustomErrors.NotEnoughFunds(protocolFeesCollected, _protocolFees);
     }
     _protocolFees = _protocolFees - protocolFeesCollected;
   }
@@ -154,7 +154,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   /// @dev not locked because it initializes unlocked
   function initializeVAMM(uint160 sqrtPriceX96) external override {
     if (_vammVars.sqrtPriceX96 != 0)  {
-      revert ExpectedSqrtPriceZeroBeforeInit(_vammVars.sqrtPriceX96);
+      revert CustomErrors.ExpectedSqrtPriceZeroBeforeInit(_vammVars.sqrtPriceX96);
     }
 
     int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
@@ -188,7 +188,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     /// @dev if msg.sender is the MarginEngine, it is a burn induced by a position liquidation
 
     if (amount <= 0) {
-      revert LiquidityDeltaMustBePositiveInBurn(amount);
+      revert CustomErrors.LiquidityDeltaMustBePositiveInBurn(amount);
     }
 
     require((msg.sender==recipient) || (msg.sender == address(_marginEngine)) || _factory.isApproved(recipient, msg.sender) , "MS or ME");
@@ -263,7 +263,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       // the state updated in the margin engine in that case are done directly in the liquidatePosition function
       positionMarginRequirement = _marginEngine.updatePositionPostVAMMInducedMintBurn(params);
     }
-
+    
     // clear any tick data that is no longer needed
     if (params.liquidityDelta < 0) {
       if (flippedLower) {
@@ -302,11 +302,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     /// might be helpful to have a higher level peripheral function for minting a given amount given a certain amount of notional an LP wants to support
 
     if (amount <= 0) {
-      revert LiquidityDeltaMustBePositiveInMint(amount);
+      revert CustomErrors.LiquidityDeltaMustBePositiveInMint(amount);
     }
 
     require(msg.sender==recipient || _factory.isApproved(recipient, msg.sender), "only msg.sender or approved can mint");
 
+    console.log("here?");
     positionMarginRequirement = updatePosition(
       ModifyPositionParams({
         owner: recipient,
@@ -599,13 +600,13 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   ) internal view {
 
       if (params.amountSpecified == 0) {
-          revert IRSNotionalAmountSpecifiedMustBeNonZero(
+          revert CustomErrors.IRSNotionalAmountSpecifiedMustBeNonZero(
               params.amountSpecified
           );
       }
 
       if (!unlocked) {
-          revert CanOnlyTradeIfUnlocked(unlocked);
+          revert CustomErrors.CanOnlyTradeIfUnlocked(unlocked);
       }
 
       /// @dev if a trader is an FT, they consume fixed in return for variable

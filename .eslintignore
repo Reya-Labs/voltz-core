@@ -10,3 +10,4 @@ tsconfig.json
 test/shared
 coverage.json
 deployments/**
+localhostDeployment.json

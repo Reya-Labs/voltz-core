@@ -2,9 +2,11 @@
 
 pragma solidity ^0.8.0;
 
+import "contracts/utils/CustomErrors.sol";
+
 /// @title The interface for the Voltz AMM Factory
 /// @notice The AMM Factory facilitates creation of Voltz AMMs
-interface IFactory {
+interface IFactory is CustomErrors {
     event IrsInstanceDeployed(
         address indexed underlyingToken,
         address indexed rateOracle,

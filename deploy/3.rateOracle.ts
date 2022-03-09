@@ -9,7 +9,7 @@ const checkBufferSize = async (r: AaveRateOracle, minSize: number) => {
   // console.log(`currentSize of ${r.address} is ${currentSize}`);
 
   if (currentSize < minSize) {
-    await r.increaseObservarionCardinalityNext(minSize);
+    await r.increaseObservationCardinalityNext(minSize);
     console.log(`Increased size of ${r.address}'s buffer to ${minSize}`);
   }
 };

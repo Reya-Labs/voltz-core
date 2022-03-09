@@ -19,8 +19,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.rateOracleTest.increaseObservarionCardinalityNext(1000);
-    await this.rateOracleTest.increaseObservarionCardinalityNext(2000);
+    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
+    await this.rateOracleTest.increaseObservationCardinalityNext(2000);
 
     let gasForMints = toBn("0");
     for (let i = 0; i < 1; i++) {
