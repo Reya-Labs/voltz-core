@@ -100,7 +100,7 @@ describe("Aave Rate Oracle", () => {
   describe("#initialize", () => {
     beforeEach("deploy and initialize test oracle", async () => {
       // ({ testRateOracle } = await loadFixture(oracleFixture));
-      await deployments.fixture(["Factory", "Mocks", "RateOracles"]);
+      await deployments.fixture(["Factory", "Mocks", "AaveRateOracles"]);
       const aaveLendingPool = await ethers.getContract("MockAaveLendingPool");
       const token = await ethers.getContract("ERC20Mock");
       const TestRateOracleFactory = await ethers.getContractFactory(
@@ -129,7 +129,7 @@ describe("Aave Rate Oracle", () => {
 
   describe("#grow", () => {
     beforeEach("deploy and initialize test oracle", async () => {
-      await deployments.fixture(["Factory", "Mocks", "RateOracles"]);
+      await deployments.fixture(["Factory", "Mocks", "AaveRateOracles"]);
       const aaveLendingPool = await ethers.getContract("MockAaveLendingPool");
       const token = await ethers.getContract("ERC20Mock");
       const TestRateOracleFactory = await ethers.getContractFactory(
