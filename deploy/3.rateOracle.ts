@@ -99,7 +99,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const mockAaveLendingPool = await ethers.getContractOrNull(
     "MockAaveLendingPool"
   );
-  if (mockToken && mockAaveLendingPool) {
+  let testRateOracle = await ethers.getContractOrNull("TestRateOracle");
+
+  if (mockToken && mockAaveLendingPool && !testRateOracle) {
     console.log(
       `Deploy rate oracle for mocked {token, aave}: {${mockToken.address}, ${mockAaveLendingPool.address}}`
     );
@@ -108,6 +110,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       args: [mockAaveLendingPool.address, mockToken.address],
       log: doLogging,
     });
+    testRateOracle = await ethers.getContractOrNull("TestRateOracle");
+
+    // Ensure the buffer is big enough
+    await checkBufferSize(testRateOracle as AaveRateOracle, 100);
+    await checkMinSecondsSinceLastUpdate(testRateOracle as AaveRateOracle, 60);
   }
 };
 func.tags = ["RateOracles"];
