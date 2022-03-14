@@ -6,8 +6,12 @@ import "../rate_oracles/IRateOracle.sol";
 
 interface ICompoundRateOracle is IRateOracle {
 
-    /// @notice Gets the address of the Aave Lending Pool
-    /// @return Address of the Aave Lending Pool
+    /// @notice Gets the address of the cToken
+    /// @return Address of the cToken
     function ctoken() external view returns (address);
+
+    /// @notice Gets the number of decimals of the underlying
+    /// @return Number of decimals of the underlying
+    function decimals() external view returns (uint);
 
 }

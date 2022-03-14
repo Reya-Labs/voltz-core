@@ -101,6 +101,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     /// @inheritdoc IRateOracle
     function getRateFromTo(uint256 from, uint256 to)
         public
+        view
         virtual
         override
         returns (uint256);
@@ -108,6 +109,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     /// @inheritdoc IRateOracle
     function getApyFromTo(uint256 from, uint256 to)
         public
+        view
         override
         returns (uint256 apyFromToWad)
     {
@@ -130,7 +132,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function variableFactor(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public override(IRateOracle) returns (uint256 resultWad) {
+    ) public view override(IRateOracle) returns (uint256 resultWad) {
         bool cacheable;
         (resultWad, cacheable) = _variableFactor(
             termStartTimestampInWeiSeconds,
@@ -157,7 +159,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function variableFactorNoCache(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public override(IRateOracle) returns (uint256 resultWad) {
+    ) public view override(IRateOracle) returns (uint256 resultWad) {
         (resultWad, ) = _variableFactor(
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds

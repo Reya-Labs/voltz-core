@@ -6,18 +6,19 @@ import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
 import "../interfaces/compound/ICToken.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WayRayMath.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
 contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
-    using SafeMath for uint256;
     using OracleBuffer for OracleBuffer.Observation[65535];
 
-    /// @dev exchangeRateCurrent() returned zero for ctoken
-    error CTokenExchangeRateCurrentReturnedZero();
+    /// @dev exchangeRateStored() returned zero for ctoken
+    error CTokenExchangeRateStoredReturnedZero();
 
     /// @inheritdoc ICompoundRateOracle
     address public override ctoken;
+
+    /// @inheritdoc ICompoundRateOracle
+    uint public override decimals;
 
     uint8 public constant override underlyingYieldBearingProtocolID = 2; // id of comp v2 is 2
 
@@ -26,9 +27,9 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     {
         ctoken = _ctoken;
         uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = ICToken
-        (ctoken)
-            .exchangeRateCurrent();
+        // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
+        // source: https://compound.finance/docs/ctokens#exchange-rate
+        uint256 result = ICToken(ctoken).exchangeRateStored();
         (
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
@@ -51,11 +52,9 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
             return (index, cardinality);
 
-        uint256 resultRay = ICToken
-        (ctoken)
-            .exchangeRateCurrent();
+        uint256 resultRay = ICToken(ctoken).exchangeRateStored();
         if (resultRay == 0) {
-            revert CTokenExchangeRateCurrentReturnedZero();
+            revert CTokenExchangeRateStoredReturnedZero();
         }
 
         emit OracleBufferWrite(
@@ -86,7 +85,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     function getRateFromTo(
         uint256 _from,
         uint256 _to //  move docs to IRateOracle. Add additional parameter to use cache and implement cache.
-    ) public override(BaseRateOracle, IRateOracle) returns (uint256) {
+    ) public view override(BaseRateOracle, IRateOracle) returns (uint256) {
         if (_from == _to) {
             return 0;
         }
@@ -161,18 +160,14 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             OracleBuffer.Observation memory rate;
             rate = observations[index];
             if (rate.blockTimestamp != currentTime) {
-                rateValueRay = ICToken
-                (ctoken)
-                    .exchangeRateCurrent();
+                rateValueRay = ICToken(ctoken).exchangeRateStored();
             } else {
                 rateValueRay = rate.observedValue;
             }
             return rateValueRay;
         }
 
-        uint256 currentValueRay = ICToken
-                (ctoken)
-                    .exchangeRateCurrent();
+        uint256 currentValueRay = ICToken(ctoken).exchangeRateStored();
         (
             OracleBuffer.Observation memory beforeOrAt,
             OracleBuffer.Observation memory atOrAfter
@@ -227,7 +222,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     }
 
     function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
-        // In the case of Comp, the values we write are obtained by calling ICToken (ctoken).exchangeRateCurrent();
+        // In the case of Comp, the values we write are obtained by calling ICToken (ctoken).exchangeRateStored();
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,

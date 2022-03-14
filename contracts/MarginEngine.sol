@@ -351,6 +351,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev The lookback window used by this function is determined by the _secondsAgo state variable
     function getHistoricalApyReadOnly()
         public
+        view
         returns (uint256)
     {
         if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - _cacheMaxAgeInSeconds) {
@@ -364,6 +365,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev The lookback window used by this function is determined by the _secondsAgo state variable
     function _getHistoricalApy()
         internal
+        view
         returns (uint256)
     {
         uint256 to = block.timestamp;

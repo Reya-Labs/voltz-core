@@ -6,11 +6,9 @@ import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WayRayMath.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
-    using SafeMath for uint256;
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
