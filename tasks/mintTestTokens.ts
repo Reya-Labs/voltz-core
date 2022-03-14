@@ -1,4 +1,4 @@
-import { BigNumber, utils } from "ethers";
+import { utils } from "ethers";
 import { task } from "hardhat/config";
 import { ERC20Mock } from "../typechain";
 import { toBn } from "../test/helpers/toBn";

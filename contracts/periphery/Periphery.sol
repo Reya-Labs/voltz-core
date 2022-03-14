@@ -119,11 +119,21 @@ contract Periphery is IPeriphery {
             tickUpper: params.tickUpper == 0 ? tickSpacing : params.tickUpper
         });
 
-        (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, _fixedTokenDeltaUnbalanced, _marginRequirement) = vamm.swap(swapParams);
+        (
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced,
+            _marginRequirement
+        ) = vamm.swap(swapParams);
         _tickAfter = vamm.vammVars().tick;
     }
 
-    function getCurrentTick(address marginEngineAddress) external view returns (int24 currentTick) {
+    function getCurrentTick(address marginEngineAddress)
+        external
+        view
+        returns (int24 currentTick)
+    {
         IVAMM vamm = getVAMM(marginEngineAddress);
         currentTick = vamm.vammVars().tick;
     }

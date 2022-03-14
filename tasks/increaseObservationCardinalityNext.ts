@@ -1,6 +1,5 @@
-import { utils } from "ethers";
 import { task } from "hardhat/config";
-import { AaveRateOracle, IRateOracle, TestRateOracle } from "../typechain";
+import { IRateOracle } from "../typechain";
 
 task("increaseObservationCardinalityNext", "increaseObservationCardinalityNext")
   .addParam("rateoracleaddress", "rateoracleaddress")

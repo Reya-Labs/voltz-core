@@ -1,4 +1,3 @@
-import { Wallet } from "ethers";
 import { task } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
 import { Factory, MarginEngine, Periphery, VAMM } from "../typechain";
@@ -7,9 +6,7 @@ import { TickMath } from "../test/shared/tickMath";
 task("mintLiquidity", "Mints liquidity")
   .addParam("meaddress", "Margin Engine Address")
   .setAction(async (taskArgs, hre) => {
-    let wallet: Wallet;
-
-    [wallet] = await (hre.ethers as any).getSigners();
+    const [wallet] = await (hre.ethers as any).getSigners();
 
     const marginEngineAddress = taskArgs.meaddress;
 

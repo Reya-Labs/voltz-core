@@ -9,8 +9,8 @@ task("advanceTimeAndBlock", "Advance Time and Block")
 
     await hre.network.provider.send("evm_increaseTime", [time]);
     for (let i = 0; i < blocks; i++) {
-        await hre.network.provider.send("evm_mine", []);
-      }
+      await hre.network.provider.send("evm_mine", []);
+    }
   });
 
 module.exports = {};
