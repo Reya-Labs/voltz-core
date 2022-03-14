@@ -10,6 +10,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: doLogging,
   });
+  return true; // Only execute once
 };
 func.tags = ["Periphery"];
+func.id = "Periphery";
 export default func;

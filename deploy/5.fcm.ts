@@ -33,6 +33,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   await factory.setMasterFCM(masterAaveFCM.address, rateOracle.address);
+  return true; // Only execute once
 };
 func.tags = ["FCMs"];
+func.id = "FCMs";
 export default func;

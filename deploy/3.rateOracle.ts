@@ -46,13 +46,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     for (const token of aaveTokens) {
       const rateOracleIdentifier = `AaveRateOracle_${token.name}`;
-      const rateOracleContract = await ethers.getContractOrNull(
+      let rateOracleContract = (await ethers.getContractOrNull(
         rateOracleIdentifier
-      );
+      )) as AaveRateOracle;
 
-      if (rateOracleContract) {
-        // Check the buffer size and increase if required
-      } else {
+      if (!rateOracleContract) {
         // There is no Aave rate oracle already deployed for this token. Deploy one now.
         // But first, do a sanity check
         const normalizedIncome =
@@ -73,12 +71,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             `Created ${token.name} (${token.address}) rate oracle for Aave lending pool ${aaveLendingPool.address}`
           );
 
-          const rateOracle = (await ethers.getContract(
+          rateOracleContract = (await ethers.getContract(
             rateOracleIdentifier
           )) as AaveRateOracle;
 
-          // This is a new rate oracle, so we write an entry to the rate buffer
-          await rateOracle.writeOracleEntry();
+          // Check the buffer size and increase if required
+          await rateOracleContract.writeOracleEntry();
         }
       }
 

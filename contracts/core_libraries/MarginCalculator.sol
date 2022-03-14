@@ -199,60 +199,33 @@ library MarginCalculator {
         uint256 timeInYearsFromStartUntilMaturityWad = FixedAndVariableMath
             .accrualFact(timeInSecondsFromStartToMaturityWad);
 
-        if (isFT) {
-            if (isLM) {
-                variableFactorWad = PRBMathUD60x18.mul(
-                    computeApyBound(
-                        termEndTimestampWad,
-                        currentTimestampWad,
-                        historicalApyWad,
-                        true,
-                        _marginCalculatorParameters
-                    ),
-                    timeInYearsFromStartUntilMaturityWad
-                );
-            } else {
-                variableFactorWad = PRBMathUD60x18.mul(
-                    PRBMathUD60x18.mul(
-                        computeApyBound(
-                            termEndTimestampWad,
-                            currentTimestampWad,
-                            historicalApyWad,
-                            true,
-                            _marginCalculatorParameters
-                        ),
-                        _marginCalculatorParameters.apyUpperMultiplierWad
-                    ),
-                    timeInYearsFromStartUntilMaturityWad
-                );
-            }
+        if (isLM) {
+            variableFactorWad = PRBMathUD60x18.mul(
+                computeApyBound(
+                    termEndTimestampWad,
+                    currentTimestampWad,
+                    historicalApyWad,
+                    isFT,
+                    _marginCalculatorParameters
+                ),
+                timeInYearsFromStartUntilMaturityWad
+            );
         } else {
-            if (isLM) {
-                variableFactorWad = PRBMathUD60x18.mul(
+            variableFactorWad = PRBMathUD60x18.mul(
+                PRBMathUD60x18.mul(
                     computeApyBound(
                         termEndTimestampWad,
                         currentTimestampWad,
                         historicalApyWad,
-                        false,
+                        isFT,
                         _marginCalculatorParameters
                     ),
-                    timeInYearsFromStartUntilMaturityWad
-                );
-            } else {
-                variableFactorWad = PRBMathUD60x18.mul(
-                    PRBMathUD60x18.mul(
-                        computeApyBound(
-                            termEndTimestampWad,
-                            currentTimestampWad,
-                            historicalApyWad,
-                            false,
-                            _marginCalculatorParameters
-                        ),
-                        _marginCalculatorParameters.apyLowerMultiplierWad
-                    ),
-                    timeInYearsFromStartUntilMaturityWad
-                );
-            }
+                    isFT
+                        ? _marginCalculatorParameters.apyUpperMultiplierWad
+                        : _marginCalculatorParameters.apyLowerMultiplierWad
+                ),
+                timeInYearsFromStartUntilMaturityWad
+            );
         }
     }
 
