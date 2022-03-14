@@ -220,7 +220,9 @@ library MarginCalculator {
                         isFT,
                         _marginCalculatorParameters
                     ),
-                    isFT ? _marginCalculatorParameters.apyUpperMultiplierWad : _marginCalculatorParameters.apyLowerMultiplierWad
+                    isFT
+                        ? _marginCalculatorParameters.apyUpperMultiplierWad
+                        : _marginCalculatorParameters.apyLowerMultiplierWad
                 ),
                 timeInYearsFromStartUntilMaturityWad
             );
