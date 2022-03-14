@@ -481,30 +481,6 @@ describe("FixedAndVariableMath", () => {
   });
 
   describe("#getFixedTokenBalance", () => {
-    it("reverts if the signs of amount0 and amount1 are the same", async () => {
-      const amount0: BigNumber = toBn("1000");
-      const amount1: BigNumber = toBn("1000");
-      const accruedVariableFactor: BigNumber = toBn("0.02");
-      const termStartTimestamp = sub(
-        currentBlockTimestamp,
-        ONE_WEEK_IN_SECONDS
-      ); // one week in seconds
-      const termEndTimestamp = add(
-        currentBlockTimestamp,
-        ONE_WEEK_IN_SECONDS.mul(2)
-      ); // two weeks in seconds
-
-      await expect(
-        fixedAndVariableMathTest.getFixedTokenBalance(
-          amount0,
-          amount1,
-          accruedVariableFactor,
-          termStartTimestamp,
-          termEndTimestamp
-        )
-      ).to.be.revertedWith("AmountSignsSame()");
-    });
-
     it("correctly gets the fixed token balance", async () => {
       const amount0: BigNumber = toBn("1000");
       const amount1: BigNumber = toBn("-1000");
