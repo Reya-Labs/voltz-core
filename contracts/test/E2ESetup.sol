@@ -43,7 +43,7 @@ contract Actor is CustomErrors {
             _variableTokenDelta,
             _cumulativeFeeIncurred,
             _fixedTokenDeltaUnbalanced,
-            _marginRequirement
+            _marginRequirement,
         ) = IPeriphery(peripheryAddress).swap(params);
     }
 

@@ -538,8 +538,6 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         if (position.margin <= positionMarginRequirement) {
             Printer.printInt256("position.margin", position.margin);
-            // @audit:  Error: VM Exception while processing transaction: reverted with an unrecognized custom error
-            // at ERC1967Proxy.functionDelegateCall (@openzeppelin/contracts/utils/Address.sol:184)
             revert CustomErrors.MarginLessThanMinimum(positionMarginRequirement);
         }
     }

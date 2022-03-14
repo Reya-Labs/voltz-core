@@ -53,8 +53,8 @@ contract Factory is IFactory, Ownable {
     // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
     // 16384 ticks represents a >5x price change with ticks of 1 bips
     require(_tickSpacing > 0 && _tickSpacing < 16384, "TSOOB");
-    IMarginEngine marginEngine = IMarginEngine(address(new ERC1967Proxy(masterMarginEngine, "")));
-    IVAMM vamm = IVAMM(address(new ERC1967Proxy(masterVAMM, "")));
+    IMarginEngine marginEngine = IMarginEngine(address(new VoltzERC1967Proxy(masterMarginEngine, "")));
+    IVAMM vamm = IVAMM(address(new VoltzERC1967Proxy(masterVAMM, "")));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     vamm.initialize(address(marginEngine), _tickSpacing);
     marginEngine.setVAMM(address(vamm));
@@ -66,7 +66,7 @@ contract Factory is IFactory, Ownable {
     
     if (masterFCMs[yieldBearingProtocolID] != address(0)) {
       address masterFCM = masterFCMs[yieldBearingProtocolID];
-      fcm = IFCM(address(new ERC1967Proxy(masterFCM, "")));
+      fcm = IFCM(address(new VoltzERC1967Proxy(masterFCM, "")));
       fcm.initialize(address(vamm), address(marginEngine));
       marginEngine.setFCM(address(fcm));
       Ownable(address(fcm)).transferOwnership(msg.sender);
