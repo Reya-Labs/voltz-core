@@ -3,10 +3,7 @@
 pragma solidity ^0.8.0;
 import "./core_libraries/Tick.sol";
 import "./interfaces/IMarginEngine.sol";
-import "./interfaces/IVAMM.sol";
-import "./core_libraries/Position.sol";
 import "./core_libraries/MarginCalculator.sol";
-import "./utils/SafeCast.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/fcms/IFCM.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
@@ -30,7 +27,6 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     using Position for Position.Info;
 
     using SafeTransferLib for IERC20Minimal;
-
 
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -535,7 +531,6 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         );
 
         if (position.margin <= positionMarginRequirement) {
-            Printer.printInt256("position.margin", position.margin);
             revert CustomErrors.MarginLessThanMinimum(positionMarginRequirement);
         }
     }
@@ -745,15 +740,6 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             uint256 scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
             uint256 scenario2MarginRequirement = getMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
 
-            // Printer.printEmptyLine();
-            // Printer.printInt256("scenario1LPFixedTokenBalance", localVars.scenario1LPFixedTokenBalance);
-            // Printer.printInt256("scenario1LPVariableTokenBalance", localVars.scenario1LPVariableTokenBalance);
-            // Printer.printUint256("scenario1MarginRequirement", scenario1MarginRequirement);
-            // Printer.printEmptyLine();
-            // Printer.printInt256("scenario2LPFixedTokenBalance", localVars.scenario2LPFixedTokenBalance);
-            // Printer.printInt256("scenario2LPVariableTokenBalance", localVars.scenario2LPVariableTokenBalance);
-            // Printer.printUint256("scenario2MarginRequirement", scenario2MarginRequirement);
-
             if (scenario1MarginRequirement > scenario2MarginRequirement) {
                 return scenario1MarginRequirement;
             } else {
@@ -780,11 +766,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             tickUpper,
             true
         );
-        if (position.margin < int256(marginRequirement)) {
-            _isLiquidatable = true;
-        } else {
-            _isLiquidatable = false;
-        }
+        _isLiquidatable = (position.margin < int256(marginRequirement));
     }
 
 
@@ -808,11 +790,6 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             isLM,
             sqrtPriceX96
         );
-
-        // Printer.printBool("isLM", isLM);
-        // Printer.printUint256("margin NORMAL", margin);
-        // Printer.printUint256("   margin MIN", minimumMarginRequirement);
-        // Printer.printEmptyLine();
 
         if (margin < minimumMarginRequirement) {
             margin = minimumMarginRequirement;
@@ -869,7 +846,6 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             )
         );
 
-        // Printer.printInt256("exp2Wad", exp2Wad);
         // this is the worst case settlement cashflow expected by the position to cover
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
 
@@ -905,6 +881,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         int256 fixedTokenDeltaUnbalanced;
         uint256 devMulWad;
         uint256 fixedRateDeviationMinWad;
+        uint256 absoluteVariableTokenBalance;
+        bool isVariableTokenBalancePositive;
 
         if (variableTokenBalance > 0) {
             if (fixedTokenBalance > 0) {
@@ -922,21 +900,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
                     .fixedRateDeviationMinLeftUnwindIMWad;
             }
 
-            // simulate an adversarial unwind (cumulative position is a Variable Taker --> simulate FT unwind --> movement to the left along the VAMM)
-            // fixedTokenDelta unbalanced that results from the simulated unwind
-            fixedTokenDeltaUnbalanced = int256(
-                MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
-                    uint256(variableTokenBalance),
-                    sqrtPriceX96,
-                    devMulWad,
-                    fixedRateDeviationMinWad,
-                    _termEndTimestampWad,
-                    Time.blockTimestampScaled(),
-                    uint256(marginCalculatorParameters.tMaxWad),
-                    marginCalculatorParameters.gammaWad,
-                    true
-                )
-            );
+            absoluteVariableTokenBalance = uint256(variableTokenBalance);
+            isVariableTokenBalancePositive = true;
+
         } else {
             if (isLM) {
                 devMulWad = marginCalculatorParameters.devMulRightUnwindLMWad;
@@ -948,41 +914,38 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
                     .fixedRateDeviationMinRightUnwindIMWad;
             }
 
-            // simulate an adversarial unwind (cumulative position is an FT --> simulate a VT unwind --> movement to the right along the VAMM)
-            fixedTokenDeltaUnbalanced = -int256(
-                MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
-                    uint256(-variableTokenBalance),
-                    sqrtPriceX96,
-                    devMulWad,
-                    fixedRateDeviationMinWad,
-                    _termEndTimestampWad,
-                    Time.blockTimestampScaled(),
-                    uint256(marginCalculatorParameters.tMaxWad),
-                    marginCalculatorParameters.gammaWad,
-                    false
-                )
-            );
+            absoluteVariableTokenBalance = uint256(-variableTokenBalance);
+            isVariableTokenBalancePositive = false;
         }
 
-        int256 variableTokenDelta = -variableTokenBalance;
+        // simulate an adversarial unwind (cumulative position is a Variable Taker --> simulate FT unwind --> movement to the left along the VAMM)
+        // fixedTokenDelta unbalanced that results from the simulated unwind
+        fixedTokenDeltaUnbalanced = int256(
+            MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
+                uint256(absoluteVariableTokenBalance),
+                sqrtPriceX96,
+                devMulWad,
+                fixedRateDeviationMinWad,
+                _termEndTimestampWad,
+                Time.blockTimestampScaled(),
+                uint256(marginCalculatorParameters.tMaxWad),
+                marginCalculatorParameters.gammaWad,
+                isVariableTokenBalancePositive
+            )
+        );
 
         int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-            fixedTokenDeltaUnbalanced,
-            variableTokenDelta,
+            isVariableTokenBalancePositive ? fixedTokenDeltaUnbalanced : -fixedTokenDeltaUnbalanced,
+            -variableTokenBalance,
             _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad),
             _termStartTimestampWad,
             _termEndTimestampWad
         );
 
-        int256 updatedVariableTokenBalance = variableTokenBalance +
-            variableTokenDelta; // should be zero
         int256 updatedFixedTokenBalance = fixedTokenBalance +
             fixedTokenDelta;
 
-        margin = _getMarginRequirement(
-            updatedFixedTokenBalance,
-            updatedVariableTokenBalance,
-            isLM);
+        margin = _getMarginRequirement(updatedFixedTokenBalance, 0, isLM);
 
         if (
             margin <

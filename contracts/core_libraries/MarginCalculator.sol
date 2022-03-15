@@ -145,31 +145,23 @@ library MarginCalculator {
             (PRBMathSD59x18.fromInt(2))
         );
 
-        if (isUpper) {
-            apyBoundVars.criticalValueWad = PRBMathSD59x18.mul(
-                _marginCalculatorParameters.xiUpperWad,
-                PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplierWad)
-            );
-        } else {
-            apyBoundVars.criticalValueWad = PRBMathSD59x18.mul(
-                _marginCalculatorParameters.xiLowerWad,
-                PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplierWad)
-            );
-        }
+        apyBoundVars.criticalValueWad = PRBMathSD59x18.mul(
+            (isUpper)
+                ? _marginCalculatorParameters.xiUpperWad
+                : _marginCalculatorParameters.xiLowerWad,
+            PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplierWad)
+        );
 
-        int256 apyBoundIntWad = (isUpper)
-            ? PRBMathSD59x18.mul(
-                apyBoundVars.zetaWad,
-                (apyBoundVars.kWad +
-                    apyBoundVars.lambdaWad +
-                    apyBoundVars.criticalValueWad)
-            )
-            : PRBMathSD59x18.mul(
-                apyBoundVars.zetaWad,
-                (apyBoundVars.kWad +
-                    apyBoundVars.lambdaWad -
-                    apyBoundVars.criticalValueWad)
-            );
+        int256 apyBoundIntWad = PRBMathSD59x18.mul(
+            apyBoundVars.zetaWad,
+            (apyBoundVars.kWad +
+                apyBoundVars.lambdaWad +
+                (
+                    (isUpper)
+                        ? apyBoundVars.criticalValueWad
+                        : -apyBoundVars.criticalValueWad
+                ))
+        );
 
         if (apyBoundIntWad < 0) {
             apyBoundWad = 0;
@@ -199,32 +191,23 @@ library MarginCalculator {
         uint256 timeInYearsFromStartUntilMaturityWad = FixedAndVariableMath
             .accrualFact(timeInSecondsFromStartToMaturityWad);
 
-        if (isLM) {
+        variableFactorWad = PRBMathUD60x18.mul(
+            computeApyBound(
+                termEndTimestampWad,
+                currentTimestampWad,
+                historicalApyWad,
+                isFT,
+                _marginCalculatorParameters
+            ),
+            timeInYearsFromStartUntilMaturityWad
+        );
+
+        if (!isLM) {
             variableFactorWad = PRBMathUD60x18.mul(
-                computeApyBound(
-                    termEndTimestampWad,
-                    currentTimestampWad,
-                    historicalApyWad,
-                    isFT,
-                    _marginCalculatorParameters
-                ),
-                timeInYearsFromStartUntilMaturityWad
-            );
-        } else {
-            variableFactorWad = PRBMathUD60x18.mul(
-                PRBMathUD60x18.mul(
-                    computeApyBound(
-                        termEndTimestampWad,
-                        currentTimestampWad,
-                        historicalApyWad,
-                        isFT,
-                        _marginCalculatorParameters
-                    ),
-                    isFT
-                        ? _marginCalculatorParameters.apyUpperMultiplierWad
-                        : _marginCalculatorParameters.apyLowerMultiplierWad
-                ),
-                timeInYearsFromStartUntilMaturityWad
+                variableFactorWad,
+                isFT
+                    ? _marginCalculatorParameters.apyUpperMultiplierWad
+                    : _marginCalculatorParameters.apyLowerMultiplierWad
             );
         }
     }
@@ -261,7 +244,7 @@ library MarginCalculator {
         uint256 tMaxWad,
         uint256 gammaWad,
         bool isFTUnwind
-    ) internal view returns (uint256 fixedTokenDeltaUnbalanced) {
+    ) internal pure returns (uint256 fixedTokenDeltaUnbalanced) {
         SimulatedUnwindLocalVars memory simulatedUnwindLocalVars;
 
         // require checks

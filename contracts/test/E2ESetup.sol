@@ -206,7 +206,7 @@ contract E2ESetup is CustomErrors {
 
     uint256 public keepInMindGas;
 
-    function getReserveNormalizedIncome() internal returns (uint256) {
+    function getReserveNormalizedIncome() internal view returns (uint256) {
         IRateOracle rateOracle = IMarginEngine(MEAddress).rateOracle();
         IAaveV2LendingPool aaveLendingPool = IAaveV2LendingPool(
             IAaveRateOracle(address(rateOracle)).aaveLendingPool()
@@ -443,7 +443,7 @@ contract E2ESetup is CustomErrors {
 
         uint256 gasBefore = gasleft();
         (
-            int256 _fixedTokenDelta,
+            ,
             int256 _variableTokenDelta,
             uint256 _cumulativeFeeIncurred,
             int256 _fixedTokenDeltaUnbalanced
@@ -551,7 +551,7 @@ contract E2ESetup is CustomErrors {
 
     function computeSettlementCashflowForSwapSnapshot(
         SwapSnapshot memory snapshot
-    ) internal returns (int256 settlementCashflow) {
+    ) internal view returns (int256 settlementCashflow) {
         // calculate the variable factor for the period the swap was active
         // needs to be called at the same time as the term end timestamp, otherwise need to cache the reserve normalised income for the term end timestamp in the E2E setup
 
@@ -605,7 +605,7 @@ contract E2ESetup is CustomErrors {
         address _owner,
         int24 tickLower,
         int24 tickUpper
-    ) public returns (int256) {
+    ) public view returns (int256) {
         (
             SwapSnapshot[] memory snapshots,
             uint256 len
@@ -863,7 +863,7 @@ contract E2ESetup is CustomErrors {
         address owner,
         int24 tickLower,
         int24 tickUpper
-    ) public returns (SwapSnapshot[] memory, uint256) {
+    ) public view returns (SwapSnapshot[] memory, uint256) {
         bytes32 hashedPositon = keccak256(
             abi.encodePacked(owner, tickLower, tickUpper)
         );
