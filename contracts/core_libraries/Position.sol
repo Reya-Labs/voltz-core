@@ -139,9 +139,8 @@ library Position {
 
         /// @audit tag 12 [ABDK]
         // overflow is possible on the below four lines
-        // 
-        
-        
+        //
+
         if (fixedTokenGrowthInsideDeltaX128 > 0) {
             // Overflow is possible
             _fixedTokenDelta = int256(
@@ -152,7 +151,7 @@ library Position {
                 )
             );
         } else {
-            // 
+            //
             _fixedTokenDelta = -int256(
                 FullMath.mulDiv(
                     uint256(-fixedTokenGrowthInsideDeltaX128),

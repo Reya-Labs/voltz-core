@@ -133,7 +133,7 @@ library WadRayMath {
         uint256 result = halfRatio + a;
 
         /// @audit tag 7 [ABDK]
-        // This “require” statement checks for a phantom overflow, as conversion from RAY to WAD is always possible.  
+        // This “require” statement checks for a phantom overflow, as conversion from RAY to WAD is always possible.
         // Consider refactoring the code to never revert.
 
         require(result >= halfRatio, Errors.MATH_ADDITION_OVERFLOW);

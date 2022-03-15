@@ -69,7 +69,7 @@ library TickMath {
         if (absTick & 0x10000 != 0)
             ratio = (ratio * 0x9aa508b5b7a84e1c677de54f3e99bc9) >> 128;
         /// @audit tag 8 [ABDK]
-        // Below three if conditions are always false, as the maximum "absTick" value is 0x10DEC.  
+        // Below three if conditions are always false, as the maximum "absTick" value is 0x10DEC.
         // Consider removing these lines.
         if (absTick & 0x20000 != 0)
             ratio = (ratio * 0x5d6af8dedb81196699c329225ee604) >> 128;

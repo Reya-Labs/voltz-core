@@ -99,11 +99,11 @@ contract Periphery is IPeriphery {
 
         /// @audit tag 11 [ABDK]
         // Overflow is possible on the two lines marked below
-       
+
         if (params.isFT) {
-            amountSpecified = int256(params.notional);  // Overflow is possible here.
+            amountSpecified = int256(params.notional); // Overflow is possible here.
         } else {
-            amountSpecified = -int256(params.notional);  // Overflow is possible here.
+            amountSpecified = -int256(params.notional); // Overflow is possible here.
         }
 
         int24 tickSpacing = vamm.tickSpacing();

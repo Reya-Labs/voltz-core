@@ -308,14 +308,13 @@ library MarginCalculator {
             int256(simulatedUnwindLocalVars.scaledTimeWad)
         );
 
-
         simulatedUnwindLocalVars.oneMinusTimeFactorWad =
             PRBMathSD59x18.fromInt(1) -
             PRBMathSD59x18.exp(simulatedUnwindLocalVars.expInputWad);
-        
+
         /// @audit tag 5 [ABDK]
         // Overflow/underflow
-        // Underflow is possible when converting simulatedUnwindLocalVars.oneMinusTimeFactorWad to "uint256". 
+        // Underflow is possible when converting simulatedUnwindLocalVars.oneMinusTimeFactorWad to "uint256".
         // Consider using safe conversion.
 
         /// @audit-casting simulatedUnwindLocalVars.oneMinusTimeFactorWad is expected to be positive here, but what if goes below 0 due to rounding imprecision?
