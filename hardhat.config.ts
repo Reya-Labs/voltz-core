@@ -17,6 +17,20 @@ import "hardhat-deploy";
 
 dotenv.config();
 
+// We can't import some tasks unless we've already built the solidity code and generated types with typechain
+// Luckily we don't need these tasks, and can ignore them, if types are missing
+const loadModuleIgnoreErrors = async (modulePath: string) => {
+  try {
+    return await import(modulePath);
+  } catch (e) {
+    // Ignore
+  }
+};
+
+loadModuleIgnoreErrors("./tasks/createIrsInstance");
+loadModuleIgnoreErrors("./tasks/listIrsInstances");
+loadModuleIgnoreErrors("./tasks/mintTestTokens");
+
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {

@@ -532,7 +532,7 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -TICK_SPACING, TICK_SPACING],
       [3, -TICK_SPACING, TICK_SPACING],
     ],
-    skipped: true,
+    skipped: false,
   },
 
   {
@@ -580,5 +580,47 @@ export const e2eScenarios: e2eParameters[] = [
       [5, -TICK_SPACING, TICK_SPACING],
     ],
     skipped: true,
+  },
+  {
+    duration: consts.ONE_YEAR,
+    numActors: 2,
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+      apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+      minDeltaLMWad: MIN_DELTA_LM,
+      minDeltaIMWad: MIN_DELTA_IM,
+      sigmaSquaredWad: toBn("0.15"),
+      alphaWad: ALPHA,
+      betaWad: BETA,
+      xiUpperWad: XI_UPPER,
+      xiLowerWad: XI_LOWER,
+      tMaxWad: T_MAX,
+
+      devMulLeftUnwindLMWad: toBn("0.5"),
+      devMulRightUnwindLMWad: toBn("0.5"),
+      devMulLeftUnwindIMWad: toBn("0.8"),
+      devMulRightUnwindIMWad: toBn("0.8"),
+
+      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+      gammaWad: toBn("0.05"),
+      minMarginToIncentiviseLiquidators: 0,
+    },
+    lookBackWindowAPY: consts.ONE_WEEK,
+    startingPrice: TickMath.getSqrtRatioAtTick(-24840),
+    feeProtocol: 0,
+    fee: toBn("0.0005"),
+    tickSpacing: TICK_SPACING,
+    positions: [
+      // lower tick: 8% -> 1.0001^(UPPER_TICK) = price = 1/(fixed rate), if fixed rate is 8%, 1.0001^(UPPER_TICK)=1/8 => UPPER_TICK approx. = -20795
+      // upper tick: 12% -> if fixed rate is 12%, 1.0001^(UPPER_TICK)=1/12 => UPPER_TICK approx. = -24850
+      [0, -24840, -20700],
+      [1, -24840, -20700],
+    ],
+    skipped: false,
   },
 ];

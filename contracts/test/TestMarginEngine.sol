@@ -133,7 +133,7 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        keepInMindMargin = getPositionMarginRequirement(
+        keepInMindMargin = _getPositionMarginRequirement(
             position,
             tickLower,
             tickUpper,
@@ -202,7 +202,7 @@ contract TestMarginEngine is MarginEngine {
             tickLower,
             tickUpper
         );
-        keepInMindMargin = getPositionMarginRequirement(
+        keepInMindMargin = _getPositionMarginRequirement(
             position,
             tickLower,
             tickUpper,

@@ -5,8 +5,9 @@ import "./IMarginEngine.sol";
 import "./IFactory.sol";
 import "./IPositionStructs.sol";
 import "../core_libraries/Tick.sol";
+import "contracts/utils/CustomErrors.sol";
 
-interface IVAMM is IPositionStructs {
+interface IVAMM is IPositionStructs, CustomErrors {
     // events
     event Swap(
         address indexed sender,
@@ -44,32 +45,6 @@ interface IVAMM is IPositionStructs {
 
     /// @dev emitted after fee is set
     event FeeSet(uint256 feeWadOld, uint256 feeWad);
-
-    // errors
-
-    /// @dev There are not enough funds available for the requested operation
-    error NotEnoughFunds(uint256 requested, uint256 available);
-
-    /// @dev The two values were expected to have oppostite sigs, but do not
-    error ExpectedOppositeSigns(int256 amount0, int256 amount1);
-
-    /// @dev Error which is reverted if the sqrt price of the vamm is non-zero before a vamm is initialized
-    error ExpectedSqrtPriceZeroBeforeInit(uint160 sqrtPriceX96);
-
-    /// @dev Error which ensures the liquidity delta is positive if a given LP wishes to mint further liquidity in the vamm
-    error LiquidityDeltaMustBePositiveInMint(uint128 amount);
-
-    /// @dev Error which ensures the liquidity delta is positive if a given LP wishes to burn liquidity in the vamm
-    error LiquidityDeltaMustBePositiveInBurn(uint128 amount);
-
-    /// @dev Error which ensures the amount of notional specified when initiating an IRS contract (via the swap function in the vamm) is non-zero
-    error IRSNotionalAmountSpecifiedMustBeNonZero(int256 amountSpecified);
-
-    /// @dev Error which ensures the VAMM is unlocked
-    error CanOnlyTradeIfUnlocked(bool unlocked);
-
-    /// @dev only the margin engine can run a certain function
-    error OnlyMarginEngine();
 
     // structs
 

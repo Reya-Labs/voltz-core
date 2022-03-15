@@ -65,7 +65,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
     modifier nonZeroDelta (int256 marginDelta) {
         if (marginDelta == 0) {
-            revert InvalidMarginDelta();
+            revert CustomErrors.InvalidMarginDelta();
         }
         _;
     }
@@ -73,7 +73,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev Modifier that ensures only the VAMM can execute certain actions
     modifier onlyVAMM () {
         if (msg.sender != address(_vamm)) {
-            revert OnlyVAMM();
+            revert CustomErrors.OnlyVAMM();
         }
         _;
     }
@@ -81,7 +81,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev Modifier that reverts if the msg.sender is not the Full Collateralisation Module
     modifier onlyFCM () {
         if (msg.sender != address(_fcm)) {
-            revert OnlyFCM();
+            revert CustomErrors.OnlyFCM();
         }
         _;
     }
@@ -90,7 +90,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev This modifier ensures that actions such as settlePosition (can only be done after maturity)
     modifier onlyAfterMaturity () {
         if (_termEndTimestampWad > Time.blockTimestampScaled()) {
-            revert CannotSettleBeforeMaturity();
+            revert CustomErrors.CannotSettleBeforeMaturity();
         }
         _;
     }
@@ -99,7 +99,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
     modifier checkCurrentTimestampTermEndTimestampDelta() {
         if (Time.isCloseToMaturityOrBeyondMaturity(_termEndTimestampWad)) {
-            revert closeToOrBeyondMaturity();
+            revert CustomErrors.closeToOrBeyondMaturity();
         }
         _;
     }
@@ -284,10 +284,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         if (marginDelta < 0) {
 
             if (_owner != msg.sender && !_factory.isApproved(_owner, msg.sender)) {
-                revert OnlyOwnerCanUpdatePosition();
+                revert CustomErrors.OnlyOwnerCanUpdatePosition();
             }
-
-            Printer.printInt256("position.margin", position.margin);
 
             position.updateMarginViaDelta(marginDelta);
 
@@ -397,7 +395,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         (bool isLiquidatable, uint256 marginRequirement) = isLiquidatablePosition(position, tickLower, tickUpper);
 
         if (!isLiquidatable) {
-            revert CannotLiquidate(marginRequirement);
+            revert CustomErrors.CannotLiquidate(marginRequirement);
         }
 
         if (position.rewardPerAmount == 0) {
@@ -427,17 +425,11 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         int256 _variableTokenDelta = unwindPosition(position, _owner, tickLower, tickUpper);
 
-        Printer.printInt256("variableTokenBalance", position.variableTokenBalance);
-        Printer.printInt256("_variableTokenDelta", _variableTokenDelta);
-        Printer.printUint256("rewardPerAmount", position.rewardPerAmount);
-
         if (_variableTokenDelta == 0) return;
 
         uint256 liquidatorRewardValue = (_variableTokenDelta < 0)
             ? PRBMathUD60x18.mul(uint256(-_variableTokenDelta), position.rewardPerAmount)
             : PRBMathUD60x18.mul(uint256(_variableTokenDelta), position.rewardPerAmount);
-
-        Printer.printUint256("liquidatorRewardValue", liquidatorRewardValue);
 
         position.updateMarginViaDelta(-int256(liquidatorRewardValue));
         _underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
@@ -480,12 +472,12 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
         positionMarginRequirement = int256(
-            getPositionMarginRequirement(position, tickLower, tickUpper, false)
+            _getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
 
         if (positionMarginRequirement > position.margin) {
             IVAMM.VAMMVars memory v = _vamm.vammVars();
-            revert MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
+            revert CustomErrors.MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
         }
 
         position.rewardPerAmount = 0;
@@ -541,11 +533,14 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     ) internal returns(int256 positionMarginRequirement) {
 
         positionMarginRequirement = int256(
-            getPositionMarginRequirement(position, tickLower, tickUpper, false)
+            _getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
 
         if (position.margin <= positionMarginRequirement) {
-            revert MarginLessThanMinimum(positionMarginRequirement);
+            Printer.printInt256("position.margin", position.margin);
+            // @audit:  Error: VM Exception while processing transaction: reverted with an unrecognized custom error
+            // at ERC1967Proxy.functionDelegateCall (@openzeppelin/contracts/utils/Address.sol:184)
+            revert CustomErrors.MarginLessThanMinimum(positionMarginRequirement);
         }
     }
 
@@ -564,10 +559,10 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         /// @dev their margin is to withdraw it completely. If so, the position needs to be settled
         if (Time.blockTimestampScaled() >= _termEndTimestampWad) {
             if (!position.isSettled) {
-                revert PositionNotSettled();
+                revert CustomErrors.PositionNotSettled();
             }
             if (position.margin < 0) {
-                revert WithdrawalExceedsCurrentMargin();
+                revert CustomErrors.WithdrawalExceedsCurrentMargin();
             }
         }
         else {
@@ -691,7 +686,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev scenario 2: a trader comes in and trades all the liquidity all the way to the the lower tick
     /// @dev one the fixed and variable token balances are calculated for each counterfactual scenarios, their margin requiremnets can be obtained by calling getMarginrRequirement for each scenario
     /// @dev finally, the output is the max of the margin requirements from two of the scenarios considered
-    function getPositionMarginRequirement(
+    function _getPositionMarginRequirement(
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper,
@@ -705,6 +700,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         uint256 variableFactorWad = _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad);
 
+        // Printer.printInt24("tick", tick);
+        // Printer.printInt256("fixedTokenBalance", position.fixedTokenBalance);
+        // Printer.printInt256("variableTokenBalance", position.variableTokenBalance);
         if (position._liquidity > 0) {
             PositionMarginRequirementLocalVars2 memory localVars;
             localVars.inRangeTick = (tick < tickLower) ? tickLower : ((tick < tickUpper) ? tick : tickUpper);
@@ -741,6 +739,15 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             uint256 scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
             uint256 scenario2MarginRequirement = getMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
 
+            // Printer.printEmptyLine();
+            // Printer.printInt256("scenario1LPFixedTokenBalance", localVars.scenario1LPFixedTokenBalance);
+            // Printer.printInt256("scenario1LPVariableTokenBalance", localVars.scenario1LPVariableTokenBalance);
+            // Printer.printUint256("scenario1MarginRequirement", scenario1MarginRequirement);
+            // Printer.printEmptyLine();
+            // Printer.printInt256("scenario2LPFixedTokenBalance", localVars.scenario2LPFixedTokenBalance);
+            // Printer.printInt256("scenario2LPVariableTokenBalance", localVars.scenario2LPVariableTokenBalance);
+            // Printer.printUint256("scenario2MarginRequirement", scenario2MarginRequirement);
+
             if (scenario1MarginRequirement > scenario2MarginRequirement) {
                 return scenario1MarginRequirement;
             } else {
@@ -761,7 +768,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         int24 tickLower,
         int24 tickUpper
     ) internal returns (bool _isLiquidatable, uint256 marginRequirement) {
-        marginRequirement = getPositionMarginRequirement(
+        marginRequirement = _getPositionMarginRequirement(
             position,
             tickLower,
             tickUpper,
@@ -795,6 +802,11 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             isLM,
             sqrtPriceX96
         );
+
+        // Printer.printBool("isLM", isLM);
+        // Printer.printUint256("margin NORMAL", margin);
+        // Printer.printUint256("   margin MIN", minimumMarginRequirement);
+        // Printer.printEmptyLine();
 
         if (margin < minimumMarginRequirement) {
             margin = minimumMarginRequirement;
@@ -851,6 +863,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             )
         );
 
+        // Printer.printInt256("exp2Wad", exp2Wad);
         // this is the worst case settlement cashflow expected by the position to cover
         int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
 
@@ -972,5 +985,21 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             margin = marginCalculatorParameters
                 .minMarginToIncentiviseLiquidators;
         }
+    }
+
+    function getPositionMarginRequirement(
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper,
+        bool isLM
+    ) override external returns (uint256 margin) {
+        Position.Info storage position = positions.get(
+            recipient,
+            tickLower,
+            tickUpper
+        );
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, true);
+
+        return _getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
     }
 }

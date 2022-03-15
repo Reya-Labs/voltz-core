@@ -8,6 +8,11 @@ import "./interfaces/IVAMM.sol";
 import "./interfaces/fcms/IFCM.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "contracts/utils/CustomErrors.sol";
+
+contract VoltzERC1967Proxy is ERC1967Proxy, CustomErrors {
+  constructor(address _logic, bytes memory _data) payable ERC1967Proxy(_logic, _data) {}
+}
 
 
 /// @title Voltz Factory Contract
@@ -43,30 +48,24 @@ contract Factory is IFactory, Ownable {
     emit MasterFCMSet(masterFCMAddressOld, masterFCMAddress, yieldBearingProtocolID);
   }
 
-  function getSalt(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) internal pure returns (bytes32 salt) {
-    return keccak256(abi.encode(_underlyingToken, _rateOracle,  _termStartTimestampWad, _termEndTimestampWad, _tickSpacing));
-  }
-
   function deployIrsInstance(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (address marginEngineProxy, address vammProxy, address fcmProxy) {
     // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
     // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
     // 16384 ticks represents a >5x price change with ticks of 1 bips
     require(_tickSpacing > 0 && _tickSpacing < 16384, "TSOOB");
-    bytes32 salt = getSalt(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing);
-    // IMarginEngine marginEngine = IMarginEngine(masterMarginEngine.cloneDeterministic(salt));
     IMarginEngine marginEngine = IMarginEngine(address(new ERC1967Proxy(masterMarginEngine, "")));
-    // IVAMM vamm = IVAMM(masterVAMM.cloneDeterministic(salt));
     IVAMM vamm = IVAMM(address(new ERC1967Proxy(masterVAMM, "")));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     vamm.initialize(address(marginEngine), _tickSpacing);
     marginEngine.setVAMM(address(vamm));
 
-    uint8 yieldBearingProtocolID = IRateOracle(_rateOracle).underlyingYieldBearingProtocolID();
+    IRateOracle r = IRateOracle(_rateOracle);
+    require(r.underlying() == _underlyingToken, "Tokens do not match");
+    uint8 yieldBearingProtocolID = r.underlyingYieldBearingProtocolID();
     IFCM fcm;
     
     if (masterFCMs[yieldBearingProtocolID] != address(0)) {
       address masterFCM = masterFCMs[yieldBearingProtocolID];
-      // fcm = IFCM(masterFCM.cloneDeterministic(salt));
       fcm = IFCM(address(new ERC1967Proxy(masterFCM, "")));
       fcm.initialize(address(vamm), address(marginEngine));
       marginEngine.setFCM(address(fcm));
