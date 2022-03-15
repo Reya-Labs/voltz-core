@@ -209,4 +209,12 @@ contract MockAToken is IAToken, ERC20 {
 
         super._transfer(from, to, amount.rayDiv(index));
     }
+
+    function approveInternal(
+        address owner,
+        address spender,
+        uint256 value
+    ) public {
+        _approve(owner, spender, value);
+    }
 }

@@ -29,15 +29,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
   using TraderWithYieldBearingAssets for TraderWithYieldBearingAssets.Info;
 
   using SafeTransferLib for IERC20Minimal;
-
-  /// The resulting margin does not meet minimum requirements
-  error MarginRequirementNotMet(int256 marginRequirement);
-
-  /// Positions and Traders cannot be settled before the applicable interest rate swap has matured 
-  error CannotSettleBeforeMaturity();
-  
-  // can only be called by the marginEngine
-  error OnlyMarginEngine();
   
   /// @dev modifier which checks if the msg.sender is not equal to the address of the MarginEngine, if that's the case, a revert is raised
   modifier onlyMarginEngine () {
@@ -63,7 +54,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     AaveDataTypes.ReserveData memory aaveReserveData = _aaveLendingPool.getReserveData(underlyingTokenAddress);
     _underlyingYieldBearingToken = IERC20Minimal(aaveReserveData.aTokenAddress);
     tickSpacing = _vamm.tickSpacing(); // retrieve tick spacing of the VAM
-
+    
     __Ownable_init();
     __Pausable_init();
     __UUPSUpgradeable_init();
@@ -246,7 +237,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     if (remainingSettlementCashflow < 0) {
     
       if (-remainingSettlementCashflow > marginToCoverRemainingSettlementCashflow) {
-        revert MarginRequirementNotMet(int256(marginToCoverVariableLegFromNowToMaturity) + remainingSettlementCashflow);
+        revert MarginRequirementNotMetFCM(int256(marginToCoverVariableLegFromNowToMaturity) + remainingSettlementCashflow);
       }
       
     }
