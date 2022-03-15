@@ -71,6 +71,7 @@ interface IRateOracle {
     //  how is the returned rate encoded? Floating rate?
     function getApyFromTo(uint256 from, uint256 to)
         external
+        view
         returns (uint256 apyFromTo);
 
     // non-view functions

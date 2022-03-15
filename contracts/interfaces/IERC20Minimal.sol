@@ -59,4 +59,6 @@ interface IERC20Minimal {
         address indexed spender,
         uint256 value
     );
+
+    function decimals() external view returns (uint8);
 }

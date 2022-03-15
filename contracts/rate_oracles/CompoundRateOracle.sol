@@ -11,8 +11,8 @@ import "../rate_oracles/BaseRateOracle.sol";
 contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
-    /// @dev exchangeRateStored() returned zero for ctoken
-    error CTokenExchangeRateStoredReturnedZero();
+    /// @dev exchangeRateInRay() returned zero
+    error CTokenExchangeRateReturnedZero();
 
     /// @inheritdoc ICompoundRateOracle
     address public override ctoken;
@@ -26,14 +26,21 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         BaseRateOracle(underlying)
     {
         ctoken = _ctoken;
+        decimals = IERC20Minimal(underlying).decimals();
         uint32 blockTimestamp = Time.blockTimestampTruncated();
-        // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
-        // source: https://compound.finance/docs/ctokens#exchange-rate
-        uint256 result = ICToken(ctoken).exchangeRateStored();
+        uint256 result = exchangeRateInRay();
         (
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
         ) = observations.initialize(blockTimestamp, result);
+    }
+
+    function exchangeRateInRay() internal view returns (uint) {
+        // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
+        // source: https://compound.finance/docs/ctokens#exchange-rate
+        uint256 exchangeRateStored = ICToken(ctoken).exchangeRateStored();
+        uint scalingFactor = 10 ** (17 - decimals);
+        return exchangeRateStored * scalingFactor;
     }
 
     /// @notice Store the CToken's current exchange rate, in Ray
@@ -52,9 +59,9 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
             return (index, cardinality);
 
-        uint256 resultRay = ICToken(ctoken).exchangeRateStored();
+        uint256 resultRay = exchangeRateInRay();
         if (resultRay == 0) {
-            revert CTokenExchangeRateStoredReturnedZero();
+            revert CTokenExchangeRateReturnedZero();
         }
 
         emit OracleBufferWrite(
@@ -111,12 +118,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         );
 
         if (rateToRay > rateFromRay) {
-            return
-                WadRayMath.rayToWad(
-                    WadRayMath.rayDiv(rateToRay, rateFromRay).sub(
-                        WadRayMath.RAY
-                    )
-                );
+            return WadRayMath.rayToWad(WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY);
         } else {
             /// is this precise, have there been instances where the comp rate is negative?
             return 0;
@@ -153,21 +155,21 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         uint32 queriedTime,
         uint16 index,
         uint16 cardinality
-    ) internal returns (uint256 rateValueRay) {
+    ) internal view returns (uint256 rateValueRay) {
         require(currentTime >= queriedTime, "OOO");
 
         if (currentTime == queriedTime) {
             OracleBuffer.Observation memory rate;
             rate = observations[index];
             if (rate.blockTimestamp != currentTime) {
-                rateValueRay = ICToken(ctoken).exchangeRateStored();
+                rateValueRay = exchangeRateInRay();
             } else {
                 rateValueRay = rate.observedValue;
             }
             return rateValueRay;
         }
 
-        uint256 currentValueRay = ICToken(ctoken).exchangeRateStored();
+        uint256 currentValueRay = exchangeRateInRay();
         (
             OracleBuffer.Observation memory beforeOrAt,
             OracleBuffer.Observation memory atOrAfter
@@ -194,8 +196,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
                 uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath
-                    .rayDiv(atOrAfter.observedValue, beforeOrAt.observedValue)
-                    .sub(WadRayMath.RAY);
+                    .rayDiv(atOrAfter.observedValue, beforeOrAt.observedValue) - WadRayMath.RAY;
 
                 rateFromBeforeOrAtToAtOrAfterWad = WadRayMath.rayToWad(
                     rateFromBeforeOrAtToAtOrAfterRay
@@ -222,7 +223,6 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     }
 
     function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
-        // In the case of Comp, the values we write are obtained by calling ICToken (ctoken).exchangeRateStored();
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,
