@@ -131,6 +131,11 @@ library WadRayMath {
     function rayToWad(uint256 a) internal pure returns (uint256) {
         uint256 halfRatio = WAD_RAY_RATIO / 2;
         uint256 result = halfRatio + a;
+
+        /// @audit tag 7 [ABDK]
+        // This “require” statement checks for a phantom overflow, as conversion from RAY to WAD is always possible.  
+        // Consider refactoring the code to never revert.
+
         require(result >= halfRatio, Errors.MATH_ADDITION_OVERFLOW);
 
         return result / WAD_RAY_RATIO;

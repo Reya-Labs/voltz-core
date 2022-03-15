@@ -97,13 +97,21 @@ contract Periphery is IPeriphery {
 
         int256 amountSpecified;
 
+        /// @audit tag 11 [ABDK]
+        // Overflow is possible on the two lines marked below
+       
         if (params.isFT) {
-            amountSpecified = int256(params.notional);
+            amountSpecified = int256(params.notional);  // Overflow is possible here.
         } else {
-            amountSpecified = -int256(params.notional);
+            amountSpecified = -int256(params.notional);  // Overflow is possible here.
         }
 
         int24 tickSpacing = vamm.tickSpacing();
+
+        /// @audit tag 6 [ABDK]
+        // Zero is a valid tick index, but here zero is used as a special value.  So it is impossible to specify, say tickLower = 0, tickUpper = 5.
+        // ref: tickLower: params.tickLower == 0 ? -tickSpacing : params.tickLower,
+        // Consider using an invalid tick index as a special value.
 
         IVAMM.SwapParams memory swapParams = IVAMM.SwapParams({
             recipient: msg.sender,

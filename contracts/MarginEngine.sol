@@ -297,6 +297,13 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
             position.updateMarginViaDelta(marginDelta);
 
+
+            /// @audit tag 10 [ABDK]
+            // This logic makes the contract behavior hard to predict and also open an attack vector.
+            // The owner may front-run a transaction and revoke approval for the “msg.sender”,
+            // thus token will be transferred from “msg.sender” rather than from “owner”.  
+            // Consider always transferring token from “owner”.
+
             address depositor;
             if (_factory.isApproved(_owner, msg.sender)) {
                 depositor = _owner;
@@ -641,11 +648,16 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
     
     function getExtraBalances(int24 from, int24 to, uint128 liquidity, uint256 variableFactorWad) internal view returns (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) {
+        
+        /// @audit [ABDK]
+        // The expressions “TickMath.getSqrtRatioAtTick(from)” and “TickMath.getSqrtRatioAtTick(to)” are calculated twice.  
+        // Consider calculating once and reusing.
+        
         if (from == to) return (0, 0);
         
         int256 amount0 = SqrtPriceMath.getAmount0Delta(
             TickMath.getSqrtRatioAtTick(from),
-            TickMath.getSqrtRatioAtTick(to),
+            TickMath.getSqrtRatioAtTick(to), 
             (from < to) ? -int128(liquidity) : int128(liquidity)
         );
 
@@ -689,12 +701,15 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         uint256 variableFactorWad = _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad);
 
-        // Printer.printInt24("tick", tick);
-        // Printer.printInt256("fixedTokenBalance", position.fixedTokenBalance);
-        // Printer.printInt256("variableTokenBalance", position.variableTokenBalance);
         if (position._liquidity > 0) {
             PositionMarginRequirementLocalVars2 memory localVars;
             localVars.inRangeTick = (tick < tickLower) ? tickLower : ((tick < tickUpper) ? tick : tickUpper);
+
+
+            /// @audit [ABDK]
+            // Scenario 1 should be considered only when “tick” < “tickUpper”.
+            // Scenario 2 should be considered only when “tick” > “tickLower”.
+
 
             // scenario 1: a trader comes in and trades all the liquidity all the way to the the upper tick
             // scenario 2: a trader comes in and trades all the liquidity all the way to the the lower tick

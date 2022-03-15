@@ -153,6 +153,11 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
   /// @dev not locked because it initializes unlocked
   function initializeVAMM(uint160 sqrtPriceX96) external override {
+    
+    /// @audit tag 1 [ABDK]
+    // This function could be called by anyone and there is no economical incentives to provide a fair price here.
+    // Consider requiring the caller to provide certain amount of liquidity along with the call, which would motivate the caller to set the price close to the fair price.
+    
     if (_vammVars.sqrtPriceX96 != 0)  {
       revert CustomErrors.ExpectedSqrtPriceZeroBeforeInit(_vammVars.sqrtPriceX96);
     }
@@ -160,6 +165,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
     _vammVars = VAMMVars({ sqrtPriceX96: sqrtPriceX96, tick: tick, feeProtocol: 0 });
+
+    /// @audit tag 2 [ABDK]
+    // It is not guaranteed that the “initialize” function was already executed, so it is possible to unlock a not fully initialized instance.  
+    // Consider adding an appropriate check.
 
     unlocked = true;
 
@@ -377,6 +386,11 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     /// @dev write an entry to the rate oracle (given no throttling)
 
     rateOracle.writeOracleEntry();
+
+
+    /// @audit tag 3 [ABDK]
+    // On every iteration of this loop there are several places where different code is executed depending on the trade side.  
+    // It would be more efficient to have two separate loop implementations and choose what implementation to run based on the trade side.
 
     // continue swapping as long as we haven't used the entire input/output and haven't reached the price (implied fixed rate) limit
     while (
