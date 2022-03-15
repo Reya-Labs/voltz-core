@@ -474,8 +474,10 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
         updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
 
-        // bool isUnwind =
-        // todo: introduce isUnwind variable
+        /// @dev isUnwind means the trader is getting into a swap with the opposite direction to their net position
+        /// @dev in that case it does not make sense to revert the transaction if the position margin requirement is not met since
+        /// @dev it could have been even further from the requireemnt prior to the unwind
+        bool isUnwind = (position.variableTokenBalance > 0 && variableTokenDelta < 0) || (position.variableTokenBalance < 0 && variableTokenDelta > 0);
 
         if (cumulativeFeeIncurred > 0) {
             /// @audit overflow possible
@@ -487,8 +489,10 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         positionMarginRequirement = int256(
             _getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
-        
-        if (positionMarginRequirement > position.margin) {
+
+        /// @dev only check the margin requirement if it is not an unwind since an unwind could bring the position to a better state
+        /// @dev and still not make it through the initial margin requirement
+        if ((positionMarginRequirement > position.margin) && !isUnwind) {
             IVAMM.VAMMVars memory v = _vamm.vammVars();
             revert CustomErrors.MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
         }
