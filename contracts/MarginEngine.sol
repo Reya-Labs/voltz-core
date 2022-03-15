@@ -334,13 +334,16 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         
         updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
         
+        /// @audit [ABDK] This line is way too long.  
+        /// Consider reformatting and/or refactoring.
+
         int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, _termStartTimestampWad, _termEndTimestampWad, _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad));
 
         position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
         position.updateMarginViaDelta(settlementCashflow);
         position.settlePosition();
 
-        emit SettlePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, position.isSettled);
+        emit SettlePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, true);
 
     }
     
@@ -350,7 +353,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         override
         returns (uint256)
     {
-        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - _cacheMaxAgeInSeconds) {
+
+        if (block.timestamp - cachedHistoricalApyWadRefreshTimestamp > _cacheMaxAgeInSeconds) {
             // Cache is stale
             _refreshHistoricalApyCache();
         }
@@ -364,11 +368,11 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         view
         returns (uint256)
     {
-        if (cachedHistoricalApyWadRefreshTimestamp < block.timestamp - _cacheMaxAgeInSeconds) {
+        if (block.timestamp - cachedHistoricalApyWadRefreshTimestamp > _cacheMaxAgeInSeconds) {
             // Cache is stale
             return _getHistoricalApy();
         }
-        return cachedHistoricalApyWad;
+        return cachedHistoricalApyWad;    
     }
 
     /// @notice Computes the historical APY value of the RateOracle
