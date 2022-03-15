@@ -16,7 +16,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "./storage/MarginEngineStorage.sol";
-
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract MarginEngine is MarginEngineStorage, IMarginEngine,
@@ -43,7 +42,6 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         require(__termStartTimestampWad != 0, "TS");
         require(__termEndTimestampWad != 0, "TE");
         require(__termEndTimestampWad >__termStartTimestampWad, "TE<=TS");
-
 
         _underlyingToken = __underlyingToken;
         _termStartTimestampWad = __termStartTimestampWad;
@@ -155,16 +153,22 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory _marginCalculatorParameters
     ) external override onlyOwner {
-        marginCalculatorParameters = _marginCalculatorParameters;
+        MarginCalculatorParameters memory marginCalculatorParametersOld = marginCalculatorParameters;
+        marginCalculatorParameters = _marginCalculatorParameters;   
+        emit MarginCalculatorParametersSet(marginCalculatorParametersOld, marginCalculatorParameters);
     }
 
     /// @inheritdoc IMarginEngine
-    function setVAMM(address _vAMMAddress) external override onlyOwner {
-        _vamm = IVAMM(_vAMMAddress);
+    function setVAMM(IVAMM _vAMM) external override onlyOwner {
+        IVAMM vammOld = _vamm;
+        _vamm = _vAMM;
+        emit VAMMSet(vammOld, _vamm);
     }
     /// @inheritdoc IMarginEngine
-    function setFCM(address _newFcm) external override onlyOwner {
-        _fcm = IFCM(_newFcm);
+    function setFCM(IFCM _newFCM) external override onlyOwner {
+        IFCM oldFCM = _fcm;
+        _fcm = _newFCM;
+        emit FCMSet(oldFCM, _fcm);
     }
 
     /// @inheritdoc IMarginEngine

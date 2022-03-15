@@ -57,7 +57,7 @@ contract Factory is IFactory, Ownable {
     IVAMM vamm = IVAMM(address(new VoltzERC1967Proxy(masterVAMM, "")));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     vamm.initialize(address(marginEngine), _tickSpacing);
-    marginEngine.setVAMM(address(vamm));
+    marginEngine.setVAMM(vamm);
 
     IRateOracle r = IRateOracle(_rateOracle);
     require(r.underlying() == address(_underlyingToken), "Tokens do not match");
@@ -68,7 +68,7 @@ contract Factory is IFactory, Ownable {
       address masterFCM = masterFCMs[yieldBearingProtocolID];
       fcm = IFCM(address(new VoltzERC1967Proxy(masterFCM, "")));
       fcm.initialize(address(vamm), address(marginEngine));
-      marginEngine.setFCM(address(fcm));
+      marginEngine.setFCM(fcm);
       Ownable(address(fcm)).transferOwnership(msg.sender);
     }
 
