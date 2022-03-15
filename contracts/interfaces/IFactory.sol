@@ -3,13 +3,15 @@
 pragma solidity ^0.8.0;
 
 import "contracts/utils/CustomErrors.sol";
+import "./rate_oracles/IRateOracle.sol";
+import "./IERC20Minimal.sol";
 
 /// @title The interface for the Voltz AMM Factory
 /// @notice The AMM Factory facilitates creation of Voltz AMMs
 interface IFactory is CustomErrors {
     event IrsInstanceDeployed(
-        address indexed underlyingToken,
-        address indexed rateOracle,
+        IERC20Minimal indexed underlyingToken,
+        IRateOracle indexed rateOracle,
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad,
         int24 tickSpacing,
@@ -41,8 +43,8 @@ interface IFactory is CustomErrors {
 
     /// @notice Deploys the contracts required for a new Interest Rate Swap instance
     function deployIrsInstance(
-        address _underlyingToken,
-        address _rateOracle,
+        IERC20Minimal _underlyingToken,
+        IRateOracle _rateOracle,
         uint256 _termStartTimestampWad,
         uint256 _termEndTimestampWad,
         int24 _tickSpacing

@@ -36,17 +36,18 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function initialize(address __underlyingToken, address _rateOracleAddress, uint256 __termStartTimestampWad, uint256 __termEndTimestampWad) external override initializer {
-        require(__underlyingToken != address(0), "UT");
-        require(_rateOracleAddress != address(0), "RO");
+    function initialize(IERC20Minimal __underlyingToken, IRateOracle __rateOracle, uint256 __termStartTimestampWad, uint256 __termEndTimestampWad) external override initializer {
+        
+        require(address(__underlyingToken) != address(0), "UT");
+        require(address(__rateOracle) != address(0), "RO");
         require(__termStartTimestampWad != 0, "TS");
         require(__termEndTimestampWad != 0, "TE");
 
-        _underlyingToken = IERC20Minimal(__underlyingToken);
+        _underlyingToken = __underlyingToken;
         _termStartTimestampWad = __termStartTimestampWad;
         _termEndTimestampWad = __termEndTimestampWad;
 
-        _rateOracle = IRateOracle(_rateOracleAddress);
+        _rateOracle = __rateOracle;
         _factory = IFactory(msg.sender);
 
         // Todo: set default values for things like _secondsAgo, cacheMaxAge.

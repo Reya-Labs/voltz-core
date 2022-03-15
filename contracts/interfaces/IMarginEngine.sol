@@ -157,10 +157,10 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
 
     /// @dev "constructor" for proxy instances
     function initialize(
-        address _underlyingToken,
-        address _rateOracleAddress,
-        uint256 _termStartTimestampWad,
-        uint256 _termEndTimestampWad
+        IERC20Minimal __underlyingToken,
+        IRateOracle __rateOracle,
+        uint256 __termStartTimestampWad,
+        uint256 __termEndTimestampWad
     ) external;
 
     // view functions

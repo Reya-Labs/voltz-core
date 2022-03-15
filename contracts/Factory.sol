@@ -48,7 +48,7 @@ contract Factory is IFactory, Ownable {
     emit MasterFCMSet(masterFCMAddressOld, masterFCMAddress, yieldBearingProtocolID);
   }
 
-  function deployIrsInstance(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (address marginEngineProxy, address vammProxy, address fcmProxy) {
+  function deployIrsInstance(IERC20Minimal _underlyingToken, IRateOracle _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (address marginEngineProxy, address vammProxy, address fcmProxy) {
     // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
     // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
     // 16384 ticks represents a >5x price change with ticks of 1 bips
@@ -60,7 +60,7 @@ contract Factory is IFactory, Ownable {
     marginEngine.setVAMM(address(vamm));
 
     IRateOracle r = IRateOracle(_rateOracle);
-    require(r.underlying() == _underlyingToken, "Tokens do not match");
+    require(r.underlying() == address(_underlyingToken), "Tokens do not match");
     uint8 yieldBearingProtocolID = r.underlyingYieldBearingProtocolID();
     IFCM fcm;
     
