@@ -307,7 +307,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     require(msg.sender==recipient || _factory.isApproved(recipient, msg.sender), "only msg.sender or approved can mint");
 
-    console.log("here?");
     positionMarginRequirement = updatePosition(
       ModifyPositionParams({
         owner: recipient,

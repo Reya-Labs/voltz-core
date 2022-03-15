@@ -14,9 +14,6 @@ library FixedAndVariableMath {
     uint256 public constant SECONDS_IN_YEAR_IN_WAD = 31536000 * 10**18;
     uint256 public constant ONE_HUNDRED_IN_WAD = 100 * 10**18;
 
-    /// @notice amount0 and amount1 must have different signs
-    error AmountSignsSame();
-
     /// @notice Caclulate the remaining cashflow to settle a position
     /// @param fixedTokenBalance The current balance of the fixed side of the position
     /// @param variableTokenBalance The current balance of the variable side of the position
@@ -199,13 +196,7 @@ library FixedAndVariableMath {
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad
     ) internal view returns (int256 fixedTokenBalance) {
-        if (
-            !(((amount0 <= 0 && amount1 >= 0) ||
-                (amount0 >= 0 && amount1 <= 0)) ||
-                (amount0 == 0 && amount1 == 0))
-        ) {
-            revert AmountSignsSame();
-        }
+        if (amount0 == 0 && amount1 == 0) return 0;
 
         int256 amount0Wad = PRBMathSD59x18.fromInt(amount0);
         int256 amount1Wad = PRBMathSD59x18.fromInt(amount1);

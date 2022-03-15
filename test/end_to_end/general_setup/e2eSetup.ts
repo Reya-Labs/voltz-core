@@ -532,7 +532,7 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -TICK_SPACING, TICK_SPACING],
       [3, -TICK_SPACING, TICK_SPACING],
     ],
-    skipped: false,
+    skipped: true,
   },
 
   {
@@ -621,6 +621,6 @@ export const e2eScenarios: e2eParameters[] = [
       [0, -24840, -20700],
       [1, -24840, -20700],
     ],
-    skipped: false,
+    skipped: true,
   },
 ];
