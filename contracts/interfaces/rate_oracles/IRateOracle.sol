@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 
+import "contracts/utils/CustomErrors.sol";
+
 pragma solidity ^0.8.0;
 
 /// @dev The RateOracle is used for two purposes on the Voltz Protocol
 /// @dev Settlement: in order to be able to settle IRS positions after the termEndTimestamp of a given AMM
 /// @dev Margin Engine Computations: getApyFromTo is used by the MarginCalculator and MarginEngine
 /// @dev It is necessary to produce margin requirements for Trader and Liquidity Providers
-interface IRateOracle {
+interface IRateOracle is CustomErrors {
 
     // events
     event MinSecondsSinceLastUpdateSet(uint256 _minSecondsSinceLastUpdate);

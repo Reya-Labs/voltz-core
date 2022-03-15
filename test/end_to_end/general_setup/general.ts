@@ -18,6 +18,7 @@ import {
   FixedAndVariableMathTest,
   MarginEngine,
   MockAaveLendingPool,
+  MockAToken,
   Periphery,
   SqrtPriceMathTest,
   TestAaveFCM,
@@ -44,6 +45,7 @@ export class ScenarioRunner {
   owner!: Wallet;
   factory!: Factory;
   token!: ERC20Mock;
+  aToken!: MockAToken;
   rateOracleTest!: TestRateOracle;
 
   termStartTimestampBN!: BigNumber;
@@ -84,6 +86,14 @@ export class ScenarioRunner {
     // todo: consider adding an extra argument to this function amount so that the amount minted and approved is not hardcoded for more granular tests
     await this.token.mint(address, BigNumber.from(10).pow(27));
     await this.token.approve(address, BigNumber.from(10).pow(27));
+
+    await this.token.mint(this.aToken.address, BigNumber.from(10).pow(27));
+    const rni = await this.aaveLendingPool.getReserveNormalizedIncome(
+      this.token.address
+    );
+
+    await this.aToken.mint(address, BigNumber.from(10).pow(27), rni);
+    await this.aToken.approve(address, BigNumber.from(10).pow(27));
   }
 
   constructor(params_: e2eParameters, outputFile_: string) {
@@ -429,6 +439,7 @@ export class ScenarioRunner {
       // manually do the prerequsite deployments for the scenario
       ({
         factory: this.factory,
+        mockAToken: this.aToken,
         token: this.token,
         rateOracleTest: this.rateOracleTest,
         aaveLendingPool: this.aaveLendingPool,
@@ -550,8 +561,8 @@ export class ScenarioRunner {
 
     // mint and approve the addresses
     await this.mintAndApprove(this.owner.address);
-    await this.mintAndApprove(this.marginEngineTest.address);
-    await this.mintAndApprove(this.e2eSetup.address);
+    // await this.mintAndApprove(this.marginEngineTest.address);
+    // await this.mintAndApprove(this.e2eSetup.address);
 
     // create the actors
     this.actors = [];
@@ -568,10 +579,34 @@ export class ScenarioRunner {
         BigNumber.from(10).pow(27)
       );
 
+      await this.aToken.approveInternal(
+        actor.address,
+        this.fcmTest.address,
+        BigNumber.from(10).pow(27)
+      );
+
+      await this.token.approveInternal(
+        actor.address,
+        this.e2eSetup.address,
+        BigNumber.from(10).pow(27)
+      );
+
+      await this.token.approveInternal(
+        actor.address,
+        this.marginEngineTest.address,
+        BigNumber.from(10).pow(27)
+      );
+
       // set approval for the periphery to act on belalf of the actor
       await actor.setIntegrationApproval(
         this.marginEngineTest.address,
         this.periphery.address,
+        true
+      );
+
+      await actor.setIntegrationApproval(
+        this.marginEngineTest.address,
+        this.e2eSetup.address,
         true
       );
     }
@@ -814,6 +849,21 @@ export class ScenarioRunner {
   async settlePositions() {
     for (const p of this.positions) {
       await this.marginEngineTest.settlePosition(p[1], p[2], p[0]);
+
+      await this.e2eSetup.updatePositionMargin(
+        p[0],
+        p[1],
+        p[2],
+        (await this.marginEngineTest.getPosition(p[0], p[1], p[2])).margin
+          .mul(-1)
+          .add(1)
+      );
+    }
+
+    for (const p of this.positions) {
+      try {
+        await this.e2eSetup.settleYBATrader(p[0]);
+      } catch (_) {}
     }
   }
 

@@ -48,6 +48,21 @@ contract Actor is CustomErrors {
         ) = IPeriphery(peripheryAddress).swap(params);
     }
 
+    function updatePositionMargin(
+        address MEAddress,
+        address _owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int256 marginDelta
+    ) public {
+        IMarginEngine(MEAddress).updatePositionMargin(
+            _owner,
+            tickLower,
+            tickUpper,
+            marginDelta
+        );
+    }
+
     function mint(
         address VAMMAddress,
         address recipient,
@@ -126,6 +141,10 @@ contract Actor is CustomErrors {
             notionalToUnwind,
             sqrtPriceLimitX96
         );
+    }
+
+    function settleYBATrader(address FCMAddress) external {
+        IFCM(FCMAddress).settleTrader();
     }
 }
 
@@ -349,6 +368,12 @@ contract E2ESetup is CustomErrors {
         continuousInvariants();
     }
 
+    function settleYBATrader(address trader) external {
+        addYBATrader(trader);
+
+        Actor(trader).settleYBATrader(FCMAddress);
+    }
+
     function mintOrBurnViaPeriphery(IPeriphery.MintOrBurnParams memory params)
         public
         returns (int256 positionMarginRequirement)
@@ -508,7 +533,8 @@ contract E2ESetup is CustomErrors {
         this.addPosition(_owner, tickLower, tickUpper);
 
         uint256 gasBefore = gasleft();
-        IMarginEngine(MEAddress).updatePositionMargin(
+        Actor(_owner).updatePositionMargin(
+            MEAddress,
             _owner,
             tickLower,
             tickUpper,
@@ -517,7 +543,10 @@ contract E2ESetup is CustomErrors {
         keepInMindGas = gasBefore - gasleft();
         initialCashflow += marginDelta;
 
-        continuousInvariants();
+        if (
+            PRBMathUD60x18.fromUint(block.timestamp) <
+            IMarginEngine(MEAddress).termEndTimestampWad()
+        ) continuousInvariants();
     }
 
     function computeSettlementCashflowForSwapSnapshot(
