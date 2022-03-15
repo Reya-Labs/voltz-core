@@ -177,6 +177,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         override
         onlyOwner
     {
+
+        /// @audit Consider adding appropriate checks for the range of valid values the secondsAgo variable can take
+
         uint256 secondsAgoOld = _secondsAgo;
         _secondsAgo = _newSecondsAgo;
         emit HistoricalApyWindowSet(secondsAgoOld, _secondsAgo);
@@ -188,6 +191,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         override 
         onlyOwner
     {
+
+        /// @audit Consider adding appropriate checks for the range of valid values the secondsAgo variable can take
+
         uint256 cacheMaxAgeInSecondsOld = _cacheMaxAgeInSeconds;
         _cacheMaxAgeInSeconds = _newCacheMaxAgeInSeconds;
         emit CacheMaxAgeSet(cacheMaxAgeInSecondsOld, _cacheMaxAgeInSeconds);
@@ -214,6 +220,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
     /// @inheritdoc IMarginEngine
     function setLiquidatorReward(uint256 _newLiquidatorRewardWad) external override onlyOwner {
+
+        /// @audit Consider adding appropriate checks for the range of valid values the secondsAgo variable can take
+
         uint256 liquidatorRewardWadOld = _liquidatorRewardWad;
         _liquidatorRewardWad = _newLiquidatorRewardWad;
         emit LiquidatorRewardSet(liquidatorRewardWadOld, _liquidatorRewardWad);
@@ -258,6 +267,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             _underlyingToken.safeTransferFrom(_account, address(this), uint256(_marginDelta));
         } else {
             uint256 marginEngineBalance = _underlyingToken.balanceOf(address(this));
+
+            // @audit This will revert in case marginDelta = -2^255.  
+            // @audit Consider surrounding with an “unchecked” block.
 
             if (uint256(-_marginDelta) > marginEngineBalance) {
                 uint256 remainingDeltaToCover = uint256(-_marginDelta);
