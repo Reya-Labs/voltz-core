@@ -653,24 +653,23 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     }
 
     
-    function getExtraBalances(int24 from, int24 to, uint128 liquidity, uint256 variableFactorWad) internal view returns (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) {
-        
-        /// @audit [ABDK]
-        // The expressions “TickMath.getSqrtRatioAtTick(from)” and “TickMath.getSqrtRatioAtTick(to)” are calculated twice.  
-        // Consider calculating once and reusing.
-        
-        if (from == to) return (0, 0);
+    function getExtraBalances(int24 fromTick, int24 toTick, uint128 liquidity, uint256 variableFactorWad) internal view returns (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) {
+                
+        if (fromTick == toTick) return (0, 0);
+
+        uint160 sqrtRatioAtFromTickX96 = TickMath.getSqrtRatioAtTick(fromTick);
+        uint160 sqrtRatioAtToTickX96 = TickMath.getSqrtRatioAtTick(toTick);
         
         int256 amount0 = SqrtPriceMath.getAmount0Delta(
-            TickMath.getSqrtRatioAtTick(from),
-            TickMath.getSqrtRatioAtTick(to), 
-            (from < to) ? -int128(liquidity) : int128(liquidity)
+            sqrtRatioAtFromTickX96,
+            sqrtRatioAtToTickX96, 
+            (fromTick < toTick) ? -int128(liquidity) : int128(liquidity)
         );
 
         int256 amount1 = SqrtPriceMath.getAmount1Delta(
-            TickMath.getSqrtRatioAtTick(from),
-            TickMath.getSqrtRatioAtTick(to),
-            (from < to) ? int128(liquidity) : -int128(liquidity)
+            sqrtRatioAtFromTickX96,
+            sqrtRatioAtToTickX96,
+            (fromTick < toTick) ? int128(liquidity) : -int128(liquidity)
         );
 
         extraFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(
