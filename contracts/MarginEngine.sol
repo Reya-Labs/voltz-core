@@ -616,44 +616,29 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             /// @dev initiate a swap
 
             bool isFT = position.variableTokenBalance < 0;
+            
+            /// @dev if isFT
+            /// @dev get into a Variable Taker swap (the opposite of LP's current position) --> hence params.isFT is set to false for the vamm swap call
+            /// @dev amountSpecified needs to be negative (since getting into a variable taker swap)
+            /// @dev since the position.variableTokenBalance is already negative, pass position.variableTokenBalance as amountSpecified
+            /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO + 1
+            /// @dev isExternal is a boolean that ensures the state updates to the position are handled directly in the body of the unwind call
+            /// @dev that's more efficient than letting the swap call the margin engine again to update position fixed and varaible token balances + account for fees
+            /// @dev if !isFT
+            /// @dev get into a Fixed Taker swap (the opposite of LP's current position)
+            /// @dev amountSpecified needs to be positive, since we are executing a fixedd taker swap
+            /// @dev since the position.variableTokenBalance is already positive, pass position.variableTokenBalance as amountSpecified
+            /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO - 1
 
-            if (isFT) {
+            IVAMM.SwapParams memory params = IVAMM.SwapParams({
+                recipient: _owner,
+                amountSpecified: position.variableTokenBalance,
+                sqrtPriceLimitX96: isFT ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1, 
+                tickLower: tickLower,
+                tickUpper: tickUpper
+            });
 
-                /// @dev get into a Variable Taker swap (the opposite of LP's current position) --> hence params.isFT is set to false for the vamm swap call
-                /// @dev amountSpecified needs to be negative (since getting into a variable taker swap)
-                /// @dev since the position.variableTokenBalance is already negative, pass position.variableTokenBalance as amountSpecified
-                /// @dev since moving from left to right along the virtual amm, sqrtPriceLimit is set to MIN_SQRT_RATIO + 1
-                /// @dev isExternal is a boolean that ensures the state updates to the position are handled directly in the body of the unwind call
-                /// @dev that's more efficient than letting the swap call the margin engine again to update position fixed and varaible token balances + account for fees
-
-                IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                    recipient: _owner,
-                    amountSpecified: position.variableTokenBalance,
-                    sqrtPriceLimitX96: TickMath.MIN_SQRT_RATIO + 1,
-                    
-                    tickLower: tickLower,
-                    tickUpper: tickUpper
-                });
-
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = _vamm.swap(params);
-            } else {
-
-                /// @dev get into a Fixed Taker swap (the opposite of LP's current position)
-                /// @dev amountSpecified needs to be positive, since we are executing a fixedd taker swap
-                /// @dev since the position.variableTokenBalance is already positive, pass position.variableTokenBalance as amountSpecified
-                /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO - 1
-
-                IVAMM.SwapParams memory params = IVAMM.SwapParams({
-                    recipient: _owner,
-                    amountSpecified: position.variableTokenBalance,
-                    sqrtPriceLimitX96: TickMath.MAX_SQRT_RATIO - 1,
-                    
-                    tickLower: tickLower,
-                    tickUpper: tickUpper
-                });
-
-                (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = _vamm.swap(params);
-            }
+            (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = _vamm.swap(params);
 
             if (_cumulativeFeeIncurred > 0) {
                 /// @dev update position margin to account for the fees incurred while conducting a swap in order to unwind
