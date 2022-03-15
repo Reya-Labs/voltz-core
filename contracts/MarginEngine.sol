@@ -268,18 +268,19 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         } else {
             uint256 marginEngineBalance = _underlyingToken.balanceOf(address(this));
 
-            // @audit This will revert in case marginDelta = -2^255.  
-            // @audit Consider surrounding with an “unchecked” block.
+            uint256 remainingDeltaToCover;
+            unchecked {
+                remainingDeltaToCover = uint256(-_marginDelta);
+            }
 
-            if (uint256(-_marginDelta) > marginEngineBalance) {
-                uint256 remainingDeltaToCover = uint256(-_marginDelta);
+            if (remainingDeltaToCover > marginEngineBalance) {
                 if (marginEngineBalance > 0) {
                     remainingDeltaToCover = remainingDeltaToCover - marginEngineBalance;
                     _underlyingToken.safeTransfer(_account, marginEngineBalance);
                 }
                 _fcm.transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
             } else {
-                _underlyingToken.safeTransfer(_account, uint256(-_marginDelta));
+                _underlyingToken.safeTransfer(_account, remainingDeltaToCover);
             }
 
         }
@@ -382,10 +383,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         view
         returns (uint256)
     {
-        uint256 to = block.timestamp;
-        uint256 from = to - _secondsAgo;
+        uint256 from = block.timestamp - _secondsAgo;
 
-        return _rateOracle.getApyFromTo(from, to);
+        return _rateOracle.getApyFromTo(from, block.timestamp);
     }
 
     /// @notice Updates the cached historical APY value of the RateOracle even if the cache is not stale
@@ -438,6 +438,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             ? PRBMathUD60x18.mul(uint256(-_variableTokenDelta), position.rewardPerAmount)
             : PRBMathUD60x18.mul(uint256(_variableTokenDelta), position.rewardPerAmount);
 
+
+        /// @audit overflow is possible when converting to int, consider using safe conversion
         position.updateMarginViaDelta(-int256(liquidatorRewardValue));
         _underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
 
@@ -472,7 +474,11 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
         updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
 
+        // bool isUnwind =
+        // todo: introduce isUnwind variable
+
         if (cumulativeFeeIncurred > 0) {
+            /// @audit overflow possible
             position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
         }
 
@@ -481,7 +487,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         positionMarginRequirement = int256(
             _getPositionMarginRequirement(position, tickLower, tickUpper, false)
         );
-
+        
         if (positionMarginRequirement > position.margin) {
             IVAMM.VAMMVars memory v = _vamm.vammVars();
             revert CustomErrors.MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
@@ -516,6 +522,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             position.updateBalancesViaDeltas(fixedTokenDelta - 1, variableTokenDelta - 1);
             position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
             /// @dev collect fees
+            /// @audit overflow possible
             position.updateMarginViaDelta(int256(feeDelta) - 1);
             position.updateFeeGrowthInside(feeGrowthInsideX128);
         } else {
@@ -646,6 +653,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
             if (_cumulativeFeeIncurred > 0) {
                 /// @dev update position margin to account for the fees incurred while conducting a swap in order to unwind
+                /// @audit overflow is possible
                 position.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
             }
 
@@ -789,6 +797,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             tickUpper,
             true
         );
+
+        /// @audit overflow is possible
         if (position.margin < int256(marginRequirement)) {
             _isLiquidatable = true;
         } else {
@@ -933,6 +943,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
             // simulate an adversarial unwind (cumulative position is a Variable Taker --> simulate FT unwind --> movement to the left along the VAMM)
             // fixedTokenDelta unbalanced that results from the simulated unwind
+
+
+            /// @audit overflow is possible
             fixedTokenDeltaUnbalanced = int256(
                 MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
                     uint256(variableTokenBalance),
