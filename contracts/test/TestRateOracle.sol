@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 import "../rate_oracles/BaseRateOracle.sol";
 import "../rate_oracles/OracleBuffer.sol";

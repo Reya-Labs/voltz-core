@@ -46,7 +46,7 @@ library SwapMath {
         uint256 timeToMaturityInSecondsWad
     )
         internal
-        view
+        pure
         returns (
             uint160 sqrtRatioNextX96,
             uint256 amountIn,
