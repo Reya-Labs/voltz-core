@@ -42,6 +42,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         require(address(__rateOracle) != address(0), "RO");
         require(__termStartTimestampWad != 0, "TS");
         require(__termEndTimestampWad != 0, "TE");
+        require(__termEndTimestampWad >__termStartTimestampWad, "TE<=TS");
+
 
         _underlyingToken = __underlyingToken;
         _termStartTimestampWad = __termStartTimestampWad;
