@@ -298,7 +298,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
         
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
         
         if (marginDelta < 0) {
 
@@ -316,21 +316,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
             position.updateMarginViaDelta(marginDelta);
 
-
-            /// @audit tag 10 [ABDK]
-            // This logic makes the contract behavior hard to predict and also open an attack vector.
-            // The owner may front-run a transaction and revoke approval for the “msg.sender”,
-            // thus token will be transferred from “msg.sender” rather than from “owner”.  
-            // Consider always transferring token from “owner”.
-
-            address depositor;
-            if (_factory.isApproved(_owner, msg.sender)) {
-                depositor = _owner;
-            } else {
-                depositor = msg.sender;
-            }
-
-            transferMargin(depositor, marginDelta);
+            transferMargin(msg.sender, marginDelta);
         }
 
         position.rewardPerAmount = 0;
@@ -416,7 +402,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);  
 
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
         
         (bool isLiquidatable, uint256 marginRequirement) = isLiquidatablePosition(position, tickLower, tickUpper);
 
@@ -460,7 +446,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external whenNotPaused onlyVAMM override returns(int256 positionMarginRequirement) {
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
 
-        updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true);
+        updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true); // isMint=true
 
         position.updateLiquidity(params.liquidityDelta);
 
@@ -480,7 +466,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         /// @dev this function can only be called by the vamm following a swap    
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
 
         if (cumulativeFeeIncurred > 0) {
             position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
@@ -1023,7 +1009,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             tickLower,
             tickUpper
         );
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, true);
+        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
 
         return _getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
     }
