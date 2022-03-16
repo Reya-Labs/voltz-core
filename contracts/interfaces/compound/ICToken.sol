@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-import "../IERC20Minimal.sol";
+import "../IERC20Extended.sol";
 
 
 interface ICToken {

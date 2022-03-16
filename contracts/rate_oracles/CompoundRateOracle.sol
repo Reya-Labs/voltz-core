@@ -18,7 +18,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     address public override ctoken;
 
     /// @inheritdoc ICompoundRateOracle
-    uint public override decimals;
+    uint256 public override decimals;
 
     uint8 public constant override underlyingYieldBearingProtocolID = 2; // id of comp v2 is 2
 
@@ -26,7 +26,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         BaseRateOracle(underlying)
     {
         ctoken = _ctoken;
-        decimals = IERC20Minimal(underlying).decimals();
+        decimals = IERC20Extended(underlying).decimals();
         uint32 blockTimestamp = Time.blockTimestampTruncated();
         uint256 result = exchangeRateInRay();
         (
@@ -35,12 +35,17 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         ) = observations.initialize(blockTimestamp, result);
     }
 
-    function exchangeRateInRay() internal view returns (uint) {
+    function exchangeRateInRay() internal view returns (uint256) {
         // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
         // source: https://compound.finance/docs/ctokens#exchange-rate
         uint256 exchangeRateStored = ICToken(ctoken).exchangeRateStored();
-        uint scalingFactor = 10 ** (17 - decimals);
-        return exchangeRateStored * scalingFactor;
+        if (decimals >= 18) {
+            uint256 scalingFactor = 10 ** (decimals - 18);
+            return WadRayMath.rayDiv(exchangeRateStored, scalingFactor);
+        } else {
+            uint256 scalingFactor = 10 ** (18 - decimals);
+            return WadRayMath.rayMul(exchangeRateStored, scalingFactor);
+        }
     }
 
     /// @notice Store the CToken's current exchange rate, in Ray
@@ -118,7 +123,10 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         );
 
         if (rateToRay > rateFromRay) {
-            return WadRayMath.rayToWad(WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY);
+            return
+                WadRayMath.rayToWad(
+                    WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY
+                );
         } else {
             /// is this precise, have there been instances where the comp rate is negative?
             return 0;
@@ -195,8 +203,10 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
-                uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath
-                    .rayDiv(atOrAfter.observedValue, beforeOrAt.observedValue) - WadRayMath.RAY;
+                uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath.rayDiv(
+                    atOrAfter.observedValue,
+                    beforeOrAt.observedValue
+                ) - WadRayMath.RAY;
 
                 rateFromBeforeOrAtToAtOrAfterWad = WadRayMath.rayToWad(
                     rateFromBeforeOrAtToAtOrAfterRay

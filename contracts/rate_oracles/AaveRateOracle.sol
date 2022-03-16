@@ -109,7 +109,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         );
 
         if (rateToRay > rateFromRay) {
-            return WadRayMath.rayToWad(WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY);
+            return
+                WadRayMath.rayToWad(
+                    WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY
+                );
         } else {
             /// is this precise, have there been instances where the aave rate is negative?
             return 0;
@@ -188,8 +191,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
-                uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath
-                    .rayDiv(atOrAfter.observedValue, beforeOrAt.observedValue) - WadRayMath.RAY;
+                uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath.rayDiv(
+                    atOrAfter.observedValue,
+                    beforeOrAt.observedValue
+                ) - WadRayMath.RAY;
 
                 rateFromBeforeOrAtToAtOrAfterWad = WadRayMath.rayToWad(
                     rateFromBeforeOrAtToAtOrAfterRay
