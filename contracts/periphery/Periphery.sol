@@ -84,7 +84,8 @@ contract Periphery is IPeriphery {
             int256 _variableTokenDelta,
             uint256 _cumulativeFeeIncurred,
             int256 _fixedTokenDeltaUnbalanced,
-            int256 _marginRequirement
+            int256 _marginRequirement,
+            int24 _tickAfter
         )
     {
         require(
@@ -118,6 +119,22 @@ contract Periphery is IPeriphery {
             tickUpper: params.tickUpper == 0 ? tickSpacing : params.tickUpper
         });
 
-        return vamm.swap(swapParams);
+        (
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced,
+            _marginRequirement
+        ) = vamm.swap(swapParams);
+        _tickAfter = vamm.vammVars().tick;
+    }
+
+    function getCurrentTick(address marginEngineAddress)
+        external
+        view
+        returns (int24 currentTick)
+    {
+        IVAMM vamm = getVAMM(marginEngineAddress);
+        currentTick = vamm.vammVars().tick;
     }
 }
