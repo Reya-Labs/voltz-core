@@ -975,14 +975,12 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             _termEndTimestampWad
         );
 
-        int256 updatedVariableTokenBalance = variableTokenBalance +
-            variableTokenDelta; // should be zero
         int256 updatedFixedTokenBalance = fixedTokenBalance +
             fixedTokenDelta;
 
         margin = _getMarginRequirement(
             updatedFixedTokenBalance,
-            updatedVariableTokenBalance,
+            0,
             isLM);
 
         if (
