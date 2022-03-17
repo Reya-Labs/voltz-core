@@ -13,6 +13,7 @@ import {
   XI_LOWER,
   T_MAX,
 } from "../test/shared/utilities";
+import { BigNumber, utils } from "ethers";
 
 task(
   "createIrsInstance",
@@ -25,7 +26,7 @@ task(
   .addOptionalParam(
     "daysDuration",
     "The number of days between the start and end time of the IRS contract",
-    45,
+    30,
     types.int
   )
   .addOptionalParam(
@@ -39,15 +40,14 @@ task(
     const rateOracle = (await hre.ethers.getContract(
       taskArgs.rateOracle
     )) as IRateOracle;
-
-    await rateOracle.increaseObservationCardinalityNext(1000);
-
     const underlyingTokenAddress = await rateOracle.underlying();
     const underlyingToken = await hre.ethers.getContractAt(
       "IERC20Minimal",
       underlyingTokenAddress
     );
-    
+
+    await rateOracle.increaseObservationCardinalityNext(1000);
+
     const aaveLendingPool = (await hre.ethers.getContractAt(
       "MockAaveLendingPool",
       "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
