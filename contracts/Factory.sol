@@ -15,6 +15,8 @@ contract VoltzERC1967Proxy is ERC1967Proxy, CustomErrors {
 }
 
 
+/// @audit shouldn't the masterFCM and masterVAMM be settable, similar to the masterFCMs?
+
 /// @title Voltz Factory Contract
 /// @notice Deploys Voltz VAMMs and MarginEngines and manages ownership and control over amm protocol fees
 // Following this example https://github.com/OriginProtocol/minimal-proxy-example/blob/master/contracts/PairFactory.sol
@@ -32,17 +34,13 @@ contract Factory is IFactory, Ownable {
   /// @dev owner --> integration contract address --> isApproved
   /// @dev if an owner wishes to allow a given intergration contract to act on thir behalf with Voltz Core
   /// @dev they need to set the approval via the setApproval function
-  mapping(address => mapping(address => bool)) private _approvals;
+  mapping(address => mapping(address => bool)) public override isApproved;
 
   function setApproval(address intAddress, bool allowIntegration) external override {
-    _approvals[msg.sender][intAddress] = allowIntegration;
+    isApproved[msg.sender][intAddress] = allowIntegration;
     emit ApprovalSet(msg.sender, intAddress, allowIntegration);
   }
   
-  function isApproved(address _owner, address intAddress) external override view returns (bool) {
-    return _approvals[_owner][intAddress];
-  }
-
   constructor(IMarginEngine _masterMarginEngine, IVAMM _masterVAMM) {
     masterMarginEngine = _masterMarginEngine;
     masterVAMM = _masterVAMM;
