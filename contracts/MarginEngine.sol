@@ -710,23 +710,28 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             PositionMarginRequirementLocalVars2 memory localVars;
             localVars.inRangeTick = (tick < tickLower) ? tickLower : ((tick < tickUpper) ? tick : tickUpper);
 
-
-            /// @audit [ABDK]
-            // Scenario 1 should be considered only when “tick” < “tickUpper”.
-            // Scenario 2 should be considered only when “tick” > “tickLower”.
-
-
             // scenario 1: a trader comes in and trades all the liquidity all the way to the the upper tick
             // scenario 2: a trader comes in and trades all the liquidity all the way to the the lower tick
-            
-            (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) = getExtraBalances(localVars.inRangeTick, tickUpper, position._liquidity, variableFactorWad);
+
+            int256 extraFixedTokenBalance;
+            int256 extraVariableTokenBalance;
+
+            if (tick < tickUpper) {
+                (extraFixedTokenBalance, extraVariableTokenBalance) = getExtraBalances(localVars.inRangeTick, tickUpper, position._liquidity, variableFactorWad);
+            }
+
             localVars.scenario1LPVariableTokenBalance =
                     position.variableTokenBalance + extraVariableTokenBalance;
 
             localVars.scenario1LPFixedTokenBalance =
                     position.fixedTokenBalance + extraFixedTokenBalance;
+            
+            if (tick > tickLower) {
+                (extraFixedTokenBalance, extraVariableTokenBalance) = getExtraBalances(localVars.inRangeTick, tickLower, position._liquidity, variableFactorWad);
+            } else {
+                (extraFixedTokenBalance, extraVariableTokenBalance) = (0,0);
+            }
 
-            (extraFixedTokenBalance, extraVariableTokenBalance) = getExtraBalances(localVars.inRangeTick, tickLower, position._liquidity, variableFactorWad);
             localVars.scenario2LPVariableTokenBalance =
                     position.variableTokenBalance + extraVariableTokenBalance;
 
@@ -746,18 +751,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
                 ? highPrice
                 : lowPrice;
 
-
             uint256 scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
             uint256 scenario2MarginRequirement = getMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
-
-            // Printer.printEmptyLine();
-            // Printer.printInt256("scenario1LPFixedTokenBalance", localVars.scenario1LPFixedTokenBalance);
-            // Printer.printInt256("scenario1LPVariableTokenBalance", localVars.scenario1LPVariableTokenBalance);
-            // Printer.printUint256("scenario1MarginRequirement", scenario1MarginRequirement);
-            // Printer.printEmptyLine();
-            // Printer.printInt256("scenario2LPFixedTokenBalance", localVars.scenario2LPFixedTokenBalance);
-            // Printer.printInt256("scenario2LPVariableTokenBalance", localVars.scenario2LPVariableTokenBalance);
-            // Printer.printUint256("scenario2MarginRequirement", scenario2MarginRequirement);
 
             if (scenario1MarginRequirement > scenario2MarginRequirement) {
                 return scenario1MarginRequirement;
