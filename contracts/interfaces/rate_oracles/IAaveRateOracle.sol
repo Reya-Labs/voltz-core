@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 import "../aave/IAaveV2LendingPool.sol";
 import "../rate_oracles/IRateOracle.sol";
+import "contracts/utils/CustomErrors.sol";
 
 interface IAaveRateOracle is IRateOracle {
 

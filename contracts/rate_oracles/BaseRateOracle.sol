@@ -87,14 +87,17 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         if (rateFromToWad == 0) {
             return 0;
         }
-        uint256 exponentWad = PRBMathUD60x18.div(
-            PRBMathUD60x18.fromUint(1),
-            timeInYearsWad
-        );
-        uint256 apyPlusOneWad = PRBMathUD60x18.pow(
-            (PRBMathUD60x18.fromUint(1) + rateFromToWad),
-            exponentWad
-        );
+        // uint256 exponentWad = PRBMathUD60x18.div(
+        //     PRBMathUD60x18.fromUint(1),
+        //     timeInYearsWad
+        // );
+        // uint256 apyPlusOneWad = PRBMathUD60x18.pow(
+        //     (PRBMathUD60x18.fromUint(1) + rateFromToWad),
+        //     exponentWad
+        // );
+
+        uint256 log2ApyPlusOneWad = PRBMathUD60x18.div(PRBMathUD60x18.log2(PRBMathUD60x18.fromUint(1) + rateFromToWad), timeInYearsWad);
+        uint256 apyPlusOneWad = PRBMathUD60x18.exp2(log2ApyPlusOneWad);
         apyWad = apyPlusOneWad - PRBMathUD60x18.fromUint(1);
     }
 
@@ -134,6 +137,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint256 termEndTimestampInWeiSeconds
     ) public override(IRateOracle) returns (uint256 resultWad) {
         bool cacheable;
+
         (resultWad, cacheable) = _variableFactor(
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds
@@ -182,6 +186,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             resultWad = settlementRateCache[termStartTimestamp][
                 termEndTimestamp
             ];
+            cacheable = false;
         } else if (Time.blockTimestampTruncated() >= termEndTimestamp) {
             resultWad = getRateFromTo(termStartTimestamp, termEndTimestamp);
             cacheable = true;
@@ -190,8 +195,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
                 termStartTimestamp,
                 Time.blockTimestampTruncated()
             );
+            cacheable = true;
         }
-        return (resultWad, cacheable);
     }
 
     /// @inheritdoc IRateOracle

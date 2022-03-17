@@ -7,7 +7,7 @@ import "../IVAMM.sol";
 import "../IERC20Minimal.sol";
 import "../../core_libraries/TraderWithYieldBearingAssets.sol";
 
-interface IFCM {
+interface IFCM is CustomErrors {
     function getTraderWithYieldBearingAssets(address trader)
         external
         view

@@ -1,14 +1,14 @@
+import { utils } from "ethers";
 import { task } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
 import { Factory, MarginEngine, Periphery, VAMM } from "../typechain";
 import { TickMath } from "../test/shared/tickMath";
 
 task("mintLiquidity", "Mints liquidity")
-  .addParam("meaddress", "Margin Engine Address")
-  .setAction(async (taskArgs, hre) => {
+  .setAction(async (_, hre) => {
     const [wallet] = await (hre.ethers as any).getSigners();
 
-    const marginEngineAddress = taskArgs.meaddress;
+    const marginEngineAddress = "0x75537828f2ce51be7289709686a69cbfdbb714f1";
 
     const factory = (await hre.ethers.getContract("Factory")) as Factory;
 
@@ -46,13 +46,17 @@ task("mintLiquidity", "Mints liquidity")
 
     console.log("marginEngineAddress", marginEngineAddress);
     console.log("wallet address", wallet.address);
+    
+    console.log("historical apy", utils.formatEther(await marginEngine.callStatic.getHistoricalApy()));
+
+    // await vamm.mint(wallet.address, -7000, 0, toBn("100000"));
 
     await periphery.mintOrBurn({
       marginEngineAddress: marginEngineAddress,
       recipient: wallet.address,
-      tickLower: -1000,
-      tickUpper: 1000,
-      notional: toBn("10"),
+      tickLower: -7000,
+      tickUpper: 0,
+      notional: toBn("100000"),
       isMint: true,
     });
   });

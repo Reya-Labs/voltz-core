@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
-import { IRateOracle, MarginEngine } from "../typechain";
+import { IRateOracle, MarginEngine, MockAaveLendingPool } from "../typechain";
 import {
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
@@ -25,7 +25,7 @@ task(
   .addOptionalParam(
     "daysDuration",
     "The number of days between the start and end time of the IRS contract",
-    30,
+    45,
     types.int
   )
   .addOptionalParam(
@@ -39,11 +39,36 @@ task(
     const rateOracle = (await hre.ethers.getContract(
       taskArgs.rateOracle
     )) as IRateOracle;
+
+    await rateOracle.increaseObservationCardinalityNext(1000);
+
     const underlyingTokenAddress = await rateOracle.underlying();
     const underlyingToken = await hre.ethers.getContractAt(
       "IERC20Minimal",
       underlyingTokenAddress
     );
+    
+    const aaveLendingPool = (await hre.ethers.getContractAt(
+      "MockAaveLendingPool",
+      "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+    )) as MockAaveLendingPool;
+
+    for (let i = 0; i < 15; i++) {
+      await hre.network.provider.send("evm_increaseTime", [86400]);
+      for (let j = 0; j < 2; j++) {
+        await hre.network.provider.send("evm_mine", []);
+      }
+
+      const rni = Math.floor((1 + (i+1) / 3650) * 10000 + 0.5).toString() +
+      "0".repeat(23);
+      console.log(rni);
+      await aaveLendingPool.setReserveNormalizedIncome(
+        "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        rni
+      );
+  
+      await rateOracle.writeOracleEntry();
+    }
 
     const factory = await hre.ethers.getContract("Factory");
 
@@ -123,6 +148,12 @@ task(
       )) as MarginEngine;
 
       await marginEngine.setMarginCalculatorParameters(margin_engine_params);
+
+      await marginEngine.setCacheMaxAgeInSeconds(BigNumber.from(86400));
+      await marginEngine.setSecondsAgo(BigNumber.from(86400 * 7));
+
+      await marginEngine.getHistoricalApy();
+      console.log("historical apy", utils.formatEther(await marginEngine.getHistoricalApyReadOnly()));
     }
   });
 

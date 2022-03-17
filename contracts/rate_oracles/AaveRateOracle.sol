@@ -13,9 +13,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     using SafeMath for uint256;
     using OracleBuffer for OracleBuffer.Observation[65535];
 
-    /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
-    error AavePoolGetReserveNormalizedIncomeReturnedZero();
-
     /// @inheritdoc IAaveRateOracle
     address public override aaveLendingPool;
 
@@ -54,7 +51,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 resultRay = IAaveV2LendingPool(aaveLendingPool)
             .getReserveNormalizedIncome(underlying);
         if (resultRay == 0) {
-            revert AavePoolGetReserveNormalizedIncomeReturnedZero();
+            revert CustomErrors.AavePoolGetReserveNormalizedIncomeReturnedZero();
         }
 
         emit OracleBufferWrite(
@@ -111,12 +108,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         );
 
         if (rateToRay > rateFromRay) {
-            return
-                WadRayMath.rayToWad(
+            uint256 result = WadRayMath.rayToWad(
                     WadRayMath.rayDiv(rateToRay, rateFromRay).sub(
                         WadRayMath.RAY
                     )
                 );
+            return result;
         } else {
             /// is this precise, have there been instances where the aave rate is negative?
             return 0;
