@@ -4,6 +4,9 @@ pragma solidity ^0.8.0;
 
 import "contracts/utils/CustomErrors.sol";
 import "./rate_oracles/IRateOracle.sol";
+import "./IMarginEngine.sol";
+import "./IVAMM.sol";
+import "./fcms/IFCM.sol";
 import "./IERC20Minimal.sol";
 
 /// @title The interface for the Voltz AMM Factory
@@ -15,16 +18,22 @@ interface IFactory is CustomErrors {
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad,
         int24 tickSpacing,
-        address marginEngine,
-        address vamm,
-        address fcm,
+        IMarginEngine marginEngine,
+        IVAMM vamm,
+        IFCM fcm,
         uint8 yieldBearingProtocolID
     );
 
     event MasterFCMSet(
-        address masterFCMAddressOld,
-        address masterFCMAddress,
+        IFCM masterFCMAddressOld,
+        IFCM masterFCMAddress,
         uint8 yieldBearingProtocolID
+    );
+
+    event ApprovalSet(
+        address indexed owner,
+        address indexed intAddress,
+        bool indexed isApproved
     );
 
     function setApproval(address intAddress, bool allowIntegration) external;
@@ -34,12 +43,11 @@ interface IFactory is CustomErrors {
         view
         returns (bool);
 
-    function setMasterFCM(address masterFCMAddress, address _rateOracle)
-        external;
+    function setMasterFCM(IFCM masterFCM, IRateOracle _rateOracle) external;
 
-    function masterVAMM() external view returns (address);
+    function masterVAMM() external view returns (IVAMM);
 
-    function masterMarginEngine() external view returns (address);
+    function masterMarginEngine() external view returns (IMarginEngine);
 
     /// @notice Deploys the contracts required for a new Interest Rate Swap instance
     function deployIrsInstance(
@@ -58,5 +66,5 @@ interface IFactory is CustomErrors {
 
     function masterFCMs(uint8 yieldBearingProtocolID)
         external
-        returns (address masterFCMAddress);
+        returns (IFCM masterFCM);
 }
