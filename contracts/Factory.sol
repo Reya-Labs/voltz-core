@@ -69,11 +69,11 @@ contract Factory is IFactory, Ownable {
     IRateOracle r = IRateOracle(_rateOracle);
     require(r.underlying() == address(_underlyingToken), "Tokens do not match");
     uint8 yieldBearingProtocolID = r.underlyingYieldBearingProtocolID();
+    IFCM _masterFCM = masterFCMs[yieldBearingProtocolID];
     IFCM fcm;
     
-    if (address(masterFCMs[yieldBearingProtocolID]) != address(0)) {
-      address masterFCM = address(masterFCMs[yieldBearingProtocolID]);
-      fcm = IFCM(address(new VoltzERC1967Proxy(masterFCM, "")));
+    if (address(_masterFCM) != address(0)) {
+      fcm = IFCM(address(new VoltzERC1967Proxy(address(_masterFCM), "")));
       fcm.initialize(address(vamm), address(marginEngine));
       marginEngine.setFCM(fcm);
       Ownable(address(fcm)).transferOwnership(msg.sender);
