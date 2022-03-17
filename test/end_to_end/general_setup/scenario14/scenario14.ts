@@ -1,9 +1,7 @@
 import { BigNumber, utils } from "ethers";
 import { toBn } from "evm-bn";
-import { randomInt } from "mathjs";
 import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
-import { TICK_SPACING } from "../../../shared/utilities";
 import { e2eScenarios } from "../e2eSetup";
 import { ScenarioRunner } from "../general";
 
@@ -24,32 +22,36 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.rateOracleTest.increaseObservationCardinalityNext(1000);
 
-    for (let i = 0; i < 15; i ++) {
+    for (let i = 0; i < 15; i++) {
       await this.advanceAndUpdateApy(consts.ONE_DAY, 2, 1 + (i + 1) / 3650);
     }
 
-    console.log(utils.formatEther(await this.marginEngineTest.callStatic.getHistoricalApy()));
+    console.log(
+      utils.formatEther(
+        await this.marginEngineTest.callStatic.getHistoricalApy()
+      )
+    );
 
     const p = this.positions[0];
     const positionMarginRequirement = BigNumber.from(0);
 
-        await this.e2eSetup.updatePositionMargin(
-          p[0],
-          p[1],
-          p[2],
-          positionMarginRequirement.add(toBn("1"))
-        );
-        console.log(
-          "gas consumed for update position margin: ",
-          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
-        );
+    await this.e2eSetup.updatePositionMargin(
+      p[0],
+      p[1],
+      p[2],
+      positionMarginRequirement.add(toBn("1"))
+    );
+    console.log(
+      "gas consumed for update position margin: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
 
-        await this.e2eSetup.mint(p[0], p[1], p[2], toBn("100000"));
-        console.log(
-          "gas consumed for mint: ",
-          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
-        );
-    
+    await this.e2eSetup.mint(p[0], p[1], p[2], toBn("100000"));
+    console.log(
+      "gas consumed for mint: ",
+      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    );
+
     await advanceTimeAndBlock(consts.ONE_DAY.mul(90), 2); // advance 5 days to reach maturity
 
     // settle positions and traders

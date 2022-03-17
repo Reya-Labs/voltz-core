@@ -109,10 +109,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         if (rateToRay > rateFromRay) {
             uint256 result = WadRayMath.rayToWad(
-                    WadRayMath.rayDiv(rateToRay, rateFromRay).sub(
-                        WadRayMath.RAY
-                    )
-                );
+                WadRayMath.rayDiv(rateToRay, rateFromRay).sub(WadRayMath.RAY)
+            );
             return result;
         } else {
             /// is this precise, have there been instances where the aave rate is negative?

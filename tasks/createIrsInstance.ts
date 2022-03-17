@@ -59,14 +59,15 @@ task(
         await hre.network.provider.send("evm_mine", []);
       }
 
-      const rni = Math.floor((1 + (i+1) / 3650) * 10000 + 0.5).toString() +
-      "0".repeat(23);
+      const rni =
+        Math.floor((1 + (i + 1) / 3650) * 10000 + 0.5).toString() +
+        "0".repeat(23);
       console.log(rni);
       await aaveLendingPool.setReserveNormalizedIncome(
         "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
         rni
       );
-  
+
       await rateOracle.writeOracleEntry();
     }
 
@@ -153,7 +154,10 @@ task(
       await marginEngine.setSecondsAgo(BigNumber.from(86400 * 7));
 
       await marginEngine.getHistoricalApy();
-      console.log("historical apy", utils.formatEther(await marginEngine.getHistoricalApyReadOnly()));
+      console.log(
+        "historical apy",
+        utils.formatEther(await marginEngine.getHistoricalApyReadOnly())
+      );
     }
   });
 

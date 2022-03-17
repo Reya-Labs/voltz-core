@@ -96,7 +96,10 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         //     exponentWad
         // );
 
-        uint256 log2ApyPlusOneWad = PRBMathUD60x18.div(PRBMathUD60x18.log2(PRBMathUD60x18.fromUint(1) + rateFromToWad), timeInYearsWad);
+        uint256 log2ApyPlusOneWad = PRBMathUD60x18.div(
+            PRBMathUD60x18.log2(PRBMathUD60x18.fromUint(1) + rateFromToWad),
+            timeInYearsWad
+        );
         uint256 apyPlusOneWad = PRBMathUD60x18.exp2(log2ApyPlusOneWad);
         apyWad = apyPlusOneWad - PRBMathUD60x18.fromUint(1);
     }
