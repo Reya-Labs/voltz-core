@@ -60,9 +60,9 @@ interface IFactory is CustomErrors {
     )
         external
         returns (
-            address marginEngineProxy,
-            address vammProxy,
-            address fcmProxy
+            IMarginEngine marginEngineProxy,
+            IVAMM vammProxy,
+            IFCM fcmProxy
         );
 
     function masterFCMs(uint8 yieldBearingProtocolID)
