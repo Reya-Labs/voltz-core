@@ -3,6 +3,7 @@ import { TestVAMM } from "../../typechain/TestVAMM";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { BigNumber } from "@ethersproject/bignumber";
 import { TestRateOracle } from "../../typechain/TestRateOracle";
+import { TestCompoundRateOracle } from "../../typechain/TestCompoundRateOracle";
 import { AaveFCM } from "../../typechain/AaveFCM";
 
 import {
@@ -11,6 +12,7 @@ import {
   FixedAndVariableMathTest,
   MockAaveLendingPool,
   MockAToken,
+  MockCToken,
   SqrtPriceMathTest,
   TickMathTest,
 } from "../../typechain";
@@ -40,6 +42,22 @@ export async function mockATokenFixture(
   )) as MockAToken;
 
   return { mockAToken };
+}
+
+export async function mockCTokenFixture(
+  _cTokenAddress: string,
+  _underlyingAsset: string
+) {
+  const mockCTokenFactory = await ethers.getContractFactory("MockCToken");
+
+  const mockCToken = (await mockCTokenFactory.deploy(
+    _cTokenAddress,
+    _underlyingAsset,
+    "Voltz cDAI",
+    "cVDAI"
+  )) as MockCToken;
+
+  return { mockCToken };
 }
 
 export async function mockERC20Fixture() {
@@ -173,16 +191,33 @@ export async function rateOracleTestFixture(
   return { rateOracleTest };
 }
 
+export async function compoundRateOracleTestFixture(
+  _cTokenAddress: string,
+  _underlyingAddress: string
+) {
+  const compoundRateOracleTestFactory = await ethers.getContractFactory(
+    "TestCompoundRateOracle"
+  );
+  const compoundRateOracleTest = (await compoundRateOracleTestFactory.deploy(
+    _cTokenAddress,
+    _underlyingAddress
+  )) as TestCompoundRateOracle;
+
+  return { compoundRateOracleTest };
+}
+
 interface MetaFixture {
   factory: Factory;
   vammMasterTest: TestVAMM;
   marginEngineMasterTest: TestMarginEngine;
   token: ERC20Mock;
   rateOracleTest: TestRateOracle;
+  compoundRateOracleTest: TestCompoundRateOracle;
   aaveLendingPool: MockAaveLendingPool;
   termStartTimestampBN: BigNumber;
   termEndTimestampBN: BigNumber;
   mockAToken: MockAToken;
+  mockCToken: MockCToken;
   marginEngineTest: TestMarginEngine;
   vammTest: TestVAMM;
   fcmTest: AaveFCM;
@@ -208,6 +243,13 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     token.address
   );
 
+  const cToken = (await mockERC20Fixture()).token;
+  const { mockCToken } = await mockCTokenFixture(cToken.address, token.address);
+  const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
+    cToken.address,
+    token.address
+  );
+
   await aaveLendingPool.setReserveNormalizedIncome(
     token.address,
     BigNumber.from(10).pow(27)
@@ -216,11 +258,14 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   await aaveLendingPool.initReserve(token.address, mockAToken.address);
 
   await rateOracleTest.increaseObservationCardinalityNext(5);
+  // await compoundRateOracleTest.increaseObservarionCardinalityNext(5);
   // write oracle entry
   await rateOracleTest.writeOracleEntry();
+  await compoundRateOracleTest.writeOracleEntry();
   // advance time after first write to the oracle
   await advanceTimeAndBlock(consts.ONE_DAY, 2); // advance by one day
   await rateOracleTest.writeOracleEntry();
+  await compoundRateOracleTest.writeOracleEntry();
 
   const termStartTimestamp: number = await getCurrentTimestamp(provider);
   const termEndTimestamp: number =
@@ -275,6 +320,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termStartTimestampBN,
     termEndTimestampBN,
     mockAToken,
+    compoundRateOracleTest,
+    mockCToken,
     marginEngineTest,
     vammTest,
     fcmTest,
@@ -288,6 +335,8 @@ interface MetaFixtureScenario1E2E {
   token: ERC20Mock;
   rateOracleTest: TestRateOracle;
   aaveLendingPool: MockAaveLendingPool;
+  compoundRateOracleTest: TestCompoundRateOracle;
+  mockCToken: MockCToken;
   termStartTimestampBN: BigNumber;
   termEndTimestampBN: BigNumber;
   testMarginCalculator: MarginCalculatorTest;
@@ -305,6 +354,16 @@ export const metaFixtureScenario1E2E =
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
     const { rateOracleTest } = await rateOracleTestFixture(
       aaveLendingPool.address,
+      token.address
+    );
+
+    const cToken = (await mockERC20Fixture()).token;
+    const { mockCToken } = await mockCTokenFixture(
+      cToken.address,
+      token.address
+    );
+    const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
+      cToken.address,
       token.address
     );
 
@@ -341,6 +400,8 @@ export const metaFixtureScenario1E2E =
       token,
       rateOracleTest,
       aaveLendingPool,
+      mockCToken,
+      compoundRateOracleTest,
       termStartTimestampBN,
       termEndTimestampBN,
       testMarginCalculator,
@@ -354,6 +415,8 @@ interface MetaFixtureE2E {
   token: ERC20Mock;
   rateOracleTest: TestRateOracle;
   aaveLendingPool: MockAaveLendingPool;
+  compoundRateOracleTest: TestCompoundRateOracle;
+  mockCToken: MockCToken;
   termStartTimestampBN: BigNumber;
   termEndTimestampBN: BigNumber;
   testMarginCalculator: MarginCalculatorTest;
@@ -372,6 +435,16 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
     const { rateOracleTest } = await rateOracleTestFixture(
       aaveLendingPool.address,
+      token.address
+    );
+
+    const cToken = (await mockERC20Fixture()).token;
+    const { mockCToken } = await mockCTokenFixture(
+      cToken.address,
+      token.address
+    );
+    const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
+      cToken.address,
       token.address
     );
 
@@ -412,6 +485,8 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
       token,
       rateOracleTest,
       aaveLendingPool,
+      compoundRateOracleTest,
+      mockCToken,
       termStartTimestampBN,
       termEndTimestampBN,
       testMarginCalculator,
