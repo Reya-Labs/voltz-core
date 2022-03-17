@@ -43,7 +43,7 @@ interface IFactory is CustomErrors {
         view
         returns (bool);
 
-    function setMasterFCM(IFCM masterFCM, IRateOracle _rateOracle) external;
+    function setMasterFCM(IFCM masterFCM, uint8 yieldBearingProtocolID) external;
 
     function masterVAMM() external view returns (IVAMM);
 

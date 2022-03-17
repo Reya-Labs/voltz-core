@@ -46,12 +46,10 @@ contract Factory is IFactory, Ownable {
     masterVAMM = _masterVAMM;
   }
 
-  function setMasterFCM(IFCM masterFCM, IRateOracle _rateOracle) external override onlyOwner {
+  function setMasterFCM(IFCM masterFCM, uint8 yieldBearingProtocolID) external override onlyOwner {
     
-    require(address(_rateOracle) != address(0), "rate oracle must exist");
     require(address(masterFCM) != address(0), "master fcm must exist");
 
-    uint8 yieldBearingProtocolID = IRateOracle(_rateOracle).underlyingYieldBearingProtocolID();
     IFCM masterFCMOld = masterFCMs[yieldBearingProtocolID];
     masterFCMs[yieldBearingProtocolID] = masterFCM;
     emit MasterFCMSet(masterFCMOld, masterFCM, yieldBearingProtocolID);
