@@ -773,8 +773,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper
-    ) internal returns (bool _isLiquidatable, uint256 marginRequirement) {
-        marginRequirement = _getPositionMarginRequirement(
+    ) internal returns (bool, uint256) {
+        uint256 marginRequirement = _getPositionMarginRequirement(
             position,
             tickLower,
             tickUpper,
@@ -782,11 +782,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         );
 
         /// @audit overflow is possible
-        if (position.margin < int256(marginRequirement)) {
-            _isLiquidatable = true;
-        } else {
-            _isLiquidatable = false;
-        }
+        return (position.margin < int256(marginRequirement), marginRequirement);
     }
 
 
