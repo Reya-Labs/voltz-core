@@ -1,5 +1,5 @@
 import { BigNumber, Wallet } from "ethers";
-import { ethers, waffle } from "hardhat"; // deployments
+import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
 import { toBn } from "../../helpers/toBn";
 import { TestCompoundRateOracle } from "../../../typechain/TestCompoundRateOracle";
@@ -8,17 +8,11 @@ import {
   mockERC20Fixture,
   mockCTokenFixture,
 } from "../../shared/fixtures";
-import {
-  // advanceTime,
-  advanceTimeAndBlock,
-  getCurrentTimestamp,
-  // setTimeNextBlock,
-} from "../../helpers/time";
-import { ERC20Mock, MockCToken } from "../../../typechain";
+import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
+import { MockCToken } from "../../../typechain";
 
 const { provider } = waffle;
 
-// let token: ERC20Mock;
 let cToken: MockCToken;
 let testCompoundRateOracle: TestCompoundRateOracle;
 
@@ -45,9 +39,7 @@ describe("Compound Rate Oracle", () => {
   };
   describe("#getRateFromTo", async () => {
     beforeEach("deploy and initialize test oracle", async () => {
-      ({ testCompoundRateOracle, token, cToken } = await loadFixture(
-        oracleFixture
-      ));
+      ({ testCompoundRateOracle, cToken } = await loadFixture(oracleFixture));
     });
     it("correctly calculates rate from one timestamp to the next", async () => {
       await testCompoundRateOracle.increaseObservationCardinalityNext(4);
