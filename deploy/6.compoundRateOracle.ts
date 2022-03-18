@@ -85,7 +85,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // Deploy rate oracle pointing at mocks, if mocks exist
   const mockToken = await ethers.getContractOrNull("ERC20Mock");
-  const mockCToken = await ethers.getContractOrNull("mockCToken");
+  const mockCToken = await ethers.getContractOrNull("MockCToken");
   if (mockToken && mockCToken) {
     console.log(
       `Deploy rate oracle for mocked {token, cToken}: {${mockToken.address}, ${mockCToken.address}}`
