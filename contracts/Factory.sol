@@ -56,14 +56,10 @@ contract Factory is IFactory, Ownable {
   }
 
   function deployIrsInstance(IERC20Minimal _underlyingToken, IRateOracle _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (IMarginEngine marginEngineProxy, IVAMM vammProxy, IFCM fcmProxy) {
-    // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
-    // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
-    // 16384 ticks represents a >5x price change with ticks of 1 bips
-    require(_tickSpacing > 0 && _tickSpacing < 16384, "TSOOB");
     IMarginEngine marginEngine = IMarginEngine(address(new VoltzERC1967Proxy(address(masterMarginEngine), "")));
     IVAMM vamm = IVAMM(address(new VoltzERC1967Proxy(address(masterVAMM), "")));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
-    vamm.initialize(address(marginEngine), _tickSpacing);
+    vamm.initialize(marginEngine, _tickSpacing);
     marginEngine.setVAMM(vamm);
 
     IRateOracle r = IRateOracle(_rateOracle);
