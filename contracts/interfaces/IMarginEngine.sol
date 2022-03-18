@@ -157,10 +157,10 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
 
     /// @dev "constructor" for proxy instances
     function initialize(
-        address _underlyingToken,
-        address _rateOracleAddress,
-        uint256 _termStartTimestampWad,
-        uint256 _termEndTimestampWad
+        IERC20Minimal __underlyingToken,
+        IRateOracle __rateOracle,
+        uint256 __termStartTimestampWad,
+        uint256 __termEndTimestampWad
     ) external;
 
     // view functions
@@ -288,10 +288,10 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
 
     /// @notice sets the Virtual Automated Market Maker (VAMM) attached to the MarginEngine
     /// @dev the VAMM is responsible for price discovery, whereas the management of the underlying collateral and liquidations are handled by the Margin Engine
-    function setVAMM(address _vAMMAddress) external;
+    function setVAMM(IVAMM _vAMM) external;
 
     /// @notice sets the Full Collateralisation Module
-    function setFCM(address _fcm) external;
+    function setFCM(IFCM _newFCM) external;
 
     /// @notice transfers margin in terms of underlying tokens to a trader from the Full Collateralisation Module
     /// @dev post maturity date of the MarginEngine, the traders from the Full Collateralisation module will be able to settle with the MarginEngine

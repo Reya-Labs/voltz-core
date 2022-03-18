@@ -51,9 +51,15 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   constructor () initializer {}
 
   /// @inheritdoc IVAMM
-  function initialize(address _marginEngineAddress, int24 __tickSpacing) external override initializer {
-    require(_marginEngineAddress != address(0), "ME must be set");
-    _marginEngine = IMarginEngine(_marginEngineAddress);
+  function initialize(IMarginEngine __marginEngine, int24 __tickSpacing) external override initializer {
+
+    require(address(__marginEngine) != address(0), "ME must be set");
+    // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
+    // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
+    // 16384 ticks represents a >5x price change with ticks of 1 bips
+    require(__tickSpacing > 0 && __tickSpacing < Tick.MAXIMUM_TICK_SPACING, "TSOOB");
+
+    _marginEngine = __marginEngine;
     rateOracle = _marginEngine.rateOracle();
     _factory = IFactory(msg.sender);
     _tickSpacing = __tickSpacing;
@@ -69,8 +75,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.   
   // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786 
   function _authorizeUpgrade(address) internal override onlyOwner {}
-
-
 
 
   // GETTERS FOR STORAGE SLOTS
@@ -386,7 +390,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     /// @dev write an entry to the rate oracle (given no throttling)
 
     rateOracle.writeOracleEntry();
-
 
     /// @audit tag 3 [ABDK]
     // On every iteration of this loop there are several places where different code is executed depending on the trade side.  
