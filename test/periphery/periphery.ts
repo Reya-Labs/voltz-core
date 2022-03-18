@@ -642,14 +642,14 @@ describe("Periphery", async () => {
       false
     );
 
-    const lpInfo = await marginEngineTest.getPosition(
+    const lpInfo = await marginEngineTest.callStatic.getPosition(
       wallet.address,
       -TICK_SPACING,
       TICK_SPACING
     );
     const lpVariableTokenBalance = lpInfo.variableTokenBalance;
 
-    const traderInfo = await marginEngineTest.getPosition(
+    const traderInfo = await marginEngineTest.callStatic.getPosition(
       other.address,
       -TICK_SPACING,
       TICK_SPACING
@@ -667,10 +667,10 @@ describe("Periphery", async () => {
       utils.formatEther(traderVariableTokenBalance.toString())
     );
 
-    expect(lpVariableTokenBalance).to.be.closeTo(notionalMinted, 2);
+    expect(lpVariableTokenBalance).to.be.closeTo(notionalMinted, 10);
     expect(traderVariableTokenBalance).to.be.closeTo(
       mul(notionalMinted, toBn("-1")),
-      2
+      10
     );
   });
 
@@ -744,14 +744,14 @@ describe("Periphery", async () => {
       false
     );
 
-    const lpInfo = await marginEngineTest.getPosition(
+    const lpInfo = await marginEngineTest.callStatic.getPosition(
       wallet.address,
       -TICK_SPACING,
       TICK_SPACING
     );
     const lpVariableTokenBalance = lpInfo.variableTokenBalance;
 
-    const traderInfo = await marginEngineTest.getPosition(
+    const traderInfo = await marginEngineTest.callStatic.getPosition(
       other.address,
       -TICK_SPACING,
       TICK_SPACING
@@ -772,7 +772,7 @@ describe("Periphery", async () => {
     expect(lpVariableTokenBalance).to.be.closeTo(notioanlLeft, 10);
     expect(traderVariableTokenBalance).to.be.closeTo(
       mul(notioanlLeft, toBn("-1")),
-      2
+      10
     );
   });
 
@@ -840,14 +840,14 @@ describe("Periphery", async () => {
       false
     );
 
-    const lpInfo = await marginEngineTest.getPosition(
+    const lpInfo = await marginEngineTest.callStatic.getPosition(
       wallet.address,
       -TICK_SPACING,
       TICK_SPACING
     );
     const lpVariableTokenBalance = lpInfo.variableTokenBalance;
 
-    const traderInfo = await marginEngineTest.getPosition(
+    const traderInfo = await marginEngineTest.callStatic.getPosition(
       other.address,
       -TICK_SPACING,
       TICK_SPACING
@@ -865,10 +865,10 @@ describe("Periphery", async () => {
       utils.formatEther(traderVariableTokenBalance.toString())
     );
 
-    expect(lpVariableTokenBalance).to.be.closeTo(notionalMinted, 2);
+    expect(lpVariableTokenBalance).to.be.closeTo(notionalMinted, 10);
     expect(traderVariableTokenBalance).to.be.closeTo(
       mul(notionalMinted, toBn("-1")),
-      2
+      10
     );
   });
 });

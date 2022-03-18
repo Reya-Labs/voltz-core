@@ -135,7 +135,7 @@ describe("VAMM", () => {
       });
 
       // check trader balances
-      const traderInfo = await marginEngineTest.getPosition(
+      const traderInfo = await marginEngineTest.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -153,7 +153,7 @@ describe("VAMM", () => {
       );
 
       // check position token balances
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -209,7 +209,7 @@ describe("VAMM", () => {
       });
 
       // check trader balances
-      const traderInfo = await marginEngineTest.getPosition(
+      const traderInfo = await marginEngineTest.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -227,7 +227,7 @@ describe("VAMM", () => {
       );
 
       // check position token balances
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -281,7 +281,7 @@ describe("VAMM", () => {
         tickUpper: TICK_SPACING,
       });
 
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -315,7 +315,7 @@ describe("VAMM", () => {
         tickUpper: TICK_SPACING,
       });
 
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -340,7 +340,7 @@ describe("VAMM", () => {
         .connect(wallet)
         .mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("10000000"));
 
-      const traderInfoOld = await marginEngineTest.getPosition(
+      const traderInfoOld = await marginEngineTest.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -355,13 +355,13 @@ describe("VAMM", () => {
         tickUpper: TICK_SPACING,
       });
 
-      const traderInfo = await marginEngineTest.getPosition(
+      const traderInfo = await marginEngineTest.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
       );
 
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING

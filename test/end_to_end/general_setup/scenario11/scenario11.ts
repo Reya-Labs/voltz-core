@@ -89,7 +89,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const p = this.positions[randomInt(0, 5)];
         console.log("here?");
         const current_liquidity =
-          (await this.marginEngineTest.getPosition(p[0], p[1], p[2]))._liquidity
+          (await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2]))._liquidity
             .div(BigNumber.from(10).pow(12))
             .toNumber() /
           10 ** 6;

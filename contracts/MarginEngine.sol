@@ -228,28 +228,10 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     function getPosition(address _owner,
                          int24 tickLower,
                          int24 tickUpper)
-        external override view returns (Position.Info memory positionMemory) {
-            
-            positionMemory = positions.get(_owner, tickLower, tickUpper);
-
-            if (positionMemory._liquidity > 0) {
-                Position.Info storage positionStorage = positions.get(_owner, tickLower, tickUpper);
-                (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = _vamm.computeGrowthInside(tickLower, tickUpper);
-                (int256 fixedTokenDelta, int256 variableTokenDelta) = positionStorage.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
-                uint256 feeDelta = positionStorage.calculateFeeDelta(feeGrowthInsideX128);
-
-                positionMemory.fixedTokenBalance += fixedTokenDelta;
-                positionMemory.variableTokenBalance += variableTokenDelta;
-
-                positionMemory.fixedTokenGrowthInsideLastX128 = fixedTokenGrowthInsideX128;
-                positionMemory.variableTokenGrowthInsideLastX128 = variableTokenGrowthInsideX128;
-
-                positionMemory.margin += int256(feeDelta);
-
-                positionMemory.feeGrowthInsideLastX128 = feeGrowthInsideX128;
-            }    
-
-            return positionMemory;
+        external override returns (Position.Info memory positionMemory) {
+            Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
+            updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
+            return position;
     }
 
     /// @notice transferMargin function which:

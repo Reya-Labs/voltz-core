@@ -8,11 +8,6 @@ interface CustomErrors {
 
     error DebugError(uint256 x, uint256 y);
 
-    error AavePoolGetReserveNormalizedIncomeReturnedZero();
-
-    /// The resulting margin does not meet minimum requirements
-    error MarginRequirementNotMetFCM(int256 marginRequirement);
-
     /// @dev Cannot have less margin than the minimum requirement
     error MarginLessThanMinimum(int256 marginRequirement);
 

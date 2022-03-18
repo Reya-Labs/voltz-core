@@ -213,7 +213,7 @@ export class ScenarioRunner {
       //   this.positions[i][2]
       // );
 
-      let positionInfo = await this.marginEngineTest.getPosition(
+      let positionInfo = await this.marginEngineTest.callStatic.getPosition(
         this.positions[i][0],
         this.positions[i][1],
         this.positions[i][2]
@@ -227,7 +227,7 @@ export class ScenarioRunner {
       // );
 
       fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
-      positionInfo = await this.marginEngineTest.getPosition(
+      positionInfo = await this.marginEngineTest.callStatic.getPosition(
         this.positions[i][0],
         this.positions[i][1],
         this.positions[i][2]
@@ -817,7 +817,7 @@ export class ScenarioRunner {
       if (lowerTick >= upperTick) continue;
 
       const liquidity = (
-        await this.marginEngineTest.getPosition(p[0], p[1], p[2])
+        await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])
       )._liquidity;
       const ratioAtLowerTick = await this.testTickMath.getSqrtRatioAtTick(
         lowerTick
@@ -854,7 +854,7 @@ export class ScenarioRunner {
         p[0],
         p[1],
         p[2],
-        (await this.marginEngineTest.getPosition(p[0], p[1], p[2])).margin
+        (await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])).margin
           .mul(-1)
           .add(1)
       );
