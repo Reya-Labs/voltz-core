@@ -243,6 +243,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     Tick.checkTicks(params.tickLower, params.tickUpper);
 
+
+    /// @dev isUpper = false
     flippedLower = _ticks.update(
       params.tickLower,
       _vammVars.tick,
@@ -254,6 +256,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       _maxLiquidityPerTick
     );
 
+    /// @dev isUpper = true
     flippedUpper = _ticks.update(
       params.tickUpper,
       _vammVars.tick,
@@ -363,6 +366,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced, int256 _marginRequirement)
   {
 
+    Tick.checkTicks(params.tickLower, params.tickUpper);
+    
     VAMMVars memory vammVarsStart = _vammVars;
 
     checksBeforeSwap(params, vammVarsStart, params.amountSpecified > 0);
@@ -371,10 +376,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       require(msg.sender==params.recipient || _factory.isApproved(params.recipient, msg.sender), "only sender or approved integration");
     }
 
-    Tick.checkTicks(params.tickLower, params.tickUpper);
-
     /// @dev lock the vamm while the swap is taking place
-
     unlocked = false;
 
     /// suggestion: use uint32 for blockTimestamp (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L132)
