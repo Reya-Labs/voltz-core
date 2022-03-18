@@ -32,7 +32,7 @@ describe("Factory", () => {
     } = await loadFixture(metaFixture));
 
     // change the term start timestamp to deploy a different instance from the one we have in the meta fixture
-    termStartTimestampBN = termEndTimestampBN.add(1);
+    termEndTimestampBN = termStartTimestampBN.add(1);
   });
 
   it("Cannot deploy if not the owner", async () => {

@@ -14,6 +14,8 @@ import "../utils/Printer.sol";
 library Tick {
     using SafeCast for int256;
 
+    int24 public constant MAXIMUM_TICK_SPACING = 16384;
+
     // info stored for each initialized individual tick
     struct Info {
         /// @dev the total position liquidity that references this tick (either as tick lower or tick upper)

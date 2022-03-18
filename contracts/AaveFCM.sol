@@ -54,7 +54,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     AaveDataTypes.ReserveData memory aaveReserveData = _aaveLendingPool.getReserveData(underlyingTokenAddress);
     _underlyingYieldBearingToken = IERC20Minimal(aaveReserveData.aTokenAddress);
     tickSpacing = _vamm.tickSpacing(); // retrieve tick spacing of the VAM
-
+    
     __Ownable_init();
     __Pausable_init();
     __UUPSUpgradeable_init();
@@ -227,9 +227,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
     /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
     uint256 marginToCoverVariableLegFromNowToMaturity = uint256(-trader.variableTokenBalance);
-    Printer.printUint256("getTraderMarginInYieldBearingTokens(trader)", getTraderMarginInYieldBearingTokens(trader));
-    Printer.printUint256("marginToCoverVariableLegFromNowToMaturity", marginToCoverVariableLegFromNowToMaturity);
-    Printer.printEmptyLine();
     int256 marginToCoverRemainingSettlementCashflow = int256(getTraderMarginInYieldBearingTokens(trader)) - int256(marginToCoverVariableLegFromNowToMaturity);
 
     int256 remainingSettlementCashflow = calculateRemainingSettlementCashflow(trader);

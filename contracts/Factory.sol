@@ -15,70 +15,73 @@ contract VoltzERC1967Proxy is ERC1967Proxy, CustomErrors {
 }
 
 
+/// @audit shouldn't the masterFCM and masterVAMM be settable, similar to the masterFCMs?
+
 /// @title Voltz Factory Contract
 /// @notice Deploys Voltz VAMMs and MarginEngines and manages ownership and control over amm protocol fees
 // Following this example https://github.com/OriginProtocol/minimal-proxy-example/blob/master/contracts/PairFactory.sol
 contract Factory is IFactory, Ownable {
-  address public override masterMarginEngine;
-  address public override masterVAMM;
-  mapping(uint8 => address) public override masterFCMs;
-  mapping(address => mapping(address => bool)) private _approvals;
+  
+  /// @dev master MarginEngine implementation that MarginEngine proxies can delegate call to
+  IMarginEngine public override masterMarginEngine;
+
+  /// @dev master VAMM implementation that VAMM proxies can delegate call to 
+  IVAMM public override masterVAMM;
+
+  /// @dev yieldBearingProtocolID --> master FCM implementation for the underlying yield bearing protocol with the corresponding id
+  mapping(uint8 => IFCM) public override masterFCMs;
+
+  /// @dev owner --> integration contract address --> isApproved
+  /// @dev if an owner wishes to allow a given intergration contract to act on thir behalf with Voltz Core
+  /// @dev they need to set the approval via the setApproval function
+  mapping(address => mapping(address => bool)) public override isApproved;
 
   function setApproval(address intAddress, bool allowIntegration) external override {
-    _approvals[msg.sender][intAddress] = allowIntegration;
+    isApproved[msg.sender][intAddress] = allowIntegration;
+    emit ApprovalSet(msg.sender, intAddress, allowIntegration);
   }
   
-  function isApproved(address _owner, address intAddress) external override view returns (bool) {
-    return _approvals[_owner][intAddress];
-  }
-
-  constructor(address _masterMarginEngine, address _masterVAMM) {
+  constructor(IMarginEngine _masterMarginEngine, IVAMM _masterVAMM) {
     masterMarginEngine = _masterMarginEngine;
     masterVAMM = _masterVAMM;
   }
 
-  function setMasterFCM(address masterFCMAddress, address _rateOracle) external override onlyOwner {
+  function setMasterFCM(IFCM masterFCM, uint8 yieldBearingProtocolID) external override onlyOwner {
     
-    require(_rateOracle != address(0), "rate oracle must exist");
-    require(masterFCMAddress != address(0), "master fcm must exist");
+    require(address(masterFCM) != address(0), "master fcm must exist");
 
-    uint8 yieldBearingProtocolID = IRateOracle(_rateOracle).underlyingYieldBearingProtocolID();
-    address masterFCMAddressOld = masterFCMs[yieldBearingProtocolID];
-    masterFCMs[yieldBearingProtocolID] = masterFCMAddress;
-    emit MasterFCMSet(masterFCMAddressOld, masterFCMAddress, yieldBearingProtocolID);
+    IFCM masterFCMOld = masterFCMs[yieldBearingProtocolID];
+    masterFCMs[yieldBearingProtocolID] = masterFCM;
+    emit MasterFCMSet(masterFCMOld, masterFCM, yieldBearingProtocolID);
   }
 
-  function deployIrsInstance(address _underlyingToken, address _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (address marginEngineProxy, address vammProxy, address fcmProxy) {
-    // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
-    // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
-    // 16384 ticks represents a >5x price change with ticks of 1 bips
-    require(_tickSpacing > 0 && _tickSpacing < 16384, "TSOOB");
-    IMarginEngine marginEngine = IMarginEngine(address(new VoltzERC1967Proxy(masterMarginEngine, "")));
-    IVAMM vamm = IVAMM(address(new VoltzERC1967Proxy(masterVAMM, "")));
+  function deployIrsInstance(IERC20Minimal _underlyingToken, IRateOracle _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (IMarginEngine marginEngineProxy, IVAMM vammProxy, IFCM fcmProxy) {
+    IMarginEngine marginEngine = IMarginEngine(address(new VoltzERC1967Proxy(address(masterMarginEngine), "")));
+    IVAMM vamm = IVAMM(address(new VoltzERC1967Proxy(address(masterVAMM), "")));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
-    vamm.initialize(address(marginEngine), _tickSpacing);
-    marginEngine.setVAMM(address(vamm));
+    vamm.initialize(marginEngine, _tickSpacing);
+    marginEngine.setVAMM(vamm);
 
     IRateOracle r = IRateOracle(_rateOracle);
-    require(r.underlying() == _underlyingToken, "Tokens do not match");
+    require(r.underlying() == address(_underlyingToken), "Tokens do not match");
     uint8 yieldBearingProtocolID = r.underlyingYieldBearingProtocolID();
+    IFCM _masterFCM = masterFCMs[yieldBearingProtocolID];
     IFCM fcm;
     
-    if (masterFCMs[yieldBearingProtocolID] != address(0)) {
-      address masterFCM = masterFCMs[yieldBearingProtocolID];
-      fcm = IFCM(address(new VoltzERC1967Proxy(masterFCM, "")));
+    if (address(_masterFCM) != address(0)) {
+      fcm = IFCM(address(new VoltzERC1967Proxy(address(_masterFCM), "")));
       fcm.initialize(address(vamm), address(marginEngine));
-      marginEngine.setFCM(address(fcm));
+      marginEngine.setFCM(fcm);
       Ownable(address(fcm)).transferOwnership(msg.sender);
     }
 
-    emit IrsInstanceDeployed(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing, address(marginEngine), address(vamm), address(fcm), yieldBearingProtocolID);
+    emit IrsInstanceDeployed(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing, marginEngine, vamm, fcm, yieldBearingProtocolID);
 
     // Transfer ownership of all instances to the factory owner
     Ownable(address(vamm)).transferOwnership(msg.sender);
     Ownable(address(marginEngine)).transferOwnership(msg.sender);
 
-    return(address(marginEngine), address(vamm), address(fcm));
+    return(marginEngine, vamm, fcm);
   }
 
 

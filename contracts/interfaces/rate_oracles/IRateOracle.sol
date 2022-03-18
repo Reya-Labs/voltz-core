@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+import "contracts/utils/CustomErrors.sol";
+
 pragma solidity ^0.8.0;
 
 import "contracts/utils/CustomErrors.sol";

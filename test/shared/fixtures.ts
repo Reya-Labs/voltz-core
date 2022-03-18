@@ -228,8 +228,14 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
+  const underlyingYieldBearingProtocolID =
+    await rateOracleTest.underlyingYieldBearingProtocolID();
+
   // set master fcm for aave
-  await factory.setMasterFCM(fcmMasterTest.address, rateOracleTest.address);
+  await factory.setMasterFCM(
+    fcmMasterTest.address,
+    underlyingYieldBearingProtocolID
+  );
 
   // deploy a margin engine & vamm
   const deployTrx = await factory.deployIrsInstance(
@@ -352,6 +358,7 @@ interface MetaFixtureE2E {
   vammMasterTest: TestVAMM;
   marginEngineMasterTest: TestMarginEngine;
   token: ERC20Mock;
+  mockAToken: MockAToken;
   rateOracleTest: TestRateOracle;
   aaveLendingPool: MockAaveLendingPool;
   termStartTimestampBN: BigNumber;
@@ -377,10 +384,17 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
 
     const { testMarginCalculator } = await marginCalculatorFixture();
 
+    const { mockAToken } = await mockATokenFixture(
+      aaveLendingPool.address,
+      token.address
+    );
+
     await aaveLendingPool.setReserveNormalizedIncome(
       token.address,
-      "1000000000000000000000000000" // 10^27
+      BigNumber.from(10).pow(27)
     );
+
+    await aaveLendingPool.initReserve(token.address, mockAToken.address);
 
     // await rateOracleTest.testGrow(100);
     await rateOracleTest.increaseObservationCardinalityNext(100);
@@ -402,14 +416,21 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
     const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
+    const underlyingYieldBearingProtocolID =
+      await rateOracleTest.underlyingYieldBearingProtocolID();
+
     // set master fcm for aave
-    await factory.setMasterFCM(fcmMasterTest.address, rateOracleTest.address);
+    await factory.setMasterFCM(
+      fcmMasterTest.address,
+      underlyingYieldBearingProtocolID
+    );
 
     return {
       factory,
       vammMasterTest,
       marginEngineMasterTest,
       token,
+      mockAToken,
       rateOracleTest,
       aaveLendingPool,
       termStartTimestampBN,

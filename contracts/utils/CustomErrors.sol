@@ -73,4 +73,10 @@ interface CustomErrors {
 
     /// @dev only the margin engine can run a certain function
     error OnlyMarginEngine();
+
+    /// The resulting margin does not meet minimum requirements
+    error MarginRequirementNotMetFCM(int256 marginRequirement);
+
+    /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
+    error AavePoolGetReserveNormalizedIncomeReturnedZero();
 }
