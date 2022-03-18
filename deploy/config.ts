@@ -10,6 +10,7 @@ interface TokenConfig {
 interface ContractsConfig {
   aaveLendingPool: string;
   aaveTokens: TokenConfig[];
+  compoundTokens: TokenConfig[];
 }
 interface ContractsConfigMap {
   [key: string]: ContractsConfig;
@@ -35,6 +36,16 @@ const config: ContractsConfigMap = {
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],
+
+    // See tokens list at https://compound.finance/docs#networks
+    compoundTokens: [
+      {
+        name: "USDT",
+        address: "0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9",
+        rateOracleBufferSize: 135,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
   },
 };
 
@@ -56,4 +67,17 @@ export const getAaveTokens = (_networkName?: string): TokenConfig[] | null => {
     throw Error(`Duplicate token names configured for network ${network.name}`);
   }
   return aaveTokens;
+};
+
+export const getCompoundTokens = (_networkName?: string): TokenConfig[] | null => {
+  const networkName = _networkName || network.name;
+
+  const compoundTokens = config[networkName]
+    ? config[networkName].compoundTokens
+    : null;
+  // Check for duplicate token names. These must be unique because they are used to name the deployed contracts
+  if (compoundTokens && duplicateExists(compoundTokens?.map((t) => t.name))) {
+    throw Error(`Duplicate token names configured for network ${network.name}`);
+  }
+  return compoundTokens;
 };

@@ -40,11 +40,13 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         // source: https://compound.finance/docs/ctokens#exchange-rate
         uint256 exchangeRateStored = ICToken(ctoken).exchangeRateStored();
         if (decimals >= 18) {
-            uint256 scalingFactor = 10 ** (decimals - 18);
-            return WadRayMath.rayDiv(exchangeRateStored, scalingFactor);
+            uint256 scalingFactor = 10**(decimals - 18);
+            // return WadRayMath.rayDiv(exchangeRateStored, scalingFactor);
+            return 1; // DEBUG
         } else {
-            uint256 scalingFactor = 10 ** (18 - decimals);
-            return WadRayMath.rayMul(exchangeRateStored, scalingFactor);
+            uint256 scalingFactor = 10**(18 - decimals);
+            // return WadRayMath.rayMul(exchangeRateStored, scalingFactor);
+            return 2; // DEBUG
         }
     }
 

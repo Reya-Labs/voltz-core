@@ -45,13 +45,11 @@ export async function mockATokenFixture(
 }
 
 export async function mockCTokenFixture(
-  _cTokenAddress: string,
   _underlyingAsset: string
 ) {
   const mockCTokenFactory = await ethers.getContractFactory("MockCToken");
 
   const mockCToken = (await mockCTokenFactory.deploy(
-    _cTokenAddress,
     _underlyingAsset,
     "Voltz cDAI",
     "cVDAI"
@@ -244,7 +242,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   );
 
   const cToken = (await mockERC20Fixture()).token;
-  const { mockCToken } = await mockCTokenFixture(cToken.address, token.address);
+  const { mockCToken } = await mockCTokenFixture(token.address);
   const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
     cToken.address,
     token.address
@@ -358,10 +356,7 @@ export const metaFixtureScenario1E2E =
     );
 
     const cToken = (await mockERC20Fixture()).token;
-    const { mockCToken } = await mockCTokenFixture(
-      cToken.address,
-      token.address
-    );
+    const { mockCToken } = await mockCTokenFixture(token.address);
     const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
       cToken.address,
       token.address
@@ -438,13 +433,11 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
       token.address
     );
 
-    const cToken = (await mockERC20Fixture()).token;
     const { mockCToken } = await mockCTokenFixture(
-      cToken.address,
       token.address
     );
     const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
-      cToken.address,
+      mockCToken.address,
       token.address
     );
 
