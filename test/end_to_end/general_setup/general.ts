@@ -854,7 +854,9 @@ export class ScenarioRunner {
         p[0],
         p[1],
         p[2],
-        (await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])).margin
+        (
+          await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])
+        ).margin
           .mul(-1)
           .add(1)
       );
