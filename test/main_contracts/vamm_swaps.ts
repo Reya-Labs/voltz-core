@@ -116,7 +116,6 @@ describe("VAMM", () => {
     it("scenario1", async () => {
       await vammTest.initializeVAMM(MIN_SQRT_RATIO);
 
-      await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.003"));
 
       await vammTest
@@ -192,7 +191,6 @@ describe("VAMM", () => {
     it("scenario 2: ", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.003"));
 
       await vammTest
@@ -265,7 +263,6 @@ describe("VAMM", () => {
     it("scenario 3: check fees (no protocol fees)", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.0005"));
 
       await vammTest
@@ -332,7 +329,6 @@ describe("VAMM", () => {
     it("scenario 5: check fees accrued = fees incurred", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.0005"));
 
       await vammTest

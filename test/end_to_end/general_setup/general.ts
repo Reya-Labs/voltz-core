@@ -549,8 +549,15 @@ export class ScenarioRunner {
 
     // set VAMM parameters
     await this.vammTest.initializeVAMM(this.params.startingPrice.toString());
-    await this.vammTest.setFeeProtocol(this.params.feeProtocol);
-    await this.vammTest.setFee(this.params.fee);
+
+    if (this.params.feeProtocol != 0) {
+      await this.vammTest.setFeeProtocol(this.params.feeProtocol);
+    }
+
+    if (this.params.fee.toString() != "0") {
+      await this.vammTest.setFee(this.params.fee);
+    }
+
 
     // set e2e setup parameters
     await this.e2eSetup.setMEAddress(this.marginEngineTest.address);

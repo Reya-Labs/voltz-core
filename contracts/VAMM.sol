@@ -191,6 +191,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     // todo: agree on the range, assign constant to upper and lower range limits
     require(feeProtocol == 0 || (feeProtocol >= 3 && feeProtocol <= 50), "PR range");
+    require(_vammVars.feeProtocol != feeProtocol, "PF value already set");
 
     uint8 feeProtocolOld = _vammVars.feeProtocol;
     _vammVars.feeProtocol = feeProtocol;
@@ -201,6 +202,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     // todo: agree on the range, assign constant to upper limit (MAX_FEE)
     require(newFeeWad >= 0 && newFeeWad <= MAX_FEE, "fee range");
+    require(_feeWad != newFeeWad, "fee value already set");
 
     uint256 feeWadOld = _feeWad;
     _feeWad = newFeeWad;

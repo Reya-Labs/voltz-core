@@ -224,8 +224,6 @@ describe("FCM", () => {
         TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
       );
 
-      await vammTest.setFeeProtocol(0);
-      await vammTest.setFee(0);
 
       await vammTest
         .connect(other)
