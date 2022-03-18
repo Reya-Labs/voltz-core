@@ -240,6 +240,9 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     internal
     returns (bool flippedLower, bool flippedUpper)
   {
+
+    Tick.checkTicks(params.tickLower, params.tickUpper);
+
     flippedLower = _ticks.update(
       params.tickLower,
       _vammVars.tick,
