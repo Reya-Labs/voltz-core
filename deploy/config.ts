@@ -69,7 +69,9 @@ export const getAaveTokens = (_networkName?: string): TokenConfig[] | null => {
   return aaveTokens;
 };
 
-export const getCompoundTokens = (_networkName?: string): TokenConfig[] | null => {
+export const getCompoundTokens = (
+  _networkName?: string
+): TokenConfig[] | null => {
   const networkName = _networkName || network.name;
 
   const compoundTokens = config[networkName]

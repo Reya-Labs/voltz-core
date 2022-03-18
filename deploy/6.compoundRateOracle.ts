@@ -37,7 +37,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const compoundTokens = getCompoundTokens();
 
   if (compoundTokens) {
-
     for (const token of compoundTokens) {
       const rateOracleIdentifier = `CompoundRateOracle_${token.name}`;
       let rateOracleContract = (await ethers.getContractOrNull(
@@ -47,10 +46,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       if (!rateOracleContract) {
         // There is no Compound rate oracle already deployed for this token. Deploy one now.
         // But first, do a sanity check
-        const cToken = await ethers.getContractAt(
-            "ICToken",
-            token.address
-        );
+        const cToken = await ethers.getContractAt("ICToken", token.address);
         const exchangeRate = await cToken.exchangeRateStored();
 
         if (!exchangeRate) {
@@ -64,9 +60,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             args: [cToken.address, token.address],
             log: doLogging,
           });
-          console.log(
-            `Created ${token.name} (${token.address}) rate oracle`
-          );
+          console.log(`Created ${token.name} (${token.address}) rate oracle`);
 
           rateOracleContract = (await ethers.getContract(
             rateOracleIdentifier
@@ -91,9 +85,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // Deploy rate oracle pointing at mocks, if mocks exist
   const mockToken = await ethers.getContractOrNull("ERC20Mock");
-  const mockCToken = await ethers.getContractOrNull(
-    "mockCToken"
-  );
+  const mockCToken = await ethers.getContractOrNull("mockCToken");
   if (mockToken && mockCToken) {
     console.log(
       `Deploy rate oracle for mocked {token, cToken}: {${mockToken.address}, ${mockCToken.address}}`

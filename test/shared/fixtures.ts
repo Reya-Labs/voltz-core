@@ -44,9 +44,7 @@ export async function mockATokenFixture(
   return { mockAToken };
 }
 
-export async function mockCTokenFixture(
-  _underlyingAsset: string
-) {
+export async function mockCTokenFixture(_underlyingAsset: string) {
   const mockCTokenFactory = await ethers.getContractFactory("MockCToken");
 
   const mockCToken = (await mockCTokenFactory.deploy(
@@ -433,9 +431,7 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
       token.address
     );
 
-    const { mockCToken } = await mockCTokenFixture(
-      token.address
-    );
+    const { mockCToken } = await mockCTokenFixture(token.address);
     const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
       mockCToken.address,
       token.address
