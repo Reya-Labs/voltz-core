@@ -411,15 +411,15 @@ describe("VAMM", () => {
   describe("#setFee", () => {
     it("check owner privilege ", async () => {
       await expect(
-        vammTest.connect(other).setFee(toBn("0.05"))
+        vammTest.connect(other).setFee(toBn("0.0005"))
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("check setFee", async () => {
       expect(await vammTest.feeWad()).to.be.equal(toBn("0"));
       await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 10).toString());
-      await expect(vammTest.setFee(toBn("0.05"))).to.not.be.reverted;
-      expect(await vammTest.feeWad()).to.be.equal(toBn("0.05"));
+      await expect(vammTest.setFee(toBn("0.0005"))).to.not.be.reverted;
+      expect(await vammTest.feeWad()).to.be.equal(toBn("0.0005"));
     });
   });
 

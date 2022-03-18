@@ -27,6 +27,9 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   using Tick for mapping(int24 => Tick.Info);
   using TickBitmap for mapping(int16 => uint256);
 
+  /// @dev 0.02 = 2% is the max fee as proportion of notional scaled by time to maturity (in wei fixed point notation 0.02 -> 2 * 10^16)
+  uint256 public constant MAX_FEE = 20000000000000000; 
+
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
   modifier lock() {
@@ -152,12 +155,17 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     if (_protocolFees < protocolFeesCollected) {
       revert CustomErrors.NotEnoughFunds(protocolFeesCollected, _protocolFees);
     }
-    _protocolFees = _protocolFees - protocolFeesCollected;
+    _protocolFees -= protocolFeesCollected;
   }
 
   /// @dev not locked because it initializes unlocked
   function initializeVAMM(uint160 sqrtPriceX96) external override {
     
+    require(sqrtPriceX96 != 0, "zero input price");
+
+    /// @dev initializeVAMM should only be callable given the initialize function was already executed
+    /// @dev we can check if the initialize function was executed by making sure the address of the margin engine is non-zero since it is set in the initialize function
+    require(address(_marginEngine) != address(0), "vamm not initialized");
     /// @audit tag 1 [ABDK]
     // This function could be called by anyone and there is no economical incentives to provide a fair price here.
     // Consider requiring the caller to provide certain amount of liquidity along with the call, which would motivate the caller to set the price close to the fair price.
@@ -180,12 +188,20 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   }
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
+
+    // todo: agree on the range, assign constant to upper and lower range limits
+    require(feeProtocol == 0 || (feeProtocol >= 3 && feeProtocol <= 50), "PR range");
+
     uint8 feeProtocolOld = _vammVars.feeProtocol;
     _vammVars.feeProtocol = feeProtocol;
     emit SetFeeProtocol(feeProtocolOld, feeProtocol);
   }
 
   function setFee(uint256 newFeeWad) external override onlyOwner lock {
+
+    // todo: agree on the range, assign constant to upper limit (MAX_FEE)
+    require(newFeeWad >= 0 && newFeeWad <= MAX_FEE, "fee range");
+
     uint256 feeWadOld = _feeWad;
     _feeWad = newFeeWad;
     emit FeeSet(feeWadOld, _feeWad);

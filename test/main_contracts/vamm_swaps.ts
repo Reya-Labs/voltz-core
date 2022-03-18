@@ -266,7 +266,7 @@ describe("VAMM", () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
       await vammTest.setFeeProtocol(0);
-      await vammTest.setFee(toBn("0.5"));
+      await vammTest.setFee(toBn("0.0005"));
 
       await vammTest
         .connect(wallet)
@@ -290,8 +290,7 @@ describe("VAMM", () => {
       const feesAccruedToLP = sub(positionInfo.margin, toBn("100000"));
       console.log("FATLP", feesAccruedToLP.toString());
 
-      /// Expected fees = toBn("100") * 0.5 * timeUntilMaturityInYears (approx the whole term which is a week)
-      const expectedFees = toBn("0.958904109589041"); // value from excel
+      const expectedFees = toBn("0.000958877156265898"); // value from excel
 
       expect(feesAccruedToLP).to.be.near(expectedFees);
     });
@@ -299,8 +298,8 @@ describe("VAMM", () => {
     it("scenario 4: check fees (with protocol fees)", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setFeeProtocol(2); // half of the fees go towards the protocol
-      await vammTest.setFee(toBn("0.5"));
+      await vammTest.setFeeProtocol(3); // half of the fees go towards the protocol
+      await vammTest.setFee(toBn("0.0005"));
 
       await vammTest
         .connect(wallet)
@@ -324,8 +323,8 @@ describe("VAMM", () => {
       const feesAccruedToLP = sub(positionInfo.margin, toBn("100000"));
       console.log("FATLP", feesAccruedToLP.toString());
 
-      /// Expected fees = toBn("100") * 0.5 * timeUntilMaturityInYears (approx the whole term which is a week)
-      const expectedFees = toBn("0.4794520547945210"); // value from excel
+      /// Expected fees = toBn("100") * 0.0005 * timeUntilMaturityInYears (approx the whole term which is a week)
+      const expectedFees = BigNumber.from("639252494503665");
 
       expect(feesAccruedToLP).to.be.near(expectedFees);
     });
@@ -334,7 +333,7 @@ describe("VAMM", () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
       await vammTest.setFeeProtocol(0);
-      await vammTest.setFee(toBn("0.5"));
+      await vammTest.setFee(toBn("0.0005"));
 
       await vammTest
         .connect(wallet)
@@ -373,8 +372,8 @@ describe("VAMM", () => {
       const feesIncurredByTrader = sub(traderInfoOld.margin, traderInfo.margin);
       console.log("FIBT", feesIncurredByTrader.toString());
 
-      /// Expected fees = toBn("100") * 0.5 * timeUntilMaturityInYears (approx the whole term which is a week)
-      const expectedFees = toBn("0.958904109589041"); // value from excel
+      /// Expected fees = toBn("100") * 0.0005 * timeUntilMaturityInYears (approx the whole term which is a week)
+      const expectedFees = BigNumber.from("958877156265898");
 
       expect(feesAccruedToLP).to.be.near(expectedFees);
       expect(feesIncurredByTrader).to.be.near(expectedFees);
