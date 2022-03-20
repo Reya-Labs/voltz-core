@@ -31,6 +31,17 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
+    
+    struct PositionMarginRequirementLocalVars2 {
+        int24 inRangeTick;
+        int256 scenario1LPVariableTokenBalance;
+        int256 scenario1LPFixedTokenBalance;
+        uint160 scenario1SqrtPriceX96;
+        int256 scenario2LPVariableTokenBalance;
+        int256 scenario2LPFixedTokenBalance;
+        uint160 scenario2SqrtPriceX96;
+    }
+
     function initialize(IERC20Minimal __underlyingToken, IRateOracle __rateOracle, uint256 __termStartTimestampWad, uint256 __termEndTimestampWad) external override initializer {
         
         require(address(__underlyingToken) != address(0), "UT");
@@ -149,22 +160,19 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     function setMarginCalculatorParameters(
         MarginCalculatorParameters memory _marginCalculatorParameters
     ) external override onlyOwner {
-        MarginCalculatorParameters memory marginCalculatorParametersOld = marginCalculatorParameters;
         marginCalculatorParameters = _marginCalculatorParameters;   
-        emit MarginCalculatorParametersSet(marginCalculatorParametersOld, marginCalculatorParameters);
+        emit MarginCalculatorParametersSet(marginCalculatorParameters);
     }
 
     /// @inheritdoc IMarginEngine
     function setVAMM(IVAMM _vAMM) external override onlyOwner {
-        IVAMM vammOld = _vamm;
         _vamm = _vAMM;
-        emit VAMMSet(vammOld, _vamm);
+        emit VAMMSet(_vamm);
     }
     /// @inheritdoc IMarginEngine
     function setFCM(IFCM _newFCM) external override onlyOwner {
-        IFCM oldFCM = _fcm;
         _fcm = _newFCM;
-        emit FCMSet(oldFCM, _fcm);
+        emit FCMSet(_fcm);
     }
 
     /// @inheritdoc IMarginEngine
@@ -173,12 +181,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         override
         onlyOwner
     {
-
         /// @audit Consider adding appropriate checks for the range of valid values the secondsAgo variable can take
-
-        uint256 secondsAgoOld = _secondsAgo;
         _secondsAgo = _newSecondsAgo;
-        emit HistoricalApyWindowSet(secondsAgoOld, _secondsAgo);
+        emit HistoricalApyWindowSet(_secondsAgo);
     }
 
     /// @inheritdoc IMarginEngine
@@ -187,60 +192,55 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         override 
         onlyOwner
     {
-
         /// @audit Consider adding appropriate checks for the range of valid values the secondsAgo variable can take
-
-        uint256 cacheMaxAgeInSecondsOld = _cacheMaxAgeInSeconds;
         _cacheMaxAgeInSeconds = _newCacheMaxAgeInSeconds;
-        emit CacheMaxAgeSet(cacheMaxAgeInSecondsOld, _cacheMaxAgeInSeconds);
+        emit CacheMaxAgeSet(_cacheMaxAgeInSeconds);
     }
 
     /// @inheritdoc IMarginEngine
-    function collectProtocol(address recipient, uint256 amount)
+    function collectProtocol(address _recipient, uint256 _amount)
         external
         override
         whenNotPaused
         onlyOwner{
 
-        if (amount > 0) {
+        if (_amount > 0) {
             /// @dev if the amount exceeds the available balances, _vamm.updateProtocolFees(amount) should be reverted as intended
-            _vamm.updateProtocolFees(amount);
+            _vamm.updateProtocolFees(_amount);
             _underlyingToken.safeTransfer(
-                recipient,
-                amount
+                _recipient,
+                _amount
             );
         }
 
-        emit CollectProtocol(msg.sender, recipient, amount);
+        emit CollectProtocol(msg.sender, _recipient, _amount);
     }
 
     /// @inheritdoc IMarginEngine
     function setLiquidatorReward(uint256 _newLiquidatorRewardWad) external override onlyOwner {
 
         /// @audit Consider adding appropriate checks for the range of valid values the secondsAgo variable can take
-
-        uint256 liquidatorRewardWadOld = _liquidatorRewardWad;
         _liquidatorRewardWad = _newLiquidatorRewardWad;
-        emit LiquidatorRewardSet(liquidatorRewardWadOld, _liquidatorRewardWad);
+        emit LiquidatorRewardSet(_liquidatorRewardWad);
     }
 
     /// @inheritdoc IMarginEngine
     function getPosition(address _owner,
-                         int24 tickLower,
-                         int24 tickUpper)
-        external override returns (Position.Info memory positionMemory) {
-            Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
-            updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
-            return position;
+                         int24 _tickLower,
+                         int24 _tickUpper)
+        external override returns (Position.Info memory) {
+            Position.Info storage _position = positions.get(_owner, _tickLower, _tickUpper);
+            _updatePositionTokenBalancesAndAccountForFees(_position, _tickLower, _tickUpper, false); // isMint=false
+            return _position;
     }
 
-    /// @notice transferMargin function which:
+    /// @notice _transferMargin function which:
     /// @dev Transfers funds in from account if _marginDelta is positive, or out to account if _marginDelta is negative
     /// @dev if the margiDelta is positive, we conduct a safe transfer from the _account address to the address of the MarginEngine
     /// @dev if the marginDelta is negative, the user wishes to withdraw underlying tokens from the MarginEngine,
     /// @dev in that case we first check the balance of the marginEngine in terms of the underlying tokens, if the balance is sufficient to cover the margin transfer, then we cover it via a safeTransfer
     /// @dev if the marginEngineBalance is not sufficient to cover the marginDelta then we cover the remainingDelta by invoking the transferMarginToMarginEngineTrader function of the fcm which in case of Aave will calls the Aave withdraw function to settle with the MarginEngine in underlying tokens
-    function transferMargin(address _account, int256 _marginDelta) internal {
+    function _transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
             _underlyingToken.safeTransferFrom(_account, address(this), uint256(_marginDelta));
         } else {
@@ -266,41 +266,41 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
 
     /// @inheritdoc IMarginEngine
-    function transferMarginToFCMTrader(address _account, uint256 marginDelta) external whenNotPaused onlyFCM override {
-        _underlyingToken.safeTransfer(_account, marginDelta);
+    function transferMarginToFCMTrader(address _account, uint256 _marginDelta) external whenNotPaused onlyFCM override {
+        _underlyingToken.safeTransfer(_account, _marginDelta);
     }
 
     /// @inheritdoc IMarginEngine
-    function updatePositionMargin(address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta) external whenNotPaused nonZeroDelta(marginDelta) override {
+    function updatePositionMargin(address _owner, int24 _tickLower, int24 _tickUpper, int256 _marginDelta) external whenNotPaused nonZeroDelta(_marginDelta) override {
         
-        Tick.checkTicks(tickLower, tickUpper);
+        Tick.checkTicks(_tickLower, _tickUpper);
         
-        Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
+        Position.Info storage _position = positions.get(_owner, _tickLower, _tickUpper);
         
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
+        _updatePositionTokenBalancesAndAccountForFees(_position, _tickLower, _tickUpper, false); // isMint=false
         
-        if (marginDelta < 0) {
+        if (_marginDelta < 0) {
 
             if (_owner != msg.sender && !_factory.isApproved(_owner, msg.sender)) {
                 revert CustomErrors.OnlyOwnerCanUpdatePosition();
             }
           
-            position.updateMarginViaDelta(marginDelta);
+            _position.updateMarginViaDelta(_marginDelta);
 
-            checkPositionMarginCanBeUpdated(position, tickLower, tickUpper); 
+            _checkPositionMarginCanBeUpdated(_position, _tickLower, _tickUpper); 
 
-            transferMargin(_owner, marginDelta);
+            _transferMargin(_owner, _marginDelta);
 
         } else {
 
-            position.updateMarginViaDelta(marginDelta);
+            _position.updateMarginViaDelta(_marginDelta);
 
-            transferMargin(msg.sender, marginDelta);
+            _transferMargin(msg.sender, _marginDelta);
         }
 
-        position.rewardPerAmount = 0;
+        _position.rewardPerAmount = 0;
 
-        emit UpdatePositionMargin(_owner, tickLower, tickUpper, position.margin);
+        emit UpdatePositionMargin(_owner, _tickLower, _tickUpper, _position.margin);
     }
     
     
@@ -311,7 +311,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper); 
         
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
+        _updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
         
         /// @audit [ABDK] This line is way too long.  
         /// Consider reformatting and/or refactoring.
@@ -322,7 +322,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         position.updateMarginViaDelta(settlementCashflow);
         position.settlePosition();
 
-        emit SettlePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, true);
+        emit SettlePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, settlementCashflow, true);
 
     }
     
@@ -384,9 +384,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);  
 
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
+        _updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
         
-        (bool isLiquidatable, uint256 marginRequirement) = isLiquidatablePosition(position, tickLower, tickUpper);
+        (bool isLiquidatable, uint256 marginRequirement) = _isLiquidatablePosition(position, tickLower, tickUpper);
 
         if (!isLiquidatable) {
             revert CustomErrors.CannotLiquidate(marginRequirement);
@@ -408,7 +408,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             position.updateLiquidity(-int128(position._liquidity));
         }
     
-        int256 _variableTokenDelta = unwindPosition(position, _owner, tickLower, tickUpper);
+        int256 _variableTokenDelta = _unwindPosition(position, _owner, tickLower, tickUpper);
 
         if (_variableTokenDelta == 0) return;
 
@@ -430,13 +430,13 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external whenNotPaused onlyVAMM override returns(int256 positionMarginRequirement) {
         Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
 
-        updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true); // isMint=true
+        _updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true); // isMint=true
 
         position.updateLiquidity(params.liquidityDelta);
 
         positionMarginRequirement = 0;
         if (params.liquidityDelta>0) {
-            positionMarginRequirement = checkPositionMarginAboveRequirement(position, params.tickLower, params.tickUpper);
+            positionMarginRequirement = _checkPositionMarginAboveRequirement(position, params.tickLower, params.tickUpper);
         }
 
         position.rewardPerAmount = 0;
@@ -450,7 +450,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         /// @dev this function can only be called by the vamm following a swap    
 
         Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
+        _updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
 
         /// @dev isUnwind means the trader is getting into a swap with the opposite direction to their net position
         /// @dev in that case it does not make sense to revert the transaction if the position margin requirement is not met since
@@ -489,7 +489,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev 4. additionally, we need to update the last growth inside variables in the Position.Info struct so that we take a note that we've accounted for the changes up until this point 
     /// @dev if _liquidity of the position supplied to this function is zero, then we need to check if isMintBurn is set to true (if it is set to true) then we know thsi function was called post a mint/burn event,
     /// @dev meaning we still need to correctly update the last fixed, variable and fee growth variables in the Position.Info struct
-    function updatePositionTokenBalancesAndAccountForFees(
+    function _updatePositionTokenBalancesAndAccountForFees(
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper,
@@ -522,7 +522,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @param tickLower Lower Tick of the position
     /// @param tickUpper Upper Tick of the position
     /// @dev This function calculates the position margin requirement, compares it with the position.margin and reverts if the current position margin is below the requirement
-    function checkPositionMarginAboveRequirement(
+    function _checkPositionMarginAboveRequirement(
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper
@@ -542,7 +542,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @param position Position.Info of the position of interest, updates to position, edit it in storage
     /// @param tickLower Lower Tick of the position
     /// @param tickUpper Upper Tick of the position
-    function checkPositionMarginCanBeUpdated(
+    function _checkPositionMarginCanBeUpdated(
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper
@@ -560,7 +560,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         }
         else {
             /// @dev if we haven't reached maturity yet, then check if the positon margin requirement is satisfied if not then the position margin update will also revert
-            checkPositionMarginAboveRequirement(
+            _checkPositionMarginAboveRequirement(
                 position,
                 tickLower,
                 tickUpper
@@ -576,7 +576,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @param _owner the owner of the position
     /// @param tickLower the lower tick of the position's tick range
     /// @param tickUpper the upper tick of the position's tick range
-    function unwindPosition(
+    function _unwindPosition(
         Position.Info storage position,
         address _owner,
         int24 tickLower,
@@ -630,7 +630,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     }
 
     
-    function getExtraBalances(int24 fromTick, int24 toTick, uint128 liquidity, uint256 variableFactorWad) internal view returns (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) {
+    function _getExtraBalances(int24 fromTick, int24 toTick, uint128 liquidity, uint256 variableFactorWad) internal view returns (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) {
                 
         if (fromTick == toTick) return (0, 0);
 
@@ -694,7 +694,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             int256 extraVariableTokenBalance;
 
             if (tick < tickUpper) {
-                (extraFixedTokenBalance, extraVariableTokenBalance) = getExtraBalances(localVars.inRangeTick, tickUpper, position._liquidity, variableFactorWad);
+                (extraFixedTokenBalance, extraVariableTokenBalance) = _getExtraBalances(localVars.inRangeTick, tickUpper, position._liquidity, variableFactorWad);
             }
 
             localVars.scenario1LPVariableTokenBalance =
@@ -704,7 +704,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
                     position.fixedTokenBalance + extraFixedTokenBalance;
             
             if (tick > tickLower) {
-                (extraFixedTokenBalance, extraVariableTokenBalance) = getExtraBalances(localVars.inRangeTick, tickLower, position._liquidity, variableFactorWad);
+                (extraFixedTokenBalance, extraVariableTokenBalance) = _getExtraBalances(localVars.inRangeTick, tickLower, position._liquidity, variableFactorWad);
             } else {
                 (extraFixedTokenBalance, extraVariableTokenBalance) = (0,0);
             }
@@ -746,7 +746,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @notice Checks if a given position is liquidatable
     /// @dev In order for a position to be liquidatable its current margin needs to be lower than the position's liquidation margin requirement
     /// @return _isLiquidatable A boolean which suggests if a given position is liquidatable
-    function isLiquidatablePosition(
+    function _isLiquidatablePosition(
         Position.Info storage position,
         int24 tickLower,
         int24 tickUpper
@@ -963,7 +963,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             tickLower,
             tickUpper
         );
-        updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
+        _updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
 
         return _getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
     }

@@ -551,13 +551,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       }
     }
 
+
+    _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
+
     if (state.tick != vammVarsStart.tick) {
        // update the tick in case it changed
-      _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
       _vammVars.tick = state.tick;
-    } else {
-      // otherwise just update the price
-      _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
     }
 
     // update liquidity if it changed
@@ -604,6 +603,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     override
     returns (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128)
   {
+
+    Tick.checkTicks(tickLower, tickUpper);
 
     fixedTokenGrowthInsideX128 = _ticks.getFixedTokenGrowthInside(
       Tick.FixedTokenGrowthInsideParams({
@@ -682,6 +683,14 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
         stateFeeGrowthGlobalX128 = state.feeGrowthGlobalX128 + FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
+        fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+          step.fixedTokenDeltaUnbalanced,
+          step.variableTokenDelta,
+          variableFactorWad,
+          termStartTimestampWad,
+          termEndTimestampWad
+        );
+        
         if (isFT) {
 
             /// @dev if the trader is a fixed taker then the variable token growth global should be incremented (since LPs are receiving variable tokens)
@@ -694,16 +703,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
             /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
             /// @dev in this case amountIn is in terms of unbalanced fixed tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of variable tokens, hence the value passed needs to be positive --> int256(step.amountOut)
-
-            // this value is negative
-            fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-              step.fixedTokenDeltaUnbalanced,
-              step.variableTokenDelta,
-              variableFactorWad,
-              termStartTimestampWad,
-              termEndTimestampWad
-            );
-
             /// @audit-casting fixedTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
             stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
 
@@ -715,20 +714,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
             /// @audit-casting step.variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
             stateVariableTokenGrowthGlobalX128= state.variableTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
-
+            
             /// @dev fixed token delta should be positive (for LPs)
             /// @dev in this case amountIn is in terms of variable tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of fixedToken, hence the value passed needs to be positive --> int256(step.amountOut),
-
-            // this value is positive
-            fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-              step.fixedTokenDeltaUnbalanced,
-              step.variableTokenDelta,
-              variableFactorWad,
-              termStartTimestampWad,
-              termEndTimestampWad
-            );
-
             /// @audit-casting fixedTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
             stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
         }
