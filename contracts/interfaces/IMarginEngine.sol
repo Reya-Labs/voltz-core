@@ -181,14 +181,14 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev The look-back window is seconds from the current timestamp
     /// @dev This value is only settable by the the Factory owner and may be unique for each MarginEngine
     /// @dev When setting secondAgo, the setter needs to take into consideration the underlying volatility of the APYs in the reference yield-bearing pool (e.g. Aave v2 USDC)
-    function secondsAgo() external view returns (uint256);
+    function lookbackWindowInSeconds() external view returns (uint256);
 
     // non-view functions
 
     /// @notice Sets secondsAgo: The look-back window size used to calculate the historical APY for margin purposes
     /// @param _secondsAgo the duration of the lookback window in seconds
     /// @dev Can only be set by the Factory Owner
-    function setSecondsAgo(uint256 _secondsAgo) external;
+    function setLookbackWindowInSeconds(uint256 _secondsAgo) external;
 
     /// @notice Set the MarginCalculatorParameters (each margin engine can have its own custom set of margin calculator parameters)
     /// @param _marginCalculatorParameters the MarginCalculatorParameters to set

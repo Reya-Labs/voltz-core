@@ -545,7 +545,7 @@ export class ScenarioRunner {
     await this.marginEngineTest.setMarginCalculatorParameters(
       this.marginCalculatorParams
     );
-    await this.marginEngineTest.setSecondsAgo(this.params.lookBackWindowAPY);
+    await this.marginEngineTest.setLookbackWindowInSeconds(this.params.lookBackWindowAPY);
 
     // set VAMM parameters
     await this.vammTest.initializeVAMM(this.params.startingPrice.toString());

@@ -1082,7 +1082,7 @@ describe("MarginEngine", () => {
 
       startTime = await getCurrentTimestamp();
 
-      await marginEngineTest.setSecondsAgo(secondsAgo); // one day
+      await marginEngineTest.setLookbackWindowInSeconds(secondsAgo); // one day
       await marginEngineTest.setCacheMaxAgeInSeconds(cachePeriod); // six hours
       await aaveLendingPool.setReserveNormalizedIncome(token.address, apy);
       await setTimeNextBlock(startTime + 31536000); // One year after first reading

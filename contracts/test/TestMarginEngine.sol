@@ -220,7 +220,7 @@ contract TestMarginEngine is MarginEngine {
         bool isLM,
         uint160 sqrtPriceX96
     ) external {
-        keepInMindMargin = getMarginRequirement(
+        keepInMindMargin = _getMarginRequirement(
             fixedTokenBalance,
             variableTokenBalance,
             isLM,

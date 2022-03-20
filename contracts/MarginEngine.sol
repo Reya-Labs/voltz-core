@@ -123,7 +123,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         return _termEndTimestampWad;
     }
     /// @inheritdoc IMarginEngine
-    function secondsAgo() external view override returns (uint256) {
+    function lookbackWindowInSeconds() external view override returns (uint256) {
         return _secondsAgo;
     }
     /// @inheritdoc IMarginEngine
@@ -176,7 +176,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     }
 
     /// @inheritdoc IMarginEngine
-    function setSecondsAgo(uint256 _newSecondsAgo)
+    function setLookbackWindowInSeconds(uint256 _newSecondsAgo)
         external
         override
         onlyOwner
@@ -244,21 +244,21 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         if (_marginDelta > 0) {
             _underlyingToken.safeTransferFrom(_account, address(this), uint256(_marginDelta));
         } else {
-            uint256 marginEngineBalance = _underlyingToken.balanceOf(address(this));
+            uint256 _marginEngineBalance = _underlyingToken.balanceOf(address(this));
 
-            uint256 remainingDeltaToCover;
+            uint256 _remainingDeltaToCover;
             unchecked {
-                remainingDeltaToCover = uint256(-_marginDelta);
+                _remainingDeltaToCover = uint256(-_marginDelta);
             }
 
-            if (remainingDeltaToCover > marginEngineBalance) {
-                if (marginEngineBalance > 0) {
-                    remainingDeltaToCover = remainingDeltaToCover - marginEngineBalance;
-                    _underlyingToken.safeTransfer(_account, marginEngineBalance);
+            if (_remainingDeltaToCover > _marginEngineBalance) {
+                if (_marginEngineBalance > 0) {
+                    _remainingDeltaToCover -= _marginEngineBalance;
+                    _underlyingToken.safeTransfer(_account, _marginEngineBalance);
                 }
-                _fcm.transferMarginToMarginEngineTrader(_account, remainingDeltaToCover);
+                _fcm.transferMarginToMarginEngineTrader(_account, _remainingDeltaToCover);
             } else {
-                _underlyingToken.safeTransfer(_account, remainingDeltaToCover);
+                _underlyingToken.safeTransfer(_account, _remainingDeltaToCover);
             }
 
         }
@@ -305,24 +305,24 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(int24 tickLower, int24 tickUpper, address _owner) external override whenNotPaused onlyAfterMaturity {
+    function settlePosition(int24 _tickLower, int24 _tickUpper, address _owner) external override whenNotPaused onlyAfterMaturity {
         
-        Tick.checkTicks(tickLower, tickUpper);
+        Tick.checkTicks(_tickLower, _tickUpper);
 
-        Position.Info storage position = positions.get(_owner, tickLower, tickUpper); 
+        Position.Info storage _position = positions.get(_owner, _tickLower, _tickUpper); 
         
-        _updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false);
+        _updatePositionTokenBalancesAndAccountForFees(_position, _tickLower, _tickUpper, false);
         
         /// @audit [ABDK] This line is way too long.  
         /// Consider reformatting and/or refactoring.
 
-        int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(position.fixedTokenBalance, position.variableTokenBalance, _termStartTimestampWad, _termEndTimestampWad, _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad));
+        int256 _settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(_position.fixedTokenBalance, _position.variableTokenBalance, _termStartTimestampWad, _termEndTimestampWad, _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad));
 
-        position.updateBalancesViaDeltas(-position.fixedTokenBalance, -position.variableTokenBalance);
-        position.updateMarginViaDelta(settlementCashflow);
-        position.settlePosition();
+        _position.updateBalancesViaDeltas(-_position.fixedTokenBalance, -_position.variableTokenBalance);
+        _position.updateMarginViaDelta(_settlementCashflow);
+        _position.settlePosition();
 
-        emit SettlePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, settlementCashflow, true);
+        emit SettlePosition(_owner, _tickLower, _tickUpper, _position.fixedTokenBalance, _position.variableTokenBalance, _position.margin, _settlementCashflow, true);
 
     }
     
@@ -361,9 +361,9 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         view
         returns (uint256)
     {
-        uint256 from = block.timestamp - _secondsAgo;
+        uint256 _from = block.timestamp - _secondsAgo;
 
-        return _rateOracle.getApyFromTo(from, block.timestamp);
+        return _rateOracle.getApyFromTo(_from, block.timestamp);
     }
 
     /// @notice Updates the cached historical APY value of the RateOracle even if the cache is not stale
@@ -376,108 +376,109 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
 
     /// @inheritdoc IMarginEngine
-    function liquidatePosition(int24 tickLower, int24 tickUpper, address _owner) external whenNotPaused checkCurrentTimestampTermEndTimestampDelta override {
+    function liquidatePosition(int24 _tickLower, int24 _tickUpper, address _owner) external whenNotPaused checkCurrentTimestampTermEndTimestampDelta override {
 
         /// @dev can only happen before maturity, this is checked when an unwind is triggered which in turn triggers a swap which checks for this condition
 
-        Tick.checkTicks(tickLower,tickUpper);
+        Tick.checkTicks(_tickLower,_tickUpper);
 
-        Position.Info storage position = positions.get(_owner, tickLower, tickUpper);  
+        Position.Info storage _position = positions.get(_owner, _tickLower, _tickUpper);  
 
-        _updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
+        _updatePositionTokenBalancesAndAccountForFees(_position, _tickLower, _tickUpper, false); // isMint=false
         
-        (bool isLiquidatable, uint256 marginRequirement) = _isLiquidatablePosition(position, tickLower, tickUpper);
+        (bool _isLiquidatable, uint256 _marginRequirement) = _isLiquidatablePosition(_position, _tickLower, _tickUpper);
 
-        if (!isLiquidatable) {
-            revert CustomErrors.CannotLiquidate(marginRequirement);
+        if (!_isLiquidatable) {
+            revert CustomErrors.CannotLiquidate(_marginRequirement);
         }
 
-        if (position.rewardPerAmount == 0) {
-            uint256 absVariableTokenBalance = position.variableTokenBalance < 0 ? uint256(-position.variableTokenBalance) :  uint256(position.variableTokenBalance);
-            if (position.margin > 0) {
-                position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(position.margin), _liquidatorRewardWad), absVariableTokenBalance);
+        if (_position.rewardPerAmount == 0) {
+            uint256 _absVariableTokenBalance = _position.variableTokenBalance < 0 ? uint256(-_position.variableTokenBalance) :  uint256(_position.variableTokenBalance);
+            if (_position.margin > 0) {
+                _position.rewardPerAmount = PRBMathUD60x18.div(PRBMathUD60x18.mul(uint256(_position.margin), _liquidatorRewardWad), _absVariableTokenBalance);
             }
             else {
-                position.rewardPerAmount = 0;
+                _position.rewardPerAmount = 0;
             }
         }
 
-        if (position._liquidity > 0) {
+        if (_position._liquidity > 0) {
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
-            _vamm.burn(_owner, tickLower, tickUpper, position._liquidity);
-            position.updateLiquidity(-int128(position._liquidity));
+            _vamm.burn(_owner, _tickLower, _tickUpper, _position._liquidity);
+            _position.updateLiquidity(-int128(_position._liquidity));
         }
     
-        int256 _variableTokenDelta = _unwindPosition(position, _owner, tickLower, tickUpper);
+        int256 _variableTokenDelta = _unwindPosition(_position, _owner, _tickLower, _tickUpper);
 
         if (_variableTokenDelta == 0) return;
 
-        uint256 liquidatorRewardValue = (_variableTokenDelta < 0)
-            ? PRBMathUD60x18.mul(uint256(-_variableTokenDelta), position.rewardPerAmount)
-            : PRBMathUD60x18.mul(uint256(_variableTokenDelta), position.rewardPerAmount);
+        uint256 _liquidatorRewardValue = (_variableTokenDelta < 0)
+            ? PRBMathUD60x18.mul(uint256(-_variableTokenDelta), _position.rewardPerAmount)
+            : PRBMathUD60x18.mul(uint256(_variableTokenDelta), _position.rewardPerAmount);
 
 
         /// @audit overflow is possible when converting to int, consider using safe conversion
-        position.updateMarginViaDelta(-int256(liquidatorRewardValue));
-        _underlyingToken.safeTransfer(msg.sender, liquidatorRewardValue);
+        _position.updateMarginViaDelta(-int256(_liquidatorRewardValue));
+        _underlyingToken.safeTransfer(msg.sender, _liquidatorRewardValue);
 
         // todo: add msg.sender to the event (as the initiator of the liquidation)
-        emit LiquidatePosition(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin, position._liquidity);
+        emit LiquidatePosition(_owner, _tickLower, _tickUpper, _position.fixedTokenBalance, _position.variableTokenBalance, _position.margin, _position._liquidity);
     }
 
 
     /// @inheritdoc IMarginEngine
-    function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory params) external whenNotPaused onlyVAMM override returns(int256 positionMarginRequirement) {
-        Position.Info storage position = positions.get(params.owner, params.tickLower, params.tickUpper);
+    function updatePositionPostVAMMInducedMintBurn(IVAMM.ModifyPositionParams memory _params) external whenNotPaused onlyVAMM override returns(int256 _positionMarginRequirement) {
+        Position.Info storage _position = positions.get(_params.owner, _params.tickLower, _params.tickUpper);
 
-        _updatePositionTokenBalancesAndAccountForFees(position, params.tickLower, params.tickUpper, true); // isMint=true
+        _updatePositionTokenBalancesAndAccountForFees(_position, _params.tickLower, _params.tickUpper, true); // isMint=true
 
-        position.updateLiquidity(params.liquidityDelta);
+        _position.updateLiquidity(_params.liquidityDelta);
 
-        positionMarginRequirement = 0;
-        if (params.liquidityDelta>0) {
-            positionMarginRequirement = _checkPositionMarginAboveRequirement(position, params.tickLower, params.tickUpper);
+        if (_params.liquidityDelta>0) {
+            _positionMarginRequirement = _checkPositionMarginAboveRequirement(_position, _params.tickLower, _params.tickUpper);
         }
 
-        position.rewardPerAmount = 0;
-
-        emit UpdatePositionPostMintBurn(params.owner, params.tickLower, params.tickUpper, position._liquidity);
+        if (_position.rewardPerAmount >= 0) {
+            _position.rewardPerAmount = 0;
+        }
+        
+        emit UpdatePositionPostMintBurn(_params.owner, _params.tickLower, _params.tickUpper, _position._liquidity);
 
     }
 
     /// @inheritdoc IMarginEngine
-    function updatePositionPostVAMMInducedSwap(address _owner, int24 tickLower, int24 tickUpper, int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) external whenNotPaused onlyVAMM override returns(int256 positionMarginRequirement) {
+    function updatePositionPostVAMMInducedSwap(address _owner, int24 _tickLower, int24 _tickUpper, int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced) external whenNotPaused onlyVAMM override returns(int256 _positionMarginRequirement) {
         /// @dev this function can only be called by the vamm following a swap    
 
-        Position.Info storage position = positions.get(_owner, tickLower, tickUpper);
-        _updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
+        Position.Info storage _position = positions.get(_owner, _tickLower, _tickUpper);
+        _updatePositionTokenBalancesAndAccountForFees(_position, _tickLower, _tickUpper, false); // isMint=false
 
         /// @dev isUnwind means the trader is getting into a swap with the opposite direction to their net position
         /// @dev in that case it does not make sense to revert the transaction if the position margin requirement is not met since
         /// @dev it could have been even further from the requireemnt prior to the unwind
-        bool isUnwind = (position.variableTokenBalance > 0 && variableTokenDelta < 0) || (position.variableTokenBalance < 0 && variableTokenDelta > 0);
+        bool _isUnwind = (_position.variableTokenBalance > 0 && _variableTokenDelta < 0) || (_position.variableTokenBalance < 0 && _variableTokenDelta > 0);
 
-        if (cumulativeFeeIncurred > 0) {
+        if (_cumulativeFeeIncurred > 0) {
             /// @audit overflow possible
-            position.updateMarginViaDelta(-int256(cumulativeFeeIncurred));
+            _position.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
         }
 
-        position.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
+        _position.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
 
-        positionMarginRequirement = int256(
-            _getPositionMarginRequirement(position, tickLower, tickUpper, false)
+        _positionMarginRequirement = int256(
+            _getPositionMarginRequirement(_position, _tickLower, _tickUpper, false)
         );
 
         /// @dev only check the margin requirement if it is not an unwind since an unwind could bring the position to a better state
         /// @dev and still not make it through the initial margin requirement
-        if ((positionMarginRequirement > position.margin) && !isUnwind) {
-            IVAMM.VAMMVars memory v = _vamm.vammVars();
-            revert CustomErrors.MarginRequirementNotMet(positionMarginRequirement, v.tick, fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced);
+        if ((_positionMarginRequirement > _position.margin) && !_isUnwind) {
+            IVAMM.VAMMVars memory _v = _vamm.vammVars();
+            revert CustomErrors.MarginRequirementNotMet(_positionMarginRequirement, _v.tick, _fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, _fixedTokenDeltaUnbalanced);
         }
 
-        position.rewardPerAmount = 0;
+        _position.rewardPerAmount = 0;
 
-        emit UpdatePositionPostSwap(_owner, tickLower, tickUpper, position.fixedTokenBalance, position.variableTokenBalance, position.margin);
+        emit UpdatePositionPostSwap(_owner, _tickLower, _tickUpper, _position.fixedTokenBalance, _position.variableTokenBalance, _position.margin);
     }
     
 
@@ -490,80 +491,80 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev if _liquidity of the position supplied to this function is zero, then we need to check if isMintBurn is set to true (if it is set to true) then we know thsi function was called post a mint/burn event,
     /// @dev meaning we still need to correctly update the last fixed, variable and fee growth variables in the Position.Info struct
     function _updatePositionTokenBalancesAndAccountForFees(
-        Position.Info storage position,
-        int24 tickLower,
-        int24 tickUpper,
-        bool isMintBurn
+        Position.Info storage _position,
+        int24 _tickLower,
+        int24 _tickUpper,
+        bool _isMintBurn
         ) internal {
 
-        if (position._liquidity > 0) {
-            (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = _vamm.computeGrowthInside(tickLower, tickUpper);
-            (int256 fixedTokenDelta, int256 variableTokenDelta) = position.calculateFixedAndVariableDelta(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
-            uint256 feeDelta = position.calculateFeeDelta(feeGrowthInsideX128);
+        if (_position._liquidity > 0) {
+            (int256 _fixedTokenGrowthInsideX128, int256 _variableTokenGrowthInsideX128, uint256 _feeGrowthInsideX128) = _vamm.computeGrowthInside(_tickLower, _tickUpper);
+            (int256 _fixedTokenDelta, int256 _variableTokenDelta) = _position.calculateFixedAndVariableDelta(_fixedTokenGrowthInsideX128, _variableTokenGrowthInsideX128);
+            uint256 _feeDelta = _position.calculateFeeDelta(_feeGrowthInsideX128);
 
-            position.updateBalancesViaDeltas(fixedTokenDelta - 1, variableTokenDelta - 1);
-            position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
+            _position.updateBalancesViaDeltas(_fixedTokenDelta - 1, _variableTokenDelta - 1);
+            _position.updateFixedAndVariableTokenGrowthInside(_fixedTokenGrowthInsideX128, _variableTokenGrowthInsideX128);
             /// @dev collect fees
             /// @audit overflow possible
-            position.updateMarginViaDelta(int256(feeDelta) - 1);
-            position.updateFeeGrowthInside(feeGrowthInsideX128);
+            _position.updateMarginViaDelta(int256(_feeDelta) - 1);
+            _position.updateFeeGrowthInside(_feeGrowthInsideX128);
         } else {
-            if (isMintBurn) {
-                (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128) = _vamm.computeGrowthInside(tickLower, tickUpper);
-                position.updateFixedAndVariableTokenGrowthInside(fixedTokenGrowthInsideX128, variableTokenGrowthInsideX128);
-                position.updateFeeGrowthInside(feeGrowthInsideX128);
+            if (_isMintBurn) {
+                (int256 _fixedTokenGrowthInsideX128, int256 _variableTokenGrowthInsideX128, uint256 _feeGrowthInsideX128) = _vamm.computeGrowthInside(_tickLower, _tickUpper);
+                _position.updateFixedAndVariableTokenGrowthInside(_fixedTokenGrowthInsideX128, _variableTokenGrowthInsideX128);
+                _position.updateFeeGrowthInside(_feeGrowthInsideX128);
             }
         }
     }
     
 
     /// @notice Internal function that checks if the position's current margin is above the requirement
-    /// @param position Position.Info of the position of interest, updates to position, edit it in storage
-    /// @param tickLower Lower Tick of the position
-    /// @param tickUpper Upper Tick of the position
+    /// @param _position Position.Info of the position of interest, updates to position, edit it in storage
+    /// @param _tickLower Lower Tick of the position
+    /// @param _tickUpper Upper Tick of the position
     /// @dev This function calculates the position margin requirement, compares it with the position.margin and reverts if the current position margin is below the requirement
     function _checkPositionMarginAboveRequirement(
-        Position.Info storage position,
-        int24 tickLower,
-        int24 tickUpper
-    ) internal returns(int256 positionMarginRequirement) {
+        Position.Info storage _position,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) internal returns(int256 _positionMarginRequirement) {
     
-        positionMarginRequirement = int256(
-            _getPositionMarginRequirement(position, tickLower, tickUpper, false)
+        _positionMarginRequirement = int256(
+            _getPositionMarginRequirement(_position, _tickLower, _tickUpper, false)
         );
 
-        if (position.margin <= positionMarginRequirement) {
-            revert CustomErrors.MarginLessThanMinimum(positionMarginRequirement);
+        if (_position.margin <= _positionMarginRequirement) {
+            revert CustomErrors.MarginLessThanMinimum(_positionMarginRequirement);
         }
     }
 
 
     /// @notice Check the position margin can be updated
-    /// @param position Position.Info of the position of interest, updates to position, edit it in storage
-    /// @param tickLower Lower Tick of the position
-    /// @param tickUpper Upper Tick of the position
+    /// @param _position Position.Info of the position of interest, updates to position, edit it in storage
+    /// @param _tickLower Lower Tick of the position
+    /// @param _tickUpper Upper Tick of the position
     function _checkPositionMarginCanBeUpdated(
-        Position.Info storage position,
-        int24 tickLower,
-        int24 tickUpper
+        Position.Info storage _position,
+        int24 _tickLower,
+        int24 _tickUpper
     ) internal {
 
         /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
         /// @dev their margin is to withdraw it completely. If so, the position needs to be settled
         if (Time.blockTimestampScaled() >= _termEndTimestampWad) {
-            if (!position.isSettled) {
+            if (!_position.isSettled) {
                 revert CustomErrors.PositionNotSettled();
             }
-            if (position.margin < 0) {
+            if (_position.margin < 0) {
                 revert CustomErrors.WithdrawalExceedsCurrentMargin();
             }
         }
         else {
             /// @dev if we haven't reached maturity yet, then check if the positon margin requirement is satisfied if not then the position margin update will also revert
             _checkPositionMarginAboveRequirement(
-                position,
-                tickLower,
-                tickUpper
+                _position,
+                _tickLower,
+                _tickUpper
             );
         }
     }
@@ -574,25 +575,25 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev If the current variable token balance is negative, then it means the position is a net Fixed Taker
     /// @dev Hence to unwind, we need to enter into a Variable Taker IRS contract with notional = abs(current variable token balance of the position)
     /// @param _owner the owner of the position
-    /// @param tickLower the lower tick of the position's tick range
-    /// @param tickUpper the upper tick of the position's tick range
+    /// @param _tickLower the lower tick of the position's tick range
+    /// @param _tickUpper the upper tick of the position's tick range
     function _unwindPosition(
-        Position.Info storage position,
+        Position.Info storage _position,
         address _owner,
-        int24 tickLower,
-        int24 tickUpper
+        int24 _tickLower,
+        int24 _tickUpper
     ) internal returns (int256 _variableTokenDelta) {
 
-        Tick.checkTicks(tickLower, tickUpper);
+        Tick.checkTicks(_tickLower, _tickUpper);
 
-        if (position.variableTokenBalance != 0 ) {
+        if (_position.variableTokenBalance != 0 ) {
 
             int256 _fixedTokenDelta;
             uint256 _cumulativeFeeIncurred;
 
             /// @dev initiate a swap
 
-            bool isFT = position.variableTokenBalance < 0;
+            bool _isFT = _position.variableTokenBalance < 0;
             
             /// @dev if isFT
             /// @dev get into a Variable Taker swap (the opposite of LP's current position) --> hence params.isFT is set to false for the vamm swap call
@@ -607,62 +608,62 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             /// @dev since the position.variableTokenBalance is already positive, pass position.variableTokenBalance as amountSpecified
             /// @dev since moving from right to left along the virtual amm, sqrtPriceLimit is set to MAX_SQRT_RATIO - 1
 
-            IVAMM.SwapParams memory params = IVAMM.SwapParams({
+            IVAMM.SwapParams memory _params = IVAMM.SwapParams({
                 recipient: _owner,
-                amountSpecified: position.variableTokenBalance,
-                sqrtPriceLimitX96: isFT ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1, 
-                tickLower: tickLower,
-                tickUpper: tickUpper
+                amountSpecified: _position.variableTokenBalance,
+                sqrtPriceLimitX96: _isFT ? TickMath.MIN_SQRT_RATIO + 1 : TickMath.MAX_SQRT_RATIO - 1, 
+                tickLower: _tickLower,
+                tickUpper: _tickUpper
             });
 
-            (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = _vamm.swap(params);
+            (_fixedTokenDelta, _variableTokenDelta, _cumulativeFeeIncurred, ,) = _vamm.swap(_params);
 
             if (_cumulativeFeeIncurred > 0) {
                 /// @dev update position margin to account for the fees incurred while conducting a swap in order to unwind
                 /// @audit overflow is possible
-                position.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
+                _position.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
             }
 
             /// @dev passes the _fixedTokenBalance and _variableTokenBalance deltas
-            position.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
+            _position.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
         }
 
     }
 
     
-    function _getExtraBalances(int24 fromTick, int24 toTick, uint128 liquidity, uint256 variableFactorWad) internal view returns (int256 extraFixedTokenBalance, int256 extraVariableTokenBalance) {
+    function _getExtraBalances(int24 _fromTick, int24 _toTick, uint128 _liquidity, uint256 _variableFactorWad) internal view returns (int256 _extraFixedTokenBalance, int256 _extraVariableTokenBalance) {
                 
-        if (fromTick == toTick) return (0, 0);
+        if (_fromTick == _toTick) return (0, 0);
 
-        uint160 sqrtRatioAtFromTickX96 = TickMath.getSqrtRatioAtTick(fromTick);
-        uint160 sqrtRatioAtToTickX96 = TickMath.getSqrtRatioAtTick(toTick);
+        uint160 _sqrtRatioAtFromTickX96 = TickMath.getSqrtRatioAtTick(_fromTick);
+        uint160 _sqrtRatioAtToTickX96 = TickMath.getSqrtRatioAtTick(_toTick);
         
-        int256 amount0 = SqrtPriceMath.getAmount0Delta(
-            sqrtRatioAtFromTickX96,
-            sqrtRatioAtToTickX96, 
-            (fromTick < toTick) ? -int128(liquidity) : int128(liquidity)
+        int256 _amount0 = SqrtPriceMath.getAmount0Delta(
+            _sqrtRatioAtFromTickX96,
+            _sqrtRatioAtToTickX96, 
+            (_fromTick < _toTick) ? -int128(_liquidity) : int128(_liquidity)
         );
 
-        int256 amount1 = SqrtPriceMath.getAmount1Delta(
-            sqrtRatioAtFromTickX96,
-            sqrtRatioAtToTickX96,
-            (fromTick < toTick) ? int128(liquidity) : -int128(liquidity)
+        int256 _amount1 = SqrtPriceMath.getAmount1Delta(
+            _sqrtRatioAtFromTickX96,
+            _sqrtRatioAtToTickX96,
+            (_fromTick < _toTick) ? int128(_liquidity) : -int128(_liquidity)
         );
 
-        extraFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(
-                        amount0,
-                        amount1,
-                        variableFactorWad,
+        _extraFixedTokenBalance = FixedAndVariableMath.getFixedTokenBalance(
+                        _amount0,
+                        _amount1,
+                        _variableFactorWad,
                         _termStartTimestampWad,
                         _termEndTimestampWad
                     );
 
-        extraVariableTokenBalance = amount1;
+        _extraVariableTokenBalance = _amount1;
     }
 
 
     /// @notice Get Position Margin Requirement
-    /// @dev if the position has no active liquidity in the VAMM, then we can compute its margin requirement by just passing its current fixed and variable token balances to teh getMarginRequirement function
+    /// @dev if the position has no active liquidity in the VAMM, then we can compute its margin requirement by just passing its current fixed and variable token balances to the getMarginRequirement function
     /// @dev however, if the current _liquidity of the position is positive, it means that the position can potentially enter into interest rate swap positions with traders in their tick range
     /// @dev to account for that possibility, we analyse two scenarios:
     /// @dev scenario 1: a trader comes in and trades all the liquidity all the way to the the upper tick
@@ -670,76 +671,76 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev one the fixed and variable token balances are calculated for each counterfactual scenarios, their margin requiremnets can be obtained by calling getMarginrRequirement for each scenario
     /// @dev finally, the output is the max of the margin requirements from two of the scenarios considered
     function _getPositionMarginRequirement(
-        Position.Info storage position,
-        int24 tickLower,
-        int24 tickUpper,
-        bool isLM
-    ) internal returns (uint256 margin) {
-        Tick.checkTicks(tickLower, tickUpper);
+        Position.Info storage _position,
+        int24 _tickLower,
+        int24 _tickUpper,
+        bool _isLM
+    ) internal returns (uint256 _margin) {
+        Tick.checkTicks(_tickLower, _tickUpper);
 
-        IVAMM.VAMMVars memory vammVars = _vamm.vammVars();
-        uint160 sqrtPriceX96 = vammVars.sqrtPriceX96;
-        int24 tick = vammVars.tick;
+        IVAMM.VAMMVars memory _vammVars = _vamm.vammVars();
+        uint160 _sqrtPriceX96 = _vammVars.sqrtPriceX96;
+        int24 _tick = _vammVars.tick;
 
-        uint256 variableFactorWad = _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad);
+        uint256 _variableFactorWad = _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad);
 
-        if (position._liquidity > 0) {
-            PositionMarginRequirementLocalVars2 memory localVars;
-            localVars.inRangeTick = (tick < tickLower) ? tickLower : ((tick < tickUpper) ? tick : tickUpper);
+        if (_position._liquidity > 0) {
+            PositionMarginRequirementLocalVars2 memory _localVars;
+            _localVars.inRangeTick = (_tick < _tickLower) ? _tickLower : ((_tick < _tickUpper) ? _tick : _tickUpper);
 
             // scenario 1: a trader comes in and trades all the liquidity all the way to the the upper tick
             // scenario 2: a trader comes in and trades all the liquidity all the way to the the lower tick
 
-            int256 extraFixedTokenBalance;
-            int256 extraVariableTokenBalance;
+            int256 _extraFixedTokenBalance;
+            int256 _extraVariableTokenBalance;
 
-            if (tick < tickUpper) {
-                (extraFixedTokenBalance, extraVariableTokenBalance) = _getExtraBalances(localVars.inRangeTick, tickUpper, position._liquidity, variableFactorWad);
+            if (_tick < _tickUpper) {
+                (_extraFixedTokenBalance, _extraVariableTokenBalance) = _getExtraBalances(_localVars.inRangeTick, _tickUpper, _position._liquidity, _variableFactorWad);
             }
 
-            localVars.scenario1LPVariableTokenBalance =
-                    position.variableTokenBalance + extraVariableTokenBalance;
+            _localVars.scenario1LPVariableTokenBalance =
+                    _position.variableTokenBalance + _extraVariableTokenBalance;
 
-            localVars.scenario1LPFixedTokenBalance =
-                    position.fixedTokenBalance + extraFixedTokenBalance;
+            _localVars.scenario1LPFixedTokenBalance =
+                    _position.fixedTokenBalance + _extraFixedTokenBalance;
             
-            if (tick > tickLower) {
-                (extraFixedTokenBalance, extraVariableTokenBalance) = _getExtraBalances(localVars.inRangeTick, tickLower, position._liquidity, variableFactorWad);
+            if (_tick > _tickLower) {
+                (_extraFixedTokenBalance, _extraVariableTokenBalance) = _getExtraBalances(_localVars.inRangeTick, _tickLower, _position._liquidity, _variableFactorWad);
             } else {
-                (extraFixedTokenBalance, extraVariableTokenBalance) = (0,0);
+                (_extraFixedTokenBalance, _extraVariableTokenBalance) = (0,0);
             }
 
-            localVars.scenario2LPVariableTokenBalance =
-                    position.variableTokenBalance + extraVariableTokenBalance;
+            _localVars.scenario2LPVariableTokenBalance =
+                    _position.variableTokenBalance + _extraVariableTokenBalance;
 
-            localVars.scenario2LPFixedTokenBalance =
-                    position.fixedTokenBalance + extraFixedTokenBalance;
+            _localVars.scenario2LPFixedTokenBalance =
+                    _position.fixedTokenBalance + _extraFixedTokenBalance;
 
-            uint160 lowPrice = TickMath.getSqrtRatioAtTick(tickLower);
-            uint160 highPrice = TickMath.getSqrtRatioAtTick(tickUpper);
-            lowPrice = sqrtPriceX96 < lowPrice ? sqrtPriceX96 : lowPrice;
-            highPrice = sqrtPriceX96 > highPrice ? sqrtPriceX96 : highPrice;
+            uint160 _lowPrice = TickMath.getSqrtRatioAtTick(_tickLower);
+            uint160 _highPrice = TickMath.getSqrtRatioAtTick(_tickUpper);
+            _lowPrice = _sqrtPriceX96 < _lowPrice ? _sqrtPriceX96 : _lowPrice;
+            _highPrice = _sqrtPriceX96 > _highPrice ? _sqrtPriceX96 : _highPrice;
 
-            localVars.scenario1SqrtPriceX96 = (localVars.scenario1LPVariableTokenBalance > 0) 
-                ? highPrice
-                : lowPrice;
+            _localVars.scenario1SqrtPriceX96 = (_localVars.scenario1LPVariableTokenBalance > 0) 
+                ? _highPrice
+                : _lowPrice;
 
-            localVars.scenario2SqrtPriceX96 = (localVars.scenario2LPVariableTokenBalance > 0) 
-                ? highPrice
-                : lowPrice;
+            _localVars.scenario2SqrtPriceX96 = (_localVars.scenario2LPVariableTokenBalance > 0) 
+                ? _highPrice
+                : _lowPrice;
 
-            uint256 scenario1MarginRequirement = getMarginRequirement(localVars.scenario1LPFixedTokenBalance, localVars.scenario1LPVariableTokenBalance, isLM, localVars.scenario1SqrtPriceX96);
-            uint256 scenario2MarginRequirement = getMarginRequirement(localVars.scenario2LPFixedTokenBalance, localVars.scenario2LPVariableTokenBalance, isLM, localVars.scenario2SqrtPriceX96);
+            uint256 _scenario1MarginRequirement = _getMarginRequirement(_localVars.scenario1LPFixedTokenBalance, _localVars.scenario1LPVariableTokenBalance, _isLM, _localVars.scenario1SqrtPriceX96);
+            uint256 _scenario2MarginRequirement = _getMarginRequirement(_localVars.scenario2LPFixedTokenBalance, _localVars.scenario2LPVariableTokenBalance, _isLM, _localVars.scenario2SqrtPriceX96);
 
-            if (scenario1MarginRequirement > scenario2MarginRequirement) {
-                return scenario1MarginRequirement;
+            if (_scenario1MarginRequirement > _scenario2MarginRequirement) {
+                return _scenario1MarginRequirement;
             } else {
-                return scenario2MarginRequirement;
+                return _scenario2MarginRequirement;
             }
 
         } else {
             // directly get the trader margin requirement
-            return getMarginRequirement(position.fixedTokenBalance, position.variableTokenBalance, isLM, sqrtPriceX96);
+            return _getMarginRequirement(_position.fixedTokenBalance, _position.variableTokenBalance, _isLM, _sqrtPriceX96);
         }
     }
 
@@ -747,73 +748,73 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @dev In order for a position to be liquidatable its current margin needs to be lower than the position's liquidation margin requirement
     /// @return _isLiquidatable A boolean which suggests if a given position is liquidatable
     function _isLiquidatablePosition(
-        Position.Info storage position,
-        int24 tickLower,
-        int24 tickUpper
+        Position.Info storage _position,
+        int24 _tickLower,
+        int24 _tickUpper
     ) internal returns (bool, uint256) {
-        uint256 marginRequirement = _getPositionMarginRequirement(
-            position,
-            tickLower,
-            tickUpper,
+        uint256 _marginRequirement = _getPositionMarginRequirement(
+            _position,
+            _tickLower,
+            _tickUpper,
             true
         );
 
         /// @audit overflow is possible
-        return (position.margin < int256(marginRequirement), marginRequirement);
+        return (_position.margin < int256(_marginRequirement), _marginRequirement);
     }
 
 
     /// @notice Returns either the Liquidation or Initial Margin Requirement given a fixed and variable token balance as well as the isLM boolean
-    /// @return margin  either liquidation or initial margin requirement of a given trader in terms of the underlying tokens
-    function getMarginRequirement(
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        bool isLM,
-        uint160 sqrtPriceX96
-    ) internal returns (uint256 margin) {    
-        margin = _getMarginRequirement(
-            fixedTokenBalance,
-            variableTokenBalance,
-            isLM
+    /// @return _margin  either liquidation or initial margin requirement of a given trader in terms of the underlying tokens
+    function _getMarginRequirement(
+        int256 _fixedTokenBalance,
+        int256 _variableTokenBalance,
+        bool _isLM,
+        uint160 _sqrtPriceX96
+    ) internal returns (uint256 _margin) {    
+        _margin = __getMarginRequirement(
+            _fixedTokenBalance,
+            _variableTokenBalance,
+            _isLM
         );
 
-        uint256 minimumMarginRequirement = getMinimumMarginRequirement(
-            fixedTokenBalance,
-            variableTokenBalance,
-            isLM,
-            sqrtPriceX96
+        uint256 _minimumMarginRequirement = _getMinimumMarginRequirement(
+            _fixedTokenBalance,
+            _variableTokenBalance,
+            _isLM,
+            _sqrtPriceX96
         );
 
-        if (margin < minimumMarginRequirement) {
-            margin = minimumMarginRequirement;
+        if (_margin < _minimumMarginRequirement) {
+            _margin = _minimumMarginRequirement;
         }
     }
 
     /// @notice get margin requirement based on a fixed and variable token balance and isLM boolean
-    function _getMarginRequirement(
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        bool isLM
-    ) internal returns (uint256 margin) {
+    function __getMarginRequirement(
+        int256 _fixedTokenBalance,
+        int256 _variableTokenBalance,
+        bool _isLM
+    ) internal returns (uint256 _margin) {
     
-        if (fixedTokenBalance >= 0 && variableTokenBalance >= 0) {
+        if (_fixedTokenBalance >= 0 && _variableTokenBalance >= 0) {
             return 0;
         }
 
-        int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(
-            fixedTokenBalance
+        int256 _fixedTokenBalanceWad = PRBMathSD59x18.fromInt(
+            _fixedTokenBalance
         );
-        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(
-            variableTokenBalance
+        int256 _variableTokenBalanceWad = PRBMathSD59x18.fromInt(
+            _variableTokenBalance
         );
 
-        uint256 timeInSecondsFromStartToMaturityWad = _termEndTimestampWad - _termStartTimestampWad;
+        uint256 _timeInSecondsFromStartToMaturityWad = _termEndTimestampWad - _termStartTimestampWad;
 
 
         /// exp1 = fixedTokenBalance*timeInYearsFromTermStartToTermEnd*0.01
         // this can either be negative or positive depending on the sign of the fixedTokenBalance
-        int256 exp1Wad = PRBMathSD59x18.mul(
-            fixedTokenBalanceWad,
+        int256 _exp1Wad = PRBMathSD59x18.mul(
+            _fixedTokenBalanceWad,
             int256(
                 FixedAndVariableMath.fixedFactor(
                     true,
@@ -824,15 +825,15 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         );
         
         /// exp2 = variableTokenBalance*worstCaseVariableFactor(from term start to term end)
-        int256 exp2Wad = PRBMathSD59x18.mul(
-            variableTokenBalanceWad,
+        int256 _exp2Wad = PRBMathSD59x18.mul(
+            _variableTokenBalanceWad,
             int256(
                 MarginCalculator.worstCaseVariableFactorAtMaturity(
-                    timeInSecondsFromStartToMaturityWad,
+                    _timeInSecondsFromStartToMaturityWad,
                     _termEndTimestampWad,
                     Time.blockTimestampScaled(),
-                    variableTokenBalance < 0,
-                    isLM,
+                    _variableTokenBalance < 0,
+                    _isLM,
                     getHistoricalApy(),
                     marginCalculatorParameters
                 )
@@ -840,17 +841,17 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         );
 
         // this is the worst case settlement cashflow expected by the position to cover
-        int256 maxCashflowDeltaToCoverPostMaturity = exp1Wad + exp2Wad;
+        int256 _maxCashflowDeltaToCoverPostMaturity = _exp1Wad + _exp2Wad;
 
         // hence if maxCashflowDeltaToCoverPostMaturity is negative then the margin needs to be sufficient to cover it
         // if maxCashflowDeltaToCoverPostMaturity is non-negative then it means according to this model the even in the worst case, the settlement cashflow is expected to be non-negative
         // hence, returning zero as the margin requirement
-        if (maxCashflowDeltaToCoverPostMaturity < 0) {
-            margin = PRBMathUD60x18.toUint(
-                uint256(-maxCashflowDeltaToCoverPostMaturity)
+        if (_maxCashflowDeltaToCoverPostMaturity < 0) {
+            _margin = PRBMathUD60x18.toUint(
+                uint256(-_maxCashflowDeltaToCoverPostMaturity)
             );
         } else {
-            margin = 0;
+            _margin = 0;
         }
     }
 
@@ -859,112 +860,112 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     // given the fixed and variable balances and a starting sqrtPriceX96
     // we calculate the minimum marign requirement by simulating a counterfactual unwind at fixed rate that is a function of the current fixed rate (sqrtPriceX96) (details in the litepaper)
     // if the variable token balance is 0 or if the variable token balance is >0 and the fixed token balace >0 then the minimum margin requirement is zero
-    function getMinimumMarginRequirement(
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        bool isLM,
-        uint160 sqrtPriceX96
-    ) internal returns (uint256 margin) {
+    function _getMinimumMarginRequirement(
+        int256 _fixedTokenBalance,
+        int256 _variableTokenBalance,
+        bool _isLM,
+        uint160 _sqrtPriceX96
+    ) internal returns (uint256 _margin) {
         
-        if (variableTokenBalance == 0) {
+        if (_variableTokenBalance == 0) {
             // if the variable token balance is zero there is no need for a minimum liquidator incentive since a liquidtion is not expected
             return 0;
         }
 
-        int256 fixedTokenDeltaUnbalanced;
-        uint256 devMulWad;
-        uint256 fixedRateDeviationMinWad;
-        uint256 absoluteVariableTokenBalance;
-        bool isVariableTokenBalancePositive;
+        int256 _fixedTokenDeltaUnbalanced;
+        uint256 _devMulWad;
+        uint256 _fixedRateDeviationMinWad;
+        uint256 _absoluteVariableTokenBalance;
+        bool _isVariableTokenBalancePositive;
 
-        if (variableTokenBalance > 0) {
-            if (fixedTokenBalance > 0) {
+        if (_variableTokenBalance > 0) {
+            if (_fixedTokenBalance > 0) {
                 // if both are positive, no need to have a margin requirement
                 return 0;
             }
 
-            if (isLM) {
-                devMulWad = marginCalculatorParameters.devMulLeftUnwindLMWad;
-                fixedRateDeviationMinWad = marginCalculatorParameters
+            if (_isLM) {
+                _devMulWad = marginCalculatorParameters.devMulLeftUnwindLMWad;
+                _fixedRateDeviationMinWad = marginCalculatorParameters
                     .fixedRateDeviationMinLeftUnwindLMWad;
             } else {
-                devMulWad = marginCalculatorParameters.devMulLeftUnwindIMWad;
-                fixedRateDeviationMinWad = marginCalculatorParameters
+                _devMulWad = marginCalculatorParameters.devMulLeftUnwindIMWad;
+                _fixedRateDeviationMinWad = marginCalculatorParameters
                     .fixedRateDeviationMinLeftUnwindIMWad;
             }
 
-            absoluteVariableTokenBalance = uint256(variableTokenBalance);
-            isVariableTokenBalancePositive = true;
+            _absoluteVariableTokenBalance = uint256(_variableTokenBalance);
+            _isVariableTokenBalancePositive = true;
 
         } else {
-            if (isLM) {
-                devMulWad = marginCalculatorParameters.devMulRightUnwindLMWad;
-                fixedRateDeviationMinWad = marginCalculatorParameters
+            if (_isLM) {
+                _devMulWad = marginCalculatorParameters.devMulRightUnwindLMWad;
+                _fixedRateDeviationMinWad = marginCalculatorParameters
                     .fixedRateDeviationMinRightUnwindLMWad;
             } else {
-                devMulWad = marginCalculatorParameters.devMulRightUnwindIMWad;
-                fixedRateDeviationMinWad = marginCalculatorParameters
+                _devMulWad = marginCalculatorParameters.devMulRightUnwindIMWad;
+                _fixedRateDeviationMinWad = marginCalculatorParameters
                     .fixedRateDeviationMinRightUnwindIMWad;
             }
 
-            absoluteVariableTokenBalance = uint256(-variableTokenBalance);
-            isVariableTokenBalancePositive = false;
+            _absoluteVariableTokenBalance = uint256(-_variableTokenBalance);
+            _isVariableTokenBalancePositive = false;
         }
 
         // simulate an adversarial unwind (cumulative position is a Variable Taker --> simulate FT unwind --> movement to the left along the VAMM)
         // fixedTokenDelta unbalanced that results from the simulated unwind
-        fixedTokenDeltaUnbalanced = int256(
+        _fixedTokenDeltaUnbalanced = int256(
             MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
-                uint256(absoluteVariableTokenBalance),
-                sqrtPriceX96,
-                devMulWad,
-                fixedRateDeviationMinWad,
+                uint256(_absoluteVariableTokenBalance),
+                _sqrtPriceX96,
+                _devMulWad,
+                _fixedRateDeviationMinWad,
                 _termEndTimestampWad,
                 Time.blockTimestampScaled(),
                 uint256(marginCalculatorParameters.tMaxWad),
                 marginCalculatorParameters.gammaWad,
-                isVariableTokenBalancePositive
+                _isVariableTokenBalancePositive
             )
         );
 
-        int256 fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-            isVariableTokenBalancePositive ? fixedTokenDeltaUnbalanced : -fixedTokenDeltaUnbalanced,
-            -variableTokenBalance,
+        int256 _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+            _isVariableTokenBalancePositive ? _fixedTokenDeltaUnbalanced : -_fixedTokenDeltaUnbalanced,
+            -_variableTokenBalance,
             _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad),
             _termStartTimestampWad,
             _termEndTimestampWad
         );
 
-        int256 updatedFixedTokenBalance = fixedTokenBalance +
-            fixedTokenDelta;
+        int256 _updatedFixedTokenBalance = _fixedTokenBalance +
+            _fixedTokenDelta;
 
-        margin = _getMarginRequirement(
-            updatedFixedTokenBalance,
+        _margin = __getMarginRequirement(
+            _updatedFixedTokenBalance,
             0,
-            isLM);
+            _isLM);
 
         if (
-            margin <
+            _margin <
             marginCalculatorParameters.minMarginToIncentiviseLiquidators
         ) {
-            margin = marginCalculatorParameters
+            _margin = marginCalculatorParameters
                 .minMarginToIncentiviseLiquidators;
         }
     }
 
     function getPositionMarginRequirement(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        bool isLM
-    ) override external returns (uint256 margin) {
-        Position.Info storage position = positions.get(
-            recipient,
-            tickLower,
-            tickUpper
+        address _recipient,
+        int24 _tickLower,
+        int24 _tickUpper,
+        bool _isLM
+    ) override external returns (uint256 _margin) {
+        Position.Info storage _position = positions.get(
+            _recipient,
+            _tickLower,
+            _tickUpper
         );
-        _updatePositionTokenBalancesAndAccountForFees(position, tickLower, tickUpper, false); // isMint=false
+        _updatePositionTokenBalancesAndAccountForFees(_position, _tickLower, _tickUpper, false); // isMint=false
 
-        return _getPositionMarginRequirement(position, tickLower, tickUpper, isLM);
+        return _getPositionMarginRequirement(_position, _tickLower, _tickUpper, _isLM);
     }
 }

@@ -169,7 +169,7 @@ describe("FCM", () => {
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
-    await marginEngineTest.setSecondsAgo(86400);
+    await marginEngineTest.setLookbackWindowInSeconds(86400);
   });
 
   describe("#fcm", () => {
