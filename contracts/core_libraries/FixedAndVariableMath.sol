@@ -7,12 +7,15 @@ import "./Time.sol";
 
 /// @title A utility library for mathematics of fixed and variable token amounts.
 library FixedAndVariableMath {
+
+    using PRBMathSD59x18 for int256;
+    using PRBMathUD60x18 for uint256;
+
     /// @notice Number of wei-seconds in a year
     /// @dev Ignoring leap years since we're only using it to calculate the eventual APY rate
 
-    // suggestion: do this conversion with PRB.fromUnit()
-    uint256 public constant SECONDS_IN_YEAR_IN_WAD = 31536000 * 10**18;
-    uint256 public constant ONE_HUNDRED_IN_WAD = 100 * 10**18;
+    uint256 public constant SECONDS_IN_YEAR_IN_WAD = 31536000e18;
+    uint256 public constant ONE_HUNDRED_IN_WAD = 100e18;
 
     /// @notice Caclulate the remaining cashflow to settle a position
     /// @param fixedTokenBalance The current balance of the fixed side of the position
@@ -30,27 +33,20 @@ library FixedAndVariableMath {
     ) internal view returns (int256 cashflow) {
         /// @dev convert fixed and variable token balances to their respective fixed token representations
 
-        int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(fixedTokenBalance);
-        int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(
-            variableTokenBalance
-        );
-
-        int256 fixedCashflowWad = PRBMathSD59x18.mul(
-            fixedTokenBalanceWad,
-            int256(
+        int256 fixedTokenBalanceWad = fixedTokenBalance.fromInt();
+        int256 variableTokenBalanceWad = variableTokenBalance.fromInt();
+        int256 fixedCashflowWad = fixedTokenBalanceWad.mul(
+             int256(
                 fixedFactor(true, termStartTimestampWad, termEndTimestampWad)
             )
-        );
+        ); 
 
-        int256 variableCashflowWad = PRBMathSD59x18.mul(
-            variableTokenBalanceWad,
-            int256(variableFactorToMaturityWad)
-        );
+        int256 variableCashflowWad = variableTokenBalanceWad.mul(int256(variableFactorToMaturityWad));
 
         int256 cashflowWad = fixedCashflowWad + variableCashflowWad;
 
         /// @dev convert back to non-fixed point representation
-        cashflow = PRBMathSD59x18.toInt(cashflowWad);
+        cashflow = cashflowWad.toInt();
     }
 
     /// @notice Divide a given time in seconds by the number of seconds in a year
@@ -61,10 +57,7 @@ library FixedAndVariableMath {
         pure
         returns (uint256 timeInYearsWad)
     {
-        timeInYearsWad = PRBMathUD60x18.div(
-            timeInSecondsAsWad,
-            SECONDS_IN_YEAR_IN_WAD
-        );
+        timeInYearsWad = timeInSecondsAsWad.div(SECONDS_IN_YEAR_IN_WAD);
     }
 
     /// @notice Calculate the fixed factor for a position - that is, the percentage earned over
@@ -80,25 +73,25 @@ library FixedAndVariableMath {
     ) internal view returns (uint256 fixedFactorValueWad) {
         require(termEndTimestampWad > termStartTimestampWad, "E<=S");
 
-        require(Time.blockTimestampScaled() >= termStartTimestampWad, "B.T<S");
+        uint256 currentTimestampWad = Time.blockTimestampScaled();
+        
+        require(currentTimestampWad >= termStartTimestampWad, "B.T<S");
 
         uint256 timeInSecondsWad;
 
         if (
-            atMaturity || (Time.blockTimestampScaled() >= termEndTimestampWad)
+            atMaturity || (currentTimestampWad >= termEndTimestampWad)
         ) {
             timeInSecondsWad = termEndTimestampWad - termStartTimestampWad;
         } else {
             timeInSecondsWad =
-                Time.blockTimestampScaled() -
+                currentTimestampWad -
                 termStartTimestampWad;
         }
 
         uint256 timeInYearsWad = accrualFact(timeInSecondsWad);
-        fixedFactorValueWad = PRBMathUD60x18.div(
-            timeInYearsWad,
-            ONE_HUNDRED_IN_WAD
-        );
+        fixedFactorValueWad = timeInYearsWad.div(ONE_HUNDRED_IN_WAD);
+    
     }
 
     /// @notice Calculate the fixed token balance for a position over a timespan
@@ -115,27 +108,8 @@ library FixedAndVariableMath {
     ) internal view returns (int256 fixedTokenBalanceWad) {
         require(termEndTimestampWad > termStartTimestampWad, "E<=S");
 
-        /// explain the math in simple terms
+        return amount0Wad - excessBalanceWad.div(int256(fixedFactor(true, termStartTimestampWad, termEndTimestampWad)));
 
-        // expected fixed cashflow with unbalanced number of fixed tokens
-        int256 exp1Wad = PRBMathSD59x18.mul(
-            amount0Wad,
-            int256(
-                fixedFactor(true, termStartTimestampWad, termEndTimestampWad)
-            )
-        );
-
-        // fixed cashflow with balanced number of fixed tokens, this cashflow accounts for the excess balance accrued since
-        // the inception of the IRS AMM
-        int256 numeratorWad = exp1Wad - excessBalanceWad;
-
-        // fixed token balance that takes into account acrrued cashflows
-        fixedTokenBalanceWad = PRBMathSD59x18.div(
-            numeratorWad,
-            int256(
-                fixedFactor(true, termStartTimestampWad, termEndTimestampWad)
-            )
-        );
     }
 
     /// @notice Represent excess values accrued in some period
@@ -161,15 +135,13 @@ library FixedAndVariableMath {
     ) internal view returns (int256) {
         AccruedValues memory accruedValues;
 
-        accruedValues.excessFixedAccruedBalanceWad = PRBMathSD59x18.mul(
-            amount0Wad,
+        accruedValues.excessFixedAccruedBalanceWad = amount0Wad.mul(
             int256(
                 fixedFactor(false, termStartTimestampWad, termEndTimestampWad)
             )
         );
 
-        accruedValues.excessVariableAccruedBalanceWad = PRBMathSD59x18.mul(
-            amount1Wad,
+        accruedValues.excessVariableAccruedBalanceWad = amount1Wad.mul(
             int256(accruedVariableFactorWad)
         );
 
@@ -198,8 +170,8 @@ library FixedAndVariableMath {
     ) internal view returns (int256 fixedTokenBalance) {
         if (amount0 == 0 && amount1 == 0) return 0;
 
-        int256 amount0Wad = PRBMathSD59x18.fromInt(amount0);
-        int256 amount1Wad = PRBMathSD59x18.fromInt(amount1);
+        int256 amount0Wad = amount0.fromInt();
+        int256 amount1Wad = amount1.fromInt();
 
         require(termEndTimestampWad > termStartTimestampWad, "E<=S");
 
@@ -218,6 +190,6 @@ library FixedAndVariableMath {
             termEndTimestampWad
         );
 
-        fixedTokenBalance = PRBMathSD59x18.toInt(fixedTokenBalanceWad);
+        fixedTokenBalance = fixedTokenBalanceWad.toInt();
     }
 }
