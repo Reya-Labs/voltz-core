@@ -95,96 +95,93 @@ library FixedAndVariableMath {
     }
 
     /// @notice Calculate the fixed token balance for a position over a timespan
-    /// @param amount0Wad A fixed amount
+    /// @param amountFixedWad  A fixed amount
     /// @param excessBalanceWad Any excess balance from the variable side of the position
     /// @param termStartTimestampWad When does the period of time begin, in wei-seconds
     /// @param termEndTimestampWad When does the period of time end, in wei-seconds
     /// @return fixedTokenBalanceWad The fixed token balance for that time period
     function calculateFixedTokenBalance(
-        int256 amount0Wad,
+        int256 amountFixedWad,
         int256 excessBalanceWad,
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad
     ) internal view returns (int256 fixedTokenBalanceWad) {
         require(termEndTimestampWad > termStartTimestampWad, "E<=S");
 
-        return amount0Wad - excessBalanceWad.div(int256(fixedFactor(true, termStartTimestampWad, termEndTimestampWad)));
+        return amountFixedWad - excessBalanceWad.div(int256(fixedFactor(true, termStartTimestampWad, termEndTimestampWad)));
 
-    }
-
-    /// @notice Represent excess values accrued in some period
-    struct AccruedValues {
-        int256 excessFixedAccruedBalanceWad;
-        int256 excessVariableAccruedBalanceWad;
-        int256 excessBalanceWad;
     }
 
     /// @notice Calculate the excess balance of both sides of a position in Wad
-    /// @param amount0Wad A fixed balance
-    /// @param amount1Wad A variable balance
+    /// @param amountFixedWad A fixed balance
+    /// @param amountVariableWad A variable balance
     /// @param accruedVariableFactorWad An annualised factor in wei-years
     /// @param termStartTimestampWad When does the period of time begin, in wei-seconds
     /// @param termEndTimestampWad When does the period of time end, in wei-seconds
     /// @return excessBalanceWad The excess balance in wad
     function getExcessBalance(
-        int256 amount0Wad,
-        int256 amount1Wad,
+        int256 amountFixedWad,
+        int256 amountVariableWad,
         uint256 accruedVariableFactorWad,
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad
     ) internal view returns (int256) {
-        AccruedValues memory accruedValues;
 
-        accruedValues.excessFixedAccruedBalanceWad = amount0Wad.mul(
+        int256 excessFixedAccruedBalanceWad;
+        int256 excessVariableAccruedBalanceWad;
+        int256 excessBalanceWad;
+
+        excessFixedAccruedBalanceWad = amountFixedWad.mul(
             int256(
                 fixedFactor(false, termStartTimestampWad, termEndTimestampWad)
             )
         );
 
-        accruedValues.excessVariableAccruedBalanceWad = amount1Wad.mul(
+        excessVariableAccruedBalanceWad = amountVariableWad.mul(
             int256(accruedVariableFactorWad)
         );
 
         /// @dev cashflows accrued since the inception of the IRS AMM
 
-        accruedValues.excessBalanceWad =
-            accruedValues.excessFixedAccruedBalanceWad +
-            accruedValues.excessVariableAccruedBalanceWad;
+        excessBalanceWad =
+           excessFixedAccruedBalanceWad +
+           excessVariableAccruedBalanceWad;
 
-        return accruedValues.excessBalanceWad;
+        return excessBalanceWad;
     }
 
     /// @notice Calculate the fixed token balance given both fixed and variable balances
-    /// @param amount0 A fixed balance
-    /// @param amount1 A variable balance
+    /// @param amountFixed A fixed balance
+    /// @param amountVariable A variable balance
     /// @param accruedVariableFactorWad An annualised factor in wei-years
     /// @param termStartTimestampWad When does the period of time begin, in wei-seconds
     /// @param termEndTimestampWad When does the period of time end, in wei-seconds
     /// @return fixedTokenBalance The fixed token balance for that time period
     function getFixedTokenBalance(
-        int256 amount0,
-        int256 amount1,
+        int256 amountFixed,
+        int256 amountVariable,
         uint256 accruedVariableFactorWad,
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad
     ) internal view returns (int256 fixedTokenBalance) {
-        if (amount0 == 0 && amount1 == 0) return 0;
-
-        int256 amount0Wad = amount0.fromInt();
-        int256 amount1Wad = amount1.fromInt();
-
+        
         require(termEndTimestampWad > termStartTimestampWad, "E<=S");
 
+        if (amountFixed == 0 && amountVariable == 0) return 0;
+
+        int256 amountFixedWad = amountFixed.fromInt();
+        int256 amountVariableWad = amountVariable.fromInt();
+
         int256 excessBalanceWad = getExcessBalance(
-            amount0Wad,
-            amount1Wad,
+            amountFixedWad,
+            amountVariableWad,
             accruedVariableFactorWad,
             termStartTimestampWad,
             termEndTimestampWad
         );
 
         int256 fixedTokenBalanceWad = calculateFixedTokenBalance(
-            amount0Wad,
+            amountFixedWad,
             excessBalanceWad,
             termStartTimestampWad,
             termEndTimestampWad
