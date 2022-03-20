@@ -224,7 +224,6 @@ describe("FCM", () => {
         TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
       );
 
-
       await vammTest
         .connect(other)
         .mint(other.address, -TICK_SPACING, TICK_SPACING, toBn("100000"));

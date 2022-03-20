@@ -54,14 +54,14 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
 
     // Events
     event HistoricalApyWindowSet(uint256 secondsAgo);
-    event CacheMaxAgeSet(
-        uint256 cacheMaxAgeInSeconds
-    );
+    event CacheMaxAgeSet(uint256 cacheMaxAgeInSeconds);
 
-    event CollectProtocol(address sender, address indexed recipient, uint256 amount);
-    event LiquidatorRewardSet(
-        uint256 liquidatorRewardWad
+    event CollectProtocol(
+        address sender,
+        address indexed recipient,
+        uint256 amount
     );
+    event LiquidatorRewardSet(uint256 liquidatorRewardWad);
 
     event VAMMSet(IVAMM indexed vamm);
 
