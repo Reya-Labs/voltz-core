@@ -70,7 +70,7 @@ contract Factory is IFactory, Ownable {
     
     if (address(_masterFCM) != address(0)) {
       fcm = IFCM(address(new VoltzERC1967Proxy(address(_masterFCM), "")));
-      fcm.initialize(address(vamm), address(marginEngine));
+      fcm.initialize(vamm, marginEngine);
       marginEngine.setFCM(fcm);
       Ownable(address(fcm)).transferOwnership(msg.sender);
     }

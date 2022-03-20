@@ -301,9 +301,9 @@ describe("FCM", () => {
 
       // lp settles and collects their margin
       await marginEngineTest.settlePosition(
+        other.address,
         -TICK_SPACING,
-        TICK_SPACING,
-        other.address
+        TICK_SPACING
       );
 
       const positionInfo = await marginEngineTest.callStatic.getPosition(

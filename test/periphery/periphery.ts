@@ -555,7 +555,7 @@ describe("Periphery", async () => {
 
     let liquidationThreshold: number = 0;
     await marginEngineTest.callStatic
-      .liquidatePosition(-TICK_SPACING, TICK_SPACING, wallet.address)
+      .liquidatePosition(wallet.address, -TICK_SPACING, TICK_SPACING)
       .then(
         (_) => {
           console.log("on success");

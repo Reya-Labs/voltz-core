@@ -118,7 +118,7 @@ contract Actor is CustomErrors {
         int24 tickUpper,
         address owner
     ) external {
-        IMarginEngine(MEAddress).liquidatePosition(tickLower, tickUpper, owner);
+        IMarginEngine(MEAddress).liquidatePosition(owner, tickLower, tickUpper);
     }
 
     function initiateFullyCollateralisedFixedTakerSwap(

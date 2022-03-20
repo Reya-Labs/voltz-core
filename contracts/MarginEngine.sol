@@ -305,7 +305,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     
     
     /// @inheritdoc IMarginEngine
-    function settlePosition(int24 _tickLower, int24 _tickUpper, address _owner) external override whenNotPaused onlyAfterMaturity {
+    function settlePosition(address _owner, int24 _tickLower, int24 _tickUpper) external override whenNotPaused onlyAfterMaturity {
         
         Tick.checkTicks(_tickLower, _tickUpper);
 
@@ -376,7 +376,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
 
     /// @inheritdoc IMarginEngine
-    function liquidatePosition(int24 _tickLower, int24 _tickUpper, address _owner) external whenNotPaused checkCurrentTimestampTermEndTimestampDelta override {
+    function liquidatePosition(address _owner, int24 _tickLower, int24 _tickUpper) external whenNotPaused checkCurrentTimestampTermEndTimestampDelta override returns (uint256) {
 
         /// @dev can only happen before maturity, this is checked when an unwind is triggered which in turn triggers a swap which checks for this condition
 
@@ -410,7 +410,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     
         int256 _variableTokenDelta = _unwindPosition(_position, _owner, _tickLower, _tickUpper);
 
-        if (_variableTokenDelta == 0) return;
+        if (_variableTokenDelta == 0) return 0;
 
         uint256 _liquidatorRewardValue = (_variableTokenDelta < 0)
             ? PRBMathUD60x18.mul(uint256(-_variableTokenDelta), _position.rewardPerAmount)
@@ -423,6 +423,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         // todo: add msg.sender to the event (as the initiator of the liquidation)
         emit LiquidatePosition(_owner, _tickLower, _tickUpper, _position.fixedTokenBalance, _position.variableTokenBalance, _position.margin, _position._liquidity);
+
+        return _liquidatorRewardValue;
     }
 
 

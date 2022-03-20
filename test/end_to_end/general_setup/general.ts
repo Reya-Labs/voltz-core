@@ -545,7 +545,9 @@ export class ScenarioRunner {
     await this.marginEngineTest.setMarginCalculatorParameters(
       this.marginCalculatorParams
     );
-    await this.marginEngineTest.setLookbackWindowInSeconds(this.params.lookBackWindowAPY);
+    await this.marginEngineTest.setLookbackWindowInSeconds(
+      this.params.lookBackWindowAPY
+    );
 
     // set VAMM parameters
     await this.vammTest.initializeVAMM(this.params.startingPrice.toString());
@@ -854,7 +856,7 @@ export class ScenarioRunner {
 
   async settlePositions() {
     for (const p of this.positions) {
-      await this.marginEngineTest.settlePosition(p[1], p[2], p[0]);
+      await this.marginEngineTest.settlePosition(p[0], p[1], p[2]);
 
       await this.e2eSetup.updatePositionMargin(
         p[0],

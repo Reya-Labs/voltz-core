@@ -210,8 +210,8 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev if marginDelta is positive, the depositor of the margin is either the msg.sender or the owner who interacted through an approved peripheral contract
     function updatePositionMargin(
         address _owner,
-        int24 tickLower,
-        int24 tickUpper,
+        int24 _tickLower,
+        int24 _tickUpper,
         int256 marginDelta
     ) external;
 
@@ -226,9 +226,9 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev 5. Calculates the settlement cashflow from all of the IRS contracts the position has entered since entering the AMM
     /// @dev 6. Updates the fixed and variable token balances of the position to be zero, adds the settlement cashflow to the position's current margin
     function settlePosition(
-        int24 tickLower,
-        int24 tickUpper,
-        address _owner
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
     ) external;
 
     /// @notice Liquidate a Position
@@ -237,10 +237,10 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev Calculate the liquidation reward = current margin of the position * liquidatorReward, subtract the liquidator reward from the position margin,
     /// @dev Burn the position's liquidity, unwind unnetted fixed and variable balances of a position, transfer the reward to the liquidator
     function liquidatePosition(
-        int24 tickLower,
-        int24 tickUpper,
-        address _owner
-    ) external;
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external returns (uint256);
 
     /// @notice Update a Position post VAMM induced mint or burn
     /// @dev Steps taken:
@@ -248,10 +248,10 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev 2. Update fixed and variable token balances of the position based on how much has been accumulated since the last mint/burn/poke
     /// @dev 3. Update position's margin by taking into account the position accumulated fees since the last mint/burn/poke
     /// @dev 4. Update fixed and variable token growth + fee growth in the position info struct for future interactions with the position
-    /// @param params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _) and the liquidity delta that needs to be applied to position._liquidity
+    /// @param _params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _) and the liquidity delta that needs to be applied to position._liquidity
     function updatePositionPostVAMMInducedMintBurn(
-        IPositionStructs.ModifyPositionParams memory params
-    ) external returns (int256 positionMarginRequirement);
+        IPositionStructs.ModifyPositionParams memory _params
+    ) external returns (int256 _positionMarginRequirement);
 
     // @notive Update a position post VAMM induced swap
     /// @dev Since every position can also engage in swaps with the VAMM, this function needs to be invoked after non-external calls are made to the VAMM's swap function
@@ -262,13 +262,13 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev 4. if all the requirements are satisfied then position gets updated to take into account the swap that it just entered, if the minimum margin requirement is not satisfied then the transaction will revert
     function updatePositionPostVAMMInducedSwap(
         address _owner,
-        int24 tickLower,
-        int24 tickUpper,
-        int256 fixedTokenDelta,
-        int256 variableTokenDelta,
-        uint256 cumulativeFeeIncurred,
-        int256 fixedTokenDeltaUnbalanced
-    ) external returns (int256 positionMarginRequirement);
+        int24 _tickLower,
+        int24 _tickUpper,
+        int256 _fixedTokenDelta,
+        int256 _variableTokenDelta,
+        uint256 _cumulativeFeeIncurred,
+        int256 _fixedTokenDeltaUnbalanced
+    ) external returns (int256 _positionMarginRequirement);
 
     /// @notice function that can only be called by the owner enables collection of protocol generated fees from any give margin engine
     /// @param _recipient the address which collects the protocol generated fees
@@ -302,9 +302,9 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     function getHistoricalApy() external returns (uint256);
 
     function getPositionMarginRequirement(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        bool isLM
-    ) external returns (uint256 margin);
+        address _recipient,
+        int24 _tickLower,
+        int24 _tickUpper,
+        bool _isLM
+    ) external returns (uint256 _margin);
 }

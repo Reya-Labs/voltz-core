@@ -17,6 +17,9 @@ import "../utils/FixedPoint96.sol";
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
 library MarginCalculator {
+    using PRBMathSD59x18 for int256;
+    using PRBMathUD60x18 for uint256;
+
     // structs
 
     struct ApyBoundVars {
@@ -40,11 +43,11 @@ library MarginCalculator {
         int256 criticalValueWad;
     }
 
-    /// suggestions: do the below conversions using PRBMath
-    int256 public constant ONE_WEI = 10**18;
-
     /// @dev Seconds in a year
-    int256 public constant SECONDS_IN_YEAR = 31536000 * ONE_WEI;
+    int256 public constant SECONDS_IN_YEAR = 31536000e18;
+
+    uint256 public constant ONE_UINT = 1e18;
+    int256 public constant ONE = 1e18;
 
     /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t_max) where t is the maturity timestamp, and t_max is the max number of seconds for the IRS AMM duration, s is the current timestamp and beta is a diffusion process parameter set via calibration
     function computeTimeFactor(
@@ -53,24 +56,23 @@ library MarginCalculator {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal pure returns (int256 timeFactorWad) {
-        require(termEndTimestampWad > 0, "termEndTimestamp must be > 0");
         require(
             currentTimestampWad <= termEndTimestampWad,
-            "endTime must be > currentTime"
+            "endTime must be >= currentTime"
         );
-        require(_marginCalculatorParameters.betaWad != 0, "parameters not set");
 
         int256 betaWad = _marginCalculatorParameters.betaWad;
+
+        require(betaWad != 0, "parameters not set");
+
         int256 tMaxWad = _marginCalculatorParameters.tMaxWad;
 
-        int256 scaledTimeWad = PRBMathSD59x18.div(
-            (int256(termEndTimestampWad) - int256(currentTimestampWad)),
-            tMaxWad
-        );
+        int256 scaledTimeWad = (int256(termEndTimestampWad) -
+            int256(currentTimestampWad)).div(tMaxWad);
 
-        int256 expInputWad = PRBMathSD59x18.mul((-betaWad), scaledTimeWad);
+        int256 expInputWad = scaledTimeWad.mul(-betaWad);
 
-        timeFactorWad = PRBMathSD59x18.exp(expInputWad);
+        timeFactorWad = expInputWad.exp();
     }
 
     /// @notice Calculates an APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
@@ -89,15 +91,11 @@ library MarginCalculator {
     ) internal pure returns (uint256 apyBoundWad) {
         ApyBoundVars memory apyBoundVars;
 
-        int256 beta4Wad = PRBMathSD59x18.mul(
-            _marginCalculatorParameters.betaWad,
-            PRBMathSD59x18.fromInt(4)
-        );
+        int256 beta4Wad = _marginCalculatorParameters.betaWad << 2;
+        int256 alpha4Wad = _marginCalculatorParameters.alphaWad << 2;
 
-        int256 alpha4Wad = PRBMathSD59x18.mul(
-            _marginCalculatorParameters.alphaWad,
-            PRBMathSD59x18.fromInt(4)
-        );
+        // int256 beta4Wad = _marginCalculatorParameters.betaWad.mul(FOUR); // FOUR is in wei
+        // int256 alpha4Wad = _marginCalculatorParameters.alphaWad.mul(FOUR); // FOUR is in wei
 
         apyBoundVars.timeFactorWad = computeTimeFactor(
             termEndTimestampWad,
@@ -105,62 +103,47 @@ library MarginCalculator {
             _marginCalculatorParameters
         );
 
-        apyBoundVars.oneMinusTimeFactorWad =
-            PRBMathSD59x18.fromInt(1) -
-            apyBoundVars.timeFactorWad;
+        apyBoundVars.oneMinusTimeFactorWad = ONE - apyBoundVars.timeFactorWad; // ONE is in wei
 
-        apyBoundVars.kWad = PRBMathSD59x18.div(
-            alpha4Wad,
+        apyBoundVars.kWad = alpha4Wad.div(
             _marginCalculatorParameters.sigmaSquaredWad
         );
-
-        apyBoundVars.zetaWad = PRBMathSD59x18.div(
-            PRBMathSD59x18.mul(
-                _marginCalculatorParameters.sigmaSquaredWad,
+        apyBoundVars.zetaWad = (
+            _marginCalculatorParameters.sigmaSquaredWad.mul(
                 apyBoundVars.oneMinusTimeFactorWad
-            ),
-            beta4Wad
-        );
-
-        apyBoundVars.lambdaNumWad = PRBMathSD59x18.mul(
-            PRBMathSD59x18.mul(beta4Wad, apyBoundVars.timeFactorWad),
-            int256(historicalApyWad)
-        );
-
-        apyBoundVars.lambdaDenWad = PRBMathSD59x18.mul(
-            _marginCalculatorParameters.sigmaSquaredWad,
-            apyBoundVars.oneMinusTimeFactorWad
-        );
-
-        apyBoundVars.lambdaWad = PRBMathSD59x18.div(
-            apyBoundVars.lambdaNumWad,
+            )
+        ).div(beta4Wad);
+        apyBoundVars.lambdaNumWad = beta4Wad
+            .mul(apyBoundVars.timeFactorWad)
+            .mul(int256(historicalApyWad));
+        apyBoundVars.lambdaDenWad = _marginCalculatorParameters
+            .sigmaSquaredWad
+            .mul(apyBoundVars.oneMinusTimeFactorWad);
+        apyBoundVars.lambdaWad = apyBoundVars.lambdaNumWad.div(
             apyBoundVars.lambdaDenWad
         );
 
-        apyBoundVars.criticalValueMultiplierWad = PRBMathSD59x18.mul(
-            (PRBMathSD59x18.mul(
-                PRBMathSD59x18.fromInt(2),
-                apyBoundVars.lambdaWad
-            ) + apyBoundVars.kWad),
-            (PRBMathSD59x18.fromInt(2))
-        );
+        apyBoundVars.criticalValueMultiplierWad =
+            ((apyBoundVars.lambdaWad << 1) + apyBoundVars.kWad) <<
+            1; //.mul(TWO);
 
-        apyBoundVars.criticalValueWad = PRBMathSD59x18.mul(
-            (isUpper)
-                ? _marginCalculatorParameters.xiUpperWad
-                : _marginCalculatorParameters.xiLowerWad,
-            PRBMathSD59x18.sqrt(apyBoundVars.criticalValueMultiplierWad)
-        );
+        apyBoundVars.criticalValueWad = apyBoundVars
+            .criticalValueMultiplierWad
+            .sqrt()
+            .mul(
+                (isUpper)
+                    ? _marginCalculatorParameters.xiUpperWad
+                    : _marginCalculatorParameters.xiLowerWad
+            );
 
-        int256 apyBoundIntWad = PRBMathSD59x18.mul(
-            apyBoundVars.zetaWad,
-            (apyBoundVars.kWad +
+        int256 apyBoundIntWad = apyBoundVars.zetaWad.mul(
+            apyBoundVars.kWad +
                 apyBoundVars.lambdaWad +
                 (
-                    (isUpper)
+                    isUpper
                         ? apyBoundVars.criticalValueWad
                         : -apyBoundVars.criticalValueWad
-                ))
+                )
         );
 
         if (apyBoundIntWad < 0) {
@@ -191,20 +174,16 @@ library MarginCalculator {
         uint256 timeInYearsFromStartUntilMaturityWad = FixedAndVariableMath
             .accrualFact(timeInSecondsFromStartToMaturityWad);
 
-        variableFactorWad = PRBMathUD60x18.mul(
-            computeApyBound(
-                termEndTimestampWad,
-                currentTimestampWad,
-                historicalApyWad,
-                isFT,
-                _marginCalculatorParameters
-            ),
-            timeInYearsFromStartUntilMaturityWad
-        );
+        variableFactorWad = computeApyBound(
+            termEndTimestampWad,
+            currentTimestampWad,
+            historicalApyWad,
+            isFT,
+            _marginCalculatorParameters
+        ).mul(timeInYearsFromStartUntilMaturityWad);
 
         if (!isLM) {
-            variableFactorWad = PRBMathUD60x18.mul(
-                variableFactorWad,
+            variableFactorWad = variableFactorWad.mul(
                 isFT
                     ? _marginCalculatorParameters.apyUpperMultiplierWad
                     : _marginCalculatorParameters.apyLowerMultiplierWad
@@ -250,25 +229,27 @@ library MarginCalculator {
         // require checks
 
         // calculate fixedRateStart
+
+        /// @audit
+        // ab: is this precise enough?
+        // This transformation could be implemented as multiplication by 2^96 / 10^18, i.e. by 79228162514
+
         simulatedUnwindLocalVars.sqrtRatioCurrWad = FullMath.mulDiv(
-            PRBMathUD60x18.fromUint(1),
+            ONE_UINT,
             sqrtRatioCurrX96,
             FixedPoint96.Q96
         );
 
-        simulatedUnwindLocalVars.fixedRateStartWad = PRBMathUD60x18.div(
-            PRBMathUD60x18.fromUint(1),
-            PRBMathUD60x18.mul(
-                simulatedUnwindLocalVars.sqrtRatioCurrWad,
+        simulatedUnwindLocalVars.fixedRateStartWad = ONE_UINT.div(
+            simulatedUnwindLocalVars.sqrtRatioCurrWad.mul(
                 simulatedUnwindLocalVars.sqrtRatioCurrWad
             )
         );
 
         // calculate D (from the litepaper)
-        simulatedUnwindLocalVars.upperDWad = PRBMathUD60x18.mul(
-            simulatedUnwindLocalVars.fixedRateStartWad,
-            startingFixedRateMultiplierWad
-        );
+        simulatedUnwindLocalVars.upperDWad = simulatedUnwindLocalVars
+            .fixedRateStartWad
+            .mul(startingFixedRateMultiplierWad);
 
         if (simulatedUnwindLocalVars.upperDWad < fixedRateDeviationMinWad) {
             simulatedUnwindLocalVars.upperDWad = fixedRateDeviationMinWad;
@@ -276,24 +257,20 @@ library MarginCalculator {
 
         // calculate d (from the litepaper)
 
-        simulatedUnwindLocalVars.scaledTimeWad = PRBMathUD60x18.div(
-            (termEndTimestampWad - currentTimestampWad),
-            tMaxWad
-        );
+        simulatedUnwindLocalVars.scaledTimeWad = (termEndTimestampWad -
+            currentTimestampWad).div(tMaxWad);
 
         /// @audit tag 4 [ABDK]
         // Overflow/underflow
         // Overflow is possible when converting gammaWad to "int256"
         // Consider using safe conversion.
 
-        simulatedUnwindLocalVars.expInputWad = PRBMathSD59x18.mul(
-            (-int256(gammaWad)),
-            int256(simulatedUnwindLocalVars.scaledTimeWad)
-        );
-
+        simulatedUnwindLocalVars.expInputWad = int256(
+            simulatedUnwindLocalVars.scaledTimeWad
+        ).mul(-int256(gammaWad));
         simulatedUnwindLocalVars.oneMinusTimeFactorWad =
-            PRBMathSD59x18.fromInt(1) -
-            PRBMathSD59x18.exp(simulatedUnwindLocalVars.expInputWad);
+            ONE -
+            simulatedUnwindLocalVars.expInputWad.exp();
 
         /// @audit tag 5 [ABDK]
         // Overflow/underflow
@@ -301,8 +278,7 @@ library MarginCalculator {
         // Consider using safe conversion.
 
         /// @audit-casting simulatedUnwindLocalVars.oneMinusTimeFactorWad is expected to be positive here, but what if goes below 0 due to rounding imprecision?
-        simulatedUnwindLocalVars.dWad = PRBMathUD60x18.mul(
-            simulatedUnwindLocalVars.upperDWad,
+        simulatedUnwindLocalVars.dWad = simulatedUnwindLocalVars.upperDWad.mul(
             uint256(simulatedUnwindLocalVars.oneMinusTimeFactorWad)
         );
 
@@ -327,16 +303,15 @@ library MarginCalculator {
 
         // calculate fixedTokenDeltaUnbalancedWad
 
-        simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad = PRBMathUD60x18
-            .mul(
-                PRBMathUD60x18.fromUint(variableTokenDeltaAbsolute),
-                simulatedUnwindLocalVars.fixedRateCFWad
-            );
+        simulatedUnwindLocalVars
+            .fixedTokenDeltaUnbalancedWad = variableTokenDeltaAbsolute
+            .fromUint()
+            .mul(simulatedUnwindLocalVars.fixedRateCFWad);
 
         // calculate fixedTokenDeltaUnbalanced
 
-        fixedTokenDeltaUnbalanced = PRBMathUD60x18.toUint(
-            simulatedUnwindLocalVars.fixedTokenDeltaUnbalancedWad
-        );
+        fixedTokenDeltaUnbalanced = simulatedUnwindLocalVars
+            .fixedTokenDeltaUnbalancedWad
+            .toUint();
     }
 }
