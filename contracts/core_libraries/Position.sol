@@ -4,15 +4,19 @@ pragma solidity ^0.8.0;
 
 import "../utils/LiquidityMath.sol";
 import "../utils/FixedPoint128.sol";
+import "../core_libraries/Tick.sol";
 import "../utils/FullMath.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary
 /// @dev Positions store additional state for tracking fees owed to the position as well as their fixed and variable token balances
 library Position {
-    using Position for Position.Info;
+    using Position for Info;
+    using SafeCast for uint256;
+    using SafeCast for int256;
 
     // info stored for each user's position
     struct Info {
@@ -55,6 +59,9 @@ library Position {
         int24 tickLower,
         int24 tickUpper
     ) internal view returns (Position.Info storage position) {
+
+        Tick.checkTicks(tickLower, tickUpper);
+
         position = self[
             keccak256(abi.encodePacked(owner, tickLower, tickUpper))
         ];
@@ -71,8 +78,9 @@ library Position {
     function updateMarginViaDelta(Info storage self, int256 marginDelta)
         internal
     {
-        Info memory _self = self;
-        self.margin = _self.margin + marginDelta;
+        int256 startingMargin = self.margin;
+
+        self.margin = startingMargin + marginDelta;
     }
 
     /// @notice Updates the Info struct of a position by changing the fixed and variable token balances of the position
@@ -85,14 +93,9 @@ library Position {
         int256 variableTokenBalanceDelta
     ) internal {
         if (fixedTokenBalanceDelta != 0 || variableTokenBalanceDelta != 0) {
-            Info memory _self = self;
 
-            self.fixedTokenBalance =
-                _self.fixedTokenBalance +
-                fixedTokenBalanceDelta;
-            self.variableTokenBalance =
-                _self.variableTokenBalance +
-                variableTokenBalanceDelta;
+            self.fixedTokenBalance += fixedTokenBalanceDelta;
+            self.variableTokenBalance += variableTokenBalanceDelta;
         }
     }
 
@@ -107,7 +110,7 @@ library Position {
     {
         Info memory _self = self;
 
-        // 0xZenus: The multiplication overflows, need to wrap the below expression in an unchecked block.
+        /// @dev 0xZenus: The multiplication overflows, need to wrap the below expression in an unchecked block.
         unchecked {
             _feeDelta = FullMath.mulDiv(
                 feeGrowthInsideX128 - _self.feeGrowthInsideLastX128,
@@ -137,49 +140,44 @@ library Position {
         int256 fixedTokenGrowthInsideDeltaX128 = fixedTokenGrowthInsideX128 -
             _self.fixedTokenGrowthInsideLastX128;
 
-        /// @audit tag 12 [ABDK]
-        // overflow is possible on the below four lines
-        //
 
         if (fixedTokenGrowthInsideDeltaX128 > 0) {
             // Overflow is possible
-            _fixedTokenDelta = int256(
+            _fixedTokenDelta = 
                 FullMath.mulDiv(
                     uint256(fixedTokenGrowthInsideDeltaX128),
                     _self._liquidity,
                     FixedPoint128.Q128
-                )
-            );
+                ).toInt256();
+        
         } else {
             //
-            _fixedTokenDelta = -int256(
+            _fixedTokenDelta = -
                 FullMath.mulDiv(
                     uint256(-fixedTokenGrowthInsideDeltaX128),
                     _self._liquidity,
                     FixedPoint128.Q128
-                )
-            );
+                ).toInt256();
+            
         }
 
         int256 variableTokenGrowthInsideDeltaX128 = variableTokenGrowthInsideX128 -
                 _self.variableTokenGrowthInsideLastX128;
 
         if (variableTokenGrowthInsideDeltaX128 > 0) {
-            _variableTokenDelta = int256(
+            _variableTokenDelta = 
                 FullMath.mulDiv(
                     uint256(variableTokenGrowthInsideDeltaX128),
                     _self._liquidity,
                     FixedPoint128.Q128
-                )
-            );
+                ).toInt256();
         } else {
-            _variableTokenDelta = -int256(
+            _variableTokenDelta = -
                 FullMath.mulDiv(
                     uint256(-variableTokenGrowthInsideDeltaX128),
                     _self._liquidity,
                     FixedPoint128.Q128
-                )
-            );
+                ).toInt256();
         }
     }
 

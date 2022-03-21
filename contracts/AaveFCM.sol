@@ -13,7 +13,7 @@ import "./interfaces/rate_oracles/IAaveRateOracle.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
-import "./utils/WayRayMath.sol";
+import "./utils/WadRayMath.sol";
 import "./utils/Printer.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
