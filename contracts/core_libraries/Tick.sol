@@ -7,8 +7,6 @@ import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
 import "../utils/Printer.sol";
 
-// import "../utils/Printer.sol";
-
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
@@ -55,41 +53,45 @@ library Tick {
         require(tickUpper <= TickMath.MAX_TICK, "TUM");
     }
 
+    struct FeeGrowthInsideParams {
+        int24 tickLower;
+        int24 tickUpper;
+        int24 tickCurrent;
+        uint256 feeGrowthGlobalX128;
+    }
+    
     function getFeeGrowthInside(
         mapping(int24 => Tick.Info) storage self,
-        int24 tickLower,
-        int24 tickUpper,
-        int24 tickCurrent,
-        uint256 feeGrowthGlobalX128
+        FeeGrowthInsideParams memory params
     ) internal view returns (uint256 feeGrowthInsideX128) {
         unchecked {
-            Info storage lower = self[tickLower];
-            Info storage upper = self[tickUpper];
+            Info storage lower = self[params.tickLower];
+            Info storage upper = self[params.tickUpper];
 
             // calculate fee growth below
             uint256 feeGrowthBelowX128;
 
-            if (tickCurrent >= tickLower) {
+            if (params.tickCurrent >= params.tickLower) {
                 feeGrowthBelowX128 = lower.feeGrowthOutsideX128;
             } else {
                 feeGrowthBelowX128 =
-                    feeGrowthGlobalX128 -
+                    params.feeGrowthGlobalX128 -
                     lower.feeGrowthOutsideX128;
             }
 
             // calculate fee growth above
             uint256 feeGrowthAboveX128;
 
-            if (tickCurrent < tickUpper) {
+            if (params.tickCurrent < params.tickUpper) {
                 feeGrowthAboveX128 = upper.feeGrowthOutsideX128;
             } else {
                 feeGrowthAboveX128 =
-                    feeGrowthGlobalX128 -
+                    params.feeGrowthGlobalX128 -
                     upper.feeGrowthOutsideX128;
             }
 
             feeGrowthInsideX128 =
-                feeGrowthGlobalX128 -
+                params.feeGrowthGlobalX128 -
                 (feeGrowthBelowX128 + feeGrowthAboveX128);
         }
     }

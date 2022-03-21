@@ -66,14 +66,13 @@ contract Periphery is IPeriphery {
             int24 _tickAfter
         )
     {
-
         IVAMM _vamm = params.marginEngine.vamm();
-        
+
         if ((params.tickLower == 0) && (params.tickUpper == 0)) {
             int24 tickSpacing = _vamm.tickSpacing();
             IVAMM.VAMMVars memory _v = _vamm.vammVars();
             /// @dev assign default values to the upper and lower ticks
-            
+
             int24 _tickLower = _v.tick - tickSpacing;
             int24 _tickUpper = _v.tick + tickSpacing;
             if (_tickLower < TickMath.MIN_TICK) {
@@ -86,7 +85,7 @@ contract Periphery is IPeriphery {
 
             // todo: check if this works, i.e. if tickLower/tickUpper are divisible by tickSpacing
             params.tickLower = _tickLower;
-            params.tickUpper = _tickUpper;            
+            params.tickUpper = _tickUpper;
         }
 
         int256 amountSpecified;

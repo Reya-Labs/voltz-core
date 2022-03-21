@@ -452,18 +452,20 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
         step.amountOut,
         step.feeAmount
       ) = SwapMath.computeSwapStep(
-        state.sqrtPriceX96,
-        (
-          !(params.amountSpecified > 0)
-            ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
-            : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
-        )
+        SwapMath.SwapStepParams({
+            sqrtRatioCurrentX96: state.sqrtPriceX96,
+            sqrtRatioTargetX96: (
+              !(params.amountSpecified > 0)
+                ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+                : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
+              )
           ? params.sqrtPriceLimitX96
           : step.sqrtPriceNextX96,
-        state.liquidity,
-        state.amountSpecifiedRemaining,
-        _feeWad,
-        termEndTimestampWad - Time.blockTimestampScaled()
+            liquidity: state.liquidity,
+            amountRemaining: state.amountSpecifiedRemaining,
+            feePercentageWad: _feeWad,
+            timeToMaturityInSecondsWad: termEndTimestampWad - Time.blockTimestampScaled()
+        })        
       );
 
       if (params.amountSpecified > 0) {
@@ -625,10 +627,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     );
 
     feeGrowthInsideX128 = _ticks.getFeeGrowthInside(
-      tickLower,
-      tickUpper,
-      _vammVars.tick,
-      _feeGrowthGlobalX128
+      Tick.FeeGrowthInsideParams({
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        tickCurrent: _vammVars.tick,
+        feeGrowthGlobalX128: _feeGrowthGlobalX128
+      })
     );
 
   }
