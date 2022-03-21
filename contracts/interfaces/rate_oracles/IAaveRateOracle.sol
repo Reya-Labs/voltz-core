@@ -9,6 +9,6 @@ interface IAaveRateOracle is IRateOracle {
 
     /// @notice Gets the address of the Aave Lending Pool
     /// @return Address of the Aave Lending Pool
-    function aaveLendingPool() external view returns (address);
+    function aaveLendingPool() external view returns (IAaveV2LendingPool);
 
 }

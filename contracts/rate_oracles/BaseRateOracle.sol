@@ -27,7 +27,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     /// @inheritdoc IRateOracle
-    address public immutable override underlying;
+    IERC20Minimal public immutable override underlying;
 
     /// @inheritdoc IRateOracle
     uint256 public override minSecondsSinceLastUpdate;
@@ -48,7 +48,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         emit MinSecondsSinceLastUpdateSet(_minSecondsSinceLastUpdate);
     }
 
-    constructor(address _underlying) {
+    constructor(IERC20Minimal _underlying) {
         underlying = _underlying;
     }
 

@@ -58,6 +58,6 @@ interface IAToken {
   /**
   * @dev Returns the address of the underlying asset of this aToken (E.g. WETH for aWETH)
   **/
-  function UNDERLYING_ASSET_ADDRESS() external view returns (address);
+  function UNDERLYING_ASSET_ADDRESS() external view returns (IERC20Minimal);
 
 }

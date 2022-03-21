@@ -11,13 +11,13 @@ import "../utils/Printer.sol";
 /// - change the rate to a fixed value (`setReserveNormalizedIncome`)
 /// - configure the rate to alter over time (`setFactorPerSecondInRay`) for more dynamic testing
 contract MockAaveLendingPool is IAaveV2LendingPool {
-    mapping(address => uint256) internal reserveNormalizedIncome;
-    mapping(address => uint256) internal startTime;
-    mapping(address => uint256) internal factorPerSecondInRay; // E.g. 1000000001000000000000000000 for 0.0000001% per second = ~3.2% APY
+    mapping(IERC20Minimal => uint256) internal reserveNormalizedIncome;
+    mapping(IERC20Minimal => uint256) internal startTime;
+    mapping(IERC20Minimal => uint256) internal factorPerSecondInRay; // E.g. 1000000001000000000000000000 for 0.0000001% per second = ~3.2% APY
 
-    mapping(address => AaveDataTypes.ReserveData) internal _reserves;
+    mapping(IERC20Minimal => AaveDataTypes.ReserveData) internal _reserves;
 
-    function getReserveNormalizedIncome(address _underlyingAsset)
+    function getReserveNormalizedIncome(IERC20Minimal _underlyingAsset)
         public
         view
         override
@@ -41,7 +41,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
     }
 
     function setReserveNormalizedIncome(
-        address _underlyingAsset,
+        IERC20Minimal _underlyingAsset,
         uint256 _reserveNormalizedIncome
     ) public {
         reserveNormalizedIncome[_underlyingAsset] = _reserveNormalizedIncome;
@@ -49,13 +49,13 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
     }
 
     function setFactorPerSecondInRay(
-        address _underlyingAsset,
+        IERC20Minimal _underlyingAsset,
         uint256 _factorPerSecondInRay
     ) public {
         factorPerSecondInRay[_underlyingAsset] = _factorPerSecondInRay;
     }
 
-    function initReserve(address asset, address aTokenAddress)
+    function initReserve(IERC20Minimal asset, address aTokenAddress)
         external
         override
     {
@@ -70,7 +70,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
      * @param asset The address of the underlying asset of the reserve
      * @return The state of the reserve
      **/
-    function getReserveData(address asset)
+    function getReserveData(IERC20Minimal asset)
         external
         view
         override
@@ -80,7 +80,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
     }
 
     function withdraw(
-        address asset,
+        IERC20Minimal asset,
         uint256 amount,
         address to
     ) external override returns (uint256) {

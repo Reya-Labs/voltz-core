@@ -213,7 +213,7 @@ contract E2ESetup is CustomErrors {
         );
         uint256 reserveNormalizedIncome = aaveLendingPool
             .getReserveNormalizedIncome(
-                address(IMarginEngine(MEAddress).underlyingToken())
+                IMarginEngine(MEAddress).underlyingToken()
             );
         return reserveNormalizedIncome;
     }

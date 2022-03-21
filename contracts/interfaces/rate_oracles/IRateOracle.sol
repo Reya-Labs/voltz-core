@@ -5,6 +5,7 @@ import "contracts/utils/CustomErrors.sol";
 pragma solidity ^0.8.0;
 
 import "contracts/utils/CustomErrors.sol";
+import "../IERC20Minimal.sol";
 
 /// @dev The RateOracle is used for two purposes on the Voltz Protocol
 /// @dev Settlement: in order to be able to settle IRS positions after the termEndTimestamp of a given AMM
@@ -44,7 +45,7 @@ interface IRateOracle is CustomErrors {
 
     /// @notice Gets the address of the underlying token of the RateOracle
     /// @return underlying The address of the underlying token
-    function underlying() external view returns (address);
+    function underlying() external view returns (IERC20Minimal);
 
     /// @notice Gets the variable factor between termStartTimestamp and termEndTimestamp
     /// @return result The variable factor
@@ -97,5 +98,5 @@ interface IRateOracle is CustomErrors {
 
     /// @notice unique ID of the underlying yield bearing protocol (e.g. Aave v2 has id 1)
     /// @return yieldBearingProtocolID unique id of the underlying yield bearing protocol
-    function underlyingYieldBearingProtocolID() external view returns(uint8 yieldBearingProtocolID);
+    function UNDERLYING_YIELD_BEARING_PROTOCOL_ID() external view returns(uint8 yieldBearingProtocolID);
 }

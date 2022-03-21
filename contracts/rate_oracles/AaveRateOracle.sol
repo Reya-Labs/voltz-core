@@ -14,11 +14,11 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     /// @inheritdoc IAaveRateOracle
-    address public override aaveLendingPool;
+    IAaveV2LendingPool public override aaveLendingPool;
 
-    uint8 public constant override underlyingYieldBearingProtocolID = 1; // id of aave v2 is 1
+    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 1; // id of aave v2 is 1
 
-    constructor(address _aaveLendingPool, address underlying)
+    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal underlying)
         BaseRateOracle(underlying)
     {
         aaveLendingPool = _aaveLendingPool;

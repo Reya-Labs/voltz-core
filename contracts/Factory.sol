@@ -21,11 +21,11 @@ contract VoltzERC1967Proxy is ERC1967Proxy, CustomErrors {
 /// @notice Deploys Voltz VAMMs and MarginEngines and manages ownership and control over amm protocol fees
 // Following this example https://github.com/OriginProtocol/minimal-proxy-example/blob/master/contracts/PairFactory.sol
 contract Factory is IFactory, Ownable {
-  
+
   /// @dev master MarginEngine implementation that MarginEngine proxies can delegate call to
   IMarginEngine public override masterMarginEngine;
 
-  /// @dev master VAMM implementation that VAMM proxies can delegate call to 
+  /// @dev master VAMM implementation that VAMM proxies can delegate call to
   IVAMM public override masterVAMM;
 
   /// @dev yieldBearingProtocolID --> master FCM implementation for the underlying yield bearing protocol with the corresponding id
@@ -40,14 +40,14 @@ contract Factory is IFactory, Ownable {
     isApproved[msg.sender][intAddress] = allowIntegration;
     emit ApprovalSet(msg.sender, intAddress, allowIntegration);
   }
-  
+
   constructor(IMarginEngine _masterMarginEngine, IVAMM _masterVAMM) {
     masterMarginEngine = _masterMarginEngine;
     masterVAMM = _masterVAMM;
   }
 
   function setMasterFCM(IFCM masterFCM, uint8 yieldBearingProtocolID) external override onlyOwner {
-    
+
     require(address(masterFCM) != address(0), "master fcm must exist");
 
     IFCM masterFCMOld = masterFCMs[yieldBearingProtocolID];
@@ -63,11 +63,11 @@ contract Factory is IFactory, Ownable {
     marginEngine.setVAMM(vamm);
 
     IRateOracle r = IRateOracle(_rateOracle);
-    require(r.underlying() == address(_underlyingToken), "Tokens do not match");
-    uint8 yieldBearingProtocolID = r.underlyingYieldBearingProtocolID();
+    require(r.underlying() == _underlyingToken, "Tokens do not match");
+    uint8 yieldBearingProtocolID = r.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
     IFCM _masterFCM = masterFCMs[yieldBearingProtocolID];
     IFCM fcm;
-    
+
     if (address(_masterFCM) != address(0)) {
       fcm = IFCM(address(new VoltzERC1967Proxy(address(_masterFCM), "")));
       fcm.initialize(address(vamm), address(marginEngine));
@@ -87,4 +87,3 @@ contract Factory is IFactory, Ownable {
 
 
 }
-
