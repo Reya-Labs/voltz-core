@@ -325,7 +325,7 @@ describe("Periphery", async () => {
       .connect(wallet)
       .callStatic.mintOrBurn({
         marginEngine: marginEngineTest.address,
-        
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: toBn("59997"), // equivalent to approximately 10,000,000 liquidity
@@ -372,7 +372,7 @@ describe("Periphery", async () => {
       .connect(wallet)
       .callStatic.mintOrBurn({
         marginEngine: marginEngineTest.address,
-        
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: toBn("59997"), // equivalent to approximately 10,000,000 liquidity
@@ -457,7 +457,7 @@ describe("Periphery", async () => {
       .connect(wallet)
       .callStatic.mintOrBurn({
         marginEngine: marginEngineTest.address,
-        
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: toBn("0"),
@@ -608,7 +608,7 @@ describe("Periphery", async () => {
 
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,
-      
+
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalMinted,
@@ -690,7 +690,7 @@ describe("Periphery", async () => {
     await expect(
       periphery.mintOrBurn({
         marginEngine: marginEngineTest.address,
-        
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: notionalMinted,
@@ -702,7 +702,7 @@ describe("Periphery", async () => {
 
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,
-      
+
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalMinted,
@@ -711,7 +711,7 @@ describe("Periphery", async () => {
 
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,
-      
+
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalBurnt,
@@ -806,7 +806,6 @@ describe("Periphery", async () => {
         TICK_SPACING,
         toBn("100000")
       );
-
 
     await periphery.connect(other).swap({
       marginEngine: marginEngineTest.address,

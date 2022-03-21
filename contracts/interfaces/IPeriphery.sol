@@ -47,7 +47,4 @@ interface IPeriphery is CustomErrors {
             int256 _marginRequirement,
             int24 _tickAfter
         );
-
-
-        
 }

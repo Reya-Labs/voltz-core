@@ -379,8 +379,10 @@ contract E2ESetup is CustomErrors {
         returns (int256 positionMarginRequirement)
     {
         addPosition(msg.sender, params.tickLower, params.tickUpper);
-        positionMarginRequirement = Actor(msg.sender)
-            .mintOrBurnViaPeriphery(peripheryAddress, params);
+        positionMarginRequirement = Actor(msg.sender).mintOrBurnViaPeriphery(
+            peripheryAddress,
+            params
+        );
     }
 
     function swapViaPeriphery(IPeriphery.SwapPeripheryParams memory params)

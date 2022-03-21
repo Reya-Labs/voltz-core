@@ -85,9 +85,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 _from,
         uint256 _to //  move docs to IRateOracle. Add additional parameter to use cache and implement cache.
     ) public view override(BaseRateOracle, IRateOracle) returns (uint256) {
-        
         require(_from <= _to, "from > to");
-        
+
         if (_from == _to) {
             return 0;
         }

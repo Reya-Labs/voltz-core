@@ -43,15 +43,12 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         onlyOwner
     {
-    
         if (minSecondsSinceLastUpdate != _minSecondsSinceLastUpdate) {
-            
-            /// @audit There is no range check for the argument.  
+            /// @audit There is no range check for the argument.
             minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate;
 
             emit MinSecondsSinceLastUpdateSet(_minSecondsSinceLastUpdate);
         }
-    
     }
 
     constructor(address _underlying) {

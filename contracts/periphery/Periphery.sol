@@ -45,7 +45,6 @@ contract Periphery is IPeriphery {
         override
         returns (int256 positionMarginRequirement)
     {
-
         IVAMM vamm = params.marginEngine.vamm();
 
         // compute the liquidity amount for the amount of notional (amount1) specified
@@ -90,7 +89,6 @@ contract Periphery is IPeriphery {
             int24 _tickAfter
         )
     {
-
         IVAMM vamm = params.marginEngine.vamm();
 
         int256 amountSpecified;
