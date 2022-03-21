@@ -260,7 +260,10 @@ library MarginCalculator {
         simulatedUnwindLocalVars.scaledTimeWad = (termEndTimestampWad -
             currentTimestampWad).div(tMaxWad);
 
-        simulatedUnwindLocalVars.expInputWad = simulatedUnwindLocalVars.scaledTimeWad.toInt256().mul(-gammaWad.toInt256());
+        simulatedUnwindLocalVars.expInputWad = simulatedUnwindLocalVars
+            .scaledTimeWad
+            .toInt256()
+            .mul(-gammaWad.toInt256());
         simulatedUnwindLocalVars.oneMinusTimeFactorWad =
             ONE -
             simulatedUnwindLocalVars.expInputWad.exp();

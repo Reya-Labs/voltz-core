@@ -18,6 +18,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     uint8 public constant override underlyingYieldBearingProtocolID = 1; // id of aave v2 is 1
 
+    uint256 public constant ONE_IN_WAD = 1e18;
+
     constructor(address _aaveLendingPool, address underlying)
         BaseRateOracle(underlying)
     {
@@ -83,6 +85,9 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 _from,
         uint256 _to //  move docs to IRateOracle. Add additional parameter to use cache and implement cache.
     ) public view override(BaseRateOracle, IRateOracle) returns (uint256) {
+        
+        require(_from <= _to, "from > to");
+        
         if (_from == _to) {
             return 0;
         }
@@ -113,7 +118,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             );
             return result;
         } else {
-            /// is this precise, have there been instances where the aave rate is negative?
             return 0;
         }
     }
@@ -136,8 +140,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
             timeDeltaBeforeOrAtToQueriedTimeWad
         );
-        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad +
-            PRBMathUD60x18.fromUint(1);
+        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad + ONE_IN_WAD;
         uint256 factorInWad = PRBMathUD60x18.pow(apyPlusOne, timeInYearsWad);
         uint256 factorInRay = WadRayMath.wadToRay(factorInWad);
         rateValueRay = WadRayMath.rayMul(beforeOrAtRateValueRay, factorInRay);

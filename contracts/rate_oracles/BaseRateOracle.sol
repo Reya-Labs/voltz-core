@@ -43,9 +43,15 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         onlyOwner
     {
-        minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate;
+    
+        if (minSecondsSinceLastUpdate != _minSecondsSinceLastUpdate) {
+            
+            /// @audit There is no range check for the argument.  
+            minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate;
 
-        emit MinSecondsSinceLastUpdateSet(_minSecondsSinceLastUpdate);
+            emit MinSecondsSinceLastUpdateSet(_minSecondsSinceLastUpdate);
+        }
+    
     }
 
     constructor(address _underlying) {
@@ -87,14 +93,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         if (rateFromToWad == 0) {
             return 0;
         }
-        // uint256 exponentWad = PRBMathUD60x18.div(
-        //     PRBMathUD60x18.fromUint(1),
-        //     timeInYearsWad
-        // );
-        // uint256 apyPlusOneWad = PRBMathUD60x18.pow(
-        //     (PRBMathUD60x18.fromUint(1) + rateFromToWad),
-        //     exponentWad
-        // );
 
         uint256 log2ApyPlusOneWad = PRBMathUD60x18.div(
             PRBMathUD60x18.log2(PRBMathUD60x18.fromUint(1) + rateFromToWad),

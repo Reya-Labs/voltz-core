@@ -24,10 +24,7 @@ interface IFactory is CustomErrors {
         uint8 yieldBearingProtocolID
     );
 
-    event MasterFCMSet(
-        IFCM masterFCMAddress,
-        uint8 yieldBearingProtocolID
-    );
+    event MasterFCMSet(IFCM masterFCMAddress, uint8 yieldBearingProtocolID);
 
     event ApprovalSet(
         address indexed owner,

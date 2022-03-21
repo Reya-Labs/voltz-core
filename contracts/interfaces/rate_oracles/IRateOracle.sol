@@ -58,6 +58,9 @@ interface IRateOracle is CustomErrors {
     /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
     function variableFactorNoCache(uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns(uint256 result);
 
+
+    /// audit [ABDK] The semantics of this function is unclear
+    /// audit [ABDK] Consider documenting.
     /// @notice Calculates the observed interest returned by the underlying in a given period
     /// @dev Reverts if we have no data point for either timestamp
     /// @param from The timestamp of the start of the period, in seconds

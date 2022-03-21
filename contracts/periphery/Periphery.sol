@@ -13,32 +13,31 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 contract Periphery is IPeriphery {
-
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    function getMarginEngine(address marginEngineAddress)
-        public
-        pure
-        override
-        returns (IMarginEngine)
-    {
-        IMarginEngine marginEngine = IMarginEngine(marginEngineAddress);
-        return marginEngine;
-    }
+    // function getMarginEngine(address marginEngineAddress)
+    //     public
+    //     pure
+    //     override
+    //     returns (IMarginEngine)
+    // {
+    //     IMarginEngine marginEngine = IMarginEngine(marginEngineAddress);
+    //     return marginEngine;
+    // }
 
-    function getVAMM(address marginEngineAddress)
-        public
-        view
-        override
-        returns (IVAMM)
-    {
-        IMarginEngine marginEngine = getMarginEngine(marginEngineAddress);
+    // function getVAMM(address marginEngineAddress)
+    //     public
+    //     view
+    //     override
+    //     returns (IVAMM)
+    // {
+    //     IMarginEngine marginEngine = getMarginEngine(marginEngineAddress);
 
-        IVAMM vamm = marginEngine.vamm();
+    //     IVAMM vamm = marginEngine.vamm();
 
-        return vamm;
-    }
+    //     return vamm;
+    // }
 
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params)
@@ -46,12 +45,8 @@ contract Periphery is IPeriphery {
         override
         returns (int256 positionMarginRequirement)
     {
-        require(
-            msg.sender == params.recipient,
-            "msg.sender must be the recipient"
-        );
 
-        IVAMM vamm = getVAMM(params.marginEngineAddress);
+        IVAMM vamm = params.marginEngine.vamm();
 
         // compute the liquidity amount for the amount of notional (amount1) specified
 
@@ -67,7 +62,7 @@ contract Periphery is IPeriphery {
         positionMarginRequirement = 0;
         if (params.isMint) {
             positionMarginRequirement = vamm.mint(
-                params.recipient,
+                msg.sender,
                 params.tickLower,
                 params.tickUpper,
                 liquidity
@@ -75,7 +70,7 @@ contract Periphery is IPeriphery {
         } else {
             // invoke a burn
             positionMarginRequirement = vamm.burn(
-                params.recipient,
+                msg.sender,
                 params.tickLower,
                 params.tickUpper,
                 liquidity
@@ -95,22 +90,15 @@ contract Periphery is IPeriphery {
             int24 _tickAfter
         )
     {
-        require(
-            msg.sender == params.recipient,
-            "msg.sender must be the recipient"
-        );
 
-        IVAMM vamm = getVAMM(params.marginEngineAddress);
+        IVAMM vamm = params.marginEngine.vamm();
 
         int256 amountSpecified;
 
-        /// @audit tag 11 [ABDK]
-        // Overflow is possible on the two lines marked below
-
         if (params.isFT) {
-            amountSpecified = params.notional.toInt256(); // Overflow is possible here.
+            amountSpecified = params.notional.toInt256();
         } else {
-            amountSpecified = -params.notional.toInt256(); // Overflow is possible here.
+            amountSpecified = -params.notional.toInt256();
         }
 
         int24 tickSpacing = vamm.tickSpacing();
@@ -144,12 +132,13 @@ contract Periphery is IPeriphery {
         _tickAfter = vamm.vammVars().tick;
     }
 
-    function getCurrentTick(address marginEngineAddress)
+    function getCurrentTick(IMarginEngine marginEngine)
         external
         view
+        override
         returns (int24 currentTick)
     {
-        IVAMM vamm = getVAMM(marginEngineAddress);
+        IVAMM vamm = marginEngine.vamm();
         currentTick = vamm.vammVars().tick;
     }
 }
