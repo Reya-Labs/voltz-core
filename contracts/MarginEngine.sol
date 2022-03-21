@@ -417,8 +417,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             : PRBMathUD60x18.mul(uint256(_variableTokenDelta), _position.rewardPerAmount);
 
 
-        /// @audit overflow is possible when converting to int, consider using safe conversion
-        _position.updateMarginViaDelta(-int256(_liquidatorRewardValue));
+        _position.updateMarginViaDelta(-_liquidatorRewardValue.toInt256());
         _underlyingToken.safeTransfer(msg.sender, _liquidatorRewardValue);
 
         // todo: add msg.sender to the event (as the initiator of the liquidation)
@@ -461,15 +460,12 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         bool _isUnwind = (_position.variableTokenBalance > 0 && _variableTokenDelta < 0) || (_position.variableTokenBalance < 0 && _variableTokenDelta > 0);
 
         if (_cumulativeFeeIncurred > 0) {
-            /// @audit overflow possible
-            _position.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
+            _position.updateMarginViaDelta(-_cumulativeFeeIncurred.toInt256());
         }
 
         _position.updateBalancesViaDeltas(_fixedTokenDelta, _variableTokenDelta);
 
-        _positionMarginRequirement = int256(
-            _getPositionMarginRequirement(_position, _tickLower, _tickUpper, false)
-        );
+        _positionMarginRequirement = _getPositionMarginRequirement(_position, _tickLower, _tickUpper, false).toInt256();
 
         /// @dev only check the margin requirement if it is not an unwind since an unwind could bring the position to a better state
         /// @dev and still not make it through the initial margin requirement
@@ -507,8 +503,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
             _position.updateBalancesViaDeltas(_fixedTokenDelta - 1, _variableTokenDelta - 1);
             _position.updateFixedAndVariableTokenGrowthInside(_fixedTokenGrowthInsideX128, _variableTokenGrowthInsideX128);
             /// @dev collect fees
-            /// @audit overflow possible
-            _position.updateMarginViaDelta(int256(_feeDelta) - 1);
+            _position.updateMarginViaDelta(_feeDelta.toInt256() - 1);
             _position.updateFeeGrowthInside(_feeGrowthInsideX128);
         } else {
             if (_isMintBurn) {
@@ -531,9 +526,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         int24 _tickUpper
     ) internal returns(int256 _positionMarginRequirement) {
     
-        _positionMarginRequirement = int256(
-            _getPositionMarginRequirement(_position, _tickLower, _tickUpper, false)
-        );
+        _positionMarginRequirement = _getPositionMarginRequirement(_position, _tickLower, _tickUpper, false).toInt256();
 
         if (_position.margin <= _positionMarginRequirement) {
             revert CustomErrors.MarginLessThanMinimum(_positionMarginRequirement);
@@ -622,8 +615,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
             if (_cumulativeFeeIncurred > 0) {
                 /// @dev update position margin to account for the fees incurred while conducting a swap in order to unwind
-                /// @audit overflow is possible
-                _position.updateMarginViaDelta(-int256(_cumulativeFeeIncurred));
+                _position.updateMarginViaDelta(-_cumulativeFeeIncurred.toInt256());
             }
 
             /// @dev passes the _fixedTokenBalance and _variableTokenBalance deltas
@@ -762,7 +754,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         );
 
         /// @audit overflow is possible
-        return (_position.margin < int256(_marginRequirement), _marginRequirement);
+        return (_position.margin < _marginRequirement.toInt256(), _marginRequirement);
     }
 
 
@@ -817,29 +809,25 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         // this can either be negative or positive depending on the sign of the fixedTokenBalance
         int256 _exp1Wad = PRBMathSD59x18.mul(
             _fixedTokenBalanceWad,
-            int256(
-                FixedAndVariableMath.fixedFactor(
-                    true,
-                    _termStartTimestampWad,
-                    _termEndTimestampWad
-                )
-            )
+            FixedAndVariableMath.fixedFactor(
+                true,
+                _termStartTimestampWad,
+                _termEndTimestampWad
+            ).toInt256()
         );
         
         /// exp2 = variableTokenBalance*worstCaseVariableFactor(from term start to term end)
         int256 _exp2Wad = PRBMathSD59x18.mul(
             _variableTokenBalanceWad,
-            int256(
-                MarginCalculator.worstCaseVariableFactorAtMaturity(
-                    _timeInSecondsFromStartToMaturityWad,
-                    _termEndTimestampWad,
-                    Time.blockTimestampScaled(),
-                    _variableTokenBalance < 0,
-                    _isLM,
-                    getHistoricalApy(),
-                    marginCalculatorParameters
-                )
-            )
+            MarginCalculator.worstCaseVariableFactorAtMaturity(
+                _timeInSecondsFromStartToMaturityWad,
+                _termEndTimestampWad,
+                Time.blockTimestampScaled(),
+                _variableTokenBalance < 0,
+                _isLM,
+                getHistoricalApy(),
+                marginCalculatorParameters
+            ).toInt256()
         );
 
         // this is the worst case settlement cashflow expected by the position to cover
@@ -916,8 +904,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         // simulate an adversarial unwind (cumulative position is a Variable Taker --> simulate FT unwind --> movement to the left along the VAMM)
         // fixedTokenDelta unbalanced that results from the simulated unwind
-        _fixedTokenDeltaUnbalanced = int256(
-            MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
+        _fixedTokenDeltaUnbalanced = MarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
                 uint256(_absoluteVariableTokenBalance),
                 _sqrtPriceX96,
                 _devMulWad,
@@ -927,8 +914,7 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
                 uint256(marginCalculatorParameters.tMaxWad),
                 marginCalculatorParameters.gammaWad,
                 _isVariableTokenBalancePositive
-            )
-        );
+            ).toInt256();
 
         int256 _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
             _isVariableTokenBalancePositive ? _fixedTokenDeltaUnbalanced : -_fixedTokenDeltaUnbalanced,

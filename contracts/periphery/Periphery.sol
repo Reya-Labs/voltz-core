@@ -10,8 +10,13 @@ import "../interfaces/IPeriphery.sol";
 import "../utils/TickMath.sol";
 import "./peripheral_libraries/LiquidityAmounts.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 contract Periphery is IPeriphery {
+
+    using SafeCast for uint256;
+    using SafeCast for int256;
+
     function getMarginEngine(address marginEngineAddress)
         public
         pure
@@ -103,9 +108,9 @@ contract Periphery is IPeriphery {
         // Overflow is possible on the two lines marked below
 
         if (params.isFT) {
-            amountSpecified = int256(params.notional); // Overflow is possible here.
+            amountSpecified = params.notional.toInt256(); // Overflow is possible here.
         } else {
-            amountSpecified = -int256(params.notional); // Overflow is possible here.
+            amountSpecified = -params.notional.toInt256(); // Overflow is possible here.
         }
 
         int24 tickSpacing = vamm.tickSpacing();

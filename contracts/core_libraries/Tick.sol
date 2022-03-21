@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../utils/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../utils/TickMath.sol";
 import "../utils/LiquidityMath.sol";
 import "../utils/Printer.sol";
