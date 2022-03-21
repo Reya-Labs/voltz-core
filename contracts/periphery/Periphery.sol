@@ -16,29 +16,6 @@ contract Periphery is IPeriphery {
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    // function getMarginEngine(address marginEngineAddress)
-    //     public
-    //     pure
-    //     override
-    //     returns (IMarginEngine)
-    // {
-    //     IMarginEngine marginEngine = IMarginEngine(marginEngineAddress);
-    //     return marginEngine;
-    // }
-
-    // function getVAMM(address marginEngineAddress)
-    //     public
-    //     view
-    //     override
-    //     returns (IVAMM)
-    // {
-    //     IMarginEngine marginEngine = getMarginEngine(marginEngineAddress);
-
-    //     IVAMM vamm = marginEngine.vamm();
-
-    //     return vamm;
-    // }
-
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params)
         external
@@ -89,7 +66,28 @@ contract Periphery is IPeriphery {
             int24 _tickAfter
         )
     {
-        IVAMM vamm = params.marginEngine.vamm();
+
+        IVAMM _vamm = params.marginEngine.vamm();
+        
+        if ((params.tickLower == 0) && (params.tickUpper == 0)) {
+            int24 tickSpacing = _vamm.tickSpacing();
+            IVAMM.VAMMVars memory _v = _vamm.vammVars();
+            /// @dev assign default values to the upper and lower ticks
+            
+            int24 _tickLower = _v.tick - tickSpacing;
+            int24 _tickUpper = _v.tick + tickSpacing;
+            if (_tickLower < TickMath.MIN_TICK) {
+                _tickLower = TickMath.MIN_TICK;
+            }
+
+            if (_tickUpper > TickMath.MAX_TICK) {
+                _tickUpper = TickMath.MAX_TICK;
+            }
+
+            // todo: check if this works, i.e. if tickLower/tickUpper are divisible by tickSpacing
+            params.tickLower = _tickLower;
+            params.tickUpper = _tickUpper;            
+        }
 
         int256 amountSpecified;
 
@@ -98,13 +96,6 @@ contract Periphery is IPeriphery {
         } else {
             amountSpecified = -params.notional.toInt256();
         }
-
-        int24 tickSpacing = vamm.tickSpacing();
-
-        /// @audit tag 6 [ABDK]
-        // Zero is a valid tick index, but here zero is used as a special value.  So it is impossible to specify, say tickLower = 0, tickUpper = 5.
-        // ref: tickLower: params.tickLower == 0 ? -tickSpacing : params.tickLower,
-        // Consider using an invalid tick index as a special value.
 
         IVAMM.SwapParams memory swapParams = IVAMM.SwapParams({
             recipient: msg.sender,
@@ -116,8 +107,8 @@ contract Periphery is IPeriphery {
                         : TickMath.MAX_SQRT_RATIO - 1
                 )
                 : params.sqrtPriceLimitX96,
-            tickLower: params.tickLower == 0 ? -tickSpacing : params.tickLower,
-            tickUpper: params.tickUpper == 0 ? tickSpacing : params.tickUpper
+            tickLower: params.tickLower,
+            tickUpper: params.tickUpper
         });
 
         (
@@ -126,8 +117,8 @@ contract Periphery is IPeriphery {
             _cumulativeFeeIncurred,
             _fixedTokenDeltaUnbalanced,
             _marginRequirement
-        ) = vamm.swap(swapParams);
-        _tickAfter = vamm.vammVars().tick;
+        ) = _vamm.swap(swapParams);
+        _tickAfter = _vamm.vammVars().tick;
     }
 
     function getCurrentTick(IMarginEngine marginEngine)
