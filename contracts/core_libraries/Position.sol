@@ -78,9 +78,7 @@ library Position {
     function updateMarginViaDelta(Info storage self, int256 marginDelta)
         internal
     {
-        int256 startingMargin = self.margin;
-
-        self.margin = startingMargin + marginDelta;
+        self.margin += marginDelta;
     }
 
     /// @notice Updates the Info struct of a position by changing the fixed and variable token balances of the position
@@ -92,7 +90,7 @@ library Position {
         int256 fixedTokenBalanceDelta,
         int256 variableTokenBalanceDelta
     ) internal {
-        if (fixedTokenBalanceDelta != 0 || variableTokenBalanceDelta != 0) {
+        if (fixedTokenBalanceDelta | variableTokenBalanceDelta != 0) {
 
             self.fixedTokenBalance += fixedTokenBalanceDelta;
             self.variableTokenBalance += variableTokenBalanceDelta;
@@ -212,17 +210,18 @@ library Position {
     {
         Info memory _self = self;
 
-        uint128 liquidityNext;
         if (liquidityDelta == 0) {
             require(_self._liquidity > 0, "NP"); // disallow pokes for 0 liquidity positions
-            liquidityNext = _self._liquidity;
         } else {
+
+            uint128 liquidityNext;
+
             liquidityNext = LiquidityMath.addDelta(
                 _self._liquidity,
                 liquidityDelta
             );
-        }
 
-        if (liquidityDelta != 0) self._liquidity = liquidityNext;
+            self._liquidity = liquidityNext;
+        }
     }
 }
