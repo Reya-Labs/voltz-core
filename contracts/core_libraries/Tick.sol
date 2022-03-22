@@ -10,6 +10,7 @@ import "../utils/Printer.sol";
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
     using SafeCast for int256;
+    using SafeCast for uint256;
 
     int24 public constant MAXIMUM_TICK_SPACING = 16384;
 
@@ -39,7 +40,7 @@ library Tick {
         pure
         returns (uint128)
     {
-        int24 minTick = TickMath.MIN_TICK - TickMath.MIN_TICK % tickSpacing;
+        int24 minTick = TickMath.MIN_TICK - (TickMath.MIN_TICK % tickSpacing);
         int24 maxTick = -minTick;
         uint24 numTicks = uint24((maxTick - minTick) / tickSpacing) + 1;
         return type(uint128).max / numTicks;
@@ -59,6 +60,41 @@ library Tick {
         uint256 feeGrowthGlobalX128;
     }
 
+    function _getGrowthInside(
+        int24 _tickLower,
+        int24 _tickUpper,
+        int24 _tickCurrent,
+        int256 _growthGlobalX128,
+        int256 _lowerGrowthOutsideX128,
+        int256 _upperGrowthOutsideX128
+    ) private pure returns (int256) {
+        // calculate the growth below
+        int256 _growthBelowX128;
+
+        if (_tickCurrent >= _tickLower) {
+            _growthBelowX128 = _lowerGrowthOutsideX128;
+        } else {
+            _growthBelowX128 = _growthGlobalX128 - _lowerGrowthOutsideX128;
+        }
+
+        // calculate the growth above
+        int256 _growthAboveX128;
+
+        if (_tickCurrent < _tickUpper) {
+            _growthAboveX128 = _upperGrowthOutsideX128;
+        } else {
+            _growthAboveX128 = _growthGlobalX128 - _upperGrowthOutsideX128;
+        }
+
+        int256 _growthInsideX128;
+
+        _growthInsideX128 =
+            _growthGlobalX128 -
+            (_growthBelowX128 + _growthAboveX128);
+
+        return _growthInsideX128;
+    }
+
     function getFeeGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         FeeGrowthInsideParams memory params
@@ -67,31 +103,14 @@ library Tick {
             Info storage lower = self[params.tickLower];
             Info storage upper = self[params.tickUpper];
 
-            // calculate fee growth below
-            uint256 feeGrowthBelowX128;
-
-            if (params.tickCurrent >= params.tickLower) {
-                feeGrowthBelowX128 = lower.feeGrowthOutsideX128;
-            } else {
-                feeGrowthBelowX128 =
-                    params.feeGrowthGlobalX128 -
-                    lower.feeGrowthOutsideX128;
-            }
-
-            // calculate fee growth above
-            uint256 feeGrowthAboveX128;
-
-            if (params.tickCurrent < params.tickUpper) {
-                feeGrowthAboveX128 = upper.feeGrowthOutsideX128;
-            } else {
-                feeGrowthAboveX128 =
-                    params.feeGrowthGlobalX128 -
-                    upper.feeGrowthOutsideX128;
-            }
-
-            feeGrowthInsideX128 =
-                params.feeGrowthGlobalX128 -
-                (feeGrowthBelowX128 + feeGrowthAboveX128);
+            feeGrowthInsideX128 = _getGrowthInside(
+                params.tickLower,
+                params.tickUpper,
+                params.tickCurrent,
+                params.feeGrowthGlobalX128.toInt256(),
+                lower.feeGrowthOutsideX128.toInt256(),
+                upper.feeGrowthOutsideX128.toInt256()
+            ).toUint256();
         }
     }
 
@@ -109,32 +128,14 @@ library Tick {
         Info storage lower = self[params.tickLower];
         Info storage upper = self[params.tickUpper];
 
-        // calculate the VariableTokenGrowth below
-        int256 variableTokenGrowthBelowX128;
-
-        if (params.tickCurrent >= params.tickLower) {
-            variableTokenGrowthBelowX128 = lower.variableTokenGrowthOutsideX128;
-        } else {
-            variableTokenGrowthBelowX128 =
-                params.variableTokenGrowthGlobalX128 -
-                lower.variableTokenGrowthOutsideX128;
-        }
-
-        // calculate the VariableTokenGrowth above
-        int256 variableTokenGrowthAboveX128;
-
-        if (params.tickCurrent < params.tickUpper) {
-            variableTokenGrowthAboveX128 = upper.variableTokenGrowthOutsideX128;
-        } else {
-            variableTokenGrowthAboveX128 =
-                params.variableTokenGrowthGlobalX128 -
-                upper.variableTokenGrowthOutsideX128;
-        }
-
-        // do we need an unchecked block in here (given we are dealing with an int256)?
-        variableTokenGrowthInsideX128 =
-            params.variableTokenGrowthGlobalX128 -
-            (variableTokenGrowthBelowX128 + variableTokenGrowthAboveX128);
+        variableTokenGrowthInsideX128 = _getGrowthInside(
+            params.tickLower,
+            params.tickUpper,
+            params.tickCurrent,
+            params.variableTokenGrowthGlobalX128,
+            lower.variableTokenGrowthOutsideX128,
+            upper.variableTokenGrowthOutsideX128
+        );
     }
 
     struct FixedTokenGrowthInsideParams {
@@ -151,32 +152,15 @@ library Tick {
         Info storage lower = self[params.tickLower];
         Info storage upper = self[params.tickUpper];
 
-        // calculate the fixedTokenGrowth below
-        int256 fixedTokenGrowthBelowX128;
-
-        if (params.tickCurrent >= params.tickLower) {
-            fixedTokenGrowthBelowX128 = lower.fixedTokenGrowthOutsideX128;
-        } else {
-            fixedTokenGrowthBelowX128 =
-                params.fixedTokenGrowthGlobalX128 -
-                lower.fixedTokenGrowthOutsideX128;
-        }
-
-        // calculate the fixedTokenGrowth above
-        int256 fixedTokenGrowthAboveX128;
-
-        if (params.tickCurrent < params.tickUpper) {
-            fixedTokenGrowthAboveX128 = upper.fixedTokenGrowthOutsideX128;
-        } else {
-            fixedTokenGrowthAboveX128 =
-                params.fixedTokenGrowthGlobalX128 -
-                upper.fixedTokenGrowthOutsideX128;
-        }
-
         // do we need an unchecked block in here (given we are dealing with an int256)?
-        fixedTokenGrowthInsideX128 =
-            params.fixedTokenGrowthGlobalX128 -
-            (fixedTokenGrowthBelowX128 + fixedTokenGrowthAboveX128);
+        fixedTokenGrowthInsideX128 = _getGrowthInside(
+            params.tickLower,
+            params.tickUpper,
+            params.tickCurrent,
+            params.fixedTokenGrowthGlobalX128,
+            lower.fixedTokenGrowthOutsideX128,
+            upper.fixedTokenGrowthOutsideX128
+        );
     }
 
     /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
