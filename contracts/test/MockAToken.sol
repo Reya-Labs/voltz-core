@@ -180,7 +180,12 @@ contract MockAToken is IAToken, ERC20 {
     /**
      * @dev Returns the address of the underlying asset of this aToken (E.g. WETH for aWETH)
      **/
-    function UNDERLYING_ASSET_ADDRESS() public view override returns (IERC20Minimal) {
+    function UNDERLYING_ASSET_ADDRESS()
+        public
+        view
+        override
+        returns (IERC20Minimal)
+    {
         return _underlyingAsset;
     }
 

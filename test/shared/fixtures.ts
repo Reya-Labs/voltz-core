@@ -228,13 +228,13 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-  const underlyingYieldBearingProtocolID =
-    await rateOracleTest.underlyingYieldBearingProtocolID();
+  const UNDERLYING_YIELD_BEARING_PROTOCOL_ID =
+    await rateOracleTest.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
   // set master fcm for aave
   await factory.setMasterFCM(
     fcmMasterTest.address,
-    underlyingYieldBearingProtocolID
+    UNDERLYING_YIELD_BEARING_PROTOCOL_ID
   );
 
   // deploy a margin engine & vamm
@@ -416,13 +416,13 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
     const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-    const underlyingYieldBearingProtocolID =
-      await rateOracleTest.underlyingYieldBearingProtocolID();
+    const UNDERLYING_YIELD_BEARING_PROTOCOL_ID =
+      await rateOracleTest.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
     // set master fcm for aave
     await factory.setMasterFCM(
       fcmMasterTest.address,
-      underlyingYieldBearingProtocolID
+      UNDERLYING_YIELD_BEARING_PROTOCOL_ID
     );
 
     return {
