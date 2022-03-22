@@ -23,8 +23,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     {
         aaveLendingPool = _aaveLendingPool;
         uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = IAaveV2LendingPool(aaveLendingPool)
-            .getReserveNormalizedIncome(underlying);
+        uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
 
         (
             oracleVars.rateCardinality,
@@ -48,8 +47,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
             return (index, cardinality);
 
-        uint256 resultRay = IAaveV2LendingPool(aaveLendingPool)
-            .getReserveNormalizedIncome(underlying);
+        uint256 resultRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
         if (resultRay == 0) {
             revert CustomErrors.AavePoolGetReserveNormalizedIncomeReturnedZero();
         }
@@ -155,16 +153,14 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             OracleBuffer.Observation memory rate;
             rate = observations[index];
             if (rate.blockTimestamp != currentTime) {
-                rateValueRay = IAaveV2LendingPool(aaveLendingPool)
-                    .getReserveNormalizedIncome(underlying);
+                rateValueRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
             } else {
                 rateValueRay = rate.observedValue;
             }
             return rateValueRay;
         }
 
-        uint256 currentValueRay = IAaveV2LendingPool(aaveLendingPool)
-            .getReserveNormalizedIncome(underlying);
+        uint256 currentValueRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
         (
             OracleBuffer.Observation memory beforeOrAt,
             OracleBuffer.Observation memory atOrAfter
@@ -219,7 +215,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
-        // In the case of Aave, the values we write are obtained by calling IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying)
+        // In the case of Aave, the values we write are obtained by calling aaveLendingPool.getReserveNormalizedIncome(underlying)
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,
