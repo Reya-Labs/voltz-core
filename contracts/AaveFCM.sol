@@ -149,10 +149,10 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
   /// @notice Get Trader Margin In Yield Bearing Tokens
   /// @dev this function takes the scaledBalance associated with a trader and multiplies it by the current Reserve Normalised Income to get the balance (margin) in terms of the underlying token
-  /// @param trader The TraderWithYieldBearingAssets.Info object that stores the data about the scaled tokens balances of the trader's margin account 
-  function getTraderMarginInYieldBearingTokens(TraderWithYieldBearingAssets.Info storage trader) internal view returns (uint256 marginInYieldBearingTokens) {
+  /// @param traderMarginInScaledYieldBearingTokens traderMarginInScaledYieldBearingTokens
+  function getTraderMarginInYieldBearingTokens(uint256 traderMarginInScaledYieldBearingTokens) internal view returns (uint256 marginInYieldBearingTokens) {
     uint256 currentRNI = _aaveLendingPool.getReserveNormalizedIncome(address(underlyingToken));
-    marginInYieldBearingTokens = trader.marginInScaledYieldBearingTokens.rayMul(currentRNI);
+    marginInYieldBearingTokens = traderMarginInScaledYieldBearingTokens.rayMul(currentRNI);
   }
 
   function getTraderMarginInATokens(address traderAddress)
@@ -164,7 +164,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
             traderAddress
         ];
         marginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(
-            trader
+            trader.marginInScaledYieldBearingTokens
         );
     }
 
@@ -202,7 +202,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
         
     // update trader fixed and variable token balances
     
-    trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
+    (int256 _fixedTokenBalance, int256 _variableTokenBalance) = trader.updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
     uint256 currentRNI = _aaveLendingPool.getReserveNormalizedIncome(address(underlyingToken));
 
@@ -211,7 +211,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
 
     // check the margin requirement of the trader post unwind, if the current balances still support the unwind, they it can happen, otherwise the unwind will get reverted
-    checkMarginRequirement(trader);
+    checkMarginRequirement(_fixedTokenBalance, _variableTokenBalance, trader.marginInScaledYieldBearingTokens);
     
     // transfer fees to the margin engine
     underlyingToken.safeTransferFrom(msg.sender, address(_marginEngine), cumulativeFeeIncurred);
@@ -224,7 +224,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
   
   /// @notice Check Margin Requirement post unwind of a fully collateralised fixed taker
-  function checkMarginRequirement(TraderWithYieldBearingAssets.Info storage trader) internal {
+  function checkMarginRequirement(int256 traderFixedTokenBalance, int256 traderVariableTokenBalance, uint256 traderMarginInScaledYieldBearingTokens) internal {
   
     // variable token balance should never be positive
     // margin in scaled tokens should cover the variable leg from now to maturity
@@ -234,10 +234,10 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     /// @dev once future variable cashflows are covered, we need to check if the remaining settlement cashflow is covered by the remaining margin in yield bearing tokens
 
     /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
-    uint256 marginToCoverVariableLegFromNowToMaturity = uint256(-trader.variableTokenBalance);
-    int256 marginToCoverRemainingSettlementCashflow = int256(getTraderMarginInYieldBearingTokens(trader)) - int256(marginToCoverVariableLegFromNowToMaturity);
+    uint256 marginToCoverVariableLegFromNowToMaturity = uint256(-traderVariableTokenBalance);
+    int256 marginToCoverRemainingSettlementCashflow = int256(getTraderMarginInYieldBearingTokens(traderMarginInScaledYieldBearingTokens)) - int256(marginToCoverVariableLegFromNowToMaturity);
 
-    int256 remainingSettlementCashflow = calculateRemainingSettlementCashflow(trader);
+    int256 remainingSettlementCashflow = calculateRemainingSettlementCashflow(traderFixedTokenBalance, traderVariableTokenBalance);
 
     if (remainingSettlementCashflow < 0) {
     
@@ -251,12 +251,12 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
 
   /// @notice Calculate remaining settlement cashflow
-  function calculateRemainingSettlementCashflow(TraderWithYieldBearingAssets.Info storage trader) internal returns (int256 remainingSettlementCashflow) {
+  function calculateRemainingSettlementCashflow(int256 traderFixedTokenBalance, int256 traderVariableTokenBalance) internal returns (int256 remainingSettlementCashflow) {
     
-    int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(trader.fixedTokenBalance);
+    int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(traderFixedTokenBalance);
     
     int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(
-        trader.variableTokenBalance
+        traderVariableTokenBalance
     );
 
     /// @dev fixed cashflow based on the full term of the margin engine
@@ -315,7 +315,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     }
 
     // if settlement happens late, additional variable yield beyond maturity will accrue to the trader
-    uint256 traderMarginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(trader);
+    uint256 traderMarginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(trader.marginInScaledYieldBearingTokens);
     trader.updateMarginInScaledYieldBearingTokens(0);    
     trader.settleTrader();
     _underlyingYieldBearingToken.safeTransfer(msg.sender, traderMarginInYieldBearingTokens);

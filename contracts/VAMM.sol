@@ -166,6 +166,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     /// @dev initializeVAMM should only be callable given the initialize function was already executed
     /// @dev we can check if the initialize function was executed by making sure the address of the margin engine is non-zero since it is set in the initialize function
     require(address(_marginEngine) != address(0), "vamm not initialized");
+    
     /// @audit tag 1 [ABDK]
     // This function could be called by anyone and there is no economical incentives to provide a fair price here.
     // Consider requiring the caller to provide certain amount of liquidity along with the call, which would motivate the caller to set the price close to the fair price.
@@ -177,10 +178,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
     _vammVars = VAMMVars({ sqrtPriceX96: sqrtPriceX96, tick: tick, feeProtocol: 0 });
-
-    /// @audit tag 2 [ABDK]
-    // It is not guaranteed that the “initialize” function was already executed, so it is possible to unlock a not fully initialized instance.  
-    // Consider adding an appropriate check.
 
     unlocked = true;
 

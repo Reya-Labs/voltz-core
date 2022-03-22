@@ -14,7 +14,7 @@ contract TestAaveFCM is AaveFCM {
             traderAddress
         ];
         marginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(
-            trader
+            trader.marginInScaledYieldBearingTokens
         );
     }
 
