@@ -21,10 +21,13 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./aave/AaveDataTypes.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
 
   using WadRayMath for uint256;
+  using SafeCast for uint256;
+  using SafeCast for int256;
 
   using TraderWithYieldBearingAssets for TraderWithYieldBearingAssets.Info;
 
@@ -114,7 +117,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     // isExternal is true since the state updates following a VAMM induced swap are done in the FCM (below)
     IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: address(this),
-        amountSpecified: int256(notional), // @audit overflow is possible here
+        amountSpecified: notional.toInt256(),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         tickLower: -tickSpacing,
         tickUpper: tickSpacing
@@ -187,7 +190,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     // since the unwind is in the Variable Taker direction, the amountSpecified needs to be exact output => needs to be negative = -int256(notionalToUnwind),
     IVAMM.SwapParams memory params = IVAMM.SwapParams({
         recipient: address(this),
-        amountSpecified: -int256(notionalToUnwind), // @audit overflow is possible
+        amountSpecified: -notionalToUnwind.toInt256(),
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         tickLower: -tickSpacing,
         tickUpper: tickSpacing

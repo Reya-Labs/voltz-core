@@ -27,10 +27,10 @@ contract TickTest {
     ) external view returns (uint256 feeGrowthInsideX128) {
         return
             ticks.getFeeGrowthInside(
-                tickLower,
+                Tick.FeeGrowthInsideParams(tickLower,
                 tickUpper,
                 tickCurrent,
-                feeGrowthGlobalX128
+                feeGrowthGlobalX128)
             );
     }
 

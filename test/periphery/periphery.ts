@@ -120,8 +120,7 @@ describe("Periphery", async () => {
     await periphery
       .connect(other)
       .callStatic.swap({
-        marginEngineAddress: marginEngineTest.address,
-        recipient: other.address,
+        marginEngine: marginEngineTest.address,
         isFT: false,
         notional: toBn("10000"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -200,8 +199,7 @@ describe("Periphery", async () => {
     await periphery
       .connect(other)
       .callStatic.swap({
-        marginEngineAddress: marginEngineTest.address,
-        recipient: other.address,
+        marginEngine: marginEngineTest.address,
         isFT: false,
         notional: toBn("10000"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -272,8 +270,7 @@ describe("Periphery", async () => {
     await periphery
       .connect(other)
       .callStatic.swap({
-        marginEngineAddress: marginEngineTest.address,
-        recipient: other.address,
+        marginEngine: marginEngineTest.address,
         isFT: false,
         notional: toBn("0"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -327,8 +324,8 @@ describe("Periphery", async () => {
     await periphery
       .connect(wallet)
       .callStatic.mintOrBurn({
-        marginEngineAddress: marginEngineTest.address,
-        recipient: wallet.address,
+        marginEngine: marginEngineTest.address,
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: toBn("59997"), // equivalent to approximately 10,000,000 liquidity
@@ -374,8 +371,8 @@ describe("Periphery", async () => {
     await periphery
       .connect(wallet)
       .callStatic.mintOrBurn({
-        marginEngineAddress: marginEngineTest.address,
-        recipient: wallet.address,
+        marginEngine: marginEngineTest.address,
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: toBn("59997"), // equivalent to approximately 10,000,000 liquidity
@@ -459,8 +456,8 @@ describe("Periphery", async () => {
     await periphery
       .connect(wallet)
       .callStatic.mintOrBurn({
-        marginEngineAddress: marginEngineTest.address,
-        recipient: wallet.address,
+        marginEngine: marginEngineTest.address,
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: toBn("0"),
@@ -610,8 +607,8 @@ describe("Periphery", async () => {
     const notionalMinted = toBn("10");
 
     await periphery.mintOrBurn({
-      marginEngineAddress: marginEngineTest.address,
-      recipient: wallet.address,
+      marginEngine: marginEngineTest.address,
+
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalMinted,
@@ -692,8 +689,8 @@ describe("Periphery", async () => {
 
     await expect(
       periphery.mintOrBurn({
-        marginEngineAddress: marginEngineTest.address,
-        recipient: wallet.address,
+        marginEngine: marginEngineTest.address,
+
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: notionalMinted,
@@ -704,8 +701,8 @@ describe("Periphery", async () => {
     await factory.connect(wallet).setApproval(periphery.address, true);
 
     await periphery.mintOrBurn({
-      marginEngineAddress: marginEngineTest.address,
-      recipient: wallet.address,
+      marginEngine: marginEngineTest.address,
+
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalMinted,
@@ -713,8 +710,8 @@ describe("Periphery", async () => {
     });
 
     await periphery.mintOrBurn({
-      marginEngineAddress: marginEngineTest.address,
-      recipient: wallet.address,
+      marginEngine: marginEngineTest.address,
+
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalBurnt,
@@ -794,8 +791,7 @@ describe("Periphery", async () => {
     const notionalMinted = toBn("10");
 
     await periphery.mintOrBurn({
-      marginEngineAddress: marginEngineTest.address,
-      recipient: wallet.address,
+      marginEngine: marginEngineTest.address,
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalMinted,
@@ -811,21 +807,8 @@ describe("Periphery", async () => {
         toBn("100000")
       );
 
-    await expect(
-      periphery.connect(wallet).swap({
-        marginEngineAddress: marginEngineTest.address,
-        recipient: other.address,
-        isFT: true,
-        notional: toBn("10"),
-        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(),
-        tickLower: -TICK_SPACING,
-        tickUpper: TICK_SPACING,
-      })
-    ).to.be.revertedWith("msg.sender must be the recipient");
-
     await periphery.connect(other).swap({
-      marginEngineAddress: marginEngineTest.address,
-      recipient: other.address,
+      marginEngine: marginEngineTest.address,
       isFT: true,
       notional: toBn("10"),
       sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(),

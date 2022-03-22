@@ -10,30 +10,11 @@ import "../interfaces/IPeriphery.sol";
 import "../utils/TickMath.sol";
 import "./peripheral_libraries/LiquidityAmounts.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 contract Periphery is IPeriphery {
-    function getMarginEngine(address marginEngineAddress)
-        public
-        pure
-        override
-        returns (IMarginEngine)
-    {
-        IMarginEngine marginEngine = IMarginEngine(marginEngineAddress);
-        return marginEngine;
-    }
-
-    function getVAMM(address marginEngineAddress)
-        public
-        view
-        override
-        returns (IVAMM)
-    {
-        IMarginEngine marginEngine = getMarginEngine(marginEngineAddress);
-
-        IVAMM vamm = marginEngine.vamm();
-
-        return vamm;
-    }
+    using SafeCast for uint256;
+    using SafeCast for int256;
 
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params)
@@ -41,12 +22,7 @@ contract Periphery is IPeriphery {
         override
         returns (int256 positionMarginRequirement)
     {
-        require(
-            msg.sender == params.recipient,
-            "msg.sender must be the recipient"
-        );
-
-        IVAMM vamm = getVAMM(params.marginEngineAddress);
+        IVAMM vamm = params.marginEngine.vamm();
 
         // compute the liquidity amount for the amount of notional (amount1) specified
 
@@ -62,7 +38,7 @@ contract Periphery is IPeriphery {
         positionMarginRequirement = 0;
         if (params.isMint) {
             positionMarginRequirement = vamm.mint(
-                params.recipient,
+                msg.sender,
                 params.tickLower,
                 params.tickUpper,
                 liquidity
@@ -70,7 +46,7 @@ contract Periphery is IPeriphery {
         } else {
             // invoke a burn
             positionMarginRequirement = vamm.burn(
-                params.recipient,
+                msg.sender,
                 params.tickLower,
                 params.tickUpper,
                 liquidity
@@ -90,30 +66,35 @@ contract Periphery is IPeriphery {
             int24 _tickAfter
         )
     {
-        require(
-            msg.sender == params.recipient,
-            "msg.sender must be the recipient"
-        );
+        IVAMM _vamm = params.marginEngine.vamm();
 
-        IVAMM vamm = getVAMM(params.marginEngineAddress);
+        if ((params.tickLower == 0) && (params.tickUpper == 0)) {
+            int24 tickSpacing = _vamm.tickSpacing();
+            IVAMM.VAMMVars memory _v = _vamm.vammVars();
+            /// @dev assign default values to the upper and lower ticks
+
+            int24 _tickLower = _v.tick - tickSpacing;
+            int24 _tickUpper = _v.tick + tickSpacing;
+            if (_tickLower < TickMath.MIN_TICK) {
+                _tickLower = TickMath.MIN_TICK;
+            }
+
+            if (_tickUpper > TickMath.MAX_TICK) {
+                _tickUpper = TickMath.MAX_TICK;
+            }
+
+            // todo: check if this works, i.e. if tickLower/tickUpper are divisible by tickSpacing
+            params.tickLower = _tickLower;
+            params.tickUpper = _tickUpper;
+        }
 
         int256 amountSpecified;
 
-        /// @audit tag 11 [ABDK]
-        // Overflow is possible on the two lines marked below
-
         if (params.isFT) {
-            amountSpecified = int256(params.notional); // Overflow is possible here.
+            amountSpecified = params.notional.toInt256();
         } else {
-            amountSpecified = -int256(params.notional); // Overflow is possible here.
+            amountSpecified = -params.notional.toInt256();
         }
-
-        int24 tickSpacing = vamm.tickSpacing();
-
-        /// @audit tag 6 [ABDK]
-        // Zero is a valid tick index, but here zero is used as a special value.  So it is impossible to specify, say tickLower = 0, tickUpper = 5.
-        // ref: tickLower: params.tickLower == 0 ? -tickSpacing : params.tickLower,
-        // Consider using an invalid tick index as a special value.
 
         IVAMM.SwapParams memory swapParams = IVAMM.SwapParams({
             recipient: msg.sender,
@@ -125,8 +106,8 @@ contract Periphery is IPeriphery {
                         : TickMath.MAX_SQRT_RATIO - 1
                 )
                 : params.sqrtPriceLimitX96,
-            tickLower: params.tickLower == 0 ? -tickSpacing : params.tickLower,
-            tickUpper: params.tickUpper == 0 ? tickSpacing : params.tickUpper
+            tickLower: params.tickLower,
+            tickUpper: params.tickUpper
         });
 
         (
@@ -135,16 +116,17 @@ contract Periphery is IPeriphery {
             _cumulativeFeeIncurred,
             _fixedTokenDeltaUnbalanced,
             _marginRequirement
-        ) = vamm.swap(swapParams);
-        _tickAfter = vamm.vammVars().tick;
+        ) = _vamm.swap(swapParams);
+        _tickAfter = _vamm.vammVars().tick;
     }
 
-    function getCurrentTick(address marginEngineAddress)
+    function getCurrentTick(IMarginEngine marginEngine)
         external
         view
+        override
         returns (int24 currentTick)
     {
-        IVAMM vamm = getVAMM(marginEngineAddress);
+        IVAMM vamm = marginEngine.vamm();
         currentTick = vamm.vammVars().tick;
     }
 }

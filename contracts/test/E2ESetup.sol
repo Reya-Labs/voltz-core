@@ -378,9 +378,11 @@ contract E2ESetup is CustomErrors {
         public
         returns (int256 positionMarginRequirement)
     {
-        addPosition(params.recipient, params.tickLower, params.tickUpper);
-        positionMarginRequirement = Actor(params.recipient)
-            .mintOrBurnViaPeriphery(peripheryAddress, params);
+        addPosition(msg.sender, params.tickLower, params.tickUpper);
+        positionMarginRequirement = Actor(msg.sender).mintOrBurnViaPeriphery(
+            peripheryAddress,
+            params
+        );
     }
 
     function swapViaPeriphery(IPeriphery.SwapPeripheryParams memory params)
@@ -390,9 +392,9 @@ contract E2ESetup is CustomErrors {
             uint256 cumulativeFeeIncurred
         )
     {
-        addPosition(params.recipient, params.tickLower, params.tickUpper);
+        addPosition(msg.sender, params.tickLower, params.tickUpper);
         (, , cumulativeFeeIncurred, , positionMarginRequirement) = Actor(
-            params.recipient
+            msg.sender
         ).swapViaPeriphery(peripheryAddress, params);
     }
 

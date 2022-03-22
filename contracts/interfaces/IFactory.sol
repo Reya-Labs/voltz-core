@@ -24,11 +24,7 @@ interface IFactory is CustomErrors {
         uint8 yieldBearingProtocolID
     );
 
-    event MasterFCMSet(
-        IFCM masterFCMAddressOld,
-        IFCM masterFCMAddress,
-        uint8 yieldBearingProtocolID
-    );
+    event MasterFCMSet(IFCM masterFCMAddress, uint8 yieldBearingProtocolID);
 
     event ApprovalSet(
         address indexed owner,
@@ -45,6 +41,10 @@ interface IFactory is CustomErrors {
 
     function setMasterFCM(IFCM masterFCM, uint8 yieldBearingProtocolID)
         external;
+
+    function setMasterVAMM(IVAMM _masterVAMM) external;
+
+    function setMasterMarginEngine(IMarginEngine _masterMarginEngine) external;
 
     function masterVAMM() external view returns (IVAMM);
 

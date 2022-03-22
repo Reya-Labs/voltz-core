@@ -46,14 +46,33 @@ contract Factory is IFactory, Ownable {
     masterVAMM = _masterVAMM;
   }
 
-  function setMasterFCM(IFCM masterFCM, uint8 yieldBearingProtocolID) external override onlyOwner {
+  function setMasterFCM(IFCM _masterFCM, uint8 _yieldBearingProtocolID) external override onlyOwner {
 
-    require(address(masterFCM) != address(0), "master fcm must exist");
-
-    IFCM masterFCMOld = masterFCMs[yieldBearingProtocolID];
-    masterFCMs[yieldBearingProtocolID] = masterFCM;
-    emit MasterFCMSet(masterFCMOld, masterFCM, yieldBearingProtocolID);
+    require(address(_masterFCM) != address(0), "master fcm must exist");
+    masterFCMs[_yieldBearingProtocolID] = _masterFCM;
+    emit MasterFCMSet(_masterFCM, _yieldBearingProtocolID);
   }
+
+  function setMasterMarginEngine(IMarginEngine _masterMarginEngine) external override onlyOwner {
+    require(address(_masterMarginEngine) != address(0), "master me must exist");
+
+    if (address(masterMarginEngine) != address(_masterMarginEngine)) {
+      masterMarginEngine = _masterMarginEngine;
+    }
+
+  }
+
+
+  function setMasterVAMM(IVAMM _masterVAMM) external override onlyOwner {
+
+    require(address(_masterVAMM) != address(0), "master vamm must exist");
+
+    if (address(masterVAMM) != address(_masterVAMM)) {
+      masterVAMM = _masterVAMM;
+    }
+
+  }
+
 
   function deployIrsInstance(IERC20Minimal _underlyingToken, IRateOracle _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (IMarginEngine marginEngineProxy, IVAMM vammProxy, IFCM fcmProxy) {
     IMarginEngine marginEngine = IMarginEngine(address(new VoltzERC1967Proxy(address(masterMarginEngine), "")));
