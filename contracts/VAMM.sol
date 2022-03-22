@@ -28,7 +28,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   using TickBitmap for mapping(int16 => uint256);
 
   /// @dev 0.02 = 2% is the max fee as proportion of notional scaled by time to maturity (in wei fixed point notation 0.02 -> 2 * 10^16)
-  uint256 public constant MAX_FEE = 20000000000000000; 
+  uint256 public constant MAX_FEE = 20000000000000000;
 
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
@@ -75,8 +75,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     __UUPSUpgradeable_init();
   }
 
-  // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.   
-  // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786 
+  // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.
+  // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786
   function _authorizeUpgrade(address) internal override onlyOwner {}
 
 
@@ -160,7 +160,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
   /// @dev not locked because it initializes unlocked
   function initializeVAMM(uint160 sqrtPriceX96) external override {
-    
+
     require(sqrtPriceX96 != 0, "zero input price");
 
     /// @dev initializeVAMM should only be callable given the initialize function was already executed
@@ -169,7 +169,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     /// @audit tag 1 [ABDK]
     // This function could be called by anyone and there is no economical incentives to provide a fair price here.
     // Consider requiring the caller to provide certain amount of liquidity along with the call, which would motivate the caller to set the price close to the fair price.
-    
+
     if (_vammVars.sqrtPriceX96 != 0)  {
       revert CustomErrors.ExpectedSqrtPriceZeroBeforeInit(_vammVars.sqrtPriceX96);
     }
@@ -179,12 +179,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     _vammVars = VAMMVars({ sqrtPriceX96: sqrtPriceX96, tick: tick, feeProtocol: 0 });
 
     /// @audit tag 2 [ABDK]
-    // It is not guaranteed that the “initialize” function was already executed, so it is possible to unlock a not fully initialized instance.  
+    // It is not guaranteed that the “initialize” function was already executed, so it is possible to unlock a not fully initialized instance.
     // Consider adding an appropriate check.
 
     unlocked = true;
 
-    emit InitializeVAMM(sqrtPriceX96, tick);
+    emit VAMMInitialization(sqrtPriceX96, tick);
   }
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
@@ -195,7 +195,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     uint8 feeProtocolOld = _vammVars.feeProtocol;
     _vammVars.feeProtocol = feeProtocol;
-    emit SetFeeProtocol(feeProtocolOld, feeProtocol);
+    emit FeeProtocol(feeProtocolOld, feeProtocol);
   }
 
   function setFee(uint256 newFeeWad) external override onlyOwner lock {
@@ -206,7 +206,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     uint256 feeWadOld = _feeWad;
     _feeWad = newFeeWad;
-    emit FeeSet(feeWadOld, _feeWad);
+    emit Fee(feeWadOld, _feeWad);
   }
 
   function burn(
@@ -295,12 +295,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     }
 
     positionMarginRequirement = 0;
-    if (msg.sender != address(_marginEngine)) { 
+    if (msg.sender != address(_marginEngine)) {
       // this only happens if the margin engine triggers a liquidation which in turn triggers a burn
       // the state updated in the margin engine in that case are done directly in the liquidatePosition function
       positionMarginRequirement = _marginEngine.updatePositionPostVAMMInducedMintBurn(params);
     }
-    
+
     // clear any tick data that is no longer needed
     if (params.liquidityDelta < 0) {
       if (flippedLower) {
@@ -367,11 +367,11 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   {
 
     Tick.checkTicks(params.tickLower, params.tickUpper);
-    
+
     VAMMVars memory vammVarsStart = _vammVars;
 
     checksBeforeSwap(params, vammVarsStart, params.amountSpecified > 0);
-    
+
     if (!(msg.sender == address(_marginEngine) || msg.sender==address(_marginEngine.fcm()))) {
       require(msg.sender==params.recipient || _factory.isApproved(params.recipient, msg.sender), "only sender or approved integration");
     }
@@ -415,7 +415,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     rateOracle.writeOracleEntry();
 
     /// @audit tag 3 [ABDK]
-    // On every iteration of this loop there are several places where different code is executed depending on the trade side.  
+    // On every iteration of this loop there are several places where different code is executed depending on the trade side.
     // It would be more efficient to have two separate loop implementations and choose what implementation to run based on the trade side.
 
     // continue swapping as long as we haven't used the entire input/output and haven't reached the price (implied fixed rate) limit
@@ -465,7 +465,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
             amountRemaining: state.amountSpecifiedRemaining,
             feePercentageWad: _feeWad,
             timeToMaturityInSecondsWad: termEndTimestampWad - Time.blockTimestampScaled()
-        })        
+        })
       );
 
       if (params.amountSpecified > 0) {
@@ -519,7 +519,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
         state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
-        
+
         // necessary for testing purposes, also handy to quickly compute the fixed rate at which an interest rate swap is created
         state.fixedTokenDeltaUnbalancedCumulative -= step.fixedTokenDeltaUnbalanced;
       }
@@ -694,20 +694,20 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
           termStartTimestampWad,
           termEndTimestampWad
         );
-        
+
         if (isFT) {
 
             /// @dev if the trader is a fixed taker then the variable token growth global should be incremented (since LPs are receiving variable tokens)
             /// @dev if the trader is a fixed taker then the fixed token growth global should decline (since LPs are providing fixed tokens)
             /// @dev if the trader is a fixed taker amountOut is in terms of variable tokens (it is a positive value)
 
-            /// @audit-casting step.variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
+            /// @audit-casting step.variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision?
             stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + FullMath.mulDiv(uint256(step.variableTokenDelta), FixedPoint128.Q128, state.liquidity).toInt256();
 
             /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
             /// @dev in this case amountIn is in terms of unbalanced fixed tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of variable tokens, hence the value passed needs to be positive --> int256(step.amountOut)
-            /// @audit-casting fixedTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
+            /// @audit-casting fixedTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision?
             stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 - FullMath.mulDiv(uint256(-fixedTokenDelta), FixedPoint128.Q128, state.liquidity).toInt256();
 
         } else {
@@ -716,13 +716,13 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
             /// @dev if a trader is a variable taker, the fixed token growth should increase (since the LPs are receiving fixed tokens)
             /// @dev if a trader is a variable taker amountIn is in terms of variable tokens
 
-            /// @audit-casting step.variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
+            /// @audit-casting step.variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision?
             stateVariableTokenGrowthGlobalX128= state.variableTokenGrowthGlobalX128 - FullMath.mulDiv(uint256(-step.variableTokenDelta), FixedPoint128.Q128, state.liquidity).toInt256();
-            
+
             /// @dev fixed token delta should be positive (for LPs)
             /// @dev in this case amountIn is in terms of variable tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of fixedToken, hence the value passed needs to be positive --> int256(step.amountOut),
-            /// @audit-casting fixedTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
+            /// @audit-casting fixedTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision?
             stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity).toInt256();
         }
     }

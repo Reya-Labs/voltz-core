@@ -20,7 +20,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
     );
 
     /// @dev emitted after a given vamm is successfully initialized
-    event InitializeVAMM(uint160 sqrtPriceX96, int24 tick);
+    event VAMMInitialization(uint160 sqrtPriceX96, int24 tick);
 
     /// @dev emitted after a successful minting of a given LP position
     event Mint(
@@ -41,10 +41,10 @@ interface IVAMM is IPositionStructs, CustomErrors {
     );
 
     /// @dev emitted after setting feeProtocol
-    event SetFeeProtocol(uint8 feeProtocolOld, uint8 feeProtocol);
+    event FeeProtocol(uint8 feeProtocolOld, uint8 feeProtocol);
 
     /// @dev emitted after fee is set
-    event FeeSet(uint256 feeWadOld, uint256 feeWad);
+    event Fee(uint256 feeWadOld, uint256 feeWad);
 
     // structs
 
