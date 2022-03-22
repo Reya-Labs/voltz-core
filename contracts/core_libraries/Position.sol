@@ -141,46 +141,20 @@ library Position {
         // overflow is possible on the below four lines
         //
 
-        if (fixedTokenGrowthInsideDeltaX128 > 0) {
-            // Overflow is possible
-            _fixedTokenDelta = int256(
-                FullMath.mulDiv(
-                    uint256(fixedTokenGrowthInsideDeltaX128),
+        _fixedTokenDelta = FullMath.mulDivSigned(
+                    fixedTokenGrowthInsideDeltaX128,
                     _self._liquidity,
                     FixedPoint128.Q128
-                )
-            );
-        } else {
-            //
-            _fixedTokenDelta = -int256(
-                FullMath.mulDiv(
-                    uint256(-fixedTokenGrowthInsideDeltaX128),
-                    _self._liquidity,
-                    FixedPoint128.Q128
-                )
-            );
-        }
+                );
 
         int256 variableTokenGrowthInsideDeltaX128 = variableTokenGrowthInsideX128 -
                 _self.variableTokenGrowthInsideLastX128;
 
-        if (variableTokenGrowthInsideDeltaX128 > 0) {
-            _variableTokenDelta = int256(
-                FullMath.mulDiv(
-                    uint256(variableTokenGrowthInsideDeltaX128),
+        _variableTokenDelta = FullMath.mulDivSigned(
+                    variableTokenGrowthInsideDeltaX128,
                     _self._liquidity,
                     FixedPoint128.Q128
-                )
-            );
-        } else {
-            _variableTokenDelta = -int256(
-                FullMath.mulDiv(
-                    uint256(-variableTokenGrowthInsideDeltaX128),
-                    _self._liquidity,
-                    FixedPoint128.Q128
-                )
-            );
-        }
+                );
     }
 
     /// @notice Updates fixedTokenGrowthInsideLast and variableTokenGrowthInsideLast to the current values

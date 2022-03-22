@@ -14,6 +14,12 @@ library FullMath {
     /// @param denominator The divisor
     /// @return result The 256-bit result
     /// @dev Credit to Remco Bloemen under MIT license https://xn--2-umb.com/21/muldiv
+
+    function mulDivSigned(int256 a, uint256 b, uint256 denominator) internal pure returns (int256 result) {
+        if (a < 0) return -int256(mulDiv(uint256(-a), b, denominator));
+        return int256(mulDiv(uint256(a), b, denominator));
+    }
+
     function mulDiv(
         uint256 a,
         uint256 b,
