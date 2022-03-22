@@ -419,8 +419,226 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     // It would be more efficient to have two separate loop implementations and choose what implementation to run based on the trade side.
 
     // continue swapping as long as we haven't used the entire input/output and haven't reached the price (implied fixed rate) limit
-    if (params.amountSpecified > 0) {
-      
+    if (params.amountSpecified > 0) { 
+      // Fixed Taker
+      while (
+      state.amountSpecifiedRemaining != 0 &&
+      state.sqrtPriceX96 != params.sqrtPriceLimitX96
+    ) {
+      StepComputations memory step;
+
+      step.sqrtPriceStartX96 = state.sqrtPriceX96;
+
+      /// the nextInitializedTick should be more than or equal to the current tick
+      /// add a test for the statement that checks for the above two conditions
+      (step.tickNext, step.initialized) = _tickBitmap
+        .nextInitializedTickWithinOneWord(state.tick, _tickSpacing, false);
+
+      // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
+      if (step.tickNext > TickMath.MAX_TICK) {
+        step.tickNext = TickMath.MAX_TICK;
+      }
+
+      // get the price for the next tick
+      step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
+
+      // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
+      /// @dev for a Fixed Taker (isFT) if the sqrtPriceNextX96 is larger than the limit, then the target price passed into computeSwapStep is sqrtPriceLimitX96
+      /// @dev for a Variable Taker (!isFT) if the sqrtPriceNextX96 is lower than the limit, then the target price passed into computeSwapStep is sqrtPriceLimitX96
+      (
+        state.sqrtPriceX96,
+        step.amountIn,
+        step.amountOut,
+        step.feeAmount
+      ) = SwapMath.computeSwapStep(
+        state.sqrtPriceX96,
+        step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
+          ? params.sqrtPriceLimitX96
+          : step.sqrtPriceNextX96,
+        state.liquidity,
+        state.amountSpecifiedRemaining,
+        _feeWad,
+        termEndTimestampWad - Time.blockTimestampScaled()
+      );
+
+      // exact input
+      /// prb math is not used in here (following v3 logic)
+      state.amountSpecifiedRemaining -= (step.amountIn).toInt256(); // this value is positive
+      state.amountCalculated -= step.amountOut.toInt256(); // this value is negative
+
+      // LP is a Variable Taker
+      step.variableTokenDelta = (step.amountIn).toInt256();
+      step.fixedTokenDeltaUnbalanced = -step.amountOut.toInt256();
+
+      // update cumulative fee incurred while initiating an interest rate swap
+      state.cumulativeFeeIncurred = state.cumulativeFeeIncurred + step.feeAmount;
+
+      // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+      if (cache.feeProtocol > 0) {
+        /// here we should round towards protocol fees (+ ((step.feeAmount % cache.feeProtocol == 0) ? 0 : 1)) ?
+        step.feeProtocolDelta = step.feeAmount / cache.feeProtocol;
+        step.feeAmount -= step.feeProtocolDelta;
+        state.protocolFee += step.feeProtocolDelta;
+      }
+
+      // update global fee tracker
+      if (state.liquidity > 0) {
+        (
+          state.feeGrowthGlobalX128,
+          state.variableTokenGrowthGlobalX128,
+          state.fixedTokenGrowthGlobalX128,
+          step.fixedTokenDelta // for LP
+        ) = calculateUpdatedGlobalTrackerValues(
+          true,
+          state,
+          step,
+          rateOracle.variableFactor(
+          termStartTimestampWad,
+          termEndTimestampWad
+          )
+        );
+
+        state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
+        state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
+        
+        // necessary for testing purposes, also handy to quickly compute the fixed rate at which an interest rate swap is created
+        state.fixedTokenDeltaUnbalancedCumulative -= step.fixedTokenDeltaUnbalanced;
+      }
+
+      // shift tick if we reached the next price
+      if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
+        // if the tick is initialized, run the tick transition
+        if (step.initialized) {
+          int128 liquidityNet = _ticks.cross(
+            step.tickNext,
+            state.fixedTokenGrowthGlobalX128,
+            state.variableTokenGrowthGlobalX128,
+            state.feeGrowthGlobalX128
+          );
+
+          state.liquidity = LiquidityMath.addDelta(
+            state.liquidity,
+            liquidityNet
+          );
+
+        }
+
+        state.tick = step.tickNext;
+      } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
+        // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
+        state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
+      }
+    }
+    }
+    else {
+      while (
+      state.amountSpecifiedRemaining != 0 &&
+      state.sqrtPriceX96 != params.sqrtPriceLimitX96
+    ) {
+      StepComputations memory step;
+
+      step.sqrtPriceStartX96 = state.sqrtPriceX96;
+
+      /// @dev if isFT (fixed taker) (moving right to left), the nextInitializedTick should be more than or equal to the current tick
+      /// @dev if !isFT (variable taker) (moving left to right), the nextInitializedTick should be less than or equal to the current tick
+      /// add a test for the statement that checks for the above two conditions
+      (step.tickNext, step.initialized) = _tickBitmap
+        .nextInitializedTickWithinOneWord(state.tick, _tickSpacing, true);
+
+      // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
+      if (step.tickNext < TickMath.MIN_TICK) {
+        step.tickNext = TickMath.MIN_TICK;
+      } 
+
+      // get the price for the next tick
+      step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
+
+      // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
+      /// @dev for a Fixed Taker (isFT) if the sqrtPriceNextX96 is larger than the limit, then the target price passed into computeSwapStep is sqrtPriceLimitX96
+      /// @dev for a Variable Taker (!isFT) if the sqrtPriceNextX96 is lower than the limit, then the target price passed into computeSwapStep is sqrtPriceLimitX96
+      (
+        state.sqrtPriceX96,
+        step.amountIn,
+        step.amountOut,
+        step.feeAmount
+      ) = SwapMath.computeSwapStep(
+        state.sqrtPriceX96,
+        step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+          ? params.sqrtPriceLimitX96
+          : step.sqrtPriceNextX96,
+        state.liquidity,
+        state.amountSpecifiedRemaining,
+        _feeWad,
+        termEndTimestampWad - Time.blockTimestampScaled()
+      );
+
+      /// prb math is not used in here (following v3 logic)
+      state.amountSpecifiedRemaining += step.amountOut.toInt256(); // this value is negative
+      state.amountCalculated += step.amountIn.toInt256(); // this value is positive
+
+      // LP is a Fixed Taker
+      step.variableTokenDelta = -step.amountOut.toInt256();
+      step.fixedTokenDeltaUnbalanced = step.amountIn.toInt256();
+
+      // update cumulative fee incurred while initiating an interest rate swap
+      state.cumulativeFeeIncurred = state.cumulativeFeeIncurred + step.feeAmount;
+
+      // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+      if (cache.feeProtocol > 0) {
+        /// here we should round towards protocol fees (+ ((step.feeAmount % cache.feeProtocol == 0) ? 0 : 1)) ?
+        step.feeProtocolDelta = step.feeAmount / cache.feeProtocol;
+        step.feeAmount -= step.feeProtocolDelta;
+        state.protocolFee += step.feeProtocolDelta;
+      }
+
+      // update global fee tracker
+      if (state.liquidity > 0) {
+        (
+          state.feeGrowthGlobalX128,
+          state.variableTokenGrowthGlobalX128,
+          state.fixedTokenGrowthGlobalX128,
+          step.fixedTokenDelta // for LP
+        ) = calculateUpdatedGlobalTrackerValues(
+          false,
+          state,
+          step,
+          rateOracle.variableFactor(
+          termStartTimestampWad,
+          termEndTimestampWad
+          )
+        );
+
+        state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
+        state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
+        
+        // necessary for testing purposes, also handy to quickly compute the fixed rate at which an interest rate swap is created
+        state.fixedTokenDeltaUnbalancedCumulative -= step.fixedTokenDeltaUnbalanced;
+      }
+
+      // shift tick if we reached the next price
+      if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
+        // if the tick is initialized, run the tick transition
+        if (step.initialized) {
+          int128 liquidityNet = _ticks.cross(
+            step.tickNext,
+            state.fixedTokenGrowthGlobalX128,
+            state.variableTokenGrowthGlobalX128,
+            state.feeGrowthGlobalX128
+          );
+
+          state.liquidity = LiquidityMath.addDelta(
+            state.liquidity,
+            -liquidityNet
+          );
+
+        }
+
+        state.tick = step.tickNext - 1;
+      } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
+        // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
+        state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
+      }
+    }
     }
     _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
 
@@ -560,37 +778,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
           termStartTimestampWad,
           termEndTimestampWad
         );
-        
-        if (isFT) {
 
-            /// @dev if the trader is a fixed taker then the variable token growth global should be incremented (since LPs are receiving variable tokens)
-            /// @dev if the trader is a fixed taker then the fixed token growth global should decline (since LPs are providing fixed tokens)
-            /// @dev if the trader is a fixed taker amountOut is in terms of variable tokens (it is a positive value)
-
-            /// @audit-casting step.variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
-            stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
-
-            /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
-            /// @dev in this case amountIn is in terms of unbalanced fixed tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
-            /// @dev in this case amountOut is in terms of variable tokens, hence the value passed needs to be positive --> int256(step.amountOut)
-            /// @audit-casting fixedTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
-            stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
-
-        } else {
-
-            /// @dev if a trader is a variable taker, the variable token growth should decline (since the LPs are providing variable tokens)
-            /// @dev if a trader is a variable taker, the fixed token growth should increase (since the LPs are receiving fixed tokens)
-            /// @dev if a trader is a variable taker amountIn is in terms of variable tokens
-
-            /// @audit-casting step.variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
-            stateVariableTokenGrowthGlobalX128= state.variableTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
-            
-            /// @dev fixed token delta should be positive (for LPs)
-            /// @dev in this case amountIn is in terms of variable tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
-            /// @dev in this case amountOut is in terms of fixedToken, hence the value passed needs to be positive --> int256(step.amountOut),
-            /// @audit-casting fixedTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
-            stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
-        }
+        stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + FullMath.mulDivSigned(step.variableTokenDelta, FixedPoint128.Q128, state.liquidity);
+  
+        stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + FullMath.mulDivSigned(fixedTokenDelta, FixedPoint128.Q128, state.liquidity);
     }
 
 }
