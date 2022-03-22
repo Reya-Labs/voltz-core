@@ -142,19 +142,19 @@ library Position {
         //
 
         _fixedTokenDelta = FullMath.mulDivSigned(
-                    fixedTokenGrowthInsideDeltaX128,
-                    _self._liquidity,
-                    FixedPoint128.Q128
-                );
+            fixedTokenGrowthInsideDeltaX128,
+            _self._liquidity,
+            FixedPoint128.Q128
+        );
 
         int256 variableTokenGrowthInsideDeltaX128 = variableTokenGrowthInsideX128 -
                 _self.variableTokenGrowthInsideLastX128;
 
         _variableTokenDelta = FullMath.mulDivSigned(
-                    variableTokenGrowthInsideDeltaX128,
-                    _self._liquidity,
-                    FixedPoint128.Q128
-                );
+            variableTokenGrowthInsideDeltaX128,
+            _self._liquidity,
+            FixedPoint128.Q128
+        );
     }
 
     /// @notice Updates fixedTokenGrowthInsideLast and variableTokenGrowthInsideLast to the current values
