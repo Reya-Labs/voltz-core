@@ -59,7 +59,6 @@ library Position {
         int24 tickLower,
         int24 tickUpper
     ) internal view returns (Position.Info storage position) {
-
         Tick.checkTicks(tickLower, tickUpper);
 
         position = self[
@@ -91,7 +90,6 @@ library Position {
         int256 variableTokenBalanceDelta
     ) internal {
         if (fixedTokenBalanceDelta | variableTokenBalanceDelta != 0) {
-
             self.fixedTokenBalance += fixedTokenBalanceDelta;
             self.variableTokenBalance += variableTokenBalanceDelta;
         }
@@ -138,44 +136,45 @@ library Position {
         int256 fixedTokenGrowthInsideDeltaX128 = fixedTokenGrowthInsideX128 -
             _self.fixedTokenGrowthInsideLastX128;
 
-
         if (fixedTokenGrowthInsideDeltaX128 > 0) {
             // Overflow is possible
-            _fixedTokenDelta = 
-                FullMath.mulDiv(
+            _fixedTokenDelta = FullMath
+                .mulDiv(
                     uint256(fixedTokenGrowthInsideDeltaX128),
                     _self._liquidity,
                     FixedPoint128.Q128
-                ).toInt256();
-        
+                )
+                .toInt256();
         } else {
             //
-            _fixedTokenDelta = -
-                FullMath.mulDiv(
+            _fixedTokenDelta = -FullMath
+                .mulDiv(
                     uint256(-fixedTokenGrowthInsideDeltaX128),
                     _self._liquidity,
                     FixedPoint128.Q128
-                ).toInt256();
-            
+                )
+                .toInt256();
         }
 
         int256 variableTokenGrowthInsideDeltaX128 = variableTokenGrowthInsideX128 -
                 _self.variableTokenGrowthInsideLastX128;
 
         if (variableTokenGrowthInsideDeltaX128 > 0) {
-            _variableTokenDelta = 
-                FullMath.mulDiv(
+            _variableTokenDelta = FullMath
+                .mulDiv(
                     uint256(variableTokenGrowthInsideDeltaX128),
                     _self._liquidity,
                     FixedPoint128.Q128
-                ).toInt256();
+                )
+                .toInt256();
         } else {
-            _variableTokenDelta = -
-                FullMath.mulDiv(
+            _variableTokenDelta = -FullMath
+                .mulDiv(
                     uint256(-variableTokenGrowthInsideDeltaX128),
                     _self._liquidity,
                     FixedPoint128.Q128
-                ).toInt256();
+                )
+                .toInt256();
         }
     }
 
@@ -213,15 +212,10 @@ library Position {
         if (liquidityDelta == 0) {
             require(_self._liquidity > 0, "NP"); // disallow pokes for 0 liquidity positions
         } else {
-
-            uint128 liquidityNext;
-
-            liquidityNext = LiquidityMath.addDelta(
+            self._liquidity = LiquidityMath.addDelta(
                 _self._liquidity,
                 liquidityDelta
             );
-
-            self._liquidity = liquidityNext;
         }
     }
 }

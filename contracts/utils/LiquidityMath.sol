@@ -10,13 +10,15 @@ library LiquidityMath {
     /// @return z The liquidity delta
     function addDelta(uint128 x, int128 y) internal pure returns (uint128 z) {
         if (y < 0) {
-            /// @audit tag 9 [ABDK]
-            // The "-y" subexpression will underflow and thus revert in case "y" is -2^127
-            // Consider nesting this code inside an "unchecked" block.
+            uint128 yAbsolute;
 
-            require((z = x - uint128(-y)) < x, "LS");
+            unchecked {
+                yAbsolute = uint128(-y);
+            }
+
+            z = x - yAbsolute;
         } else {
-            require((z = x + uint128(y)) >= x, "LA");
+            z = x + uint128(y);
         }
     }
 }

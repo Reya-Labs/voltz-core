@@ -31,6 +31,8 @@ library Time {
         view
         returns (bool vammInactive)
     {
-        return Time.blockTimestampScaled() + SECONDS_IN_DAY_WAD >= termEndTimestampWad;
+        return
+            Time.blockTimestampScaled() + SECONDS_IN_DAY_WAD >=
+            termEndTimestampWad;
     }
 }

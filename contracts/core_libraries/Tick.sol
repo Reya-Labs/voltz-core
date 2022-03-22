@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
+import "../utils/LiquidityMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../utils/TickMath.sol";
-import "../utils/LiquidityMath.sol";
 import "../utils/Printer.sol";
 
 /// @title Tick
@@ -59,7 +58,7 @@ library Tick {
         int24 tickCurrent;
         uint256 feeGrowthGlobalX128;
     }
-    
+
     function getFeeGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         FeeGrowthInsideParams memory params
