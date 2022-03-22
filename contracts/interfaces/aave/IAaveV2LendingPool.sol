@@ -6,13 +6,7 @@ import "../../aave/AaveDataTypes.sol";
 
 interface IAaveV2LendingPool {
 
-
     function getReserveNormalizedIncome(address underlyingAsset) external view returns (uint256);
-
-    function initReserve(
-        address asset,
-        address aTokenAddress
-    ) external;
 
     function getReserveData(address asset) external view returns (AaveDataTypes.ReserveData memory);
 

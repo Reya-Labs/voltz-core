@@ -5,7 +5,7 @@ import "./core_libraries/Tick.sol";
 import "./storage/VAMMStorage.sol";
 import "./interfaces/IVAMM.sol";
 import "./core_libraries/TickBitmap.sol";
-import "./utils/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
@@ -166,10 +166,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     /// @dev initializeVAMM should only be callable given the initialize function was already executed
     /// @dev we can check if the initialize function was executed by making sure the address of the margin engine is non-zero since it is set in the initialize function
     require(address(_marginEngine) != address(0), "vamm not initialized");
-    /// @audit tag 1 [ABDK]
-    // This function could be called by anyone and there is no economical incentives to provide a fair price here.
-    // Consider requiring the caller to provide certain amount of liquidity along with the call, which would motivate the caller to set the price close to the fair price.
-    
+  
     if (_vammVars.sqrtPriceX96 != 0)  {
       revert CustomErrors.ExpectedSqrtPriceZeroBeforeInit(_vammVars.sqrtPriceX96);
     }
@@ -177,10 +174,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
     _vammVars = VAMMVars({ sqrtPriceX96: sqrtPriceX96, tick: tick, feeProtocol: 0 });
-
-    /// @audit tag 2 [ABDK]
-    // It is not guaranteed that the “initialize” function was already executed, so it is possible to unlock a not fully initialized instance.  
-    // Consider adding an appropriate check.
 
     unlocked = true;
 
@@ -379,9 +372,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     /// @dev lock the vamm while the swap is taking place
     unlocked = false;
 
-    /// suggestion: use uint32 for blockTimestamp (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L132)
-    /// suggestion: feeProtocol can be represented in a more efficient way (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L69)
-    // Uniswap implementation: feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4), where in our case isFT == !zeroForOne
     SwapCache memory cache = SwapCache({
       liquidityStart: _liquidity,
       feeProtocol: _vammVars.feeProtocol
@@ -451,14 +441,16 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
         step.amountOut,
         step.feeAmount
       ) = SwapMath.computeSwapStep(
-        state.sqrtPriceX96,
-        step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
+        SwapMath.SwapStepParams({
+            sqrtRatioCurrentX96: state.sqrtPriceX96,
+            sqrtRatioTargetX96: step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
           ? params.sqrtPriceLimitX96
           : step.sqrtPriceNextX96,
-        state.liquidity,
-        state.amountSpecifiedRemaining,
-        _feeWad,
-        termEndTimestampWad - Time.blockTimestampScaled()
+            liquidity: state.liquidity,
+            amountRemaining: state.amountSpecifiedRemaining,
+            feePercentageWad: _feeWad,
+            timeToMaturityInSecondsWad: termEndTimestampWad - Time.blockTimestampScaled()
+        })        
       );
 
       // exact input
@@ -562,14 +554,18 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
         step.amountOut,
         step.feeAmount
       ) = SwapMath.computeSwapStep(
-        state.sqrtPriceX96,
-        step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+
+        SwapMath.SwapStepParams({
+            sqrtRatioCurrentX96: state.sqrtPriceX96,
+            sqrtRatioTargetX96: step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
           ? params.sqrtPriceLimitX96
           : step.sqrtPriceNextX96,
-        state.liquidity,
-        state.amountSpecifiedRemaining,
-        _feeWad,
-        termEndTimestampWad - Time.blockTimestampScaled()
+            liquidity: state.liquidity,
+            amountRemaining: state.amountSpecifiedRemaining,
+            feePercentageWad: _feeWad,
+            timeToMaturityInSecondsWad: termEndTimestampWad - Time.blockTimestampScaled()
+        })  
+
       );
 
       /// prb math is not used in here (following v3 logic)
@@ -713,10 +709,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     );
 
     feeGrowthInsideX128 = _ticks.getFeeGrowthInside(
-      tickLower,
-      tickUpper,
-      _vammVars.tick,
-      _feeGrowthGlobalX128
+      Tick.FeeGrowthInsideParams({
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        tickCurrent: _vammVars.tick,
+        feeGrowthGlobalX128: _feeGrowthGlobalX128
+      })
     );
 
   }
@@ -778,7 +776,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
           termStartTimestampWad,
           termEndTimestampWad
         );
-
         stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + FullMath.mulDivSigned(step.variableTokenDelta, FixedPoint128.Q128, state.liquidity);
   
         stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + FullMath.mulDivSigned(fixedTokenDelta, FixedPoint128.Q128, state.liquidity);

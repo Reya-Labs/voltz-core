@@ -13,12 +13,16 @@ import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
 import "../utils/FullMath.sol";
 import "../utils/FixedPoint96.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
 library MarginCalculator {
     using PRBMathSD59x18 for int256;
     using PRBMathUD60x18 for uint256;
+
+    using SafeCast for uint256;
+    using SafeCast for int256;
 
     // structs
 
@@ -230,10 +234,6 @@ library MarginCalculator {
 
         // calculate fixedRateStart
 
-        /// @audit
-        // ab: is this precise enough?
-        // This transformation could be implemented as multiplication by 2^96 / 10^18, i.e. by 79228162514
-
         simulatedUnwindLocalVars.sqrtRatioCurrWad = FullMath.mulDiv(
             ONE_UINT,
             sqrtRatioCurrX96,
@@ -260,26 +260,17 @@ library MarginCalculator {
         simulatedUnwindLocalVars.scaledTimeWad = (termEndTimestampWad -
             currentTimestampWad).div(tMaxWad);
 
-        /// @audit tag 4 [ABDK]
-        // Overflow/underflow
-        // Overflow is possible when converting gammaWad to "int256"
-        // Consider using safe conversion.
-
-        simulatedUnwindLocalVars.expInputWad = int256(
-            simulatedUnwindLocalVars.scaledTimeWad
-        ).mul(-int256(gammaWad));
+        simulatedUnwindLocalVars.expInputWad = simulatedUnwindLocalVars
+            .scaledTimeWad
+            .toInt256()
+            .mul(-gammaWad.toInt256());
         simulatedUnwindLocalVars.oneMinusTimeFactorWad =
             ONE -
             simulatedUnwindLocalVars.expInputWad.exp();
 
-        /// @audit tag 5 [ABDK]
-        // Overflow/underflow
-        // Underflow is possible when converting simulatedUnwindLocalVars.oneMinusTimeFactorWad to "uint256".
-        // Consider using safe conversion.
-
         /// @audit-casting simulatedUnwindLocalVars.oneMinusTimeFactorWad is expected to be positive here, but what if goes below 0 due to rounding imprecision?
         simulatedUnwindLocalVars.dWad = simulatedUnwindLocalVars.upperDWad.mul(
-            uint256(simulatedUnwindLocalVars.oneMinusTimeFactorWad)
+            simulatedUnwindLocalVars.oneMinusTimeFactorWad.toUint256()
         );
 
         // calculate counterfactual fixed rate

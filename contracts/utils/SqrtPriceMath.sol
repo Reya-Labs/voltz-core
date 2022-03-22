@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./SafeCast.sol";
+import "./SafeCastUni.sol";
 
 import "./FullMath.sol";
 import "./UnsafeMath.sol";
@@ -11,7 +11,7 @@ import "./FixedPoint96.sol";
 /// @title Functions based on Q64.96 sqrt price and liquidity
 /// @notice Contains the math that uses square root of price as a Q64.96 and liquidity to compute deltas
 library SqrtPriceMath {
-    using SafeCast for uint256;
+    using SafeCastUni for uint256;
 
     /// @notice Gets the next sqrt price given a delta of token0
     /// @dev Always rounds up, because in the exact output case (increasing price) we need to move the price at least

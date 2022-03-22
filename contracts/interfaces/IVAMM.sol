@@ -67,9 +67,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
         uint160 sqrtPriceLimitX96;
         /// @dev Is the swap triggered by a trader. If this is false then this is only possible in a scenario where a liquidity provider's position is liquidated
         /// @dev leading to an unwind of a liquidity provider
-        /// @dev lower tick of the liquidity provider (needs to be set if isTrader is false)
+        /// @dev lower tick of the position
         int24 tickLower;
-        /// @dev upper tick of the liqudiity provider (needs to be set if isTrader is false)
+        /// @dev upper tick of the position
         int24 tickUpper;
     }
 
