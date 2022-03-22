@@ -49,7 +49,9 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
             return (index, cardinality);
 
-        uint256 resultRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
+        uint256 resultRay = aaveLendingPool.getReserveNormalizedIncome(
+            underlying
+        );
         if (resultRay == 0) {
             revert CustomErrors.AavePoolGetReserveNormalizedIncomeReturnedZero();
         }
@@ -149,20 +151,24 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality
     ) internal view returns (uint256 rateValueRay) {
-        require(currentTime >= queriedTime, "OOO");
+        if (currentTime < queriedTime) revert CustomErrors.OOO();
 
         if (currentTime == queriedTime) {
             OracleBuffer.Observation memory rate;
             rate = observations[index];
             if (rate.blockTimestamp != currentTime) {
-                rateValueRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
+                rateValueRay = aaveLendingPool.getReserveNormalizedIncome(
+                    underlying
+                );
             } else {
                 rateValueRay = rate.observedValue;
             }
             return rateValueRay;
         }
 
-        uint256 currentValueRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
+        uint256 currentValueRay = aaveLendingPool.getReserveNormalizedIncome(
+            underlying
+        );
         (
             OracleBuffer.Observation memory beforeOrAt,
             OracleBuffer.Observation memory atOrAfter

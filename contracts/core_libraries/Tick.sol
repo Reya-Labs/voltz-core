@@ -59,7 +59,7 @@ library Tick {
         int24 tickCurrent;
         uint256 feeGrowthGlobalX128;
     }
-    
+
     function getFeeGrowthInside(
         mapping(int24 => Tick.Info) storage self,
         FeeGrowthInsideParams memory params
