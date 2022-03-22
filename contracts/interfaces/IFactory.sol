@@ -12,7 +12,7 @@ import "./IERC20Minimal.sol";
 /// @title The interface for the Voltz AMM Factory
 /// @notice The AMM Factory facilitates creation of Voltz AMMs
 interface IFactory is CustomErrors {
-    event IrsInstanceDeployed(
+    event IrsInstance(
         IERC20Minimal indexed underlyingToken,
         IRateOracle indexed rateOracle,
         uint256 termStartTimestampWad,
@@ -24,9 +24,9 @@ interface IFactory is CustomErrors {
         uint8 yieldBearingProtocolID
     );
 
-    event MasterFCMSet(IFCM masterFCMAddress, uint8 yieldBearingProtocolID);
+    event MasterFCM(IFCM masterFCMAddress, uint8 yieldBearingProtocolID);
 
-    event ApprovalSet(
+    event Approval(
         address indexed owner,
         address indexed intAddress,
         bool indexed isApproved

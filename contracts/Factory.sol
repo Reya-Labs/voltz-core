@@ -38,7 +38,7 @@ contract Factory is IFactory, Ownable {
 
   function setApproval(address intAddress, bool allowIntegration) external override {
     isApproved[msg.sender][intAddress] = allowIntegration;
-    emit ApprovalSet(msg.sender, intAddress, allowIntegration);
+    emit Approval(msg.sender, intAddress, allowIntegration);
   }
 
   constructor(IMarginEngine _masterMarginEngine, IVAMM _masterVAMM) {
@@ -50,7 +50,7 @@ contract Factory is IFactory, Ownable {
 
     require(address(_masterFCM) != address(0), "master fcm must exist");
     masterFCMs[_yieldBearingProtocolID] = _masterFCM;
-    emit MasterFCMSet(_masterFCM, _yieldBearingProtocolID);
+    emit MasterFCM(_masterFCM, _yieldBearingProtocolID);
   }
 
   function setMasterMarginEngine(IMarginEngine _masterMarginEngine) external override onlyOwner {
@@ -94,7 +94,7 @@ contract Factory is IFactory, Ownable {
       Ownable(address(fcm)).transferOwnership(msg.sender);
     }
 
-    emit IrsInstanceDeployed(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing, marginEngine, vamm, fcm, yieldBearingProtocolID);
+    emit IrsInstance(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad, _tickSpacing, marginEngine, vamm, fcm, yieldBearingProtocolID);
 
     // Transfer ownership of all instances to the factory owner
     Ownable(address(vamm)).transferOwnership(msg.sender);
