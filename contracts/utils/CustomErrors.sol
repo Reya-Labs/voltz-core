@@ -61,7 +61,7 @@ interface CustomErrors {
     error LiquidityDeltaMustBePositiveInBurn(uint128 amount);
 
     /// @dev Error which ensures the amount of notional specified when initiating an IRS contract (via the swap function in the vamm) is non-zero
-    error IRSNotionalAmountSpecifiedMustBeNonZero(int256 amountSpecified);
+    error IRSNotionalAmountSpecifiedMustBeNonZero();
 
     /// @dev Error which ensures the VAMM is unlocked
     error CanOnlyTradeIfUnlocked(bool unlocked);

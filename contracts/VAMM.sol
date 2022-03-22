@@ -644,9 +644,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   ) internal view {
 
       if (params.amountSpecified == 0) {
-          revert CustomErrors.IRSNotionalAmountSpecifiedMustBeNonZero(
-              params.amountSpecified
-          );
+          revert CustomErrors.IRSNotionalAmountSpecifiedMustBeNonZero();
       }
 
       if (!unlocked) {
