@@ -137,7 +137,6 @@ library Position {
             _self.fixedTokenGrowthInsideLastX128;
 
         if (fixedTokenGrowthInsideDeltaX128 > 0) {
-            // Overflow is possible
             _fixedTokenDelta = FullMath
                 .mulDiv(
                     uint256(fixedTokenGrowthInsideDeltaX128),

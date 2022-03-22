@@ -57,7 +57,6 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
 
     function initReserve(address asset, address aTokenAddress)
         external
-        override
     {
         AaveDataTypes.ReserveData memory reserveData;
         reserveData.aTokenAddress = aTokenAddress;
