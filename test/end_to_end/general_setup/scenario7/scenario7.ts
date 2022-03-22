@@ -84,12 +84,12 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
       // if (isLiquidatable) {
       //   await this.e2eSetup.liquidatePosition(
+      //     this.positions[3][0],
       //     this.positions[3][1],
       //     this.positions[3][2],
-      //     this.positions[3][0],
-      //     this.positions[0][1],
-      //     this.positions[0][2],
       //     this.positions[0][0]
+      //     this.positions[0][1],
+      //     this.positions[0][2]
       //   );
       //   console.log("is liquidatable");
       //   break;

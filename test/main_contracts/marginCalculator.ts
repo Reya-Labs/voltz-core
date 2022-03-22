@@ -104,16 +104,6 @@ describe("MarginCalculator", () => {
   });
 
   describe("#computeTimeFactor", async () => {
-    it("reverts if termEndTimestamp isn't > 0", async () => {
-      await expect(
-        testMarginCalculator.computeTimeFactor(
-          toBn("0"),
-          toBn("1"),
-          margin_engine_params
-        )
-      ).to.be.revertedWith("termEndTimestamp must be > 0");
-    });
-
     it("reverts if currentTimestamp is larger than termEndTimestamp", async () => {
       await expect(
         testMarginCalculator.computeTimeFactor(
@@ -121,7 +111,7 @@ describe("MarginCalculator", () => {
           toBn("2"),
           margin_engine_params
         )
-      ).to.be.revertedWith("endTime must be > currentTime");
+      ).to.be.revertedWith("endTime must be >= currentTime");
     });
 
     it("correctly computes the time factor", async () => {

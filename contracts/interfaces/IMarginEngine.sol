@@ -12,15 +12,6 @@ import "contracts/utils/CustomErrors.sol";
 
 interface IMarginEngine is IPositionStructs, CustomErrors {
     // structs
-    struct PositionMarginRequirementLocalVars2 {
-        int24 inRangeTick;
-        int256 scenario1LPVariableTokenBalance;
-        int256 scenario1LPFixedTokenBalance;
-        uint160 scenario1SqrtPriceX96;
-        int256 scenario2LPVariableTokenBalance;
-        int256 scenario2LPFixedTokenBalance;
-        uint160 scenario2SqrtPriceX96;
-    }
 
     struct MarginCalculatorParameters {
         /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity (18 decimals fixed point number)
@@ -62,48 +53,46 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     }
 
     // Events
-    event HistoricalApyWindowSet(uint256 secondsAgoOld, uint256 secondsAgo);
-    event CacheMaxAgeSet(
-        uint256 cacheMaxAgeInSecondsOld,
-        uint256 cacheMaxAgeInSeconds
+    event HistoricalApyWindowSet(uint256 secondsAgo);
+    event CacheMaxAgeSet(uint256 cacheMaxAgeInSeconds);
+
+    event CollectProtocol(
+        address sender,
+        address indexed recipient,
+        uint256 amount
     );
+    event LiquidatorRewardSet(uint256 liquidatorRewardWad);
 
-    event CollectProtocol(address sender, address recipient, uint256 amount);
-    event LiquidatorRewardSet(
-        uint256 liquidatorRewardWadOld,
-        uint256 liquidatorRewardWad
-    );
+    event VAMMSet(IVAMM indexed vamm);
 
-    event VAMMSet(IVAMM vammOld, IVAMM vamm);
-
-    event FCMSet(IFCM fcmOld, IFCM fcm);
+    event FCMSet(IFCM indexed fcm);
 
     event MarginCalculatorParametersSet(
-        MarginCalculatorParameters marginCalculatorParametersOld,
         MarginCalculatorParameters marginCalculatorParameters
     );
 
     event UpdatePositionMargin(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
+        address indexed owner,
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
         int256 positionMargin
     );
 
     event SettlePosition(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
+        address indexed owner,
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         int256 margin,
+        int256 settlementCashflow,
         bool isSettled
     );
 
     event LiquidatePosition(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
+        address indexed owner,
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         int256 margin,
@@ -111,18 +100,18 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     );
 
     event UpdatePositionPostSwap(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
+        address indexed owner,
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         int256 margin
     );
 
     event UpdatePositionPostMintBurn(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
+        address indexed owner,
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
         uint128 liquidity
     );
 
@@ -178,13 +167,13 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
 
     /// @notice Returns the information about a position by the position's key
     /// @param _owner The address of the position owner
-    /// @param tickLower The lower tick boundary of the position
-    /// @param tickUpper The upper tick boundary of the position
+    /// @param _tickLower The lower tick boundary of the position
+    /// @param _tickUpper The upper tick boundary of the position
     /// Returns position The Position.Info corresponding to the requested position
     function getPosition(
         address _owner,
-        int24 tickLower,
-        int24 tickUpper
+        int24 _tickLower,
+        int24 _tickUpper
     ) external returns (Position.Info memory position);
 
     /// @notice Gets the look-back window size that's used to request the historical APY from the rate Oracle
@@ -192,14 +181,14 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev The look-back window is seconds from the current timestamp
     /// @dev This value is only settable by the the Factory owner and may be unique for each MarginEngine
     /// @dev When setting secondAgo, the setter needs to take into consideration the underlying volatility of the APYs in the reference yield-bearing pool (e.g. Aave v2 USDC)
-    function secondsAgo() external view returns (uint256);
+    function lookbackWindowInSeconds() external view returns (uint256);
 
     // non-view functions
 
     /// @notice Sets secondsAgo: The look-back window size used to calculate the historical APY for margin purposes
     /// @param _secondsAgo the duration of the lookback window in seconds
     /// @dev Can only be set by the Factory Owner
-    function setSecondsAgo(uint256 _secondsAgo) external;
+    function setLookbackWindowInSeconds(uint256 _secondsAgo) external;
 
     /// @notice Set the MarginCalculatorParameters (each margin engine can have its own custom set of margin calculator parameters)
     /// @param _marginCalculatorParameters the MarginCalculatorParameters to set
@@ -221,8 +210,8 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev if marginDelta is positive, the depositor of the margin is either the msg.sender or the owner who interacted through an approved peripheral contract
     function updatePositionMargin(
         address _owner,
-        int24 tickLower,
-        int24 tickUpper,
+        int24 _tickLower,
+        int24 _tickUpper,
         int256 marginDelta
     ) external;
 
@@ -237,9 +226,9 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev 5. Calculates the settlement cashflow from all of the IRS contracts the position has entered since entering the AMM
     /// @dev 6. Updates the fixed and variable token balances of the position to be zero, adds the settlement cashflow to the position's current margin
     function settlePosition(
-        int24 tickLower,
-        int24 tickUpper,
-        address _owner
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
     ) external;
 
     /// @notice Liquidate a Position
@@ -248,10 +237,10 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev Calculate the liquidation reward = current margin of the position * liquidatorReward, subtract the liquidator reward from the position margin,
     /// @dev Burn the position's liquidity, unwind unnetted fixed and variable balances of a position, transfer the reward to the liquidator
     function liquidatePosition(
-        int24 tickLower,
-        int24 tickUpper,
-        address _owner
-    ) external;
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external returns (uint256);
 
     /// @notice Update a Position post VAMM induced mint or burn
     /// @dev Steps taken:
@@ -259,10 +248,10 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev 2. Update fixed and variable token balances of the position based on how much has been accumulated since the last mint/burn/poke
     /// @dev 3. Update position's margin by taking into account the position accumulated fees since the last mint/burn/poke
     /// @dev 4. Update fixed and variable token growth + fee growth in the position info struct for future interactions with the position
-    /// @param params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _) and the liquidity delta that needs to be applied to position._liquidity
+    /// @param _params necessary for the purposes of referencing the position being updated (owner, tickLower, tickUpper, _) and the liquidity delta that needs to be applied to position._liquidity
     function updatePositionPostVAMMInducedMintBurn(
-        IPositionStructs.ModifyPositionParams memory params
-    ) external returns (int256 positionMarginRequirement);
+        IPositionStructs.ModifyPositionParams memory _params
+    ) external returns (int256 _positionMarginRequirement);
 
     // @notive Update a position post VAMM induced swap
     /// @dev Since every position can also engage in swaps with the VAMM, this function needs to be invoked after non-external calls are made to the VAMM's swap function
@@ -273,18 +262,18 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @dev 4. if all the requirements are satisfied then position gets updated to take into account the swap that it just entered, if the minimum margin requirement is not satisfied then the transaction will revert
     function updatePositionPostVAMMInducedSwap(
         address _owner,
-        int24 tickLower,
-        int24 tickUpper,
-        int256 fixedTokenDelta,
-        int256 variableTokenDelta,
-        uint256 cumulativeFeeIncurred,
-        int256 fixedTokenDeltaUnbalanced
-    ) external returns (int256 positionMarginRequirement);
+        int24 _tickLower,
+        int24 _tickUpper,
+        int256 _fixedTokenDelta,
+        int256 _variableTokenDelta,
+        uint256 _cumulativeFeeIncurred,
+        int256 _fixedTokenDeltaUnbalanced
+    ) external returns (int256 _positionMarginRequirement);
 
     /// @notice function that can only be called by the owner enables collection of protocol generated fees from any give margin engine
-    /// @param recipient the address which collects the protocol generated fees
-    /// @param amount the amount in terms of underlying tokens collected from the protocol's earnings
-    function collectProtocol(address recipient, uint256 amount) external;
+    /// @param _recipient the address which collects the protocol generated fees
+    /// @param _amount the amount in terms of underlying tokens collected from the protocol's earnings
+    function collectProtocol(address _recipient, uint256 _amount) external;
 
     /// @notice sets the Virtual Automated Market Maker (VAMM) attached to the MarginEngine
     /// @dev the VAMM is responsible for price discovery, whereas the management of the underlying collateral and liquidations are handled by the Margin Engine
@@ -296,7 +285,7 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @notice transfers margin in terms of underlying tokens to a trader from the Full Collateralisation Module
     /// @dev post maturity date of the MarginEngine, the traders from the Full Collateralisation module will be able to settle with the MarginEngine
     /// @dev to ensure their fixed yield is guaranteed, in order to collect the funds from the MarginEngine, the FCM needs to invoke the transferMarginToFCMTrader function whcih is only callable by the FCM attached to a particular Margin Engine
-    function transferMarginToFCMTrader(address _account, uint256 marginDelta)
+    function transferMarginToFCMTrader(address _account, uint256 _marginDelta)
         external;
 
     /// @notice Gets the maximum age of the cached historical APY value can be without being refreshed
@@ -313,9 +302,9 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     function getHistoricalApy() external returns (uint256);
 
     function getPositionMarginRequirement(
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        bool isLM
-    ) external returns (uint256 margin);
+        address _recipient,
+        int24 _tickLower,
+        int24 _tickUpper,
+        bool _isLM
+    ) external returns (uint256 _margin);
 }

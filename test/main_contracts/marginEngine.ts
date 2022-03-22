@@ -475,9 +475,9 @@ describe("MarginEngine", () => {
       }
 
       await marginEngineTest.liquidatePosition(
+        other.address,
         -TICK_SPACING,
-        TICK_SPACING,
-        other.address
+        TICK_SPACING
       );
 
       const positionInfo = await marginEngineTest.callStatic.getPosition(
@@ -714,9 +714,9 @@ describe("MarginEngine", () => {
     it("reverts before maturity", async () => {
       await expect(
         marginEngineTest.settlePosition(
+          wallet.address,
           -TICK_SPACING,
-          TICK_SPACING,
-          wallet.address
+          TICK_SPACING
         )
       ).to.be.reverted;
     });
@@ -746,9 +746,9 @@ describe("MarginEngine", () => {
 
       await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
       await marginEngineTest.settlePosition(
+        wallet.address,
         -TICK_SPACING,
-        TICK_SPACING,
-        wallet.address
+        TICK_SPACING
       );
 
       const positionInfo = await marginEngineTest.callStatic.getPosition(
@@ -785,9 +785,9 @@ describe("MarginEngine", () => {
 
       await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
       await marginEngineTest.settlePosition(
+        wallet.address,
         -TICK_SPACING,
-        TICK_SPACING,
-        wallet.address
+        TICK_SPACING
       );
       const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
@@ -862,19 +862,18 @@ describe("MarginEngine", () => {
         recipient: other.address,
         amountSpecified: toBn("1"),
         sqrtPriceLimitX96: MAX_SQRT_RATIO.sub(1),
-
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
       });
 
       await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
 
-      await marginEngineTest.settlePosition(-1, 1, wallet.address);
+      await marginEngineTest.settlePosition(wallet.address, -1, 1);
 
       await marginEngineTest.settlePosition(
+        other.address,
         -TICK_SPACING,
-        TICK_SPACING,
-        other.address
+        TICK_SPACING
       );
 
       const traderInfoNew = await marginEngineTest.callStatic.getPosition(
@@ -958,7 +957,7 @@ describe("MarginEngine", () => {
 
       await marginEngineTest
         .connect(other)
-        .liquidatePosition(-TICK_SPACING, TICK_SPACING, wallet.address);
+        .liquidatePosition(wallet.address, -TICK_SPACING, TICK_SPACING);
 
       const traderInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
@@ -1035,9 +1034,9 @@ describe("MarginEngine", () => {
       expect(positionInfoOld.variableTokenBalance).to.be.near(toBn("-10"));
 
       await marginEngineTest.liquidatePosition(
+        other.address,
         -TICK_SPACING,
-        TICK_SPACING,
-        other.address
+        TICK_SPACING
       );
 
       const positionInfo = await marginEngineTest.callStatic.getPosition(
@@ -1082,7 +1081,7 @@ describe("MarginEngine", () => {
 
       startTime = await getCurrentTimestamp();
 
-      await marginEngineTest.setSecondsAgo(secondsAgo); // one day
+      await marginEngineTest.setLookbackWindowInSeconds(secondsAgo); // one day
       await marginEngineTest.setCacheMaxAgeInSeconds(cachePeriod); // six hours
       await aaveLendingPool.setReserveNormalizedIncome(token.address, apy);
       await setTimeNextBlock(startTime + 31536000); // One year after first reading

@@ -17,7 +17,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.marginEngineTest.setSecondsAgo(consts.ONE_WEEK);
+    await this.marginEngineTest.setLookbackWindowInSeconds(consts.ONE_WEEK);
     await this.marginEngineTest.setCacheMaxAgeInSeconds(consts.ONE_DAY);
 
     await this.rateOracleTest.increaseObservationCardinalityNext(1000);

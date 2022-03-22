@@ -151,7 +151,7 @@ task(
       await marginEngine.setMarginCalculatorParameters(margin_engine_params);
 
       await marginEngine.setCacheMaxAgeInSeconds(BigNumber.from(86400));
-      await marginEngine.setSecondsAgo(BigNumber.from(86400 * 7));
+      await marginEngine.setLookbackWindowInSeconds(BigNumber.from(86400 * 7));
 
       await marginEngine.getHistoricalApy();
       console.log(

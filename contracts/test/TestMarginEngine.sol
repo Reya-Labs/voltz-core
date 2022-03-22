@@ -25,7 +25,7 @@ contract TestMarginEngine is MarginEngine {
             tickUpper
         );
 
-        updatePositionTokenBalancesAndAccountForFees(
+        _updatePositionTokenBalancesAndAccountForFees(
             position,
             tickLower,
             tickUpper,
@@ -66,7 +66,7 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        checkPositionMarginCanBeUpdated(position, tickLower, tickUpper);
+        _checkPositionMarginCanBeUpdated(position, tickLower, tickUpper);
 
         position._liquidity = originalLiquidity;
         position.fixedTokenBalance = originalFixedTokenBalance;
@@ -99,7 +99,7 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        checkPositionMarginAboveRequirement(position, tickLower, tickUpper);
+        _checkPositionMarginAboveRequirement(position, tickLower, tickUpper);
 
         position._liquidity = originalLiquidity;
         position.fixedTokenBalance = originalFixedTokenBalance;
@@ -184,7 +184,7 @@ contract TestMarginEngine is MarginEngine {
             tickLower,
             tickUpper
         );
-        unwindPosition(position, owner, tickLower, tickUpper);
+        _unwindPosition(position, owner, tickLower, tickUpper);
     }
 
     function getCachedHistoricalApy() external view returns (uint256) {
@@ -220,7 +220,7 @@ contract TestMarginEngine is MarginEngine {
         bool isLM,
         uint160 sqrtPriceX96
     ) external {
-        keepInMindMargin = getMarginRequirement(
+        keepInMindMargin = _getMarginRequirement(
             fixedTokenBalance,
             variableTokenBalance,
             isLM,
@@ -255,7 +255,7 @@ contract TestMarginEngine is MarginEngine {
         position.variableTokenBalance = counterfactualVariableTokenBalance;
         position.margin = counterfactualMargin;
 
-        (keepInMindIsLiquidatable, ) = isLiquidatablePosition(
+        (keepInMindIsLiquidatable, ) = _isLiquidatablePosition(
             position,
             tickLower,
             tickUpper
@@ -278,7 +278,7 @@ contract TestMarginEngine is MarginEngine {
             tickUpper
         );
 
-        (keepInMindIsLiquidatable, ) = isLiquidatablePosition(
+        (keepInMindIsLiquidatable, ) = _isLiquidatablePosition(
             position,
             tickLower,
             tickUpper

@@ -50,7 +50,7 @@ interface IFCM is CustomErrors {
     /// @dev "constructor" for proxy instances
     /// @dev in the initialize function we set the vamm and the margiEngine associated with the fcm
     /// @dev different FCM implementations are free to have different implementations for the initialisation logic
-    function initialize(address _vammAddress, address _marginEngineAddress)
+    function initialize(IVAMM __vamm, IMarginEngine __marginEngine)
         external;
 
     /// @notice Margine Engine linked to the Full Collateralisation Module

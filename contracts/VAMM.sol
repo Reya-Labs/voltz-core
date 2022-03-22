@@ -27,6 +27,9 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   using Tick for mapping(int24 => Tick.Info);
   using TickBitmap for mapping(int16 => uint256);
 
+  /// @dev 0.02 = 2% is the max fee as proportion of notional scaled by time to maturity (in wei fixed point notation 0.02 -> 2 * 10^16)
+  uint256 public constant MAX_FEE = 20000000000000000; 
+
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
   modifier lock() {
@@ -152,12 +155,17 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     if (_protocolFees < protocolFeesCollected) {
       revert CustomErrors.NotEnoughFunds(protocolFeesCollected, _protocolFees);
     }
-    _protocolFees = _protocolFees - protocolFeesCollected;
+    _protocolFees -= protocolFeesCollected;
   }
 
   /// @dev not locked because it initializes unlocked
   function initializeVAMM(uint160 sqrtPriceX96) external override {
     
+    require(sqrtPriceX96 != 0, "zero input price");
+
+    /// @dev initializeVAMM should only be callable given the initialize function was already executed
+    /// @dev we can check if the initialize function was executed by making sure the address of the margin engine is non-zero since it is set in the initialize function
+    require(address(_marginEngine) != address(0), "vamm not initialized");
     /// @audit tag 1 [ABDK]
     // This function could be called by anyone and there is no economical incentives to provide a fair price here.
     // Consider requiring the caller to provide certain amount of liquidity along with the call, which would motivate the caller to set the price close to the fair price.
@@ -180,12 +188,22 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   }
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
+
+    // todo: agree on the range, assign constant to upper and lower range limits
+    require(feeProtocol == 0 || (feeProtocol >= 3 && feeProtocol <= 50), "PR range");
+    require(_vammVars.feeProtocol != feeProtocol, "PF value already set");
+
     uint8 feeProtocolOld = _vammVars.feeProtocol;
     _vammVars.feeProtocol = feeProtocol;
     emit SetFeeProtocol(feeProtocolOld, feeProtocol);
   }
 
   function setFee(uint256 newFeeWad) external override onlyOwner lock {
+
+    // todo: agree on the range, assign constant to upper limit (MAX_FEE)
+    require(newFeeWad >= 0 && newFeeWad <= MAX_FEE, "fee range");
+    require(_feeWad != newFeeWad, "fee value already set");
+
     uint256 feeWadOld = _feeWad;
     _feeWad = newFeeWad;
     emit FeeSet(feeWadOld, _feeWad);
@@ -222,6 +240,11 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     internal
     returns (bool flippedLower, bool flippedUpper)
   {
+
+    Tick.checkTicks(params.tickLower, params.tickUpper);
+
+
+    /// @dev isUpper = false
     flippedLower = _ticks.update(
       params.tickLower,
       _vammVars.tick,
@@ -233,6 +256,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       _maxLiquidityPerTick
     );
 
+    /// @dev isUpper = true
     flippedUpper = _ticks.update(
       params.tickUpper,
       _vammVars.tick,
@@ -342,6 +366,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced, int256 _marginRequirement)
   {
 
+    Tick.checkTicks(params.tickLower, params.tickUpper);
+    
     VAMMVars memory vammVarsStart = _vammVars;
 
     checksBeforeSwap(params, vammVarsStart, params.amountSpecified > 0);
@@ -350,10 +376,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       require(msg.sender==params.recipient || _factory.isApproved(params.recipient, msg.sender), "only sender or approved integration");
     }
 
-    Tick.checkTicks(params.tickLower, params.tickUpper);
-
     /// @dev lock the vamm while the swap is taking place
-
     unlocked = false;
 
     /// suggestion: use uint32 for blockTimestamp (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L132)
@@ -528,13 +551,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       }
     }
 
+
+    _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
+
     if (state.tick != vammVarsStart.tick) {
        // update the tick in case it changed
-      _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
       _vammVars.tick = state.tick;
-    } else {
-      // otherwise just update the price
-      _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
     }
 
     // update liquidity if it changed
@@ -581,6 +603,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     override
     returns (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128)
   {
+
+    Tick.checkTicks(tickLower, tickUpper);
 
     fixedTokenGrowthInsideX128 = _ticks.getFixedTokenGrowthInside(
       Tick.FixedTokenGrowthInsideParams({
@@ -659,6 +683,14 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
         stateFeeGrowthGlobalX128 = state.feeGrowthGlobalX128 + FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
+        fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+          step.fixedTokenDeltaUnbalanced,
+          step.variableTokenDelta,
+          variableFactorWad,
+          termStartTimestampWad,
+          termEndTimestampWad
+        );
+        
         if (isFT) {
 
             /// @dev if the trader is a fixed taker then the variable token growth global should be incremented (since LPs are receiving variable tokens)
@@ -671,16 +703,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
             /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
             /// @dev in this case amountIn is in terms of unbalanced fixed tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of variable tokens, hence the value passed needs to be positive --> int256(step.amountOut)
-
-            // this value is negative
-            fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-              step.fixedTokenDeltaUnbalanced,
-              step.variableTokenDelta,
-              variableFactorWad,
-              termStartTimestampWad,
-              termEndTimestampWad
-            );
-
             /// @audit-casting fixedTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
             stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
 
@@ -692,20 +714,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
             /// @audit-casting step.variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
             stateVariableTokenGrowthGlobalX128= state.variableTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
-
+            
             /// @dev fixed token delta should be positive (for LPs)
             /// @dev in this case amountIn is in terms of variable tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
             /// @dev in this case amountOut is in terms of fixedToken, hence the value passed needs to be positive --> int256(step.amountOut),
-
-            // this value is positive
-            fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-              step.fixedTokenDeltaUnbalanced,
-              step.variableTokenDelta,
-              variableFactorWad,
-              termStartTimestampWad,
-              termEndTimestampWad
-            );
-
             /// @audit-casting fixedTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
             stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
         }
