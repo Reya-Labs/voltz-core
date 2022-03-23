@@ -116,6 +116,10 @@ const config: HardhatUserConfig = {
   mocha: {
     timeout: 2400000,
   },
+  contractSizer: {
+    strict: true,
+    except: [":Test"],
+  },
 };
 
 export default config;
