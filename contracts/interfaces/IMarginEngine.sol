@@ -53,32 +53,32 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     }
 
     // Events
-    event HistoricalApyWindowSet(uint256 secondsAgo);
-    event CacheMaxAgeSet(uint256 cacheMaxAgeInSeconds);
+    event HistoricalApyWindowSetting(uint256 secondsAgo);
+    event CacheMaxAgeSetting(uint256 cacheMaxAgeInSeconds);
 
-    event CollectProtocol(
+    event ProtocolCollection(
         address sender,
         address indexed recipient,
         uint256 amount
     );
-    event LiquidatorRewardSet(uint256 liquidatorRewardWad);
+    event LiquidatorRewardSetting(uint256 liquidatorRewardWad);
 
-    event VAMMSet(IVAMM indexed vamm);
+    event VAMMSetting(IVAMM indexed vamm);
 
-    event FCMSet(IFCM indexed fcm);
+    event FCMSetting(IFCM indexed fcm);
 
-    event MarginCalculatorParametersSet(
+    event MarginCalculatorParametersSetting(
         MarginCalculatorParameters marginCalculatorParameters
     );
 
-    event UpdatePositionMargin(
+    event PositionMarginUpdate(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
         int256 positionMargin
     );
 
-    event SettlePosition(
+    event PositionSettlement(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
@@ -89,7 +89,7 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
         bool isSettled
     );
 
-    event LiquidatePosition(
+    event PositionLiquidation(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
@@ -99,7 +99,7 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
         uint128 liquidity
     );
 
-    event UpdatePositionPostSwap(
+    event PositionPostSwapUpdate(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
@@ -108,7 +108,7 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
         int256 margin
     );
 
-    event UpdatePositionPostMintBurn(
+    event PositionPostMintBurnUpdate(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
