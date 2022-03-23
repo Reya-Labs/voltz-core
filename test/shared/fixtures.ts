@@ -248,9 +248,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const receiptLogs = (await deployTrx.wait()).logs;
   // console.log("receiptLogs", receiptLogs);
   const log = factory.interface.parseLog(receiptLogs[receiptLogs.length - 3]);
-  if (log.name !== "IrsInstanceDeployed") {
+  if (log.name !== "IrsInstance") {
     throw Error(
-      "IrsInstanceDeployed log not found. Has it moved to a different position in the array?"
+      "IrsInstance log not found. Has it moved to a different position in the array?"
     );
   }
   // console.log("log", log);

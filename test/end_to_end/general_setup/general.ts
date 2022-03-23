@@ -497,9 +497,9 @@ export class ScenarioRunner {
     const log = this.factory.interface.parseLog(
       receiptLogs[receiptLogs.length - 3]
     );
-    if (log.name !== "IrsInstanceDeployed") {
+    if (log.name !== "IrsInstance") {
       throw Error(
-        "IrsInstanceDeployed log not found has it moved to a different position in the array?)"
+        "IrsInstance log not found has it moved to a different position in the array?)"
       );
     }
     // console.log("log", log);

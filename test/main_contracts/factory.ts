@@ -70,7 +70,7 @@ describe("Factory", () => {
         TICK_SPACING
       )
     )
-      .to.emit(factory, "IrsInstanceDeployed")
+      .to.emit(factory, "IrsInstance")
       .withArgs(
         token.address,
         rateOracleTest.address,
