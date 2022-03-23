@@ -39,10 +39,10 @@ interface IFCM is CustomErrors {
     function settleTrader() external returns (int256);
 
     /// @notice
-    /// @param _account address of the position owner from the MarginEngine who wishes to settle with the FCM in underlying tokens
+    /// @param account address of the position owner from the MarginEngine who wishes to settle with the FCM in underlying tokens
     /// @param marginDeltaInUnderlyingTokens amount in terms of underlying tokens that needs to be settled with the trader from the MarginEngine
     function transferMarginToMarginEngineTrader(
-        address _account,
+        address account,
         uint256 marginDeltaInUnderlyingTokens
     ) external;
 

@@ -330,11 +330,11 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
   /// @notice Transfer Margin (in underlying tokens) from the FCM to a MarginEngine trader
   /// @dev in case of aave this is done by withdrawing aTokens from the aaveLendingPools resulting in burning of the aTokens in exchange for the ability to transfer underlying tokens to the margin engine trader
-  function transferMarginToMarginEngineTrader(address _account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine whenNotPaused override {
+  function transferMarginToMarginEngineTrader(address account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine whenNotPaused override {
     if (underlyingToken.balanceOf(address(_underlyingYieldBearingToken)) >= marginDeltaInUnderlyingTokens) {
-      _aaveLendingPool.withdraw(underlyingToken, marginDeltaInUnderlyingTokens, _account);
+      _aaveLendingPool.withdraw(underlyingToken, marginDeltaInUnderlyingTokens, account);
     } else {
-      _underlyingYieldBearingToken.safeTransfer(_account, marginDeltaInUnderlyingTokens);
+      _underlyingYieldBearingToken.safeTransfer(account, marginDeltaInUnderlyingTokens);
     }
   }
 
