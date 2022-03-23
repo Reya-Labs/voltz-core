@@ -8,7 +8,7 @@ interface ICompoundRateOracle is IRateOracle {
 
     /// @notice Gets the address of the cToken
     /// @return Address of the cToken
-    function ctoken() external view returns (address);
+    function ctoken() external view returns (ICToken);
 
     /// @notice Gets the number of decimals of the underlying
     /// @return Number of decimals of the underlying

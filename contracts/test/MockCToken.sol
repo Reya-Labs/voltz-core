@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/compound/ICToken.sol";
-import "../utils/WayRayMath.sol";
+import "../utils/WadRayMath.sol";
 import "../utils/Printer.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 

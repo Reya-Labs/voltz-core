@@ -46,9 +46,11 @@ describe("Compound Rate Oracle", () => {
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const rateFromTimestamp = (await getCurrentTimestamp(provider)) + 1;
+      await cToken.setExchangeRate(toBn("0.01"));
       await testCompoundRateOracle.writeOracleEntry();
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      console.log("MockCToken.address: ", cToken.address);
       await cToken.setExchangeRate(toBn("0.1"));
       const rateToTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testCompoundRateOracle.writeOracleEntry();
@@ -60,7 +62,7 @@ describe("Compound Rate Oracle", () => {
       );
       const rateFromTo = await testCompoundRateOracle.latestRateFromTo();
 
-      const expectedRateFromTo = toBn("0.1");
+      const expectedRateFromTo = toBn("9");
 
       expect(rateFromTo).to.eq(expectedRateFromTo);
     });

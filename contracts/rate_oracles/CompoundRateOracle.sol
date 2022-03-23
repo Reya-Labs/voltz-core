@@ -5,8 +5,9 @@ pragma solidity ^0.8.0;
 import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
 import "../interfaces/compound/ICToken.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
-import "../utils/WayRayMath.sol";
+import "../utils/WadRayMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
+import "hardhat/console.sol";
 
 contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
@@ -15,20 +16,20 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     error CTokenExchangeRateReturnedZero();
 
     /// @inheritdoc ICompoundRateOracle
-    address public override ctoken;
+    ICToken public override ctoken;
 
     /// @inheritdoc ICompoundRateOracle
     uint256 public override decimals;
 
-    uint8 public constant override underlyingYieldBearingProtocolID = 2; // id of comp v2 is 2
+    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of comp v2 is 2
 
-    constructor(address _ctoken, address underlying)
+    constructor(ICToken _ctoken, IERC20Extended underlying)
         BaseRateOracle(underlying)
     {
         ctoken = _ctoken;
-        decimals = IERC20Extended(underlying).decimals();
+        decimals = underlying.decimals();
         uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = exchangeRateInRay();
+        uint256 result = 10000000000000000000000000000000000000000000;
         (
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
@@ -38,15 +39,15 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     function exchangeRateInRay() internal view returns (uint256) {
         // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
         // source: https://compound.finance/docs/ctokens#exchange-rate
-        uint256 exchangeRateStored = ICToken(ctoken).exchangeRateStored();
+        uint256 exchangeRateStored = ctoken.exchangeRateStored();
+        console.log("cToken.address: ", address(ctoken));
+        console.log("exchangeRateStored: ", exchangeRateStored);
         if (decimals >= 18) {
             uint256 scalingFactor = 10**(decimals - 18);
-            // return WadRayMath.rayDiv(exchangeRateStored, scalingFactor);
-            return 1; // DEBUG
+            return WadRayMath.rayDiv(exchangeRateStored, scalingFactor);
         } else {
             uint256 scalingFactor = 10**(18 - decimals);
-            // return WadRayMath.rayMul(exchangeRateStored, scalingFactor);
-            return 2; // DEBUG
+            return WadRayMath.rayMul(exchangeRateStored, scalingFactor);
         }
     }
 
@@ -71,7 +72,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             revert CTokenExchangeRateReturnedZero();
         }
 
-        emit OracleBufferWrite(
+        emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
             address(this),
             index,
@@ -205,6 +206,8 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
+                console.log("atOrAfter.observedValue", atOrAfter.observedValue);
+                console.log("beforeOrAt.observedValue", beforeOrAt.observedValue);
                 uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath.rayDiv(
                     atOrAfter.observedValue,
                     beforeOrAt.observedValue

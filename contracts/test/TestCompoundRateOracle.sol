@@ -4,7 +4,7 @@ import "../rate_oracles/OracleBuffer.sol";
 import "../rate_oracles/CompoundRateOracle.sol";
 import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "../utils/WayRayMath.sol";
+import "../utils/WadRayMath.sol";
 import "hardhat/console.sol";
 import "../interfaces/compound/ICToken.sol";
 
@@ -21,7 +21,7 @@ contract TestCompoundRateOracle is CompoundRateOracle {
     uint256 public latestAfterOrAtRateValue;
 
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
-    constructor(address cToken, address underlying)
+    constructor(ICToken cToken, IERC20Extended underlying)
         CompoundRateOracle(cToken, underlying)
     {
         // if not done manually, doesn't work for some reason
