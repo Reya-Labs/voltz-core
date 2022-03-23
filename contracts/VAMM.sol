@@ -162,6 +162,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   function initializeVAMM(uint160 sqrtPriceX96) external override {
 
     require(sqrtPriceX96 != 0, "zero input price");
+    require((sqrtPriceX96 < TickMath.MAX_SQRT_RATIO) && (sqrtPriceX96 >= TickMath.MIN_SQRT_RATIO), "R"); 
 
     /// @dev initializeVAMM should only be callable given the initialize function was already executed
     /// @dev we can check if the initialize function was executed by making sure the address of the margin engine is non-zero since it is set in the initialize function
@@ -181,8 +182,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   }
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
-
-    // todo: agree on the range, assign constant to upper and lower range limits
     require(feeProtocol == 0 || (feeProtocol >= 3 && feeProtocol <= 50), "PR range");
     require(_vammVars.feeProtocol != feeProtocol, "PF value already set");
 
@@ -191,8 +190,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   }
 
   function setFee(uint256 newFeeWad) external override onlyOwner lock {
-
-    // todo: agree on the range, assign constant to upper limit (MAX_FEE)
     require(newFeeWad >= 0 && newFeeWad <= MAX_FEE, "fee range");
     require(_feeWad != newFeeWad, "fee value already set");
 
