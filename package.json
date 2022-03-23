@@ -34,6 +34,7 @@
     "ethers": "^5.5.4",
     "evm-bn": "^1.1.1",
     "hardhat": "^2.8.0",
+    "hardhat-contract-sizer": "^2.5.1",
     "hardhat-deploy": "^0.10.4",
     "hardhat-gas-reporter": "^1.0.4",
     "husky": "^7.0.4",
@@ -55,7 +56,6 @@
     "@openzeppelin/contracts-upgradeable": "^4.4.2",
     "@openzeppelin/upgrades": "^2.8.0",
     "@uniswap/sdk-core": "^3.0.1",
-    "hardhat-contract-sizer": "^2.1.1",
     "hardhat-prettier": "0.0.1",
     "hardhat-tracer": "^1.0.0-alpha.6",
     "jsbi": "^4.0.0",
@@ -93,7 +93,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "npm run check"
+      "pre-push": "npm run check && hh size-contracts"
     }
   }
 }
