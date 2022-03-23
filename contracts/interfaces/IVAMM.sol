@@ -54,7 +54,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
         /// @dev The current tick of the vamm, i.e. according to the last tick transition that was run.
         int24 tick;
         // the current protocol fee as a percentage of the swap fee taken on withdrawal
-        // represented as an integer denominator (1/x)%
+        // represented as an integer denominator (1/x)
         uint8 feeProtocol;
     }
 
