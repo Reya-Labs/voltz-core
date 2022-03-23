@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
 import "../interfaces/compound/ICToken.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
-import "../utils/WayRayMath.sol";
+import "../utils/WadRayMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
 contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
@@ -15,18 +15,18 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     error CTokenExchangeRateReturnedZero();
 
     /// @inheritdoc ICompoundRateOracle
-    address public override ctoken;
+    ICToken public override ctoken;
 
     /// @inheritdoc ICompoundRateOracle
     uint256 public override decimals;
 
-    uint8 public constant override underlyingYieldBearingProtocolID = 2; // id of comp v2 is 2
+    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of comp v2 is 2
 
-    constructor(address _ctoken, address underlying)
+    constructor(ICToken _ctoken, IERC20Extended underlying)
         BaseRateOracle(underlying)
     {
         ctoken = _ctoken;
-        decimals = IERC20Extended(underlying).decimals();
+        decimals = underlying.decimals();
         uint32 blockTimestamp = Time.blockTimestampTruncated();
         uint256 result = exchangeRateInRay();
         (
@@ -38,15 +38,13 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     function exchangeRateInRay() internal view returns (uint256) {
         // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
         // source: https://compound.finance/docs/ctokens#exchange-rate
-        uint256 exchangeRateStored = ICToken(ctoken).exchangeRateStored();
+        uint256 exchangeRateStored = ctoken.exchangeRateStored();
         if (decimals >= 18) {
             uint256 scalingFactor = 10**(decimals - 18);
-            // return WadRayMath.rayDiv(exchangeRateStored, scalingFactor);
-            return 1; // DEBUG
+            return WadRayMath.rayDiv(exchangeRateStored, scalingFactor);
         } else {
             uint256 scalingFactor = 10**(18 - decimals);
-            // return WadRayMath.rayMul(exchangeRateStored, scalingFactor);
-            return 2; // DEBUG
+            return WadRayMath.rayMul(exchangeRateStored, scalingFactor);
         }
     }
 
@@ -71,7 +69,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             revert CTokenExchangeRateReturnedZero();
         }
 
-        emit OracleBufferWrite(
+        emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
             address(this),
             index,

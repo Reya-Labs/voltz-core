@@ -6,7 +6,6 @@ import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WadRayMath.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
@@ -112,7 +111,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         if (rateToRay > rateFromRay) {
             uint256 result = WadRayMath.rayToWad(
-                WadRayMath.rayDiv(rateToRay, rateFromRay).sub(WadRayMath.RAY)
+                WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY
             );
             return result;
         } else {
