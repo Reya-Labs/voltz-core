@@ -479,7 +479,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
           state.fixedTokenGrowthGlobalX128,
           step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
-          true,
           state,
           step,
           rateOracle.variableFactor(
@@ -593,7 +592,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
           state.fixedTokenGrowthGlobalX128,
           step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
-          false,
           state,
           step,
           rateOracle.variableFactor(
@@ -747,7 +745,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   }
 
     function calculateUpdatedGlobalTrackerValues(
-        bool isFT,
         SwapState memory state,
         StepComputations memory step,
         uint256 variableFactorWad
