@@ -14,8 +14,8 @@ import "../IERC20Minimal.sol";
 interface IRateOracle is CustomErrors {
 
     // events
-    event MinSecondsSinceLastUpdateSet(uint256 _minSecondsSinceLastUpdate);
-    event OracleBufferWrite(
+    event MinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate);
+    event OracleBufferUpdate(
         uint256 blockTimestampScaled,
         address source,
         uint16 index,
@@ -28,7 +28,7 @@ interface IRateOracle is CustomErrors {
     /// @notice Emitted by the rate oracle for increases to the number of observations that can be stored
     /// @param observationCardinalityNextOld The previous value of the next observation cardinality
     /// @param observationCardinalityNextNew The updated value of the next observation cardinality
-    event IncreaserateCardinalityNext(
+    event RateCardinalityNext(
         uint16 observationCardinalityNextOld,
         uint16 observationCardinalityNextNew
     );

@@ -56,7 +56,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             revert CustomErrors.AavePoolGetReserveNormalizedIncomeReturnedZero();
         }
 
-        emit OracleBufferWrite(
+        emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
             address(this),
             index,

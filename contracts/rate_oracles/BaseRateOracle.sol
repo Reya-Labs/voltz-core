@@ -47,7 +47,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             /// @audit There is no range check for the argument.
             minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate;
 
-            emit MinSecondsSinceLastUpdateSet(_minSecondsSinceLastUpdate);
+            emit MinSecondsSinceLastUpdate(_minSecondsSinceLastUpdate);
         }
     }
 
@@ -71,7 +71,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         oracleVars.rateCardinalityNext = rateCardinalityNextNew;
 
         if (rateCardinalityNextOld != rateCardinalityNextNew) {
-            emit IncreaserateCardinalityNext(
+            emit RateCardinalityNext(
                 rateCardinalityNextOld,
                 rateCardinalityNextNew
             );
