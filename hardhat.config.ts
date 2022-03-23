@@ -109,6 +109,9 @@ const config: HardhatUserConfig = {
     outputFile: process.env.REPORT_GAS_TO_FILE,
     noColors: !!process.env.REPORT_GAS_TO_FILE,
     enabled: !!(process.env.REPORT_GAS && process.env.REPORT_GAS != "false"),
+    currency: "USD",
+    gasPrice: 120,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
   },
   mocha: {
     timeout: 2400000,
