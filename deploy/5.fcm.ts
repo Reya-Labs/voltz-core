@@ -33,7 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   const underlyingYieldBearingProtocolID =
-    await rateOracle.underlyingYieldBearingProtocolID();
+    await rateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
   await factory.setMasterFCM(
     masterAaveFCM.address,
