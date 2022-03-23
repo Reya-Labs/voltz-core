@@ -49,17 +49,20 @@ interface IRateOracle is CustomErrors {
     /// @return result The variable factor
     /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). Term end timestamps are cached for quick retrieval later.
     /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
+    /// @dev if queried before maturity then returns the rate of return between pool initiation and current timestamp (in wad)
+    /// @dev if queried after maturity then returns the rate of return between pool initiation and maturity timestamp (in wad)
     function variableFactor(uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256 result);
 
     /// @notice Gets the variable factor between termStartTimestamp and termEndTimestamp
     /// @return result The variable factor
     /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). No caching takes place.
     /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
+    /// @dev returns the variable rate of return
+    /// @dev if queried before maturity then returns the rate of return between pool initiation and current timestamp (in wad)
+    /// @dev if queried after maturity then returns the rate of return between pool initiation and maturity timestamp (in wad)
     function variableFactorNoCache(uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns(uint256 result);
 
-
-    /// audit [ABDK] The semantics of this function is unclear
-    /// audit [ABDK] Consider documenting.
+    
     /// @notice Calculates the observed interest returned by the underlying in a given period
     /// @dev Reverts if we have no data point for either timestamp
     /// @param from The timestamp of the start of the period, in seconds

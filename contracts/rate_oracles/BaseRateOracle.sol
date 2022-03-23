@@ -44,7 +44,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         onlyOwner
     {
         if (minSecondsSinceLastUpdate != _minSecondsSinceLastUpdate) {
-            /// @audit There is no range check for the argument.
             minSecondsSinceLastUpdate = _minSecondsSinceLastUpdate;
 
             emit MinSecondsSinceLastUpdate(_minSecondsSinceLastUpdate);

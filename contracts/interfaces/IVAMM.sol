@@ -142,8 +142,8 @@ interface IVAMM is IPositionStructs, CustomErrors {
 
     // immutables
 
-    /// @notice The vamm's fee (proportion) in wei
-    /// @return The fee in wei
+    /// @notice The vamm's fee (proportion) in wad
+    /// @return The fee in wad
     function feeWad() external view returns (uint256);
 
     /// @notice The vamm tick spacing
@@ -188,9 +188,12 @@ interface IVAMM is IPositionStructs, CustomErrors {
     function factory() external view returns (IFactory);
 
     /// @notice Function that sets the feeProtocol of the vamm
+    /// @dev the current protocol fee as a percentage of the swap fee taken on withdrawal
+    // represented as an integer denominator (1/x)
     function setFeeProtocol(uint8 feeProtocol) external;
 
     /// @notice Function that sets fee of the vamm
+    /// @dev The vamm's fee (proportion) in wad
     function setFee(uint256 _fee) external;
 
     /// @notice Updates internal accounting to reflect a collection of protocol fees. The actual transfer of fees must happen separately in the AMM
