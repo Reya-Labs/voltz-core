@@ -21,7 +21,8 @@ interface IFactory is CustomErrors {
         IMarginEngine marginEngine,
         IVAMM vamm,
         IFCM fcm,
-        uint8 yieldBearingProtocolID
+        uint8 yieldBearingProtocolID,
+        uint8 underlyingTokenDecimals
     );
 
     event MasterFCM(IFCM masterFCMAddress, uint8 yieldBearingProtocolID);

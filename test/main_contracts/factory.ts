@@ -80,7 +80,8 @@ describe("Factory", () => {
         marginEngineAddress,
         vammAddress,
         fcmAddress,
-        1
+        1,
+        18 // 18 decimals
       );
 
     const marginEngineTestFactory = await ethers.getContractFactory(
