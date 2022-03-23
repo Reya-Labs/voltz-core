@@ -19,51 +19,58 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    const length_of_series = 50;
+    const length_of_series = 10;
     const actions = [1, 2, 3, 4, 5];
 
     await this.rateOracleTest.increaseObservationCardinalityNext(1000);
     await this.rateOracleTest.increaseObservationCardinalityNext(2000);
 
     for (let step = 0; step < length_of_series * 4; step++) {
-      await advanceTimeAndBlock(consts.ONE_HOUR.mul(6), 1);
+      // await advanceTimeAndBlock(consts.ONE_HOUR.mul(6), 1);
+      await this.advanceAndUpdateApy(
+        consts.ONE_HOUR.mul(6),
+        1,
+        1.0001 + step * 0.00001
+      );
 
       const action = step < 5 ? 1 : actions[randomInt(0, actions.length)];
       await this.exportSnapshot(
         "step: " + step.toString() + " / action: " + action.toString()
       );
 
+      console.log(action);
       if (action === 1) {
         // position mint
         const p = this.positions[randomInt(0, 5)];
         const liquidityDelta = randomInt(10000, 100000);
         const liquidityDeltaBn = toBn(liquidityDelta.toString());
-        // const positionInfo = await this.marginEngineTest.getPosition(
-        //   p[0],
-        //   p[1],
-        //   p[2]
-        // );
 
-        // await this.marginEngineTest.getCounterfactualMarginRequirementTest(
-        //   p[0],
-        //   p[1],
-        //   p[2],
-        //   liquidityDeltaBn,
-        //   positionInfo.fixedTokenBalance,
-        //   positionInfo.variableTokenBalance,
-        //   positionInfo.margin,
-        //   false
-        // );
+        let marginRequirement = BigNumber.from("0");
+        await this.e2eSetup.callStatic
+          .mint(p[0], p[1], p[2], liquidityDeltaBn)
+          .then(
+            () => {},
+            (error) => {
+              if (error.message.includes("MarginLessThanMinimum")) {
+                const args: string[] = error.message
+                  .split("MarginLessThanMinimum")[1]
+                  .split("(")[1]
+                  .split(")")[0]
+                  .replaceAll(" ", "")
+                  .split(",");
 
-        // const positionMarginRequirement =
-        //   await this.marginEngineTest.getMargin();
-        const positionMarginRequirement = BigNumber.from(0);
+                marginRequirement = BigNumber.from(args[0]);
+              } else {
+                console.log(error);
+              }
+            }
+          );
 
         await this.e2eSetup.updatePositionMargin(
           p[0],
           p[1],
           p[2],
-          positionMarginRequirement.add(toBn("1"))
+          marginRequirement.add(toBn("1"))
         );
         console.log(
           "gas consumed for update position margin: ",
@@ -80,8 +87,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       if (action === 2) {
         // position burn
         const p = this.positions[randomInt(0, 5)];
+        console.log("here?");
         const current_liquidity =
-          (await this.marginEngineTest.getPosition(p[0], p[1], p[2]))._liquidity
+          (
+            await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])
+          )._liquidity
             .div(BigNumber.from(10).pow(12))
             .toNumber() /
           10 ** 6;

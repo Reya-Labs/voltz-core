@@ -32,7 +32,7 @@ describe("Factory", () => {
     } = await loadFixture(metaFixture));
 
     // change the term start timestamp to deploy a different instance from the one we have in the meta fixture
-    termStartTimestampBN = termEndTimestampBN.add(1);
+    termEndTimestampBN = termStartTimestampBN.add(1);
   });
 
   it("Cannot deploy if not the owner", async () => {
@@ -70,7 +70,7 @@ describe("Factory", () => {
         TICK_SPACING
       )
     )
-      .to.emit(factory, "IrsInstanceDeployed")
+      .to.emit(factory, "IrsInstance")
       .withArgs(
         token.address,
         rateOracleTest.address,
@@ -124,5 +124,28 @@ describe("Factory", () => {
 
     const marginEngineAddressRealised = await vamm1.marginEngine();
     expect(marginEngineAddressRealised).to.eq(marginEngine1.address);
+  });
+
+  // test set master me and set master vamm
+
+  it("sets master margin engine", async () => {
+    // create a new margine enigne implementation
+    // set the master margin enigne
+    // create a new vamm implementation
+    // set the vamm
+    // deploy a new IRS instance with new implementations
+    // check that the newly deployed proxies follow the new implementation
+  });
+
+  // test upgradability
+
+  it("upgrades the implementation of a proxy", async () => {
+    // deploy a new IRS instance
+    // create a new margin engine implementation
+    // upgrade the margin engine implementation for the IRS instance
+    // create a new vamm implementation
+    // upgrade the vamm implementation for the IRS instance
+    // check that the proxy now follows the new implementation
+    // check we can upgrade the new implementation again
   });
 });

@@ -4,8 +4,7 @@ pragma solidity ^0.8.0;
 import "prb-math/contracts/PRBMathUD60x18.sol";
 
 library Time {
-    uint256 private constant MAX_UINT32 = 2**32 - 1;
-    uint256 public constant SECONDS_IN_DAY_WAD = 86400 * 10**18; /// convert into WAD via PRB
+    uint256 public constant SECONDS_IN_DAY_WAD = 86400e18;
 
     /// @notice Calculate block.timestamp to wei precision
     /// @return Current timestamp in wei-seconds (1/1e18)
@@ -24,8 +23,7 @@ library Time {
         pure
         returns (uint32 timestamp)
     {
-        require(_timestamp <= MAX_UINT32, "TSOFLOW");
-        return uint32(_timestamp);
+        require((timestamp = uint32(_timestamp)) == _timestamp, "TSOFLOW");
     }
 
     function isCloseToMaturityOrBeyondMaturity(uint256 termEndTimestampWad)
@@ -33,15 +31,8 @@ library Time {
         view
         returns (bool vammInactive)
     {
-        uint256 currentTimestamp = Time.blockTimestampScaled();
-
-        if (currentTimestamp >= termEndTimestampWad) {
-            vammInactive = true;
-        } else {
-            uint256 timeDelta = termEndTimestampWad - currentTimestamp;
-            if (timeDelta <= SECONDS_IN_DAY_WAD) {
-                vammInactive = true;
-            }
-        }
+        return
+            Time.blockTimestampScaled() + SECONDS_IN_DAY_WAD >=
+            termEndTimestampWad;
     }
 }

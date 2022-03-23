@@ -1,15 +1,17 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/aave/IAToken.sol";
-import "../utils/WayRayMath.sol";
+import "../utils/WadRayMath.sol";
 import "../utils/Printer.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MockAToken is IAToken, ERC20 {
     using WadRayMath for uint256;
     IAaveV2LendingPool internal _pool;
-    address internal _underlyingAsset;
+    IERC20Minimal internal _underlyingAsset;
 
     modifier onlyLendingPool() {
         require(msg.sender == address(_pool), "CT_CALLER_MUST_BE_LENDING_POOL");
@@ -18,7 +20,7 @@ contract MockAToken is IAToken, ERC20 {
 
     constructor(
         IAaveV2LendingPool pool,
-        address underlyingAsset,
+        IERC20Minimal underlyingAsset,
         string memory name,
         string memory symbol
     ) ERC20(name, symbol) {
@@ -178,7 +180,12 @@ contract MockAToken is IAToken, ERC20 {
     /**
      * @dev Returns the address of the underlying asset of this aToken (E.g. WETH for aWETH)
      **/
-    function UNDERLYING_ASSET_ADDRESS() public view override returns (address) {
+    function UNDERLYING_ASSET_ADDRESS()
+        public
+        view
+        override
+        returns (IERC20Minimal)
+    {
         return _underlyingAsset;
     }
 
@@ -202,11 +209,19 @@ contract MockAToken is IAToken, ERC20 {
         address to,
         uint256 amount
     ) internal override {
-        address underlyingAsset = _underlyingAsset;
+        IERC20Minimal underlyingAsset = _underlyingAsset;
         IAaveV2LendingPool pool = _pool;
 
         uint256 index = pool.getReserveNormalizedIncome(underlyingAsset);
 
         super._transfer(from, to, amount.rayDiv(index));
+    }
+
+    function approveInternal(
+        address owner,
+        address spender,
+        uint256 value
+    ) public {
+        _approve(owner, spender, value);
     }
 }

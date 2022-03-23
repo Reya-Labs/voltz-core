@@ -6,6 +6,8 @@ interface CustomErrors {
     /// @dev No need to unwind a net zero position
     error PositionNetZero();
 
+    error DebugError(uint256 x, uint256 y);
+
     /// @dev Cannot have less margin than the minimum requirement
     error MarginLessThanMinimum(int256 marginRequirement);
 
@@ -59,11 +61,20 @@ interface CustomErrors {
     error LiquidityDeltaMustBePositiveInBurn(uint128 amount);
 
     /// @dev Error which ensures the amount of notional specified when initiating an IRS contract (via the swap function in the vamm) is non-zero
-    error IRSNotionalAmountSpecifiedMustBeNonZero(int256 amountSpecified);
+    error IRSNotionalAmountSpecifiedMustBeNonZero();
 
     /// @dev Error which ensures the VAMM is unlocked
     error CanOnlyTradeIfUnlocked(bool unlocked);
 
     /// @dev only the margin engine can run a certain function
     error OnlyMarginEngine();
+
+    /// The resulting margin does not meet minimum requirements
+    error MarginRequirementNotMetFCM(int256 marginRequirement);
+
+    /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
+    error AavePoolGetReserveNormalizedIncomeReturnedZero();
+
+    /// @dev currentTime < queriedTime
+    error OOO();
 }

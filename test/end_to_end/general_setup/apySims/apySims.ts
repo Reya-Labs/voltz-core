@@ -19,8 +19,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // check mint margin requirement
     await this.e2eSetup.callStatic
       .mintOrBurnViaPeriphery({
-        marginEngineAddress: this.marginEngineTest.address,
-        recipient: this.positions[positionIndex][0],
+        marginEngine: this.marginEngineTest.address,
         tickLower: this.positions[positionIndex][1],
         tickUpper: this.positions[positionIndex][2],
         notional: this.NOTIONAL,
@@ -67,8 +66,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // mint liquidity
     await this.e2eSetup.mintOrBurnViaPeriphery({
-      marginEngineAddress: this.marginEngineTest.address,
-      recipient: this.positions[positionIndex][0],
+      marginEngine: this.marginEngineTest.address,
       tickLower: this.positions[positionIndex][1],
       tickUpper: this.positions[positionIndex][2],
       notional: this.NOTIONAL,
@@ -88,8 +86,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // check swap margin requirement
     await this.e2eSetup.callStatic
       .swapViaPeriphery({
-        marginEngineAddress: this.marginEngineTest.address,
-        recipient: this.positions[positionIndex][0],
+        marginEngine: this.marginEngineTest.address,
         isFT: isFT,
         notional: this.NOTIONAL,
         sqrtPriceLimitX96: sqrtPriceLimitX96,
@@ -153,8 +150,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // swap
     await this.e2eSetup.swapViaPeriphery({
-      marginEngineAddress: this.marginEngineTest.address,
-      recipient: this.positions[positionIndex][0],
+      marginEngine: this.marginEngineTest.address,
       isFT: isFT,
       notional: this.NOTIONAL,
       sqrtPriceLimitX96: sqrtPriceLimitX96,

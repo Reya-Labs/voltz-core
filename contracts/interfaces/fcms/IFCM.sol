@@ -3,11 +3,11 @@
 pragma solidity ^0.8.0;
 
 import "../IMarginEngine.sol";
-import "../IVAMM.sol";
+import "../../utils/CustomErrors.sol";
 import "../IERC20Minimal.sol";
 import "../../core_libraries/TraderWithYieldBearingAssets.sol";
 
-interface IFCM {
+interface IFCM is CustomErrors {
     function getTraderWithYieldBearingAssets(address trader)
         external
         view
@@ -36,13 +36,13 @@ interface IFCM {
 
     /// @notice Settle Trader
     /// @dev this function in the fcm let's traders settle with the MarginEngine based on their settlement cashflows which is a functon of their fixed and variable token balances
-    function settleTrader() external;
+    function settleTrader() external returns (int256);
 
     /// @notice
-    /// @param _account address of the position owner from the MarginEngine who wishes to settle with the FCM in underlying tokens
+    /// @param account address of the position owner from the MarginEngine who wishes to settle with the FCM in underlying tokens
     /// @param marginDeltaInUnderlyingTokens amount in terms of underlying tokens that needs to be settled with the trader from the MarginEngine
     function transferMarginToMarginEngineTrader(
-        address _account,
+        address account,
         uint256 marginDeltaInUnderlyingTokens
     ) external;
 
@@ -50,13 +50,13 @@ interface IFCM {
     /// @dev "constructor" for proxy instances
     /// @dev in the initialize function we set the vamm and the margiEngine associated with the fcm
     /// @dev different FCM implementations are free to have different implementations for the initialisation logic
-    function initialize(address _vammAddress, address _marginEngineAddress)
+    function initialize(IVAMM __vamm, IMarginEngine __marginEngine)
         external;
 
     /// @notice Margine Engine linked to the Full Collateralisation Module
     /// @return marginEngine Margine Engine linked to the Full Collateralisation Module
     function marginEngine() external view returns (IMarginEngine);
-    
+
     /// @notice VAMM linked to the Full Collateralisation Module
     /// @return VAMM linked to the Full Collateralisation Module
     function vamm() external view returns (IVAMM);

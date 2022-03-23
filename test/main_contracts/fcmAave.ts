@@ -169,7 +169,7 @@ describe("FCM", () => {
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
-    await marginEngineTest.setSecondsAgo(86400);
+    await marginEngineTest.setLookbackWindowInSeconds(86400);
   });
 
   describe("#fcm", () => {
@@ -223,9 +223,6 @@ describe("FCM", () => {
       await vammTest.initializeVAMM(
         TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
       );
-
-      await vammTest.setFeeProtocol(0);
-      await vammTest.setFee(0);
 
       await vammTest
         .connect(other)
@@ -304,12 +301,12 @@ describe("FCM", () => {
 
       // lp settles and collects their margin
       await marginEngineTest.settlePosition(
+        other.address,
         -TICK_SPACING,
-        TICK_SPACING,
-        other.address
+        TICK_SPACING
       );
 
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -330,11 +327,12 @@ describe("FCM", () => {
         );
 
       console.log("here?");
-      const positionInfoPostUpdateMargin = await marginEngineTest.getPosition(
-        other.address,
-        -TICK_SPACING,
-        TICK_SPACING
-      );
+      const positionInfoPostUpdateMargin =
+        await marginEngineTest.callStatic.getPosition(
+          other.address,
+          -TICK_SPACING,
+          TICK_SPACING
+        );
       const finalPositionMarginPostUpdateMargin =
         positionInfoPostUpdateMargin.margin;
 

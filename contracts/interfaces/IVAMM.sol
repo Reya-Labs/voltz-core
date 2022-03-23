@@ -20,7 +20,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
     );
 
     /// @dev emitted after a given vamm is successfully initialized
-    event InitializeVAMM(uint160 sqrtPriceX96, int24 tick);
+    event VAMMInitialization(uint160 sqrtPriceX96, int24 tick);
 
     /// @dev emitted after a successful minting of a given LP position
     event Mint(
@@ -41,10 +41,10 @@ interface IVAMM is IPositionStructs, CustomErrors {
     );
 
     /// @dev emitted after setting feeProtocol
-    event SetFeeProtocol(uint8 feeProtocolOld, uint8 feeProtocol);
+    event FeeProtocol(uint8 feeProtocol);
 
     /// @dev emitted after fee is set
-    event FeeSet(uint256 feeWadOld, uint256 feeWad);
+    event Fee(uint256 feeWad);
 
     // structs
 
@@ -54,7 +54,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
         /// @dev The current tick of the vamm, i.e. according to the last tick transition that was run.
         int24 tick;
         // the current protocol fee as a percentage of the swap fee taken on withdrawal
-        // represented as an integer denominator (1/x)%
+        // represented as an integer denominator (1/x)
         uint8 feeProtocol;
     }
 
@@ -67,9 +67,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
         uint160 sqrtPriceLimitX96;
         /// @dev Is the swap triggered by a trader. If this is false then this is only possible in a scenario where a liquidity provider's position is liquidated
         /// @dev leading to an unwind of a liquidity provider
-        /// @dev lower tick of the liquidity provider (needs to be set if isTrader is false)
+        /// @dev lower tick of the position
         int24 tickLower;
-        /// @dev upper tick of the liqudiity provider (needs to be set if isTrader is false)
+        /// @dev upper tick of the position
         int24 tickUpper;
     }
 
@@ -137,13 +137,13 @@ interface IVAMM is IPositionStructs, CustomErrors {
     }
 
     /// @dev "constructor" for proxy instances
-    function initialize(address _marginEngineAddress, int24 _tickSpacing)
+    function initialize(IMarginEngine __marginEngine, int24 __tickSpacing)
         external;
 
     // immutables
 
-    /// @notice The vamm's fee (proportion) in wei
-    /// @return The fee in wei
+    /// @notice The vamm's fee (proportion) in wad
+    /// @return The fee in wad
     function feeWad() external view returns (uint256);
 
     /// @notice The vamm tick spacing
@@ -188,9 +188,12 @@ interface IVAMM is IPositionStructs, CustomErrors {
     function factory() external view returns (IFactory);
 
     /// @notice Function that sets the feeProtocol of the vamm
+    /// @dev the current protocol fee as a percentage of the swap fee taken on withdrawal
+    // represented as an integer denominator (1/x)
     function setFeeProtocol(uint8 feeProtocol) external;
 
     /// @notice Function that sets fee of the vamm
+    /// @dev The vamm's fee (proportion) in wad
     function setFee(uint256 _fee) external;
 
     /// @notice Updates internal accounting to reflect a collection of protocol fees. The actual transfer of fees must happen separately in the AMM

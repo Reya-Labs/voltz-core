@@ -116,7 +116,6 @@ describe("VAMM", () => {
     it("scenario1", async () => {
       await vammTest.initializeVAMM(MIN_SQRT_RATIO);
 
-      await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.003"));
 
       await vammTest
@@ -135,7 +134,7 @@ describe("VAMM", () => {
       });
 
       // check trader balances
-      const traderInfo = await marginEngineTest.getPosition(
+      const traderInfo = await marginEngineTest.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -153,7 +152,7 @@ describe("VAMM", () => {
       );
 
       // check position token balances
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -192,7 +191,6 @@ describe("VAMM", () => {
     it("scenario 2: ", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setFeeProtocol(0);
       await vammTest.setFee(toBn("0.003"));
 
       await vammTest
@@ -209,7 +207,7 @@ describe("VAMM", () => {
       });
 
       // check trader balances
-      const traderInfo = await marginEngineTest.getPosition(
+      const traderInfo = await marginEngineTest.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -227,7 +225,7 @@ describe("VAMM", () => {
       );
 
       // check position token balances
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -265,8 +263,7 @@ describe("VAMM", () => {
     it("scenario 3: check fees (no protocol fees)", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setFeeProtocol(0);
-      await vammTest.setFee(toBn("0.5"));
+      await vammTest.setFee(toBn("0.0005"));
 
       await vammTest
         .connect(wallet)
@@ -281,7 +278,7 @@ describe("VAMM", () => {
         tickUpper: TICK_SPACING,
       });
 
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -290,8 +287,7 @@ describe("VAMM", () => {
       const feesAccruedToLP = sub(positionInfo.margin, toBn("100000"));
       console.log("FATLP", feesAccruedToLP.toString());
 
-      /// Expected fees = toBn("100") * 0.5 * timeUntilMaturityInYears (approx the whole term which is a week)
-      const expectedFees = toBn("0.958904109589041"); // value from excel
+      const expectedFees = toBn("0.000958877156265898"); // value from excel
 
       expect(feesAccruedToLP).to.be.near(expectedFees);
     });
@@ -299,8 +295,8 @@ describe("VAMM", () => {
     it("scenario 4: check fees (with protocol fees)", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setFeeProtocol(2); // half of the fees go towards the protocol
-      await vammTest.setFee(toBn("0.5"));
+      await vammTest.setFeeProtocol(3); // half of the fees go towards the protocol
+      await vammTest.setFee(toBn("0.0005"));
 
       await vammTest
         .connect(wallet)
@@ -315,7 +311,7 @@ describe("VAMM", () => {
         tickUpper: TICK_SPACING,
       });
 
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -324,8 +320,8 @@ describe("VAMM", () => {
       const feesAccruedToLP = sub(positionInfo.margin, toBn("100000"));
       console.log("FATLP", feesAccruedToLP.toString());
 
-      /// Expected fees = toBn("100") * 0.5 * timeUntilMaturityInYears (approx the whole term which is a week)
-      const expectedFees = toBn("0.4794520547945210"); // value from excel
+      /// Expected fees = toBn("100") * 0.0005 * timeUntilMaturityInYears (approx the whole term which is a week)
+      const expectedFees = BigNumber.from("639252494503665");
 
       expect(feesAccruedToLP).to.be.near(expectedFees);
     });
@@ -333,14 +329,13 @@ describe("VAMM", () => {
     it("scenario 5: check fees accrued = fees incurred", async () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
 
-      await vammTest.setFeeProtocol(0);
-      await vammTest.setFee(toBn("0.5"));
+      await vammTest.setFee(toBn("0.0005"));
 
       await vammTest
         .connect(wallet)
         .mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("10000000"));
 
-      const traderInfoOld = await marginEngineTest.getPosition(
+      const traderInfoOld = await marginEngineTest.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -355,13 +350,13 @@ describe("VAMM", () => {
         tickUpper: TICK_SPACING,
       });
 
-      const traderInfo = await marginEngineTest.getPosition(
+      const traderInfo = await marginEngineTest.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
       );
 
-      const positionInfo = await marginEngineTest.getPosition(
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -373,8 +368,8 @@ describe("VAMM", () => {
       const feesIncurredByTrader = sub(traderInfoOld.margin, traderInfo.margin);
       console.log("FIBT", feesIncurredByTrader.toString());
 
-      /// Expected fees = toBn("100") * 0.5 * timeUntilMaturityInYears (approx the whole term which is a week)
-      const expectedFees = toBn("0.958904109589041"); // value from excel
+      /// Expected fees = toBn("100") * 0.0005 * timeUntilMaturityInYears (approx the whole term which is a week)
+      const expectedFees = BigNumber.from("958877156265898");
 
       expect(feesAccruedToLP).to.be.near(expectedFees);
       expect(feesIncurredByTrader).to.be.near(expectedFees);

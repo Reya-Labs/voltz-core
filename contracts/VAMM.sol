@@ -5,7 +5,7 @@ import "./core_libraries/Tick.sol";
 import "./storage/VAMMStorage.sol";
 import "./interfaces/IVAMM.sol";
 import "./core_libraries/TickBitmap.sol";
-import "./utils/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
@@ -26,6 +26,9 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   using SafeCast for int256;
   using Tick for mapping(int24 => Tick.Info);
   using TickBitmap for mapping(int16 => uint256);
+
+  /// @dev 0.02 = 2% is the max fee as proportion of notional scaled by time to maturity (in wei fixed point notation 0.02 -> 2 * 10^16)
+  uint256 public constant MAX_FEE = 20000000000000000;
 
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
@@ -51,9 +54,15 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   constructor () initializer {}
 
   /// @inheritdoc IVAMM
-  function initialize(address _marginEngineAddress, int24 __tickSpacing) external override initializer {
-    require(_marginEngineAddress != address(0), "ME must be set");
-    _marginEngine = IMarginEngine(_marginEngineAddress);
+  function initialize(IMarginEngine __marginEngine, int24 __tickSpacing) external override initializer {
+
+    require(address(__marginEngine) != address(0), "ME must be set");
+    // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
+    // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
+    // 16384 ticks represents a >5x price change with ticks of 1 bips
+    require(__tickSpacing > 0 && __tickSpacing < Tick.MAXIMUM_TICK_SPACING, "TSOOB");
+
+    _marginEngine = __marginEngine;
     rateOracle = _marginEngine.rateOracle();
     _factory = IFactory(msg.sender);
     _tickSpacing = __tickSpacing;
@@ -66,11 +75,9 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     __UUPSUpgradeable_init();
   }
 
-  // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.   
-  // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786 
+  // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.
+  // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786
   function _authorizeUpgrade(address) internal override onlyOwner {}
-
-
 
 
   // GETTERS FOR STORAGE SLOTS
@@ -148,11 +155,19 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     if (_protocolFees < protocolFeesCollected) {
       revert CustomErrors.NotEnoughFunds(protocolFeesCollected, _protocolFees);
     }
-    _protocolFees = _protocolFees - protocolFeesCollected;
+    _protocolFees -= protocolFeesCollected;
   }
 
   /// @dev not locked because it initializes unlocked
   function initializeVAMM(uint160 sqrtPriceX96) external override {
+
+    require(sqrtPriceX96 != 0, "zero input price");
+    require((sqrtPriceX96 < TickMath.MAX_SQRT_RATIO) && (sqrtPriceX96 >= TickMath.MIN_SQRT_RATIO), "R"); 
+
+    /// @dev initializeVAMM should only be callable given the initialize function was already executed
+    /// @dev we can check if the initialize function was executed by making sure the address of the margin engine is non-zero since it is set in the initialize function
+    require(address(_marginEngine) != address(0), "vamm not initialized");
+
     if (_vammVars.sqrtPriceX96 != 0)  {
       revert CustomErrors.ExpectedSqrtPriceZeroBeforeInit(_vammVars.sqrtPriceX96);
     }
@@ -163,19 +178,23 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     unlocked = true;
 
-    emit InitializeVAMM(sqrtPriceX96, tick);
+    emit VAMMInitialization(sqrtPriceX96, tick);
   }
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
-    uint8 feeProtocolOld = _vammVars.feeProtocol;
+    require(feeProtocol == 0 || (feeProtocol >= 3 && feeProtocol <= 50), "PR range");
+    require(_vammVars.feeProtocol != feeProtocol, "PF value already set");
+
     _vammVars.feeProtocol = feeProtocol;
-    emit SetFeeProtocol(feeProtocolOld, feeProtocol);
+    emit FeeProtocol(feeProtocol);
   }
 
   function setFee(uint256 newFeeWad) external override onlyOwner lock {
-    uint256 feeWadOld = _feeWad;
+    require(newFeeWad >= 0 && newFeeWad <= MAX_FEE, "fee range");
+    require(_feeWad != newFeeWad, "fee value already set");
+
     _feeWad = newFeeWad;
-    emit FeeSet(feeWadOld, _feeWad);
+    emit Fee(_feeWad);
   }
 
   function burn(
@@ -209,6 +228,11 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     internal
     returns (bool flippedLower, bool flippedUpper)
   {
+
+    Tick.checkTicks(params.tickLower, params.tickUpper);
+
+
+    /// @dev isUpper = false
     flippedLower = _ticks.update(
       params.tickLower,
       _vammVars.tick,
@@ -220,6 +244,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       _maxLiquidityPerTick
     );
 
+    /// @dev isUpper = true
     flippedUpper = _ticks.update(
       params.tickUpper,
       _vammVars.tick,
@@ -258,12 +283,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     }
 
     positionMarginRequirement = 0;
-    if (msg.sender != address(_marginEngine)) { 
+    if (msg.sender != address(_marginEngine)) {
       // this only happens if the margin engine triggers a liquidation which in turn triggers a burn
       // the state updated in the margin engine in that case are done directly in the liquidatePosition function
       positionMarginRequirement = _marginEngine.updatePositionPostVAMMInducedMintBurn(params);
     }
-    
+
     // clear any tick data that is no longer needed
     if (params.liquidityDelta < 0) {
       if (flippedLower) {
@@ -329,23 +354,19 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced, int256 _marginRequirement)
   {
 
+    Tick.checkTicks(params.tickLower, params.tickUpper);
+
     VAMMVars memory vammVarsStart = _vammVars;
 
     checksBeforeSwap(params, vammVarsStart, params.amountSpecified > 0);
-    
+
     if (!(msg.sender == address(_marginEngine) || msg.sender==address(_marginEngine.fcm()))) {
       require(msg.sender==params.recipient || _factory.isApproved(params.recipient, msg.sender), "only sender or approved integration");
     }
 
-    Tick.checkTicks(params.tickLower, params.tickUpper);
-
     /// @dev lock the vamm while the swap is taking place
-
     unlocked = false;
 
-    /// suggestion: use uint32 for blockTimestamp (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L132)
-    /// suggestion: feeProtocol can be represented in a more efficient way (https://github.com/Uniswap/v3-core/blob/9161f9ae4aaa109f7efdff84f1df8d4bc8bfd042/contracts/UniswapV3Pool.sol#L69)
-    // Uniswap implementation: feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4), where in our case isFT == !zeroForOne
     SwapCache memory cache = SwapCache({
       liquidityStart: _liquidity,
       feeProtocol: _vammVars.feeProtocol
@@ -378,8 +399,14 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     rateOracle.writeOracleEntry();
 
+    /// @audit tag 3 [ABDK]
+    // On every iteration of this loop there are several places where different code is executed depending on the trade side.
+    // It would be more efficient to have two separate loop implementations and choose what implementation to run based on the trade side.
+
     // continue swapping as long as we haven't used the entire input/output and haven't reached the price (implied fixed rate) limit
-    while (
+    if (params.amountSpecified > 0) {
+      // Fixed Taker
+      while (
       state.amountSpecifiedRemaining != 0 &&
       state.sqrtPriceX96 != params.sqrtPriceLimitX96
     ) {
@@ -387,16 +414,13 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
       step.sqrtPriceStartX96 = state.sqrtPriceX96;
 
-      /// @dev if isFT (fixed taker) (moving right to left), the nextInitializedTick should be more than or equal to the current tick
-      /// @dev if !isFT (variable taker) (moving left to right), the nextInitializedTick should be less than or equal to the current tick
+      /// the nextInitializedTick should be more than or equal to the current tick
       /// add a test for the statement that checks for the above two conditions
       (step.tickNext, step.initialized) = _tickBitmap
-        .nextInitializedTickWithinOneWord(state.tick, _tickSpacing, !(params.amountSpecified > 0));
+        .nextInitializedTickWithinOneWord(state.tick, _tickSpacing, false);
 
       // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
-      if (step.tickNext < TickMath.MIN_TICK) {
-        step.tickNext = TickMath.MIN_TICK;
-      } else if (step.tickNext > TickMath.MAX_TICK) {
+      if (step.tickNext > TickMath.MAX_TICK) {
         step.tickNext = TickMath.MAX_TICK;
       }
 
@@ -412,40 +436,26 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
         step.amountOut,
         step.feeAmount
       ) = SwapMath.computeSwapStep(
-        state.sqrtPriceX96,
-        (
-          !(params.amountSpecified > 0)
-            ? step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
-            : step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
-        )
+        SwapMath.SwapStepParams({
+            sqrtRatioCurrentX96: state.sqrtPriceX96,
+            sqrtRatioTargetX96: step.sqrtPriceNextX96 > params.sqrtPriceLimitX96
           ? params.sqrtPriceLimitX96
           : step.sqrtPriceNextX96,
-        state.liquidity,
-        state.amountSpecifiedRemaining,
-        _feeWad,
-        termEndTimestampWad - Time.blockTimestampScaled()
+            liquidity: state.liquidity,
+            amountRemaining: state.amountSpecifiedRemaining,
+            feePercentageWad: _feeWad,
+            timeToMaturityInSecondsWad: termEndTimestampWad - Time.blockTimestampScaled()
+        })
       );
 
-      if (params.amountSpecified > 0) {
-        // User is a Fixed Taker
-        // exact input
-        /// prb math is not used in here (following v3 logic)
-        state.amountSpecifiedRemaining -= (step.amountIn).toInt256(); // this value is positive
-        state.amountCalculated -= step.amountOut.toInt256(); // this value is negative
+      // exact input
+      /// prb math is not used in here (following v3 logic)
+      state.amountSpecifiedRemaining -= (step.amountIn).toInt256(); // this value is positive
+      state.amountCalculated -= step.amountOut.toInt256(); // this value is negative
 
-        // LP is a Variable Taker
-        step.variableTokenDelta = (step.amountIn).toInt256();
-        step.fixedTokenDeltaUnbalanced = -step.amountOut.toInt256();
-      } else {
-        // User is a VariableTaker
-        /// prb math is not used in here (following v3 logic)
-        state.amountSpecifiedRemaining += step.amountOut.toInt256(); // this value is negative
-        state.amountCalculated += step.amountIn.toInt256(); // this value is positive
-
-        // LP is a Fixed Taker
-        step.variableTokenDelta = -step.amountOut.toInt256();
-        step.fixedTokenDeltaUnbalanced = step.amountIn.toInt256();
-      }
+      // LP is a Variable Taker
+      step.variableTokenDelta = (step.amountIn).toInt256();
+      step.fixedTokenDeltaUnbalanced = -step.amountOut.toInt256();
 
       // update cumulative fee incurred while initiating an interest rate swap
       state.cumulativeFeeIncurred = state.cumulativeFeeIncurred + step.feeAmount;
@@ -466,7 +476,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
           state.fixedTokenGrowthGlobalX128,
           step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
-          params.amountSpecified > 0,
           state,
           step,
           rateOracle.variableFactor(
@@ -477,7 +486,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
         state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
-        
+
         // necessary for testing purposes, also handy to quickly compute the fixed rate at which an interest rate swap is created
         state.fixedTokenDeltaUnbalancedCumulative -= step.fixedTokenDeltaUnbalanced;
       }
@@ -493,10 +502,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
             state.feeGrowthGlobalX128
           );
 
-          // if we're moving rightward (along the virtual amm), we interpret liquidityNet as the opposite sign
-          // safe because liquidityNet cannot be type(int128).min
-          if (!(params.amountSpecified > 0)) liquidityNet = -liquidityNet;
-
           state.liquidity = LiquidityMath.addDelta(
             state.liquidity,
             liquidityNet
@@ -504,20 +509,131 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
         }
 
-        state.tick = !(params.amountSpecified > 0) ? step.tickNext - 1 : step.tickNext;
+        state.tick = step.tickNext;
       } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
         // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
         state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
       }
     }
+    }
+    else {
+      while (
+      state.amountSpecifiedRemaining != 0 &&
+      state.sqrtPriceX96 != params.sqrtPriceLimitX96
+    ) {
+      StepComputations memory step;
+
+      step.sqrtPriceStartX96 = state.sqrtPriceX96;
+
+      /// @dev if isFT (fixed taker) (moving right to left), the nextInitializedTick should be more than or equal to the current tick
+      /// @dev if !isFT (variable taker) (moving left to right), the nextInitializedTick should be less than or equal to the current tick
+      /// add a test for the statement that checks for the above two conditions
+      (step.tickNext, step.initialized) = _tickBitmap
+        .nextInitializedTickWithinOneWord(state.tick, _tickSpacing, true);
+
+      // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
+      if (step.tickNext < TickMath.MIN_TICK) {
+        step.tickNext = TickMath.MIN_TICK;
+      }
+
+      // get the price for the next tick
+      step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
+
+      // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
+      /// @dev for a Fixed Taker (isFT) if the sqrtPriceNextX96 is larger than the limit, then the target price passed into computeSwapStep is sqrtPriceLimitX96
+      /// @dev for a Variable Taker (!isFT) if the sqrtPriceNextX96 is lower than the limit, then the target price passed into computeSwapStep is sqrtPriceLimitX96
+      (
+        state.sqrtPriceX96,
+        step.amountIn,
+        step.amountOut,
+        step.feeAmount
+      ) = SwapMath.computeSwapStep(
+
+        SwapMath.SwapStepParams({
+            sqrtRatioCurrentX96: state.sqrtPriceX96,
+            sqrtRatioTargetX96: step.sqrtPriceNextX96 < params.sqrtPriceLimitX96
+          ? params.sqrtPriceLimitX96
+          : step.sqrtPriceNextX96,
+            liquidity: state.liquidity,
+            amountRemaining: state.amountSpecifiedRemaining,
+            feePercentageWad: _feeWad,
+            timeToMaturityInSecondsWad: termEndTimestampWad - Time.blockTimestampScaled()
+        })
+
+      );
+
+      /// prb math is not used in here (following v3 logic)
+      state.amountSpecifiedRemaining += step.amountOut.toInt256(); // this value is negative
+      state.amountCalculated += step.amountIn.toInt256(); // this value is positive
+
+      // LP is a Fixed Taker
+      step.variableTokenDelta = -step.amountOut.toInt256();
+      step.fixedTokenDeltaUnbalanced = step.amountIn.toInt256();
+
+      // update cumulative fee incurred while initiating an interest rate swap
+      state.cumulativeFeeIncurred = state.cumulativeFeeIncurred + step.feeAmount;
+
+      // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+      if (cache.feeProtocol > 0) {
+        /// here we should round towards protocol fees (+ ((step.feeAmount % cache.feeProtocol == 0) ? 0 : 1)) ?
+        step.feeProtocolDelta = step.feeAmount / cache.feeProtocol;
+        step.feeAmount -= step.feeProtocolDelta;
+        state.protocolFee += step.feeProtocolDelta;
+      }
+
+      // update global fee tracker
+      if (state.liquidity > 0) {
+        (
+          state.feeGrowthGlobalX128,
+          state.variableTokenGrowthGlobalX128,
+          state.fixedTokenGrowthGlobalX128,
+          step.fixedTokenDelta // for LP
+        ) = calculateUpdatedGlobalTrackerValues(
+          state,
+          step,
+          rateOracle.variableFactor(
+          termStartTimestampWad,
+          termEndTimestampWad
+          )
+        );
+
+        state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
+        state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
+
+        // necessary for testing purposes, also handy to quickly compute the fixed rate at which an interest rate swap is created
+        state.fixedTokenDeltaUnbalancedCumulative -= step.fixedTokenDeltaUnbalanced;
+      }
+
+      // shift tick if we reached the next price
+      if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
+        // if the tick is initialized, run the tick transition
+        if (step.initialized) {
+          int128 liquidityNet = _ticks.cross(
+            step.tickNext,
+            state.fixedTokenGrowthGlobalX128,
+            state.variableTokenGrowthGlobalX128,
+            state.feeGrowthGlobalX128
+          );
+
+          state.liquidity = LiquidityMath.addDelta(
+            state.liquidity,
+            -liquidityNet
+          );
+
+        }
+
+        state.tick = step.tickNext - 1;
+      } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
+        // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
+        state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
+      }
+    }
+    }
+    _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
 
     if (state.tick != vammVarsStart.tick) {
        // update the tick in case it changed
-      _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
       _vammVars.tick = state.tick;
-    } else {
-      // otherwise just update the price
-      _vammVars.sqrtPriceX96 = state.sqrtPriceX96;
     }
 
     // update liquidity if it changed
@@ -565,6 +681,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     returns (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128)
   {
 
+    Tick.checkTicks(tickLower, tickUpper);
+
     fixedTokenGrowthInsideX128 = _ticks.getFixedTokenGrowthInside(
       Tick.FixedTokenGrowthInsideParams({
         tickLower: tickLower,
@@ -584,10 +702,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     );
 
     feeGrowthInsideX128 = _ticks.getFeeGrowthInside(
-      tickLower,
-      tickUpper,
-      _vammVars.tick,
-      _feeGrowthGlobalX128
+      Tick.FeeGrowthInsideParams({
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        tickCurrent: _vammVars.tick,
+        feeGrowthGlobalX128: _feeGrowthGlobalX128
+      })
     );
 
   }
@@ -599,9 +719,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   ) internal view {
 
       if (params.amountSpecified == 0) {
-          revert CustomErrors.IRSNotionalAmountSpecifiedMustBeNonZero(
-              params.amountSpecified
-          );
+          revert CustomErrors.IRSNotionalAmountSpecifiedMustBeNonZero();
       }
 
       if (!unlocked) {
@@ -623,9 +741,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       );
   }
 
-
     function calculateUpdatedGlobalTrackerValues(
-        bool isFT,
         SwapState memory state,
         StepComputations memory step,
         uint256 variableFactorWad
@@ -642,56 +758,17 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
         stateFeeGrowthGlobalX128 = state.feeGrowthGlobalX128 + FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
 
-        if (isFT) {
+        fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
+          step.fixedTokenDeltaUnbalanced,
+          step.variableTokenDelta,
+          variableFactorWad,
+          termStartTimestampWad,
+          termEndTimestampWad
+        );
 
-            /// @dev if the trader is a fixed taker then the variable token growth global should be incremented (since LPs are receiving variable tokens)
-            /// @dev if the trader is a fixed taker then the fixed token growth global should decline (since LPs are providing fixed tokens)
-            /// @dev if the trader is a fixed taker amountOut is in terms of variable tokens (it is a positive value)
+        stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + FullMath.mulDivSigned(step.variableTokenDelta, FixedPoint128.Q128, state.liquidity);
 
-            /// @audit-casting step.variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
-            stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
-
-            /// @dev fixedToken delta should be negative, hence amount0 passed into getFixedTokenBalance needs to be negative
-            /// @dev in this case amountIn is in terms of unbalanced fixed tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
-            /// @dev in this case amountOut is in terms of variable tokens, hence the value passed needs to be positive --> int256(step.amountOut)
-
-            // this value is negative
-            fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-              step.fixedTokenDeltaUnbalanced,
-              step.variableTokenDelta,
-              variableFactorWad,
-              termStartTimestampWad,
-              termEndTimestampWad
-            );
-
-            /// @audit-casting fixedTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
-            stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
-
-        } else {
-
-            /// @dev if a trader is a variable taker, the variable token growth should decline (since the LPs are providing variable tokens)
-            /// @dev if a trader is a variable taker, the fixed token growth should increase (since the LPs are receiving fixed tokens)
-            /// @dev if a trader is a variable taker amountIn is in terms of variable tokens
-
-            /// @audit-casting step.variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision? 
-            stateVariableTokenGrowthGlobalX128= state.variableTokenGrowthGlobalX128 - int256(FullMath.mulDiv(uint256(-step.variableTokenDelta), FixedPoint128.Q128, state.liquidity));
-
-            /// @dev fixed token delta should be positive (for LPs)
-            /// @dev in this case amountIn is in terms of variable tokens, hence the value passed needs to be negative --> -int256(step.amountIn),
-            /// @dev in this case amountOut is in terms of fixedToken, hence the value passed needs to be positive --> int256(step.amountOut),
-
-            // this value is positive
-            fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-              step.fixedTokenDeltaUnbalanced,
-              step.variableTokenDelta,
-              variableFactorWad,
-              termStartTimestampWad,
-              termEndTimestampWad
-            );
-
-            /// @audit-casting fixedTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
-            stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + int256(FullMath.mulDiv(uint256(fixedTokenDelta), FixedPoint128.Q128, state.liquidity));
-        }
+        stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + FullMath.mulDivSigned(fixedTokenDelta, FixedPoint128.Q128, state.liquidity);
     }
 
 }

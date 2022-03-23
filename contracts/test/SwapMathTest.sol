@@ -27,7 +27,7 @@ contract SwapMathTest {
         uint256 timeToMaturityInSeconds
     )
         external
-        view
+        pure
         returns (
             uint160 sqrtQ,
             uint256 amountIn,
@@ -37,12 +37,14 @@ contract SwapMathTest {
     {
         return
             SwapMath.computeSwapStep(
-                sqrtRatioCurrentX96,
-                sqrtRatioTargetX96,
-                liquidity,
-                amountRemaining,
-                feePercentage,
-                timeToMaturityInSeconds
+                SwapMath.SwapStepParams(
+                    sqrtRatioCurrentX96,
+                    sqrtRatioTargetX96,
+                    liquidity,
+                    amountRemaining,
+                    feePercentage,
+                    timeToMaturityInSeconds
+                )
             );
     }
 
@@ -56,12 +58,14 @@ contract SwapMathTest {
     ) external view returns (uint256) {
         uint256 gasBefore = gasleft();
         SwapMath.computeSwapStep(
-            sqrtRatioCurrentX96,
-            sqrtRatioTargetX96,
-            liquidity,
-            amountRemaining,
-            feePercentage,
-            timeToMaturityInSeconds
+            SwapMath.SwapStepParams(
+                sqrtRatioCurrentX96,
+                sqrtRatioTargetX96,
+                liquidity,
+                amountRemaining,
+                feePercentage,
+                timeToMaturityInSeconds
+            )
         );
         return gasBefore - gasleft();
     }

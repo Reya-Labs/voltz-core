@@ -1,10 +1,12 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 import "../rate_oracles/BaseRateOracle.sol";
 import "../rate_oracles/OracleBuffer.sol";
 import "../rate_oracles/AaveRateOracle.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "../utils/WayRayMath.sol";
+import "../utils/WadRayMath.sol";
 import "hardhat/console.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 
@@ -21,7 +23,7 @@ contract TestRateOracle is AaveRateOracle {
     uint256 public latestAfterOrAtRateValue;
 
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
-    constructor(address aaveLendingPool, address underlying)
+    constructor(IAaveV2LendingPool aaveLendingPool, IERC20Minimal underlying)
         AaveRateOracle(aaveLendingPool, underlying)
     {
         // if not done manually, doesn't work for some reason

@@ -5,27 +5,26 @@ pragma solidity ^0.8.0;
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
-import "../utils/WayRayMath.sol";
+import "../utils/WadRayMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
-    /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
-    error AavePoolGetReserveNormalizedIncomeReturnedZero();
-
     /// @inheritdoc IAaveRateOracle
-    address public override aaveLendingPool;
+    IAaveV2LendingPool public override aaveLendingPool;
 
-    uint8 public constant override underlyingYieldBearingProtocolID = 1; // id of aave v2 is 1
+    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 1; // id of aave v2 is 1
 
-    constructor(address _aaveLendingPool, address underlying)
+    uint256 public constant ONE_IN_WAD = 1e18;
+
+    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal underlying)
         BaseRateOracle(underlying)
     {
         aaveLendingPool = _aaveLendingPool;
         uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = IAaveV2LendingPool(aaveLendingPool)
-            .getReserveNormalizedIncome(underlying);
+        uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
 
         (
             oracleVars.rateCardinality,
@@ -49,13 +48,14 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
             return (index, cardinality);
 
-        uint256 resultRay = IAaveV2LendingPool(aaveLendingPool)
-            .getReserveNormalizedIncome(underlying);
+        uint256 resultRay = aaveLendingPool.getReserveNormalizedIncome(
+            underlying
+        );
         if (resultRay == 0) {
-            revert AavePoolGetReserveNormalizedIncomeReturnedZero();
+            revert CustomErrors.AavePoolGetReserveNormalizedIncomeReturnedZero();
         }
 
-        emit OracleBufferWrite(
+        emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
             address(this),
             index,
@@ -84,6 +84,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 _from,
         uint256 _to //  move docs to IRateOracle. Add additional parameter to use cache and implement cache.
     ) public view override(BaseRateOracle, IRateOracle) returns (uint256) {
+        require(_from <= _to, "from > to");
+
         if (_from == _to) {
             return 0;
         }
@@ -109,12 +111,11 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         );
 
         if (rateToRay > rateFromRay) {
-            return
-                WadRayMath.rayToWad(
-                    WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY
-                );
+            uint256 result = WadRayMath.rayToWad(
+                WadRayMath.rayDiv(rateToRay, rateFromRay).sub(WadRayMath.RAY)
+            );
+            return result;
         } else {
-            /// is this precise, have there been instances where the aave rate is negative?
             return 0;
         }
     }
@@ -137,8 +138,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
             timeDeltaBeforeOrAtToQueriedTimeWad
         );
-        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad +
-            PRBMathUD60x18.fromUint(1);
+        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad + ONE_IN_WAD;
         uint256 factorInWad = PRBMathUD60x18.pow(apyPlusOne, timeInYearsWad);
         uint256 factorInRay = WadRayMath.wadToRay(factorInWad);
         rateValueRay = WadRayMath.rayMul(beforeOrAtRateValueRay, factorInRay);
@@ -150,22 +150,24 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         uint16 index,
         uint16 cardinality
     ) internal view returns (uint256 rateValueRay) {
-        require(currentTime >= queriedTime, "OOO");
+        if (currentTime < queriedTime) revert CustomErrors.OOO();
 
         if (currentTime == queriedTime) {
             OracleBuffer.Observation memory rate;
             rate = observations[index];
             if (rate.blockTimestamp != currentTime) {
-                rateValueRay = IAaveV2LendingPool(aaveLendingPool)
-                    .getReserveNormalizedIncome(underlying);
+                rateValueRay = aaveLendingPool.getReserveNormalizedIncome(
+                    underlying
+                );
             } else {
                 rateValueRay = rate.observedValue;
             }
             return rateValueRay;
         }
 
-        uint256 currentValueRay = IAaveV2LendingPool(aaveLendingPool)
-            .getReserveNormalizedIncome(underlying);
+        uint256 currentValueRay = aaveLendingPool.getReserveNormalizedIncome(
+            underlying
+        );
         (
             OracleBuffer.Observation memory beforeOrAt,
             OracleBuffer.Observation memory atOrAfter
@@ -221,7 +223,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
-        // In the case of Aave, the values we write are obtained by calling IAaveV2LendingPool(aaveLendingPool).getReserveNormalizedIncome(underlying)
+        // In the case of Aave, the values we write are obtained by calling aaveLendingPool.getReserveNormalizedIncome(underlying)
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,

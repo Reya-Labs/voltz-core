@@ -60,11 +60,6 @@ library WadRayMath {
             return 0;
         }
 
-        require(
-            a <= (type(uint256).max - halfWAD) / b,
-            Errors.MATH_MULTIPLICATION_OVERFLOW
-        );
-
         return (a * b + halfWAD) / WAD;
     }
 
@@ -77,11 +72,6 @@ library WadRayMath {
     function wadDiv(uint256 a, uint256 b) internal pure returns (uint256) {
         require(b != 0, Errors.MATH_DIVISION_BY_ZERO);
         uint256 halfB = b / 2;
-
-        require(
-            a <= (type(uint256).max - halfB) / WAD,
-            Errors.MATH_MULTIPLICATION_OVERFLOW
-        );
 
         return (a * WAD + halfB) / b;
     }
@@ -97,11 +87,6 @@ library WadRayMath {
             return 0;
         }
 
-        require(
-            a <= (type(uint256).max - halfRAY) / b,
-            Errors.MATH_MULTIPLICATION_OVERFLOW
-        );
-
         return (a * b + halfRAY) / RAY;
     }
 
@@ -115,11 +100,6 @@ library WadRayMath {
         require(b != 0, Errors.MATH_DIVISION_BY_ZERO);
         uint256 halfB = b / 2;
 
-        require(
-            a <= (type(uint256).max - halfB) / RAY,
-            Errors.MATH_MULTIPLICATION_OVERFLOW
-        );
-
         return (a * RAY + halfB) / b;
     }
 
@@ -131,6 +111,11 @@ library WadRayMath {
     function rayToWad(uint256 a) internal pure returns (uint256) {
         uint256 halfRatio = WAD_RAY_RATIO / 2;
         uint256 result = halfRatio + a;
+
+        /// @audit tag 7 [ABDK]
+        // This “require” statement checks for a phantom overflow, as conversion from RAY to WAD is always possible.
+        // Consider refactoring the code to never revert.
+
         require(result >= halfRatio, Errors.MATH_ADDITION_OVERFLOW);
 
         return result / WAD_RAY_RATIO;
@@ -143,10 +128,6 @@ library WadRayMath {
      **/
     function wadToRay(uint256 a) internal pure returns (uint256) {
         uint256 result = a * WAD_RAY_RATIO;
-        require(
-            result / WAD_RAY_RATIO == a,
-            Errors.MATH_MULTIPLICATION_OVERFLOW
-        );
         return result;
     }
 }

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "../interfaces/IMarginEngine.sol";
@@ -6,8 +8,7 @@ import "contracts/utils/CustomErrors.sol";
 
 interface IPeriphery is CustomErrors {
     struct MintOrBurnParams {
-        address marginEngineAddress;
-        address recipient;
+        IMarginEngine marginEngine;
         int24 tickLower;
         int24 tickUpper;
         uint256 notional;
@@ -15,8 +16,7 @@ interface IPeriphery is CustomErrors {
     }
 
     struct SwapPeripheryParams {
-        address marginEngineAddress;
-        address recipient;
+        IMarginEngine marginEngine;
         bool isFT;
         uint256 notional;
         uint160 sqrtPriceLimitX96;
@@ -25,12 +25,11 @@ interface IPeriphery is CustomErrors {
     }
 
     // view functions
-    function getMarginEngine(address marginEngineAddress)
-        external
-        pure
-        returns (IMarginEngine);
 
-    function getVAMM(address marginEngineAddress) external view returns (IVAMM);
+    function getCurrentTick(IMarginEngine marginEngine)
+        external
+        view
+        returns (int24 currentTick);
 
     // non-view functions
 

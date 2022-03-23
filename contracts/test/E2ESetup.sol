@@ -10,7 +10,7 @@ import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IPeriphery.sol";
-import "../utils/WayRayMath.sol";
+import "../utils/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "contracts/utils/CustomErrors.sol";
 
@@ -46,6 +46,21 @@ contract Actor is CustomErrors {
             _marginRequirement,
 
         ) = IPeriphery(peripheryAddress).swap(params);
+    }
+
+    function updatePositionMargin(
+        address MEAddress,
+        address _owner,
+        int24 tickLower,
+        int24 tickUpper,
+        int256 marginDelta
+    ) public {
+        IMarginEngine(MEAddress).updatePositionMargin(
+            _owner,
+            tickLower,
+            tickUpper,
+            marginDelta
+        );
     }
 
     function mint(
@@ -103,7 +118,7 @@ contract Actor is CustomErrors {
         int24 tickUpper,
         address owner
     ) external {
-        IMarginEngine(MEAddress).liquidatePosition(tickLower, tickUpper, owner);
+        IMarginEngine(MEAddress).liquidatePosition(owner, tickLower, tickUpper);
     }
 
     function initiateFullyCollateralisedFixedTakerSwap(
@@ -126,6 +141,10 @@ contract Actor is CustomErrors {
             notionalToUnwind,
             sqrtPriceLimitX96
         );
+    }
+
+    function settleYBATrader(address FCMAddress) external {
+        IFCM(FCMAddress).settleTrader();
     }
 }
 
@@ -187,14 +206,14 @@ contract E2ESetup is CustomErrors {
 
     uint256 public keepInMindGas;
 
-    function getReserveNormalizedIncome() internal returns (uint256) {
+    function getReserveNormalizedIncome() internal view returns (uint256) {
         IRateOracle rateOracle = IMarginEngine(MEAddress).rateOracle();
         IAaveV2LendingPool aaveLendingPool = IAaveV2LendingPool(
             IAaveRateOracle(address(rateOracle)).aaveLendingPool()
         );
         uint256 reserveNormalizedIncome = aaveLendingPool
             .getReserveNormalizedIncome(
-                address(IMarginEngine(MEAddress).underlyingToken())
+                IMarginEngine(MEAddress).underlyingToken()
             );
         return reserveNormalizedIncome;
     }
@@ -349,13 +368,21 @@ contract E2ESetup is CustomErrors {
         continuousInvariants();
     }
 
+    function settleYBATrader(address trader) external {
+        addYBATrader(trader);
+
+        Actor(trader).settleYBATrader(FCMAddress);
+    }
+
     function mintOrBurnViaPeriphery(IPeriphery.MintOrBurnParams memory params)
         public
         returns (int256 positionMarginRequirement)
     {
-        addPosition(params.recipient, params.tickLower, params.tickUpper);
-        positionMarginRequirement = Actor(params.recipient)
-            .mintOrBurnViaPeriphery(peripheryAddress, params);
+        addPosition(msg.sender, params.tickLower, params.tickUpper);
+        positionMarginRequirement = Actor(msg.sender).mintOrBurnViaPeriphery(
+            peripheryAddress,
+            params
+        );
     }
 
     function swapViaPeriphery(IPeriphery.SwapPeripheryParams memory params)
@@ -365,9 +392,9 @@ contract E2ESetup is CustomErrors {
             uint256 cumulativeFeeIncurred
         )
     {
-        addPosition(params.recipient, params.tickLower, params.tickUpper);
+        addPosition(msg.sender, params.tickLower, params.tickUpper);
         (, , cumulativeFeeIncurred, , positionMarginRequirement) = Actor(
-            params.recipient
+            msg.sender
         ).swapViaPeriphery(peripheryAddress, params);
     }
 
@@ -418,7 +445,7 @@ contract E2ESetup is CustomErrors {
 
         uint256 gasBefore = gasleft();
         (
-            int256 _fixedTokenDelta,
+            ,
             int256 _variableTokenDelta,
             uint256 _cumulativeFeeIncurred,
             int256 _fixedTokenDeltaUnbalanced
@@ -508,7 +535,8 @@ contract E2ESetup is CustomErrors {
         this.addPosition(_owner, tickLower, tickUpper);
 
         uint256 gasBefore = gasleft();
-        IMarginEngine(MEAddress).updatePositionMargin(
+        Actor(_owner).updatePositionMargin(
+            MEAddress,
             _owner,
             tickLower,
             tickUpper,
@@ -517,12 +545,15 @@ contract E2ESetup is CustomErrors {
         keepInMindGas = gasBefore - gasleft();
         initialCashflow += marginDelta;
 
-        continuousInvariants();
+        if (
+            PRBMathUD60x18.fromUint(block.timestamp) <
+            IMarginEngine(MEAddress).termEndTimestampWad()
+        ) continuousInvariants();
     }
 
     function computeSettlementCashflowForSwapSnapshot(
         SwapSnapshot memory snapshot
-    ) internal returns (int256 settlementCashflow) {
+    ) internal view returns (int256 settlementCashflow) {
         // calculate the variable factor for the period the swap was active
         // needs to be called at the same time as the term end timestamp, otherwise need to cache the reserve normalised income for the term end timestamp in the E2E setup
 
@@ -576,7 +607,7 @@ contract E2ESetup is CustomErrors {
         address _owner,
         int24 tickLower,
         int24 tickUpper
-    ) public returns (int256) {
+    ) public view returns (int256) {
         (
             SwapSnapshot[] memory snapshots,
             uint256 len
@@ -834,7 +865,7 @@ contract E2ESetup is CustomErrors {
         address owner,
         int24 tickLower,
         int24 tickUpper
-    ) public returns (SwapSnapshot[] memory, uint256) {
+    ) public view returns (SwapSnapshot[] memory, uint256) {
         bytes32 hashedPositon = keccak256(
             abi.encodePacked(owner, tickLower, tickUpper)
         );

@@ -269,8 +269,14 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
+  const UNDERLYING_YIELD_BEARING_PROTOCOL_ID =
+    await rateOracleTest.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
+
   // set master fcm for aave
-  await factory.setMasterFCM(fcmMasterTest.address, rateOracleTest.address);
+  await factory.setMasterFCM(
+    fcmMasterTest.address,
+    UNDERLYING_YIELD_BEARING_PROTOCOL_ID
+  );
 
   // deploy a margin engine & vamm
   const deployTrx = await factory.deployIrsInstance(
@@ -283,9 +289,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const receiptLogs = (await deployTrx.wait()).logs;
   // console.log("receiptLogs", receiptLogs);
   const log = factory.interface.parseLog(receiptLogs[receiptLogs.length - 3]);
-  if (log.name !== "IrsInstanceDeployed") {
+  if (log.name !== "IrsInstance") {
     throw Error(
-      "IrsInstanceDeployed log not found. Has it moved to a different position in the array?"
+      "IrsInstance log not found. Has it moved to a different position in the array?"
     );
   }
   // console.log("log", log);
@@ -406,6 +412,7 @@ interface MetaFixtureE2E {
   vammMasterTest: TestVAMM;
   marginEngineMasterTest: TestMarginEngine;
   token: ERC20Mock;
+  mockAToken: MockAToken;
   rateOracleTest: TestRateOracle;
   aaveLendingPool: MockAaveLendingPool;
   compoundRateOracleTest: TestCompoundRateOracle;
@@ -439,10 +446,17 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
 
     const { testMarginCalculator } = await marginCalculatorFixture();
 
+    const { mockAToken } = await mockATokenFixture(
+      aaveLendingPool.address,
+      token.address
+    );
+
     await aaveLendingPool.setReserveNormalizedIncome(
       token.address,
-      "1000000000000000000000000000" // 10^27
+      BigNumber.from(10).pow(27)
     );
+
+    await aaveLendingPool.initReserve(token.address, mockAToken.address);
 
     // await rateOracleTest.testGrow(100);
     await rateOracleTest.increaseObservationCardinalityNext(100);
@@ -464,14 +478,21 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
     const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
     const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
+    const UNDERLYING_YIELD_BEARING_PROTOCOL_ID =
+      await rateOracleTest.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
+
     // set master fcm for aave
-    await factory.setMasterFCM(fcmMasterTest.address, rateOracleTest.address);
+    await factory.setMasterFCM(
+      fcmMasterTest.address,
+      UNDERLYING_YIELD_BEARING_PROTOCOL_ID
+    );
 
     return {
       factory,
       vammMasterTest,
       marginEngineMasterTest,
       token,
+      mockAToken,
       rateOracleTest,
       aaveLendingPool,
       compoundRateOracleTest,

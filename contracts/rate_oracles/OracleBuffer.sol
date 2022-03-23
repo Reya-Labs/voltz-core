@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
 /// Observations are overwritten when the full length of the oracle array is populated.
 /// The most recent observation is available, independent of the length of the oracle array, by passing 0 to observe()
 library OracleBuffer {
-    uint256 private constant MAX_UINT216 = 2**216 - 1;
+    uint256 public constant MAX_BUFFER_LENGTH = 65535;
 
     /// @dev An Observation fits in one storage slot, keeping gas costs down and allowing `grow()` to pre-pay for gas
     struct Observation {
@@ -30,7 +30,7 @@ library OracleBuffer {
         pure
         returns (Observation memory)
     {
-        require(observedValue <= MAX_UINT216, ">216");
+        require(observedValue <= type(uint216).max, ">216");
         return
             Observation({
                 blockTimestamp: blockTimestamp,
@@ -45,7 +45,7 @@ library OracleBuffer {
     /// @return cardinality The number of populated elements in the oracle array
     /// @return cardinalityNext The new length of the oracle array, independent of population
     function initialize(
-        Observation[65535] storage self,
+        Observation[MAX_BUFFER_LENGTH] storage self,
         uint32 time,
         uint256 observedValue
     ) internal returns (uint16 cardinality, uint16 cardinalityNext) {
@@ -66,7 +66,7 @@ library OracleBuffer {
     /// @return indexUpdated The new index of the most recently written element in the oracle array
     /// @return cardinalityUpdated The new cardinality of the oracle array
     function write(
-        Observation[65535] storage self,
+        Observation[MAX_BUFFER_LENGTH] storage self,
         uint16 index,
         uint32 blockTimestamp,
         uint256 observedValue,
@@ -95,7 +95,7 @@ library OracleBuffer {
     /// @param next The proposed next cardinality which will be populated in the oracle array
     /// @return next The next cardinality which will be populated in the oracle array
     function grow(
-        Observation[65535] storage self,
+        Observation[MAX_BUFFER_LENGTH] storage self,
         uint16 current,
         uint16 next
     ) internal returns (uint16) {
@@ -119,7 +119,7 @@ library OracleBuffer {
     /// @return beforeOrAt The observation recorded before, or at, the target
     /// @return atOrAfter The observation recorded at, or after, the target
     function binarySearch(
-        Observation[65535] storage self,
+        Observation[MAX_BUFFER_LENGTH] storage self,
         uint32 target,
         uint16 index,
         uint16 cardinality
@@ -132,7 +132,8 @@ library OracleBuffer {
         uint256 r = l + cardinality - 1; // newest observation
         uint256 i;
         while (true) {
-            i = (l + r) / 2;
+            // i = (l + r) / 2;
+            i = (l + r) >> 1;
 
             beforeOrAt = self[i % cardinality];
 
@@ -165,7 +166,7 @@ library OracleBuffer {
     /// @return beforeOrAt The observation which occurred at, or before, the given timestamp
     /// @return atOrAfter The observation which occurred at, or after, the given timestamp
     function getSurroundingObservations(
-        Observation[65535] storage self,
+        Observation[MAX_BUFFER_LENGTH] storage self,
         uint32 target,
         uint256 currentValue,
         uint16 index,

@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: MIT
 
+import "contracts/utils/CustomErrors.sol";
+
 pragma solidity ^0.8.0;
+
+import "contracts/utils/CustomErrors.sol";
+import "../IERC20Minimal.sol";
 
 /// @dev The RateOracle is used for two purposes on the Voltz Protocol
 /// @dev Settlement: in order to be able to settle IRS positions after the termEndTimestamp of a given AMM
 /// @dev Margin Engine Computations: getApyFromTo is used by the MarginCalculator and MarginEngine
 /// @dev It is necessary to produce margin requirements for Trader and Liquidity Providers
-interface IRateOracle {
+interface IRateOracle is CustomErrors {
 
     // events
-    event MinSecondsSinceLastUpdateSet(uint256 _minSecondsSinceLastUpdate);
-    event OracleBufferWrite(
+    event MinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate);
+    event OracleBufferUpdate(
         uint256 blockTimestampScaled,
         address source,
         uint16 index,
@@ -21,10 +26,8 @@ interface IRateOracle {
     );
 
     /// @notice Emitted by the rate oracle for increases to the number of observations that can be stored
-    /// @param observationCardinalityNextOld The previous value of the next observation cardinality
     /// @param observationCardinalityNextNew The updated value of the next observation cardinality
-    event IncreaserateCardinalityNext(
-        uint16 observationCardinalityNextOld,
+    event RateCardinalityNext(
         uint16 observationCardinalityNextNew
     );
 
@@ -40,20 +43,26 @@ interface IRateOracle {
 
     /// @notice Gets the address of the underlying token of the RateOracle
     /// @return underlying The address of the underlying token
-    function underlying() external view returns (address);
+    function underlying() external view returns (IERC20Minimal);
 
     /// @notice Gets the variable factor between termStartTimestamp and termEndTimestamp
     /// @return result The variable factor
     /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). Term end timestamps are cached for quick retrieval later.
     /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
+    /// @dev if queried before maturity then returns the rate of return between pool initiation and current timestamp (in wad)
+    /// @dev if queried after maturity then returns the rate of return between pool initiation and maturity timestamp (in wad)
     function variableFactor(uint256 termStartTimestamp, uint256 termEndTimestamp) external returns(uint256 result);
 
     /// @notice Gets the variable factor between termStartTimestamp and termEndTimestamp
     /// @return result The variable factor
     /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). No caching takes place.
     /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
+    /// @dev returns the variable rate of return
+    /// @dev if queried before maturity then returns the rate of return between pool initiation and current timestamp (in wad)
+    /// @dev if queried after maturity then returns the rate of return between pool initiation and maturity timestamp (in wad)
     function variableFactorNoCache(uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns(uint256 result);
 
+    
     /// @notice Calculates the observed interest returned by the underlying in a given period
     /// @dev Reverts if we have no data point for either timestamp
     /// @param from The timestamp of the start of the period, in seconds
@@ -93,5 +102,5 @@ interface IRateOracle {
 
     /// @notice unique ID of the underlying yield bearing protocol (e.g. Aave v2 has id 1)
     /// @return yieldBearingProtocolID unique id of the underlying yield bearing protocol
-    function underlyingYieldBearingProtocolID() external view returns(uint8 yieldBearingProtocolID);
+    function UNDERLYING_YIELD_BEARING_PROTOCOL_ID() external view returns(uint8 yieldBearingProtocolID);
 }
