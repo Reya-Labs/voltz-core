@@ -1,7 +1,6 @@
 import { expect } from "../shared/expect";
 import { LiquidityMathTest } from "../../typechain/LiquidityMathTest";
 import { ethers, waffle } from "hardhat";
-import snapshotGasCost from "../shared/snapshotGasCost";
 
 const { BigNumber } = ethers;
 
@@ -36,11 +35,6 @@ describe("LiquidityMath", () => {
     it("3 + -4 underflows", async () => {
       await expect(liquidityMath.addDelta(3, -4)).to.be.reverted;
     });
-    it("gas add", async () => {
-      await snapshotGasCost(liquidityMath.getGasCostOfAddDelta(15, 4));
-    });
-    it("gas sub", async () => {
-      await snapshotGasCost(liquidityMath.getGasCostOfAddDelta(15, -4));
-    });
+    // snapshot gas cost here
   });
 });

@@ -55,10 +55,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
         factorPerSecondInRay[_underlyingAsset] = _factorPerSecondInRay;
     }
 
-    function initReserve(IERC20Minimal asset, address aTokenAddress)
-        external
-        override
-    {
+    function initReserve(IERC20Minimal asset, address aTokenAddress) external {
         AaveDataTypes.ReserveData memory reserveData;
         reserveData.aTokenAddress = aTokenAddress;
 

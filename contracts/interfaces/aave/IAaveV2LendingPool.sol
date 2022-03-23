@@ -7,13 +7,7 @@ import "../IERC20Minimal.sol";
 
 interface IAaveV2LendingPool {
 
-
     function getReserveNormalizedIncome(IERC20Minimal underlyingAsset) external view returns (uint256);
-
-    function initReserve(
-        IERC20Minimal asset,
-        address aTokenAddress
-    ) external;
 
     function getReserveData(IERC20Minimal asset) external view returns (AaveDataTypes.ReserveData memory);
 

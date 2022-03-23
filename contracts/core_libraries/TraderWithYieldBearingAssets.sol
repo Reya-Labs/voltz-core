@@ -33,8 +33,16 @@ library TraderWithYieldBearingAssets {
         Info storage self,
         int256 fixedTokenBalanceDelta,
         int256 variableTokenBalanceDelta
-    ) internal {
-        self.fixedTokenBalance += fixedTokenBalanceDelta;
-        self.variableTokenBalance += variableTokenBalanceDelta;
+    )
+        internal
+        returns (int256 _fixedTokenBalance, int256 _variableTokenBalance)
+    {
+        _fixedTokenBalance = self.fixedTokenBalance + fixedTokenBalanceDelta;
+        _variableTokenBalance =
+            self.variableTokenBalance +
+            variableTokenBalanceDelta;
+
+        self.fixedTokenBalance = _fixedTokenBalance;
+        self.variableTokenBalance = _variableTokenBalance;
     }
 }

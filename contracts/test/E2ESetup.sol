@@ -10,7 +10,7 @@ import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IPeriphery.sol";
-import "../utils/WayRayMath.sol";
+import "../utils/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "contracts/utils/CustomErrors.sol";
 

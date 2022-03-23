@@ -27,6 +27,11 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
     using SafeTransferLib for IERC20Minimal;
 
+    uint256 public constant MAX_LOOKBACK_WINDOW_IN_SECONDS = 315360000; // ten years
+    uint256 public constant MIN_LOOKBACK_WINDOW_IN_SECONDS = 3600; // one hour
+    uint256 public constant MAX_CACHE_MAX_AGE_IN_SECONDS = 1209600; // two weeks
+    uint256 public constant MAX_LIQUIDATOR_REWARD_WAD = 3e17; // 30%
+
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -181,7 +186,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         override
         onlyOwner
     {
-        /// @audit Consider adding appropriate checks for the range of valid values the secondsAgo variable can take
+        require((_newSecondsAgo <= MAX_LOOKBACK_WINDOW_IN_SECONDS) && (_newSecondsAgo >= MIN_LOOKBACK_WINDOW_IN_SECONDS), "look back OOB");
+        
         _secondsAgo = _newSecondsAgo;
         emit HistoricalApyWindowSet(_secondsAgo);
     }
@@ -192,7 +198,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
         override 
         onlyOwner
     {
-        /// @audit Consider adding appropriate checks for the range of valid values the secondsAgo variable can take
+        require(_newCacheMaxAgeInSeconds <= MAX_CACHE_MAX_AGE_IN_SECONDS, "cache max age OOB");
+
         _cacheMaxAgeInSeconds = _newCacheMaxAgeInSeconds;
         emit CacheMaxAgeSet(_cacheMaxAgeInSeconds);
     }
@@ -219,7 +226,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
     /// @inheritdoc IMarginEngine
     function setLiquidatorReward(uint256 _newLiquidatorRewardWad) external override onlyOwner {
 
-        /// @audit Consider adding appropriate checks for the range of valid values the secondsAgo variable can take
+        require(_newLiquidatorRewardWad <= MAX_LIQUIDATOR_REWARD_WAD, "liquidator reward OOB");
+
         _liquidatorRewardWad = _newLiquidatorRewardWad;
         emit LiquidatorRewardSet(_liquidatorRewardWad);
     }
