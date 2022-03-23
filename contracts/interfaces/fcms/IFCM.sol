@@ -36,7 +36,7 @@ interface IFCM is CustomErrors {
 
     /// @notice Settle Trader
     /// @dev this function in the fcm let's traders settle with the MarginEngine based on their settlement cashflows which is a functon of their fixed and variable token balances
-    function settleTrader() external;
+    function settleTrader() external returns (int256);
 
     /// @notice
     /// @param _account address of the position owner from the MarginEngine who wishes to settle with the FCM in underlying tokens
@@ -56,7 +56,7 @@ interface IFCM is CustomErrors {
     /// @notice Margine Engine linked to the Full Collateralisation Module
     /// @return marginEngine Margine Engine linked to the Full Collateralisation Module
     function marginEngine() external view returns (IMarginEngine);
-    
+
     /// @notice VAMM linked to the Full Collateralisation Module
     /// @return VAMM linked to the Full Collateralisation Module
     function vamm() external view returns (IVAMM);

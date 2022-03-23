@@ -211,7 +211,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
     // check the margin requirement of the trader post unwind, if the current balances still support the unwind, they it can happen, otherwise the unwind will get reverted
     checkMarginRequirement(_fixedTokenBalance, _variableTokenBalance, trader.marginInScaledYieldBearingTokens);
-    
+
     // transfer fees to the margin engine
     underlyingToken.safeTransferFrom(msg.sender, address(_marginEngine), cumulativeFeeIncurred);
 
@@ -224,7 +224,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
   /// @notice Check Margin Requirement post unwind of a fully collateralised fixed taker
   function checkMarginRequirement(int256 traderFixedTokenBalance, int256 traderVariableTokenBalance, uint256 traderMarginInScaledYieldBearingTokens) internal {
-  
+
     // variable token balance should never be positive
     // margin in scaled tokens should cover the variable leg from now to maturity
 
@@ -232,7 +232,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     /// @dev hence, we can assume that the variable cashflows from now to maturity is covered by a portion of the trader's collateral in yield bearing tokens
     /// @dev once future variable cashflows are covered, we need to check if the remaining settlement cashflow is covered by the remaining margin in yield bearing tokens
 
-    /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision? 
+    /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision?
     uint256 marginToCoverVariableLegFromNowToMaturity = uint256(-traderVariableTokenBalance);
     int256 marginToCoverRemainingSettlementCashflow = int256(getTraderMarginInYieldBearingTokens(traderMarginInScaledYieldBearingTokens)) - int256(marginToCoverVariableLegFromNowToMaturity);
 
@@ -251,9 +251,9 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
   /// @notice Calculate remaining settlement cashflow
   function calculateRemainingSettlementCashflow(int256 traderFixedTokenBalance, int256 traderVariableTokenBalance) internal returns (int256 remainingSettlementCashflow) {
-    
+
     int256 fixedTokenBalanceWad = PRBMathSD59x18.fromInt(traderFixedTokenBalance);
-    
+
     int256 variableTokenBalanceWad = PRBMathSD59x18.fromInt(
         traderVariableTokenBalance
     );
@@ -298,7 +298,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
   /// @dev if the settlement cashflow of the trader is positive, then the settleTrader() function invokes the transferMarginToFCMTrader function of the MarginEngine which transfers the settlement cashflow the trader in terms of the underlying tokens
   /// @dev if settlement cashflow of the trader is negative, we need to update trader's margin in terms of scaled yield bearing tokens to account the settlement casflow
   /// @dev once settlement cashflows are accounted for, we safeTransfer the scaled yield bearing tokens in the margin account of the trader back to their wallet address
-  function settleTrader() external override onlyAfterMaturity {
+  function settleTrader() external override onlyAfterMaturity returns (int256 traderSettlementCashflow) {
 
     // todo: recipient as input to the function
 
@@ -315,7 +315,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
     // if settlement happens late, additional variable yield beyond maturity will accrue to the trader
     uint256 traderMarginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(trader.marginInScaledYieldBearingTokens);
-    trader.updateMarginInScaledYieldBearingTokens(0);    
+    trader.updateMarginInScaledYieldBearingTokens(0);
     trader.settleTrader();
     _underlyingYieldBearingToken.safeTransfer(msg.sender, traderMarginInYieldBearingTokens);
     if (settlementCashflow > 0) {
@@ -324,6 +324,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
       _marginEngine.transferMarginToFCMTrader(msg.sender, uint256(settlementCashflow));
     }
 
+    return settlementCashflow;
   }
 
 
