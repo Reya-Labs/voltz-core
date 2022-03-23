@@ -41,10 +41,10 @@ interface IVAMM is IPositionStructs, CustomErrors {
     );
 
     /// @dev emitted after setting feeProtocol
-    event FeeProtocol(uint8 feeProtocolOld, uint8 feeProtocol);
+    event FeeProtocol(uint8 feeProtocol);
 
     /// @dev emitted after fee is set
-    event Fee(uint256 feeWadOld, uint256 feeWad);
+    event Fee(uint256 feeWad);
 
     // structs
 

@@ -166,7 +166,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     /// @dev initializeVAMM should only be callable given the initialize function was already executed
     /// @dev we can check if the initialize function was executed by making sure the address of the margin engine is non-zero since it is set in the initialize function
     require(address(_marginEngine) != address(0), "vamm not initialized");
-  
+
     if (_vammVars.sqrtPriceX96 != 0)  {
       revert CustomErrors.ExpectedSqrtPriceZeroBeforeInit(_vammVars.sqrtPriceX96);
     }
@@ -186,9 +186,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     require(feeProtocol == 0 || (feeProtocol >= 3 && feeProtocol <= 50), "PR range");
     require(_vammVars.feeProtocol != feeProtocol, "PF value already set");
 
-    uint8 feeProtocolOld = _vammVars.feeProtocol;
     _vammVars.feeProtocol = feeProtocol;
-    emit FeeProtocol(feeProtocolOld, feeProtocol);
+    emit FeeProtocol(feeProtocol);
   }
 
   function setFee(uint256 newFeeWad) external override onlyOwner lock {
@@ -197,9 +196,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     require(newFeeWad >= 0 && newFeeWad <= MAX_FEE, "fee range");
     require(_feeWad != newFeeWad, "fee value already set");
 
-    uint256 feeWadOld = _feeWad;
     _feeWad = newFeeWad;
-    emit Fee(feeWadOld, _feeWad);
+    emit Fee(_feeWad);
   }
 
   function burn(
@@ -409,7 +407,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     // It would be more efficient to have two separate loop implementations and choose what implementation to run based on the trade side.
 
     // continue swapping as long as we haven't used the entire input/output and haven't reached the price (implied fixed rate) limit
-    if (params.amountSpecified > 0) { 
+    if (params.amountSpecified > 0) {
       // Fixed Taker
       while (
       state.amountSpecifiedRemaining != 0 &&
@@ -540,7 +538,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
       if (step.tickNext < TickMath.MIN_TICK) {
         step.tickNext = TickMath.MIN_TICK;
-      } 
+      }
 
       // get the price for the next tick
       step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
@@ -564,7 +562,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
             amountRemaining: state.amountSpecifiedRemaining,
             feePercentageWad: _feeWad,
             timeToMaturityInSecondsWad: termEndTimestampWad - Time.blockTimestampScaled()
-        })  
+        })
 
       );
 
@@ -606,7 +604,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
         state.variableTokenDeltaCumulative -= step.variableTokenDelta; // opposite sign from that of the LP's
-        
+
         // necessary for testing purposes, also handy to quickly compute the fixed rate at which an interest rate swap is created
         state.fixedTokenDeltaUnbalancedCumulative -= step.fixedTokenDeltaUnbalanced;
       }
@@ -775,7 +773,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
         );
 
         stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + FullMath.mulDivSigned(step.variableTokenDelta, FixedPoint128.Q128, state.liquidity);
-  
+
         stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + FullMath.mulDivSigned(fixedTokenDelta, FixedPoint128.Q128, state.liquidity);
     }
 
