@@ -26,10 +26,8 @@ interface IRateOracle is CustomErrors {
     );
 
     /// @notice Emitted by the rate oracle for increases to the number of observations that can be stored
-    /// @param observationCardinalityNextOld The previous value of the next observation cardinality
     /// @param observationCardinalityNextNew The updated value of the next observation cardinality
     event RateCardinalityNext(
-        uint16 observationCardinalityNextOld,
         uint16 observationCardinalityNextNew
     );
 

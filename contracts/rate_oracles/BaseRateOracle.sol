@@ -71,10 +71,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         oracleVars.rateCardinalityNext = rateCardinalityNextNew;
 
         if (rateCardinalityNextOld != rateCardinalityNextNew) {
-            emit RateCardinalityNext(
-                rateCardinalityNextOld,
-                rateCardinalityNextNew
-            );
+            emit RateCardinalityNext(rateCardinalityNextNew);
         }
     }
 
