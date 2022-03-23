@@ -108,7 +108,7 @@ task(
       console.error("IRS creation failed!");
     } else {
       const event = receipt.events.filter(
-        (e: { event: string }) => e.event === "IrsInstanceDeployed"
+        (e: { event: string }) => e.event === "IrsInstance"
       )[0];
       //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
       console.log(`IRS created successfully. Event args were: ${event.args}`);

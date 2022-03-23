@@ -9,7 +9,7 @@ task(
   const factory = (await hre.ethers.getContract("Factory")) as Factory;
   // console.log(`Listing IRS instances created by Factory ${factory.address}`);
 
-  const logs = await factory.queryFilter(factory.filters.IrsInstanceDeployed());
+  const logs = await factory.queryFilter(factory.filters.IrsInstance());
   const events = logs.map((l) => factory.interface.parseLog(l));
 
   let csvOutput = `underlyingToken,rateOracle,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID`;
