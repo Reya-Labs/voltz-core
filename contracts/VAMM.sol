@@ -139,10 +139,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       return _vammVars;
   }
 
-  /// @inheritdoc IVAMM
-  function unlocked() external view override returns (bool) {
-      return _unlocked;
-  }
 
   /// @dev modifier that ensures the
   modifier onlyMarginEngine () {
