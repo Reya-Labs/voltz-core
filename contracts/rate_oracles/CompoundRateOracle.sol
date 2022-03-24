@@ -7,6 +7,7 @@ import "../interfaces/compound/ICToken.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WadRayMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
+import "hardhat/console.sol";
 
 contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
@@ -28,7 +29,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         ctoken = _ctoken;
         decimals = underlying.decimals();
         uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = exchangeRateInRay();
+        uint256 result = 10000000000000000000000000000000000000000000;
         (
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
@@ -39,6 +40,8 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
         // source: https://compound.finance/docs/ctokens#exchange-rate
         uint256 exchangeRateStored = ctoken.exchangeRateStored();
+        console.log("cToken.address: ", address(ctoken));
+        console.log("exchangeRateStored: ", exchangeRateStored);
         if (decimals >= 18) {
             uint256 scalingFactor = 10**(decimals - 18);
             return WadRayMath.rayDiv(exchangeRateStored, scalingFactor);
@@ -203,6 +206,8 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
+                console.log("atOrAfter.observedValue", atOrAfter.observedValue);
+                console.log("beforeOrAt.observedValue", beforeOrAt.observedValue);
                 uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath.rayDiv(
                     atOrAfter.observedValue,
                     beforeOrAt.observedValue
