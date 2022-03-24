@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
   const aaveTokens = getAaveTokens();
-  let rateOracle = await ethers.getContractOrNull("TestRateOracle");
+  let rateOracle = await ethers.getContractOrNull("MockTokenRateOracle");
   const factory = (await ethers.getContract("Factory")) as Factory;
 
   if (!rateOracle && aaveTokens) {

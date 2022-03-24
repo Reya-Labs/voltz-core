@@ -1,7 +1,11 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
-import { getAaveLendingPoolAddress, getAaveTokens } from "./config";
+import {
+  configDefaults,
+  getAaveLendingPoolAddress,
+  getAaveTokens,
+} from "./config";
 import { AaveRateOracle } from "../typechain";
 
 const checkBufferSize = async (r: AaveRateOracle, minSize: number) => {
@@ -101,11 +105,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log(
       `Deploy rate oracle for mocked {token, aave}: {${mockToken.address}, ${mockAaveLendingPool.address}}`
     );
-    await deploy("TestRateOracle", {
+    await deploy("MockTokenRateOracle", {
+      contract: "AaveRateOracle",
       from: deployer,
       args: [mockAaveLendingPool.address, mockToken.address],
       log: doLogging,
     });
+    const rateOracleContract = (await ethers.getContract(
+      "MockTokenRateOracle"
+    )) as AaveRateOracle;
+    // Ensure the buffer is big enough
+    await checkBufferSize(
+      rateOracleContract as AaveRateOracle,
+      configDefaults.rateOracleBufferSize
+    );
+    await checkMinSecondsSinceLastUpdate(
+      rateOracleContract as AaveRateOracle,
+      configDefaults.rateOracleMinSecondsSinceLastUpdate
+    );
   }
 };
 func.tags = ["RateOracles"];
