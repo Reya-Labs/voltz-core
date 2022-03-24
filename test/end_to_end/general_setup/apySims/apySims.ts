@@ -24,6 +24,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         tickUpper: this.positions[positionIndex][2],
         notional: this.NOTIONAL,
         isMint: true,
+        marginDelta: 0,
       })
       .then(
         (_: any) => {
@@ -71,6 +72,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       tickUpper: this.positions[positionIndex][2],
       notional: this.NOTIONAL,
       isMint: true,
+      marginDelta: 0,
     });
   }
 
@@ -92,6 +94,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         tickLower: this.positions[positionIndex][1],
         tickUpper: this.positions[positionIndex][2],
+        marginDelta: 0,
       })
       .then(
         // todo: add interface for the result to avoid using [] notation to query result elements
@@ -156,6 +159,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       sqrtPriceLimitX96: sqrtPriceLimitX96,
       tickLower: this.positions[positionIndex][1],
       tickUpper: this.positions[positionIndex][2],
+      marginDelta: 0,
     });
   }
 

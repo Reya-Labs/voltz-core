@@ -11,10 +11,37 @@ import "../utils/TickMath.sol";
 import "./peripheral_libraries/LiquidityAmounts.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "../core_libraries/SafeTransferLib.sol";
+import "../core_libraries/Tick.sol";
 
 contract Periphery is IPeriphery {
     using SafeCast for uint256;
     using SafeCast for int256;
+
+    using SafeTransferLib for IERC20Minimal;
+
+    function updatePositionMargin(
+        IMarginEngine _marginEngine,
+        int24 _tickLower,
+        int24 _tickUpper,
+        uint256 _marginDelta
+    ) internal {
+        if (_marginDelta > 0) {
+            IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
+            _underlyingToken.safeTransferFrom(
+                msg.sender,
+                address(this),
+                _marginDelta
+            );
+            _underlyingToken.approve(address(_marginEngine), _marginDelta);
+            _marginEngine.updatePositionMargin(
+                msg.sender,
+                _tickLower,
+                _tickUpper,
+                _marginDelta.toInt256()
+            );
+        }
+    }
 
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params)
@@ -22,12 +49,36 @@ contract Periphery is IPeriphery {
         override
         returns (int256 positionMarginRequirement)
     {
+        Tick.checkTicks(params.tickLower, params.tickUpper);
+
+        // todo: check ticks in here?
+
         IVAMM vamm = params.marginEngine.vamm();
 
-        // compute the liquidity amount for the amount of notional (amount1) specified
+        bool vammUnlocked = vamm.unlocked();
+
+        // get sqrt ratios
 
         uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(params.tickLower);
         uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(params.tickUpper);
+
+        // initialize the vamm at tick lower
+
+        if (!vammUnlocked) {
+            // initialize the vamm at tick lower
+            vamm.initializeVAMM(sqrtRatioAX96);
+        }
+
+        // if margin delta is positive, top up position margin
+
+        updatePositionMargin(
+            params.marginEngine,
+            params.tickLower,
+            params.tickUpper,
+            params.marginDelta
+        );
+
+        // compute the liquidity amount for the amount of notional (amount1) specified
 
         uint128 liquidity = LiquidityAmounts.getLiquidityForAmount1(
             sqrtRatioAX96,
@@ -66,6 +117,8 @@ contract Periphery is IPeriphery {
             int24 _tickAfter
         )
     {
+        Tick.checkTicks(params.tickLower, params.tickUpper);
+
         IVAMM _vamm = params.marginEngine.vamm();
 
         if ((params.tickLower == 0) && (params.tickUpper == 0)) {
@@ -87,6 +140,16 @@ contract Periphery is IPeriphery {
             params.tickLower = _tickLower;
             params.tickUpper = _tickUpper;
         }
+
+        // if margin delta is positive, top up position margin
+        /// @audit duplicate code
+
+        updatePositionMargin(
+            params.marginEngine,
+            params.tickLower,
+            params.tickUpper,
+            params.marginDelta
+        );
 
         int256 amountSpecified;
 

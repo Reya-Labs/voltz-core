@@ -164,6 +164,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @return The current VAMM Vars (see struct definition for semantics)
     function vammVars() external view returns (VAMMVars memory);
 
+    /// @return True if the VAMM is unlocked, false if it is locked
+    function unlocked() external view returns (bool);
+
     /// @notice The fixed token growth in wei, accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function fixedTokenGrowthGlobalX128() external view returns (int256);
