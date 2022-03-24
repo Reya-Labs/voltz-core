@@ -62,11 +62,14 @@ contract Periphery is IPeriphery {
         uint160 sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(params.tickLower);
         uint160 sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(params.tickUpper);
 
-        // initialize the vamm at tick lower
+        // initialize the vamm at midTick
 
         if (!vammUnlocked) {
-            // initialize the vamm at tick lower
-            vamm.initializeVAMM(sqrtRatioAX96);
+            int24 midTick = (params.tickLower + params.tickUpper) / 2;
+            uint160 sqrtRatioAtMidTickX96 = TickMath.getSqrtRatioAtTick(
+                midTick
+            );
+            vamm.initializeVAMM(sqrtRatioAtMidTickX96);
         }
 
         // if margin delta is positive, top up position margin
