@@ -13,6 +13,7 @@ interface IPeriphery is CustomErrors {
         int24 tickUpper;
         uint256 notional;
         bool isMint;
+        uint256 marginDelta;
     }
 
     struct SwapPeripheryParams {
@@ -22,6 +23,7 @@ interface IPeriphery is CustomErrors {
         uint160 sqrtPriceLimitX96;
         int24 tickLower;
         int24 tickUpper;
+        uint256 marginDelta;
     }
 
     // view functions

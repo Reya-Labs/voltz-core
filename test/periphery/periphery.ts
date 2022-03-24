@@ -50,11 +50,14 @@ describe("Periphery", async () => {
       metaFixture
     ));
 
-    await token.mint(wallet.address, BigNumber.from(10).pow(27));
+    await token.mint(wallet.address, BigNumber.from(10).pow(27).mul(2));
+
     await token
       .connect(wallet)
       .approve(marginEngineTest.address, BigNumber.from(10).pow(27));
-    await token.mint(other.address, BigNumber.from(10).pow(27));
+
+    await token.mint(other.address, BigNumber.from(10).pow(27).mul(2));
+
     await token
       .connect(other)
       .approve(marginEngineTest.address, BigNumber.from(10).pow(27));
@@ -95,6 +98,16 @@ describe("Periphery", async () => {
 
     // set the periphery in the factory
     await factory.setPeriphery(periphery.address);
+
+    // approve the periphery to spend tokens on wallet's behalf
+
+    await token
+      .connect(wallet)
+      .approve(periphery.address, BigNumber.from(10).pow(27));
+
+    await token
+      .connect(other)
+      .approve(periphery.address, BigNumber.from(10).pow(27));
   });
 
   it("swap quoter on revert: margin requirement not met", async () => {
@@ -129,6 +142,7 @@ describe("Periphery", async () => {
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
         tickLower: 0,
         tickUpper: 0,
+        marginDelta: 0,
       })
       .then(
         async (result) => {
@@ -208,6 +222,7 @@ describe("Periphery", async () => {
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
+        marginDelta: 0,
       })
       .then(
         async (result) => {
@@ -279,6 +294,7 @@ describe("Periphery", async () => {
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
         tickLower: 0,
         tickUpper: 0,
+        marginDelta: 0,
       })
       .then(
         async (result) => {
@@ -333,6 +349,7 @@ describe("Periphery", async () => {
         tickUpper: TICK_SPACING,
         notional: toBn("59997"), // equivalent to approximately 10,000,000 liquidity
         isMint: true,
+        marginDelta: 0,
       })
       .then(
         (result) => {
@@ -375,11 +392,11 @@ describe("Periphery", async () => {
       .connect(wallet)
       .callStatic.mintOrBurn({
         marginEngine: marginEngineTest.address,
-
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: toBn("59997"), // equivalent to approximately 10,000,000 liquidity
         isMint: true,
+        marginDelta: 0,
       })
       .then(
         (result) => {
@@ -465,6 +482,7 @@ describe("Periphery", async () => {
         tickUpper: TICK_SPACING,
         notional: toBn("0"),
         isMint: true,
+        marginDelta: 0,
       })
       .then(
         (result) => {
@@ -591,28 +609,15 @@ describe("Periphery", async () => {
   });
 
   it("minting via periphery", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-
-    await vammTest.initializeVAMM(
-      TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
-    );
-
-    await marginEngineTest.updatePositionMargin(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING,
-      toBn("100000")
-    );
-
     const notionalMinted = toBn("10");
 
-    await periphery.mintOrBurn({
+    await periphery.connect(wallet).mintOrBurn({
       marginEngine: marginEngineTest.address,
-
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalMinted,
       isMint: true,
+      marginDelta: toBn("100000"),
     });
 
     await marginEngineTest
@@ -672,39 +677,26 @@ describe("Periphery", async () => {
   });
 
   it("burning via periphery", async () => {
-    await vammTest.initializeVAMM(
-      TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
-    );
-
-    await marginEngineTest.updatePositionMargin(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING,
-      toBn("100000")
-    );
-
     const notionalMinted = toBn("10");
     const notionalBurnt = toBn("5");
     const notioanlLeft = sub(notionalMinted, notionalBurnt);
 
-    await factory.connect(wallet).setApproval(periphery.address, true);
-
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,
-
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalMinted,
       isMint: true,
+      marginDelta: toBn("100000"),
     });
 
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,
-
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
       notional: notionalBurnt,
       isMint: false,
+      marginDelta: 0,
     });
 
     await marginEngineTest
@@ -763,20 +755,6 @@ describe("Periphery", async () => {
   });
 
   it("swapping via periphery", async () => {
-    // await factory.connect(wallet).setApproval(periphery.address, true);
-    // await factory.connect(other).setApproval(periphery.address, true);
-
-    await vammTest.initializeVAMM(
-      TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
-    );
-
-    await marginEngineTest.updatePositionMargin(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING,
-      toBn("100000")
-    );
-
     const notionalMinted = toBn("10");
 
     await periphery.mintOrBurn({
@@ -785,6 +763,7 @@ describe("Periphery", async () => {
       tickUpper: TICK_SPACING,
       notional: notionalMinted,
       isMint: true,
+      marginDelta: toBn("100000"),
     });
 
     await marginEngineTest
@@ -803,6 +782,7 @@ describe("Periphery", async () => {
       sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(),
       tickLower: -TICK_SPACING,
       tickUpper: TICK_SPACING,
+      marginDelta: 0,
     });
 
     await marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
