@@ -26,7 +26,7 @@ import {
   encodeSqrtRatioX96,
 } from "../shared/utilities";
 import { TickMath } from "../shared/tickMath";
-import { mul, sub } from "../shared/functions";
+import { mul } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -669,9 +669,9 @@ describe("Periphery", async () => {
       utils.formatEther(traderVariableTokenBalance.toString())
     );
 
-    expect(lpVariableTokenBalance).to.be.closeTo(notionalMinted, 10);
+    expect(lpVariableTokenBalance).to.be.closeTo("5007499619400846835", 10);
     expect(traderVariableTokenBalance).to.be.closeTo(
-      mul(notionalMinted, toBn("-1")),
+      "-5007499619400846838",
       10
     );
   });
@@ -679,7 +679,6 @@ describe("Periphery", async () => {
   it("burning via periphery", async () => {
     const notionalMinted = toBn("10");
     const notionalBurnt = toBn("5");
-    const notioanlLeft = sub(notionalMinted, notionalBurnt);
 
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,
@@ -747,9 +746,9 @@ describe("Periphery", async () => {
       utils.formatEther(traderVariableTokenBalance.toString())
     );
 
-    expect(lpVariableTokenBalance).to.be.closeTo(notioanlLeft, 10);
+    expect(lpVariableTokenBalance).to.be.closeTo("2503749809700423415", 10);
     expect(traderVariableTokenBalance).to.be.closeTo(
-      mul(notioanlLeft, toBn("-1")),
+      "-2503749809700423415",
       10
     );
   });
@@ -817,9 +816,9 @@ describe("Periphery", async () => {
       utils.formatEther(traderVariableTokenBalance.toString())
     );
 
-    expect(lpVariableTokenBalance).to.be.closeTo(notionalMinted, 10);
+    expect(lpVariableTokenBalance).to.be.closeTo("5007499619400846835", 10);
     expect(traderVariableTokenBalance).to.be.closeTo(
-      mul(notionalMinted, toBn("-1")),
+      "-5007499619400846835",
       10
     );
   });
