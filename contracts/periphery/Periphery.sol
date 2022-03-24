@@ -26,21 +26,19 @@ contract Periphery is IPeriphery {
         int24 _tickUpper,
         uint256 _marginDelta
     ) internal {
-        if (_marginDelta > 0) {
-            IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
-            _underlyingToken.safeTransferFrom(
-                msg.sender,
-                address(this),
-                _marginDelta
-            );
-            _underlyingToken.approve(address(_marginEngine), _marginDelta);
-            _marginEngine.updatePositionMargin(
-                msg.sender,
-                _tickLower,
-                _tickUpper,
-                _marginDelta.toInt256()
-            );
-        }
+        IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
+        _underlyingToken.safeTransferFrom(
+            msg.sender,
+            address(this),
+            _marginDelta
+        );
+        _underlyingToken.approve(address(_marginEngine), _marginDelta);
+        _marginEngine.updatePositionMargin(
+            msg.sender,
+            _tickLower,
+            _tickUpper,
+            _marginDelta.toInt256()
+        );
     }
 
     /// @notice Add liquidity to an initialized pool
@@ -75,12 +73,14 @@ contract Periphery is IPeriphery {
 
         // if margin delta is positive, top up position margin
 
-        updatePositionMargin(
-            params.marginEngine,
-            params.tickLower,
-            params.tickUpper,
-            params.marginDelta
-        );
+        if (params.marginDelta > 0) {
+            updatePositionMargin(
+                params.marginEngine,
+                params.tickLower,
+                params.tickUpper,
+                params.marginDelta
+            );
+        }
 
         // compute the liquidity amount for the amount of notional (amount1) specified
 
@@ -146,14 +146,15 @@ contract Periphery is IPeriphery {
         }
 
         // if margin delta is positive, top up position margin
-        /// @audit duplicate code
 
-        updatePositionMargin(
-            params.marginEngine,
-            params.tickLower,
-            params.tickUpper,
-            params.marginDelta
-        );
+        if (params.marginDelta > 0) {
+            updatePositionMargin(
+                params.marginEngine,
+                params.tickLower,
+                params.tickUpper,
+                params.marginDelta
+            );
+        }
 
         int256 amountSpecified;
 
