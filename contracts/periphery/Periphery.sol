@@ -55,7 +55,8 @@ contract Periphery is IPeriphery {
 
         IVAMM vamm = params.marginEngine.vamm();
 
-        bool vammUnlocked = vamm.unlocked();
+        IVAMM.VAMMVars memory _v = vamm.vammVars();
+        bool vammUnlocked = _v.sqrtPriceX96 != 0;
 
         // get sqrt ratios
 
