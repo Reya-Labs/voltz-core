@@ -41,7 +41,6 @@ interface IFactory is CustomErrors {
         view
         returns (bool);
 
-    
     function masterVAMM() external view returns (IVAMM);
 
     function masterMarginEngine() external view returns (IMarginEngine);
@@ -49,7 +48,7 @@ interface IFactory is CustomErrors {
     function periphery() external view returns (IPeriphery);
 
     // settters
-    
+
     function setApproval(address intAddress, bool allowIntegration) external;
 
     function setMasterFCM(IFCM masterFCM, uint8 yieldBearingProtocolID)
@@ -77,6 +76,7 @@ interface IFactory is CustomErrors {
         );
 
     function masterFCMs(uint8 yieldBearingProtocolID)
-        external view
+        external
+        view
         returns (IFCM masterFCM);
 }
