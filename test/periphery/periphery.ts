@@ -580,10 +580,7 @@ describe("Periphery", async () => {
   });
 
   it("approvals work as expected", async () => {
-    let isApproved = await factory.isApproved(
-      wallet.address,
-      other.address
-    );
+    let isApproved = await factory.isApproved(wallet.address, other.address);
     expect(isApproved).to.eq(false);
     await factory.connect(wallet).setApproval(other.address, true);
     isApproved = await factory.isApproved(wallet.address, other.address);
