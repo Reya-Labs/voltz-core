@@ -92,11 +92,14 @@ describe("Periphery", async () => {
     const peripheryFactory = await ethers.getContractFactory("Periphery");
 
     periphery = (await peripheryFactory.deploy()) as Periphery;
+
+    // set the periphery in the factory
+    await factory.setPeriphery(periphery.address);
   });
 
   it("swap quoter on revert: margin requirement not met", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await marginEngineTest.updatePositionMargin(
@@ -166,8 +169,8 @@ describe("Periphery", async () => {
   });
 
   it("swap quoter on success", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await marginEngineTest.updatePositionMargin(
@@ -245,8 +248,8 @@ describe("Periphery", async () => {
   });
 
   it("swap quoter on different revert", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await marginEngineTest.updatePositionMargin(
@@ -316,8 +319,8 @@ describe("Periphery", async () => {
   });
 
   it("mint quoter on revert", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     let marginRequirement: number = 0;
@@ -356,8 +359,8 @@ describe("Periphery", async () => {
   });
 
   it("mint quoter on success", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await marginEngineTest.updatePositionMargin(
@@ -403,8 +406,8 @@ describe("Periphery", async () => {
   });
 
   it("mint quoter from vamm", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await marginEngineTest.updatePositionMargin(
@@ -448,8 +451,8 @@ describe("Periphery", async () => {
   });
 
   it("mint quoter on different revert", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     let marginRequirement: number = 0;
@@ -488,8 +491,8 @@ describe("Periphery", async () => {
   });
 
   it("update position margin on revert", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await marginEngineTest.updatePositionMargin(
@@ -535,8 +538,8 @@ describe("Periphery", async () => {
   });
 
   it("update position margin on revert", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await marginEngineTest.updatePositionMargin(
@@ -579,14 +582,14 @@ describe("Periphery", async () => {
   it("approvals work as expected", async () => {
     let isApproved = await factory.isApproved(
       wallet.address,
-      periphery.address
+      other.address
     );
     expect(isApproved).to.eq(false);
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    isApproved = await factory.isApproved(wallet.address, periphery.address);
+    await factory.connect(wallet).setApproval(other.address, true);
+    isApproved = await factory.isApproved(wallet.address, other.address);
     expect(isApproved).to.eq(true);
-    await factory.connect(wallet).setApproval(periphery.address, false);
-    isApproved = await factory.isApproved(wallet.address, periphery.address);
+    await factory.connect(wallet).setApproval(other.address, false);
+    isApproved = await factory.isApproved(wallet.address, other.address);
     expect(isApproved).to.eq(false);
   });
 
@@ -687,17 +690,6 @@ describe("Periphery", async () => {
     const notionalBurnt = toBn("5");
     const notioanlLeft = sub(notionalMinted, notionalBurnt);
 
-    await expect(
-      periphery.mintOrBurn({
-        marginEngine: marginEngineTest.address,
-
-        tickLower: -TICK_SPACING,
-        tickUpper: TICK_SPACING,
-        notional: notionalMinted,
-        isMint: true,
-      })
-    ).to.be.revertedWith("only msg.sender or approved can mint");
-
     await factory.connect(wallet).setApproval(periphery.address, true);
 
     await periphery.mintOrBurn({
@@ -774,8 +766,8 @@ describe("Periphery", async () => {
   });
 
   it("swapping via periphery", async () => {
-    await factory.connect(wallet).setApproval(periphery.address, true);
-    await factory.connect(other).setApproval(periphery.address, true);
+    // await factory.connect(wallet).setApproval(periphery.address, true);
+    // await factory.connect(other).setApproval(periphery.address, true);
 
     await vammTest.initializeVAMM(
       TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
