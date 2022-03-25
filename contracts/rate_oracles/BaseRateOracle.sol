@@ -55,13 +55,11 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         underlying = _underlying;
     }
 
-    
     /// @inheritdoc IRateOracle
     function increaseObservationCardinalityNext(uint16 rateCardinalityNext)
         external
         override
     {
-
         uint16 rateCardinalityNextOld = oracleVars.rateCardinalityNext; // for the event
 
         uint16 rateCardinalityNextNew = observations.grow(
