@@ -92,10 +92,11 @@ contract Factory is IFactory, Ownable {
 
   function setPeriphery(IPeriphery _periphery) external override onlyOwner {
     
-    require(address(_periphery) != address(0), "master vamm must exist");
+    require(address(_periphery) != address(0), "periphery must exist");
 
     if (address(periphery) != address(_periphery)) {
       periphery = _periphery;
+      emit PeripheryUpdate(periphery);
     }
 
   }
