@@ -280,6 +280,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
     /// @inheritdoc IMarginEngine
     function updatePositionMargin(address _owner, int24 _tickLower, int24 _tickUpper, int256 _marginDelta) external whenNotPaused nonZeroDelta(_marginDelta) override {
+        
+        require(_owner != address(0), "owner must exist");
 
         Tick.checkTicks(_tickLower, _tickUpper);
 

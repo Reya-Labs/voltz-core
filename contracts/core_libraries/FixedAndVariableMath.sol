@@ -92,7 +92,7 @@ library FixedAndVariableMath {
 
     /// @notice Calculate the fixed token balance for a position over a timespan
     /// @param amountFixedWad  A fixed amount
-    /// @param excessBalanceWad Any excess balance from the variable side of the position
+    /// @param excessBalanceWad Cashflows accrued to the fixed and variable token amounts since the inception of the IRS AMM
     /// @param termStartTimestampWad When does the period of time begin, in wei-seconds
     /// @param termEndTimestampWad When does the period of time end, in wei-seconds
     /// @return fixedTokenBalanceWad The fixed token balance for that time period
