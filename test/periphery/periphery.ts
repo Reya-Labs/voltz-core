@@ -97,7 +97,9 @@ describe("Periphery", async () => {
     periphery = (await peripheryFactory.deploy()) as Periphery;
 
     // set the periphery in the factory
-    await factory.setPeriphery(periphery.address);
+    await expect(factory.setPeriphery(periphery.address))
+      .to.emit(factory, "PeripheryUpdate")
+      .withArgs(periphery.address);
 
     // approve the periphery to spend tokens on wallet's behalf
 

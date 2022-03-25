@@ -34,6 +34,8 @@ interface IFactory is CustomErrors {
         bool indexed isApproved
     );
 
+    event PeripheryUpdate(IPeriphery periphery);
+
     // view functions
 
     function isApproved(address _owner, address intAddress)
