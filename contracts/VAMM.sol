@@ -400,10 +400,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     rateOracle.writeOracleEntry();
 
-    /// @audit tag 3 [ABDK]
-    // On every iteration of this loop there are several places where different code is executed depending on the trade side.
-    // It would be more efficient to have two separate loop implementations and choose what implementation to run based on the trade side.
-
     // continue swapping as long as we haven't used the entire input/output and haven't reached the price (implied fixed rate) limit
     if (params.amountSpecified > 0) {
       // Fixed Taker
