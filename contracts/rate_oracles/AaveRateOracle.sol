@@ -20,12 +20,15 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     uint256 public constant ONE_IN_WAD = 1e18;
 
-    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal underlying)
-        BaseRateOracle(underlying)
+    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal _underlying)
+        BaseRateOracle(_underlying)
     {
+        require(address(_aaveLendingPool) != address(0), "aave pool must exist");
+        require(address(_underlying) != address(0), "underlying must exist");
+
         aaveLendingPool = _aaveLendingPool;
         uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
+        uint256 result = aaveLendingPool.getReserveNormalizedIncome(_underlying);
 
         (
             oracleVars.rateCardinality,

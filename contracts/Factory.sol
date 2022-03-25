@@ -58,6 +58,9 @@ contract Factory is IFactory, Ownable {
   }
 
   constructor(IMarginEngine _masterMarginEngine, IVAMM _masterVAMM) {
+    require(address(_masterMarginEngine) != address(0), "master me must exist");
+    require(address(_masterVAMM) != address(0), "master vamm must exist");
+
     masterMarginEngine = _masterMarginEngine;
     masterVAMM = _masterVAMM;
   }

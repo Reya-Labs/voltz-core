@@ -51,15 +51,17 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     constructor(IERC20Minimal _underlying) {
+        require(address(_underlying) != address(0), "underlying must exist");
         underlying = _underlying;
     }
 
-    // AB: lock the amm when calling this function?
+    
     /// @inheritdoc IRateOracle
     function increaseObservationCardinalityNext(uint16 rateCardinalityNext)
         external
         override
     {
+
         uint16 rateCardinalityNextOld = oracleVars.rateCardinalityNext; // for the event
 
         uint16 rateCardinalityNextNew = observations.grow(

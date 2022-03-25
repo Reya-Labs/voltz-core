@@ -47,6 +47,10 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
   /// @dev in the initialize function we set the vamm and the margiEngine associated with the fcm
   function initialize(IVAMM __vamm, IMarginEngine __marginEngine) external override initializer {
+
+    require(address(__vamm) != address(0), "vamm must exist");
+    require(address(__marginEngine) != address(0), "margin engine must exist");
+
     /// @dev we additionally cache the rateOracle, _aaveLendingPool, underlyingToken, underlyingYieldBearingToken
     _vamm = __vamm;
     _marginEngine = __marginEngine;
