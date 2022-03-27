@@ -31,7 +31,7 @@ const config: ContractsConfigMap = {
       {
         name: "USDT",
         address: "0x13512979ADE267AB5100878E2e0f485B568328a4",
-        rateOracleBufferSize: 135,
+        rateOracleBufferSize: 50,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],
