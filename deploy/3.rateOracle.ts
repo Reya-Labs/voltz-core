@@ -8,7 +8,6 @@ import {
   getMaxDurationOfIrsInSeconds,
 } from "../deployConfig/config";
 import { AaveRateOracle } from "../typechain";
-import { BigNumber } from "ethers";
 
 const MAX_BUFFER_GROWTH_PER_TRANSACTION = 100;
 const BUFFER_SIZE_SAFETY_FACTOR = 1.2; // The buffer must last for 1.2x as long as the longest expected IRS
