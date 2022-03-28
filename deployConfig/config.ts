@@ -64,6 +64,12 @@ const config: ContractsConfigMap = {
         rateOracleBufferSize: 50,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
+      {
+        name: "USDC",
+        address: "0xe22da380ee6B445bb8273C81944ADEB6E8450422",
+        rateOracleBufferSize: 150,
+        minSecondsSinceLastUpdate: 60 * 60, // 1 hour
+      },
     ],
   },
   localhost: {
