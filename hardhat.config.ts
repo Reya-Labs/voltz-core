@@ -61,7 +61,6 @@ const config: HardhatUserConfig = {
   networks: {
     localhost: {
       live: false,
-      saveDeployments: false,
     },
     hardhat: {
       // forking: {
