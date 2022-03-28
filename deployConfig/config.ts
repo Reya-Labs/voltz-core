@@ -1,6 +1,7 @@
 import type { ConfigDefaults, ContractsConfigMap, TokenConfig } from "./types";
 // import { network } from "hardhat"; // Not importable from tasks
 import { toBn } from "../test/helpers/toBn";
+import { BigNumberish } from "ethers";
 
 function duplicateExists(arr: string[]) {
   return new Set(arr).size !== arr.length;
@@ -51,7 +52,7 @@ const config: ContractsConfigMap = {
   kovan: {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe",
-    maxIrsDurationInSeconds: 60 * 60 * 24 * 365, // One year
+    maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough
     configDefaults: kovanConfigDefaults,
 
     // Kovan MockUSDT (USDC has no ABI and faucet not working, so USDT easier to mint)
@@ -61,23 +62,23 @@ const config: ContractsConfigMap = {
       {
         name: "USDT",
         address: "0x13512979ADE267AB5100878E2e0f485B568328a4",
-        rateOracleBufferSize: 50,
+        rateOracleBufferSize: 150,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
       {
         name: "USDC",
         address: "0xe22da380ee6B445bb8273C81944ADEB6E8450422",
         rateOracleBufferSize: 150,
-        minSecondsSinceLastUpdate: 60 * 60, // 1 hour
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],
   },
   localhost: {
-    maxIrsDurationInSeconds: 60 * 60 * 24 * 30, // 30 days
+    maxIrsDurationInSeconds: 60 * 60 * 24 * 30, // 30 days. Do not increase without checking that rate oracle buffers are large enough
     configDefaults: localhostConfigDefaults,
   },
   hardhat: {
-    maxIrsDurationInSeconds: 60 * 60 * 24 * 30, // 30 days
+    maxIrsDurationInSeconds: 60 * 60 * 24 * 30, // 30 days. Do not increase without checking that rate oracle buffers are large enough
     configDefaults: localhostConfigDefaults,
   },
 };
@@ -89,6 +90,11 @@ export const getAaveLendingPoolAddress = (
   return config[_networkName]
     ? config[_networkName].aaveLendingPool
     : undefined;
+};
+
+export const getMaxDurationOfIrsInSeconds = (_networkName: string): number => {
+  // const networkName = _networkName || network.name;
+  return config[_networkName].maxIrsDurationInSeconds;
 };
 
 export const getAaveTokens = (
