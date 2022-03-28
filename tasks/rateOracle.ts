@@ -17,7 +17,8 @@ task(
     )) as BaseRateOracle;
     // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
 
-    await rateOracle.writeOracleEntry();
+    const trx = await rateOracle.writeOracleEntry();
+    await trx.wait();
   });
 
 task(
