@@ -4,25 +4,8 @@ import {
   getMaxDurationOfIrsInSeconds,
 } from "../deployConfig/config";
 import { toBn } from "../test/helpers/toBn";
-import {
-  IRateOracle,
-  MarginEngine,
-  MockAaveLendingPool,
-  VAMM,
-} from "../typechain";
-import {
-  APY_UPPER_MULTIPLIER,
-  APY_LOWER_MULTIPLIER,
-  MIN_DELTA_LM,
-  MIN_DELTA_IM,
-  SIGMA_SQUARED,
-  ALPHA,
-  BETA,
-  XI_UPPER,
-  XI_LOWER,
-  T_MAX,
-} from "../test/shared/utilities";
-import { BigNumber, utils } from "ethers";
+import { IRateOracle, MarginEngine, VAMM } from "../typechain";
+import { utils } from "ethers";
 
 task(
   "createIrsInstance",

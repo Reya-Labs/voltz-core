@@ -1,7 +1,6 @@
 import type { ConfigDefaults, ContractsConfigMap, TokenConfig } from "./types";
 // import { network } from "hardhat"; // Not importable from tasks
 import { toBn } from "../test/helpers/toBn";
-import { BigNumberish } from "ethers";
 
 function duplicateExists(arr: string[]) {
   return new Set(arr).size !== arr.length;
