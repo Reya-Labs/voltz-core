@@ -4,7 +4,12 @@ import {
   getMaxDurationOfIrsInSeconds,
 } from "../deployConfig/config";
 import { toBn } from "../test/helpers/toBn";
-import { IRateOracle, MarginEngine, MockAaveLendingPool } from "../typechain";
+import {
+  IRateOracle,
+  MarginEngine,
+  MockAaveLendingPool,
+  VAMM,
+} from "../typechain";
 import {
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
@@ -109,22 +114,34 @@ task(
         "MarginEngine",
         marginEngineAddress
       )) as MarginEngine;
+      const vamm = (await hre.ethers.getContractAt(
+        "VAMM",
+        vammAddress
+      )) as VAMM;
 
-      // Not set the config for our IRS instance
+      // Set the config for our IRS instance
       // TODO: allow values to be overridden with task parameters, as required
       const configDefaults = getConfigDefaults(hre.network.name);
-      if (configDefaults) {
-        await marginEngine.setMarginCalculatorParameters(
-          configDefaults.marginEngineCalculatorParameters
-        );
-
-        await marginEngine.setCacheMaxAgeInSeconds(
-          configDefaults.marginEngineCacheMaxAgeInSeconds
-        );
-        await marginEngine.setLookbackWindowInSeconds(
-          configDefaults.marginEngineLookbackWindowInSeconds
-        );
-      }
+      let trx = await marginEngine.setMarginCalculatorParameters(
+        configDefaults.marginEngineCalculatorParameters
+      );
+      await trx.wait();
+      trx = await marginEngine.setCacheMaxAgeInSeconds(
+        configDefaults.marginEngineCacheMaxAgeInSeconds
+      );
+      await trx.wait();
+      trx = await marginEngine.setLookbackWindowInSeconds(
+        configDefaults.marginEngineLookbackWindowInSeconds
+      );
+      await trx.wait();
+      trx = await marginEngine.setLiquidatorReward(
+        configDefaults.marginEngineLiquidatorRewardWad
+      );
+      await trx.wait();
+      trx = await vamm.setFeeProtocol(configDefaults.vammFeeProtocol);
+      await trx.wait();
+      trx = await vamm.setFee(configDefaults.vammFeeWad);
+      await trx.wait();
 
       try {
         await marginEngine.getHistoricalApy();
@@ -136,7 +153,7 @@ task(
         );
       } catch (e) {
         console.error(
-          `Could not get historical APY; misconfigured window or uninitialized rate oracle?`
+          `WARNING: Could not get historical APY; misconfigured window or uninitialized rate oracle?`
         );
         console.log(
           `Lookback window = ${await marginEngine.lookbackWindowInSeconds()}s`
