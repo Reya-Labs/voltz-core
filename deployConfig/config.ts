@@ -32,7 +32,7 @@ const kovanConfigDefaults: ConfigDefaults = {
   marginEngineLookbackWindowInSeconds: 60 * 60 * 6, // 6 hours
   // marginEngineLookbackWindowInSeconds: 1209600, // 2 weeks
   marginEngineCacheMaxAgeInSeconds: 6 * 60 * 60, // 6 hours
-  marginEngineLiquidatorRewardWad: toBn(0.5),
+  marginEngineLiquidatorRewardWad: toBn(0.1),
   marginEngineCalculatorParameters: marginCalculatorDefaults1,
   vammFeeProtocol: 10,
   vammFeeWad: toBn(0.001), // 0.1%
@@ -62,13 +62,13 @@ const config: ContractsConfigMap = {
       {
         name: "USDT",
         address: "0x13512979ADE267AB5100878E2e0f485B568328a4",
-        rateOracleBufferSize: 150,
+        rateOracleBufferSize: 200,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
       {
         name: "USDC",
         address: "0xe22da380ee6B445bb8273C81944ADEB6E8450422",
-        rateOracleBufferSize: 150,
+        rateOracleBufferSize: 200,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],
