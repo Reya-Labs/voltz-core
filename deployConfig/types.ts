@@ -44,7 +44,7 @@ export interface ConfigDefaults extends IrsConfig {
 }
 export interface ContractsConfig {
   aaveLendingPool?: string;
-  maxIrsDurationInSeconds: BigNumberish; // TODO: make sure that the oracle buffer will last this long
+  maxIrsDurationInSeconds: number; // TODO: make sure that the oracle buffer will last this long
   configDefaults: ConfigDefaults;
   aaveTokens?: TokenConfig[];
 }

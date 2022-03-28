@@ -5,30 +5,55 @@ import {
   getConfigDefaults,
   getAaveLendingPoolAddress,
   getAaveTokens,
+  getMaxDurationOfIrsInSeconds,
 } from "../deployConfig/config";
 import { AaveRateOracle } from "../typechain";
+import { BigNumber } from "ethers";
 
-const checkBufferSize = async (r: AaveRateOracle, minSize: number) => {
-  const currentSize = (await r.oracleVars())[2];
+const MAX_BUFFER_GROWTH_PER_TRANSACTION = 100;
+const BUFFER_SIZE_SAFETY_FACTOR = 1.25; // The buffer must last for 1.25x as long as the longest expected IRS
+
+const applyBufferConfig = async (
+  r: AaveRateOracle,
+  minBufferSize: number,
+  minSecondsSinceLastUpdate: number,
+  maxIrsDurationInSeconds: number
+) => {
+  const secondsWorthOfBuffer = minBufferSize * minSecondsSinceLastUpdate;
+  if (
+    secondsWorthOfBuffer <
+    maxIrsDurationInSeconds * BUFFER_SIZE_SAFETY_FACTOR
+  ) {
+    throw new Error(
+      `Buffer config of {size ${minBufferSize}, minGap ${minSecondsSinceLastUpdate}s} ` +
+        `does not guarantee adequate buffer for an IRS of duration ${maxIrsDurationInSeconds}s`
+    );
+  }
+
+  let currentSize = (await r.oracleVars())[2];
   // console.log(`currentSize of ${r.address} is ${currentSize}`);
 
-  if (currentSize < minSize) {
-    await r.increaseObservationCardinalityNext(minSize);
-    console.log(`Increased size of ${r.address}'s buffer to ${minSize}`);
-  }
-};
+  while (currentSize < minBufferSize) {
+    // Growing the buffer can use a lot of gas so we may split buffer growth into multiple trx
+    const newSize = Math.min(
+      currentSize + MAX_BUFFER_GROWTH_PER_TRANSACTION,
+      minBufferSize
+    );
+    await r.increaseObservationCardinalityNext(newSize);
+    console.log(`Increased size of ${r.address}'s buffer to ${newSize}`);
 
-const checkMinSecondsSinceLastUpdate = async (
-  r: AaveRateOracle,
-  minSeconds: number
-) => {
-  const currentVal = (await r.minSecondsSinceLastUpdate()).toNumber();
+    currentSize = (await r.oracleVars())[2];
+  }
+
+  const currentSecondsSinceLastUpdate = (
+    await r.minSecondsSinceLastUpdate()
+  ).toNumber();
   // console.log( `current minSecondsSinceLastUpdate of ${r.address} is ${currentVal}` );
 
-  if (currentVal !== minSeconds) {
-    await r.setMinSecondsSinceLastUpdate(minSeconds);
+  if (currentSecondsSinceLastUpdate !== minSecondsSinceLastUpdate) {
+    await r.setMinSecondsSinceLastUpdate(minSecondsSinceLastUpdate);
     console.log(
-      `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSeconds}`
+      `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSecondsSinceLastUpdate}`
     );
   }
 };
@@ -42,6 +67,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Set up rate oracles for the Aave lending pool, if one exists
   const existingAaveLendingPoolAddress = getAaveLendingPoolAddress(network);
   const aaveTokens = getAaveTokens(network);
+  const maxDurationOfIrsInSeconds = getMaxDurationOfIrsInSeconds(
+    hre.network.name
+  );
 
   if (existingAaveLendingPoolAddress && aaveTokens) {
     const aaveLendingPool = await ethers.getContractAt(
@@ -85,13 +113,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       }
 
       // Ensure the buffer is big enough
-      await checkBufferSize(
+      await applyBufferConfig(
         rateOracleContract as AaveRateOracle,
-        token.rateOracleBufferSize
-      );
-      await checkMinSecondsSinceLastUpdate(
-        rateOracleContract as AaveRateOracle,
-        token.minSecondsSinceLastUpdate
+        token.rateOracleBufferSize,
+        token.minSecondsSinceLastUpdate,
+        maxDurationOfIrsInSeconds
       );
     }
   }
@@ -116,13 +142,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )) as AaveRateOracle;
     // Ensure the buffer is big enough
     const configDefaults = getConfigDefaults(network);
-    await checkBufferSize(
+    await applyBufferConfig(
       rateOracleContract as AaveRateOracle,
-      configDefaults.rateOracleBufferSize
-    );
-    await checkMinSecondsSinceLastUpdate(
-      rateOracleContract as AaveRateOracle,
-      configDefaults.rateOracleMinSecondsSinceLastUpdate
+      configDefaults.rateOracleBufferSize,
+      configDefaults.rateOracleMinSecondsSinceLastUpdate,
+      maxDurationOfIrsInSeconds
     );
 
     // Take a reading

@@ -1,5 +1,8 @@
 import { task, types } from "hardhat/config";
-import { getConfigDefaults } from "../deployConfig/config";
+import {
+  getConfigDefaults,
+  getMaxDurationOfIrsInSeconds,
+} from "../deployConfig/config";
 import { toBn } from "../test/helpers/toBn";
 import { IRateOracle, MarginEngine, MockAaveLendingPool } from "../typechain";
 import {
@@ -63,6 +66,17 @@ task(
     // const startTimestamp = tomorrow.getTime() / 1000;
     const startTimestamp = today.getTime() / 1000;
     const endDay = new Date(tomorrow);
+
+    const maxIrsDurationInDays =
+      getMaxDurationOfIrsInSeconds(hre.network.name) / (60 * 60 * 24);
+
+    if (maxIrsDurationInDays < taskArgs.daysDuration) {
+      throw new Error(
+        `Rate Oracle buffer can cope with IRS instances of up to ${maxIrsDurationInDays} days duration ` +
+          `so the requested duration of ${taskArgs.daysDuration} is unsafe`
+      );
+    }
+
     endDay.setDate(tomorrow.getDate() + taskArgs.daysDuration);
     const endTimestamp = endDay.getTime() / 1000; // N.B. May not be midnight if clocks have changed
 
