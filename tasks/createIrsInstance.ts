@@ -1,4 +1,5 @@
 import { task, types } from "hardhat/config";
+import { getConfigDefaults } from "../deployConfig/config";
 import { toBn } from "../test/helpers/toBn";
 import { IRateOracle, MarginEngine, MockAaveLendingPool } from "../typechain";
 import {
@@ -45,32 +46,6 @@ task(
       "IERC20Minimal",
       underlyingTokenAddress
     );
-
-    await rateOracle.increaseObservationCardinalityNext(1000);
-
-    const aaveLendingPool = (await hre.ethers.getContractAt(
-      "MockAaveLendingPool",
-      "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
-    )) as MockAaveLendingPool;
-
-    for (let i = 0; i < 15; i++) {
-      await hre.network.provider.send("evm_increaseTime", [86400]);
-      for (let j = 0; j < 2; j++) {
-        await hre.network.provider.send("evm_mine", []);
-      }
-
-      const rni =
-        Math.floor((1 + (i + 1) / 3650) * 10000 + 0.5).toString() +
-        "0".repeat(23);
-      console.log(rni);
-      await aaveLendingPool.setReserveNormalizedIncome(
-        "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-        rni
-      );
-
-      await rateOracle.writeOracleEntry();
-    }
-
     const factory = await hre.ethers.getContract("Factory");
 
     console.log(
@@ -113,51 +88,46 @@ task(
       //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
       console.log(`IRS created successfully. Event args were: ${event.args}`);
 
-      // set margin calculator parameters
-      const margin_engine_params = {
-        apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
-        apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
-        minDeltaLMWad: MIN_DELTA_LM,
-        minDeltaIMWad: MIN_DELTA_IM,
-        sigmaSquaredWad: SIGMA_SQUARED,
-        alphaWad: ALPHA,
-        betaWad: BETA,
-        xiUpperWad: XI_UPPER,
-        xiLowerWad: XI_LOWER,
-        tMaxWad: T_MAX,
-
-        devMulLeftUnwindLMWad: toBn("0.5"),
-        devMulRightUnwindLMWad: toBn("0.5"),
-        devMulLeftUnwindIMWad: toBn("0.8"),
-        devMulRightUnwindIMWad: toBn("0.8"),
-
-        fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
-        fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
-
-        fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
-        fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
-
-        gammaWad: toBn("1.0"),
-        minMarginToIncentiviseLiquidators: 0,
-      };
-
       const marginEngineAddress = event.args[5];
+      const vammAddress = event.args[6];
 
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
         marginEngineAddress
       )) as MarginEngine;
 
-      await marginEngine.setMarginCalculatorParameters(margin_engine_params);
+      // Not set the config for our IRS instance
+      // TODO: allow values to be overridden with task parameters, as required
+      const configDefaults = getConfigDefaults(hre.network.name);
+      if (configDefaults) {
+        await marginEngine.setMarginCalculatorParameters(
+          configDefaults.marginEngineCalculatorParameters
+        );
 
-      await marginEngine.setCacheMaxAgeInSeconds(BigNumber.from(86400));
-      await marginEngine.setLookbackWindowInSeconds(BigNumber.from(86400 * 7));
+        await marginEngine.setCacheMaxAgeInSeconds(
+          configDefaults.marginEngineCacheMaxAgeInSeconds
+        );
+        await marginEngine.setLookbackWindowInSeconds(
+          configDefaults.marginEngineLookbackWindowInSeconds
+        );
+      }
 
-      await marginEngine.getHistoricalApy();
-      console.log(
-        "historical apy",
-        utils.formatEther(await marginEngine.getHistoricalApyReadOnly())
-      );
+      try {
+        await marginEngine.getHistoricalApy();
+        const historicalApy = await marginEngine.getHistoricalApyReadOnly();
+        console.log(
+          `Margin Engine's historical apy: ${historicalApy} (${utils.formatEther(
+            historicalApy
+          )})`
+        );
+      } catch (e) {
+        console.error(
+          `Could not get historical APY; misconfigured window or uninitialized rate oracle?`
+        );
+        console.log(
+          `Lookback window = ${await marginEngine.lookbackWindowInSeconds()}s`
+        );
+      }
     }
   });
 
