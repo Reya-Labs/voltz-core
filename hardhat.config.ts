@@ -24,6 +24,7 @@ const loadModuleIgnoreErrors = async (modulePath: string) => {
     return await import(modulePath);
   } catch (e) {
     // Ignore
+    // console.log(`Could not load task from ${modulePath}: ${JSON.stringify(e)}`);
   }
 };
 

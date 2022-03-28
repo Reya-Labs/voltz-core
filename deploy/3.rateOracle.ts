@@ -2,10 +2,10 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import {
-  configDefaults,
+  getConfigDefaults,
   getAaveLendingPoolAddress,
   getAaveTokens,
-} from "./config";
+} from "../deployConfig/config";
 import { AaveRateOracle } from "../typechain";
 
 const checkBufferSize = async (r: AaveRateOracle, minSize: number) => {
@@ -37,10 +37,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
+  const network = hre.network.name;
 
   // Set up rate oracles for the Aave lending pool, if one exists
-  const existingAaveLendingPoolAddress = getAaveLendingPoolAddress();
-  const aaveTokens = getAaveTokens();
+  const existingAaveLendingPoolAddress = getAaveLendingPoolAddress(network);
+  const aaveTokens = getAaveTokens(network);
 
   if (existingAaveLendingPoolAddress && aaveTokens) {
     const aaveLendingPool = await ethers.getContractAt(
@@ -79,7 +80,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             rateOracleIdentifier
           )) as AaveRateOracle;
 
-          // Check the buffer size and increase if required
           await rateOracleContract.writeOracleEntry();
         }
       }
@@ -115,6 +115,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       "MockTokenRateOracle"
     )) as AaveRateOracle;
     // Ensure the buffer is big enough
+    const configDefaults = getConfigDefaults(network);
     await checkBufferSize(
       rateOracleContract as AaveRateOracle,
       configDefaults.rateOracleBufferSize
@@ -123,7 +124,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       rateOracleContract as AaveRateOracle,
       configDefaults.rateOracleMinSecondsSinceLastUpdate
     );
+
+    // Take a reading
+    await rateOracleContract.writeOracleEntry();
+
+    // Fast forward time to ensure that the mock rate oracle has enough historical data
+    await hre.network.provider.send("evm_increaseTime", [
+      configDefaults.marginEngineLookbackWindowInSeconds,
+    ]);
   }
+  return false; // This script is safely re-runnable and will reconfigure existing rate oracles if required
 };
 func.tags = ["RateOracles"];
 export default func;
