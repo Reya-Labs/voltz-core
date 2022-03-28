@@ -35,10 +35,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const underlyingYieldBearingProtocolID =
     await rateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
-  await factory.setMasterFCM(
+  const trx = await factory.setMasterFCM(
     masterAaveFCM.address,
     underlyingYieldBearingProtocolID
   );
+  await trx.wait();
   return true; // Only execute once
 };
 func.tags = ["FCMs"];

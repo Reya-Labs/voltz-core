@@ -20,14 +20,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: doLogging,
   });
   const mockAaveLendingPool = await ethers.getContract("MockAaveLendingPool");
-  await mockAaveLendingPool.setReserveNormalizedIncome(
+  const trx1 = await mockAaveLendingPool.setReserveNormalizedIncome(
     mockERC20Deploy.address,
     BigNumber.from(10).pow(27)
   );
-  await mockAaveLendingPool.setFactorPerSecondInRay(
+  await trx1.wait();
+  const trx2 = await mockAaveLendingPool.setFactorPerSecondInRay(
     mockERC20Deploy.address,
     "1000000001000000000000000000" // 0.0000001% per second = ~3.2% APY
   );
+  await trx2.wait();
   return true; // Only execute once
 };
 func.tags = ["Mocks"];

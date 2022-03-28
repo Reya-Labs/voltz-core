@@ -11,7 +11,7 @@ import { AaveRateOracle } from "../typechain";
 import { BigNumber } from "ethers";
 
 const MAX_BUFFER_GROWTH_PER_TRANSACTION = 100;
-const BUFFER_SIZE_SAFETY_FACTOR = 1.25; // The buffer must last for 1.25x as long as the longest expected IRS
+const BUFFER_SIZE_SAFETY_FACTOR = 1.2; // The buffer must last for 1.2x as long as the longest expected IRS
 
 const applyBufferConfig = async (
   r: AaveRateOracle,
@@ -39,7 +39,8 @@ const applyBufferConfig = async (
       currentSize + MAX_BUFFER_GROWTH_PER_TRANSACTION,
       minBufferSize
     );
-    await r.increaseObservationCardinalityNext(newSize);
+    const trx = await r.increaseObservationCardinalityNext(newSize);
+    await trx.wait();
     console.log(`Increased size of ${r.address}'s buffer to ${newSize}`);
 
     currentSize = (await r.oracleVars())[2];
@@ -51,7 +52,8 @@ const applyBufferConfig = async (
   // console.log( `current minSecondsSinceLastUpdate of ${r.address} is ${currentVal}` );
 
   if (currentSecondsSinceLastUpdate !== minSecondsSinceLastUpdate) {
-    await r.setMinSecondsSinceLastUpdate(minSecondsSinceLastUpdate);
+    const trx = await r.setMinSecondsSinceLastUpdate(minSecondsSinceLastUpdate);
+    await trx.wait();
     console.log(
       `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSecondsSinceLastUpdate}`
     );
@@ -108,7 +110,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             rateOracleIdentifier
           )) as AaveRateOracle;
 
-          await rateOracleContract.writeOracleEntry();
+          const trx = await rateOracleContract.writeOracleEntry();
+          await trx.wait();
         }
       }
 
@@ -150,7 +153,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
 
     // Take a reading
-    await rateOracleContract.writeOracleEntry();
+    const trx = await rateOracleContract.writeOracleEntry();
+    await trx.wait();
 
     // Fast forward time to ensure that the mock rate oracle has enough historical data
     await hre.network.provider.send("evm_increaseTime", [
