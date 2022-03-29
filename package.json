@@ -1,5 +1,8 @@
 {
-  "name": "hardhat-project",
+  "name": "voltz-core",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "devDependencies": {
     "@ethersproject/bignumber": "^5.5.0",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
@@ -34,6 +37,7 @@
     "ethers": "^5.5.4",
     "evm-bn": "^1.1.1",
     "hardhat": "^2.8.0",
+    "hardhat-contract-sizer": "^2.5.1",
     "hardhat-deploy": "^0.10.4",
     "hardhat-gas-reporter": "^1.0.4",
     "husky": "^7.0.4",
@@ -55,7 +59,6 @@
     "@openzeppelin/contracts-upgradeable": "^4.4.2",
     "@openzeppelin/upgrades": "^2.8.0",
     "@uniswap/sdk-core": "^3.0.1",
-    "hardhat-contract-sizer": "^2.1.1",
     "hardhat-prettier": "0.0.1",
     "hardhat-tracer": "^1.0.0-alpha.6",
     "jsbi": "^4.0.0",
@@ -88,12 +91,12 @@
     "prepare": "husky install",
     "deploy:kovan": "hardhat deploy --network kovan --tags Factory,RateOracles,Periphery,FCMs --export deployments/kovanDeployment.json",
     "deploy:localhost": "npx hardhat node --tags Factory,Mocks,RateOracles,Periphery,FCMs --export deployments/localhostDeployment.json --hostname 0.0.0.0",
-    "createTestIrs:localhost": "npx hardhat createIrsInstance --network localhost --rate-oracle 'TestRateOracle' --tick-spacing 3000",
+    "createTestIrs:localhost": "npx hardhat createIrsInstance --network localhost --rate-oracle 'MockTokenRateOracle' --tick-spacing 3000",
     "generateEndToEndActivity:localhost": "npx hardhat test --network localhost test/end_to_end/general_setup/scenario0/scenario0.ts"
   },
   "husky": {
     "hooks": {
-      "pre-push": "npm run check"
+      "pre-push": "npm run check && hh size-contracts"
     }
   }
 }

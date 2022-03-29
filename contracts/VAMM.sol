@@ -182,7 +182,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     emit VAMMInitialization(sqrtPriceX96, tick);
   }
 
-  function setFeeProtocol(uint8 feeProtocol) external override onlyOwner lock {
+  function setFeeProtocol(uint8 feeProtocol) external override onlyOwner {
     require(feeProtocol == 0 || (feeProtocol >= 3 && feeProtocol <= 50), "PR range");
     require(_vammVars.feeProtocol != feeProtocol, "PF value already set");
 
@@ -190,7 +190,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     emit FeeProtocol(feeProtocol);
   }
 
-  function setFee(uint256 newFeeWad) external override onlyOwner lock {
+  function setFee(uint256 newFeeWad) external override onlyOwner {
     require(newFeeWad >= 0 && newFeeWad <= MAX_FEE, "fee range");
     require(_feeWad != newFeeWad, "fee value already set");
 

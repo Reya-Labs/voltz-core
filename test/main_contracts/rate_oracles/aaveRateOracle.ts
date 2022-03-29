@@ -3,7 +3,6 @@ import { ethers, waffle, deployments } from "hardhat";
 import { expect } from "chai";
 import { toBn } from "../../helpers/toBn";
 import { div, sub, add, pow } from "../../shared/functions";
-import { TestRateOracle } from "../../../typechain/TestRateOracle";
 import {
   rateOracleTestFixture,
   mockERC20Fixture,
@@ -16,7 +15,11 @@ import {
   setTimeNextBlock,
 } from "../../helpers/time";
 import Decimal from "decimal.js-light";
-import { ERC20Mock, MockAaveLendingPool } from "../../../typechain";
+import {
+  ERC20Mock,
+  MockAaveLendingPool,
+  TestRateOracle,
+} from "../../../typechain";
 import { consts } from "../../helpers/constants";
 
 const { provider } = waffle;
@@ -98,8 +101,14 @@ describe("Aave Rate Oracle", () => {
     beforeEach("deploy and initialize test oracle", async () => {
       // ({ testRateOracle } = await loadFixture(oracleFixture));
       await deployments.fixture(["Factory", "Mocks", "RateOracles"]);
-      testRateOracle = (await ethers.getContract(
+      const aaveLendingPool = await ethers.getContract("MockAaveLendingPool");
+      const token = await ethers.getContract("ERC20Mock");
+      const TestRateOracleFactory = await ethers.getContractFactory(
         "TestRateOracle"
+      );
+      testRateOracle = (await TestRateOracleFactory.deploy(
+        aaveLendingPool.address,
+        token.address
       )) as TestRateOracle;
     });
 
@@ -111,7 +120,7 @@ describe("Aave Rate Oracle", () => {
 
     it("rateIndex, rateCardinality, rateCardinalityNext correctly initialized", async () => {
       const [rateIndex, rateCardinality, rateCardinalityNext] =
-        await testRateOracle.getOracleVars();
+        await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(0);
       expect(rateCardinality).to.eq(1);
       expect(rateCardinalityNext).to.eq(1);
@@ -121,9 +130,16 @@ describe("Aave Rate Oracle", () => {
   describe("#grow", () => {
     beforeEach("deploy and initialize test oracle", async () => {
       await deployments.fixture(["Factory", "Mocks", "RateOracles"]);
-      testRateOracle = (await ethers.getContract(
+      const aaveLendingPool = await ethers.getContract("MockAaveLendingPool");
+      const token = await ethers.getContract("ERC20Mock");
+      const TestRateOracleFactory = await ethers.getContractFactory(
         "TestRateOracle"
-      )) as TestRateOracle; // await testRateOracle.initializeTestRateOracle({
+      );
+      testRateOracle = (await TestRateOracleFactory.deploy(
+        aaveLendingPool.address,
+        token.address
+      )) as TestRateOracle;
+      // await testRateOracle.initializeTestRateOracle({
       //   tick: 1,
       //   liquidity: 1
       // });
@@ -132,7 +148,7 @@ describe("Aave Rate Oracle", () => {
     it("increases the cardinality next for the first call", async () => {
       await testRateOracle.increaseObservationCardinalityNext(5);
       const [rateIndex, rateCardinality, rateCardinalityNext] =
-        await testRateOracle.getOracleVars();
+        await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(0);
       expect(rateCardinality).to.eq(1);
       expect(rateCardinalityNext).to.eq(5);
@@ -142,7 +158,7 @@ describe("Aave Rate Oracle", () => {
       await testRateOracle.increaseObservationCardinalityNext(5);
       await testRateOracle.increaseObservationCardinalityNext(3);
       const [rateIndex, rateCardinality, rateCardinalityNext] =
-        await testRateOracle.getOracleVars();
+        await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(0);
       expect(rateCardinality).to.eq(1);
       expect(rateCardinalityNext).to.eq(5);
@@ -158,9 +174,11 @@ describe("Aave Rate Oracle", () => {
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const currentTimestamp = await getCurrentTimestamp(provider);
       await testRateOracle.writeOracleEntry();
-      const [rateIndex] = await testRateOracle.getOracleVars();
+      const [rateIndex] = await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(0);
-      const [rateTimestamp, rateValue] = await testRateOracle.getRate(0);
+      const [rateTimestamp, rateValue, _] = await testRateOracle.observations(
+        0
+      );
       // console.log(`currentTimestamp: ${currentTimestamp}`);
       // console.log(`rateTimestamp: ${rateTimestamp.valueOf()}`);
       expect(rateValue).to.eq(toBn("1.0", consts.AAVE_RATE_DECIMALS));
@@ -170,14 +188,14 @@ describe("Aave Rate Oracle", () => {
     it("grows cardinality if writing past", async () => {
       await testRateOracle.increaseObservationCardinalityNext(2);
       await testRateOracle.increaseObservationCardinalityNext(4);
-      let [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      let [rateIndex, rateCardinality] = await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(0);
       expect(rateCardinality).to.eq(1);
       // console.log(await getCurrentTimestamp(provider));
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       // console.log(await getCurrentTimestamp(provider));
       await testRateOracle.writeOracleEntry();
-      [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      [rateIndex, rateCardinality] = await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(1);
       expect(rateCardinality).to.eq(4);
       const minSecondsSinceLastUpdate =
@@ -185,10 +203,12 @@ describe("Aave Rate Oracle", () => {
       await advanceTimeAndBlock(minSecondsSinceLastUpdate.add(1), 2); // advance by more than minSecondsSinceLastUpdate
       const currentTimestamp = await getCurrentTimestamp(provider);
       await testRateOracle.writeOracleEntry();
-      [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      [rateIndex, rateCardinality] = await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(2);
       expect(rateCardinality).to.eq(4);
-      const [rateTimestamp, rateValue] = await testRateOracle.getRate(2);
+      const [rateTimestamp, rateValue, _] = await testRateOracle.observations(
+        2
+      );
       expect(rateValue).to.eq(toBn("1.0", consts.AAVE_RATE_DECIMALS));
       expect(rateTimestamp).to.eq(currentTimestamp + 1);
     });
@@ -197,24 +217,26 @@ describe("Aave Rate Oracle", () => {
       await testRateOracle.setMinSecondsSinceLastUpdate(7200); // two hours
       await testRateOracle.increaseObservationCardinalityNext(2);
       await testRateOracle.increaseObservationCardinalityNext(4);
-      let [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      let [rateIndex, rateCardinality] = await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(0);
       expect(rateCardinality).to.eq(1);
       // console.log(await getCurrentTimestamp(provider));
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
       const currentTimestamp = await getCurrentTimestamp(provider);
       await testRateOracle.writeOracleEntry();
-      [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      [rateIndex, rateCardinality] = await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(1);
       expect(rateCardinality).to.eq(4);
       const minSecondsSinceLastUpdate =
         await testRateOracle.minSecondsSinceLastUpdate();
       await advanceTimeAndBlock(minSecondsSinceLastUpdate.sub(100), 2); // advance by less than minSecondsSinceLastUpdate
       await testRateOracle.writeOracleEntry();
-      [rateIndex, rateCardinality] = await testRateOracle.getOracleVars();
+      [rateIndex, rateCardinality] = await testRateOracle.oracleVars();
       expect(rateIndex).to.eq(1); // Should be unchanged since insufficient time passed to write new rate
       expect(rateCardinality).to.eq(4);
-      const [rateTimestamp, rateValue] = await testRateOracle.getRate(1);
+      const [rateTimestamp, rateValue, _] = await testRateOracle.observations(
+        1
+      );
       expect(rateValue).to.eq(toBn("1.0", consts.AAVE_RATE_DECIMALS));
       expect(rateTimestamp).to.eq(currentTimestamp + 1); // TImestemp from *before* last write
     });

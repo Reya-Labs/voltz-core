@@ -15,7 +15,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   // set the periphery in the factory
-  await factory.setPeriphery(periphery.address);
+  const trx = await factory.setPeriphery(periphery.address);
+  await trx.wait();
 
   return true; // Only execute once
 };

@@ -24,6 +24,7 @@ const loadModuleIgnoreErrors = async (modulePath: string) => {
     return await import(modulePath);
   } catch (e) {
     // Ignore
+    // console.log(`Could not load task from ${modulePath}: ${JSON.stringify(e)}`);
   }
 };
 
@@ -35,6 +36,7 @@ loadModuleIgnoreErrors("./tasks/updatePositionMargin");
 loadModuleIgnoreErrors("./tasks/increaseObservationCardinalityNext");
 loadModuleIgnoreErrors("./tasks/advanceTimeAndBlock");
 loadModuleIgnoreErrors("./tasks/updateAPYFor15Days");
+loadModuleIgnoreErrors("./tasks/rateOracle");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -59,7 +61,6 @@ const config: HardhatUserConfig = {
   networks: {
     localhost: {
       live: false,
-      saveDeployments: false,
     },
     hardhat: {
       // forking: {
@@ -109,9 +110,16 @@ const config: HardhatUserConfig = {
     outputFile: process.env.REPORT_GAS_TO_FILE,
     noColors: !!process.env.REPORT_GAS_TO_FILE,
     enabled: !!(process.env.REPORT_GAS && process.env.REPORT_GAS != "false"),
+    currency: "USD",
+    gasPrice: 120,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
   },
   mocha: {
     timeout: 2400000,
+  },
+  contractSizer: {
+    strict: true,
+    except: [":Test"],
   },
 };
 
