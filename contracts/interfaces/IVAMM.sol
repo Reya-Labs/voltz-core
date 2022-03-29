@@ -65,8 +65,6 @@ interface IVAMM is IPositionStructs, CustomErrors {
         int256 amountSpecified;
         /// @dev The Q64.96 sqrt price limit. If !isFT, the price cannot be less than this
         uint160 sqrtPriceLimitX96;
-        /// @dev Is the swap triggered by a trader. If this is false then this is only possible in a scenario where a liquidity provider's position is liquidated
-        /// @dev leading to an unwind of a liquidity provider
         /// @dev lower tick of the position
         int24 tickLower;
         /// @dev upper tick of the position
@@ -206,9 +204,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
     function initializeVAMM(uint160 sqrtPriceX96) external;
 
     /// @notice removes liquidity given recipient/tickLower/tickUpper of the position
-    /// @param recipient The address for which the liquidity will be created
-    /// @param tickLower The lower tick of the position in which to add liquidity
-    /// @param tickUpper The upper tick of the position in which to add liquidity
+    /// @param recipient The address for which the liquidity will be removed
+    /// @param tickLower The lower tick of the position in which to remove liquidity
+    /// @param tickUpper The upper tick of the position in which to remove liqudiity
     /// @param amount The amount of liquidity to burn
     function burn(
         address recipient,
