@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: agpl-3.0
 
 // solhint-disable const-name-snakecase
 
