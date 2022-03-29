@@ -48,7 +48,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     console.log("marginRequirement", marginRequirement);
     if (!(marginRequirement === "")) {
-      // update positioin margin to be equal to the requirement
+      // update position margin to be equal to the requirement
       await this.e2eSetup.updatePositionMargin(
         this.positions[positionIndex][0],
         this.positions[positionIndex][1],
@@ -130,7 +130,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     if (!(marginRequirement === "")) {
       // todo: add logic that checks the current position margin and only deposits positive margin delta if required
       // the logic below always deposits +marginRequirement
-      // update positioin margin to be equal to the requirement + fees
+      // update position margin to be equal to the requirement + fees
       await this.e2eSetup.updatePositionMargin(
         this.positions[positionIndex][0],
         this.positions[positionIndex][1],

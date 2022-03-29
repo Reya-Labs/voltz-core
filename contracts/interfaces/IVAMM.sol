@@ -162,15 +162,15 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @return The current VAMM Vars (see struct definition for semantics)
     function vammVars() external view returns (VAMMVars memory);
 
-    /// @notice The fixed token growth in wei, accumulated per unit of liquidity for the entire life of the vamm
+    /// @notice The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function fixedTokenGrowthGlobalX128() external view returns (int256);
 
-    /// @notice The variable token growth in wei, accumulated per unit of liquidity for the entire life of the vamm
+    /// @notice The variable token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function variableTokenGrowthGlobalX128() external view returns (int256);
 
-    /// @notice The fee growth in wei, collected per unit of liquidity for the entire life of the vamm
+    /// @notice The fee growth collected per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function feeGrowthGlobalX128() external view returns (uint256);
 

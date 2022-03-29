@@ -43,6 +43,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @param index The index of the Observation that was most recently written to the observations buffer
     /// @param cardinality The number of populated elements in the observations buffer
     /// @param cardinalityNext The new length of the observations buffer, independent of population
+    /// @return indexUpdated The new index of the most recently written element in the oracle array
+    /// @return cardinalityUpdated The new cardinality of the oracle array
     function writeRate(
         uint16 index,
         uint16 cardinality,

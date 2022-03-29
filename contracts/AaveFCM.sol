@@ -145,7 +145,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     // deposit notional executed in terms of aTokens (e.g. aUSDC) to fully collateralise your position
     _underlyingYieldBearingToken.safeTransferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
 
-    // transfer fees to the margin engine (in terms of the underlyingToken e.g. aUSDC)
+    // transfer fees to the margin engine (in terms of the underlyingToken e.g. USDC)
     underlyingToken.safeTransferFrom(msg.sender, address(_marginEngine), cumulativeFeeIncurred);
 
     emit FullyCollateralisedSwap(msg.sender, trader.marginInScaledYieldBearingTokens, trader.fixedTokenBalance, trader.variableTokenBalance);

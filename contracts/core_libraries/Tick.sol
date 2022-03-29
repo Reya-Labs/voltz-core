@@ -168,6 +168,8 @@ library Tick {
     /// @param tick The tick that will be updated
     /// @param tickCurrent The current tick
     /// @param liquidityDelta A new amount of liquidity to be added (subtracted) when tick is crossed from left to right (right to left)
+    /// @param fixedTokenGrowthGlobalX128 The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
+    /// @param variableTokenGrowthGlobalX128 The variable token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @param upper true for updating a position's upper tick, or false for updating a position's lower tick
     /// @param maxLiquidity The maximum liquidity allocation for a single tick
     /// @return flipped Whether the tick was flipped from initialized to uninitialized, or vice versa
@@ -235,6 +237,9 @@ library Tick {
     /// @notice Transitions to next tick as needed by price movement
     /// @param self The mapping containing all tick information for initialized ticks
     /// @param tick The destination tick of the transition
+    /// @param fixedTokenGrowthGlobalX128 The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
+    /// @param variableTokenGrowthGlobalX128 The variable token growth accumulated per unit of liquidity for the entire life of the vamm
+    /// @param feeGrowthGlobalX128 The fee growth collected per unit of liquidity for the entire life of the vamm
     /// @return liquidityNet The amount of liquidity added (subtracted) when tick is crossed from left to right (right to left)
     function cross(
         mapping(int24 => Tick.Info) storage self,

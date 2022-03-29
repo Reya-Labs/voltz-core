@@ -16,8 +16,8 @@ interface IFCM is CustomErrors {
     /// @notice Initiate a Fully Collateralised Fixed Taker Swap
     /// @param notional amount of notional (in terms of the underlying token) to trade
     /// @param sqrtPriceLimitX96 the sqrtPriceLimit (in binary fixed point math notation) beyond which swaps won't be executed
-    /// @dev An example of an initiated fully collateralised fixed taker swap is a scenario where a trader with 100aTokens wishes to get a fixed return on them
-    /// @dev they can choose to deposit their 100aTokens into the FCM (enter into a fixed taker position with a notional of 100) to swap variable vashflows from the aTokens
+    /// @dev An example of an initiated fully collateralised fixed taker swap is a scenario where a trader with 100 aTokens wishes to get a fixed return on them
+    /// @dev they can choose to deposit their 100aTokens into the FCM (enter into a fixed taker position with a notional of 100) to swap variable cashflows from the aTokens
     /// @dev with the fixed cashflows from the variable takers
     function initiateFullyCollateralisedFixedTakerSwap(
         uint256 notional,
