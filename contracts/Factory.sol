@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 import "./interfaces/IFactory.sol";
+import "./interfaces/IPeriphery.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/IMarginEngine.sol";
 import "./interfaces/IVAMM.sol";
@@ -14,8 +15,6 @@ contract VoltzERC1967Proxy is ERC1967Proxy, CustomErrors {
   constructor(address _logic, bytes memory _data) payable ERC1967Proxy(_logic, _data) {}
 }
 
-
-/// @audit shouldn't the masterFCM and masterVAMM be settable, similar to the masterFCMs?
 
 /// @title Voltz Factory Contract
 /// @notice Deploys Voltz VAMMs and MarginEngines and manages ownership and control over amm protocol fees
@@ -34,11 +33,28 @@ contract Factory is IFactory, Ownable {
   /// @dev owner --> integration contract address --> isApproved
   /// @dev if an owner wishes to allow a given intergration contract to act on thir behalf with Voltz Core
   /// @dev they need to set the approval via the setApproval function
-  mapping(address => mapping(address => bool)) public override isApproved;
+  mapping(address => mapping(address => bool)) private _isApproved;
+  
+  /// @dev Voltz Periphery
+  IPeriphery public override periphery;  
 
   function setApproval(address intAddress, bool allowIntegration) external override {
-    isApproved[msg.sender][intAddress] = allowIntegration;
+    _isApproved[msg.sender][intAddress] = allowIntegration;
     emit Approval(msg.sender, intAddress, allowIntegration);
+  }
+
+  function isApproved(address _owner, address _intAddress) override view public returns (bool) {
+
+    require(_owner != address(0), "owner does not exist");
+    require(_intAddress != address(0), "int does not exist");
+
+    /// @dev Voltz periphery is always approved to act on behalf of the owner
+    if (_intAddress == address(periphery)) {
+      return true;
+    } else {
+      return _isApproved[_owner][_intAddress];
+    }
+
   }
 
   constructor(IMarginEngine _masterMarginEngine, IVAMM _masterVAMM) {
@@ -69,6 +85,18 @@ contract Factory is IFactory, Ownable {
 
     if (address(masterVAMM) != address(_masterVAMM)) {
       masterVAMM = _masterVAMM;
+    }
+
+  }
+
+
+  function setPeriphery(IPeriphery _periphery) external override onlyOwner {
+    
+    require(address(_periphery) != address(0), "periphery must exist");
+
+    if (address(periphery) != address(_periphery)) {
+      periphery = _periphery;
+      emit PeripheryUpdate(periphery);
     }
 
   }

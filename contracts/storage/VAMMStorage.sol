@@ -21,7 +21,7 @@ contract VAMMStorageV1 {
     // be internal due to limitations in the solidity compiler (as of 0.8.12)
     uint256 internal _feeWad;
     // Mutex
-    bool internal unlocked;
+    bool internal _unlocked;
     uint128 internal _liquidity;
     uint256 internal _feeGrowthGlobalX128;
     uint256 internal _protocolFees;

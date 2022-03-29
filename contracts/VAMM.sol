@@ -33,10 +33,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
   modifier lock() {
-    require(unlocked, "LOK");
-    unlocked = false;
+    require(_unlocked, "LOK");
+    _unlocked = false;
     _;
-    unlocked = true;
+    _unlocked = true;
   }
 
   // https://ethereum.stackexchange.com/questions/68529/solidity-modifiers-in-library
@@ -139,6 +139,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       return _vammVars;
   }
 
+
   /// @dev modifier that ensures the
   modifier onlyMarginEngine () {
     if (msg.sender != address(_marginEngine)) {
@@ -176,7 +177,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     _vammVars = VAMMVars({ sqrtPriceX96: sqrtPriceX96, tick: tick, feeProtocol: 0 });
 
-    unlocked = true;
+    _unlocked = true;
 
     emit VAMMInitialization(sqrtPriceX96, tick);
   }
@@ -365,7 +366,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     }
 
     /// @dev lock the vamm while the swap is taking place
-    unlocked = false;
+    _unlocked = false;
 
     SwapCache memory cache = SwapCache({
       liquidityStart: _liquidity,
@@ -667,7 +668,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       params.tickUpper
     );
 
-    unlocked = true;
+    _unlocked = true;
   }
 
   /// @inheritdoc IVAMM
@@ -722,8 +723,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
           revert CustomErrors.IRSNotionalAmountSpecifiedMustBeNonZero();
       }
 
-      if (!unlocked) {
-          revert CustomErrors.CanOnlyTradeIfUnlocked(unlocked);
+      if (!_unlocked) {
+          revert CustomErrors.CanOnlyTradeIfUnlocked(_unlocked);
       }
 
       /// @dev if a trader is an FT, they consume fixed in return for variable

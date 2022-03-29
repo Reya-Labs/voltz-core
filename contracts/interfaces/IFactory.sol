@@ -8,6 +8,7 @@ import "./IMarginEngine.sol";
 import "./IVAMM.sol";
 import "./fcms/IFCM.sol";
 import "./IERC20Minimal.sol";
+import "./IPeriphery.sol";
 
 /// @title The interface for the Voltz AMM Factory
 /// @notice The AMM Factory facilitates creation of Voltz AMMs
@@ -33,12 +34,24 @@ interface IFactory is CustomErrors {
         bool indexed isApproved
     );
 
-    function setApproval(address intAddress, bool allowIntegration) external;
+    event PeripheryUpdate(IPeriphery periphery);
+
+    // view functions
 
     function isApproved(address _owner, address intAddress)
         external
         view
         returns (bool);
+
+    function masterVAMM() external view returns (IVAMM);
+
+    function masterMarginEngine() external view returns (IMarginEngine);
+
+    function periphery() external view returns (IPeriphery);
+
+    // settters
+
+    function setApproval(address intAddress, bool allowIntegration) external;
 
     function setMasterFCM(IFCM masterFCM, uint8 yieldBearingProtocolID)
         external;
@@ -47,9 +60,7 @@ interface IFactory is CustomErrors {
 
     function setMasterMarginEngine(IMarginEngine _masterMarginEngine) external;
 
-    function masterVAMM() external view returns (IVAMM);
-
-    function masterMarginEngine() external view returns (IMarginEngine);
+    function setPeriphery(IPeriphery _periphery) external;
 
     /// @notice Deploys the contracts required for a new Interest Rate Swap instance
     function deployIrsInstance(
@@ -68,5 +79,6 @@ interface IFactory is CustomErrors {
 
     function masterFCMs(uint8 yieldBearingProtocolID)
         external
+        view
         returns (IFCM masterFCM);
 }

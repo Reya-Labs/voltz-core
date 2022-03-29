@@ -1,15 +1,22 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
+import { Factory } from "../typechain";
+import { ethers } from "hardhat";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
+  const factory = (await ethers.getContract("Factory")) as Factory;
 
-  await deploy("Periphery", {
+  const periphery = await deploy("Periphery", {
     from: deployer,
     log: doLogging,
   });
+
+  // set the periphery in the factory
+  await factory.setPeriphery(periphery.address);
+
   return true; // Only execute once
 };
 func.tags = ["Periphery"];
