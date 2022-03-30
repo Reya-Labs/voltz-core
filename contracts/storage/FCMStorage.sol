@@ -7,6 +7,7 @@ import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
 import "../core_libraries/TraderWithYieldBearingAssets.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
+import "../interfaces/compound/ICToken.sol";
 
 contract FCMStorageV1 {
     // Any variables that would implicitly implement an IMarginEngine function if public, must instead
@@ -26,6 +27,13 @@ contract AaveFCMStorageV1 {
     IERC20Minimal internal _underlyingYieldBearingToken;
 }
 
+contract CompoundFCMStorageV1 {
+    // Any variables that would implicitly implement an IMarginEngine function if public, must instead
+    // be internal due to limitations in the solidity compiler (as of 0.8.12)
+    ICToken internal _ctoken;
+    IERC20Minimal internal _underlyingYieldBearingToken;
+}
+
 contract FCMStorage is FCMStorageV1 {
     // Reserve some storage for use in future versions, without creating conflicts
     // with other inheritted contracts
@@ -36,4 +44,10 @@ contract AaveFCMStorage is FCMStorage, AaveFCMStorageV1 {
     // Reserve some storage for use in future versions, without creating conflicts
     // with other inheritted contracts
     uint256[48] private __gap;
+}
+
+contract CompoundFCMStorage is FCMStorage, CompoundFCMStorageV1 {
+    // Reserve some storage for use in future versions, without creating conflicts
+    // with other inheritted contracts
+    uint256[52] private __gap;
 }

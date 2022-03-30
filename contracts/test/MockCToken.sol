@@ -30,4 +30,8 @@ contract MockCToken is ICToken, ERC20 {
     function underlying() external view override returns (address) {
         return _underlyingAsset;
     }
+
+    function redeemUnderlying(uint redeemAmount) external override returns (uint) {
+        return 0;
+    }
 }

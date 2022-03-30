@@ -12,8 +12,10 @@ interface ICToken {
      */
   function exchangeRateStored() external view returns (uint256);
 
+  function redeemUnderlying(uint redeemAmount) external returns (uint);
+
       /**
      * @notice Underlying asset for this CToken
      */
-    function underlying() external view returns (address);
+  function underlying() external view returns (address);
 }
