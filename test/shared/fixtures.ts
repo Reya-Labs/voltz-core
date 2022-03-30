@@ -250,7 +250,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     aaveLendingPool.address,
     token.address
   );
-  
+
   // const cToken = (await mockCTokenFixture()).token; ab: what's the purpose of this line??
   const { mockCToken } = await mockCTokenFixture(token.address);
 
