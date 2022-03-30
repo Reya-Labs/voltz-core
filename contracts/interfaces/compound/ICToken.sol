@@ -26,5 +26,7 @@ interface ICToken {
     // function getCash() external view returns (uint);
     // function accrueInterest() external returns (uint);
     // function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint);
+    // https://github.com/compound-finance/compound-protocol/blob/master/contracts/CTokenInterfaces.sol#L263
+    function redeemUnderlying(uint redeemAmount) external returns (uint);
 
 }
