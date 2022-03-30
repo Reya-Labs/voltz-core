@@ -238,11 +238,18 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     aaveLendingPool.address,
     token.address
   );
-
-  const cToken = (await mockERC20Fixture()).token;
+  
+  // const cToken = (await mockCTokenFixture()).token; ab: what's the purpose of this line??
   const { mockCToken } = await mockCTokenFixture(token.address);
+
+  await mockCToken.setExchangeRate(BigNumber.from(10).pow(18));
+
+  const exchangeRateStored = await mockCToken.exchangeRateStored();
+
+  console.log("exchangeRateStored", exchangeRateStored.toString());
+
   const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
-    cToken.address,
+    mockCToken.address,
     token.address
   );
 
@@ -254,14 +261,14 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   await aaveLendingPool.initReserve(token.address, mockAToken.address);
 
   await rateOracleTest.increaseObservationCardinalityNext(5);
-  // await compoundRateOracleTest.increaseObservarionCardinalityNext(5);
+  await compoundRateOracleTest.increaseObservationCardinalityNext(5);
   // write oracle entry
   await rateOracleTest.writeOracleEntry();
   await compoundRateOracleTest.writeOracleEntry();
   // advance time after first write to the oracle
   await advanceTimeAndBlock(consts.ONE_DAY, 2); // advance by one day
   await rateOracleTest.writeOracleEntry();
-  await compoundRateOracleTest.writeOracleEntry();
+  // await compoundRateOracleTest.writeOracleEntry();
 
   const termStartTimestamp: number = await getCurrentTimestamp(provider);
   const termEndTimestamp: number =
