@@ -39,15 +39,18 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     function exchangeRateInRay() internal view returns (uint256) {
         // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
         // source: https://compound.finance/docs/ctokens#exchange-rate
-        uint256 exchangeRateStored = ctoken.exchangeRateStored();
+        console.log("Here 1");
+        console.log(address(ctoken));
+        uint256 _exchangeRateStored = ctoken.exchangeRateStored();
+        console.log("Here 2");
         console.log("cToken.address: ", address(ctoken));
-        console.log("exchangeRateStored: ", exchangeRateStored);
+        console.log("exchangeRateStored: ", _exchangeRateStored);
         if (decimals >= 18) {
             uint256 scalingFactor = 10**(decimals - 18);
-            return WadRayMath.rayDiv(exchangeRateStored, scalingFactor);
+            return WadRayMath.rayDiv(_exchangeRateStored, scalingFactor);
         } else {
             uint256 scalingFactor = 10**(18 - decimals);
-            return WadRayMath.rayMul(exchangeRateStored, scalingFactor);
+            return WadRayMath.rayMul(_exchangeRateStored, scalingFactor);
         }
     }
 
