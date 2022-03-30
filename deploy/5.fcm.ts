@@ -2,14 +2,14 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import { Factory } from "../typechain";
-import { getAaveTokens } from "./config";
+import { getAaveTokens } from "../deployConfig/config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
-  const aaveTokens = getAaveTokens();
-  let rateOracle = await ethers.getContractOrNull("TestRateOracle");
+  const aaveTokens = getAaveTokens(hre.network.name);
+  let rateOracle = await ethers.getContractOrNull("MockTokenRateOracle");
   const factory = (await ethers.getContract("Factory")) as Factory;
 
   if (!rateOracle && aaveTokens) {
@@ -35,10 +35,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const underlyingYieldBearingProtocolID =
     await rateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
-  await factory.setMasterFCM(
+  const trx = await factory.setMasterFCM(
     masterAaveFCM.address,
     underlyingYieldBearingProtocolID
   );
+  await trx.wait();
   return true; // Only execute once
 };
 func.tags = ["FCMs"];

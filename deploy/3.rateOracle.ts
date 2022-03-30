@@ -1,30 +1,60 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
-import { getAaveLendingPoolAddress, getAaveTokens } from "./config";
+import {
+  getConfigDefaults,
+  getAaveLendingPoolAddress,
+  getAaveTokens,
+  getMaxDurationOfIrsInSeconds,
+} from "../deployConfig/config";
 import { AaveRateOracle } from "../typechain";
 
-const checkBufferSize = async (r: AaveRateOracle, minSize: number) => {
-  const currentSize = (await r.oracleVars())[2];
+const MAX_BUFFER_GROWTH_PER_TRANSACTION = 100;
+const BUFFER_SIZE_SAFETY_FACTOR = 1.2; // The buffer must last for 1.2x as long as the longest expected IRS
+
+const applyBufferConfig = async (
+  r: AaveRateOracle,
+  minBufferSize: number,
+  minSecondsSinceLastUpdate: number,
+  maxIrsDurationInSeconds: number
+) => {
+  const secondsWorthOfBuffer = minBufferSize * minSecondsSinceLastUpdate;
+  if (
+    secondsWorthOfBuffer <
+    maxIrsDurationInSeconds * BUFFER_SIZE_SAFETY_FACTOR
+  ) {
+    throw new Error(
+      `Buffer config of {size ${minBufferSize}, minGap ${minSecondsSinceLastUpdate}s} ` +
+        `does not guarantee adequate buffer for an IRS of duration ${maxIrsDurationInSeconds}s`
+    );
+  }
+
+  let currentSize = (await r.oracleVars())[2];
   // console.log(`currentSize of ${r.address} is ${currentSize}`);
 
-  if (currentSize < minSize) {
-    await r.increaseObservationCardinalityNext(minSize);
-    console.log(`Increased size of ${r.address}'s buffer to ${minSize}`);
-  }
-};
+  while (currentSize < minBufferSize) {
+    // Growing the buffer can use a lot of gas so we may split buffer growth into multiple trx
+    const newSize = Math.min(
+      currentSize + MAX_BUFFER_GROWTH_PER_TRANSACTION,
+      minBufferSize
+    );
+    const trx = await r.increaseObservationCardinalityNext(newSize);
+    await trx.wait();
+    console.log(`Increased size of ${r.address}'s buffer to ${newSize}`);
 
-const checkMinSecondsSinceLastUpdate = async (
-  r: AaveRateOracle,
-  minSeconds: number
-) => {
-  const currentVal = (await r.minSecondsSinceLastUpdate()).toNumber();
+    currentSize = (await r.oracleVars())[2];
+  }
+
+  const currentSecondsSinceLastUpdate = (
+    await r.minSecondsSinceLastUpdate()
+  ).toNumber();
   // console.log( `current minSecondsSinceLastUpdate of ${r.address} is ${currentVal}` );
 
-  if (currentVal !== minSeconds) {
-    await r.setMinSecondsSinceLastUpdate(minSeconds);
+  if (currentSecondsSinceLastUpdate !== minSecondsSinceLastUpdate) {
+    const trx = await r.setMinSecondsSinceLastUpdate(minSecondsSinceLastUpdate);
+    await trx.wait();
     console.log(
-      `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSeconds}`
+      `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSecondsSinceLastUpdate}`
     );
   }
 };
@@ -33,10 +63,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
+  const network = hre.network.name;
 
   // Set up rate oracles for the Aave lending pool, if one exists
-  const existingAaveLendingPoolAddress = getAaveLendingPoolAddress();
-  const aaveTokens = getAaveTokens();
+  const existingAaveLendingPoolAddress = getAaveLendingPoolAddress(network);
+  const aaveTokens = getAaveTokens(network);
+  const maxDurationOfIrsInSeconds = getMaxDurationOfIrsInSeconds(
+    hre.network.name
+  );
 
   if (existingAaveLendingPoolAddress && aaveTokens) {
     const aaveLendingPool = await ethers.getContractAt(
@@ -75,19 +109,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             rateOracleIdentifier
           )) as AaveRateOracle;
 
-          // Check the buffer size and increase if required
-          await rateOracleContract.writeOracleEntry();
+          const trx = await rateOracleContract.writeOracleEntry();
+          await trx.wait();
         }
       }
 
       // Ensure the buffer is big enough
-      await checkBufferSize(
+      await applyBufferConfig(
         rateOracleContract as AaveRateOracle,
-        token.rateOracleBufferSize
-      );
-      await checkMinSecondsSinceLastUpdate(
-        rateOracleContract as AaveRateOracle,
-        token.minSecondsSinceLastUpdate
+        token.rateOracleBufferSize,
+        token.minSecondsSinceLastUpdate,
+        maxDurationOfIrsInSeconds
       );
     }
   }
@@ -101,12 +133,34 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log(
       `Deploy rate oracle for mocked {token, aave}: {${mockToken.address}, ${mockAaveLendingPool.address}}`
     );
-    await deploy("TestRateOracle", {
+    await deploy("MockTokenRateOracle", {
+      contract: "AaveRateOracle",
       from: deployer,
       args: [mockAaveLendingPool.address, mockToken.address],
       log: doLogging,
     });
+    const rateOracleContract = (await ethers.getContract(
+      "MockTokenRateOracle"
+    )) as AaveRateOracle;
+    // Ensure the buffer is big enough
+    const configDefaults = getConfigDefaults(network);
+    await applyBufferConfig(
+      rateOracleContract as AaveRateOracle,
+      configDefaults.rateOracleBufferSize,
+      configDefaults.rateOracleMinSecondsSinceLastUpdate,
+      maxDurationOfIrsInSeconds
+    );
+
+    // Take a reading
+    const trx = await rateOracleContract.writeOracleEntry();
+    await trx.wait();
+
+    // Fast forward time to ensure that the mock rate oracle has enough historical data
+    await hre.network.provider.send("evm_increaseTime", [
+      configDefaults.marginEngineLookbackWindowInSeconds,
+    ]);
   }
+  return false; // This script is safely re-runnable and will reconfigure existing rate oracles if required
 };
 func.tags = ["RateOracles"];
 export default func;

@@ -7,6 +7,7 @@ import { TickMath } from "../test/shared/tickMath";
 task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
   const [wallet] = await (hre.ethers as any).getSigners();
 
+  // TODO: make configurable
   const marginEngineAddress = "0x75537828f2ce51be7289709686a69cbfdbb714f1";
 
   const factory = (await hre.ethers.getContract("Factory")) as Factory;
@@ -51,15 +52,13 @@ task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
     utils.formatEther(await marginEngine.callStatic.getHistoricalApy())
   );
 
-  // await vamm.mint(wallet.address, -7000, 0, toBn("100000"));
-
-  await periphery.mintOrBurn({
-    marginEngineAddress: marginEngineAddress,
-    recipient: wallet.address,
+  await periphery.connect(wallet).mintOrBurn({
+    marginEngine: marginEngineAddress,
     tickLower: -7000,
     tickUpper: 0,
     notional: toBn("100000"),
     isMint: true,
+    marginDelta: 0,
   });
 });
 

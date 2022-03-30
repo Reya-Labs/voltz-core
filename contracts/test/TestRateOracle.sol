@@ -31,21 +31,21 @@ contract TestRateOracle is AaveRateOracle {
         underlying = underlying;
     }
 
-    function getOracleVars()
-        external
-        view
-        returns (
-            uint16,
-            uint16,
-            uint16
-        )
-    {
-        return (
-            oracleVars.rateIndex,
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
-        );
-    }
+    // function getOracleVars()
+    //     external
+    //     view
+    //     returns (
+    //         uint16,
+    //         uint16,
+    //         uint16
+    //     )
+    // {
+    //     return (
+    //         oracleVars.rateIndex,
+    //         oracleVars.rateCardinality,
+    //         oracleVars.rateCardinalityNext
+    //     );
+    // }
 
     function getRate(uint16 index) external view returns (uint256, uint256) {
         OracleBuffer.Observation memory rate = observations[index];

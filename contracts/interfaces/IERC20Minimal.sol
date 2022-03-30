@@ -44,6 +44,12 @@ interface IERC20Minimal {
         uint256 amount
     ) external returns (bool);
 
+    // todo: consider moving into IRC20Extended
+    /// @dev Returns the number of decimals used to get its user representation.
+    // For example, if decimals equals 2, a balance of 505 tokens should be displayed to a user as 5,05 (505 / 10 ** 2).
+    // Tokens usually opt for a value of 18, imitating the relationship between Ether and Wei.
+    function decimals() external view returns (uint8);
+
     /// @notice Event emitted when tokens are transferred from one address to another, either via `#transfer` or `#transferFrom`.
     /// @param from The account from which the tokens were sent, i.e. the balance decreased
     /// @param to The account to which the tokens were sent, i.e. the balance increased
