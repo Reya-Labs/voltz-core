@@ -8,14 +8,13 @@ Voltz is a noncustodial automated market maker for Interest Rate Swaps (IRS). Vo
 
 This repository contains the smart contracts that power Voltz Protocol. Over time, Voltz Protocol will be governed by the DAO, so that the protocol is owned and managed by the community that uses it. Decentralizing ownership is critical to ensure the strength of the ecosystem we are all looking to build and to provide control to those that use the system. However, Voltz will initially be controlled by the Voltz Multisigs whilst the DAO is being created.
 
-
 We would love to see how you can build and improve upon what we've built here at Voltz.
 
 ## Uniswap v3 Additional Use Grant
 
 There are a large number of innovative design decisions required to create Voltz Protocol, including the use of concentrated liquidity pioneered in [Uniswap v3](https://uniswap.org/whitepaper-v3.pdf). However, Uniswap v3 is subject to a [Business Source License](https://github.com/Uniswap/v3-core/blob/main/LICENSE), meaning Uniswap v3 code can only be used in another protocol if that protocol is provided with an “Additional Use Grant” by the Uniswap community.
 
-[Voltz was provided an Additional Use Grant](https://app.ens.domains/name/v3-core-license-grants.uniswap.eth/details), executed following an [on-chain governance vote](https://app.uniswap.org/#/vote/2/11?chain=mainnet) by the Uniswap Community. This means Uniswap v3 code can be used within Voltz Protocol. However, if another project wishes to use this code they will also need to get an Additional Use Grant from Uniswap Governance in accordance with the Business Source License. 
+[Voltz was provided an Additional Use Grant](https://app.ens.domains/name/v3-core-license-grants.uniswap.eth/details), executed following an [on-chain governance vote](https://app.uniswap.org/#/vote/2/11?chain=mainnet) by the Uniswap Community. This means Uniswap v3 code can be used within Voltz Protocol. However, if another project wishes to use this code they will also need to get an Additional Use Grant from Uniswap Governance in accordance with the Business Source License.
 
 The Uniswap v3 code subject to the Business Source License can be identified by the “SPDX-License-Identifier: BUSL-1.1” at the top of each library or smart contract.
 
