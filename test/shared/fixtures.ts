@@ -335,7 +335,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const fcmTest = fcmTestFactory.attach(fcmAddress) as AaveFCM;
 
   const fcmTestFactoryCompound = await ethers.getContractFactory("CompoundFCM");
-  const fcmTestCompound = fcmTestFactoryCompound.attach(fcmAddress) as CompoundFCM;
+  const fcmTestCompound = fcmTestFactoryCompound.attach(
+    fcmAddress
+  ) as CompoundFCM;
 
   return {
     factory,

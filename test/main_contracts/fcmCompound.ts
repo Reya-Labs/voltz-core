@@ -175,7 +175,6 @@ describe("FCM Compound", () => {
 
         // mint underlyings to the mock cToken
         await token.mint(mockCToken.address, BigNumber.from(10).pow(27));
-        const currentExchangeRate = await mockCToken.exchangeRateStored();
 
         // mint aTokens
         await mockCToken.mint(wallet.address, toBn("100"));

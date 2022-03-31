@@ -46,10 +46,7 @@ contract MockCToken is ICToken, ERC20 {
      * @param amount The amount of tokens getting minted
      * @return `true` if the the previous balance of the user was 0
      */
-    function mint(
-        address user,
-        uint256 amount
-    ) external returns (bool) {
+    function mint(address user, uint256 amount) external returns (bool) {
         uint256 previousBalance = super.balanceOf(user);
 
         require(amount != 0, "CT_INVALID_MINT_AMOUNT");
@@ -59,5 +56,4 @@ contract MockCToken is ICToken, ERC20 {
 
         return previousBalance == 0;
     }
-
 }
