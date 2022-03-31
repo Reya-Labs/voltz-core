@@ -23,7 +23,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of comp v2 is 2
 
-    constructor(ICToken _ctoken, IERC20Extended underlying)
+    constructor(ICToken _ctoken, IERC20Minimal underlying)
         BaseRateOracle(underlying)
     {
         ctoken = _ctoken;
