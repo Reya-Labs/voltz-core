@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "./FixedAndVariableMath.sol";
 
 /// @title Trader
-// todo: split this lib into aave only and common functionalities
 library TraderWithYieldBearingAssets {
     // info stored for each user's position
     struct Info {

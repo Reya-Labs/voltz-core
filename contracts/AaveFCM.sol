@@ -114,8 +114,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
     require(notional!=0, "notional = 0");
 
-    /// todo: (URGENT) add support for approvals and recipient (similar to how it is implemented in the MarginEngine)
-
     // initiate a swap
     // the default tick range for a Position associated with the FCM is tickLower: -tickSpacing and tickUpper: tickSpacing
     // isExternal is true since the state updates following a VAMM induced swap are done in the FCM (below)
@@ -303,8 +301,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
   /// @dev if settlement cashflow of the trader is negative, we need to update trader's margin in terms of scaled yield bearing tokens to account the settlement casflow
   /// @dev once settlement cashflows are accounted for, we safeTransfer the scaled yield bearing tokens in the margin account of the trader back to their wallet address
   function settleTrader() external override onlyAfterMaturity returns (int256 traderSettlementCashflow) {
-
-    // todo: recipient as input to the function
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 

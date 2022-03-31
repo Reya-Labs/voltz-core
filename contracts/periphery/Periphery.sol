@@ -49,8 +49,6 @@ contract Periphery is IPeriphery {
     {
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
-        // todo: check ticks in here?
-
         IVAMM vamm = params.marginEngine.vamm();
 
         IVAMM.VAMMVars memory _v = vamm.vammVars();
@@ -140,7 +138,7 @@ contract Periphery is IPeriphery {
                 _tickUpper = TickMath.MAX_TICK;
             }
 
-            // todo: check if this works, i.e. if tickLower/tickUpper are divisible by tickSpacing
+            /// @audit add unit testsl, checks of tickLower/tickUpper divisiblilty by tickSpacing
             params.tickLower = _tickLower;
             params.tickUpper = _tickUpper;
         }

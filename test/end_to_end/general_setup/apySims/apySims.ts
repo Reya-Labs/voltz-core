@@ -97,7 +97,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         marginDelta: 0,
       })
       .then(
-        // todo: add interface for the result to avoid using [] notation to query result elements
+        /// recommendation: add interface for the result to avoid using [] notation to query result elements
         async (result) => {
           // console.log(result);
           marginRequirement = result[0].toString();
@@ -128,7 +128,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     );
 
     if (!(marginRequirement === "")) {
-      // todo: add logic that checks the current position margin and only deposits positive margin delta if required
+      // rec: add logic that checks the current position margin and only deposits positive margin delta if required
       // the logic below always deposits +marginRequirement
       // update position margin to be equal to the requirement + fees
       await this.e2eSetup.updatePositionMargin(

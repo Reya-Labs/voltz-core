@@ -83,7 +83,7 @@ export class ScenarioRunner {
   currentTick: number = 0;
 
   async mintAndApprove(address: string) {
-    // todo: consider adding an extra argument to this function amount so that the amount minted and approved is not hardcoded for more granular tests
+    // consider adding an extra argument to this function amount so that the amount minted and approved is not hardcoded for more granular tests
     await this.token.mint(address, BigNumber.from(10).pow(27));
     await this.token.approve(address, BigNumber.from(10).pow(27));
 

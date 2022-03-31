@@ -429,9 +429,8 @@ contract MarginEngine is MarginEngineStorage, IMarginEngine,
 
         _position.updateMarginViaDelta(-_liquidatorRewardValue.toInt256());
         _underlyingToken.safeTransfer(msg.sender, _liquidatorRewardValue);
-
-        // todo: add msg.sender to the event (as the initiator of the liquidation)
-        emit PositionLiquidation(_owner, _tickLower, _tickUpper, _position.fixedTokenBalance, _position.variableTokenBalance, _position.margin, _position._liquidity);
+        
+        emit PositionLiquidation(_owner, _tickLower, _tickUpper, _position.fixedTokenBalance, _position.variableTokenBalance, _position.margin, _position._liquidity, msg.sender);
 
         return _liquidatorRewardValue;
     }

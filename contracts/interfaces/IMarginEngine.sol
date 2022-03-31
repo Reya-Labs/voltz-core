@@ -96,7 +96,8 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
         int256 margin,
-        uint128 liquidity
+        uint128 liquidity,
+        address liquidator
     );
 
     event PositionPostSwapUpdate(
