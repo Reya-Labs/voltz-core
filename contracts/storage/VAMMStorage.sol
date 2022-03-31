@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-pragma solidity ^0.8.0;
+pragma solidity =0.8.9;
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";

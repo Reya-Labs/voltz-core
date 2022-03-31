@@ -2,7 +2,7 @@
 
 // solhint-disable no-inline-assembly
 
-pragma solidity ^0.8.0;
+pragma solidity =0.8.9;
 
 /// @title Math functions that do not check inputs or outputs
 /// @notice Contains methods that perform common math functions but do not do any overflow or underflow checks

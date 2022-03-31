@@ -2,7 +2,7 @@
 
 import "contracts/utils/CustomErrors.sol";
 
-pragma solidity ^0.8.0;
+pragma solidity =0.8.9;
 
 import "contracts/utils/CustomErrors.sol";
 import "../IERC20Minimal.sol";
