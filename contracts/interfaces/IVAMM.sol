@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
 import "./IMarginEngine.sol";
@@ -65,8 +65,6 @@ interface IVAMM is IPositionStructs, CustomErrors {
         int256 amountSpecified;
         /// @dev The Q64.96 sqrt price limit. If !isFT, the price cannot be less than this
         uint160 sqrtPriceLimitX96;
-        /// @dev Is the swap triggered by a trader. If this is false then this is only possible in a scenario where a liquidity provider's position is liquidated
-        /// @dev leading to an unwind of a liquidity provider
         /// @dev lower tick of the position
         int24 tickLower;
         /// @dev upper tick of the position
@@ -164,15 +162,15 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @return The current VAMM Vars (see struct definition for semantics)
     function vammVars() external view returns (VAMMVars memory);
 
-    /// @notice The fixed token growth in wei, accumulated per unit of liquidity for the entire life of the vamm
+    /// @notice The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function fixedTokenGrowthGlobalX128() external view returns (int256);
 
-    /// @notice The variable token growth in wei, accumulated per unit of liquidity for the entire life of the vamm
+    /// @notice The variable token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function variableTokenGrowthGlobalX128() external view returns (int256);
 
-    /// @notice The fee growth in wei, collected per unit of liquidity for the entire life of the vamm
+    /// @notice The fee growth collected per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function feeGrowthGlobalX128() external view returns (uint256);
 
@@ -206,9 +204,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
     function initializeVAMM(uint160 sqrtPriceX96) external;
 
     /// @notice removes liquidity given recipient/tickLower/tickUpper of the position
-    /// @param recipient The address for which the liquidity will be created
-    /// @param tickLower The lower tick of the position in which to add liquidity
-    /// @param tickUpper The upper tick of the position in which to add liquidity
+    /// @param recipient The address for which the liquidity will be removed
+    /// @param tickLower The lower tick of the position in which to remove liquidity
+    /// @param tickUpper The upper tick of the position in which to remove liqudiity
     /// @param amount The amount of liquidity to burn
     function burn(
         address recipient,

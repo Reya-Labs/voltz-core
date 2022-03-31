@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
 pragma solidity ^0.8.0;
 import "./IVAMM.sol";
@@ -203,7 +203,7 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @notice updates the margin account of a position which can be uniquily identified with its _owner, tickLower, tickUpper
     /// @dev if the position has positive liquidity then before the margin update, we call the updatePositionTokenBalancesAndAccountForFees functon that calculates up to date
     /// @dev margin, fixed and variable token balances by taking into account the fee income from their tick range and fixed and variable deltas settled along their tick range
-    /// @dev marginDelta is the delta applied to the current margin of a positioin, if the marginDelta is negative, the position is withdrawing margin, if the marginDelta is positive, the position is depositing funds in terms of the underlying tokens
+    /// @dev marginDelta is the delta applied to the current margin of a position, if the marginDelta is negative, the position is withdrawing margin, if the marginDelta is positive, the position is depositing funds in terms of the underlying tokens
     /// @dev if marginDelta is negative, we need to check if the msg.sender is either the _owner of the position or the msg.sender is apporved by the _owner to act on their behalf in Voltz Protocol
     /// @dev the approval logic is implemented in the Factory.sol
     /// @dev if marginDelta is negative, we additionally need to check if post the initial margin requirement is still satisfied post withdrawal

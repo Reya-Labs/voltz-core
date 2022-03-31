@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
 pragma solidity ^0.8.0;
 
@@ -84,6 +84,7 @@ library MarginCalculator {
     /// @param currentTimestampWad currentTimestampScaled
     /// @param historicalApyWad Geometric Mean Time Weighted Average APY (TWAPPY) of the underlying pool (e.g. Aave v2 USDC Lending Pool)
     /// @param isUpper isUpper = true ==> calculating the APY Upper Bound, otherwise APY Lower Bound
+    /// @param _marginCalculatorParameters Margin Calculator Parameters (more details in the litepaper) necessary to compute position margin requirements
     /// @return apyBoundWad APY Upper or Lower Bound of a given underlying pool (e.g. Aave v2 USDC Lending Pool)
     function computeApyBound(
         uint256 termEndTimestampWad,
@@ -97,9 +98,6 @@ library MarginCalculator {
 
         int256 beta4Wad = _marginCalculatorParameters.betaWad << 2;
         int256 alpha4Wad = _marginCalculatorParameters.alphaWad << 2;
-
-        // int256 beta4Wad = _marginCalculatorParameters.betaWad.mul(FOUR); // FOUR is in wei
-        // int256 alpha4Wad = _marginCalculatorParameters.alphaWad.mul(FOUR); // FOUR is in wei
 
         apyBoundVars.timeFactorWad = computeTimeFactor(
             termEndTimestampWad,
@@ -129,7 +127,7 @@ library MarginCalculator {
 
         apyBoundVars.criticalValueMultiplierWad =
             ((apyBoundVars.lambdaWad << 1) + apyBoundVars.kWad) <<
-            1; //.mul(TWO);
+            1;
 
         apyBoundVars.criticalValueWad = apyBoundVars
             .criticalValueMultiplierWad
@@ -164,6 +162,7 @@ library MarginCalculator {
     /// @param isFT isFT => we are dealing with a Fixed Taker (short) IRS position, otherwise it is a Variable Taker (long) IRS position
     /// @param isLM isLM => we are computing a Liquidation Margin otherwise computing an Initial Margin
     /// @param historicalApyWad Historical Average APY of the underlying pool (e.g. Aave v2 USDC Lending Pool)
+    /// @param _marginCalculatorParameters Margin Calculator Parameters (more details in the litepaper) necessary to compute position margin requirements
     /// @return variableFactorWad The Worst Case Variable Factor At Maturity = APY Bound * accrualFactor(timeInYearsFromStartUntilMaturity) where APY Bound = APY Upper Bound for Fixed Takers and APY Lower Bound for Variable Takers (18 decimals)
     function worstCaseVariableFactorAtMaturity(
         uint256 timeInSecondsFromStartToMaturityWad,
@@ -207,11 +206,13 @@ library MarginCalculator {
         uint256 fixedTokenDeltaUnbalancedWad;
     }
 
-    // simulation of a swap without the need to involve the swap function
+    
     /// @notice calculates the absolute fixed token delta unbalanced resulting from a simulated counterfactual unwind necessary to determine the minimum margin requirement of a trader
+    /// @dev simulation of a swap without the need to involve the swap function
     /// @param variableTokenDeltaAbsolute absolute value of the variableTokenDelta for which the unwind is simulated
     /// @param sqrtRatioCurrX96 sqrtRatio necessary to calculate the starting fixed rate which is used to calculate the counterfactual unwind fixed rate
     /// @param startingFixedRateMultiplierWad the multiplier (lambda from the litepaper - minimum margin requirement equation) that is multiplied by the starting fixed rate to determine the deviation applied to the starting fixed rate (in Wad)
+    /// @param fixedRateDeviationMinWad The minimum value the variable D (from the litepaper) can take
     /// @param termEndTimestampWad term end timestamp in wad
     /// @param currentTimestampWad current timestamp in wad
     /// @param tMaxWad the maximum duration for a Voltz Protocol IRS AMM

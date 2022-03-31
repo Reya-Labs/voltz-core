@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
 pragma solidity ^0.8.0;
 
@@ -6,11 +6,9 @@ import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WadRayMath.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
-    using SafeMath for uint256;
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     /// @inheritdoc IAaveRateOracle
@@ -20,12 +18,20 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     uint256 public constant ONE_IN_WAD = 1e18;
 
-    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal underlying)
-        BaseRateOracle(underlying)
+    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal _underlying)
+        BaseRateOracle(_underlying)
     {
+        require(
+            address(_aaveLendingPool) != address(0),
+            "aave pool must exist"
+        );
+        require(address(_underlying) != address(0), "underlying must exist");
+
         aaveLendingPool = _aaveLendingPool;
         uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = aaveLendingPool.getReserveNormalizedIncome(underlying);
+        uint256 result = aaveLendingPool.getReserveNormalizedIncome(
+            _underlying
+        );
 
         (
             oracleVars.rateCardinality,
@@ -37,6 +43,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     /// @param index The index of the Observation that was most recently written to the observations buffer
     /// @param cardinality The number of populated elements in the observations buffer
     /// @param cardinalityNext The new length of the observations buffer, independent of population
+    /// @return indexUpdated The new index of the most recently written element in the oracle array
+    /// @return cardinalityUpdated The new cardinality of the oracle array
     function writeRate(
         uint16 index,
         uint16 cardinality,
@@ -113,7 +121,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
         if (rateToRay > rateFromRay) {
             uint256 result = WadRayMath.rayToWad(
-                WadRayMath.rayDiv(rateToRay, rateFromRay).sub(WadRayMath.RAY)
+                WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY
             );
             return result;
         } else {
@@ -194,9 +202,10 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
-                uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath
-                    .rayDiv(atOrAfter.observedValue, beforeOrAt.observedValue)
-                    .sub(WadRayMath.RAY);
+                uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath.rayDiv(
+                    atOrAfter.observedValue,
+                    beforeOrAt.observedValue
+                ) - WadRayMath.RAY;
 
                 rateFromBeforeOrAtToAtOrAfterWad = WadRayMath.rayToWad(
                     rateFromBeforeOrAtToAtOrAfterRay

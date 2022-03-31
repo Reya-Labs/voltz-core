@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 
-/// @title Console things
+/// @title Wrapper around hardhat/console.sol
 library Printer {
     bool public constant PRINT = true;
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
 pragma solidity ^0.8.0;
 
@@ -51,10 +51,10 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     constructor(IERC20Minimal _underlying) {
+        require(address(_underlying) != address(0), "underlying must exist");
         underlying = _underlying;
     }
 
-    // AB: lock the amm when calling this function?
     /// @inheritdoc IRateOracle
     function increaseObservationCardinalityNext(uint16 rateCardinalityNext)
         external

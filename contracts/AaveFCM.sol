@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
 pragma solidity ^0.8.0;
 import "./interfaces/fcms/IFCM.sol";
@@ -47,6 +47,10 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
   /// @dev in the initialize function we set the vamm and the margiEngine associated with the fcm
   function initialize(IVAMM __vamm, IMarginEngine __marginEngine) external override initializer {
+
+    require(address(__vamm) != address(0), "vamm must exist");
+    require(address(__marginEngine) != address(0), "margin engine must exist");
+
     /// @dev we additionally cache the rateOracle, _aaveLendingPool, underlyingToken, underlyingYieldBearingToken
     _vamm = __vamm;
     _marginEngine = __marginEngine;
@@ -141,7 +145,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     // deposit notional executed in terms of aTokens (e.g. aUSDC) to fully collateralise your position
     _underlyingYieldBearingToken.safeTransferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
 
-    // transfer fees to the margin engine (in terms of the underlyingToken e.g. aUSDC)
+    // transfer fees to the margin engine (in terms of the underlyingToken e.g. USDC)
     underlyingToken.safeTransferFrom(msg.sender, address(_marginEngine), cumulativeFeeIncurred);
 
     emit FullyCollateralisedSwap(msg.sender, trader.marginInScaledYieldBearingTokens, trader.fixedTokenBalance, trader.variableTokenBalance);
