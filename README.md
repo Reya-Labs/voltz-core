@@ -12,7 +12,7 @@ We would love to see how you can build and improve upon what we've built here at
 
 ## Uniswap v3 Additional Use Grant
 
-There are a large number of innovative design decisions required to create Voltz Protocol, including the use of concentrated liquidity pioneered in Uniswap v3. However, Uniswap v3 is subject to a Business Source License, meaning Uniswap v3 code can only be used in another protocol if that protocol is provided with an “Additional Use Grant” by the Uniswap community.
+There are a large number of innovative design decisions required to create Voltz Protocol, including the use of concentrated liquidity pioneered in [Uniswap v3](https://uniswap.org/whitepaper-v3.pdf). However, Uniswap v3 is subject to a Business Source License, meaning Uniswap v3 code can only be used in another protocol if that protocol is provided with an “Additional Use Grant” by the Uniswap community.
 
 Voltz was provided an Additional Use Grant, executed following an on-chain governance vote by the Uniswap Community. This means Uniswap v3 code can be used within Voltz Protocol. However, if another project wishes to use this code they will also need to get an Additional Use Grant from Uniswap Governance in accordance with the Business Source License. 
 
