@@ -206,7 +206,6 @@ library MarginCalculator {
         uint256 fixedTokenDeltaUnbalancedWad;
     }
 
-    
     /// @notice calculates the absolute fixed token delta unbalanced resulting from a simulated counterfactual unwind necessary to determine the minimum margin requirement of a trader
     /// @dev simulation of a swap without the need to involve the swap function
     /// @param variableTokenDeltaAbsolute absolute value of the variableTokenDelta for which the unwind is simulated

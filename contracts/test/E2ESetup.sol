@@ -14,13 +14,11 @@ import "../utils/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "contracts/utils/CustomErrors.sol";
 
-
 contract Actor is CustomErrors {
     function mintOrBurnViaPeriphery(
         address peripheryAddress,
         IPeriphery.MintOrBurnParams memory params
     ) external returns (int256 positionMarginRequirement) {
-
         /// @audit recommendation: separate file for the actor contract: convention is 1 file per contract
 
         positionMarginRequirement = IPeriphery(peripheryAddress).mintOrBurn(
