@@ -64,6 +64,10 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
     function underlyingYieldBearingToken() external view override returns (IERC20Minimal) {
         return _underlyingYieldBearingToken;
     }
+    /// @inheritdoc ICompoundFCM
+    function ctoken() external view override returns (ICToken) {
+        return _ctoken;
+    }
     /// @inheritdoc IFCM
     function marginEngine() external view override returns (IMarginEngine) {
         return _marginEngine;
