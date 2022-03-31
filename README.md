@@ -10,6 +10,12 @@ This repository contains the smart contracts that power Voltz Protocol. Over tim
 
 We would love to see how you can build and improve upon what we've built here at Voltz.
 
+## Uniswap v3 Additional Use Grant
+
+There are a large number of innovative design decisions required to create Voltz Protocol, including the use of concentrated liquidity pioneered in Uniswap v3. However, Uniswap v3 is subject to a Business Source License, meaning Uniswap v3 code can only be used in another protocol if that protocol is provided with an “Additional Use Grant” by the Uniswap community.
+
+Voltz was provided an Additional Use Grant, executed following an on-chain governance vote by the Uniswap Community. This means Uniswap v3 code can be used within Voltz Protocol. However, if another project wishes to use this code they will also need to get an Additional Use Grant from Uniswap Governance in accordance with the Business Source License. 
+
 ## Code Contributions
 
 We welcome and are extremely excited to support individuals and teams that wish to contribute to the Voltz core contracts. If you wish to propose changes to the current codebase, make sure you do it in accordance with the contribution guidelines. Before starting to work on major contributions make sure to discuss them with the Voltz community and the core team to make sure they are in alignment with our roadmap and long-term vision. In case you have any questions or just want to have a discussion feel free to jump into the dev channel of our [discord](https://discord.com/invite/KVWtUGRumk).
