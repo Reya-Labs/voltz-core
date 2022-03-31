@@ -207,7 +207,10 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
                 console.log("atOrAfter.observedValue", atOrAfter.observedValue);
-                console.log("beforeOrAt.observedValue", beforeOrAt.observedValue);
+                console.log(
+                    "beforeOrAt.observedValue",
+                    beforeOrAt.observedValue
+                );
                 uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath.rayDiv(
                     atOrAfter.observedValue,
                     beforeOrAt.observedValue

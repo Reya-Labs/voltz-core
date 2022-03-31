@@ -27,7 +27,33 @@ contract MockCToken is ICToken, ERC20 {
         return _rate;
     }
 
-    function redeemUnderlying(uint redeemAmount) external override returns (uint) {
+    function redeemUnderlying(uint256 redeemAmount)
+        external
+        override
+        returns (uint256)
+    {
         return 0;
     }
+
+    // https://github.com/compound-finance/compound-protocol/blob/master/contracts/CErc20.sol#L42
+    /**
+     * @dev Mints `amount` cTokens to `user`
+     * @param user The address receiving the minted tokens
+     * @param amount The amount of tokens getting minted
+     * @return `true` if the the previous balance of the user was 0
+     */
+    function mint(
+        address user,
+        uint256 amount
+    ) external returns (bool) {
+        uint256 previousBalance = super.balanceOf(user);
+
+        require(amount != 0, "CT_INVALID_MINT_AMOUNT");
+        _mint(user, amount);
+
+        emit Transfer(address(0), user, amount);
+
+        return previousBalance == 0;
+    }
+
 }

@@ -26,6 +26,7 @@ import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 import { toBn } from "evm-bn";
 import { e2eParameters } from "../end_to_end/general_setup/e2eSetup";
 import { TICK_SPACING } from "./utilities";
+import { CompoundFCM } from "../../typechain/CompoundFCM";
 const { provider } = waffle;
 
 export async function mockATokenFixture(
@@ -217,6 +218,7 @@ interface MetaFixture {
   marginEngineTest: TestMarginEngine;
   vammTest: TestVAMM;
   fcmTest: AaveFCM;
+  fcmTestCompound: CompoundFCM;
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
@@ -312,6 +314,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const fcmTestFactory = await ethers.getContractFactory("AaveFCM");
   const fcmTest = fcmTestFactory.attach(fcmAddress) as AaveFCM;
 
+  const fcmTestFactoryCompound = await ethers.getContractFactory("CompoundFCM");
+  const fcmTestCompound = fcmTestFactoryCompound.attach(fcmAddress) as CompoundFCM;
+
   return {
     factory,
     vammMasterTest,
@@ -327,6 +332,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     marginEngineTest,
     vammTest,
     fcmTest,
+    fcmTestCompound,
   };
 };
 
