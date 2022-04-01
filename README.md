@@ -22,6 +22,10 @@ The Uniswap v3 code subject to the Business Source License can be identified by 
 
 We are extremely excited to have the support of individuals and teams that wish to contribute to Voltz core contracts. Before starting to work on major contributions make sure to discuss them with the Voltz community to make sure they are in alignment with our roadmap and long-term vision. If you have any questions or just want to have a discussion feel free to jump into our [discord](https://discord.com/invite/KVWtUGRumk).
 
+## Bug Bounty
+
+
+
 ## Build and Test
 
 ### Getting Started
