@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-pragma solidity ^0.8.0;
+pragma solidity =0.8.9;
 import "../aave/IAaveV2LendingPool.sol";
 import "../rate_oracles/IRateOracle.sol";
 import "contracts/utils/CustomErrors.sol";

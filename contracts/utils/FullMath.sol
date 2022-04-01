@@ -2,7 +2,7 @@
 
 // solhint-disable no-inline-assembly
 
-pragma solidity ^0.8.0;
+pragma solidity =0.8.9;
 
 /// @title Contains 512-bit math functions
 /// @notice Facilitates multiplication and division that can have overflow of an intermediate value without any loss of precision

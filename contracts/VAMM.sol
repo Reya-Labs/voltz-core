@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-pragma solidity ^0.8.0;
+pragma solidity =0.8.9;
 import "./core_libraries/Tick.sol";
 import "./storage/VAMMStorage.sol";
 import "./interfaces/IVAMM.sol";
