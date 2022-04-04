@@ -101,6 +101,7 @@ library OracleBuffer {
         uint16 next
     ) internal returns (uint16) {
         require(current > 0, "I");
+        require(next < MAX_BUFFER_LENGTH, "buffer limit");
         // no-op if the passed next value isn't greater than the current next value
         if (next <= current) return current;
         // store in each slot to prevent fresh SSTOREs in swaps
