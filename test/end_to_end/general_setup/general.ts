@@ -719,6 +719,92 @@ export class ScenarioRunner {
     };
   }
 
+  public async getInfoSwapViaPeriphery(
+    trader: string,
+    swapParams: {
+      marginEngine: string;
+      isFT: boolean;
+      notional: BigNumber;
+      sqrtPriceLimitX96: BigNumber;
+      tickLower: number;
+      tickUpper: number;
+      marginDelta: BigNumber;
+    }
+  ): Promise<InfoPostSwap> {
+    const tickBefore = await this.periphery.getCurrentTick(
+      this.marginEngineTest.address
+    );
+
+    let tickAfter = 0;
+    let marginRequirement: BigNumber = BigNumber.from(0);
+    let fee = BigNumber.from(0);
+    let availableNotional = BigNumber.from(0);
+
+    await this.e2eSetup.callStatic.swapViaPeriphery(trader, swapParams).then(
+      (result: any) => {
+        availableNotional = result[1];
+        fee = result[2];
+        marginRequirement = result[4];
+        tickAfter = parseInt(result[5]);
+      },
+      (error: any) => {
+        const message = extractErrorMessage(error);
+
+        if (!message) {
+          throw new Error("Cannot decode additional margin amount");
+        }
+
+        if (message.includes("MarginRequirementNotMet")) {
+          const args: string[] = message
+            .split("MarginRequirementNotMet")[1]
+            .split("(")[1]
+            .split(")")[0]
+            .replaceAll(" ", "")
+            .split(",");
+
+          marginRequirement = BigNumber.from(args[0]);
+          tickAfter = parseInt(args[1]);
+          fee = BigNumber.from(args[4]);
+          availableNotional = BigNumber.from(args[3]);
+        } else {
+          console.log(message);
+          throw new Error("Additional margin amount cannot be established");
+        }
+      }
+    );
+
+    const currentMargin = (
+      await this.marginEngineTest.callStatic.getPosition(
+        trader,
+        swapParams.tickLower,
+        swapParams.tickUpper
+      )
+    ).margin;
+
+    const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
+    const scaledFee = parseFloat(utils.formatEther(fee));
+    const scaledAvailableNotional = parseFloat(
+      utils.formatEther(availableNotional)
+    );
+    const scaledMarginRequirement = parseFloat(
+      utils.formatEther(marginRequirement)
+    );
+
+    const suggestedMargin = (scaledMarginRequirement + scaledFee) * 1.01;
+
+    const additionalMargin =
+      suggestedMargin > scaledCurrentMargin
+        ? suggestedMargin - scaledCurrentMargin
+        : 0;
+
+    return {
+      marginRequirement: additionalMargin,
+      availableNotional: scaledAvailableNotional,
+      fee: scaledFee,
+      slippage: tickAfter - tickBefore,
+    };
+  }
+
   public async getMintInfoViaAMM(
     recipient: string,
     tickLower: number,
@@ -776,6 +862,68 @@ export class ScenarioRunner {
     return additionalMargin;
   }
 
+  public async getMintInfoViaPeriphery(
+    trader: string,
+    mintParams: {
+      marginEngine: string;
+      tickLower: number;
+      tickUpper: number;
+      notional: BigNumber;
+      isMint: boolean;
+      marginDelta: BigNumber;
+    }
+  ): Promise<number> {
+    let marginRequirement = BigNumber.from("0");
+    await this.e2eSetup.callStatic
+      .mintOrBurnViaPeriphery(trader, mintParams)
+      .then(
+        (result) => {
+          marginRequirement = BigNumber.from(result);
+        },
+        (error) => {
+          const message = extractErrorMessage(error);
+
+          if (!message) {
+            throw new Error("Cannot decode additional margin amount");
+          }
+
+          if (message.includes("MarginLessThanMinimum")) {
+            const args: string[] = message
+              .split("MarginLessThanMinimum")[1]
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = BigNumber.from(args[0]);
+          } else {
+            throw new Error("Additional margin amount cannot be established");
+          }
+        }
+      );
+
+    const currentMargin = (
+      await this.marginEngineTest.callStatic.getPosition(
+        trader,
+        mintParams.tickLower,
+        mintParams.tickUpper
+      )
+    ).margin;
+
+    const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
+    const scaledMarginRequirement = parseFloat(
+      utils.formatEther(marginRequirement)
+    );
+
+    const suggestedMargin = scaledMarginRequirement * 1.01;
+    const additionalMargin =
+      suggestedMargin > scaledCurrentMargin
+        ? suggestedMargin - scaledCurrentMargin
+        : 0;
+
+    return additionalMargin;
+  }
+
   async updateAPYbounds() {
     const currentTimestamp: number = await getCurrentTimestamp(provider);
     const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
@@ -810,6 +958,11 @@ export class ScenarioRunner {
     reserveNormalizedIncome: number
   ) {
     await advanceTimeAndBlock(time, blockCount);
+    console.log(
+      "rni:",
+      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
+        "0".repeat(23)
+    );
     await this.aaveLendingPool.setReserveNormalizedIncome(
       this.token.address,
       Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +

@@ -273,13 +273,21 @@ contract E2ESetup is CustomErrors {
     )
         public
         returns (
-            int256 positionMarginRequirement,
-            uint256 cumulativeFeeIncurred
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement
         )
     {
         addPosition(trader, params.tickLower, params.tickUpper);
-        (, , cumulativeFeeIncurred, , positionMarginRequirement) = Actor(trader)
-            .swapViaPeriphery(peripheryAddress, params);
+        (
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced,
+            _marginRequirement
+        ) = Actor(trader).swapViaPeriphery(peripheryAddress, params);
     }
 
     function mintViaAMM(
