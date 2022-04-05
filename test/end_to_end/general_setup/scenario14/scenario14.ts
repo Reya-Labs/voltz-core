@@ -2,20 +2,72 @@ import { BigNumber, utils } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
-import { e2eScenarios } from "../e2eSetup";
+import {
+  APY_UPPER_MULTIPLIER,
+  APY_LOWER_MULTIPLIER,
+  MIN_DELTA_LM,
+  MIN_DELTA_IM,
+  ALPHA,
+  BETA,
+  XI_UPPER,
+  XI_LOWER,
+  T_MAX,
+  encodeSqrtRatioX96,
+  TICK_SPACING,
+} from "../../../shared/utilities";
+import { e2eParameters } from "../e2eSetup";
 import { ScenarioRunner } from "../general";
+
+const e2eParams: e2eParameters = {
+  duration: consts.ONE_MONTH.mul(3),
+  numActors: 6,
+  marginCalculatorParams: {
+    apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+    apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+    minDeltaLMWad: MIN_DELTA_LM,
+    minDeltaIMWad: MIN_DELTA_IM,
+    sigmaSquaredWad: toBn("0.15"),
+    alphaWad: ALPHA,
+    betaWad: BETA,
+    xiUpperWad: XI_UPPER,
+    xiLowerWad: XI_LOWER,
+    tMaxWad: T_MAX,
+
+    devMulLeftUnwindLMWad: toBn("0.5"),
+    devMulRightUnwindLMWad: toBn("0.5"),
+    devMulLeftUnwindIMWad: toBn("0.8"),
+    devMulRightUnwindIMWad: toBn("0.8"),
+
+    fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+    fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+    fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+    fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+    gammaWad: toBn("1.0"),
+    minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+  },
+  lookBackWindowAPY: consts.ONE_WEEK,
+  startingPrice: encodeSqrtRatioX96(1, 1),
+  feeProtocol: 5,
+  fee: toBn("0.01"),
+  tickSpacing: TICK_SPACING,
+  positions: [
+    [0, -TICK_SPACING, TICK_SPACING],
+    [1, -3 * TICK_SPACING, -TICK_SPACING],
+    [0, -3 * TICK_SPACING, TICK_SPACING],
+    [0, 0, TICK_SPACING],
+    [2, -3 * TICK_SPACING, TICK_SPACING],
+    [3, -TICK_SPACING, TICK_SPACING],
+    [4, -TICK_SPACING, TICK_SPACING],
+    [5, -TICK_SPACING, TICK_SPACING],
+  ],
+  skipped: true,
+};
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     await this.exportSnapshot("START");
-
-    for (const p of this.positions.slice(5, 8)) {
-      await this.e2eSetup.updatePositionMargin(p[0], p[1], p[2], toBn("10000"));
-      console.log(
-        "gas consumed for update position margin: ",
-        (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
-      );
-    }
 
     await this.marginEngineTest.setLookbackWindowInSeconds(consts.ONE_WEEK);
     await this.marginEngineTest.setCacheMaxAgeInSeconds(consts.ONE_DAY);
@@ -33,24 +85,21 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     );
 
     const p = this.positions[0];
-    const positionMarginRequirement = BigNumber.from(0);
-
-    await this.e2eSetup.updatePositionMargin(
+    const positionMarginRequirement = await this.getMintInfoViaAMM(
       p[0],
       p[1],
       p[2],
-      positionMarginRequirement.add(toBn("1"))
-    );
-    console.log(
-      "gas consumed for update position margin: ",
-      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+      toBn("100000")
     );
 
-    await this.e2eSetup.mint(p[0], p[1], p[2], toBn("100000"));
-    console.log(
-      "gas consumed for mint: ",
-      (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+    await this.e2eSetup.updatePositionMarginViaAMM(
+      p[0],
+      p[1],
+      p[2],
+      toBn(positionMarginRequirement.toString())
     );
+
+    await this.e2eSetup.mintViaAMM(p[0], p[1], p[2], toBn("100000"));
 
     await advanceTimeAndBlock(consts.ONE_DAY.mul(90), 2); // advance 5 days to reach maturity
 
@@ -63,7 +112,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
 const test = async () => {
   console.log("scenario", 14);
-  const e2eParams = e2eScenarios[11];
   const scenario = new ScenarioRunnerInstance(
     e2eParams,
     "test/end_to_end/general_setup/scenario14/console.txt"
@@ -72,4 +120,4 @@ const test = async () => {
   await scenario.run();
 };
 
-it.skip("scenario 14", test);
+it("scenario 14", test);

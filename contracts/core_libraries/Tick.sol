@@ -103,14 +103,16 @@ library Tick {
             Info storage lower = self[params.tickLower];
             Info storage upper = self[params.tickUpper];
 
-            feeGrowthInsideX128 = _getGrowthInside(
-                params.tickLower,
-                params.tickUpper,
-                params.tickCurrent,
-                params.feeGrowthGlobalX128.toInt256(),
-                lower.feeGrowthOutsideX128.toInt256(),
-                upper.feeGrowthOutsideX128.toInt256()
-            ).toUint256();
+            feeGrowthInsideX128 = uint256(
+                _getGrowthInside(
+                    params.tickLower,
+                    params.tickUpper,
+                    params.tickCurrent,
+                    params.feeGrowthGlobalX128.toInt256(),
+                    lower.feeGrowthOutsideX128.toInt256(),
+                    upper.feeGrowthOutsideX128.toInt256()
+                )
+            );
         }
     }
 

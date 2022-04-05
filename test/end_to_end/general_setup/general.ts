@@ -28,12 +28,19 @@ import {
 import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 import { e2eParameters } from "./e2eSetup";
-// import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { toBn } from "../../helpers/toBn";
 import { consts } from "../../helpers/constants";
 import { createFixtureLoader } from "ethereum-waffle";
+import { extractErrorMessage } from "../../utils/extractErrorMessage";
 
 const { provider } = waffle;
+
+export type InfoPostSwap = {
+  marginRequirement: number;
+  availableNotional: number;
+  fee: number;
+  slippage: number;
+};
 
 export class ScenarioRunner {
   traderTickLower: number = -TICK_SPACING;
@@ -41,7 +48,6 @@ export class ScenarioRunner {
 
   params: e2eParameters;
 
-  // owner!: SignerWithAddress;
   owner!: Wallet;
   factory!: Factory;
   token!: ERC20Mock;
@@ -207,24 +213,11 @@ export class ScenarioRunner {
     );
 
     for (let i = 0; i < this.positions.length; i++) {
-      // const positionHistory = await this.e2eSetup.getPositionHistory(
-      //   this.positions[i][0],
-      //   this.positions[i][1],
-      //   this.positions[i][2]
-      // );
-
       let positionInfo = await this.marginEngineTest.callStatic.getPosition(
         this.positions[i][0],
         this.positions[i][1],
         this.positions[i][2]
       );
-
-      // await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-      //   this.positions[i][0],
-      //   this.positions[i][1],
-      //   this.positions[i][2],
-      //   false
-      // );
 
       fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
       positionInfo = await this.marginEngineTest.callStatic.getPosition(
@@ -326,15 +319,7 @@ export class ScenarioRunner {
           utils.formatEther(positionInfo.variableTokenBalance).toString() +
           "\n"
       );
-      // fs.appendFileSync(
-      //   this.outputFile,
-      //   "          feeGrowthInsideLastX128: " +
-      //     (
-      //       positionInfo.feeGrowthInsideLastX128.div(BigNumber.from(2).pow(128 - 32)).toNumber() /
-      //       2 ** 32
-      //     ).toString() +
-      //     "\n"
-      // );
+
       fs.appendFileSync(
         this.outputFile,
         "                        isSettled: " +
@@ -432,7 +417,6 @@ export class ScenarioRunner {
 
   async init(isProd: boolean = false) {
     this.owner = provider.getWallets()[0];
-    provider.getSigner();
 
     if (!isProd) {
       this.loadFixture = createFixtureLoader([this.owner]);
@@ -493,16 +477,15 @@ export class ScenarioRunner {
     );
 
     const receiptLogs = (await deployTrx.wait()).logs;
-    // console.log("receiptLogs", receiptLogs);
     const log = this.factory.interface.parseLog(
       receiptLogs[receiptLogs.length - 3]
     );
     if (log.name !== "IrsInstance") {
       throw Error(
-        "IrsInstance log not found has it moved to a different position in the array?)"
+        "IrsInstance log not found! Has it moved to a different position in the array?"
       );
     }
-    // console.log("log", log);
+
     const marginEngineAddress = log.args.marginEngine;
     const vammAddress = log.args.vamm;
     const fcmAddress = log.args.fcm;
@@ -587,6 +570,12 @@ export class ScenarioRunner {
         BigNumber.from(10).pow(27)
       );
 
+      await this.token.approveInternal(
+        actor.address,
+        this.periphery.address,
+        BigNumber.from(10).pow(27)
+      );
+
       await this.aToken.approveInternal(
         actor.address,
         this.fcmTest.address,
@@ -639,97 +628,6 @@ export class ScenarioRunner {
     await this.updateCurrentTick();
   }
 
-  async printPositionInfo(positionInfo: any) {
-    console.log(
-      "                        liquidity: ",
-      utils.formatEther(positionInfo[0])
-    );
-    console.log(
-      "                           margin: ",
-      utils.formatEther(positionInfo[1])
-    );
-    console.log(
-      "   fixedTokenGrowthInsideLastX128: ",
-      positionInfo[2].div(BigNumber.from(2).pow(128 - 32)).toNumber() / 2 ** 32
-    );
-    console.log(
-      "variableTokenGrowthInsideLastX128: ",
-      positionInfo[3].div(BigNumber.from(2).pow(128 - 32)).toNumber() / 2 ** 32
-    );
-    console.log(
-      "                fixedTokenBalance: ",
-      utils.formatEther(positionInfo[4])
-    );
-    console.log(
-      "             variableTokenBalance: ",
-      utils.formatEther(positionInfo[5])
-    );
-    console.log(
-      "          feeGrowthInsideLastX128: ",
-      positionInfo[6].div(BigNumber.from(2).pow(128 - 32)).toNumber() / 2 ** 32
-    );
-    console.log(
-      "                        isSettled: ",
-      positionInfo[7].toString()
-    );
-
-    const settlementCashflow =
-      await this.testFixedAndVariableMath.calculateSettlementCashflow(
-        positionInfo[4],
-        positionInfo[5],
-        this.termStartTimestampBN,
-        this.termEndTimestampBN,
-        this.variableFactorWad
-      );
-    console.log(
-      "             settlement cashflow: ",
-      utils.formatEther(settlementCashflow)
-    );
-
-    console.log("");
-  }
-
-  // print the trader information
-  async printTraderInfo(traderInfo: any) {
-    console.log("              margin: ", utils.formatEther(traderInfo[0]));
-    console.log("   fixedTokenBalance: ", utils.formatEther(traderInfo[1]));
-    console.log("variableTokenBalance: ", utils.formatEther(traderInfo[2]));
-    console.log("           isSettled: ", traderInfo[3].toString());
-
-    const settlementCashflow =
-      await this.testFixedAndVariableMath.calculateSettlementCashflow(
-        traderInfo[1],
-        traderInfo[2],
-        this.termStartTimestampBN,
-        this.termEndTimestampBN,
-        this.variableFactorWad
-      );
-    console.log("settlement cashflow: ", utils.formatEther(settlementCashflow));
-
-    console.log("");
-  }
-
-  // print the position and trader information
-  async printPositionsInfo() {
-    // for (let i = 0; i < this.positions.length; i++) {
-    //   await this.marginEngineTest.updatePositionTokenBalancesAndAccountForFeesTest(
-    //     this.positions[i][0],
-    //     this.positions[i][1],
-    //     this.positions[i][2],
-    //     false
-    //   );
-    //   console.log("POSITION: ", i + 1);
-    //   console.log("TICK LOWER", this.positions[i][1]);
-    //   console.log("TICK UPPER", this.positions[i][2]);
-    //   const positionInfo = await this.marginEngineTest.getPosition(
-    //     this.positions[i][0],
-    //     this.positions[i][1],
-    //     this.positions[i][2]
-    //   );
-    //   await this.printPositionInfo(positionInfo);
-    // }
-  }
-
   // print the current normalized income
   async printReserveNormalizedIncome() {
     const currentReseveNormalizedIncome =
@@ -739,6 +637,143 @@ export class ScenarioRunner {
       formatRay(currentReseveNormalizedIncome)
     ); // in ray
     console.log("");
+  }
+
+  public async getInfoSwapViaAMM(swapParams: {
+    recipient: string;
+    amountSpecified: BigNumber;
+    sqrtPriceLimitX96: BigNumber;
+    tickLower: number;
+    tickUpper: number;
+  }): Promise<InfoPostSwap> {
+    const tickBefore = await this.periphery.getCurrentTick(
+      this.marginEngineTest.address
+    );
+
+    let tickAfter = 0;
+    let marginRequirement: BigNumber = BigNumber.from(0);
+    let fee = BigNumber.from(0);
+    let availableNotional = BigNumber.from(0);
+
+    await this.e2eSetup.callStatic.swapViaAMM(swapParams).then(
+      (result: any) => {
+        availableNotional = result[1];
+        fee = result[2];
+        marginRequirement = result[4];
+        tickAfter = parseInt(result[5]);
+      },
+      (error: any) => {
+        const message = extractErrorMessage(error);
+
+        if (!message) {
+          throw new Error("Cannot decode additional margin amount");
+        }
+
+        if (message.includes("MarginRequirementNotMet")) {
+          const args: string[] = message
+            .split("MarginRequirementNotMet")[1]
+            .split("(")[1]
+            .split(")")[0]
+            .replaceAll(" ", "")
+            .split(",");
+
+          marginRequirement = BigNumber.from(args[0]);
+          tickAfter = parseInt(args[1]);
+          fee = BigNumber.from(args[4]);
+          availableNotional = BigNumber.from(args[3]);
+        } else {
+          throw new Error("Additional margin amount cannot be established");
+        }
+      }
+    );
+
+    const currentMargin = (
+      await this.marginEngineTest.callStatic.getPosition(
+        swapParams.recipient,
+        swapParams.tickLower,
+        swapParams.tickUpper
+      )
+    ).margin;
+
+    const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
+    const scaledFee = parseFloat(utils.formatEther(fee));
+    const scaledAvailableNotional = parseFloat(
+      utils.formatEther(availableNotional)
+    );
+    const scaledMarginRequirement = parseFloat(
+      utils.formatEther(marginRequirement)
+    );
+
+    const suggestedMargin = (scaledMarginRequirement + scaledFee) * 1.01;
+
+    const additionalMargin =
+      suggestedMargin > scaledCurrentMargin
+        ? suggestedMargin - scaledCurrentMargin
+        : 0;
+
+    return {
+      marginRequirement: additionalMargin,
+      availableNotional: scaledAvailableNotional,
+      fee: scaledFee,
+      slippage: tickAfter - tickBefore,
+    };
+  }
+
+  public async getMintInfoViaAMM(
+    recipient: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: BigNumber
+  ): Promise<number> {
+    let marginRequirement = BigNumber.from("0");
+    await this.e2eSetup.callStatic
+      .mintViaAMM(recipient, tickLower, tickUpper, amount)
+      .then(
+        (result) => {
+          marginRequirement = BigNumber.from(result);
+        },
+        (error) => {
+          const message = extractErrorMessage(error);
+
+          if (!message) {
+            throw new Error("Cannot decode additional margin amount");
+          }
+
+          if (message.includes("MarginLessThanMinimum")) {
+            const args: string[] = message
+              .split("MarginLessThanMinimum")[1]
+              .split("(")[1]
+              .split(")")[0]
+              .replaceAll(" ", "")
+              .split(",");
+
+            marginRequirement = BigNumber.from(args[0]);
+          } else {
+            throw new Error("Additional margin amount cannot be established");
+          }
+        }
+      );
+
+    const currentMargin = (
+      await this.marginEngineTest.callStatic.getPosition(
+        recipient,
+        tickLower,
+        tickUpper
+      )
+    ).margin;
+
+    const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
+    const scaledMarginRequirement = parseFloat(
+      utils.formatEther(marginRequirement)
+    );
+
+    const suggestedMargin = scaledMarginRequirement * 1.01;
+    const additionalMargin =
+      suggestedMargin > scaledCurrentMargin
+        ? suggestedMargin - scaledCurrentMargin
+        : 0;
+
+    return additionalMargin;
   }
 
   async updateAPYbounds() {
@@ -784,23 +819,6 @@ export class ScenarioRunner {
     await this.rateOracleTest.writeOracleEntry();
 
     await this.updateAPYbounds();
-  }
-
-  async getAPYboundsAndPositionMargin(_: [string, number, number]) {
-    // await this.updateAPYbounds();
-    // await this.marginEngineTest.getPositionMarginRequirementTest(
-    //   position[0],
-    //   position[1],
-    //   position[2],
-    //   false
-    // );
-    // const positionMarginRequirement = await this.marginEngineTest.getMargin();
-    // console.log(
-    //   "position margin requirement: ",
-    //   utils.formatEther(positionMarginRequirement)
-    // );
-    // console.log("");
-    // return positionMarginRequirement;
   }
 
   async getVT(towards: string) {
@@ -856,9 +874,9 @@ export class ScenarioRunner {
 
   async settlePositions() {
     for (const p of this.positions) {
-      await this.marginEngineTest.settlePosition(p[0], p[1], p[2]);
+      await this.e2eSetup.settlePositionViaAMM(p[0], p[1], p[2]);
 
-      await this.e2eSetup.updatePositionMargin(
+      await this.e2eSetup.updatePositionMarginViaAMM(
         p[0],
         p[1],
         p[2],
@@ -879,7 +897,6 @@ export class ScenarioRunner {
 
   async updateCurrentTick() {
     this.currentTick = (await this.vammTest.vammVars()).tick;
-    // this.currentTick = await this.vammTest.getCurrentTick();
   }
 
   async run() {}

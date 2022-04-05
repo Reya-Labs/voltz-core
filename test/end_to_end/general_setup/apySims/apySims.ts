@@ -5,8 +5,63 @@ import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
 import { add } from "../../../shared/functions";
 import { TickMath } from "../../../shared/tickMath";
-import { e2eScenarios } from "../e2eSetup";
+import {
+  APY_UPPER_MULTIPLIER,
+  APY_LOWER_MULTIPLIER,
+  MIN_DELTA_LM,
+  MIN_DELTA_IM,
+  ALPHA,
+  BETA,
+  XI_UPPER,
+  XI_LOWER,
+  T_MAX,
+  TICK_SPACING,
+} from "../../../shared/utilities";
+import { e2eParameters } from "../e2eSetup";
 import { ScenarioRunner } from "../general";
+
+const e2eParams: e2eParameters = {
+  duration: consts.ONE_YEAR,
+  numActors: 2,
+  marginCalculatorParams: {
+    apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+    apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+    minDeltaLMWad: MIN_DELTA_LM,
+    minDeltaIMWad: MIN_DELTA_IM,
+    sigmaSquaredWad: toBn("0.15"),
+    alphaWad: ALPHA,
+    betaWad: BETA,
+    xiUpperWad: XI_UPPER,
+    xiLowerWad: XI_LOWER,
+    tMaxWad: T_MAX,
+
+    devMulLeftUnwindLMWad: toBn("0.5"),
+    devMulRightUnwindLMWad: toBn("0.5"),
+    devMulLeftUnwindIMWad: toBn("0.8"),
+    devMulRightUnwindIMWad: toBn("0.8"),
+
+    fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+    fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+    fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+    fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+    gammaWad: toBn("0.05"),
+    minMarginToIncentiviseLiquidators: 0,
+  },
+  lookBackWindowAPY: consts.ONE_WEEK,
+  startingPrice: TickMath.getSqrtRatioAtTick(-24840),
+  feeProtocol: 0,
+  fee: toBn("0.0005"),
+  tickSpacing: TICK_SPACING,
+  positions: [
+    // lower tick: 8% -> 1.0001^(UPPER_TICK) = price = 1/(fixed rate), if fixed rate is 8%, 1.0001^(UPPER_TICK)=1/8 => UPPER_TICK approx. = -20795
+    // upper tick: 12% -> if fixed rate is 12%, 1.0001^(UPPER_TICK)=1/12 => UPPER_TICK approx. = -24850
+    [0, -24840, -20700],
+    [1, -24840, -20700],
+  ],
+  skipped: true,
+};
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   // notional traded in this scenario\
@@ -18,7 +73,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // check mint margin requirement
     await this.e2eSetup.callStatic
-      .mintOrBurnViaPeriphery({
+      .mintOrBurnViaPeriphery(this.positions[positionIndex][0], {
         marginEngine: this.marginEngineTest.address,
         tickLower: this.positions[positionIndex][1],
         tickUpper: this.positions[positionIndex][2],
@@ -264,7 +319,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
 const test = async () => {
   console.log("scenario", 12);
-  const e2eParams = e2eScenarios[12];
   const scenario = new ScenarioRunnerInstance(
     e2eParams,
     "test/end_to_end/general_setup/apySims/console.txt"
@@ -273,8 +327,4 @@ const test = async () => {
   await scenario.run();
 };
 
-if (e2eScenarios[12].skipped) {
-  it.skip("scenario 12 (apy sims)", test);
-} else {
-  it("scenario 12 (apy sims)", test);
-}
+it("scenario 12 (apy sims)", test);

@@ -28,7 +28,7 @@ interface CustomErrors {
     );
 
     /// The position/trader needs to be below the liquidation threshold to be liquidated
-    error CannotLiquidate(uint256 marginRequirement);
+    error CannotLiquidate();
 
     /// Only the position/trade owner can update the LP/Trader margin
     error OnlyOwnerCanUpdatePosition();

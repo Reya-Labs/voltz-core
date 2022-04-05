@@ -3,21 +3,72 @@ import { toBn } from "evm-bn";
 import { randomInt } from "mathjs";
 import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
-import { TICK_SPACING } from "../../../shared/utilities";
-import { e2eScenarios } from "../e2eSetup";
+import {
+  ALPHA,
+  APY_LOWER_MULTIPLIER,
+  APY_UPPER_MULTIPLIER,
+  BETA,
+  encodeSqrtRatioX96,
+  MIN_DELTA_IM,
+  MIN_DELTA_LM,
+  TICK_SPACING,
+  T_MAX,
+  XI_LOWER,
+  XI_UPPER,
+} from "../../../shared/utilities";
+import { e2eParameters } from "../e2eSetup";
 import { ScenarioRunner } from "../general";
+
+const e2eParams: e2eParameters = {
+  duration: consts.ONE_MONTH.mul(3),
+  numActors: 6,
+  marginCalculatorParams: {
+    apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+    apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+    minDeltaLMWad: MIN_DELTA_LM,
+    minDeltaIMWad: MIN_DELTA_IM,
+    sigmaSquaredWad: toBn("0.15"),
+    alphaWad: ALPHA,
+    betaWad: BETA,
+    xiUpperWad: XI_UPPER,
+    xiLowerWad: XI_LOWER,
+    tMaxWad: T_MAX,
+
+    devMulLeftUnwindLMWad: toBn("0.5"),
+    devMulRightUnwindLMWad: toBn("0.5"),
+    devMulLeftUnwindIMWad: toBn("0.8"),
+    devMulRightUnwindIMWad: toBn("0.8"),
+
+    fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+    fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+    fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+    fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+    gammaWad: toBn("1.0"),
+    minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+  },
+  lookBackWindowAPY: consts.ONE_WEEK,
+  startingPrice: encodeSqrtRatioX96(1, 1),
+  feeProtocol: 5,
+  fee: toBn("0.01"),
+  tickSpacing: TICK_SPACING,
+  positions: [
+    [0, -TICK_SPACING, TICK_SPACING],
+    [1, -3 * TICK_SPACING, -TICK_SPACING],
+    [0, -3 * TICK_SPACING, TICK_SPACING],
+    [0, 0, TICK_SPACING],
+    [2, -3 * TICK_SPACING, TICK_SPACING],
+    [3, -TICK_SPACING, TICK_SPACING],
+    [4, -TICK_SPACING, TICK_SPACING],
+    [5, -TICK_SPACING, TICK_SPACING],
+  ],
+  skipped: true,
+};
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     await this.exportSnapshot("START");
-
-    for (const p of this.positions.slice(5, 8)) {
-      await this.e2eSetup.updatePositionMargin(p[0], p[1], p[2], toBn("10000"));
-      console.log(
-        "gas consumed for update position margin: ",
-        (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
-      );
-    }
 
     const length_of_series = 10;
     const actions = [1, 2, 3, 4, 5];
@@ -45,49 +96,30 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const liquidityDelta = randomInt(10000, 100000);
         const liquidityDeltaBn = toBn(liquidityDelta.toString());
 
-        let marginRequirement = BigNumber.from("0");
-        await this.e2eSetup.callStatic
-          .mint(p[0], p[1], p[2], liquidityDeltaBn)
-          .then(
-            () => {},
-            (error) => {
-              if (error.message.includes("MarginLessThanMinimum")) {
-                const args: string[] = error.message
-                  .split("MarginLessThanMinimum")[1]
-                  .split("(")[1]
-                  .split(")")[0]
-                  .replaceAll(" ", "")
-                  .split(",");
-
-                marginRequirement = BigNumber.from(args[0]);
-              } else {
-                console.log(error);
-              }
-            }
-          );
-
-        await this.e2eSetup.updatePositionMargin(
+        const positionMarginRequirement = await this.getMintInfoViaAMM(
           p[0],
           p[1],
           p[2],
-          marginRequirement.add(toBn("1"))
-        );
-        console.log(
-          "gas consumed for update position margin: ",
-          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
+          liquidityDeltaBn
         );
 
-        await this.e2eSetup.mint(p[0], p[1], p[2], liquidityDeltaBn);
-        console.log(
-          "gas consumed for mint: ",
-          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
-        );
+        if (positionMarginRequirement > 0) {
+          await this.e2eSetup.updatePositionMarginViaAMM(
+            p[0],
+            p[1],
+            p[2],
+            toBn(positionMarginRequirement.toString())
+          );
+        }
+
+        console.log(positionMarginRequirement);
+
+        await this.e2eSetup.mintViaAMM(p[0], p[1], p[2], liquidityDeltaBn);
       }
 
       if (action === 2) {
         // position burn
         const p = this.positions[randomInt(0, 5)];
-        console.log("here?");
         const current_liquidity =
           (
             await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])
@@ -100,11 +132,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
         if (liquidityDelta <= 0) continue;
 
-        await this.e2eSetup.burn(p[0], p[1], p[2], liquidityDeltaBn);
-        console.log(
-          "gas consumed for burn: ",
-          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
-        );
+        await this.e2eSetup.burnViaAMM(p[0], p[1], p[2], liquidityDeltaBn);
       }
 
       if (action === 3) {
@@ -116,22 +144,39 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const amount = randomInt(min_vt, max_vt);
         console.log("vt:", min_vt, "->", amount, "->", max_vt);
 
-        if (amount === 0) continue;
+        const { marginRequirement: positionMarginRequirement } =
+          await this.getInfoSwapViaAMM({
+            recipient: p[0],
+            amountSpecified: toBn(amount.toString()),
+            sqrtPriceLimitX96:
+              amount > 0
+                ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+                : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
 
-        await this.e2eSetup.swap({
+            tickLower: p[1],
+            tickUpper: p[2],
+          });
+
+        if (positionMarginRequirement > 0) {
+          await this.e2eSetup.updatePositionMarginViaAMM(
+            p[0],
+            p[1],
+            p[2],
+            toBn(positionMarginRequirement.toString())
+          );
+        }
+
+        await this.e2eSetup.swapViaAMM({
           recipient: p[0],
           amountSpecified: toBn(amount.toString()),
           sqrtPriceLimitX96:
             amount > 0
               ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
               : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
+
           tickLower: p[1],
           tickUpper: p[2],
         });
-        console.log(
-          "gas consumed for swap: ",
-          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
-        );
       }
 
       if (action === 4) {
@@ -148,10 +193,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           p[0],
           toBn(amount.toString()),
           await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
-        );
-        console.log(
-          "gas consumed for fcm swap: ",
-          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
         );
       }
 
@@ -184,10 +225,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           toBn(amount.toString()),
           await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING)
         );
-        console.log(
-          "gas consumed for fcm unwind: ",
-          (await this.e2eSetup.getGasConsumedAtLastTx()).toString()
-        );
       }
     }
 
@@ -202,7 +239,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
 const test = async () => {
   console.log("scenario", 11);
-  const e2eParams = e2eScenarios[11];
   const scenario = new ScenarioRunnerInstance(
     e2eParams,
     "test/end_to_end/general_setup/scenario11/console.txt"
@@ -211,8 +247,4 @@ const test = async () => {
   await scenario.run();
 };
 
-if (e2eScenarios[11].skipped) {
-  it.skip("scenario 11", test);
-} else {
-  it("scenario 11", test);
-}
+it("scenario 11", test);

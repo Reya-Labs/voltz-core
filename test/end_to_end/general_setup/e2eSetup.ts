@@ -77,7 +77,7 @@ export const e2eScenarios: e2eParameters[] = [
       [2, -TICK_SPACING, TICK_SPACING],
       [3, -TICK_SPACING, TICK_SPACING],
     ],
-    skipped: true,
+    skipped: false,
   },
 
   {
@@ -111,8 +111,8 @@ export const e2eScenarios: e2eParameters[] = [
     },
     lookBackWindowAPY: consts.ONE_WEEK,
     startingPrice: encodeSqrtRatioX96(1, 1),
-    feeProtocol: 2,
-    fee: toBn("0.5"),
+    feeProtocol: 5,
+    fee: toBn("0.01"),
     tickSpacing: TICK_SPACING,
     positions: [
       [0, -TICK_SPACING, 0],
@@ -669,6 +669,6 @@ export const e2eScenarios: e2eParameters[] = [
       [4, -TICK_SPACING, TICK_SPACING],
       [5, -TICK_SPACING, TICK_SPACING],
     ],
-    skipped: false,
+    skipped: true,
   },
 ];

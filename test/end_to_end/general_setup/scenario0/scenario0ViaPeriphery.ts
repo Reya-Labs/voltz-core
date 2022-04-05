@@ -51,8 +51,8 @@ const e2eParams: e2eParameters = {
   },
   lookBackWindowAPY: consts.ONE_WEEK,
   startingPrice: encodeSqrtRatioX96(1, 1),
-  feeProtocol: 5,
-  fee: toBn("0.01"),
+  feeProtocol: 0,
+  fee: toBn("0"),
   tickSpacing: TICK_SPACING,
   positions: [
     [0, -TICK_SPACING, TICK_SPACING],
@@ -60,28 +60,29 @@ const e2eParams: e2eParameters = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  skipped: false,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     await this.exportSnapshot("START");
 
-    // update the position margin with 210
-    await this.e2eSetup.updatePositionMarginViaAMM(
-      this.positions[0][0],
-      this.positions[0][1],
-      this.positions[0][2],
-      toBn("420")
-    );
+    {
+      const mintOrBurnParameters = {
+        marginEngine: this.marginEngineTest.address,
+        tickLower: this.positions[0][1],
+        tickUpper: this.positions[0][2],
+        notional: toBn("6000"),
+        isMint: true,
+        marginDelta: toBn("210"),
+      };
 
-    // add 1,000,000 liquidity to Position 0
-    await this.e2eSetup.mintViaAMM(
-      this.positions[0][0],
-      this.positions[0][1],
-      this.positions[0][2],
-      toBn("1000000")
-    );
+      // add 1,000,000 liquidity to Position 0
+      await this.e2eSetup.mintOrBurnViaPeriphery(
+        this.positions[0][0],
+        mintOrBurnParameters
+      );
+    }
 
     // two days pass and set reserve normalised income
     await this.advanceAndUpdateApy(consts.ONE_DAY.mul(2), 1, 1.0081); // advance 2 days
@@ -89,27 +90,22 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // Trader 0 engages in a swap that (almost) consumes all of the liquidity of Position 0
     await this.exportSnapshot("BEFORE FIRST SWAP");
 
-    // update the trader margin with 1,000
-    await this.e2eSetup.updatePositionMarginViaAMM(
-      this.positions[2][0],
-      this.positions[2][1],
-      this.positions[2][2],
-      toBn("2000")
-    );
-
-    // print the maximum amount given the liquidity of Position 0
-    await this.updateCurrentTick();
-
-    await this.getVT("below");
-
-    // Trader 0 buys 2,995 VT
-    await this.e2eSetup.swapViaAMM({
-      recipient: this.positions[2][0],
-      amountSpecified: toBn("-2995"),
-      sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-      tickLower: this.positions[2][1],
-      tickUpper: this.positions[2][2],
-    });
+    {
+      // Trader 0 buys 2,995 VT
+      const swapParameters = {
+        marginEngine: this.marginEngineTest.address,
+        isFT: false,
+        notional: toBn("2995"),
+        sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+        tickLower: this.positions[2][1],
+        tickUpper: this.positions[2][2],
+        marginDelta: toBn("1000"),
+      };
+      await this.e2eSetup.swapViaPeriphery(
+        this.positions[2][0],
+        swapParameters
+      );
+    }
 
     await this.exportSnapshot("AFTER FIRST SWAP");
 
@@ -120,21 +116,25 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // add 5,000,000 liquidity to Position 1
 
-    // update the position margin with 2,000
-    await this.e2eSetup.updatePositionMarginViaAMM(
-      this.positions[1][0],
-      this.positions[1][1],
-      this.positions[1][2],
-      toBn("4000")
-    );
+    // print the position margin requirement
+    // await this.getAPYboundsAndPositionMargin(this.positions[1]);
 
-    // add 5,000,000 liquidity to Position 1
-    await this.e2eSetup.mintViaAMM(
-      this.positions[1][0],
-      this.positions[1][1],
-      this.positions[1][2],
-      toBn("5000000")
-    );
+    {
+      const mintOrBurnParameters = {
+        marginEngine: this.marginEngineTest.address,
+        tickLower: this.positions[1][1],
+        tickUpper: this.positions[1][2],
+        notional: toBn("30000"),
+        isMint: true,
+        marginDelta: toBn("2500"),
+      };
+
+      // add 1,000,000 liquidity to Position 0
+      await this.e2eSetup.mintOrBurnViaPeriphery(
+        this.positions[1][0],
+        mintOrBurnParameters
+      );
+    }
 
     // a week passes
     await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125);
@@ -142,62 +142,68 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // Trader 1 engages in a swap
     await this.exportSnapshot("BEFORE SECOND SWAP");
 
-    // update the trader margin with 1,000
-    await this.e2eSetup.updatePositionMarginViaAMM(
-      this.positions[3][0],
-      this.positions[3][1],
-      this.positions[3][2],
-      toBn("2000")
-    );
-
-    // print the maximum amount given the liquidity of Position 0
-    await this.updateCurrentTick();
-
-    await this.getVT("below");
-
-    // Trader 1 buys 15,000 VT
-    await this.e2eSetup.swapViaAMM({
-      recipient: this.positions[3][0],
-      amountSpecified: toBn("-15000"),
-      sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-      tickLower: this.positions[3][1],
-      tickUpper: this.positions[3][2],
-    });
+    {
+      // Trader 0 buys 2,995 VT
+      const swapParameters = {
+        marginEngine: this.marginEngineTest.address,
+        isFT: false,
+        notional: toBn("15000"),
+        sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+        tickLower: this.positions[3][1],
+        tickUpper: this.positions[3][2],
+        marginDelta: toBn("1000"),
+      };
+      await this.e2eSetup.swapViaPeriphery(
+        this.positions[3][0],
+        swapParameters
+      );
+    }
 
     await this.exportSnapshot("AFTER SECOND SWAP");
 
     // Trader 0 engages in a reverse swap
     await this.exportSnapshot("BEFORE THIRD (REVERSE) SWAP");
 
-    // Trader 0 sells 10,000 VT
-    await this.e2eSetup.initiateFullyCollateralisedFixedTakerSwap(
-      this.positions[2][0],
-      toBn("10000"),
-      BigNumber.from(MAX_SQRT_RATIO.sub(1))
-    );
+    {
+      // Trader 0 buys 2,995 VT
+      const swapParameters = {
+        marginEngine: this.marginEngineTest.address,
+        isFT: true,
+        notional: toBn("10000"),
+        sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
+        tickLower: this.positions[2][1],
+        tickUpper: this.positions[2][2],
+        marginDelta: toBn("0"),
+      };
+      await this.e2eSetup.swapViaPeriphery(
+        this.positions[2][0],
+        swapParameters
+      );
+    }
 
     await this.exportSnapshot("AFTER THIRD (REVERSE) SWAP");
-
-    await this.e2eSetup.unwindFullyCollateralisedFixedTakerSwap(
-      this.positions[2][0],
-      toBn("10000"),
-      BigNumber.from(MIN_SQRT_RATIO.add(1))
-    );
-
-    await this.exportSnapshot("AFTER UNWINDING THIRD (REVERSE) SWAP");
 
     await this.updateCurrentTick();
 
     // two weeks pass
     await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(2), 2, 1.013); // advance two weeks
 
-    // burn all liquidity of Position 0
-    await this.e2eSetup.burnViaAMM(
-      this.positions[0][0],
-      this.positions[0][1],
-      this.positions[0][2],
-      toBn("1000000")
-    );
+    {
+      const mintOrBurnParameters = {
+        marginEngine: this.marginEngineTest.address,
+        tickLower: this.positions[0][1],
+        tickUpper: this.positions[0][2],
+        notional: toBn("2995.35"),
+        isMint: false,
+        marginDelta: toBn("0"),
+      };
+
+      // add 1,000,000 liquidity to Position 0
+      await this.e2eSetup.mintOrBurnViaPeriphery(
+        this.positions[0][0],
+        mintOrBurnParameters
+      );
+    }
 
     await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(8), 4, 1.0132); // advance eight weeks (4 days before maturity)
 
@@ -211,13 +217,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 }
 
 const test = async () => {
-  console.log("scenario", 10);
+  console.log("scenario", 0);
   const scenario = new ScenarioRunnerInstance(
     e2eParams,
-    "test/end_to_end/general_setup/scenario10/console.txt"
+    "test/end_to_end/general_setup/scenario0/consoleViaPeriphery.txt"
   );
   await scenario.init();
   await scenario.run();
 };
 
-it("scenario 10", test);
+it("scenario 0", test);

@@ -2,6 +2,7 @@
 
 pragma solidity =0.8.9;
 
+import "contracts/test/Actor.sol";
 import "contracts/test/TestMarginEngine.sol";
 import "contracts/test/TestVAMM.sol";
 import "contracts/test/TestAaveFCM.sol";
@@ -13,141 +14,6 @@ import "../interfaces/IPeriphery.sol";
 import "../utils/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "contracts/utils/CustomErrors.sol";
-
-contract Actor is CustomErrors {
-    function mintOrBurnViaPeriphery(
-        address peripheryAddress,
-        IPeriphery.MintOrBurnParams memory params
-    ) external returns (int256 positionMarginRequirement) {
-        /// @audit recommendation: separate file for the actor contract: convention is 1 file per contract
-
-        positionMarginRequirement = IPeriphery(peripheryAddress).mintOrBurn(
-            params
-        );
-    }
-
-    function swapViaPeriphery(
-        address peripheryAddress,
-        IPeriphery.SwapPeripheryParams memory params
-    )
-        external
-        returns (
-            int256 _fixedTokenDelta,
-            int256 _variableTokenDelta,
-            uint256 _cumulativeFeeIncurred,
-            int256 _fixedTokenDeltaUnbalanced,
-            int256 _marginRequirement
-        )
-    {
-        (
-            _fixedTokenDelta,
-            _variableTokenDelta,
-            _cumulativeFeeIncurred,
-            _fixedTokenDeltaUnbalanced,
-            _marginRequirement,
-
-        ) = IPeriphery(peripheryAddress).swap(params);
-    }
-
-    function updatePositionMargin(
-        address MEAddress,
-        address _owner,
-        int24 tickLower,
-        int24 tickUpper,
-        int256 marginDelta
-    ) public {
-        IMarginEngine(MEAddress).updatePositionMargin(
-            _owner,
-            tickLower,
-            tickUpper,
-            marginDelta
-        );
-    }
-
-    function mint(
-        address VAMMAddress,
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount
-    ) external {
-        IVAMM(VAMMAddress).mint(recipient, tickLower, tickUpper, amount);
-    }
-
-    function burn(
-        address VAMMAddress,
-        address recipient,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 amount
-    ) external {
-        IVAMM(VAMMAddress).burn(recipient, tickLower, tickUpper, amount);
-    }
-
-    function swap(address VAMMAddress, IVAMM.SwapParams memory params)
-        external
-        returns (
-            int256 _fixedTokenDelta,
-            int256 _variableTokenDelta,
-            uint256 _cumulativeFeeIncurred,
-            int256 _fixedTokenDeltaUnbalanced
-        )
-    {
-        (
-            _fixedTokenDelta,
-            _variableTokenDelta,
-            _cumulativeFeeIncurred,
-            _fixedTokenDeltaUnbalanced,
-
-        ) = IVAMM(VAMMAddress).swap(params);
-    }
-
-    function setIntegrationApproval(
-        address MEAddress,
-        address intAddress,
-        bool allowIntegration
-    ) external {
-        // get the factory
-        IFactory factory = IMarginEngine(MEAddress).factory();
-        // set integration approval
-        factory.setApproval(intAddress, allowIntegration);
-    }
-
-    function liquidatePosition(
-        address MEAddress,
-        int24 tickLower,
-        int24 tickUpper,
-        address owner
-    ) external {
-        IMarginEngine(MEAddress).liquidatePosition(owner, tickLower, tickUpper);
-    }
-
-    function initiateFullyCollateralisedFixedTakerSwap(
-        address FCMAddress,
-        uint256 notional,
-        uint160 sqrtPriceLimitX96
-    ) external {
-        IFCM(FCMAddress).initiateFullyCollateralisedFixedTakerSwap(
-            notional,
-            sqrtPriceLimitX96
-        );
-    }
-
-    function unwindFullyCollateralisedFixedTakerSwap(
-        address FCMAddress,
-        uint256 notionalToUnwind,
-        uint160 sqrtPriceLimitX96
-    ) external {
-        IFCM(FCMAddress).unwindFullyCollateralisedFixedTakerSwap(
-            notionalToUnwind,
-            sqrtPriceLimitX96
-        );
-    }
-
-    function settleYBATrader(address FCMAddress) external {
-        IFCM(FCMAddress).settleTrader();
-    }
-}
 
 contract E2ESetup is CustomErrors {
     struct UniqueIdentifiersPosition {
@@ -375,40 +241,57 @@ contract E2ESetup is CustomErrors {
         Actor(trader).settleYBATrader(FCMAddress);
     }
 
-    function mintOrBurnViaPeriphery(IPeriphery.MintOrBurnParams memory params)
-        public
-        returns (int256 positionMarginRequirement)
-    {
-        addPosition(msg.sender, params.tickLower, params.tickUpper);
-        positionMarginRequirement = Actor(msg.sender).mintOrBurnViaPeriphery(
+    function settlePositionViaAMM(
+        address recipient,
+        int24 tickLower,
+        int24 tickUpper
+    ) external {
+        addPosition(recipient, tickLower, tickUpper);
+
+        Actor(recipient).settlePositionViaAMM(
+            MEAddress,
+            recipient,
+            tickLower,
+            tickUpper
+        );
+    }
+
+    function mintOrBurnViaPeriphery(
+        address trader,
+        IPeriphery.MintOrBurnParams memory params
+    ) public returns (int256 positionMarginRequirement) {
+        addPosition(trader, params.tickLower, params.tickUpper);
+        positionMarginRequirement = Actor(trader).mintOrBurnViaPeriphery(
             peripheryAddress,
             params
         );
     }
 
-    function swapViaPeriphery(IPeriphery.SwapPeripheryParams memory params)
+    function swapViaPeriphery(
+        address trader,
+        IPeriphery.SwapPeripheryParams memory params
+    )
         public
         returns (
             int256 positionMarginRequirement,
             uint256 cumulativeFeeIncurred
         )
     {
-        addPosition(msg.sender, params.tickLower, params.tickUpper);
-        (, , cumulativeFeeIncurred, , positionMarginRequirement) = Actor(
-            msg.sender
-        ).swapViaPeriphery(peripheryAddress, params);
+        addPosition(trader, params.tickLower, params.tickUpper);
+        (, , cumulativeFeeIncurred, , positionMarginRequirement) = Actor(trader)
+            .swapViaPeriphery(peripheryAddress, params);
     }
 
-    function mint(
+    function mintViaAMM(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
         uint128 amount
-    ) public {
+    ) public returns (int256 positionMarginRequirement) {
         this.addPosition(recipient, tickLower, tickUpper);
 
         uint256 gasBefore = gasleft();
-        Actor(recipient).mint(
+        positionMarginRequirement = Actor(recipient).mintViaAMM(
             VAMMAddress,
             recipient,
             tickLower,
@@ -420,7 +303,7 @@ contract E2ESetup is CustomErrors {
         continuousInvariants();
     }
 
-    function burn(
+    function burnViaAMM(
         address recipient,
         int24 tickLower,
         int24 tickUpper,
@@ -429,7 +312,7 @@ contract E2ESetup is CustomErrors {
         this.addPosition(recipient, tickLower, tickUpper);
 
         uint256 gasBefore = gasleft();
-        Actor(recipient).burn(
+        Actor(recipient).burnViaAMM(
             VAMMAddress,
             recipient,
             tickLower,
@@ -441,16 +324,26 @@ contract E2ESetup is CustomErrors {
         continuousInvariants();
     }
 
-    function swap(IVAMM.SwapParams memory params) public {
+    function swapViaAMM(IVAMM.SwapParams memory params)
+        public
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement
+        )
+    {
         this.addPosition(params.recipient, params.tickLower, params.tickUpper);
 
         uint256 gasBefore = gasleft();
         (
-            ,
-            int256 _variableTokenDelta,
-            uint256 _cumulativeFeeIncurred,
-            int256 _fixedTokenDeltaUnbalanced
-        ) = Actor(params.recipient).swap(VAMMAddress, params);
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced,
+            _marginRequirement
+        ) = Actor(params.recipient).swapViaAMM(VAMMAddress, params);
         keepInMindGas = gasBefore - gasleft();
 
         continuousInvariants();
@@ -466,12 +359,12 @@ contract E2ESetup is CustomErrors {
     }
 
     function liquidatePosition(
+        address liquidator,
         int24 lowerTickLiquidator,
         int24 upperTickLiquidator,
-        address liquidator,
+        address owner,
         int24 tickLower,
-        int24 tickUpper,
-        address owner
+        int24 tickUpper
     ) external {
         this.addPosition(liquidator, lowerTickLiquidator, upperTickLiquidator);
         this.addPosition(owner, tickLower, tickUpper);
@@ -527,7 +420,7 @@ contract E2ESetup is CustomErrors {
             PRBMathUD60x18.fromUint(1);
     }
 
-    function updatePositionMargin(
+    function updatePositionMarginViaAMM(
         address _owner,
         int24 tickLower,
         int24 tickUpper,
@@ -536,7 +429,7 @@ contract E2ESetup is CustomErrors {
         this.addPosition(_owner, tickLower, tickUpper);
 
         uint256 gasBefore = gasleft();
-        Actor(_owner).updatePositionMargin(
+        Actor(_owner).updatePositionMarginViaAMM(
             MEAddress,
             _owner,
             tickLower,
@@ -896,27 +789,5 @@ contract E2ESetup is CustomErrors {
         }
 
         return snapshots;
-    }
-
-    function getSwapsHistory(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper
-    ) public view returns (SwapSnapshot[] memory) {
-        bytes32 hashedPositon = keccak256(
-            abi.encodePacked(owner, tickLower, tickUpper)
-        );
-        uint256 len = sizeOfPositionSwapsHistory[hashedPositon];
-        SwapSnapshot[] memory snapshots = new SwapSnapshot[](len);
-
-        for (uint256 i = 0; i < len; i++) {
-            snapshots[i] = positionSwapsHistory[hashedPositon][i + 1];
-        }
-
-        return snapshots;
-    }
-
-    function getGasConsumedAtLastTx() external view returns (uint256) {
-        return keepInMindGas;
     }
 }

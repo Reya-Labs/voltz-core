@@ -1,10 +1,68 @@
-import { BigNumber } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
-import { TICK_SPACING } from "../../../shared/utilities";
-import { e2eScenarios } from "../e2eSetup";
+import {
+  ALPHA,
+  APY_LOWER_MULTIPLIER,
+  APY_UPPER_MULTIPLIER,
+  BETA,
+  encodeSqrtRatioX96,
+  MIN_DELTA_IM,
+  MIN_DELTA_LM,
+  TICK_SPACING,
+  T_MAX,
+  XI_LOWER,
+  XI_UPPER,
+} from "../../../shared/utilities";
+import { e2eParameters } from "../e2eSetup";
 import { ScenarioRunner } from "../general";
+
+const e2eParams: e2eParameters = {
+  duration: consts.ONE_MONTH.mul(3),
+  numActors: 6,
+  marginCalculatorParams: {
+    apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
+    apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
+    minDeltaLMWad: MIN_DELTA_LM,
+    minDeltaIMWad: MIN_DELTA_IM,
+    sigmaSquaredWad: toBn("0.15"),
+    alphaWad: ALPHA,
+    betaWad: BETA,
+    xiUpperWad: XI_UPPER,
+    xiLowerWad: XI_LOWER,
+    tMaxWad: T_MAX,
+
+    devMulLeftUnwindLMWad: toBn("0.5"),
+    devMulRightUnwindLMWad: toBn("0.5"),
+    devMulLeftUnwindIMWad: toBn("0.8"),
+    devMulRightUnwindIMWad: toBn("0.8"),
+
+    fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
+    fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
+
+    fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
+    fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+
+    gammaWad: toBn("1.0"),
+    minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
+  },
+  lookBackWindowAPY: consts.ONE_WEEK,
+  startingPrice: encodeSqrtRatioX96(1, 1),
+  feeProtocol: 0,
+  fee: toBn("0"),
+  tickSpacing: TICK_SPACING,
+  positions: [
+    [0, -TICK_SPACING, TICK_SPACING],
+    [1, -3 * TICK_SPACING, -TICK_SPACING],
+    [0, -3 * TICK_SPACING, TICK_SPACING],
+    [0, 0, TICK_SPACING],
+    [2, -3 * TICK_SPACING, TICK_SPACING],
+    [3, -TICK_SPACING, TICK_SPACING],
+    [4, -TICK_SPACING, TICK_SPACING],
+    [5, -TICK_SPACING, TICK_SPACING],
+  ],
+  skipped: true,
+};
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
@@ -14,59 +72,33 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     const liquidityDeltaBn = toBn("100000");
 
-    let marginRequirement = BigNumber.from("0");
-    await this.e2eSetup.callStatic
-      .mint(
-        this.positions[0][0],
-        this.positions[0][1],
-        this.positions[0][2],
-        liquidityDeltaBn
-      )
-      .then(
-        () => {},
-        (error) => {
-          if (error.message.includes("MarginLessThanMinimum")) {
-            const args: string[] = error.message
-              .split("MarginLessThanMinimum")[1]
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-
-            marginRequirement = BigNumber.from(args[0]);
-          }
-        }
-      );
-
-    await this.e2eSetup.updatePositionMargin(
-      this.positions[0][0],
-      this.positions[0][1],
-      this.positions[0][2],
-      marginRequirement.add(toBn("1"))
-    );
-
-    await this.e2eSetup.mint(
+    const marginRequirement = await this.getMintInfoViaAMM(
       this.positions[0][0],
       this.positions[0][1],
       this.positions[0][2],
       liquidityDeltaBn
     );
 
-    // const max_vt_fcm = Math.floor(await this.getVT("above"));
-    // const amount_fcm = randomInt(1, max_vt_fcm);
-    // console.log("to fcm swap vt:", 0, "->", amount_fcm, "->", max_vt_fcm);
+    await this.e2eSetup.updatePositionMarginViaAMM(
+      this.positions[0][0],
+      this.positions[0][1],
+      this.positions[0][2],
+      toBn(marginRequirement.toString())
+    );
 
-    await this.e2eSetup.updatePositionMargin(
+    await this.e2eSetup.mintViaAMM(
+      this.positions[0][0],
+      this.positions[0][1],
+      this.positions[0][2],
+      liquidityDeltaBn
+    );
+
+    await this.e2eSetup.updatePositionMarginViaAMM(
       this.positions[5][0],
       this.positions[5][1],
       this.positions[5][2],
       toBn("10000")
     );
-
-    // const min_vt = -Math.floor(await this.getVT("below"));
-    // const max_vt = Math.floor(await this.getVT("above"));
-    // const amount = randomInt(min_vt, max_vt);
-    // console.log("vt:", min_vt, "->", amount, "->", max_vt);
 
     const amount_fcm = 150;
     await this.e2eSetup.initiateFullyCollateralisedFixedTakerSwap(
@@ -76,7 +108,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     );
 
     const amount = -300;
-    await this.e2eSetup.swap({
+    await this.e2eSetup.swapViaAMM({
       recipient: this.positions[5][0],
       amountSpecified: toBn(amount.toString()),
       sqrtPriceLimitX96:
@@ -106,7 +138,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
 const test = async () => {
   console.log("scenario", 13);
-  const e2eParams = e2eScenarios[13];
   const scenario = new ScenarioRunnerInstance(
     e2eParams,
     "test/end_to_end/general_setup/scenario13/console.txt"
@@ -115,8 +146,4 @@ const test = async () => {
   await scenario.run();
 };
 
-if (e2eScenarios[13].skipped) {
-  it.skip("scenario 13", test);
-} else {
-  it("scenario 13", test);
-}
+it("scenario 13", test);

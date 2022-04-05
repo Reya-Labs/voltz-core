@@ -5,8 +5,19 @@
     "strict": true,
     "esModuleInterop": true,
     "outDir": "dist",
-    "declaration": true
+    "declaration": true,
+    "lib": [
+      "es2019",
+      "ES2021.String"
+    ],
   },
-  "include": ["./scripts", "./test", "./typechain", "./deploy"],
-  "files": ["./hardhat.config.ts"]
+  "include": [
+    "./scripts",
+    "./test",
+    "./typechain",
+    "./deploy"
+  ],
+  "files": [
+    "./hardhat.config.ts"
+  ]
 }

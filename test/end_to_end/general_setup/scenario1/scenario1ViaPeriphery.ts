@@ -1,4 +1,3 @@
-import { BigNumber } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
@@ -8,10 +7,8 @@ import {
   APY_UPPER_MULTIPLIER,
   BETA,
   encodeSqrtRatioX96,
-  MAX_SQRT_RATIO,
   MIN_DELTA_IM,
   MIN_DELTA_LM,
-  MIN_SQRT_RATIO,
   TICK_SPACING,
   T_MAX,
   XI_LOWER,
@@ -22,7 +19,7 @@ import { ScenarioRunner } from "../general";
 
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(3),
-  numActors: 4,
+  numActors: 5,
   marginCalculatorParams: {
     apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
     apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
@@ -51,14 +48,15 @@ const e2eParams: e2eParameters = {
   },
   lookBackWindowAPY: consts.ONE_WEEK,
   startingPrice: encodeSqrtRatioX96(1, 1),
-  feeProtocol: 0,
-  fee: toBn("0"),
+  feeProtocol: 5,
+  fee: toBn("0.01"),
   tickSpacing: TICK_SPACING,
   positions: [
-    [0, -TICK_SPACING * 300, -TICK_SPACING * 299],
-    [1, -TICK_SPACING * 300, -TICK_SPACING * 299],
-    [2, -TICK_SPACING, TICK_SPACING],
-    [3, -TICK_SPACING, TICK_SPACING],
+    [0, -TICK_SPACING, 0],
+    [1, -TICK_SPACING, 0],
+    [2, -TICK_SPACING, 0],
+    [3, -TICK_SPACING, 0],
+    [4, -TICK_SPACING, 0],
   ],
   skipped: true,
 };
@@ -67,63 +65,54 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     await this.exportSnapshot("START");
 
-    await this.e2eSetup.updatePositionMarginViaAMM(
-      this.positions[0][0],
-      this.positions[0][1],
-      this.positions[0][2],
-      toBn("21000")
-    );
+    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
+    await this.rateOracleTest.increaseObservationCardinalityNext(2000);
 
-    await this.e2eSetup.mintViaAMM(
-      this.positions[0][0],
-      this.positions[0][1],
-      this.positions[0][2],
-      toBn("100000000")
-    );
+    // each LP deposits 1,010 liquidity 100 times
 
-    await this.e2eSetup.updatePositionMarginViaAMM(
-      this.positions[2][0],
-      this.positions[2][1],
-      this.positions[2][2],
-      toBn("1000")
-    );
+    for (let i = 0; i < 100; i++) {
+      console.log("mint phase: ", i);
+      for (const p of this.positions) {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngineTest.address,
+          tickLower: p[1],
+          tickUpper: p[2],
+          notional: toBn("3"),
+          isMint: true,
+          marginDelta: toBn("0.25"),
+        };
 
-    await this.e2eSetup.swapViaAMM({
-      recipient: this.positions[2][0],
-      amountSpecified: toBn("-2000"),
-      sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-
-      tickLower: this.positions[2][1],
-      tickUpper: this.positions[2][2],
-    });
-
-    await this.e2eSetup.updatePositionMarginViaAMM(
-      this.positions[3][0],
-      this.positions[3][1],
-      this.positions[3][2],
-      toBn("1000")
-    );
-
-    await this.e2eSetup.swapViaAMM({
-      recipient: this.positions[3][0],
-      amountSpecified: toBn("2000"),
-      sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
-
-      tickLower: this.positions[3][1],
-      tickUpper: this.positions[3][2],
-    });
-
-    for (let i = 0; i < 89; i++) {
-      await this.exportSnapshot("DAY " + i.toString());
-
-      await this.advanceAndUpdateApy(
-        consts.ONE_DAY.mul(1),
-        1,
-        1.001 + i * 0.0001
-      );
+        await this.e2eSetup.mintOrBurnViaPeriphery(p[0], mintOrBurnParameters);
+      }
     }
 
-    this.exportSnapshot("BEFORE SETTLEMENT");
+    await this.advanceAndUpdateApy(consts.ONE_DAY.mul(25), 1, 1.0012);
+
+    await this.exportSnapshot("AFTER 100 MINT PHASES");
+
+    const sqrtPriceLimit = await this.testTickMath.getSqrtRatioAtTick(
+      -TICK_SPACING
+    );
+
+    for (let i = 0; i < 100; i++) {
+      console.log("swap phase: ", i);
+      for (const p of this.positions) {
+        const swapParameters = {
+          marginEngine: this.marginEngineTest.address,
+          isFT: false,
+          notional: toBn("3"),
+          sqrtPriceLimitX96: sqrtPriceLimit,
+          tickLower: p[1],
+          tickUpper: p[2],
+          marginDelta: toBn("1"),
+        };
+        await this.e2eSetup.swapViaPeriphery(p[0], swapParameters);
+      }
+    }
+
+    await this.advanceAndUpdateApy(consts.ONE_DAY.mul(25), 1, 1.0015);
+
+    await this.exportSnapshot("BEFORE SETTLEMENT");
 
     await advanceTimeAndBlock(consts.ONE_DAY.mul(40), 1);
 
@@ -135,13 +124,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 }
 
 const test = async () => {
-  console.log("scenario", 2);
+  console.log("scenario", 1);
   const scenario = new ScenarioRunnerInstance(
     e2eParams,
-    "test/end_to_end/general_setup/scenario2/console.txt"
+    "test/end_to_end/general_setup/scenario1/consoleViaPeriphery.txt"
   );
   await scenario.init();
   await scenario.run();
 };
 
-it("scenario 2", test);
+it("scenario 1", test);
