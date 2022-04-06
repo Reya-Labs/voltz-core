@@ -1,12 +1,12 @@
 import { BigNumber, utils } from "ethers";
 import { toBn } from "evm-bn";
 import { random } from "mathjs";
-import { consts } from "../../../../helpers/constants";
-import { advanceTimeAndBlock } from "../../../../helpers/time";
-import { add } from "../../../../shared/functions";
-import { TickMath } from "../../../../shared/tickMath";
-import { e2eScenarios } from "../../e2eSetup";
-import { ScenarioRunner } from "../../general";
+import { consts } from "../../../helpers/constants";
+import { advanceTimeAndBlock } from "../../../helpers/time";
+import { add } from "../../../shared/functions";
+import { TickMath } from "../../../shared/tickMath";
+import { e2eScenarios } from "../../general_setup/e2eSetup";
+import { ScenarioRunner } from "../../general_setup/general";
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   // notional traded in this scenario\
@@ -18,13 +18,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // check mint margin requirement
     await this.e2eSetup.callStatic
-      .mintOrBurnViaPeriphery({
-        marginEngineAddress: this.marginEngineTest.address,
-        recipient: this.positions[positionIndex][0],
+      .mintOrBurnViaPeriphery(this.positions[positionIndex][0], {
+        marginEngine: this.marginEngineTest.address,
         tickLower: this.positions[positionIndex][1],
         tickUpper: this.positions[positionIndex][2],
         notional: this.NOTIONAL,
         isMint: true,
+        marginDelta: toBn("0"),
       })
       .then(
         (_: any) => {
@@ -49,7 +49,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     console.log("marginRequirement", marginRequirement);
     if (!(marginRequirement === "")) {
       // update positioin margin to be equal to the requirement
-      await this.e2eSetup.updatePositionMargin(
+      await this.e2eSetup.updatePositionMarginViaAMM(
         this.positions[positionIndex][0],
         this.positions[positionIndex][1],
         this.positions[positionIndex][2],
@@ -58,14 +58,17 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     }
 
     // mint liquidity
-    await this.e2eSetup.mintOrBurnViaPeriphery({
-      marginEngineAddress: this.marginEngineTest.address,
-      recipient: this.positions[positionIndex][0],
-      tickLower: this.positions[positionIndex][1],
-      tickUpper: this.positions[positionIndex][2],
-      notional: this.NOTIONAL,
-      isMint: true,
-    });
+    await this.e2eSetup.mintOrBurnViaPeriphery(
+      this.positions[positionIndex][0],
+      {
+        marginEngine: this.marginEngineTest.address,
+        tickLower: this.positions[positionIndex][1],
+        tickUpper: this.positions[positionIndex][2],
+        notional: this.NOTIONAL,
+        isMint: true,
+        marginDelta: toBn("0"),
+      }
+    );
   }
 
   async executeSwap(
@@ -79,14 +82,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // check swap margin requirement
     await this.e2eSetup.callStatic
-      .swapViaPeriphery({
-        marginEngineAddress: this.marginEngineTest.address,
-        recipient: this.positions[positionIndex][0],
+      .swapViaPeriphery(this.positions[positionIndex][0], {
+        marginEngine: this.marginEngineTest.address,
         isFT: isFT,
         notional: this.NOTIONAL,
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         tickLower: this.positions[positionIndex][1],
         tickUpper: this.positions[positionIndex][2],
+        marginDelta: toBn("0"),
       })
       .then(
         // todo: add interface for the result to avoid using [] notation to query result elements
@@ -123,7 +126,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       // todo: add logic that checks the current position margin and only deposits positive margin delta if required
       // the logic below always deposits +marginRequirement
       // update positioin margin to be equal to the requirement + fees
-      await this.e2eSetup.updatePositionMargin(
+      await this.e2eSetup.updatePositionMarginViaAMM(
         this.positions[positionIndex][0],
         this.positions[positionIndex][1],
         this.positions[positionIndex][2],
@@ -138,14 +141,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     }
 
     // swap
-    await this.e2eSetup.swapViaPeriphery({
-      marginEngineAddress: this.marginEngineTest.address,
-      recipient: this.positions[positionIndex][0],
+    await this.e2eSetup.swapViaPeriphery(this.positions[positionIndex][0], {
+      marginEngine: this.marginEngineTest.address,
       isFT: isFT,
       notional: this.NOTIONAL,
       sqrtPriceLimitX96: sqrtPriceLimitX96,
       tickLower: this.positions[positionIndex][1],
       tickUpper: this.positions[positionIndex][2],
+      marginDelta: toBn("0"),
     });
   }
 

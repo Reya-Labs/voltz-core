@@ -1,12 +1,12 @@
 import { BigNumber, utils } from "ethers";
 import { toBn } from "evm-bn";
-import { consts } from "../../../../helpers/constants";
-import { advanceTimeAndBlock } from "../../../../helpers/time";
-import { add } from "../../../../shared/functions";
-import { TickMath } from "../../../../shared/tickMath";
-import { MAX_TICK, MIN_TICK } from "../../../../shared/utilities";
-import { e2eScenarios } from "../../e2eSetup";
-import { ScenarioRunner } from "../../general";
+import { consts } from "../../../helpers/constants";
+import { advanceTimeAndBlock } from "../../../helpers/time";
+import { add } from "../../../shared/functions";
+import { TickMath } from "../../../shared/tickMath";
+import { MAX_TICK, MIN_TICK } from "../../../shared/utilities";
+import { e2eScenarios } from "../../general_setup/e2eSetup";
+import { ScenarioRunner } from "../../general_setup/general";
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   // notional traded in this scenario\
@@ -46,13 +46,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // check mint margin requirement
     await this.e2eSetup.callStatic
-      .mintOrBurnViaPeriphery({
-        marginEngineAddress: this.marginEngineTest.address,
-        recipient: this.positions[this.positions.length - 1][0],
+      .mintOrBurnViaPeriphery(this.positions[this.positions.length - 1][0], {
+        marginEngine: this.marginEngineTest.address,
         tickLower: this.positions[this.positions.length - 1][1],
         tickUpper: this.positions[this.positions.length - 1][2],
         notional: this.NOTIONAL,
         isMint: true,
+        marginDelta: toBn("0"),
       })
       .then(
         (_: any) => {
@@ -100,7 +100,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         this.e2eSetup.address,
         true
       );
-      await this.e2eSetup.updatePositionMargin(
+      await this.e2eSetup.updatePositionMarginViaAMM(
         this.positions[this.positions.length - 1][0],
         this.positions[this.positions.length - 1][1],
         this.positions[this.positions.length - 1][2],
@@ -110,29 +110,35 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     }
 
     // mint liquidity
-    await this.e2eSetup.mintOrBurnViaPeriphery({
-      marginEngineAddress: this.marginEngineTest.address,
-      recipient: this.positions[this.positions.length - 1][0],
-      tickLower: this.positions[this.positions.length - 1][1],
-      tickUpper: this.positions[this.positions.length - 1][2],
-      notional: this.NOTIONAL,
-      isMint: true,
-    });
+    await this.e2eSetup.mintOrBurnViaPeriphery(
+      this.positions[this.positions.length - 1][0],
+      {
+        marginEngine: this.marginEngineTest.address,
+        tickLower: this.positions[this.positions.length - 1][1],
+        tickUpper: this.positions[this.positions.length - 1][2],
+        notional: this.NOTIONAL,
+        isMint: true,
+        marginDelta: toBn("0"),
+      }
+    );
   }
 
   async executeBurn() {
     // burn liquidity
-    await this.e2eSetup.mintOrBurnViaPeriphery({
-      marginEngineAddress: this.marginEngineTest.address,
-      recipient: this.positions[this.positions.length - 1][0],
-      tickLower: this.positions[this.positions.length - 1][1],
-      tickUpper: this.positions[this.positions.length - 1][2],
-      notional: this.NOTIONAL,
-      isMint: false,
-    });
+    await this.e2eSetup.mintOrBurnViaPeriphery(
+      this.positions[this.positions.length - 1][0],
+      {
+        marginEngine: this.marginEngineTest.address,
+        tickLower: this.positions[this.positions.length - 1][1],
+        tickUpper: this.positions[this.positions.length - 1][2],
+        notional: this.NOTIONAL,
+        isMint: false,
+        marginDelta: toBn("0"),
+      }
+    );
 
     const margin = (
-      await this.marginEngineTest.getPosition(
+      await this.marginEngineTest.callStatic.getPosition(
         this.positions[this.positions.length - 1][0],
         this.positions[this.positions.length - 1][1],
         this.positions[this.positions.length - 1][2]
@@ -144,7 +150,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.e2eSetup.address,
       true
     );
-    await this.e2eSetup.updatePositionMargin(
+    await this.e2eSetup.updatePositionMarginViaAMM(
       this.positions[this.positions.length - 1][0],
       this.positions[this.positions.length - 1][1],
       this.positions[this.positions.length - 1][2],
@@ -164,14 +170,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // check swap margin requirement
     await this.e2eSetup.callStatic
-      .swapViaPeriphery({
-        marginEngineAddress: this.marginEngineTest.address,
-        recipient: this.positions[positionIndex][0],
+      .swapViaPeriphery(this.positions[positionIndex][0], {
+        marginEngine: this.marginEngineTest.address,
         isFT: isFT,
         notional: this.NOTIONAL,
         sqrtPriceLimitX96: sqrtPriceLimitX96,
         tickLower: this.positions[positionIndex][1],
         tickUpper: this.positions[positionIndex][2],
+        marginDelta: toBn("0"),
       })
       .then(
         // todo: add interface for the result to avoid using [] notation to query result elements
@@ -208,7 +214,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         this.e2eSetup.address,
         true
       );
-      await this.e2eSetup.updatePositionMargin(
+      await this.e2eSetup.updatePositionMarginViaAMM(
         this.positions[positionIndex][0],
         this.positions[positionIndex][1],
         this.positions[positionIndex][2],
@@ -228,14 +234,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     }
 
     // swap
-    await this.e2eSetup.swapViaPeriphery({
-      marginEngineAddress: this.marginEngineTest.address,
-      recipient: this.positions[positionIndex][0],
+    await this.e2eSetup.swapViaPeriphery(this.positions[positionIndex][0], {
+      marginEngine: this.marginEngineTest.address,
       isFT: isFT,
       notional: this.NOTIONAL,
       sqrtPriceLimitX96: sqrtPriceLimitX96,
       tickLower: this.positions[positionIndex][1],
       tickUpper: this.positions[positionIndex][2],
+      marginDelta: toBn("0"),
     });
   }
 
