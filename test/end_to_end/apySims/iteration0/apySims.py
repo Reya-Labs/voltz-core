@@ -90,7 +90,6 @@ with open('test/end_to_end/apySims/iteration0/console.txt') as f:
         phases[-1].append(l)
 
     for phase in phases:
-        print(phase)
         name, date, phase_info = ParsePhase(phase)
         print(name)
         phase_information[name] = phase_info

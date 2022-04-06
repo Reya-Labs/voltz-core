@@ -76,7 +76,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.rateOracleTest.increaseObservationCardinalityNext(6000);
 
     let events: [BigNumber, () => Promise<void>][] = [];
-    const days = 360;
+    const days = 20;
 
     let time = toBn("0");
     let acc_rni = 1;

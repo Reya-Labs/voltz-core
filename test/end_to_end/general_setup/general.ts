@@ -122,6 +122,16 @@ export class ScenarioRunner {
       this.outputFile,
       "current timestamp: " + currentTimestamp.toString() + "\n"
     );
+    fs.appendFileSync(
+      this.outputFile,
+      "  start timestamp: " +
+        utils.formatEther(this.termStartTimestampBN) +
+        "\n"
+    );
+    fs.appendFileSync(
+      this.outputFile,
+      "    end timestamp: " + utils.formatEther(this.termEndTimestampBN) + "\n"
+    );
     fs.appendFileSync(this.outputFile, "\n");
 
     await this.updateCurrentTick();
@@ -199,7 +209,13 @@ export class ScenarioRunner {
         "variable factor: " +
           utils.formatEther(this.variableFactorWad).toString() +
           "\n"
-      ); // displayed as zero, investigate
+      );
+      fs.appendFileSync(this.outputFile, "\n");
+    } else {
+      fs.appendFileSync(this.outputFile, "lower apy bound: 0.0" + "\n");
+      fs.appendFileSync(this.outputFile, " historical apy: 0.0" + "\n");
+      fs.appendFileSync(this.outputFile, "upper apy bound: 0.0" + "\n");
+      fs.appendFileSync(this.outputFile, "variable factor: 0.0" + "\n");
       fs.appendFileSync(this.outputFile, "\n");
     }
 
@@ -341,7 +357,47 @@ export class ScenarioRunner {
           utils.formatEther(settlementCashflow).toString() +
           "\n"
       );
-      fs.appendFileSync(this.outputFile, "\n");
+      if (toBn(currentTimestamp.toString()) < this.termEndTimestampBN) {
+        const current_margin_requirement =
+          await this.marginEngineTest.callStatic.getPositionMarginRequirement(
+            this.positions[i][0],
+            this.positions[i][1],
+            this.positions[i][2],
+            false
+          );
+        fs.appendFileSync(
+          this.outputFile,
+          "              margin requirement: " +
+            utils.formatEther(current_margin_requirement).toString() +
+            "\n"
+        );
+
+        const liquidation_threshold =
+          await this.marginEngineTest.callStatic.getPositionMarginRequirement(
+            this.positions[i][0],
+            this.positions[i][1],
+            this.positions[i][2],
+            true
+          );
+        fs.appendFileSync(
+          this.outputFile,
+          "           liquidation threshold: " +
+            utils.formatEther(liquidation_threshold).toString() +
+            "\n"
+        );
+        fs.appendFileSync(this.outputFile, "\n");
+      } else {
+        fs.appendFileSync(
+          this.outputFile,
+          "              margin requirement: 0.0" + "\n"
+        );
+
+        fs.appendFileSync(
+          this.outputFile,
+          "           liquidation threshold: 0.0" + "\n"
+        );
+        fs.appendFileSync(this.outputFile, "\n");
+      }
 
       {
         fs.appendFileSync(this.outputFile, "TRADER YBA " + i.toString() + "\n");
