@@ -68,9 +68,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Set up rate oracles for the Aave lending pool, if one exists
   const existingAaveLendingPoolAddress = getAaveLendingPoolAddress(network);
   const aaveTokens = getAaveTokens(network);
-  const maxDurationOfIrsInSeconds = getMaxDurationOfIrsInSeconds(
-    hre.network.name
-  );
+  const maxDurationOfIrsInSeconds = getMaxDurationOfIrsInSeconds(network);
 
   if (existingAaveLendingPoolAddress && aaveTokens) {
     const aaveLendingPool = await ethers.getContractAt(

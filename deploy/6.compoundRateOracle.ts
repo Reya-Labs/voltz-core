@@ -1,7 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
-import { getCompoundTokens } from "./config";
+import { getCompoundTokens } from "../deployConfig/config";
 import { CompoundRateOracle } from "../typechain/CompoundRateOracle";
 
 const checkBufferSize = async (r: CompoundRateOracle, minSize: number) => {
@@ -34,7 +34,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
 
-  const compoundTokens = getCompoundTokens();
+  const compoundTokens = getCompoundTokens(hre.network.name);
 
   if (compoundTokens) {
     for (const token of compoundTokens) {

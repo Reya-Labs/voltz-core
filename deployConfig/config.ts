@@ -124,13 +124,13 @@ export const getAaveTokens = (
 };
 
 export const getCompoundTokens = (
-  _networkName?: string
-): TokenConfig[] | null => {
+  _networkName: string
+): TokenConfig[] | undefined => {
   const networkName = _networkName;
 
   const compoundTokens = config[networkName]
     ? config[networkName].compoundTokens
-    : null;
+    : undefined;
   // Check for duplicate token names. These must be unique because they are used to name the deployed contracts
   if (compoundTokens && duplicateExists(compoundTokens?.map((t) => t.name))) {
     throw Error(
