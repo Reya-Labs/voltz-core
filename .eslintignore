@@ -11,3 +11,4 @@ test/shared
 coverage.json
 deployments/**
 localhostDeployment.json
+test/end_to_end/apySims/iteration*/sim_info.json
