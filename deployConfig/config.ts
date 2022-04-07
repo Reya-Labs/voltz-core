@@ -68,7 +68,7 @@ const config: ContractsConfigMap = {
       {
         name: "USDC",
         address: "0xe22da380ee6B445bb8273C81944ADEB6E8450422",
-        rateOracleBufferSize: 200,
+        rateOracleBufferSize: 300,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],
@@ -131,7 +131,7 @@ export const getCompoundTokens = (
   const compoundTokens = config[networkName]
     ? config[networkName].compoundTokens
     : undefined;
-  // Check for duplicate token names. These must be unique because they are used to name the deployed contracts
+  // Check for duplicate token names. These must be∫ unique because they are used to name the deployed contracts
   if (compoundTokens && duplicateExists(compoundTokens?.map((t) => t.name))) {
     throw Error(
       `Duplicate token names configured for Compound on network ${_networkName}`
