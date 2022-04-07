@@ -12,7 +12,7 @@ task(
   const logs = await factory.queryFilter(factory.filters.IrsInstance());
   const events = logs.map((l) => factory.interface.parseLog(l));
 
-  let csvOutput = `underlyingToken,rateOracle,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID`;
+  let csvOutput = `underlyingToken,rateOracle,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,historicalAPY`;
 
   for (const e of events) {
     const a = e.args;
@@ -27,7 +27,19 @@ task(
     const startTimeString = new Date(startTimestamp * 1000).toISOString();
     const endTImeString = new Date(endTimestamp * 1000).toISOString();
 
-    csvOutput += `\n${a.underlyingToken},${a.rateOracle},${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${a.tickSpacing},${a.marginEngine},${a.vamm},${a.fcm},${a.yieldBearingProtocolID}`;
+    const marginEngine = await hre.ethers.getContractAt(
+      "MarginEngine",
+      a.marginEngine
+    );
+    const historicalAPY = await marginEngine.getHistoricalApyReadOnly();
+
+    csvOutput += `\n${a.underlyingToken},${
+      a.rateOracle
+    },${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${
+      a.tickSpacing
+    },${a.marginEngine},${a.vamm},${a.fcm},${
+      a.yieldBearingProtocolID
+    },${historicalAPY.toString()}`;
   }
 
   console.log(csvOutput);
