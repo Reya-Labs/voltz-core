@@ -2,1521 +2,8 @@
   "name": "kovan",
   "chainId": "42",
   "contracts": {
-    "AaveFCM": {
-      "address": "0xae5626653fd961D814EE2c7eD85d15fBDfe22794",
-      "abi": [
-        {
-          "inputs": [],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "inputs": [],
-          "name": "AavePoolGetReserveNormalizedIncomeReturnedZero",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bool",
-              "name": "unlocked",
-              "type": "bool"
-            }
-          ],
-          "name": "CanOnlyTradeIfUnlocked",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "marginRequirement",
-              "type": "uint256"
-            }
-          ],
-          "name": "CannotLiquidate",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "CannotSettleBeforeMaturity",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "x",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "y",
-              "type": "uint256"
-            }
-          ],
-          "name": "DebugError",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "amount0",
-              "type": "int256"
-            },
-            {
-              "internalType": "int256",
-              "name": "amount1",
-              "type": "int256"
-            }
-          ],
-          "name": "ExpectedOppositeSigns",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint160",
-              "name": "sqrtPriceX96",
-              "type": "uint160"
-            }
-          ],
-          "name": "ExpectedSqrtPriceZeroBeforeInit",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "IRSNotionalAmountSpecifiedMustBeNonZero",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "InvalidMarginDelta",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint128",
-              "name": "amount",
-              "type": "uint128"
-            }
-          ],
-          "name": "LiquidityDeltaMustBePositiveInBurn",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint128",
-              "name": "amount",
-              "type": "uint128"
-            }
-          ],
-          "name": "LiquidityDeltaMustBePositiveInMint",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "marginRequirement",
-              "type": "int256"
-            }
-          ],
-          "name": "MarginLessThanMinimum",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "marginRequirement",
-              "type": "int256"
-            },
-            {
-              "internalType": "int24",
-              "name": "tick",
-              "type": "int24"
-            },
-            {
-              "internalType": "int256",
-              "name": "fixedTokenDelta",
-              "type": "int256"
-            },
-            {
-              "internalType": "int256",
-              "name": "variableTokenDelta",
-              "type": "int256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "cumulativeFeeIncurred",
-              "type": "uint256"
-            },
-            {
-              "internalType": "int256",
-              "name": "fixedTokenDeltaUnbalanced",
-              "type": "int256"
-            }
-          ],
-          "name": "MarginRequirementNotMet",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "marginRequirement",
-              "type": "int256"
-            }
-          ],
-          "name": "MarginRequirementNotMetFCM",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "requested",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "available",
-              "type": "uint256"
-            }
-          ],
-          "name": "NotEnoughFunds",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OOO",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyFCM",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyMarginEngine",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyOwnerCanUpdatePosition",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyVAMM",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "x",
-              "type": "int256"
-            }
-          ],
-          "name": "PRBMathSD59x18__FromIntOverflow",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "x",
-              "type": "int256"
-            }
-          ],
-          "name": "PRBMathSD59x18__FromIntUnderflow",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "PRBMathSD59x18__MulInputTooSmall",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "rAbs",
-              "type": "uint256"
-            }
-          ],
-          "name": "PRBMathSD59x18__MulOverflow",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "x",
-              "type": "uint256"
-            }
-          ],
-          "name": "PRBMathUD60x18__FromUintOverflow",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "prod1",
-              "type": "uint256"
-            }
-          ],
-          "name": "PRBMath__MulDivFixedPointOverflow",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "prod1",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "denominator",
-              "type": "uint256"
-            }
-          ],
-          "name": "PRBMath__MulDivOverflow",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "PositionNetZero",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "PositionNotSettled",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "WithdrawalExceedsCurrentMargin",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "closeToOrBeyondMaturity",
-          "type": "error"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "previousAdmin",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "newAdmin",
-              "type": "address"
-            }
-          ],
-          "name": "AdminChanged",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "beacon",
-              "type": "address"
-            }
-          ],
-          "name": "BeaconUpgraded",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "trader",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "marginInScaledYieldBearingTokens",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "int256",
-              "name": "fixedTokenBalance",
-              "type": "int256"
-            },
-            {
-              "indexed": false,
-              "internalType": "int256",
-              "name": "variableTokenBalance",
-              "type": "int256"
-            }
-          ],
-          "name": "FullyCollateralisedSwap",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "Paused",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "Unpaused",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "implementation",
-              "type": "address"
-            }
-          ],
-          "name": "Upgraded",
-          "type": "event"
-        },
-        {
-          "inputs": [],
-          "name": "aaveLendingPool",
-          "outputs": [
-            {
-              "internalType": "contract IAaveV2LendingPool",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "traderAddress",
-              "type": "address"
-            }
-          ],
-          "name": "getTraderMarginInATokens",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "marginInYieldBearingTokens",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "trader",
-              "type": "address"
-            }
-          ],
-          "name": "getTraderWithYieldBearingAssets",
-          "outputs": [
-            {
-              "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "marginInScaledYieldBearingTokens",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "int256",
-                  "name": "fixedTokenBalance",
-                  "type": "int256"
-                },
-                {
-                  "internalType": "int256",
-                  "name": "variableTokenBalance",
-                  "type": "int256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isSettled",
-                  "type": "bool"
-                }
-              ],
-              "internalType": "struct TraderWithYieldBearingAssets.Info",
-              "name": "traderInfo",
-              "type": "tuple"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "contract IVAMM",
-              "name": "__vamm",
-              "type": "address"
-            },
-            {
-              "internalType": "contract IMarginEngine",
-              "name": "__marginEngine",
-              "type": "address"
-            }
-          ],
-          "name": "initialize",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "notional",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint160",
-              "name": "sqrtPriceLimitX96",
-              "type": "uint160"
-            }
-          ],
-          "name": "initiateFullyCollateralisedFixedTakerSwap",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "marginEngine",
-          "outputs": [
-            {
-              "internalType": "contract IMarginEngine",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "paused",
-          "outputs": [
-            {
-              "internalType": "bool",
-              "name": "",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "proxiableUUID",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "rateOracle",
-          "outputs": [
-            {
-              "internalType": "contract IRateOracle",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "settleTrader",
-          "outputs": [
-            {
-              "internalType": "int256",
-              "name": "traderSettlementCashflow",
-              "type": "int256"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "name": "traders",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "marginInScaledYieldBearingTokens",
-              "type": "uint256"
-            },
-            {
-              "internalType": "int256",
-              "name": "fixedTokenBalance",
-              "type": "int256"
-            },
-            {
-              "internalType": "int256",
-              "name": "variableTokenBalance",
-              "type": "int256"
-            },
-            {
-              "internalType": "bool",
-              "name": "isSettled",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "marginDeltaInUnderlyingTokens",
-              "type": "uint256"
-            }
-          ],
-          "name": "transferMarginToMarginEngineTrader",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "underlyingToken",
-          "outputs": [
-            {
-              "internalType": "contract IERC20Minimal",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "underlyingYieldBearingToken",
-          "outputs": [
-            {
-              "internalType": "contract IERC20Minimal",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "notionalToUnwind",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint160",
-              "name": "sqrtPriceLimitX96",
-              "type": "uint160"
-            }
-          ],
-          "name": "unwindFullyCollateralisedFixedTakerSwap",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newImplementation",
-              "type": "address"
-            }
-          ],
-          "name": "upgradeTo",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newImplementation",
-              "type": "address"
-            },
-            {
-              "internalType": "bytes",
-              "name": "data",
-              "type": "bytes"
-            }
-          ],
-          "name": "upgradeToAndCall",
-          "outputs": [],
-          "stateMutability": "payable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "vamm",
-          "outputs": [
-            {
-              "internalType": "contract IVAMM",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        }
-      ]
-    },
-    "AaveRateOracle_USDC": {
-      "address": "0xEBA6f8D7d4d4787f29441dB1164548299Ef4641F",
-      "abi": [
-        {
-          "inputs": [
-            {
-              "internalType": "contract IAaveV2LendingPool",
-              "name": "_aaveLendingPool",
-              "type": "address"
-            },
-            {
-              "internalType": "contract IERC20Minimal",
-              "name": "underlying",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "inputs": [],
-          "name": "AavePoolGetReserveNormalizedIncomeReturnedZero",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bool",
-              "name": "unlocked",
-              "type": "bool"
-            }
-          ],
-          "name": "CanOnlyTradeIfUnlocked",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "marginRequirement",
-              "type": "uint256"
-            }
-          ],
-          "name": "CannotLiquidate",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "CannotSettleBeforeMaturity",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "x",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "y",
-              "type": "uint256"
-            }
-          ],
-          "name": "DebugError",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "amount0",
-              "type": "int256"
-            },
-            {
-              "internalType": "int256",
-              "name": "amount1",
-              "type": "int256"
-            }
-          ],
-          "name": "ExpectedOppositeSigns",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint160",
-              "name": "sqrtPriceX96",
-              "type": "uint160"
-            }
-          ],
-          "name": "ExpectedSqrtPriceZeroBeforeInit",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "IRSNotionalAmountSpecifiedMustBeNonZero",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "InvalidMarginDelta",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint128",
-              "name": "amount",
-              "type": "uint128"
-            }
-          ],
-          "name": "LiquidityDeltaMustBePositiveInBurn",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint128",
-              "name": "amount",
-              "type": "uint128"
-            }
-          ],
-          "name": "LiquidityDeltaMustBePositiveInMint",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "marginRequirement",
-              "type": "int256"
-            }
-          ],
-          "name": "MarginLessThanMinimum",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "marginRequirement",
-              "type": "int256"
-            },
-            {
-              "internalType": "int24",
-              "name": "tick",
-              "type": "int24"
-            },
-            {
-              "internalType": "int256",
-              "name": "fixedTokenDelta",
-              "type": "int256"
-            },
-            {
-              "internalType": "int256",
-              "name": "variableTokenDelta",
-              "type": "int256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "cumulativeFeeIncurred",
-              "type": "uint256"
-            },
-            {
-              "internalType": "int256",
-              "name": "fixedTokenDeltaUnbalanced",
-              "type": "int256"
-            }
-          ],
-          "name": "MarginRequirementNotMet",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "marginRequirement",
-              "type": "int256"
-            }
-          ],
-          "name": "MarginRequirementNotMetFCM",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "requested",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "available",
-              "type": "uint256"
-            }
-          ],
-          "name": "NotEnoughFunds",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OOO",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyFCM",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyMarginEngine",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyOwnerCanUpdatePosition",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyVAMM",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "x",
-              "type": "uint256"
-            }
-          ],
-          "name": "PRBMathUD60x18__Exp2InputTooBig",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "x",
-              "type": "uint256"
-            }
-          ],
-          "name": "PRBMathUD60x18__FromUintOverflow",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "x",
-              "type": "uint256"
-            }
-          ],
-          "name": "PRBMathUD60x18__LogInputTooSmall",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "prod1",
-              "type": "uint256"
-            }
-          ],
-          "name": "PRBMath__MulDivFixedPointOverflow",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "prod1",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "denominator",
-              "type": "uint256"
-            }
-          ],
-          "name": "PRBMath__MulDivOverflow",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "PositionNetZero",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "PositionNotSettled",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "WithdrawalExceedsCurrentMargin",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "closeToOrBeyondMaturity",
-          "type": "error"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "_minSecondsSinceLastUpdate",
-              "type": "uint256"
-            }
-          ],
-          "name": "MinSecondsSinceLastUpdate",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "blockTimestampScaled",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "source",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint16",
-              "name": "index",
-              "type": "uint16"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint32",
-              "name": "blockTimestamp",
-              "type": "uint32"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "observedValue",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint16",
-              "name": "cardinality",
-              "type": "uint16"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint16",
-              "name": "cardinalityNext",
-              "type": "uint16"
-            }
-          ],
-          "name": "OracleBufferUpdate",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": false,
-              "internalType": "uint16",
-              "name": "observationCardinalityNextNew",
-              "type": "uint16"
-            }
-          ],
-          "name": "RateCardinalityNext",
-          "type": "event"
-        },
-        {
-          "inputs": [],
-          "name": "ONE_IN_WAD",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "UNDERLYING_YIELD_BEARING_PROTOCOL_ID",
-          "outputs": [
-            {
-              "internalType": "uint8",
-              "name": "",
-              "type": "uint8"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "aaveLendingPool",
-          "outputs": [
-            {
-              "internalType": "contract IAaveV2LendingPool",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "from",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "to",
-              "type": "uint256"
-            }
-          ],
-          "name": "getApyFromTo",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "apyFromToWad",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_from",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_to",
-              "type": "uint256"
-            }
-          ],
-          "name": "getRateFromTo",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint16",
-              "name": "rateCardinalityNext",
-              "type": "uint16"
-            }
-          ],
-          "name": "increaseObservationCardinalityNext",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "beforeOrAtRateValueRay",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "apyFromBeforeOrAtToAtOrAfterWad",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "timeDeltaBeforeOrAtToQueriedTimeWad",
-              "type": "uint256"
-            }
-          ],
-          "name": "interpolateRateValue",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "rateValueRay",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "pure",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "minSecondsSinceLastUpdate",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "name": "observations",
-          "outputs": [
-            {
-              "internalType": "uint32",
-              "name": "blockTimestamp",
-              "type": "uint32"
-            },
-            {
-              "internalType": "uint216",
-              "name": "observedValue",
-              "type": "uint216"
-            },
-            {
-              "internalType": "bool",
-              "name": "initialized",
-              "type": "bool"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "oracleVars",
-          "outputs": [
-            {
-              "internalType": "uint16",
-              "name": "rateIndex",
-              "type": "uint16"
-            },
-            {
-              "internalType": "uint16",
-              "name": "rateCardinality",
-              "type": "uint16"
-            },
-            {
-              "internalType": "uint16",
-              "name": "rateCardinalityNext",
-              "type": "uint16"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "owner",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "renounceOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "_minSecondsSinceLastUpdate",
-              "type": "uint256"
-            }
-          ],
-          "name": "setMinSecondsSinceLastUpdate",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint32",
-              "name": "",
-              "type": "uint32"
-            },
-            {
-              "internalType": "uint32",
-              "name": "",
-              "type": "uint32"
-            }
-          ],
-          "name": "settlementRateCache",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "underlying",
-          "outputs": [
-            {
-              "internalType": "contract IERC20Minimal",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "termStartTimestampInWeiSeconds",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "termEndTimestampInWeiSeconds",
-              "type": "uint256"
-            }
-          ],
-          "name": "variableFactor",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "resultWad",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "termStartTimestampInWeiSeconds",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "termEndTimestampInWeiSeconds",
-              "type": "uint256"
-            }
-          ],
-          "name": "variableFactorNoCache",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "resultWad",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "writeOracleEntry",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ]
-    },
     "AaveRateOracle_USDT": {
-      "address": "0xd8d978e433cA401A23F81B550b99Fd1d9E119214",
+      "address": "0x4B3739F4f82202848A734282AA9BF433c5791148",
       "abi": [
         {
           "inputs": [
@@ -1527,7 +14,7 @@
             },
             {
               "internalType": "contract IERC20Minimal",
-              "name": "underlying",
+              "name": "_underlying",
               "type": "address"
             }
           ],
@@ -1551,13 +38,7 @@
           "type": "error"
         },
         {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "marginRequirement",
-              "type": "uint256"
-            }
-          ],
+          "inputs": [],
           "name": "CannotLiquidate",
           "type": "error"
         },
@@ -2249,7 +730,7 @@
       ]
     },
     "Factory": {
-      "address": "0x0Acae90cc4927bAd5BA6a51754771582783a95bb",
+      "address": "0xAF47e8353729E5be6cA4f605dd176B7Fc80EDA08",
       "abi": [
         {
           "inputs": [
@@ -2284,13 +765,7 @@
           "type": "error"
         },
         {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "marginRequirement",
-              "type": "uint256"
-            }
-          ],
+          "inputs": [],
           "name": "CannotLiquidate",
           "type": "error"
         },
@@ -2878,7 +1353,7 @@
       ]
     },
     "MarginEngine": {
-      "address": "0x01CAFCbD7D80592332Ce42C0a0b42Ab646cFB213",
+      "address": "0x9D1188E7a03f0E053c00BE9AA38f662Dae04E381",
       "abi": [
         {
           "inputs": [],
@@ -2902,13 +1377,7 @@
           "type": "error"
         },
         {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "marginRequirement",
-              "type": "uint256"
-            }
-          ],
+          "inputs": [],
           "name": "CannotLiquidate",
           "type": "error"
         },
@@ -3512,6 +1981,12 @@
               "internalType": "uint128",
               "name": "liquidity",
               "type": "uint128"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "liquidator",
+              "type": "address"
             }
           ],
           "name": "PositionLiquidation",
@@ -4097,19 +2572,6 @@
         },
         {
           "inputs": [],
-          "name": "proxiableUUID",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
           "name": "rateOracle",
           "outputs": [
             {
@@ -4555,390 +3017,8 @@
         }
       ]
     },
-    "Periphery": {
-      "address": "0x4cb93ed60a3Dd9013979c6251C14117e02A6DfA1",
-      "abi": [
-        {
-          "inputs": [],
-          "name": "AavePoolGetReserveNormalizedIncomeReturnedZero",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bool",
-              "name": "unlocked",
-              "type": "bool"
-            }
-          ],
-          "name": "CanOnlyTradeIfUnlocked",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "marginRequirement",
-              "type": "uint256"
-            }
-          ],
-          "name": "CannotLiquidate",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "CannotSettleBeforeMaturity",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "x",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "y",
-              "type": "uint256"
-            }
-          ],
-          "name": "DebugError",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "amount0",
-              "type": "int256"
-            },
-            {
-              "internalType": "int256",
-              "name": "amount1",
-              "type": "int256"
-            }
-          ],
-          "name": "ExpectedOppositeSigns",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint160",
-              "name": "sqrtPriceX96",
-              "type": "uint160"
-            }
-          ],
-          "name": "ExpectedSqrtPriceZeroBeforeInit",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "IRSNotionalAmountSpecifiedMustBeNonZero",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "InvalidMarginDelta",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint128",
-              "name": "amount",
-              "type": "uint128"
-            }
-          ],
-          "name": "LiquidityDeltaMustBePositiveInBurn",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint128",
-              "name": "amount",
-              "type": "uint128"
-            }
-          ],
-          "name": "LiquidityDeltaMustBePositiveInMint",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "marginRequirement",
-              "type": "int256"
-            }
-          ],
-          "name": "MarginLessThanMinimum",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "marginRequirement",
-              "type": "int256"
-            },
-            {
-              "internalType": "int24",
-              "name": "tick",
-              "type": "int24"
-            },
-            {
-              "internalType": "int256",
-              "name": "fixedTokenDelta",
-              "type": "int256"
-            },
-            {
-              "internalType": "int256",
-              "name": "variableTokenDelta",
-              "type": "int256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "cumulativeFeeIncurred",
-              "type": "uint256"
-            },
-            {
-              "internalType": "int256",
-              "name": "fixedTokenDeltaUnbalanced",
-              "type": "int256"
-            }
-          ],
-          "name": "MarginRequirementNotMet",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "int256",
-              "name": "marginRequirement",
-              "type": "int256"
-            }
-          ],
-          "name": "MarginRequirementNotMetFCM",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "requested",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "available",
-              "type": "uint256"
-            }
-          ],
-          "name": "NotEnoughFunds",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OOO",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyFCM",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyMarginEngine",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyOwnerCanUpdatePosition",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "OnlyVAMM",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "PositionNetZero",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "PositionNotSettled",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "WithdrawalExceedsCurrentMargin",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "closeToOrBeyondMaturity",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "contract IMarginEngine",
-              "name": "marginEngine",
-              "type": "address"
-            }
-          ],
-          "name": "getCurrentTick",
-          "outputs": [
-            {
-              "internalType": "int24",
-              "name": "currentTick",
-              "type": "int24"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "components": [
-                {
-                  "internalType": "contract IMarginEngine",
-                  "name": "marginEngine",
-                  "type": "address"
-                },
-                {
-                  "internalType": "int24",
-                  "name": "tickLower",
-                  "type": "int24"
-                },
-                {
-                  "internalType": "int24",
-                  "name": "tickUpper",
-                  "type": "int24"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "notional",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isMint",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "marginDelta",
-                  "type": "uint256"
-                }
-              ],
-              "internalType": "struct IPeriphery.MintOrBurnParams",
-              "name": "params",
-              "type": "tuple"
-            }
-          ],
-          "name": "mintOrBurn",
-          "outputs": [
-            {
-              "internalType": "int256",
-              "name": "positionMarginRequirement",
-              "type": "int256"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "components": [
-                {
-                  "internalType": "contract IMarginEngine",
-                  "name": "marginEngine",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bool",
-                  "name": "isFT",
-                  "type": "bool"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "notional",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint160",
-                  "name": "sqrtPriceLimitX96",
-                  "type": "uint160"
-                },
-                {
-                  "internalType": "int24",
-                  "name": "tickLower",
-                  "type": "int24"
-                },
-                {
-                  "internalType": "int24",
-                  "name": "tickUpper",
-                  "type": "int24"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "marginDelta",
-                  "type": "uint256"
-                }
-              ],
-              "internalType": "struct IPeriphery.SwapPeripheryParams",
-              "name": "params",
-              "type": "tuple"
-            }
-          ],
-          "name": "swap",
-          "outputs": [
-            {
-              "internalType": "int256",
-              "name": "_fixedTokenDelta",
-              "type": "int256"
-            },
-            {
-              "internalType": "int256",
-              "name": "_variableTokenDelta",
-              "type": "int256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_cumulativeFeeIncurred",
-              "type": "uint256"
-            },
-            {
-              "internalType": "int256",
-              "name": "_fixedTokenDeltaUnbalanced",
-              "type": "int256"
-            },
-            {
-              "internalType": "int256",
-              "name": "_marginRequirement",
-              "type": "int256"
-            },
-            {
-              "internalType": "int24",
-              "name": "_tickAfter",
-              "type": "int24"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }
-      ]
-    },
     "VAMM": {
-      "address": "0xa24Ee30a27C7BA4f29C615caBD38bE8c4c783374",
+      "address": "0xB39bF482dD2e86Da53F7E76007C5641a2B90a9b7",
       "abi": [
         {
           "inputs": [],
@@ -4962,13 +3042,7 @@
           "type": "error"
         },
         {
-          "inputs": [
-            {
-              "internalType": "uint256",
-              "name": "marginRequirement",
-              "type": "uint256"
-            }
-          ],
+          "inputs": [],
           "name": "CannotLiquidate",
           "type": "error"
         },
@@ -5799,19 +3873,6 @@
         },
         {
           "inputs": [],
-          "name": "proxiableUUID",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "",
-              "type": "bytes32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
           "name": "renounceOwnership",
           "outputs": [],
           "stateMutability": "nonpayable",
@@ -6087,6 +4148,1870 @@
               "internalType": "int256",
               "name": "",
               "type": "int256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ]
+    },
+    "AaveRateOracle_USDC": {
+      "address": "0x419b87419DfdD057DDD5B3d0b059dC3B0004e779",
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "contract IAaveV2LendingPool",
+              "name": "_aaveLendingPool",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20Minimal",
+              "name": "_underlying",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "inputs": [],
+          "name": "AavePoolGetReserveNormalizedIncomeReturnedZero",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bool",
+              "name": "unlocked",
+              "type": "bool"
+            }
+          ],
+          "name": "CanOnlyTradeIfUnlocked",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "CannotLiquidate",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "CannotSettleBeforeMaturity",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "x",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "y",
+              "type": "uint256"
+            }
+          ],
+          "name": "DebugError",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "amount0",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "amount1",
+              "type": "int256"
+            }
+          ],
+          "name": "ExpectedOppositeSigns",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96",
+              "type": "uint160"
+            }
+          ],
+          "name": "ExpectedSqrtPriceZeroBeforeInit",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "IRSNotionalAmountSpecifiedMustBeNonZero",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "InvalidMarginDelta",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            }
+          ],
+          "name": "LiquidityDeltaMustBePositiveInBurn",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            }
+          ],
+          "name": "LiquidityDeltaMustBePositiveInMint",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "marginRequirement",
+              "type": "int256"
+            }
+          ],
+          "name": "MarginLessThanMinimum",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "marginRequirement",
+              "type": "int256"
+            },
+            {
+              "internalType": "int24",
+              "name": "tick",
+              "type": "int24"
+            },
+            {
+              "internalType": "int256",
+              "name": "fixedTokenDelta",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "variableTokenDelta",
+              "type": "int256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "cumulativeFeeIncurred",
+              "type": "uint256"
+            },
+            {
+              "internalType": "int256",
+              "name": "fixedTokenDeltaUnbalanced",
+              "type": "int256"
+            }
+          ],
+          "name": "MarginRequirementNotMet",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "marginRequirement",
+              "type": "int256"
+            }
+          ],
+          "name": "MarginRequirementNotMetFCM",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "requested",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "available",
+              "type": "uint256"
+            }
+          ],
+          "name": "NotEnoughFunds",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OOO",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyFCM",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyMarginEngine",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyOwnerCanUpdatePosition",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyVAMM",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "x",
+              "type": "uint256"
+            }
+          ],
+          "name": "PRBMathUD60x18__Exp2InputTooBig",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "x",
+              "type": "uint256"
+            }
+          ],
+          "name": "PRBMathUD60x18__FromUintOverflow",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "x",
+              "type": "uint256"
+            }
+          ],
+          "name": "PRBMathUD60x18__LogInputTooSmall",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "prod1",
+              "type": "uint256"
+            }
+          ],
+          "name": "PRBMath__MulDivFixedPointOverflow",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "prod1",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "denominator",
+              "type": "uint256"
+            }
+          ],
+          "name": "PRBMath__MulDivOverflow",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "PositionNetZero",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "PositionNotSettled",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "WithdrawalExceedsCurrentMargin",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "closeToOrBeyondMaturity",
+          "type": "error"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_minSecondsSinceLastUpdate",
+              "type": "uint256"
+            }
+          ],
+          "name": "MinSecondsSinceLastUpdate",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "blockTimestampScaled",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "source",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint16",
+              "name": "index",
+              "type": "uint16"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint32",
+              "name": "blockTimestamp",
+              "type": "uint32"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "observedValue",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint16",
+              "name": "cardinality",
+              "type": "uint16"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint16",
+              "name": "cardinalityNext",
+              "type": "uint16"
+            }
+          ],
+          "name": "OracleBufferUpdate",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint16",
+              "name": "observationCardinalityNextNew",
+              "type": "uint16"
+            }
+          ],
+          "name": "RateCardinalityNext",
+          "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "ONE_IN_WAD",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "UNDERLYING_YIELD_BEARING_PROTOCOL_ID",
+          "outputs": [
+            {
+              "internalType": "uint8",
+              "name": "",
+              "type": "uint8"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "aaveLendingPool",
+          "outputs": [
+            {
+              "internalType": "contract IAaveV2LendingPool",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "from",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "to",
+              "type": "uint256"
+            }
+          ],
+          "name": "getApyFromTo",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "apyFromToWad",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_from",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_to",
+              "type": "uint256"
+            }
+          ],
+          "name": "getRateFromTo",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint16",
+              "name": "rateCardinalityNext",
+              "type": "uint16"
+            }
+          ],
+          "name": "increaseObservationCardinalityNext",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "beforeOrAtRateValueRay",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "apyFromBeforeOrAtToAtOrAfterWad",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timeDeltaBeforeOrAtToQueriedTimeWad",
+              "type": "uint256"
+            }
+          ],
+          "name": "interpolateRateValue",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "rateValueRay",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "pure",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "minSecondsSinceLastUpdate",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "name": "observations",
+          "outputs": [
+            {
+              "internalType": "uint32",
+              "name": "blockTimestamp",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint216",
+              "name": "observedValue",
+              "type": "uint216"
+            },
+            {
+              "internalType": "bool",
+              "name": "initialized",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "oracleVars",
+          "outputs": [
+            {
+              "internalType": "uint16",
+              "name": "rateIndex",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint16",
+              "name": "rateCardinality",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint16",
+              "name": "rateCardinalityNext",
+              "type": "uint16"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_minSecondsSinceLastUpdate",
+              "type": "uint256"
+            }
+          ],
+          "name": "setMinSecondsSinceLastUpdate",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint32",
+              "name": "",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "",
+              "type": "uint32"
+            }
+          ],
+          "name": "settlementRateCache",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "underlying",
+          "outputs": [
+            {
+              "internalType": "contract IERC20Minimal",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "termStartTimestampInWeiSeconds",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "termEndTimestampInWeiSeconds",
+              "type": "uint256"
+            }
+          ],
+          "name": "variableFactor",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "resultWad",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "termStartTimestampInWeiSeconds",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "termEndTimestampInWeiSeconds",
+              "type": "uint256"
+            }
+          ],
+          "name": "variableFactorNoCache",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "resultWad",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "writeOracleEntry",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ]
+    },
+    "Periphery": {
+      "address": "0x4d1e13111412725D458D106A36524B9c13E98D98",
+      "abi": [
+        {
+          "inputs": [],
+          "name": "AavePoolGetReserveNormalizedIncomeReturnedZero",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bool",
+              "name": "unlocked",
+              "type": "bool"
+            }
+          ],
+          "name": "CanOnlyTradeIfUnlocked",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "CannotLiquidate",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "CannotSettleBeforeMaturity",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "x",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "y",
+              "type": "uint256"
+            }
+          ],
+          "name": "DebugError",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "amount0",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "amount1",
+              "type": "int256"
+            }
+          ],
+          "name": "ExpectedOppositeSigns",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96",
+              "type": "uint160"
+            }
+          ],
+          "name": "ExpectedSqrtPriceZeroBeforeInit",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "IRSNotionalAmountSpecifiedMustBeNonZero",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "InvalidMarginDelta",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            }
+          ],
+          "name": "LiquidityDeltaMustBePositiveInBurn",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            }
+          ],
+          "name": "LiquidityDeltaMustBePositiveInMint",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "marginRequirement",
+              "type": "int256"
+            }
+          ],
+          "name": "MarginLessThanMinimum",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "marginRequirement",
+              "type": "int256"
+            },
+            {
+              "internalType": "int24",
+              "name": "tick",
+              "type": "int24"
+            },
+            {
+              "internalType": "int256",
+              "name": "fixedTokenDelta",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "variableTokenDelta",
+              "type": "int256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "cumulativeFeeIncurred",
+              "type": "uint256"
+            },
+            {
+              "internalType": "int256",
+              "name": "fixedTokenDeltaUnbalanced",
+              "type": "int256"
+            }
+          ],
+          "name": "MarginRequirementNotMet",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "marginRequirement",
+              "type": "int256"
+            }
+          ],
+          "name": "MarginRequirementNotMetFCM",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "requested",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "available",
+              "type": "uint256"
+            }
+          ],
+          "name": "NotEnoughFunds",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OOO",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyFCM",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyMarginEngine",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyOwnerCanUpdatePosition",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyVAMM",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "PositionNetZero",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "PositionNotSettled",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "WithdrawalExceedsCurrentMargin",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "closeToOrBeyondMaturity",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "contract IMarginEngine",
+              "name": "marginEngine",
+              "type": "address"
+            }
+          ],
+          "name": "getCurrentTick",
+          "outputs": [
+            {
+              "internalType": "int24",
+              "name": "currentTick",
+              "type": "int24"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "components": [
+                {
+                  "internalType": "contract IMarginEngine",
+                  "name": "marginEngine",
+                  "type": "address"
+                },
+                {
+                  "internalType": "int24",
+                  "name": "tickLower",
+                  "type": "int24"
+                },
+                {
+                  "internalType": "int24",
+                  "name": "tickUpper",
+                  "type": "int24"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "notional",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isMint",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "marginDelta",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct IPeriphery.MintOrBurnParams",
+              "name": "params",
+              "type": "tuple"
+            }
+          ],
+          "name": "mintOrBurn",
+          "outputs": [
+            {
+              "internalType": "int256",
+              "name": "positionMarginRequirement",
+              "type": "int256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "components": [
+                {
+                  "internalType": "contract IMarginEngine",
+                  "name": "marginEngine",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isFT",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "notional",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint160",
+                  "name": "sqrtPriceLimitX96",
+                  "type": "uint160"
+                },
+                {
+                  "internalType": "int24",
+                  "name": "tickLower",
+                  "type": "int24"
+                },
+                {
+                  "internalType": "int24",
+                  "name": "tickUpper",
+                  "type": "int24"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "marginDelta",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct IPeriphery.SwapPeripheryParams",
+              "name": "params",
+              "type": "tuple"
+            }
+          ],
+          "name": "swap",
+          "outputs": [
+            {
+              "internalType": "int256",
+              "name": "_fixedTokenDelta",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "_variableTokenDelta",
+              "type": "int256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_cumulativeFeeIncurred",
+              "type": "uint256"
+            },
+            {
+              "internalType": "int256",
+              "name": "_fixedTokenDeltaUnbalanced",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "_marginRequirement",
+              "type": "int256"
+            },
+            {
+              "internalType": "int24",
+              "name": "_tickAfter",
+              "type": "int24"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ]
+    },
+    "AaveFCM": {
+      "address": "0xACFf41A5bfB2Cac91E7c9f525F8e8B2E9a2083E1",
+      "abi": [
+        {
+          "inputs": [],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "inputs": [],
+          "name": "AavePoolGetReserveNormalizedIncomeReturnedZero",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bool",
+              "name": "unlocked",
+              "type": "bool"
+            }
+          ],
+          "name": "CanOnlyTradeIfUnlocked",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "CannotLiquidate",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "CannotSettleBeforeMaturity",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "x",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "y",
+              "type": "uint256"
+            }
+          ],
+          "name": "DebugError",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "amount0",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "amount1",
+              "type": "int256"
+            }
+          ],
+          "name": "ExpectedOppositeSigns",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96",
+              "type": "uint160"
+            }
+          ],
+          "name": "ExpectedSqrtPriceZeroBeforeInit",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "IRSNotionalAmountSpecifiedMustBeNonZero",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "InvalidMarginDelta",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            }
+          ],
+          "name": "LiquidityDeltaMustBePositiveInBurn",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            }
+          ],
+          "name": "LiquidityDeltaMustBePositiveInMint",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "marginRequirement",
+              "type": "int256"
+            }
+          ],
+          "name": "MarginLessThanMinimum",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "marginRequirement",
+              "type": "int256"
+            },
+            {
+              "internalType": "int24",
+              "name": "tick",
+              "type": "int24"
+            },
+            {
+              "internalType": "int256",
+              "name": "fixedTokenDelta",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "variableTokenDelta",
+              "type": "int256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "cumulativeFeeIncurred",
+              "type": "uint256"
+            },
+            {
+              "internalType": "int256",
+              "name": "fixedTokenDeltaUnbalanced",
+              "type": "int256"
+            }
+          ],
+          "name": "MarginRequirementNotMet",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "marginRequirement",
+              "type": "int256"
+            }
+          ],
+          "name": "MarginRequirementNotMetFCM",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "requested",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "available",
+              "type": "uint256"
+            }
+          ],
+          "name": "NotEnoughFunds",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OOO",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyFCM",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyMarginEngine",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyOwnerCanUpdatePosition",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "OnlyVAMM",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "x",
+              "type": "int256"
+            }
+          ],
+          "name": "PRBMathSD59x18__FromIntOverflow",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "int256",
+              "name": "x",
+              "type": "int256"
+            }
+          ],
+          "name": "PRBMathSD59x18__FromIntUnderflow",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "PRBMathSD59x18__MulInputTooSmall",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "rAbs",
+              "type": "uint256"
+            }
+          ],
+          "name": "PRBMathSD59x18__MulOverflow",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "x",
+              "type": "uint256"
+            }
+          ],
+          "name": "PRBMathUD60x18__FromUintOverflow",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "prod1",
+              "type": "uint256"
+            }
+          ],
+          "name": "PRBMath__MulDivFixedPointOverflow",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "prod1",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "denominator",
+              "type": "uint256"
+            }
+          ],
+          "name": "PRBMath__MulDivOverflow",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "PositionNetZero",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "PositionNotSettled",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "WithdrawalExceedsCurrentMargin",
+          "type": "error"
+        },
+        {
+          "inputs": [],
+          "name": "closeToOrBeyondMaturity",
+          "type": "error"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "previousAdmin",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "newAdmin",
+              "type": "address"
+            }
+          ],
+          "name": "AdminChanged",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "beacon",
+              "type": "address"
+            }
+          ],
+          "name": "BeaconUpgraded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "trader",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "marginInScaledYieldBearingTokens",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "int256",
+              "name": "fixedTokenBalance",
+              "type": "int256"
+            },
+            {
+              "indexed": false,
+              "internalType": "int256",
+              "name": "variableTokenBalance",
+              "type": "int256"
+            }
+          ],
+          "name": "FullyCollateralisedSwap",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Paused",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "Unpaused",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "implementation",
+              "type": "address"
+            }
+          ],
+          "name": "Upgraded",
+          "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "aaveLendingPool",
+          "outputs": [
+            {
+              "internalType": "contract IAaveV2LendingPool",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "traderAddress",
+              "type": "address"
+            }
+          ],
+          "name": "getTraderMarginInATokens",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "marginInYieldBearingTokens",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "trader",
+              "type": "address"
+            }
+          ],
+          "name": "getTraderWithYieldBearingAssets",
+          "outputs": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "marginInScaledYieldBearingTokens",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "int256",
+                  "name": "fixedTokenBalance",
+                  "type": "int256"
+                },
+                {
+                  "internalType": "int256",
+                  "name": "variableTokenBalance",
+                  "type": "int256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isSettled",
+                  "type": "bool"
+                }
+              ],
+              "internalType": "struct TraderWithYieldBearingAssets.Info",
+              "name": "traderInfo",
+              "type": "tuple"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "contract IVAMM",
+              "name": "__vamm",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IMarginEngine",
+              "name": "__marginEngine",
+              "type": "address"
+            }
+          ],
+          "name": "initialize",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "notional",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceLimitX96",
+              "type": "uint160"
+            }
+          ],
+          "name": "initiateFullyCollateralisedFixedTakerSwap",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "marginEngine",
+          "outputs": [
+            {
+              "internalType": "contract IMarginEngine",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "paused",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "rateOracle",
+          "outputs": [
+            {
+              "internalType": "contract IRateOracle",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "renounceOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "settleTrader",
+          "outputs": [
+            {
+              "internalType": "int256",
+              "name": "traderSettlementCashflow",
+              "type": "int256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "traders",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "marginInScaledYieldBearingTokens",
+              "type": "uint256"
+            },
+            {
+              "internalType": "int256",
+              "name": "fixedTokenBalance",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "variableTokenBalance",
+              "type": "int256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isSettled",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "marginDeltaInUnderlyingTokens",
+              "type": "uint256"
+            }
+          ],
+          "name": "transferMarginToMarginEngineTrader",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "underlyingToken",
+          "outputs": [
+            {
+              "internalType": "contract IERC20Minimal",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "underlyingYieldBearingToken",
+          "outputs": [
+            {
+              "internalType": "contract IERC20Minimal",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "notionalToUnwind",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceLimitX96",
+              "type": "uint160"
+            }
+          ],
+          "name": "unwindFullyCollateralisedFixedTakerSwap",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newImplementation",
+              "type": "address"
+            }
+          ],
+          "name": "upgradeTo",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newImplementation",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "name": "upgradeToAndCall",
+          "outputs": [],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "vamm",
+          "outputs": [
+            {
+              "internalType": "contract IVAMM",
+              "name": "",
+              "type": "address"
             }
           ],
           "stateMutability": "view",
