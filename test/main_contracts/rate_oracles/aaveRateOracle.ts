@@ -262,18 +262,44 @@ describe("Aave Rate Oracle", () => {
         token.address,
         toBn("1.1", consts.AAVE_RATE_DECIMALS)
       );
-      const rateToTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testRateOracle.writeOracleEntry();
+      const rateToTimestamp = await getCurrentTimestamp(provider);
 
-      await testRateOracle.testGetRateFromTo(
+      const rateFromTo = await testRateOracle.getRateFromTo(
         rateFromTimestamp,
         rateToTimestamp
       );
-      const rateFromTo = await testRateOracle.latestRateFromTo();
 
       const expectedRateFromTo = toBn("0.1");
 
       expect(rateFromTo).to.eq(expectedRateFromTo);
+    });
+
+    it("correctly calculates rate from one timestamp to the next when there was no recent write", async () => {
+      await testRateOracle.increaseObservationCardinalityNext(4);
+
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+      await testRateOracle.writeOracleEntry();
+
+      await advanceTimeAndBlock(BigNumber.from(86400).mul(5), 500); // advance by 500 days
+      const rateFromTimestamp = await getCurrentTimestamp(provider);
+      await advanceTimeAndBlock(BigNumber.from(86400).mul(5), 500); // advance by 500 days
+
+      // set new liquidity index value
+      await aaveLendingPool.setReserveNormalizedIncome(
+        token.address,
+        toBn("1.21", consts.AAVE_RATE_DECIMALS) // Factor of 1.1 every 500 days
+      );
+      const rateToTimestamp = await getCurrentTimestamp(provider);
+
+      const rateFromTo = await testRateOracle.getRateFromTo(
+        rateFromTimestamp,
+        rateToTimestamp
+      );
+
+      const expectedRateFromTo = toBn("0.1");
+
+      expect(rateFromTo).to.be.closeTo(expectedRateFromTo, 100_000_000_000_000); // within 1e14 of 1e18 = within 0.01%
     });
   });
 

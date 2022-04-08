@@ -71,14 +71,6 @@ contract TestRateOracle is AaveRateOracle {
         );
     }
 
-    function testGetRateFromTo(uint256 from, uint256 to)
-        external
-        returns (uint256)
-    {
-        latestRateFromTo = getRateFromTo(from, to);
-        return latestRateFromTo;
-    }
-
     // function testBinarySearch(uint32 target)
     //     external
     //     view
@@ -117,6 +109,7 @@ contract TestRateOracle is AaveRateOracle {
             OracleBuffer.Observation memory atOrAfter
         ) = observations.getSurroundingObservations(
                 target,
+                Time.blockTimestampTruncated(),
                 currentValue,
                 oracleVars.rateIndex,
                 oracleVars.rateCardinality
