@@ -3,6 +3,7 @@
 pragma solidity =0.8.9;
 
 import "../IMarginEngine.sol";
+import "../IVAMM.sol";
 import "../../utils/CustomErrors.sol";
 import "../IERC20Minimal.sol";
 import "../../core_libraries/TraderWithYieldBearingAssets.sol";
