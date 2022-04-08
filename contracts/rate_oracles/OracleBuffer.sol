@@ -161,7 +161,8 @@ library OracleBuffer {
     /// @dev Assumes there is at least 1 initialized observation.
     /// Used by observeSingle() to compute the counterfactual accumulator values as of a given block timestamp.
     /// @param self The stored oracle array
-    /// @param target The timestamp at which the reserved observation should be for. Must be chronologically before time.
+    /// @param target The timestamp at which the reserved observation should be for. Must be chronologically before currentTime.
+    /// @param currentTime The current timestamp, at which currentValue applies.
     /// @param currentValue The current observed value if we were writing a new observation now (semantics may differ for different types of rate oracle)
     /// @param index The index of the observation that was most recently written to the observations array
     /// @param cardinality The number of populated elements in the oracle array
@@ -170,6 +171,7 @@ library OracleBuffer {
     function getSurroundingObservations(
         Observation[MAX_BUFFER_LENGTH] storage self,
         uint32 target,
+        uint32 currentTime,
         uint256 currentValue,
         uint16 index,
         uint16 cardinality
@@ -188,7 +190,7 @@ library OracleBuffer {
                 return (beforeOrAt, atOrAfter);
             } else {
                 // otherwise, we need to transform
-                return (beforeOrAt, observation(target, currentValue));
+                return (beforeOrAt, observation(currentTime, currentValue));
             }
         }
 
