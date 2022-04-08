@@ -224,4 +224,4 @@ const test = async () => {
   await scenario.run();
 };
 
-it("scenario 0", test);
+it.skip("scenario 0", test);

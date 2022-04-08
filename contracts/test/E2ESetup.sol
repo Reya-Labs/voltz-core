@@ -404,6 +404,18 @@ contract E2ESetup is CustomErrors {
         continuousInvariants();
     }
 
+    function setIntegrationApproval(
+        address recipient,
+        address intAddress,
+        bool allowIntegration
+    ) external {
+        Actor(recipient).setIntegrationApproval(
+            MEAddress,
+            intAddress,
+            allowIntegration
+        );
+    }
+
     function estimatedVariableFactorFromStartToMaturity()
         internal
         returns (uint256 _estimatedVariableFactorFromStartToMaturity)

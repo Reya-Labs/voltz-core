@@ -1,5 +1,7 @@
 ----------------------------START----------------------------
-current timestamp: 1651744213
+current timestamp: 1794928398
+  start timestamp: 1794928321.0
+    end timestamp: 1802704321.0
 
 current tick: 0
 sqrt price at current tick: 1
@@ -9,14 +11,14 @@ current reserve normalised income: 1.008000000
 amount of available variable tokens: 0 (↑) ; 0 (↓)
 
 lower apy bound: 0.009615544109705467
- historical apy: 0.10178722266105159
-upper apy bound: 0.193177916082966295
+ historical apy: 0.101787222661051591
+upper apy bound: 0.193177916082966296
 variable factor: 0.0
 
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -29,9 +31,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -39,7 +43,7 @@ TRADER YBA 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -52,9 +56,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -62,7 +68,7 @@ TRADER YBA 1
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -75,9 +81,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -85,7 +93,7 @@ TRADER YBA 2
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -98,9 +106,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -109,7 +119,9 @@ TRADER YBA 3
 
 
 ----------------------------BEFORE FIRST SWAP----------------------------
-current timestamp: 1651917017
+current timestamp: 1795101202
+  start timestamp: 1794928321.0
+    end timestamp: 1802704321.0
 
 current tick: 0
 sqrt price at current tick: 1
@@ -126,7 +138,7 @@ variable factor: 0.000099206349206349
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -139,9 +151,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: -0.000000000000000003
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 170.4485068768103822
+           liquidation threshold: 111.118852837276857064
 
 TRADER YBA 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -149,7 +163,7 @@ TRADER YBA 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -162,9 +176,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -172,7 +188,7 @@ TRADER YBA 1
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -185,9 +201,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -195,7 +213,7 @@ TRADER YBA 2
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -208,9 +226,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -219,7 +239,9 @@ TRADER YBA 3
 
 
 ----------------------------AFTER FIRST SWAP----------------------------
-current timestamp: 1651917019
+current timestamp: 1795101204
+  start timestamp: 1794928321.0
+    end timestamp: 1802704321.0
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
@@ -228,15 +250,15 @@ current reserve normalised income: 1.008100000
 
 amount of available variable tokens: 5999.709018652707 (↑) ; 0 (↓)
 
-lower apy bound: 0.000721228046082001
- historical apy: 0.077244562545366488
-upper apy bound: 0.160658091766013255
+lower apy bound: 0.000721228046082002
+ historical apy: 0.077244562545366489
+upper apy bound: 0.160658091766013257
 variable factor: 0.000099206349206349
 
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -249,9 +271,11 @@ variableTokenGrowthInsideLastX128: -0.0029949999880045652
              variableTokenBalance: -2995.000000000000000006
                         isSettled: false
              settlement cashflow: 7.242434182398100094
+              margin requirement: 170.427793358696857955
+           liquidation threshold: 111.105343173040865855
 
 TRADER YBA 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -259,7 +283,7 @@ TRADER YBA 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -272,9 +296,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -282,7 +308,7 @@ TRADER YBA 1
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -295,9 +321,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 2995.0
                         isSettled: false
              settlement cashflow: -7.242434182398100094
+              margin requirement: 7.166721817791711364
+           liquidation threshold: 7.006935226157680229
 
 TRADER YBA 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -305,7 +333,7 @@ TRADER YBA 2
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -318,9 +346,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -329,7 +359,9 @@ TRADER YBA 3
 
 
 ----------------------------BEFORE SECOND SWAP----------------------------
-current timestamp: 1653126627
+current timestamp: 1796310814
+  start timestamp: 1794928321.0
+    end timestamp: 1802704321.0
 
 current tick: -60
 sqrt price at current tick: 0.9970046449452639
@@ -338,15 +370,15 @@ current reserve normalised income: 1.012500000
 
 amount of available variable tokens: 5999.709018652707 (↑) ; 29819.10166331881 (↓)
 
-lower apy bound: 0.034913846251776722
- historical apy: 0.137583602700363867
-upper apy bound: 0.232692990013776563
+lower apy bound: 0.034913735396181174
+ historical apy: 0.137583360238752094
+upper apy bound: 0.232692687685768921
 variable factor: 0.000099206349206349
 
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -359,9 +391,11 @@ variableTokenGrowthInsideLastX128: -0.0029949999880045652
              variableTokenBalance: -2995.00000000000000001
                         isSettled: false
              settlement cashflow: 7.242434182398100094
+              margin requirement: 250.223376907341263581
+           liquidation threshold: 164.30239887213713727
 
 TRADER YBA 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -369,7 +403,7 @@ TRADER YBA 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
@@ -382,9 +416,11 @@ variableTokenGrowthInsideLastX128: 0.0029949999880045652
              variableTokenBalance: -0.000000000000000003
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 2502.221337044815357222
+           liquidation threshold: 1646.766786445972615176
 
 TRADER YBA 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -392,7 +428,7 @@ TRADER YBA 1
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -405,9 +441,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 2995.0
                         isSettled: false
              settlement cashflow: -7.242434182398100094
+              margin requirement: 2.030694173005666632
+           liquidation threshold: 1.694408575462690179
 
 TRADER YBA 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -415,7 +453,7 @@ TRADER YBA 2
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -428,9 +466,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: false
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -439,7 +479,9 @@ TRADER YBA 3
 
 
 ----------------------------AFTER SECOND SWAP----------------------------
-current timestamp: 1653126629
+current timestamp: 1796310816
+  start timestamp: 1794928321.0
+    end timestamp: 1802704321.0
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
@@ -448,30 +490,32 @@ current reserve normalised income: 1.012500000
 
 amount of available variable tokens: 21180.108970917587 (↑) ; 14638.701711053925 (↓)
 
-lower apy bound: 0.034913609751318819
- historical apy: 0.13758311777398484
-upper apy bound: 0.232692393280344717
+lower apy bound: 0.034913498896258862
+ historical apy: 0.137582875313278253
+upper apy bound: 0.232692090953260311
 variable factor: 0.000099206349206349
 
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
-                           margin: 425.77717017455613237
+                           margin: 425.77717017437604312
    fixedTokenGrowthInsideLastX128: 0.003058016998693347
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 3058.01719392647997483
+                fixedTokenBalance: 3058.017193834635372418
              variableTokenBalance: -2995.354955910780937687
                         isSettled: false
-             settlement cashflow: 7.243158138832787233
+             settlement cashflow: 7.24315813860632109
+              margin requirement: 250.252505708742578784
+           liquidation threshold: 164.321565016375260145
 
 TRADER YBA 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -479,22 +523,24 @@ TRADER YBA 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
          sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
-                           margin: 4024.327837541070457833
-   fixedTokenGrowthInsideLastX128: -0.0004481063224375248
+                           margin: 4024.327829930900467083
+   fixedTokenGrowthInsideLastX128: -0.0004481072537600994
 variableTokenGrowthInsideLastX128: -0.000004928791895508766
-                fixedTokenBalance: 13048.013829035702826806
+                fixedTokenBalance: 13048.009936172888854228
              variableTokenBalance: -14999.645044089219062332
                         isSettled: false
-             settlement cashflow: 30.685124759708450379
+             settlement cashflow: 30.685115160868635105
+              margin requirement: 2487.047084560782543587
+           liquidation threshold: 1636.780236483134248585
 
 TRADER YBA 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -502,7 +548,7 @@ TRADER YBA 1
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -515,9 +561,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 2995.0
                         isSettled: false
              settlement cashflow: -7.242434182398100094
+              margin requirement: 1.99918605271358508
+           liquidation threshold: 1.660867517248631094
 
 TRADER YBA 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -525,22 +573,24 @@ TRADER YBA 2
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 0.0
-                           margin: 1969.589483447488580001
+                           margin: 1969.589492960426180001
    fixedTokenGrowthInsideLastX128: 0
 variableTokenGrowthInsideLastX128: 0
-                fixedTokenBalance: -13048.321714774452381811
+                fixedTokenBalance: -13048.317821819793806821
              variableTokenBalance: 15000.0
                         isSettled: false
-             settlement cashflow: -30.685848716143137518
+             settlement cashflow: -30.6858391170768561
+              margin requirement: 4.425831789775445343
+           liquidation threshold: 2.73141508460873089
 
 TRADER YBA 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -549,7 +599,9 @@ TRADER YBA 3
 
 
 ----------------------------BEFORE THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1653126629
+current timestamp: 1796310816
+  start timestamp: 1794928321.0
+    end timestamp: 1802704321.0
 
 current tick: -121
 sqrt price at current tick: 0.9939685650169849
@@ -558,30 +610,32 @@ current reserve normalised income: 1.012500000
 
 amount of available variable tokens: 21180.108970917587 (↑) ; 14638.701711053925 (↓)
 
-lower apy bound: 0.034913609751318819
- historical apy: 0.13758311777398484
-upper apy bound: 0.232692393280344717
+lower apy bound: 0.034913498896258862
+ historical apy: 0.137582875313278253
+upper apy bound: 0.232692090953260311
 variable factor: 0.000099206349206349
 
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
-                           margin: 425.77717017455613237
+                           margin: 425.77717017437604312
    fixedTokenGrowthInsideLastX128: 0.003058016998693347
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 3058.01719392647997483
+                fixedTokenBalance: 3058.017193834635372418
              variableTokenBalance: -2995.354955910780937687
                         isSettled: false
-             settlement cashflow: 7.243158138832787233
+             settlement cashflow: 7.24315813860632109
+              margin requirement: 250.252505708742578784
+           liquidation threshold: 164.321565016375260145
 
 TRADER YBA 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -589,22 +643,24 @@ TRADER YBA 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
          sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
-                           margin: 4024.327837541070457833
-   fixedTokenGrowthInsideLastX128: -0.0004481063224375248
+                           margin: 4024.327829930900467083
+   fixedTokenGrowthInsideLastX128: -0.0004481072537600994
 variableTokenGrowthInsideLastX128: -0.000004928791895508766
-                fixedTokenBalance: 13048.013829035702826806
+                fixedTokenBalance: 13048.009936172888854228
              variableTokenBalance: -14999.645044089219062332
                         isSettled: false
-             settlement cashflow: 30.685124759708450379
+             settlement cashflow: 30.685115160868635105
+              margin requirement: 2487.047084560782543587
+           liquidation threshold: 1636.780236483134248585
 
 TRADER YBA 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -612,7 +668,7 @@ TRADER YBA 1
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -625,9 +681,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 2995.0
                         isSettled: false
              settlement cashflow: -7.242434182398100094
+              margin requirement: 1.99918605271358508
+           liquidation threshold: 1.660867517248631094
 
 TRADER YBA 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -635,22 +693,24 @@ TRADER YBA 2
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 0.0
-                           margin: 1969.589483447488580001
+                           margin: 1969.589492960426180001
    fixedTokenGrowthInsideLastX128: 0
 variableTokenGrowthInsideLastX128: 0
-                fixedTokenBalance: -13048.321714774452381811
+                fixedTokenBalance: -13048.317821819793806821
              variableTokenBalance: 15000.0
                         isSettled: false
-             settlement cashflow: -30.685848716143137518
+             settlement cashflow: -30.6858391170768561
+              margin requirement: 4.425831789775445343
+           liquidation threshold: 2.73141508460873089
 
 TRADER YBA 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -659,7 +719,9 @@ TRADER YBA 3
 
 
 ----------------------------AFTER THIRD (REVERSE) SWAP----------------------------
-current timestamp: 1653126630
+current timestamp: 1796310817
+  start timestamp: 1794928321.0
+    end timestamp: 1802704321.0
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836
@@ -668,30 +730,32 @@ current reserve normalised income: 1.012500000
 
 amount of available variable tokens: 11230.974950983737 (↑) ; 24587.835730987776 (↓)
 
-lower apy bound: 0.034913491501193722
- historical apy: 0.137582875310872803
-upper apy bound: 0.232692094913594258
+lower apy bound: 0.03491338064640152
+ historical apy: 0.137582632850618727
+upper apy bound: 0.232691792586971398
 variable factor: 0.000099206349206349
 
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 1000000.0
-                           margin: 425.777170174556132368
+                           margin: 425.777170174376043118
    fixedTokenGrowthInsideLastX128: 0.003058016998693347
 variableTokenGrowthInsideLastX128: -0.0029953548219054937
-                fixedTokenBalance: 3058.017193926479974828
+                fixedTokenBalance: 3058.017193834635372416
              variableTokenBalance: -2995.354955910780937689
                         isSettled: false
-             settlement cashflow: 7.243158138832787233
+             settlement cashflow: 7.24315813860632109
+              margin requirement: 250.2521751573804038
+           liquidation threshold: 164.321344648800477821
 
 TRADER YBA 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -699,22 +763,24 @@ TRADER YBA 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
          sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
-                           margin: 4040.54677716562652183
-   fixedTokenGrowthInsideLastX128: -0.0021895484533160925
+                           margin: 4040.54676448188981108
+   fixedTokenGrowthInsideLastX128: -0.002189548686146736
 variableTokenGrowthInsideLastX128: 0.0019950708374381065
-                fixedTokenBalance: 4340.804160455387696075
+                fixedTokenBalance: 4340.80286550139312938
              variableTokenBalance: -4999.645044089219062335
                         isSettled: false
-             settlement cashflow: 10.207356192258836725
+             settlement cashflow: 10.207352999221589848
+              margin requirement: 2482.773604098583014815
+           liquidation threshold: 1633.967090986706558624
 
 TRADER YBA 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -722,22 +788,24 @@ TRADER YBA 1
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 0.0
-                           margin: 1972.505582377283102215
+                           margin: 1972.505588719241502215
    fixedTokenGrowthInsideLastX128: 0
 variableTokenGrowthInsideLastX128: 0
-                fixedTokenBalance: 5649.50036039258471088
+                fixedTokenBalance: 5649.497762483765304997
              variableTokenBalance: -7005.0
                         isSettled: false
-             settlement cashflow: 13.23533438505151356
+             settlement cashflow: 13.235327979248945161
+              margin requirement: 588.948665666982977113
+           liquidation threshold: 387.989020959508844773
 
 TRADER YBA 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -745,22 +813,24 @@ TRADER YBA 2
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
          sqrt price at upper tick: 1.0030043539591134
                         liquidity: 0.0
-                           margin: 1969.589483447488580001
+                           margin: 1969.589492960426180001
    fixedTokenGrowthInsideLastX128: 0
 variableTokenGrowthInsideLastX128: 0
-                fixedTokenBalance: -13048.321714774452381811
+                fixedTokenBalance: -13048.317821819793806821
              variableTokenBalance: 15000.0
                         isSettled: false
-             settlement cashflow: -30.685848716143137518
+             settlement cashflow: -30.6858391170768561
+              margin requirement: 4.531190738689089165
+           liquidation threshold: 2.843572557580189482
 
 TRADER YBA 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -769,7 +839,9 @@ TRADER YBA 3
 
 
 ----------------------------FINAL----------------------------
-current timestamp: 1659606652
+current timestamp: 1802790840
+  start timestamp: 1794928321.0
+    end timestamp: 1802704321.0
 
 current tick: -81
 sqrt price at current tick: 0.995958391809836
@@ -778,10 +850,15 @@ current reserve normalised income: 1.013200000
 
 amount of available variable tokens: 5231.265932331029 (↑) ; 24587.835730987776 (↓)
 
+lower apy bound: 0.0
+ historical apy: 0.0
+upper apy bound: 0.0
+variable factor: 0.0
+
 No of   Actors: 4
 No of Positions: 4
 POSITION 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -794,9 +871,11 @@ variableTokenGrowthInsideLastX128: -0.0029953548219054937
              variableTokenBalance: 0.0
                         isSettled: true
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 0
-                       address   : 0x95401dc811bb5740090279Ba06cfA8fcF6113778
+                       address   : 0x516dB874D2A4f7B6CB41A6feE9b123EA322658C0
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -804,22 +883,24 @@ TRADER YBA 0
              settlement cashflow: 0.0
 
 POSITION 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                        lower tick: -180
          sqrt price at lower tick: 0.9910408246796578
                        upper tick: -60
          sqrt price at upper tick: 0.9970046449452639
                         liquidity: 5000000.0
                            margin: 0.0
-   fixedTokenGrowthInsideLastX128: -0.0021895484533160925
+   fixedTokenGrowthInsideLastX128: -0.002189548686146736
 variableTokenGrowthInsideLastX128: 0.0019950708374381065
                 fixedTokenBalance: -0.000000000000000002
              variableTokenBalance: -0.000000000000000002
                         isSettled: true
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 1
-                       address   : 0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154
+                       address   : 0xa554d65f22573cBaB73279Ff57805834F012385d
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -827,7 +908,7 @@ TRADER YBA 1
              settlement cashflow: 0.0
 
 POSITION 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -840,9 +921,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: true
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 2
-                       address   : 0x922D6956C99E12DFeB3224DEA977D0939758A1Fe
+                       address   : 0x774b2952C41eBd59D8063d168bF8b840902D2c89
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0
@@ -850,7 +933,7 @@ TRADER YBA 2
              settlement cashflow: 0.0
 
 POSITION 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                        lower tick: -60
          sqrt price at lower tick: 0.9970046449452639
                        upper tick: 60
@@ -863,9 +946,11 @@ variableTokenGrowthInsideLastX128: 0
              variableTokenBalance: 0.0
                         isSettled: true
              settlement cashflow: 0.0
+              margin requirement: 0.0
+           liquidation threshold: 0.0
 
 TRADER YBA 3
-                       address   : 0x0355B7B8cb128fA5692729Ab3AAa199C1753f726
+                       address   : 0x7791b489fb72B15DdFf4946dc05093a01b8B3638
                            margin: 0.0
                 fixedTokenBalance: 0.0
              variableTokenBalance: 0.0

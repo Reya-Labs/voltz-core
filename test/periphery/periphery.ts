@@ -359,14 +359,12 @@ describe("Periphery", async () => {
           marginRequirement = parseFloat(utils.formatEther(result));
         },
         (error) => {
-          console.log("on revert");
           if (error.message.includes("MarginLessThanMinimum")) {
             const args: string[] = error.message
               .split("(")[1]
               .split(")")[0]
               .replaceAll(" ", "")
               .split(",");
-
             marginRequirement = parseFloat(utils.formatEther(args[0]));
           } else {
             console.error(error);
@@ -555,48 +553,6 @@ describe("Periphery", async () => {
       );
 
     console.log("          margin requirement:", marginRequirement);
-  });
-
-  it("update position margin on revert", async () => {
-    // await factory.connect(wallet).setApproval(periphery.address, true);
-    // await factory.connect(other).setApproval(periphery.address, true);
-    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
-
-    await marginEngineTest.updatePositionMargin(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING,
-      toBn("1000")
-    );
-
-    await vammTest
-      .connect(wallet)
-      .mint(wallet.address, -TICK_SPACING, TICK_SPACING, toBn("10000000"));
-
-    let liquidationThreshold: number = 0;
-    await marginEngineTest.callStatic
-      .liquidatePosition(wallet.address, -TICK_SPACING, TICK_SPACING)
-      .then(
-        (_) => {
-          console.log("on success");
-        },
-        (error) => {
-          console.log("on revert");
-          if (error.message.includes("CannotLiquidate")) {
-            const args: string[] = error.message
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-
-            liquidationThreshold = parseFloat(utils.formatEther(args[0]));
-          } else {
-            console.error(error);
-          }
-        }
-      );
-
-    console.log("liquidation threshion:", liquidationThreshold);
   });
 
   it("approvals work as expected", async () => {

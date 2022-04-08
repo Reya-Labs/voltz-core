@@ -217,4 +217,4 @@ const test = async () => {
   await scenario.run();
 };
 
-it("scenario 12 (apy sims)", test);
+it.skip("scenario 12 (apy sims)", test);

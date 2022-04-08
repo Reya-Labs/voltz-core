@@ -244,8 +244,4 @@ const test = async () => {
   await scenario.run();
 };
 
-if (e2eScenarios[12].skipped) {
-  it.skip("scenario 12 (apy sims)", test);
-} else {
-  it("scenario 12 (apy sims)", test);
-}
+it.skip("scenario 12 (apy sims)", test);
