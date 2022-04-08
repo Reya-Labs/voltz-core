@@ -12,7 +12,7 @@ task(
   const logs = await factory.queryFilter(factory.filters.IrsInstance());
   const events = logs.map((l) => factory.interface.parseLog(l));
 
-  let csvOutput = `underlyingToken,rateOracle,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,historicalAPY`;
+  let csvOutput = `underlyingToken,rateOracle,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,lookbackWindowInSeconds,cacheMaxAgeInSeconds,historicalAPY`;
 
   for (const e of events) {
     const a = e.args;
@@ -31,7 +31,9 @@ task(
       "MarginEngine",
       a.marginEngine
     );
+    const secondsAgo = await marginEngine.lookbackWindowInSeconds();
     const historicalAPY = await marginEngine.getHistoricalApyReadOnly();
+    const cacheMaxAgeInSeconds = await marginEngine.cacheMaxAgeInSeconds();
 
     csvOutput += `\n${a.underlyingToken},${
       a.rateOracle
@@ -39,7 +41,7 @@ task(
       a.tickSpacing
     },${a.marginEngine},${a.vamm},${a.fcm},${
       a.yieldBearingProtocolID
-    },${historicalAPY.toString()}`;
+    },${secondsAgo.toString()},${cacheMaxAgeInSeconds.toString()},${historicalAPY.toString()}`;
   }
 
   console.log(csvOutput);
