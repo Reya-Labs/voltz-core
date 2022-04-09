@@ -112,6 +112,19 @@ describe("Periphery", async () => {
       .approve(periphery.address, BigNumber.from(10).pow(27));
   });
 
+  it("set lp notional cap works as expected", async () => {
+
+    await expect(
+      periphery.setLPNotionalCap(marginEngineTest.address, toBn("10"))
+    ).to.emit(periphery, "NotionalCap")
+    .withArgs(
+      marginEngineTest.address,
+      toBn("10")
+    );
+
+  })
+
+
   it("swap quoter on revert: margin requirement not met", async () => {
     // await factory.connect(wallet).setApproval(periphery.address, true);
     // await factory.connect(other).setApproval(periphery.address, true);
