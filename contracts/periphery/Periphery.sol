@@ -38,24 +38,28 @@ contract Periphery is IPeriphery {
         _;
     }
 
-    modifier checkLPNotionalCap(IMarginEngine _marginEngine, uint256 _notionalDelta, bool _isMint) {
-        
-        uint256 _lpNotionalCap = lpNotionalCaps[_marginEngine]; 
+    modifier checkLPNotionalCap(
+        IMarginEngine _marginEngine,
+        uint256 _notionalDelta,
+        bool _isMint
+    ) {
+        uint256 _lpNotionalCap = lpNotionalCaps[_marginEngine];
 
         if (_isMint) {
             lpNotionalCumulatives[_marginEngine] += _notionalDelta;
 
             if (_lpNotionalCap > 0) {
                 /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
-                require(lpNotionalCumulatives[_marginEngine] < _lpNotionalCap, "lp cap limit");
+                require(
+                    lpNotionalCumulatives[_marginEngine] < _lpNotionalCap,
+                    "lp cap limit"
+                );
             }
-        }
-        else {
+        } else {
             lpNotionalCumulatives[_marginEngine] -= _notionalDelta;
         }
 
         _;
-        
     }
 
     function setLPNotionalCap(
