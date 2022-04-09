@@ -4,6 +4,7 @@ pragma solidity =0.8.9;
 import "./core_libraries/Tick.sol";
 import "./storage/VAMMStorage.sol";
 import "./interfaces/IVAMM.sol";
+import "./interfaces/IPeriphery.sol";
 import "./core_libraries/TickBitmap.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./utils/SqrtPriceMath.sol";
@@ -329,6 +330,11 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     uint128 amount
   ) external override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock returns(int256 positionMarginRequirement) {
 
+    if (_isAlpha) {
+      IPeriphery _periphery = _factory.periphery();
+      require(msg.sender==address(_periphery), "periphery only");
+    }
+    
     /// might be helpful to have a higher level peripheral function for minting a given amount given a certain amount of notional an LP wants to support
 
     if (amount <= 0) {
