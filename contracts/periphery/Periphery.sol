@@ -22,6 +22,7 @@ contract Periphery is IPeriphery {
     using SafeTransferLib for IERC20Minimal;
 
     /// @dev Voltz Protocol marginEngine => LP Notional Cap in Underlying Tokens
+    /// @dev LP notional cap of zero implies no notional cap
     /// @inheritdoc IPeriphery
     mapping(IMarginEngine => uint256) public override lpNotionalCaps;
 
@@ -35,6 +36,26 @@ contract Periphery is IPeriphery {
             .owner();
         require(msg.sender == marginEngineOwner, "only me owner");
         _;
+    }
+
+    modifier checkLPNotionalCap(IMarginEngine _marginEngine, uint256 _notionalDelta, bool _isMint) {
+        
+        uint256 _lpNotionalCap = lpNotionalCaps[_marginEngine]; 
+
+        if (_isMint) {
+            lpNotionalCumulatives[_marginEngine] += _notionalDelta;
+
+            if (_lpNotionalCap > 0) {
+                /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
+                require(lpNotionalCumulatives[_marginEngine] < _lpNotionalCap, "lp cap limit");
+            }
+        }
+        else {
+            lpNotionalCumulatives[_marginEngine] -= _notionalDelta;
+        }
+
+        _;
+        
     }
 
     function setLPNotionalCap(
@@ -72,6 +93,7 @@ contract Periphery is IPeriphery {
     function mintOrBurn(MintOrBurnParams memory params)
         external
         override
+        checkLPNotionalCap(params.marginEngine, params.notional, params.isMint)
         returns (int256 positionMarginRequirement)
     {
         Tick.checkTicks(params.tickLower, params.tickUpper);
