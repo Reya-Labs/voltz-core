@@ -22,7 +22,12 @@ contract Periphery is IPeriphery {
     using SafeTransferLib for IERC20Minimal;
 
     /// @dev Voltz Protocol marginEngine => LP Notional Cap in Underlying Tokens
+    /// @inheritdoc IPeriphery
     mapping(IMarginEngine => uint256) public override lpNotionalCaps;
+
+    /// @dev amount of notional (coming from the periphery) in terms of underlying tokens taken up by LPs in a given MarginEngine
+    /// @inheritdoc IPeriphery
+    mapping(IMarginEngine => uint256) public override lpNotionalCumulatives;
 
     modifier marginEngineOwnerOnly(IMarginEngine _marginEngine) {
         require(address(_marginEngine) != address(0), "me addr zero");

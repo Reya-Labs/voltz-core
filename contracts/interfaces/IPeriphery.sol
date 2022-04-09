@@ -46,6 +46,13 @@ interface IPeriphery is CustomErrors {
         external
         returns (uint256);
 
+    /// @param _marginEngine MarginEngine for which to get the lp notional cumulative in underlying tokens
+    /// @return Total amount of notional supplied by the LPs to a given _marginEngine via the periphery
+    function lpNotionalCumulatives(IMarginEngine _marginEngine)
+        external
+        returns (uint256);
+
+
     // non-view functions
 
     function mintOrBurn(MintOrBurnParams memory params)
