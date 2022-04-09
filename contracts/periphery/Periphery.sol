@@ -19,6 +19,24 @@ contract Periphery is IPeriphery {
     using SafeCast for int256;
 
     using SafeTransferLib for IERC20Minimal;
+    
+    /// @inheritdoc IPeriphery
+    uint256 lpNotionalCap public override;
+
+
+    modifier marginEngineOwnerOnly(IMarginEngine _marginEngine) {
+        require(address(_marginEngine) != address(0), "me addr zero");
+        address marginEngineOwner = _marginEngine.owner(); 
+        require(msg.sender == marginEngineOwner, "only me owner"); 
+        _;   
+    }
+
+    function setLPNotionalCap(IMarginEngine _marginEngine, uint256 _lpNotionalCapNew) external marginEngineOwnerOnly(_marginEngine)  {
+        if (lpNotionalCap != _lpNotionalCapNew) { 
+            lpNotionalCap = _lpNotionalCapNew;
+            emit NotionalCap(lpNotionalCap);
+        }
+    }
 
     function updatePositionMargin(
         IMarginEngine _marginEngine,
