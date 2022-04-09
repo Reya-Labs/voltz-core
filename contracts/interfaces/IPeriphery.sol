@@ -40,10 +40,11 @@ interface IPeriphery is CustomErrors {
         view
         returns (int24 currentTick);
 
-
     /// @param _marginEngine MarginEngine for which to get the lp cap in underlying tokens
     /// @return Notional Cap for liquidity providers that mint via periphery (enforced in the core if isAlpha is set to true)
-    function lpNotionalCaps(IMarginEngine _marginEngine) external returns (uint256);
+    function lpNotionalCaps(IMarginEngine _marginEngine)
+        external
+        returns (uint256);
 
     // non-view functions
 

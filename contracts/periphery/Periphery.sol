@@ -26,13 +26,17 @@ contract Periphery is IPeriphery {
 
     modifier marginEngineOwnerOnly(IMarginEngine _marginEngine) {
         require(address(_marginEngine) != address(0), "me addr zero");
-        address marginEngineOwner = OwnableUpgradeable(address(_marginEngine)).owner();
-        require(msg.sender == marginEngineOwner, "only me owner"); 
-        _;   
+        address marginEngineOwner = OwnableUpgradeable(address(_marginEngine))
+            .owner();
+        require(msg.sender == marginEngineOwner, "only me owner");
+        _;
     }
 
-    function setLPNotionalCap(IMarginEngine _marginEngine, uint256 _lpNotionalCapNew) external marginEngineOwnerOnly(_marginEngine)  {
-        if (lpNotionalCaps[_marginEngine] != _lpNotionalCapNew) { 
+    function setLPNotionalCap(
+        IMarginEngine _marginEngine,
+        uint256 _lpNotionalCapNew
+    ) external marginEngineOwnerOnly(_marginEngine) {
+        if (lpNotionalCaps[_marginEngine] != _lpNotionalCapNew) {
             lpNotionalCaps[_marginEngine] = _lpNotionalCapNew;
             emit NotionalCap(_marginEngine, lpNotionalCaps[_marginEngine]);
         }
