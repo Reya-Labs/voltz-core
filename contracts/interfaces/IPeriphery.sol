@@ -52,7 +52,6 @@ interface IPeriphery is CustomErrors {
         external
         returns (uint256);
 
-
     // non-view functions
 
     function mintOrBurn(MintOrBurnParams memory params)
