@@ -512,7 +512,6 @@ contract MarginEngine is
 
         (
             bool _isLiquidatable,
-            int256 _marginRequirement
         ) = _isLiquidatablePosition(_position, _tickLower, _tickUpper);
 
         if (!_isLiquidatable) {

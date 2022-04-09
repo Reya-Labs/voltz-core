@@ -31,6 +31,7 @@ contract VAMMStorageV1 {
     mapping(int24 => Tick.Info) internal _ticks;
     mapping(int16 => uint256) internal _tickBitmap;
     IVAMM.VAMMVars internal _vammVars;
+    bool internal _isAlpha;
 }
 
 contract VAMMStorage is VAMMStorageV1 {

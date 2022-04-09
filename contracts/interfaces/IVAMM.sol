@@ -162,6 +162,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @return The current VAMM Vars (see struct definition for semantics)
     function vammVars() external view returns (VAMMVars memory);
 
+    /// @return If true, the VAMM Proxy is currently in alpha state, hence minting can only be done via the periphery. If false, minting can be done directly via VAMM.
+    function isAlpha() external view returns (bool);
+
     /// @notice The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function fixedTokenGrowthGlobalX128() external view returns (int256);
