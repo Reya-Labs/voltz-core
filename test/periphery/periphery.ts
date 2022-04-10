@@ -185,10 +185,36 @@ describe("Periphery", async () => {
     ).to.not.be.reverted;
   });
 
+  it("alpha state can only be set by the owner of the vamm", async () => {
+    await expect(vammTest.connect(other).setIsAlpha(true)).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+
+    const isAlpha = await vammTest.isAlpha();
+    expect(isAlpha).to.eq(false);
+
+    await expect(vammTest.setIsAlpha(true))
+      .to.emit(vammTest, "IsAlpha")
+      .withArgs(true);
+
+    await expect(vammTest.setIsAlpha(true)).to.be.revertedWith(
+      "alpha state already set"
+    );
+  });
+
   it("can't mint with vamm when alpha but can mint with periphery", async () => {
+    await vammTest.setIsAlpha(true);
 
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
-
+    await expect(
+      vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("10000000")
+      )
+    ).to.be.revertedWith("periphery only");
   });
 
   it("swap quoter on revert: margin requirement not met", async () => {
