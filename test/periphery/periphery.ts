@@ -112,9 +112,121 @@ describe("Periphery", async () => {
       .approve(periphery.address, BigNumber.from(10).pow(27));
   });
 
+  it("set lp notional cap works as expected with margin engine owner", async () => {
+    await expect(
+      periphery.setLPNotionalCap(marginEngineTest.address, toBn("10"))
+    )
+      .to.emit(periphery, "NotionalCap")
+      .withArgs(marginEngineTest.address, toBn("10"));
+  });
+
+  it("set lp notional reverts if invoked by a non-owner", async () => {
+    await expect(
+      periphery
+        .connect(other)
+        .setLPNotionalCap(marginEngineTest.address, toBn("10"))
+    ).to.be.revertedWith("only me owner");
+  });
+
+  it("check can't mint beyond the notional cap", async () => {
+    await periphery.setLPNotionalCap(marginEngineTest.address, toBn("10"));
+
+    await periphery.mintOrBurn({
+      marginEngine: marginEngineTest.address,
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      notional: toBn("9"),
+      isMint: true,
+      marginDelta: toBn("10"),
+    });
+
+    await expect(
+      periphery.mintOrBurn({
+        marginEngine: marginEngineTest.address,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        notional: toBn("2"),
+        isMint: true,
+        marginDelta: toBn("10"),
+      })
+    ).to.be.revertedWith("lp cap limit");
+  });
+
+  it("check can't mint beyond the notional cap", async () => {
+    await periphery.setLPNotionalCap(marginEngineTest.address, toBn("10"));
+
+    await periphery.mintOrBurn({
+      marginEngine: marginEngineTest.address,
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      notional: toBn("9"),
+      isMint: true,
+      marginDelta: toBn("10"),
+    });
+
+    await periphery.mintOrBurn({
+      marginEngine: marginEngineTest.address,
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      notional: toBn("9"),
+      isMint: false,
+      marginDelta: toBn("0"),
+    });
+
+    await expect(
+      periphery.mintOrBurn({
+        marginEngine: marginEngineTest.address,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        notional: toBn("2"),
+        isMint: true,
+        marginDelta: toBn("10"),
+      })
+    ).to.not.be.reverted;
+  });
+
+  it("alpha state can only be set by the owner of the vamm", async () => {
+    await expect(vammTest.connect(other).setIsAlpha(true)).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+
+    const isAlpha = await vammTest.isAlpha();
+    expect(isAlpha).to.eq(false);
+
+    await expect(vammTest.setIsAlpha(true))
+      .to.emit(vammTest, "IsAlpha")
+      .withArgs(true);
+
+    await expect(vammTest.setIsAlpha(true)).to.be.revertedWith(
+      "alpha state already set"
+    );
+  });
+
+  it("can't mint or burn with vamm when alpha but can mint with periphery", async () => {
+    await vammTest.setIsAlpha(true);
+
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await expect(
+      vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("10000000")
+      )
+    ).to.be.revertedWith("periphery only");
+
+    await expect(
+      vammTest.burn(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("10000000")
+      )
+    ).to.be.revertedWith("periphery only");
+  });
+
   it("swap quoter on revert: margin requirement not met", async () => {
-    // await factory.connect(wallet).setApproval(periphery.address, true);
-    // await factory.connect(other).setApproval(periphery.address, true);
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await marginEngineTest.updatePositionMargin(
@@ -346,7 +458,6 @@ describe("Periphery", async () => {
       .connect(wallet)
       .callStatic.mintOrBurn({
         marginEngine: marginEngineTest.address,
-
         tickLower: -TICK_SPACING,
         tickUpper: TICK_SPACING,
         notional: toBn("59997"), // equivalent to approximately 10,000,000 liquidity

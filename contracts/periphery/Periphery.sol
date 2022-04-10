@@ -13,12 +13,64 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract Periphery is IPeriphery {
     using SafeCast for uint256;
     using SafeCast for int256;
 
     using SafeTransferLib for IERC20Minimal;
+
+    /// @dev Voltz Protocol marginEngine => LP Notional Cap in Underlying Tokens
+    /// @dev LP notional cap of zero implies no notional cap
+    /// @inheritdoc IPeriphery
+    mapping(IMarginEngine => uint256) public override lpNotionalCaps;
+
+    /// @dev amount of notional (coming from the periphery) in terms of underlying tokens taken up by LPs in a given MarginEngine
+    /// @inheritdoc IPeriphery
+    mapping(IMarginEngine => uint256) public override lpNotionalCumulatives;
+
+    modifier marginEngineOwnerOnly(IMarginEngine _marginEngine) {
+        require(address(_marginEngine) != address(0), "me addr zero");
+        address marginEngineOwner = OwnableUpgradeable(address(_marginEngine))
+            .owner();
+        require(msg.sender == marginEngineOwner, "only me owner");
+        _;
+    }
+
+    modifier checkLPNotionalCap(
+        IMarginEngine _marginEngine,
+        uint256 _notionalDelta,
+        bool _isMint
+    ) {
+        uint256 _lpNotionalCap = lpNotionalCaps[_marginEngine];
+
+        if (_isMint) {
+            lpNotionalCumulatives[_marginEngine] += _notionalDelta;
+
+            if (_lpNotionalCap > 0) {
+                /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
+                require(
+                    lpNotionalCumulatives[_marginEngine] < _lpNotionalCap,
+                    "lp cap limit"
+                );
+            }
+        } else {
+            lpNotionalCumulatives[_marginEngine] -= _notionalDelta;
+        }
+
+        _;
+    }
+
+    function setLPNotionalCap(
+        IMarginEngine _marginEngine,
+        uint256 _lpNotionalCapNew
+    ) external marginEngineOwnerOnly(_marginEngine) {
+        if (lpNotionalCaps[_marginEngine] != _lpNotionalCapNew) {
+            lpNotionalCaps[_marginEngine] = _lpNotionalCapNew;
+            emit NotionalCap(_marginEngine, lpNotionalCaps[_marginEngine]);
+        }
+    }
 
     function updatePositionMargin(
         IMarginEngine _marginEngine,
@@ -45,6 +97,7 @@ contract Periphery is IPeriphery {
     function mintOrBurn(MintOrBurnParams memory params)
         external
         override
+        checkLPNotionalCap(params.marginEngine, params.notional, params.isMint)
         returns (int256 positionMarginRequirement)
     {
         Tick.checkTicks(params.tickLower, params.tickUpper);

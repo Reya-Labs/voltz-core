@@ -4,6 +4,7 @@ pragma solidity =0.8.9;
 import "./core_libraries/Tick.sol";
 import "./storage/VAMMStorage.sol";
 import "./interfaces/IVAMM.sol";
+import "./interfaces/IPeriphery.sol";
 import "./core_libraries/TickBitmap.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./utils/SqrtPriceMath.sol";
@@ -47,6 +48,17 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       revert("closeToOrBeyondMaturity");
     }
     _;
+  }
+
+  modifier checkIsAlpha() {
+    
+    if (_isAlpha) {
+      IPeriphery _periphery = _factory.periphery();
+      require(msg.sender==address(_periphery), "periphery only");
+    }
+
+    _;
+    
   }
 
   // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
@@ -139,6 +151,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       return _vammVars;
   }
 
+  /// @inheritdoc IVAMM
+  function isAlpha() external view override returns (bool) {
+    return _isAlpha;
+  }
 
   /// @dev modifier that ensures the
   modifier onlyMarginEngine () {
@@ -198,12 +214,23 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     emit Fee(_feeWad);
   }
 
+  
+  /// @inheritdoc IVAMM
+  function setIsAlpha(bool __isAlpha) external override onlyOwner {
+
+    require(_isAlpha != __isAlpha, "alpha state already set");
+    _isAlpha = __isAlpha;
+    emit IsAlpha(_isAlpha);
+
+  }
+
+  // todo: prevent burning directly via the vamm if in Alpha State
   function burn(
     address recipient,
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override whenNotPaused lock returns(int256 positionMarginRequirement) {
+  ) external override checkIsAlpha whenNotPaused lock returns(int256 positionMarginRequirement) {
 
     /// @dev if msg.sender is the MarginEngine, it is a burn induced by a position liquidation
 
@@ -323,8 +350,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock returns(int256 positionMarginRequirement) {
-
+  ) external override checkIsAlpha whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock returns(int256 positionMarginRequirement) {
+    
     /// might be helpful to have a higher level peripheral function for minting a given amount given a certain amount of notional an LP wants to support
 
     if (amount <= 0) {

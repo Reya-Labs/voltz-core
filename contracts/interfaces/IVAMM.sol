@@ -46,6 +46,12 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @dev emitted after fee is set
     event Fee(uint256 feeWad);
 
+    /// @dev emitted after the _isAlpha boolean is updated by the owner of the VAMM
+    /// @dev _isAlpha boolean dictates whether the Margin Engine is in the Alpha State, i.e. mints can only be done via the periphery
+    /// @dev additionally, the periphery has the logic to take care of lp notional caps in the Alpha State phase of VAMM
+    /// @dev __isAlpha is the newly set value for the _isAlpha boolean
+    event IsAlpha(bool __isAlpha);
+
     // structs
 
     struct VAMMVars {
@@ -162,6 +168,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @return The current VAMM Vars (see struct definition for semantics)
     function vammVars() external view returns (VAMMVars memory);
 
+    /// @return If true, the VAMM Proxy is currently in alpha state, hence minting can only be done via the periphery. If false, minting can be done directly via VAMM.
+    function isAlpha() external view returns (bool);
+
     /// @notice The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function fixedTokenGrowthGlobalX128() external view returns (int256);
@@ -189,6 +198,11 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @dev the current protocol fee as a percentage of the swap fee taken on withdrawal
     // represented as an integer denominator (1/x)
     function setFeeProtocol(uint8 feeProtocol) external;
+
+    /// @notice Function that sets the _isAlpha state variable, if it is set to true the protocol is in the Alpha State
+    /// @dev if the VAMM is at the alpha state, mints can only be done via the periphery which in turn takes care of notional caps for the LPs
+    /// @dev this function can only be called by the owner of the VAMM
+    function setIsAlpha(bool __isAlpha) external;
 
     /// @notice Function that sets fee of the vamm
     /// @dev The vamm's fee (proportion) in wad

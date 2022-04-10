@@ -7,6 +7,13 @@ import "../interfaces/IVAMM.sol";
 import "contracts/utils/CustomErrors.sol";
 
 interface IPeriphery is CustomErrors {
+    // events
+
+    /// @dev emitted after new lp notional cap is set
+    event NotionalCap(IMarginEngine _marginEngine, uint256 _lpNotionalCapNew);
+
+    // structs
+
     struct MintOrBurnParams {
         IMarginEngine marginEngine;
         int24 tickLower;
@@ -32,6 +39,18 @@ interface IPeriphery is CustomErrors {
         external
         view
         returns (int24 currentTick);
+
+    /// @param _marginEngine MarginEngine for which to get the lp cap in underlying tokens
+    /// @return Notional Cap for liquidity providers that mint or burn via periphery (enforced in the core if isAlpha is set to true)
+    function lpNotionalCaps(IMarginEngine _marginEngine)
+        external
+        returns (uint256);
+
+    /// @param _marginEngine MarginEngine for which to get the lp notional cumulative in underlying tokens
+    /// @return Total amount of notional supplied by the LPs to a given _marginEngine via the periphery
+    function lpNotionalCumulatives(IMarginEngine _marginEngine)
+        external
+        returns (uint256);
 
     // non-view functions
 
