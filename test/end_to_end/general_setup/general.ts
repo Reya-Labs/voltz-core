@@ -1014,15 +1014,10 @@ export class ScenarioRunner {
     reserveNormalizedIncome: number
   ) {
     await advanceTimeAndBlock(time, blockCount);
-    console.log(
-      "rni:",
-      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
-        "0".repeat(23)
-    );
     await this.aaveLendingPool.setReserveNormalizedIncome(
       this.token.address,
-      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
-        "0".repeat(23)
+      Math.floor(reserveNormalizedIncome * 10000000 + 0.5).toString() +
+        "0".repeat(20)
     );
 
     await this.rateOracleTest.writeOracleEntry();

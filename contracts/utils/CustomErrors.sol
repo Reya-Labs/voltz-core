@@ -6,8 +6,6 @@ interface CustomErrors {
     /// @dev No need to unwind a net zero position
     error PositionNetZero();
 
-    error DebugError(uint256 x, uint256 y);
-
     /// @dev Cannot have less margin than the minimum requirement
     error MarginLessThanMinimum(int256 marginRequirement);
 

@@ -3,6 +3,7 @@ import { BigNumber, utils, Wallet } from "ethers";
 import { expect } from "../shared/expect";
 import { metaFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
+import { rawDecode } from "ethereumjs-abi";
 import {
   ERC20Mock,
   Factory,
@@ -779,5 +780,157 @@ describe("Periphery", async () => {
       "-5007499619400846835",
       10
     );
+  });
+
+  // const decodeError = (error: string): string => {
+  //   const buffer = Buffer.from(error, "utf-8");
+  //   console.log(buffer.slice(4));
+  //   const decoded = rawDecode(["string"], buffer.slice(4));
+  //   return decoded.toString();
+  // };
+
+  it.only("here", async () => {
+    const error =
+      "0x6b4fff2400000000000000000000000000000000000000000000000000000000007c3344";
+
+    const iface = new ethers.utils.Interface([
+      /// @dev No need to unwind a net zero position
+      "error PositionNetZero()",
+      "error MarginLessThanMinimum(int256 marginRequirement)",
+
+      /// @dev We can't withdraw more margin than we have
+      "error WithdrawalExceedsCurrentMargin()",
+
+      /// @dev Position must be settled after AMM has reached maturity
+      "error PositionNotSettled()",
+
+      /// The resulting margin does not meet minimum requirements
+      "error MarginRequirementNotMet(int256 marginRequirement,int24 tick,int256 fixedTokenDelta,int256 variableTokenDelta,uint256 cumulativeFeeIncurred,int256 fixedTokenDeltaUnbalanced)",
+
+      /// The position/trader needs to be below the liquidation threshold to be liquidated
+      "error CannotLiquidate()",
+
+      /// Only the position/trade owner can update the LP/Trader margin
+      "error OnlyOwnerCanUpdatePosition()",
+
+      "error OnlyVAMM()",
+
+      "error OnlyFCM()",
+
+      /// Margin delta must not equal zero
+      "error InvalidMarginDelta()",
+
+      /// Positions and Traders cannot be settled before the applicable interest rate swap has matured
+      "error CannotSettleBeforeMaturity()",
+
+      "error closeToOrBeyondMaturity()",
+
+      /// @dev There are not enough funds available for the requested operation
+      "error NotEnoughFunds(uint256 requested, uint256 available)",
+
+      /// @dev The two values were expected to have oppostite sigs, but do not
+      "error ExpectedOppositeSigns(int256 amount0, int256 amount1)",
+
+      /// @dev Error which is reverted if the sqrt price of the vamm is non-zero before a vamm is initialized
+      "error ExpectedSqrtPriceZeroBeforeInit(uint160 sqrtPriceX96)",
+
+      /// @dev Error which ensures the liquidity delta is positive if a given LP wishes to mint further liquidity in the vamm
+      "error LiquidityDeltaMustBePositiveInMint(uint128 amount)",
+
+      /// @dev Error which ensures the liquidity delta is positive if a given LP wishes to burn liquidity in the vamm
+      "error LiquidityDeltaMustBePositiveInBurn(uint128 amount)",
+
+      /// @dev Error which ensures the amount of notional specified when initiating an IRS contract (via the swap function in the vamm) is non-zero
+      "error IRSNotionalAmountSpecifiedMustBeNonZero()",
+
+      /// @dev Error which ensures the VAMM is unlocked
+      "error CanOnlyTradeIfUnlocked(bool unlocked)",
+
+      /// @dev only the margin engine can run a certain function
+      "error OnlyMarginEngine()",
+
+      /// The resulting margin does not meet minimum requirements
+      "error MarginRequirementNotMetFCM(int256 marginRequirement)",
+
+      /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
+      "error AavePoolGetReserveNormalizedIncomeReturnedZero()",
+
+      /// @dev currentTime < queriedTime
+      "error OOO()",
+    ]);
+
+    try {
+      const result = iface.decodeErrorResult(
+        "MarginRequirementNotMetFCM",
+        error
+      );
+      console.log(result);
+    } catch (_) {}
+
+    // const encoded = ethers.utils.defaultAbiCoder.encode(
+    //   ["MarginRequirementNotMet(uint256)", "uint256"],
+    //   [1]
+    // );
+    // console.log(encoded);
+
+    // const error =
+    //   "Reverted 0x6b4fff2400000000000000000000000000000000000000000000000000000000007c3344";
+    // const error =
+    //   "Reverted 0x43f2832100000000000000000000000000000000000000000000000000000000001ab753ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffca0f00000000000000000000000000000000000000000000000000000000dc5555e9ffffffffffffffffffffffffffffffffffffffffffffffffffffffffc4653600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f572e5b8";
+    // const rawReason = error.toString();
+    // console.log("reason:", rawReason);
+    // const reasonWithSignature = rawReason.replace("Reverted ", "");
+    // const selector = reasonWithSignature.slice(2, 10);
+    // const reasonWithoutSignature =
+    //   reasonWithSignature.slice(0, 2) + reasonWithSignature.slice(10);
+    // console.log(selector);
+    // console.log(reasonWithoutSignature);
+    // if (selector === "6b4fff24") {
+    //   const args = ethers.utils.defaultAbiCoder.decode(
+    //     ["uint256"],
+    //     reasonWithoutSignature
+    //   );
+    //   console.log(args.toString());
+    //   console.log("MarginLessThanMinimum(" + args.toString() + ")");
+    // }
+    // if (selector === "43f28321") {
+    //   const args = ethers.utils.defaultAbiCoder.decode(
+    //     ["tuple(int256,int24,int256,int256,uint256,int256)"],
+    //     reasonWithoutSignature
+    //   );
+    //   console.log(args.toString());
+    //   return (
+    //     "MarginRequirementNotMet(" +
+    //     args[0][0].toString() +
+    //     "," +
+    //     args[0][1].toString() +
+    //     "," +
+    //     args[0][2].toString() +
+    //     "," +
+    //     args[0][3].toString() +
+    //     "," +
+    //     args[0][4].toString() +
+    //     "," +
+    //     args[0][5].toString() +
+    //     ")"
+    //   );
+    // }
+    // const err =
+    //   "0x6b4fff2400000000000000000000000000000000000000000000000000000000000c6adc";
+    // const errWithNoSignature =
+    //   "0x00000000000000000000000000000000000000000000000000000000000c6adc";
+    // console.log(decodeError(err));
+    // console.log(
+    //   utils.defaultAbiCoder.decode(["uint256"], errWithNoSignature).toString()
+    // );
+    // console.log(utils.defaultAbiCoder.encode(["uint256"], [1000000]));
+    // console.log(errWithNoSignature);
+    // const reasonWithSignature =
+    //   "0x6b4fff2400000000000000000000000000000000000000000000000000000012bc589604";
+    // const reason =
+    //   "0x0000000000000000000000000000000000000000000000000000000000000012bc589604";
+    // const reason =
+    //   "0x00000000000000000000000000000000000000000000000000000000000004d20000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000b48656c6c6f20576f726c64000000000000000000000000000000000000000000";
+    // console.log(utils.formatBytes32String)
   });
 });
