@@ -202,13 +202,22 @@ describe("Periphery", async () => {
     );
   });
 
-  it("can't mint with vamm when alpha but can mint with periphery", async () => {
+  it("can't mint or burn with vamm when alpha but can mint with periphery", async () => {
     await vammTest.setIsAlpha(true);
 
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
     await expect(
       vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("10000000")
+      )
+    ).to.be.revertedWith("periphery only");
+
+    await expect(
+      vammTest.burn(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING,
