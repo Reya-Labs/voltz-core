@@ -203,6 +203,16 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     emit Fee(_feeWad);
   }
 
+  
+  /// @inheritdoc IVAMM
+  function setIsAlpha(bool __isAlpha) external override onlyOwner {
+
+    require(_isAlpha != __isAlpha, "alpha state already set");
+    _isAlpha = __isAlpha;
+    emit IsAlpha(_isAlpha);
+
+  }
+
   function burn(
     address recipient,
     int24 tickLower,

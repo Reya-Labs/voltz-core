@@ -185,7 +185,11 @@ describe("Periphery", async () => {
     ).to.not.be.reverted;
   });
 
-  it("can't mint with vamm when alpha but can mint with periphery", async () => {});
+  it("can't mint with vamm when alpha but can mint with periphery", async () => {
+
+
+
+  });
 
   it("swap quoter on revert: margin requirement not met", async () => {
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
