@@ -3,7 +3,6 @@ import { BigNumber, utils, Wallet } from "ethers";
 import { expect } from "../shared/expect";
 import { metaFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
-import { rawDecode } from "ethereumjs-abi";
 import {
   ERC20Mock,
   Factory,
