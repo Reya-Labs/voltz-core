@@ -50,6 +50,17 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     _;
   }
 
+  modifier checkIsAlpha() {
+    
+    if (_isAlpha) {
+      IPeriphery _periphery = _factory.periphery();
+      require(msg.sender==address(_periphery), "periphery only");
+    }
+
+    _;
+    
+  }
+
   // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor () initializer {}
@@ -213,12 +224,13 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
   }
 
+  // todo: prevent burning directly via the vamm if in Alpha State
   function burn(
     address recipient,
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override whenNotPaused lock returns(int256 positionMarginRequirement) {
+  ) external override checkIsAlpha whenNotPaused lock returns(int256 positionMarginRequirement) {
 
     /// @dev if msg.sender is the MarginEngine, it is a burn induced by a position liquidation
 
@@ -338,12 +350,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock returns(int256 positionMarginRequirement) {
-
-    if (_isAlpha) {
-      IPeriphery _periphery = _factory.periphery();
-      require(msg.sender==address(_periphery), "periphery only");
-    }
+  ) external override checkIsAlpha whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock returns(int256 positionMarginRequirement) {
     
     /// might be helpful to have a higher level peripheral function for minting a given amount given a certain amount of notional an LP wants to support
 
