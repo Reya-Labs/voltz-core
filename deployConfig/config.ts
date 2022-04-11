@@ -9,16 +9,16 @@ function duplicateExists(arr: string[]) {
 const marginCalculatorDefaults1 = {
   apyUpperMultiplierWad: toBn(1.5),
   apyLowerMultiplierWad: toBn(0.7),
-  sigmaSquaredWad: toBn(0.01),
-  alphaWad: toBn(0.04),
+  sigmaSquaredWad: toBn(0.5),
+  alphaWad: toBn(0.1),
   betaWad: toBn(1),
   xiUpperWad: toBn(2),
   xiLowerWad: toBn(1.5),
   tMaxWad: toBn(31536000), // one year
   devMulLeftUnwindLMWad: toBn(0.5),
   devMulRightUnwindLMWad: toBn(0.5),
-  devMulLeftUnwindIMWad: toBn(0.8),
-  devMulRightUnwindIMWad: toBn(0.8),
+  devMulLeftUnwindIMWad: toBn(1.5),
+  devMulRightUnwindIMWad: toBn(1.5),
   fixedRateDeviationMinLeftUnwindLMWad: toBn(0.1),
   fixedRateDeviationMinRightUnwindLMWad: toBn(0.1),
   fixedRateDeviationMinLeftUnwindIMWad: toBn(0.3),
@@ -33,8 +33,8 @@ const kovanConfigDefaults: ConfigDefaults = {
   marginEngineCacheMaxAgeInSeconds: 6 * 60 * 60, // 6 hours
   marginEngineLiquidatorRewardWad: toBn(0.1),
   marginEngineCalculatorParameters: marginCalculatorDefaults1,
-  vammFeeProtocol: 10,
-  vammFeeWad: toBn(0.001), // 0.1%
+  vammFeeProtocol: 0,
+  vammFeeWad: toBn(0.009), // 0.9%, for 30 day pool
   rateOracleBufferSize: 100,
   rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
 };

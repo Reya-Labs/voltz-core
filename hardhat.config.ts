@@ -37,6 +37,7 @@ loadModuleIgnoreErrors("./tasks/increaseObservationCardinalityNext");
 loadModuleIgnoreErrors("./tasks/advanceTimeAndBlock");
 loadModuleIgnoreErrors("./tasks/updateAPYFor15Days");
 loadModuleIgnoreErrors("./tasks/rateOracle");
+loadModuleIgnoreErrors("./tasks/setParameters");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -51,6 +52,7 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.9",
+
     settings: {
       optimizer: {
         enabled: true,
@@ -87,6 +89,7 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
+      // accounts: [`${process.env.PRIVATE_KEY_KOVAN}`]
     },
   },
   namedAccounts: {
