@@ -91,7 +91,7 @@ To start a local blockchain (hardhat node) and deploy our contracts to it, run:
 
 #### Deploy to kovan
 
-To deploy our contracts to the kovan testnet, first check the configuration for kovan in [the deployment config](./deploy/config.ts), and once it is correct run:
+To deploy our contracts to the kovan testnet, first check the configuration for kovan in [the deployment config](./deployConfig/config.ts), and once it is correct run:
 
 `npm run deploy:kovan`
 
