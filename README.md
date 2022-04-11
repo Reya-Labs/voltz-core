@@ -10,6 +10,10 @@ This repository contains the smart contracts that power Voltz Protocol. Over tim
 
 We would love to see how you can build and improve upon what we've built here at Voltz.
 
+## Bug Bounty
+
+Alongside third-party auditors we want help from the community in ensuring Voltz Protocol remains secure. As a result, we have a generous bug-bounty program on [Immunifi](https://immunefi.com/bounty/voltz/). We look forward to your help in creating one of the most important lego-blocks of a new financial system!
+
 ## Uniswap v3 Additional Use Grant
 
 There are a large number of innovative design decisions required to create Voltz Protocol, including the use of concentrated liquidity pioneered in [Uniswap v3](https://uniswap.org/whitepaper-v3.pdf). However, Uniswap v3 is subject to a [Business Source License](https://github.com/Uniswap/v3-core/blob/main/LICENSE), meaning Uniswap v3 code can only be used in another protocol if that protocol is provided with an “Additional Use Grant” by the Uniswap community.
