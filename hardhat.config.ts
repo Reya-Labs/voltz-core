@@ -38,6 +38,7 @@ loadModuleIgnoreErrors("./tasks/advanceTimeAndBlock");
 loadModuleIgnoreErrors("./tasks/updateAPYFor15Days");
 loadModuleIgnoreErrors("./tasks/rateOracle");
 loadModuleIgnoreErrors("./tasks/setParameters");
+loadModuleIgnoreErrors("./tasks/setPeriphery");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -86,10 +87,10 @@ const config: HardhatUserConfig = {
     kovan: {
       url: `${process.env.KOVAN_URL}`,
       // gasPrice: 1,
-      accounts: {
-        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
-      },
-      // accounts: [`${process.env.PRIVATE_KEY_KOVAN}`]
+      // accounts: {
+      //   mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      // },
+      accounts: [`${process.env.PRIVATE_KEY_KOVAN}`]
     },
   },
   namedAccounts: {
