@@ -90,7 +90,7 @@ const config: HardhatUserConfig = {
       // accounts: {
       //   mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       // },
-      accounts: [`${process.env.PRIVATE_KEY_KOVAN}`]
+      accounts: [`${process.env.PRIVATE_KEY_KOVAN}`],
     },
   },
   namedAccounts: {
