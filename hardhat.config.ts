@@ -8,7 +8,7 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-prettier";
-// import "@tenderly/hardhat-tenderly";
+import "@tenderly/hardhat-tenderly";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";

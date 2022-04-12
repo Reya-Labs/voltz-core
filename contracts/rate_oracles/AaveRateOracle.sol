@@ -7,6 +7,7 @@ import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WadRayMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
+import "../utils/CustomErrors.sol";
 
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];

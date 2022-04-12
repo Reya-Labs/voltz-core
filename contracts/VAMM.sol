@@ -20,6 +20,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./utils/FixedPoint128.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "./utils/CustomErrors.sol";
 
 
 contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {

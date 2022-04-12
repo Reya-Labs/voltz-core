@@ -5,7 +5,6 @@ pragma solidity =0.8.9;
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/aave/IAToken.sol";
 import "../utils/WadRayMath.sol";
-import "../utils/Printer.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MockAToken is IAToken, ERC20 {

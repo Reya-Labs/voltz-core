@@ -14,6 +14,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "./storage/MarginEngineStorage.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "./utils/CustomErrors.sol";
 
 contract MarginEngine is
     MarginEngineStorage,

@@ -14,7 +14,6 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./utils/WadRayMath.sol";
-import "./utils/Printer.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -22,6 +21,7 @@ import "./aave/AaveDataTypes.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "./utils/CustomErrors.sol";
 
 contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
 

@@ -4,7 +4,6 @@ pragma solidity =0.8.9;
 import "../utils/LiquidityMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../utils/TickMath.sol";
-import "../utils/Printer.sol";
 
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations

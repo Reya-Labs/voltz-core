@@ -6,7 +6,6 @@ import "contracts/test/Actor.sol";
 import "contracts/test/TestMarginEngine.sol";
 import "contracts/test/TestVAMM.sol";
 import "contracts/test/TestAaveFCM.sol";
-import "contracts/utils/Printer.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../interfaces/IFactory.sol";
