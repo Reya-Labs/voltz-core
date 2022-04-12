@@ -13,6 +13,7 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
+import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract Periphery is IPeriphery {
@@ -247,5 +248,41 @@ contract Periphery is IPeriphery {
     {
         IVAMM vamm = marginEngine.vamm();
         currentTick = vamm.vammVars().tick;
+    }
+
+    function estimatedCashflowAtMaturity(
+        IMarginEngine marginEngine,
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external override returns (int256 estimatedSettlementCashflow) {
+        uint256 historicalAPYWad = marginEngine.getHistoricalApy();
+
+        uint256 termStartTimestampWad = marginEngine.termStartTimestampWad();
+        uint256 termEndTimestampWad = marginEngine.termEndTimestampWad();
+
+        uint256 termInYears = FixedAndVariableMath.accrualFact(
+            termEndTimestampWad - termStartTimestampWad
+        );
+
+        // calculate the estimated variable factor from start to maturity
+        uint256 _estimatedVariableFactorFromStartToMaturity = PRBMathUD60x18
+            .pow((PRBMathUD60x18.fromUint(1) + historicalAPYWad), termInYears) -
+            PRBMathUD60x18.fromUint(1);
+
+        Position.Info memory position = marginEngine.getPosition(
+            _owner,
+            _tickLower,
+            _tickUpper
+        );
+
+        estimatedSettlementCashflow = FixedAndVariableMath
+            .calculateSettlementCashflow(
+                position.fixedTokenBalance,
+                position.variableTokenBalance,
+                termStartTimestampWad,
+                termEndTimestampWad,
+                _estimatedVariableFactorFromStartToMaturity
+            );
     }
 }
