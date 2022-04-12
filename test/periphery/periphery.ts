@@ -790,9 +790,9 @@ describe("Periphery", async () => {
 
   it.only("here", async () => {
     const error =
-      "0x6b4fff2400000000000000000000000000000000000000000000000000000000007c3344";
+      "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001e536166654d6174683a207375627472616374696f6e206f766572666c6f770000";
 
-    const iface = new ethers.utils.Interface([
+    const errors = [
       /// @dev No need to unwind a net zero position
       "error PositionNetZero()",
       "error MarginLessThanMinimum(int256 marginRequirement)",
@@ -856,15 +856,26 @@ describe("Periphery", async () => {
 
       /// @dev currentTime < queriedTime
       "error OOO()",
-    ]);
+    ];
 
-    try {
-      const result = iface.decodeErrorResult(
-        "MarginRequirementNotMetFCM",
-        error
-      );
-      console.log(result);
-    } catch (_) {}
+    // const abi =
+    //   require("../../artifacts/contracts/Factory.sol/Factory.json").abi;
+    // const iface = new ethers.utils.Interface(abi);
+
+    // const errorSignatures = [];
+    // for (const err of errors) {
+    //   errorSignatures.push(err.split("(")[0].slice(6));
+    // }
+
+    // console.log(iface.parseError(error));
+    console.log(utils.defaultAbiCoder.decode(["string"], error));
+
+    // for (const errSig of errorSignatures) {
+    //   try {
+    //     iface.decodeErrorResult(errSig, error);
+    //     console.log(errSig);
+    //   } catch (_) {}
+    // }
 
     // const encoded = ethers.utils.defaultAbiCoder.encode(
     //   ["MarginRequirementNotMet(uint256)", "uint256"],

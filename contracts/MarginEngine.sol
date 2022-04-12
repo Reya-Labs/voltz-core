@@ -1089,6 +1089,7 @@ contract MarginEngine is
             _sqrtPriceX96
         );
 
+        console.log(_minimumMarginRequirement, _margin);
         if (_margin < _minimumMarginRequirement) {
             _margin = _minimumMarginRequirement;
         }

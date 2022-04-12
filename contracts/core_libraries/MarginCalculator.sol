@@ -227,7 +227,7 @@ library MarginCalculator {
         uint256 tMaxWad,
         uint256 gammaWad,
         bool isFTUnwind
-    ) internal pure returns (uint256 fixedTokenDeltaUnbalanced) {
+    ) internal view returns (uint256 fixedTokenDeltaUnbalanced) {
         SimulatedUnwindLocalVars memory simulatedUnwindLocalVars;
 
         // require checks
@@ -251,6 +251,11 @@ library MarginCalculator {
             .fixedRateStartWad
             .mul(startingFixedRateMultiplierWad);
 
+        console.log(
+            "deviations:",
+            simulatedUnwindLocalVars.upperDWad,
+            fixedRateDeviationMinWad
+        );
         if (simulatedUnwindLocalVars.upperDWad < fixedRateDeviationMinWad) {
             simulatedUnwindLocalVars.upperDWad = fixedRateDeviationMinWad;
         }

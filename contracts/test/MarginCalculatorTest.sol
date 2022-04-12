@@ -16,7 +16,7 @@ contract MarginCalculatorTest {
         uint256 tMaxWad,
         uint256 gammaWad,
         bool isFTUnwind
-    ) external pure returns (uint256 fixedTokenDeltaUnbalanced) {
+    ) external view returns (uint256 fixedTokenDeltaUnbalanced) {
         return
             MarginCalculator
                 .getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
