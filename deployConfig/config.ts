@@ -51,7 +51,8 @@ const config: ContractsConfigMap = {
   kovan: {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe",
-    maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough
+    // maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough
+    maxIrsDurationInSeconds: 60 * 60 * 24 * 62, // 32 days. Do not increase without checking that rate oracle buffers are large enough
     configDefaults: kovanConfigDefaults,
 
     // Kovan MockUSDT (USDC has no ABI and faucet not working, so USDT easier to mint)
