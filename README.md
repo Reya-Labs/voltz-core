@@ -107,7 +107,7 @@ There is a task for this. Run `npx hardhat help mintTestTokens` for task usage.
 
 Run: `npx hardhat createIrsInstance --network <networkName> --rate-oracle <rateOracleName> [--tick-spacing <tickSpacingValue>]`
 
-Where `rateOracleName` is the name of a rate oracle instance as defined in the `deployments/<networkName>` directory. E.g. it might be "TestRateOracle" on localhost, or "AaveRateOracle_USDT" on kovan.
+Where `rateOracleName` is the name of a rate oracle instance as defined in the `deployments/<networkName>` directory. E.g. it might be "MockTestRateOracle" on localhost, or "AaveRateOracle_USDT" on kovan.
 
 #### List IRS Instances
 
