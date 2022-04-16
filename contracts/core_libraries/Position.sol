@@ -45,6 +45,8 @@ library Position {
         uint256 feeGrowthInsideLastX128;
         // amount of variable tokens at the initiation of liquidity
         uint256 rewardPerAmount;
+        // amount of fees accumulated
+        uint256 accumulatedFees;
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries

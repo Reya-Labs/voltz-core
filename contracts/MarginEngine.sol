@@ -383,6 +383,7 @@ contract MarginEngine is
             _owner,
             _tickLower,
             _tickUpper,
+            _marginDelta,
             _position.margin
         );
     }
@@ -434,11 +435,8 @@ contract MarginEngine is
             _owner,
             _tickLower,
             _tickUpper,
-            _position.fixedTokenBalance,
-            _position.variableTokenBalance,
             _position.margin,
-            _settlementCashflow,
-            true
+            _settlementCashflow
         );
     }
 
@@ -450,6 +448,7 @@ contract MarginEngine is
         ) {
             // Cache is stale
             _refreshHistoricalApyCache();
+            emit HistoricalApy(cachedHistoricalApyWad);
         }
         return cachedHistoricalApyWad;
     }
@@ -472,7 +471,8 @@ contract MarginEngine is
     function _getHistoricalApy() internal view returns (uint256) {
         uint256 _from = block.timestamp - _secondsAgo;
 
-        return _rateOracle.getApyFromTo(_from, block.timestamp);
+        uint256 historicalApy = _rateOracle.getApyFromTo(_from, block.timestamp);
+        return historicalApy;
     }
 
     /// @notice Updates the cached historical APY value of the RateOracle even if the cache is not stale
@@ -580,11 +580,9 @@ contract MarginEngine is
             _owner,
             _tickLower,
             _tickUpper,
-            _position.fixedTokenBalance,
-            _position.variableTokenBalance,
-            _position.margin,
-            _position._liquidity,
-            msg.sender
+            msg.sender,
+            _variableTokenDelta,
+            _liquidatorRewardValue
         );
 
         return _liquidatorRewardValue;
@@ -752,6 +750,7 @@ contract MarginEngine is
                 _variableTokenGrowthInsideX128
             );
             /// @dev collect fees
+            _position.accumulatedFees += _feeDelta > 0 ? _feeDelta - 1 : 0;
             _position.updateMarginViaDelta(_feeDelta.toInt256() - 1);
             _position.updateFeeGrowthInside(_feeGrowthInsideX128);
         } else {

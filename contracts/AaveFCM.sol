@@ -93,13 +93,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
   // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786
   function _authorizeUpgrade(address) internal override onlyOwner {}
 
-  event FullyCollateralisedSwap(
-    address indexed trader,
-    uint256 marginInScaledYieldBearingTokens,
-    int256 fixedTokenBalance,
-    int256 variableTokenBalance
-  );
-
   function getTraderWithYieldBearingAssets(
         address trader
     ) external override view returns (TraderWithYieldBearingAssets.Info memory traderInfo) {
@@ -110,7 +103,8 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
   /// @notice Initiate a Fully Collateralised Fixed Taker Swap
   /// @param notional Notional that cover by a fully collateralised fixed taker interest rate swap
   /// @param sqrtPriceLimitX96 The binary fixed point math representation of the sqrtPriceLimit beyond which the fixed taker swap will not be executed with the VAMM
-  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override {
+  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override returns 
+    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) {
 
     require(notional!=0, "notional = 0");
 
@@ -125,7 +119,8 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
         tickUpper: tickSpacing
     });
 
-    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, ,) = _vamm.swap(params);
+    int24 tickBefore = _vamm.vammVars().tick;
+    (fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced,) = _vamm.swap(params);
 
     require(variableTokenDelta <=0, "VT delta sign");
 
@@ -146,7 +141,16 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     // transfer fees to the margin engine (in terms of the underlyingToken e.g. USDC)
     underlyingToken.safeTransferFrom(msg.sender, address(_marginEngine), cumulativeFeeIncurred);
 
-    emit FullyCollateralisedSwap(msg.sender, trader.marginInScaledYieldBearingTokens, trader.fixedTokenBalance, trader.variableTokenBalance);
+    emit FullyCollateralisedSwap(
+      msg.sender,
+      notional,
+      sqrtPriceLimitX96,
+      trader.variableTokenBalance,
+      cumulativeFeeIncurred,
+      fixedTokenDelta, 
+      variableTokenDelta,
+      fixedTokenDeltaUnbalanced
+    );
   }
 
   /// @notice Get Trader Margin In Yield Bearing Tokens
@@ -174,7 +178,8 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
   /// @notice Unwind Fully Collateralised Fixed Taker Swap
   /// @param notionalToUnwind The amount of notional to unwind (stop securing with a fixed rate)
   /// @param sqrtPriceLimitX96 The sqrt price limit (binary fixed point notation) beyond which the unwind cannot progress
-  function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override {
+  function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override returns 
+    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) {
 
     // add require statement and isApproval
 
@@ -198,7 +203,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
         tickUpper: tickSpacing
     });
 
-    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, ,) = _vamm.swap(params);
+    (fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced,) = _vamm.swap(params);
 
     require(variableTokenDelta >= 0, "VT delta negative");
 
@@ -221,6 +226,16 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     // variable token delta should be positive
     _underlyingYieldBearingToken.safeTransfer(msg.sender, uint256(variableTokenDelta));
 
+    emit FullyCollateralisedUnwind(
+      msg.sender,
+      notionalToUnwind,
+      sqrtPriceLimitX96,
+      trader.variableTokenBalance,
+      cumulativeFeeIncurred,
+      fixedTokenDelta, 
+      variableTokenDelta,
+      fixedTokenDeltaUnbalanced
+    );
   }
 
 
@@ -323,6 +338,11 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
       // as long as the margin engine is active and solvent it shoudl be able to cover the settlement cashflows of the fully collateralised traders
       _marginEngine.transferMarginToFCMTrader(msg.sender, uint256(settlementCashflow));
     }
+
+    emit fcmPositionSettlement(
+      msg.sender,
+      settlementCashflow
+    );
 
     return settlementCashflow;
   }
