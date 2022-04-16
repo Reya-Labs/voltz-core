@@ -75,29 +75,29 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
+        int256 marginDelta,
         int256 positionMargin
+    );
+
+    event HistoricalApy(
+        uint256 value
     );
 
     event PositionSettlement(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
         int256 margin,
-        int256 settlementCashflow,
-        bool isSettled
+        int256 settlementCashflow
     );
 
     event PositionLiquidation(
         address indexed owner,
         int24 indexed tickLower,
         int24 indexed tickUpper,
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        int256 margin,
-        uint128 liquidity,
-        address liquidator
+        address liquidator,
+        int256 notionalUnwound,
+        uint256 liquidatorReward
     );
 
     event PositionPostSwapUpdate(

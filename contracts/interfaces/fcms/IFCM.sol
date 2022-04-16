@@ -22,7 +22,7 @@ interface IFCM is CustomErrors {
     function initiateFullyCollateralisedFixedTakerSwap(
         uint256 notional,
         uint160 sqrtPriceLimitX96
-    ) external;
+    ) external returns (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced);
 
     /// @notice Unwind a Fully Collateralised Fixed Taker Swap
     /// @param notionalToUnwind The amount of notional of the original Fully Collateralised Fixed Taker swap to be unwound at the current VAMM fixed rates
@@ -32,7 +32,7 @@ interface IFCM is CustomErrors {
     function unwindFullyCollateralisedFixedTakerSwap(
         uint256 notionalToUnwind,
         uint160 sqrtPriceLimitX96
-    ) external;
+    ) external returns (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced);
 
     /// @notice Settle Trader
     /// @dev this function in the fcm let's traders settle with the MarginEngine based on their settlement cashflows which is a functon of their fixed and variable token balances
@@ -64,4 +64,31 @@ interface IFCM is CustomErrors {
     /// @notice Rate Oracle linked to the Full Collateralisation Module
     /// @return Rate Oracle linked to the Full Collateralisation Module
     function rateOracle() external view returns (IRateOracle);
+
+    event FullyCollateralisedSwap(
+        address indexed trader,
+        uint256 desiredNotional,
+        uint160 sqrtPriceLimitX96,
+        int256 variableTokenBalance,
+        uint256 cumulativeFeeIncurred,
+        int256 fixedTokenDelta,
+        int256 variableTokenDelta,
+        int256 fixedTokenDeltaUnbalanced
+    );
+
+    event FullyCollateralisedUnwind(
+        address indexed trader,
+        uint256 desiredNotional,
+        uint160 sqrtPriceLimitX96,
+        int256 variableTokenBalance,
+        uint256 cumulativeFeeIncurred,
+        int256 fixedTokenDelta,
+        int256 variableTokenDelta,
+        int256 fixedTokenDeltaUnbalanced
+    );
+
+    event fcmPositionSettlement(
+        address indexed trader,
+        int256 settlementCashflow
+    );
 }

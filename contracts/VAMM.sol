@@ -684,11 +684,14 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     emit Swap(
       msg.sender,
       params.recipient,
-      state.sqrtPriceX96,
-      state.liquidity,
-      state.tick,
       params.tickLower,
-      params.tickUpper
+      params.tickUpper,
+      params.amountSpecified,
+      params.sqrtPriceLimitX96,
+      _cumulativeFeeIncurred,
+      _fixedTokenDelta,
+      _variableTokenDelta,
+      _fixedTokenDeltaUnbalanced
     );
 
     _unlocked = true;

@@ -170,7 +170,8 @@ contract TestMarginEngine is MarginEngine {
             variableTokenBalance: variableTokenBalance,
             feeGrowthInsideLastX128: feeGrowthInsideLastX128,
             isSettled: isSettled,
-            rewardPerAmount: 0
+            rewardPerAmount: 0,
+            accumulatedFees: 0
         });
     }
 
