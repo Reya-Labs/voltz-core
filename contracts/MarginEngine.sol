@@ -380,11 +380,22 @@ contract MarginEngine is
         _position.rewardPerAmount = 0;
 
         emit PositionMarginUpdate(
+            msg.sender,
             _owner,
             _tickLower,
             _tickUpper,
-            _marginDelta,
-            _position.margin
+            _marginDelta
+        );
+
+        emit PositionUpdate(
+            _owner,
+            _tickLower,
+            _tickUpper,
+            _position._liquidity,
+            _position.margin,
+            _position.fixedTokenBalance,
+            _position.variableTokenBalance,
+            _position.accumulatedFees
         );
     }
 
@@ -435,8 +446,18 @@ contract MarginEngine is
             _owner,
             _tickLower,
             _tickUpper,
-            _position.margin,
             _settlementCashflow
+        );
+
+        emit PositionUpdate(
+            _owner,
+            _tickLower,
+            _tickUpper,
+            _position._liquidity,
+            _position.margin,
+            _position.fixedTokenBalance,
+            _position.variableTokenBalance,
+            _position.accumulatedFees
         );
     }
 
@@ -585,6 +606,17 @@ contract MarginEngine is
             _liquidatorRewardValue
         );
 
+        emit PositionUpdate(
+            _owner,
+            _tickLower,
+            _tickUpper,
+            _position._liquidity,
+            _position.margin,
+            _position.fixedTokenBalance,
+            _position.variableTokenBalance,
+            _position.accumulatedFees
+        );
+
         return _liquidatorRewardValue;
     }
 
@@ -625,11 +657,15 @@ contract MarginEngine is
             _position.rewardPerAmount = 0;
         }
 
-        emit PositionPostMintBurnUpdate(
+        emit PositionUpdate(
             _params.owner,
             _params.tickLower,
             _params.tickUpper,
-            _position._liquidity
+            _position._liquidity,
+            _position.margin,
+            _position.fixedTokenBalance,
+            _position.variableTokenBalance,
+            _position.accumulatedFees
         );
     }
 
@@ -702,13 +738,15 @@ contract MarginEngine is
 
         _position.rewardPerAmount = 0;
 
-        emit PositionPostSwapUpdate(
+        emit PositionUpdate(
             _owner,
             _tickLower,
             _tickUpper,
+            _position._liquidity,
+            _position.margin,
             _position.fixedTokenBalance,
             _position.variableTokenBalance,
-            _position.margin
+            _position.accumulatedFees
         );
     }
 
@@ -750,8 +788,11 @@ contract MarginEngine is
                 _variableTokenGrowthInsideX128
             );
             /// @dev collect fees
-            _position.accumulatedFees += _feeDelta > 0 ? _feeDelta - 1 : 0;
-            _position.updateMarginViaDelta(_feeDelta.toInt256() - 1);
+            if (_feeDelta > 0) {
+                _position.accumulatedFees += _feeDelta - 1;
+                _position.updateMarginViaDelta(_feeDelta.toInt256() - 1);
+            }
+            
             _position.updateFeeGrowthInside(_feeGrowthInsideX128);
         } else {
             if (_isMintBurn) {
@@ -1266,7 +1307,7 @@ contract MarginEngine is
         int24 _tickLower,
         int24 _tickUpper,
         bool _isLM
-    ) external override returns (uint256 _margin) {
+    ) external override returns (uint256) {
         Position.Info storage _position = positions.get(
             _recipient,
             _tickLower,
@@ -1278,6 +1319,17 @@ contract MarginEngine is
             _tickUpper,
             false
         ); // isMint=false
+        
+        emit PositionUpdate(
+            _recipient,
+            _tickLower,
+            _tickUpper,
+            _position._liquidity,
+            _position.margin,
+            _position.fixedTokenBalance,
+            _position.variableTokenBalance,
+            _position.accumulatedFees
+        );
 
         return
             _getPositionMarginRequirement(

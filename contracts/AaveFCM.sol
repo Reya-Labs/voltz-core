@@ -145,11 +145,17 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
       msg.sender,
       notional,
       sqrtPriceLimitX96,
-      trader.variableTokenBalance,
       cumulativeFeeIncurred,
       fixedTokenDelta, 
       variableTokenDelta,
       fixedTokenDeltaUnbalanced
+    );
+
+    emit FCMTraderUpdate(
+      msg.sender,
+      trader.marginInScaledYieldBearingTokens,
+      trader.fixedTokenBalance,
+      trader.variableTokenBalance
     );
   }
 
@@ -230,11 +236,17 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
       msg.sender,
       notionalToUnwind,
       sqrtPriceLimitX96,
-      trader.variableTokenBalance,
       cumulativeFeeIncurred,
       fixedTokenDelta, 
       variableTokenDelta,
       fixedTokenDeltaUnbalanced
+    );
+
+    emit FCMTraderUpdate(
+      msg.sender,
+      trader.marginInScaledYieldBearingTokens,
+      trader.fixedTokenBalance,
+      trader.variableTokenBalance
     );
   }
 
@@ -342,6 +354,13 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     emit fcmPositionSettlement(
       msg.sender,
       settlementCashflow
+    );
+
+    emit FCMTraderUpdate(
+      msg.sender,
+      trader.marginInScaledYieldBearingTokens,
+      trader.fixedTokenBalance,
+      trader.variableTokenBalance
     );
 
     return settlementCashflow;
