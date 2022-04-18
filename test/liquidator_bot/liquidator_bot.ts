@@ -257,8 +257,9 @@ describe("LiquidatorBot", async () => {
       utils.formatEther(liquidationMarginRequirement).toString()
     );
 
-    const liquidatorRewardAmount: BigNumber =
-      await liquidatorBotTest.connect(other).callStatic.liquidatePosition(
+    const liquidatorRewardAmount: BigNumber = await liquidatorBotTest
+      .connect(other)
+      .callStatic.liquidatePosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
@@ -272,19 +273,20 @@ describe("LiquidatorBot", async () => {
     // liquidate the position
 
     let balanceOfLiquidator: BigNumber = await token.balanceOf(other.address);
-    console.log("Balance of liquidator in underlying VUSD before liquidation", utils.formatEther(balanceOfLiquidator).toString());
-
-    await liquidatorBotTest.connect(other).liquidatePosition(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING
+    console.log(
+      "Balance of liquidator in underlying VUSD before liquidation",
+      utils.formatEther(balanceOfLiquidator).toString()
     );
 
+    await liquidatorBotTest
+      .connect(other)
+      .liquidatePosition(wallet.address, -TICK_SPACING, TICK_SPACING);
 
     balanceOfLiquidator = await token.balanceOf(other.address);
 
-    console.log("Balance of liquidator in underlying VUSD after successful liquidation", utils.formatEther(balanceOfLiquidator).toString());
-
-
+    console.log(
+      "Balance of liquidator in underlying VUSD after successful liquidation",
+      utils.formatEther(balanceOfLiquidator).toString()
+    );
   });
 });
