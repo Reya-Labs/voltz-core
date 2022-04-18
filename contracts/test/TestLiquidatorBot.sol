@@ -12,33 +12,36 @@ contract TestLiquidatorBot {
     constructor() {}
 
     // set margin engine
-    function setMarginEngine(IMarginEngine _marginEngine) external { 
+    function setMarginEngine(IMarginEngine _marginEngine) external {
         // in order to restrict this function to only be callable by the owner of the bot you can apply the onlyOwner modifier by OZ ()
         require(address(_marginEngine) != address(0), "me must exist");
-        require((address(marginEngine) != address(_marginEngine)), "me already set");
+        require(
+            (address(marginEngine) != address(_marginEngine)),
+            "me already set"
+        );
         marginEngine = _marginEngine;
     }
 
     function getMELiquidatorRewardWad() external view returns (uint256) {
         require(address(marginEngine) != address(0), "me must be set");
-        return marginEngine.liquidatorRewardWad(); 
+        return marginEngine.liquidatorRewardWad();
     }
 
     function getLiquidationMarginRequirement(
         address _recipient,
         int24 _tickLower,
         int24 _tickUpper
-    ) external returns (uint256) { 
+    ) external returns (uint256) {
         require(address(marginEngine) != address(0), "me must be set");
-        
-        return marginEngine.getPositionMarginRequirement(
-            _recipient,
-            _tickLower,
-            _tickUpper,
-            true // isLM, i.e. is liquidation margin
-        );
+
+        return
+            marginEngine.getPositionMarginRequirement(
+                _recipient,
+                _tickLower,
+                _tickUpper,
+                true // isLM, i.e. is liquidation margin
+            );
     }
-    
 
     function liquidatePosition(
         address _owner,
@@ -47,12 +50,6 @@ contract TestLiquidatorBot {
     ) external {
         require(address(marginEngine) != address(0), "me must be set");
 
-        marginEngine.liquidatePosition(
-            _owner,
-            _tickLower,
-            _tickUpper
-        );
-
+        marginEngine.liquidatePosition(_owner, _tickLower, _tickUpper);
     }
-    
 }

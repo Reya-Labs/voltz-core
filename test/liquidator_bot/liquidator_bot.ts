@@ -10,8 +10,7 @@ import {
   Periphery,
   TestLiquidatorBot,
   TestMarginEngine,
-  TestRateOracle,
-  TestVAMM,
+  TestRateOracle
 } from "../../typechain";
 import {
   APY_UPPER_MULTIPLIER,
@@ -25,11 +24,7 @@ import {
   XI_LOWER,
   T_MAX,
   TICK_SPACING,
-  MIN_SQRT_RATIO,
-  encodeSqrtRatioX96,
 } from "../shared/utilities";
-import { TickMath } from "../shared/tickMath";
-import { mul } from "../shared/functions";
 import { advanceTimeAndBlock } from "../helpers/time";
 import { consts } from "../helpers/constants";
 
@@ -53,9 +48,8 @@ describe("LiquidatorBot", async () => {
   });
 
   beforeEach("deploy fixture", async () => {
-    ({ token, marginEngineTest, factory, aaveLendingPool, rateOracleTest } = await loadFixture(
-      metaFixture
-    ));
+    ({ token, marginEngineTest, factory, aaveLendingPool, rateOracleTest } =
+      await loadFixture(metaFixture));
 
     await token.mint(wallet.address, BigNumber.from(10).pow(27).mul(2));
 
@@ -122,45 +116,51 @@ describe("LiquidatorBot", async () => {
   });
 
   it("execute a liquidation via a simple liquidator bot", async () => {
-  
     await aaveLendingPool.setReserveNormalizedIncome(
       token.address,
-      "1008000000000000000010000000" // 
+      "1008000000000000000010000000" //
     );
 
     await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1); // advance by two days
 
     await aaveLendingPool.setReserveNormalizedIncome(
       token.address,
-      "1008000000000000000020000000" // 
+      "1008000000000000000020000000" //
     );
-    
+
     // check current historical apy in the underlying aave lending pool captured by Voltz Protocol Rate Oracle
-    let historicalApyWad: BigNumber = await marginEngineTest.callStatic.getHistoricalApy();
-    
-    console.log("Historical APY: ", utils.formatEther(historicalApyWad).toString(), "%");
+    const historicalApyWad: BigNumber =
+      await marginEngineTest.callStatic.getHistoricalApy();
+
+    console.log(
+      "Historical APY: ",
+      utils.formatEther(historicalApyWad).toString(),
+      "%"
+    );
 
     // set the liquidator reward for the margin engine
-    const _liquidatorRewardWad = toBn("0.05"); 
-    
+    const _liquidatorRewardWad = toBn("0.05");
+
     await marginEngineTest.setLiquidatorReward(_liquidatorRewardWad);
-    
+
     // deploy the test liquidator bot smart contract
-    ({ liquidatorBotTest } = await loadFixture(
-        liquidatorBotTestFixture
-    ));
+    ({ liquidatorBotTest } = await loadFixture(liquidatorBotTestFixture));
 
     // set the margin engine associated with the liquidator bot
     await liquidatorBotTest.setMarginEngine(marginEngineTest.address);
 
     // fetch the newly set margin engine address
-    const marginEngineAddressAssociatedWithBot = await liquidatorBotTest.marginEngine();
+    const marginEngineAddressAssociatedWithBot =
+      await liquidatorBotTest.marginEngine();
 
-    // check if the marginEngineAddressAssociatedWithBot matches with the test margin engine address deployed in beforeEach 
-    expect(marginEngineAddressAssociatedWithBot).to.eq(marginEngineTest.address);
+    // check if the marginEngineAddressAssociatedWithBot matches with the test margin engine address deployed in beforeEach
+    expect(marginEngineAddressAssociatedWithBot).to.eq(
+      marginEngineTest.address
+    );
 
     // get liquidator reward by fetching it from the margin engine via the liquidator bot smart contract
-    const liquidatorRewardWad = await liquidatorBotTest.getMELiquidatorRewardWad();
+    const liquidatorRewardWad =
+      await liquidatorBotTest.getMELiquidatorRewardWad();
 
     // check if liquidatorRewardWad fetched by the LiquidatorBot matches the value we set at the beginning of the unit test
     expect(liquidatorRewardWad).to.eq(_liquidatorRewardWad);
@@ -168,50 +168,56 @@ describe("LiquidatorBot", async () => {
     // scenario starts
 
     // a liquidity provider (wallet) mints liquidity via the periphery
-    await periphery.connect(wallet).mintOrBurn(
-        {
-            marginEngine: marginEngineTest.address,
-            tickLower: -TICK_SPACING,
-            tickUpper: TICK_SPACING,
-            notional: toBn('10000000'),
-            isMint: true,
-            marginDelta: toBn("430196")
-        }
-    );
-
+    await periphery.connect(wallet).mintOrBurn({
+      marginEngine: marginEngineTest.address,
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      notional: toBn("10000000"),
+      isMint: true,
+      marginDelta: toBn("430196"),
+    });
 
     // check the liquidation margin requirement of the fixed taker above
-    const liquidationMarginRequirement = await liquidatorBotTest.callStatic.getLiquidationMarginRequirement(
+    const liquidationMarginRequirement =
+      await liquidatorBotTest.callStatic.getLiquidationMarginRequirement(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
-    );
+      );
 
-    console.log("liquidationMarginRequirement in VUSD", utils.formatEther(liquidationMarginRequirement).toString());
+    console.log(
+      "liquidationMarginRequirement in VUSD",
+      utils.formatEther(liquidationMarginRequirement).toString()
+    );
 
     // check the initial margin requirement of the fixed taker above
 
-    const initialMarginRequirement = await marginEngineTest.callStatic.getPositionMarginRequirement(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING,
-      false
+    const initialMarginRequirement =
+      await marginEngineTest.callStatic.getPositionMarginRequirement(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        false
+      );
+
+    console.log(
+      "initialMarginRequirement in VUSD",
+      utils.formatEther(initialMarginRequirement).toString()
     );
 
-    console.log("initialMarginRequirement in VUSD", utils.formatEther(initialMarginRequirement).toString());
-   
     // we attempt a liquidation in here, it is expected to fail since the liqudity provider has sufficient amount of margin in underlying tokens
 
-    await expect(liquidatorBotTest.liquidatePosition(
+    await expect(
+      liquidatorBotTest.liquidatePosition(
         wallet.address,
         -TICK_SPACING,
         TICK_SPACING
-    )).to.be.revertedWith("CannotLiquidate");
+      )
+    ).to.be.revertedWith("CannotLiquidate");
 
-    
     // check current historical apy in the underlying aave lending pool captured by Voltz Protocol Rate Oracle
     // let historicalApyWad: BigNumber = await marginEngineTest.callStatic.getHistoricalApy();
-    
+
     // console.log("Historical APY: ", utils.formatEther(historicalApyWad).toString());
 
     // advance time by one day, artificially modify the reserved normalized income in the underlying aaveLendingPool in order to affect the historical apy
@@ -225,12 +231,5 @@ describe("LiquidatorBot", async () => {
     );
 
     await rateOracleTest.writeOracleEntry();
-
-    
-
-
-
-    
-
   });
 });
