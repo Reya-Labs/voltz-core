@@ -52,5 +52,4 @@ contract TestLiquidatorBot {
 
         return marginEngine.liquidatePosition(_owner, _tickLower, _tickUpper);
     }
-
 }

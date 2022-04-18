@@ -257,21 +257,16 @@ describe("LiquidatorBot", async () => {
       utils.formatEther(liquidationMarginRequirement).toString()
     );
 
-    const liquidatorRewardAmount: BigNumber = await liquidatorBotTest.callStatic.liquidatePosition(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING
-    );
+    const liquidatorRewardAmount: BigNumber =
+      await liquidatorBotTest.callStatic.liquidatePosition(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
 
     console.log(
       "liquidatorRewardAmount in VUSD",
       utils.formatEther(liquidatorRewardAmount).toString()
     );
-
-      
-    
-    
-
-
   });
 });
