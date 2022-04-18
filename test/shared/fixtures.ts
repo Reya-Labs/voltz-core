@@ -90,15 +90,14 @@ export async function marginEngineMasterTestFixture() {
 }
 
 export async function liquidatorBotTestFixture() {
-
   const liquidatorBotTestFactory = await ethers.getContractFactory(
     "TestLiquidatorBot"
   );
 
-  const liquidatorBotTest = (await liquidatorBotTestFactory.deploy()) as TestLiquidatorBot;
+  const liquidatorBotTest =
+    (await liquidatorBotTestFactory.deploy()) as TestLiquidatorBot;
 
-  return { liquidatorBotTest }
-
+  return { liquidatorBotTest };
 }
 
 export async function marginCalculatorFixture() {

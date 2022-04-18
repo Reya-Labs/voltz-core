@@ -1,12 +1,13 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
 import { expect } from "../shared/expect";
-import { metaFixture } from "../shared/fixtures";
+import { liquidatorBotTestFixture, metaFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
 import {
   ERC20Mock,
   Factory,
   Periphery,
+  TestLiquidatorBot,
   TestMarginEngine,
   TestVAMM,
 } from "../../typechain";
@@ -33,10 +34,10 @@ const createFixtureLoader = waffle.createFixtureLoader;
 describe("LiquidatorBot", async () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
-  let vammTest: TestVAMM;
   let marginEngineTest: TestMarginEngine;
   let periphery: Periphery;
   let factory: Factory;
+  let liquidatorBotTest: TestLiquidatorBot;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
@@ -46,7 +47,7 @@ describe("LiquidatorBot", async () => {
   });
 
   beforeEach("deploy fixture", async () => {
-    ({ token, vammTest, marginEngineTest, factory } = await loadFixture(
+    ({ token, marginEngineTest, factory } = await loadFixture(
       metaFixture
     ));
 
@@ -112,16 +113,14 @@ describe("LiquidatorBot", async () => {
       .approve(periphery.address, BigNumber.from(10).pow(27));
   });
 
-
-  it("execute a liquidation via a simple liquidator bot", async () => { 
-
+  it("execute a liquidation via a simple liquidator bot", async () => {
     // deploy the test liquidator bot smart contract
+    ({ liquidatorBotTest } = await loadFixture(
+        liquidatorBotTestFixture
+    ));
+
     
 
 
-  })
-
-
-
-
+  });
 });
