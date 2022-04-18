@@ -6,9 +6,11 @@ import { toBn } from "evm-bn";
 import {
   ERC20Mock,
   Factory,
+  MockAaveLendingPool,
   Periphery,
   TestLiquidatorBot,
   TestMarginEngine,
+  TestRateOracle,
   TestVAMM,
 } from "../../typechain";
 import {
@@ -28,6 +30,8 @@ import {
 } from "../shared/utilities";
 import { TickMath } from "../shared/tickMath";
 import { mul } from "../shared/functions";
+import { advanceTimeAndBlock } from "../helpers/time";
+import { consts } from "../helpers/constants";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -37,6 +41,8 @@ describe("LiquidatorBot", async () => {
   let marginEngineTest: TestMarginEngine;
   let periphery: Periphery;
   let factory: Factory;
+  let aaveLendingPool: MockAaveLendingPool;
+  let rateOracleTest: TestRateOracle;
   let liquidatorBotTest: TestLiquidatorBot;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
@@ -47,7 +53,7 @@ describe("LiquidatorBot", async () => {
   });
 
   beforeEach("deploy fixture", async () => {
-    ({ token, marginEngineTest, factory } = await loadFixture(
+    ({ token, marginEngineTest, factory, aaveLendingPool, rateOracleTest } = await loadFixture(
       metaFixture
     ));
 
@@ -92,6 +98,8 @@ describe("LiquidatorBot", async () => {
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
+    await marginEngineTest.setLookbackWindowInSeconds(consts.ONE_DAY);
+
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
 
@@ -114,6 +122,23 @@ describe("LiquidatorBot", async () => {
   });
 
   it("execute a liquidation via a simple liquidator bot", async () => {
+  
+    await aaveLendingPool.setReserveNormalizedIncome(
+      token.address,
+      "1008000000000000000010000000" // 
+    );
+
+    await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1); // advance by two days
+
+    await aaveLendingPool.setReserveNormalizedIncome(
+      token.address,
+      "1008000000000000000020000000" // 
+    );
+    
+    // check current historical apy in the underlying aave lending pool captured by Voltz Protocol Rate Oracle
+    let historicalApyWad: BigNumber = await marginEngineTest.callStatic.getHistoricalApy();
+    
+    console.log("Historical APY: ", utils.formatEther(historicalApyWad).toString(), "%");
 
     // set the liquidator reward for the margin engine
     const _liquidatorRewardWad = toBn("0.05"); 
@@ -150,10 +175,9 @@ describe("LiquidatorBot", async () => {
             tickUpper: TICK_SPACING,
             notional: toBn('10000000'),
             isMint: true,
-            marginDelta: toBn("2000")
+            marginDelta: toBn("430196")
         }
     );
-
 
 
     // check the liquidation margin requirement of the fixed taker above
@@ -162,10 +186,20 @@ describe("LiquidatorBot", async () => {
         -TICK_SPACING,
         TICK_SPACING
     );
-    
-    console.log("liquidationMarginRequirement in VUSD", utils.formatEther(liquidationMarginRequirement).toString());
-    
 
+    console.log("liquidationMarginRequirement in VUSD", utils.formatEther(liquidationMarginRequirement).toString());
+
+    // check the initial margin requirement of the fixed taker above
+
+    const initialMarginRequirement = await marginEngineTest.callStatic.getPositionMarginRequirement(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      false
+    );
+
+    console.log("initialMarginRequirement in VUSD", utils.formatEther(initialMarginRequirement).toString());
+   
     // we attempt a liquidation in here, it is expected to fail since the liqudity provider has sufficient amount of margin in underlying tokens
 
     await expect(liquidatorBotTest.liquidatePosition(
@@ -174,8 +208,25 @@ describe("LiquidatorBot", async () => {
         TICK_SPACING
     )).to.be.revertedWith("CannotLiquidate");
 
-    // push time
-    // set reserve normalized income
+    
+    // check current historical apy in the underlying aave lending pool captured by Voltz Protocol Rate Oracle
+    // let historicalApyWad: BigNumber = await marginEngineTest.callStatic.getHistoricalApy();
+    
+    // console.log("Historical APY: ", utils.formatEther(historicalApyWad).toString());
+
+    // advance time by one day, artificially modify the reserved normalized income in the underlying aaveLendingPool in order to affect the historical apy
+    // captured by the test rate oracle which is then used to compute margin requirements
+
+    await advanceTimeAndBlock(consts.ONE_DAY, 1); // advance by one day and one block
+
+    await aaveLendingPool.setReserveNormalizedIncome(
+      token.address,
+      "1008000000000000000000000000" // 10^27 * 1.008
+    );
+
+    await rateOracleTest.writeOracleEntry();
+
+    
 
 
 
