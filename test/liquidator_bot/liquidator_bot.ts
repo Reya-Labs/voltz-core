@@ -237,8 +237,7 @@ describe("LiquidatorBot", async () => {
     await rateOracleTest.writeOracleEntry();
 
     // check current historical apy in the underlying aave lending pool captured by Voltz Protocol Rate Oracle
-    historicalApyWad =
-      await marginEngineTest.callStatic.getHistoricalApy();
+    historicalApyWad = await marginEngineTest.callStatic.getHistoricalApy();
 
     console.log(
       "Historical APY: ",
@@ -246,18 +245,31 @@ describe("LiquidatorBot", async () => {
       "%"
     );
 
-
-    liquidationMarginRequirement = await liquidatorBotTest.callStatic.getLiquidationMarginRequirement(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING
-    );
+    liquidationMarginRequirement =
+      await liquidatorBotTest.callStatic.getLiquidationMarginRequirement(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
 
     console.log(
       "liquidationMarginRequirement in VUSD",
       utils.formatEther(liquidationMarginRequirement).toString()
     );
 
+    const liquidatorRewardAmount: BigNumber = await liquidatorBotTest.callStatic.liquidatePosition(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING
+    );
+
+    console.log(
+      "liquidatorRewardAmount in VUSD",
+      utils.formatEther(liquidatorRewardAmount).toString()
+    );
+
+      
+    
     
 
 

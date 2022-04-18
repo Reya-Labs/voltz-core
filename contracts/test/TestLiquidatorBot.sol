@@ -47,9 +47,10 @@ contract TestLiquidatorBot {
         address _owner,
         int24 _tickLower,
         int24 _tickUpper
-    ) external {
+    ) external returns (uint256) {
         require(address(marginEngine) != address(0), "me must be set");
 
-        marginEngine.liquidatePosition(_owner, _tickLower, _tickUpper);
+        return marginEngine.liquidatePosition(_owner, _tickLower, _tickUpper);
     }
+
 }
