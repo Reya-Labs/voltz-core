@@ -140,12 +140,46 @@ describe("LiquidatorBot", async () => {
     // check if liquidatorRewardWad fetched by the LiquidatorBot matches the value we set at the beginning of the unit test
     expect(liquidatorRewardWad).to.eq(_liquidatorRewardWad);
 
+    // scenario starts
+
+    // a liquidity provider (wallet) mints liquidity via the periphery
+    await periphery.connect(wallet).mintOrBurn(
+        {
+            marginEngine: marginEngineTest.address,
+            tickLower: -TICK_SPACING,
+            tickUpper: TICK_SPACING,
+            notional: toBn('10000000'),
+            isMint: true,
+            marginDelta: toBn("2000")
+        }
+    );
+
+
+
+    // check the liquidation margin requirement of the fixed taker above
+    const liquidationMarginRequirement = await liquidatorBotTest.callStatic.getLiquidationMarginRequirement(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING
+    );
+    
+    console.log("liquidationMarginRequirement in VUSD", utils.formatEther(liquidationMarginRequirement).toString());
     
 
+    // we attempt a liquidation in here, it is expected to fail since the liqudity provider has sufficient amount of margin in underlying tokens
+
+    await expect(liquidatorBotTest.liquidatePosition(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING
+    )).to.be.revertedWith("CannotLiquidate");
+
+    // push time
+    // set reserve normalized income
 
 
 
-
+    
 
   });
 });

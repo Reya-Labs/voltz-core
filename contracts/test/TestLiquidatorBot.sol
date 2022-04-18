@@ -40,7 +40,19 @@ contract TestLiquidatorBot {
     }
     
 
-    // liquidate a position
+    function liquidatePosition(
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external {
+        require(address(marginEngine) != address(0), "me must be set");
 
-    // function liquidatePosition() {
+        marginEngine.liquidatePosition(
+            _owner,
+            _tickLower,
+            _tickUpper
+        );
+
+    }
+    
 }
