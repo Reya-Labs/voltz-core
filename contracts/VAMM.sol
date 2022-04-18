@@ -379,7 +379,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     override
     whenNotPaused
     checkCurrentTimestampTermEndTimestampDelta
-    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced, int256 _marginRequirement)
+    returns (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced, int256 marginRequirement)
   {
 
     Tick.checkTicks(params.tickLower, params.tickUpper);
@@ -667,10 +667,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     _variableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128;
     _fixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128;
 
-    _cumulativeFeeIncurred = state.cumulativeFeeIncurred;
-    _fixedTokenDelta = state.fixedTokenDeltaCumulative;
-    _variableTokenDelta = state.variableTokenDeltaCumulative;
-    _fixedTokenDeltaUnbalanced = state.fixedTokenDeltaUnbalancedCumulative;
+    cumulativeFeeIncurred = state.cumulativeFeeIncurred;
+    fixedTokenDelta = state.fixedTokenDeltaCumulative;
+    variableTokenDelta = state.variableTokenDeltaCumulative;
+    fixedTokenDeltaUnbalanced = state.fixedTokenDeltaUnbalancedCumulative;
 
     if (state.protocolFee > 0) {
       _protocolFees += state.protocolFee;
@@ -678,8 +678,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
     if (!(msg.sender == address(_marginEngine) || msg.sender==address(_marginEngine.fcm()))) {
-      _marginRequirement = _marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, state.fixedTokenDeltaUnbalancedCumulative);
+      marginRequirement = _marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, state.fixedTokenDeltaUnbalancedCumulative);
     }
+
+    emit VAMMPriceChange(_vammVars.tick);
 
     emit Swap(
       msg.sender,
@@ -688,10 +690,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       params.tickUpper,
       params.amountSpecified,
       params.sqrtPriceLimitX96,
-      _cumulativeFeeIncurred,
-      _fixedTokenDelta,
-      _variableTokenDelta,
-      _fixedTokenDeltaUnbalanced
+      cumulativeFeeIncurred,
+      fixedTokenDelta,
+      variableTokenDelta,
+      fixedTokenDeltaUnbalanced
     );
 
     _unlocked = true;

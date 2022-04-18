@@ -69,7 +69,6 @@ interface IFCM is CustomErrors {
         address indexed trader,
         uint256 desiredNotional,
         uint160 sqrtPriceLimitX96,
-        int256 variableTokenBalance,
         uint256 cumulativeFeeIncurred,
         int256 fixedTokenDelta,
         int256 variableTokenDelta,
@@ -80,7 +79,6 @@ interface IFCM is CustomErrors {
         address indexed trader,
         uint256 desiredNotional,
         uint160 sqrtPriceLimitX96,
-        int256 variableTokenBalance,
         uint256 cumulativeFeeIncurred,
         int256 fixedTokenDelta,
         int256 variableTokenDelta,
@@ -90,5 +88,12 @@ interface IFCM is CustomErrors {
     event fcmPositionSettlement(
         address indexed trader,
         int256 settlementCashflow
+    );
+
+    event FCMTraderUpdate(
+        address indexed trader,
+        uint256 marginInScaledYieldBearingTokens,
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance
     );
 }

@@ -323,10 +323,9 @@ describe("FCM", () => {
           other.address,
           -TICK_SPACING,
           TICK_SPACING,
-          mul(finalPositionMargin, toBn("-1")).add(1)
+          mul(finalPositionMargin, toBn("-1"))
         );
 
-      console.log("here?");
       const positionInfoPostUpdateMargin =
         await marginEngineTest.callStatic.getPosition(
           other.address,
