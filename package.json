@@ -1,5 +1,5 @@
 {
-  "name": "voltz-core",
+  "name": "@voltz/voltz-core",
   "engines": {
     "node": ">=16.0.0"
   },
