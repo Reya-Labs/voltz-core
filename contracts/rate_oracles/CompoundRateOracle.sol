@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity =0.8.9;
 
 import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
 import "../interfaces/compound/ICToken.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WadRayMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
-import "hardhat/console.sol";
+import "hardhat/console.sol"; // @TODO: remove console logs
 
 contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
-
-    /// @dev exchangeRateInRay() returned zero
-    error CTokenExchangeRateReturnedZero();
 
     /// @inheritdoc ICompoundRateOracle
     ICToken public override ctoken;
@@ -58,6 +55,8 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     /// @param index The index of the Observation that was most recently written to the observations buffer
     /// @param cardinality The number of populated elements in the observations buffer
     /// @param cardinalityNext The new length of the observations buffer, independent of population
+    /// @return indexUpdated The new index of the most recently written element in the oracle array
+    /// @return cardinalityUpdated The new cardinality of the oracle array
     function writeRate(
         uint16 index,
         uint16 cardinality,
@@ -72,7 +71,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
         uint256 resultRay = exchangeRateInRay();
         if (resultRay == 0) {
-            revert CTokenExchangeRateReturnedZero();
+            revert CustomErrors.CTokenExchangeRateReturnedZero();
         }
 
         emit OracleBufferUpdate(
@@ -104,6 +103,8 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         uint256 _from,
         uint256 _to //  move docs to IRateOracle. Add additional parameter to use cache and implement cache.
     ) public view override(BaseRateOracle, IRateOracle) returns (uint256) {
+        require(_from <= _to, "from > to");
+
         if (_from == _to) {
             return 0;
         }
@@ -129,12 +130,11 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         );
 
         if (rateToRay > rateFromRay) {
-            return
-                WadRayMath.rayToWad(
-                    WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY
-                );
+            uint256 result = WadRayMath.rayToWad(
+                WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY
+            );
+            return result;
         } else {
-            /// is this precise, have there been instances where the comp rate is negative?
             return 0;
         }
     }
@@ -157,8 +157,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
             timeDeltaBeforeOrAtToQueriedTimeWad
         );
-        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad +
-            PRBMathUD60x18.fromUint(1);
+        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad + ONE_IN_WAD;
         uint256 factorInWad = PRBMathUD60x18.pow(apyPlusOne, timeInYearsWad);
         uint256 factorInRay = WadRayMath.wadToRay(factorInWad);
         rateValueRay = WadRayMath.rayMul(beforeOrAtRateValueRay, factorInRay);
@@ -170,7 +169,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         uint16 index,
         uint16 cardinality
     ) internal view returns (uint256 rateValueRay) {
-        require(currentTime >= queriedTime, "OOO");
+        if (currentTime < queriedTime) revert CustomErrors.OOO();
 
         if (currentTime == queriedTime) {
             OracleBuffer.Observation memory rate;
@@ -189,6 +188,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             OracleBuffer.Observation memory atOrAfter
         ) = observations.getSurroundingObservations(
                 queriedTime,
+                currentTime,
                 currentValueRay,
                 index,
                 cardinality

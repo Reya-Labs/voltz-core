@@ -16,8 +16,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 1; // id of aave v2 is 1
 
-    uint256 public constant ONE_IN_WAD = 1e18;
-
     constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal _underlying)
         BaseRateOracle(_underlying)
     {
