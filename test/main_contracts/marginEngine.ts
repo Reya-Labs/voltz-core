@@ -1058,11 +1058,11 @@ describe("MarginEngine", () => {
       );
       const balanceWalletDelta = sub(balanceWallet, oldBalanceWallet);
 
-      expect(balanceWalletDelta).to.be.near(toBn("0.1"));
-      expect(marginEngineBalanceDelta).to.be.near(toBn("0.1"));
+      expect(balanceWalletDelta).to.be.near(toBn("0.2"));
+      expect(marginEngineBalanceDelta).to.be.near(toBn("0.2"));
 
       expect(positionInfo.variableTokenBalance).to.be.near(toBn("0"));
-      expect(positionInfo.margin).to.be.near(toBn("0.9"));
+      expect(positionInfo.margin).to.be.near(toBn("0.8"));
     });
   });
 
