@@ -510,9 +510,11 @@ contract MarginEngine is
             false
         ); // isMint=false
 
-        (
-            bool _isLiquidatable,
-        ) = _isLiquidatablePosition(_position, _tickLower, _tickUpper);
+        (bool _isLiquidatable, ) = _isLiquidatablePosition(
+            _position,
+            _tickLower,
+            _tickUpper
+        );
 
         if (!_isLiquidatable) {
             revert CannotLiquidate();
@@ -540,6 +542,19 @@ contract MarginEngine is
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
             _vamm.burn(_owner, _tickLower, _tickUpper, _position._liquidity);
             _position.updateLiquidity(-int128(_position._liquidity));
+
+            uint256 _liquidatorRewardForBurningLiquidity = PRBMathUD60x18.mul(
+                uint256(_position.margin),
+                _liquidatorRewardWad
+            );
+
+            _position.updateMarginViaDelta(
+                -_liquidatorRewardForBurningLiquidity.toInt256()
+            );
+            _underlyingToken.safeTransfer(
+                msg.sender,
+                _liquidatorRewardForBurningLiquidity
+            );
         }
 
         int256 _variableTokenDelta = _unwindPosition(
