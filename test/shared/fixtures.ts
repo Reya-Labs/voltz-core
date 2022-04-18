@@ -12,6 +12,7 @@ import {
   MockAaveLendingPool,
   MockAToken,
   SqrtPriceMathTest,
+  TestLiquidatorBot,
   TickMathTest,
 } from "../../typechain";
 
@@ -86,6 +87,17 @@ export async function marginEngineMasterTestFixture() {
     (await marginEngineMasterTestFactory.deploy()) as TestMarginEngine;
 
   return { marginEngineMasterTest };
+}
+
+export async function liquidatorBotTestFixture() {
+  const liquidatorBotTestFactory = await ethers.getContractFactory(
+    "TestLiquidatorBot"
+  );
+
+  const liquidatorBotTest =
+    (await liquidatorBotTestFactory.deploy()) as TestLiquidatorBot;
+
+  return { liquidatorBotTest };
 }
 
 export async function marginCalculatorFixture() {
