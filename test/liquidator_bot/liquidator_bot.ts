@@ -272,7 +272,9 @@ describe("LiquidatorBot", async () => {
 
     // liquidate the position
 
-    let balanceOfLiquidator: BigNumber = await token.balanceOf(other.address);
+    let balanceOfLiquidator: BigNumber = await token.balanceOf(
+      liquidatorBotTest.address
+    );
     console.log(
       "Balance of liquidator in underlying VUSD before liquidation",
       utils.formatEther(balanceOfLiquidator).toString()
@@ -282,7 +284,7 @@ describe("LiquidatorBot", async () => {
       .connect(other)
       .liquidatePosition(wallet.address, -TICK_SPACING, TICK_SPACING);
 
-    balanceOfLiquidator = await token.balanceOf(other.address);
+    balanceOfLiquidator = await token.balanceOf(liquidatorBotTest.address);
 
     console.log(
       "Balance of liquidator in underlying VUSD after successful liquidation",
