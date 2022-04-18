@@ -87,10 +87,9 @@ const config: HardhatUserConfig = {
     kovan: {
       url: `${process.env.KOVAN_URL}`,
       // gasPrice: 1,
-      // accounts: {
-      //   mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
-      // },
-      accounts: [`${process.env.PRIVATE_KEY_KOVAN}`],
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
     },
   },
   namedAccounts: {

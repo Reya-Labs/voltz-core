@@ -510,9 +510,11 @@ contract MarginEngine is
             false
         ); // isMint=false
 
-        (
-            bool _isLiquidatable,
-        ) = _isLiquidatablePosition(_position, _tickLower, _tickUpper);
+        (bool _isLiquidatable, ) = _isLiquidatablePosition(
+            _position,
+            _tickLower,
+            _tickUpper
+        );
 
         if (!_isLiquidatable) {
             revert CannotLiquidate();
@@ -536,10 +538,17 @@ contract MarginEngine is
             }
         }
 
+        uint256 _liquidatorRewardValue = 0;
         if (_position._liquidity > 0) {
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
             _vamm.burn(_owner, _tickLower, _tickUpper, _position._liquidity);
             _position.updateLiquidity(-int128(_position._liquidity));
+
+            /// @dev liquidator reward for burning liquidity
+            _liquidatorRewardValue += PRBMathUD60x18.mul(
+                uint256(_position.margin),
+                _liquidatorRewardWad
+            );
         }
 
         int256 _variableTokenDelta = _unwindPosition(
@@ -549,20 +558,23 @@ contract MarginEngine is
             _tickUpper
         );
 
-        if (_variableTokenDelta == 0) return 0;
+        /// @dev liquidator reward for unwinding position
+        if (_variableTokenDelta != 0) {
+            _liquidatorRewardValue += (_variableTokenDelta < 0)
+                ? PRBMathUD60x18.mul(
+                    uint256(-_variableTokenDelta),
+                    _position.rewardPerAmount
+                )
+                : PRBMathUD60x18.mul(
+                    uint256(_variableTokenDelta),
+                    _position.rewardPerAmount
+                );
+        }
 
-        uint256 _liquidatorRewardValue = (_variableTokenDelta < 0)
-            ? PRBMathUD60x18.mul(
-                uint256(-_variableTokenDelta),
-                _position.rewardPerAmount
-            )
-            : PRBMathUD60x18.mul(
-                uint256(_variableTokenDelta),
-                _position.rewardPerAmount
-            );
-
-        _position.updateMarginViaDelta(-_liquidatorRewardValue.toInt256());
-        _underlyingToken.safeTransfer(msg.sender, _liquidatorRewardValue);
+        if (_liquidatorRewardValue > 0) {
+            _position.updateMarginViaDelta(-_liquidatorRewardValue.toInt256());
+            _underlyingToken.safeTransfer(msg.sender, _liquidatorRewardValue);
+        }
 
         emit PositionLiquidation(
             _owner,
