@@ -114,12 +114,37 @@ describe("LiquidatorBot", async () => {
   });
 
   it("execute a liquidation via a simple liquidator bot", async () => {
+
+    // set the liquidator reward for the margin engine
+    const _liquidatorRewardWad = toBn("0.05"); 
+    
+    await marginEngineTest.setLiquidatorReward(_liquidatorRewardWad);
+    
     // deploy the test liquidator bot smart contract
     ({ liquidatorBotTest } = await loadFixture(
         liquidatorBotTestFixture
     ));
 
+    // set the margin engine associated with the liquidator bot
+    await liquidatorBotTest.setMarginEngine(marginEngineTest.address);
+
+    // fetch the newly set margin engine address
+    const marginEngineAddressAssociatedWithBot = await liquidatorBotTest.marginEngine();
+
+    // check if the marginEngineAddressAssociatedWithBot matches with the test margin engine address deployed in beforeEach 
+    expect(marginEngineAddressAssociatedWithBot).to.eq(marginEngineTest.address);
+
+    // get liquidator reward by fetching it from the margin engine via the liquidator bot smart contract
+    const liquidatorRewardWad = await liquidatorBotTest.getMELiquidatorRewardWad();
+
+    // check if liquidatorRewardWad fetched by the LiquidatorBot matches the value we set at the beginning of the unit test
+    expect(liquidatorRewardWad).to.eq(_liquidatorRewardWad);
+
     
+
+
+
+
 
 
   });
