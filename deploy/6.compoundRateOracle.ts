@@ -37,8 +37,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const compoundTokens = getCompoundTokens(hre.network.name);
 
   if (compoundTokens) {
-    for (const token of compoundTokens) {
-      const rateOracleIdentifier = `CompoundRateOracle_${token.name}`;
+    for (const cTokenDefinition of compoundTokens) {
+      const rateOracleIdentifier = `CompoundRateOracle_${cTokenDefinition.name}`;
       let rateOracleContract = (await ethers.getContractOrNull(
         rateOracleIdentifier
       )) as CompoundRateOracle;
@@ -46,21 +46,29 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       if (!rateOracleContract) {
         // There is no Compound rate oracle already deployed for this token. Deploy one now.
         // But first, do a sanity check
-        const cToken = await ethers.getContractAt("ICToken", token.address);
+        const cToken = await ethers.getContractAt(
+          "ICToken",
+          cTokenDefinition.address
+        );
+        const underlying = await cToken.underlying();
         const exchangeRate = await cToken.exchangeRateStored();
 
         if (!exchangeRate) {
           throw Error(
-            `Could not find data for token ${token.name} (${token.address})`
+            `Could not find data for token ${cTokenDefinition.name} (${cTokenDefinition.address})`
           );
         } else {
+          const decimals = await underlying.decimals();
+
           await deploy(rateOracleIdentifier, {
             contract: "CompoundRateOracle",
             from: deployer,
-            args: [cToken.address, token.address],
+            args: [cToken.address, underlying.address, decimals],
             log: doLogging,
           });
-          console.log(`Created ${token.name} (${token.address}) rate oracle`);
+          console.log(
+            `Deploy compound rate oracle for: {${cToken.address}, ${underlying.address}, ${decimals}}`
+          );
 
           rateOracleContract = (await ethers.getContract(
             rateOracleIdentifier
@@ -74,11 +82,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       // Ensure the buffer is big enough
       await checkBufferSize(
         rateOracleContract as CompoundRateOracle,
-        token.rateOracleBufferSize
+        cTokenDefinition.rateOracleBufferSize
       );
       await checkMinSecondsSinceLastUpdate(
         rateOracleContract as CompoundRateOracle,
-        token.minSecondsSinceLastUpdate
+        cTokenDefinition.minSecondsSinceLastUpdate
       );
     }
   }
@@ -87,12 +95,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const mockToken = await ethers.getContractOrNull("ERC20Mock");
   const mockCToken = await ethers.getContractOrNull("MockCToken");
   if (mockToken && mockCToken) {
+    const decimals = await mockToken.decimals();
     console.log(
-      `Deploy rate oracle for mocked {token, cToken}: {${mockToken.address}, ${mockCToken.address}}`
+      `Deploy compound rate oracle for mocks: {${mockToken.address}, ${mockCToken.address}, ${decimals}}`
     );
+
     await deploy("TestCompoundRateOracle", {
       from: deployer,
-      args: [mockCToken.address, mockToken.address],
+      args: [mockCToken.address, mockToken.address, decimals],
       log: doLogging,
     });
   }

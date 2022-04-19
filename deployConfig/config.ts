@@ -75,9 +75,9 @@ const config: ContractsConfigMap = {
     // See tokens list at https://compound.finance/docs#networks
     compoundTokens: [
       {
-        name: "USDT",
-        address: "0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9",
-        rateOracleBufferSize: 135,
+        name: "cUSDC",
+        address: "0x4a92e71227d294f041bd82dd8f78591b75140d63",
+        rateOracleBufferSize: 300,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],

@@ -21,12 +21,9 @@ contract TestCompoundRateOracle is CompoundRateOracle {
     uint256 public latestAfterOrAtRateValue;
 
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
-    constructor(ICToken cToken, IERC20Minimal underlying)
-        CompoundRateOracle(cToken, underlying)
+    constructor(ICToken cToken, IERC20Minimal underlying, uint8 _decimals)
+        CompoundRateOracle(cToken, underlying, _decimals)
     {
-        // if not done manually, doesn't work for some reason
-        cToken = cToken;
-        underlying = underlying;
     }
 
     function getOracleVars()

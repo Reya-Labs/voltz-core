@@ -20,11 +20,12 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of comp v2 is 2
 
-    constructor(ICToken _ctoken, IERC20Minimal underlying)
+    constructor(ICToken _ctoken, IERC20Minimal underlying, uint8 _decimals)
         BaseRateOracle(underlying)
     {
         ctoken = _ctoken;
-        decimals = underlying.decimals();
+        require(ctoken.underlying() == address(underlying), "Tokens do not match");
+        decimals = _decimals;
         uint32 blockTimestamp = Time.blockTimestampTruncated();
         uint256 result = 10000000000000000000000000000000000000000000;
         (
@@ -35,7 +36,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
     function exchangeRateInRay() internal view returns (uint256) {
         // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
-        // source: https://compound.finance/docs/ctokens#exchange-rate
+        // source: https://compound.finance/docs/ctokens#exchange-rate and https://compound.finance/docs#protocol-math
         console.log("Here 1");
         console.log(address(ctoken));
         uint256 _exchangeRateStored = ctoken.exchangeRateStored();
