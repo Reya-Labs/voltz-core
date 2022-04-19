@@ -37,7 +37,7 @@ const createFixtureLoader = waffle.createFixtureLoader;
 // proceed to write more e2e scenarios with new conditions
 // add new invariants to the scenarios --> use modular code
 
-describe("FCM", () => {
+describe("FCM Compound", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
   let rateOracleTest: TestRateOracle;
@@ -165,28 +165,28 @@ describe("FCM", () => {
   });
 
   describe("#fcm", () => {
-    beforeEach("initialize the pool at price of 1:1 TODO: MODIFY FOR COMPOUND", async () => {
-      await token.mint(other.address, BigNumber.from(10).pow(27));
-      await token
-        .connect(other)
-        .approve(marginEngineTest.address, BigNumber.from(10).pow(27));
+    beforeEach(
+      "initialize the pool at price of 1:1 TODO: MODIFY FOR COMPOUND",
+      async () => {
+        await token.mint(other.address, BigNumber.from(10).pow(27));
+        await token
+          .connect(other)
+          .approve(marginEngineTest.address, BigNumber.from(10).pow(27));
 
-      // mint underlyings to the mock cToken
-      await token.mint(mockCToken.address, BigNumber.from(10).pow(27));
-      const currentExchangeRate = await mockCToken.exchangeRateStored();
+        // mint underlyings to the mock cToken
+        await token.mint(mockCToken.address, BigNumber.from(10).pow(27));
+        const currentExchangeRate = await mockCToken.exchangeRateStored();
 
-      // mint aTokens
-      await mockCToken.mint(
-        wallet.address,
-        toBn("100")
-      );
-      await mockCToken.connect(wallet).approve(fcmTestCompound.address, toBn("100"));
-    });
+        // mint aTokens
+        await mockCToken.mint(wallet.address, toBn("100"));
+        await mockCToken
+          .connect(wallet)
+          .approve(fcmTestCompound.address, toBn("100"));
+      }
+    );
 
     it("scenario1", async () => {
-      expect(await fcmTestCompound.ctoken(), "ctoken expect").to.eq(
-        mockCToken
-      );
+      expect(await fcmTestCompound.ctoken(), "ctoken expect").to.eq(mockCToken);
       expect(
         await fcmTestCompound.marginEngine(),
         "margin engine address expect"
@@ -250,14 +250,15 @@ describe("FCM", () => {
       await printHistoricalApy();
 
       // check a token balance of the fcm
-      const cTokenBalanceOfFCM = await mockCToken.balanceOf(fcmTestCompound.address);
+      const cTokenBalanceOfFCM = await mockCToken.balanceOf(
+        fcmTestCompound.address
+      );
 
       console.log("cTokenBalanceOfFCM", utils.formatEther(cTokenBalanceOfFCM));
 
       // check trader balance
-      const cTokenBalanceOfTrader = await fcmTestCompound.getTraderMarginInCTokens(
-        wallet.address
-      );
+      const cTokenBalanceOfTrader =
+        await fcmTestCompound.getTraderMarginInCTokens(wallet.address);
 
       console.log(
         "cTokenBalanceOfTrader",
@@ -268,7 +269,9 @@ describe("FCM", () => {
 
       await fcmTestCompound.settleTrader();
 
-      const traderInfoPostSettlement = await fcmTestCompound.traders(wallet.address);
+      const traderInfoPostSettlement = await fcmTestCompound.traders(
+        wallet.address
+      );
       printTraderWithYieldBearingTokensInfo(traderInfoPostSettlement);
 
       expect(traderInfoPostSettlement.fixedTokenBalance).to.eq(0);

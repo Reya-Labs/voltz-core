@@ -201,6 +201,8 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
 
     uint256 currentExchangeRate = _ctoken.exchangeRateStored();
 
+    // TODO: does this work with arbitrary numbers of decimals in the exchange rate (exchange rate decimals depends on underlying decimals). Probably not?
+
     /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision?
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens - uint256(variableTokenDelta).rayDiv(currentExchangeRate);
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
