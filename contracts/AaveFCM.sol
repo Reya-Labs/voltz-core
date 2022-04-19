@@ -119,7 +119,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
         tickUpper: tickSpacing
     });
 
-    int24 tickBefore = _vamm.vammVars().tick;
     (fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced,) = _vamm.swap(params);
 
     require(variableTokenDelta <=0, "VT delta sign");
