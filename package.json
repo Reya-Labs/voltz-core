@@ -1,5 +1,8 @@
 {
   "name": "@voltz-protocol/voltz-core",
+  "version": "1.0.0",
+  "description": "The Voltz-Protocol core npm package",
+  "license": "MIT",
   "engines": {
     "node": ">=16.0.0"
   },
