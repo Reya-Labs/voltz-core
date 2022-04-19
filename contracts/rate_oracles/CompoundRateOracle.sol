@@ -18,7 +18,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     /// @inheritdoc ICompoundRateOracle
     uint256 public override decimals;
 
-    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of comp v2 is 2
+    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of compound is 2
 
     constructor(ICToken _ctoken, IERC20Minimal underlying, uint8 _decimals)
         BaseRateOracle(underlying)
