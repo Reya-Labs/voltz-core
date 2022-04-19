@@ -94,6 +94,10 @@
     "createTestIrs:localhost": "npx hardhat createIrsInstance --network localhost --rate-oracle 'MockTokenRateOracle' --tick-spacing 3000",
     "generateEndToEndActivity:localhost": "npx hardhat test --network localhost test/end_to_end/general_setup/scenario0/scenario0.ts"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Voltz-Protocol/voltz-core"
+  },
   "husky": {
     "hooks": {
       "pre-push": "npm run check && hh size-contracts"
