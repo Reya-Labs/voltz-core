@@ -1,8 +1,8 @@
 {
   "name": "@voltz-protocol/voltz-core",
   "version": "1.0.0",
-  "description": "The Voltz-Protocol core npm package",
-  "license": "MIT",
+  "description": "Voltz Protocol Core Smart Contracts",
+  "license": "BUSL-1.1",
   "engines": {
     "node": ">=16.0.0"
   },
