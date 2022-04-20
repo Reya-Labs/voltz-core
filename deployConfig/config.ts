@@ -33,7 +33,7 @@ const kovanConfigDefaults: ConfigDefaults = {
   marginEngineCacheMaxAgeInSeconds: 6 * 60 * 60, // 6 hours
   marginEngineLiquidatorRewardWad: toBn(0.1),
   marginEngineCalculatorParameters: marginCalculatorDefaults1,
-  vammFeeProtocol: 0,
+  vammFeeProtocol: 10,
   vammFeeWad: toBn(0.009), // 0.9%, for 30 day pool
   rateOracleBufferSize: 100,
   rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
