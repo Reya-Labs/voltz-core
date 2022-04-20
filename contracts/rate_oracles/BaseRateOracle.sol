@@ -13,7 +13,6 @@ import "../core_libraries/Time.sol";
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
 abstract contract BaseRateOracle is IRateOracle, Ownable {
-
     uint256 public constant ONE_IN_WAD = 1e18;
 
     using OracleBuffer for OracleBuffer.Observation[65535];

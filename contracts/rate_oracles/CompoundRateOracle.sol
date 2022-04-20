@@ -20,11 +20,16 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of compound is 2
 
-    constructor(ICToken _ctoken, IERC20Minimal underlying, uint8 _decimals)
-        BaseRateOracle(underlying)
-    {
+    constructor(
+        ICToken _ctoken,
+        IERC20Minimal underlying,
+        uint8 _decimals
+    ) BaseRateOracle(underlying) {
         ctoken = _ctoken;
-        require(ctoken.underlying() == address(underlying), "Tokens do not match");
+        require(
+            ctoken.underlying() == address(underlying),
+            "Tokens do not match"
+        );
         decimals = _decimals;
         uint32 blockTimestamp = Time.blockTimestampTruncated();
         uint256 result = 10000000000000000000000000000000000000000000;

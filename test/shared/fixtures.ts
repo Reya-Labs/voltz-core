@@ -83,8 +83,13 @@ export async function mockAaveLendingPoolFixture() {
 export async function fcmMasterTestFixture() {
   const fcmMasterTestFactory = await ethers.getContractFactory("AaveFCM");
   const fcmMasterTest = (await fcmMasterTestFactory.deploy()) as AaveFCM;
+  const fcmMasterCompoundFactory = await ethers.getContractFactory(
+    "CompoundFCM"
+  );
+  const fcmMasterCompound =
+    (await fcmMasterCompoundFactory.deploy()) as CompoundFCM;
 
-  return { fcmMasterTest };
+  return { fcmMasterTest, fcmMasterCompound };
 }
 
 export async function vammMasterTestFixture() {
@@ -229,15 +234,17 @@ interface MetaFixture {
   mockAToken: MockAToken;
   mockCToken: MockCToken;
   marginEngineTest: TestMarginEngine;
+  marginEngineCompound: TestMarginEngine;
   vammTest: TestVAMM;
+  vammCompound: TestVAMM;
   fcmTest: AaveFCM;
-  fcmTestCompound: CompoundFCM;
+  fcmCompound: CompoundFCM;
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
   const { marginEngineMasterTest } = await marginEngineMasterTestFixture();
   const { vammMasterTest } = await vammMasterTestFixture();
-  const { fcmMasterTest } = await fcmMasterTestFixture();
+  const { fcmMasterTest, fcmMasterCompound } = await fcmMasterTestFixture();
   const { factory } = await factoryFixture(
     marginEngineMasterTest.address,
     vammMasterTest.address
@@ -291,13 +298,19 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
   const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
 
-  const UNDERLYING_YIELD_BEARING_PROTOCOL_ID =
+  const UNDERLYING_YIELD_BEARING_PROTOCOL_AAVE =
     await rateOracleTest.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
+  const UNDERLYING_YIELD_BEARING_PROTOCOL_COMPOUND =
+    await compoundRateOracleTest.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
-  // set master fcm for aave
+  // set master fcm for aave and compound
   await factory.setMasterFCM(
     fcmMasterTest.address,
-    UNDERLYING_YIELD_BEARING_PROTOCOL_ID
+    UNDERLYING_YIELD_BEARING_PROTOCOL_AAVE
+  );
+  await factory.setMasterFCM(
+    fcmMasterCompound.address,
+    UNDERLYING_YIELD_BEARING_PROTOCOL_COMPOUND
   );
 
   // deploy a margin engine & vamm
@@ -308,18 +321,18 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termEndTimestampBN,
     TICK_SPACING
   );
-  const receiptLogs = (await deployTrx.wait()).logs;
+  let receiptLogs = (await deployTrx.wait()).logs;
   // console.log("receiptLogs", receiptLogs);
-  const log = factory.interface.parseLog(receiptLogs[receiptLogs.length - 3]);
+  let log = factory.interface.parseLog(receiptLogs[receiptLogs.length - 3]);
   if (log.name !== "IrsInstance") {
     throw Error(
       "IrsInstance log not found. Has it moved to a different position in the array?"
     );
   }
   // console.log("log", log);
-  const marginEngineAddress = log.args.marginEngine;
-  const vammAddress = log.args.vamm;
-  const fcmAddress = log.args.fcm;
+  let marginEngineAddress = log.args.marginEngine;
+  let vammAddress = log.args.vamm;
+  let fcmAddress = log.args.fcm;
 
   const marginEngineTestFactory = await ethers.getContractFactory(
     "TestMarginEngine"
@@ -334,10 +347,35 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const fcmTestFactory = await ethers.getContractFactory("AaveFCM");
   const fcmTest = fcmTestFactory.attach(fcmAddress) as AaveFCM;
 
+  const deployTrxCompound = await factory.deployIrsInstance(
+    token.address,
+    compoundRateOracleTest.address,
+    termStartTimestampBN,
+    termEndTimestampBN,
+    TICK_SPACING
+  );
+
+  receiptLogs = (await deployTrxCompound.wait()).logs;
+  // console.log("receiptLogs", receiptLogs);
+  log = factory.interface.parseLog(receiptLogs[receiptLogs.length - 3]);
+  if (log.name !== "IrsInstance") {
+    throw Error(
+      "IrsInstance log not found. Has it moved to a different position in the array?"
+    );
+  }
+  // console.log("log", log);
+  marginEngineAddress = log.args.marginEngine;
+  vammAddress = log.args.vamm;
+  fcmAddress = log.args.fcm;
+
+  const marginEngineCompound = marginEngineTestFactory.attach(
+    marginEngineAddress
+  ) as TestMarginEngine;
+
+  const vammCompound = vammTestFactory.attach(vammAddress) as TestVAMM;
+
   const fcmTestFactoryCompound = await ethers.getContractFactory("CompoundFCM");
-  const fcmTestCompound = fcmTestFactoryCompound.attach(
-    fcmAddress
-  ) as CompoundFCM;
+  const fcmCompound = fcmTestFactoryCompound.attach(fcmAddress) as CompoundFCM;
 
   return {
     factory,
@@ -352,9 +390,11 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     compoundRateOracleTest,
     mockCToken,
     marginEngineTest,
+    marginEngineCompound,
     vammTest,
+    vammCompound,
     fcmTest,
-    fcmTestCompound,
+    fcmCompound,
   };
 };
 
