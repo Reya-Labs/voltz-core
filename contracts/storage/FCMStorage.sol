@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-
 pragma solidity =0.8.9;
 
 import "../interfaces/IERC20Minimal.sol";
@@ -31,7 +30,6 @@ contract CompoundFCMStorageV1 {
     // Any variables that would implicitly implement an IMarginEngine function if public, must instead
     // be internal due to limitations in the solidity compiler (as of 0.8.12)
     ICToken internal _ctoken;
-    IERC20Minimal internal _underlyingYieldBearingToken;
 }
 
 contract FCMStorage is FCMStorageV1 {
@@ -49,5 +47,5 @@ contract AaveFCMStorage is FCMStorage, AaveFCMStorageV1 {
 contract CompoundFCMStorage is FCMStorage, CompoundFCMStorageV1 {
     // Reserve some storage for use in future versions, without creating conflicts
     // with other inheritted contracts
-    uint256[52] private __gap;
+    uint256[50] private __gap;
 }

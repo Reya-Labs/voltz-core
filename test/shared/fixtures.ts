@@ -264,7 +264,14 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   // const cToken = (await mockCTokenFixture()).token; ab: what's the purpose of this line??
   const { mockCToken } = await mockCTokenFixture(token.address);
 
-  await mockCToken.setExchangeRate(BigNumber.from(10).pow(18));
+  const decimals = await token.decimals();
+  console.log("decimals", decimals);
+
+  // Starting exchange rate = 0.02, expressed using 10 ^ (18 + underlyingDecimals - cTokenDecimals)
+  //  = 0.02 * 10 ^ (18 + 18 - 8)
+  //  = 0.02 * 10 ^ 28
+  //  = 2 * 10^26
+  await mockCToken.setExchangeRate(BigNumber.from(10).pow(26).mul(2));
 
   const exchangeRateStored = await mockCToken.exchangeRateStored();
 

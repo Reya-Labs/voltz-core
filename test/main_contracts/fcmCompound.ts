@@ -200,28 +200,21 @@ describe("FCM Compound", () => {
     );
 
     it("scenario1", async () => {
-      console.log("0");
-
-      expect(await fcmCompound.ctoken(), "ctoken expect").to.eq(mockCToken);
-      console.log("0a");
-
       expect(
         await fcmCompound.marginEngine(),
         "margin engine address expect"
       ).to.eq(marginEngineCompound.address);
-      console.log("0b");
       expect(
         await fcmCompound.underlyingYieldBearingToken(),
         "underlying yield bearing token expect"
-      ).to.eq(mockCToken);
+      ).to.eq(mockCToken.address);
       console.log("0c");
       expect(await fcmCompound.vamm(), "vamm address expect").to.eq(
-        vammCompound
+        vammCompound.address
       );
 
       const otherStartingBalance = await token.balanceOf(other.address);
 
-      console.log("1");
       await marginEngineCompound
         .connect(other)
         .updatePositionMargin(
@@ -234,7 +227,6 @@ describe("FCM Compound", () => {
       await vammCompound.initializeVAMM(
         TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
       );
-      console.log("2");
 
       await vammCompound
         .connect(other)
@@ -256,8 +248,6 @@ describe("FCM Compound", () => {
           TickMath.getSqrtRatioAtTick(TICK_SPACING).toString()
         );
 
-      console.log("5");
-
       // do a full scenario with checks
       const traderInfo = await fcmCompound.traders(wallet.address);
       printTraderWithYieldBearingTokensInfo(traderInfo);
@@ -266,9 +256,10 @@ describe("FCM Compound", () => {
 
       // time passes, trader's margin in yield bearing tokens should be the same as the ctoken balance of the fcm
       await advanceTime(604800); // advance time by one week
-      await mockCToken.setExchangeRate(
-        Math.floor(1.0015 * 10000 + 0.5).toString() + "0".repeat(23)
-      );
+      const initalExchangeRate = await mockCToken.exchangeRateStored();
+
+      // SImulate 1% return in a week
+      await mockCToken.setExchangeRate(initalExchangeRate.mul(10).div(100));
       await rateOracleTest.writeOracleEntry();
 
       await printHistoricalApy();
