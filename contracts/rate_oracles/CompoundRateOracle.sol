@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
 pragma solidity =0.8.9;
 
@@ -40,20 +40,21 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     }
 
     function exchangeRateInRay() internal view returns (uint256) {
-        // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(18 - 8 + Underlying Token Decimals)
+        // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(10 + Underlying Token Decimals)
         // source: https://compound.finance/docs/ctokens#exchange-rate and https://compound.finance/docs#protocol-math
-        console.log("Here 1");
+        // We want the same number scaled by 10^27 (ray)
+        // So: if Underlying Token Decimals == 17, no scaling is required
+        //     if Underlying Token Decimals > 17, we scale down by a factor of 10^difference
+        //     if Underlying Token Decimals < 17, we scale up by a factor of 10^difference
+        // And if decimals
         console.log(address(ctoken));
         uint256 _exchangeRateStored = ctoken.exchangeRateStored();
-        console.log("Here 2");
-        console.log("cToken.address: ", address(ctoken));
-        console.log("exchangeRateStored: ", _exchangeRateStored);
-        if (decimals >= 18) {
-            uint256 scalingFactor = 10**(decimals - 18);
-            return WadRayMath.rayDiv(_exchangeRateStored, scalingFactor);
+        if (decimals >= 17) {
+            uint256 scalingFactor = 10**(decimals - 17);
+            return _exchangeRateStored / scalingFactor;
         } else {
-            uint256 scalingFactor = 10**(18 - decimals);
-            return WadRayMath.rayMul(_exchangeRateStored, scalingFactor);
+            uint256 scalingFactor = 10**(17 - decimals);
+            return _exchangeRateStored * scalingFactor;
         }
     }
 
