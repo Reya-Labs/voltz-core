@@ -119,7 +119,9 @@ For humans, some post-processing can be useful to make the output more readable.
 
 ## Liquidator Bot (example)
 
-In order to test out a simple liquidator bot on top of Voltz, head over to [Liquidator Bot](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/liquidator_bot/liquidator_bot.ts).
+In order to test out a simple liquidator bot simulation on top of Voltz, head over to [Liquidator Bot Simulation](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/liquidator_bot/liquidator_bot.ts).
+
+Refer to [LiquidatorBot](https://github.com/Voltz-Protocol/voltz-core/blob/main/contracts/test/TestLiquidatorBot.sol) to check out a simple liquidator bot implementation.
 
 ## Terms and Conditions
 
