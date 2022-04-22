@@ -10,6 +10,12 @@ This repository contains the smart contracts that power Voltz Protocol. Over tim
 
 We would love to see how you can build and improve upon what we've built here at Voltz.
 
+## Liquidator Bot (example)
+
+In order to test out a simple liquidator bot simulation on top of Voltz, head over to [Liquidator Bot Simulation](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/liquidator_bot/liquidator_bot.ts).
+
+Refer to [LiquidatorBot](https://github.com/Voltz-Protocol/voltz-core/blob/main/contracts/test/TestLiquidatorBot.sol) to check out a simple liquidator bot implementation.
+
 ## Bug Bounty
 
 Alongside third-party auditors we want help from the community in ensuring Voltz Protocol remains secure. As a result, we have a generous bug-bounty program on [Immunifi](https://immunefi.com/bounty/voltz/). We look forward to your help in creating one of the most important lego-blocks of a new financial system!
@@ -116,12 +122,6 @@ Where `rateOracleName` is the name of a rate oracle instance as defined in the `
 For humans, some post-processing can be useful to make the output more readable. E.g. in bash:
 
 `npx hardhat listIrsInstances --network <networkName> | column -s, -t`
-
-## Liquidator Bot (example)
-
-In order to test out a simple liquidator bot simulation on top of Voltz, head over to [Liquidator Bot Simulation](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/liquidator_bot/liquidator_bot.ts).
-
-Refer to [LiquidatorBot](https://github.com/Voltz-Protocol/voltz-core/blob/main/contracts/test/TestLiquidatorBot.sol) to check out a simple liquidator bot implementation.
 
 ## Terms and Conditions
 
