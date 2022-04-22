@@ -16,6 +16,10 @@ In order to test out a simple liquidator bot simulation on top of Voltz, head ov
 
 Refer to [LiquidatorBot](https://github.com/Voltz-Protocol/voltz-core/blob/main/contracts/test/TestLiquidatorBot.sol) to check out a simple liquidator bot implementation.
 
+To run a liquidator bot simulation: run:
+
+`npx hardhat test test/liquidator_bot/liquidator_bot.ts`
+
 ## Bug Bounty
 
 Alongside third-party auditors we want help from the community in ensuring Voltz Protocol remains secure. As a result, we have a generous bug-bounty program on [Immunifi](https://immunefi.com/bounty/voltz/). We look forward to your help in creating one of the most important lego-blocks of a new financial system!
