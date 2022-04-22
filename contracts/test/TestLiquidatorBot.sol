@@ -4,16 +4,13 @@ pragma solidity =0.8.9;
 
 import "../interfaces/IMarginEngine.sol";
 
-// needs a reference to a given margin engine
-
 contract TestLiquidatorBot {
     IMarginEngine public marginEngine;
 
     constructor() {}
 
-    // set margin engine
     function setMarginEngine(IMarginEngine _marginEngine) external {
-        // in order to restrict this function to only be callable by the owner of the bot you can apply the onlyOwner modifier by OZ ()
+        // in order to restrict this function to only be callable by the owner of the bot you can apply the onlyOwner modifier by OZ
         require(address(_marginEngine) != address(0), "me must exist");
         require(
             (address(marginEngine) != address(_marginEngine)),
