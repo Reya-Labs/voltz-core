@@ -117,6 +117,10 @@ For humans, some post-processing can be useful to make the output more readable.
 
 `npx hardhat listIrsInstances --network <networkName> | column -s, -t`
 
+## Liquidator Bot (example)
+
+In order to test out a simple liquidator bot on top of Voltz, head over to [Liquidator Bot](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/liquidator_bot/liquidator_bot.ts).
+
 ## Terms and Conditions
 
 The Voltz Protocol, and any products or services associated therewith, is offered only to persons (aged 18 years or older) or entities who are not residents of, citizens of, are incorporated in, or have a registered office in any “Restricted Territory.”
