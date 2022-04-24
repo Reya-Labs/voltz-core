@@ -76,7 +76,8 @@ task(
       rateOracle.address,
       toBn(startTimestamp), // converting to wad
       toBn(endTimestamp), // converting to wad
-      taskArgs.tickSpacing
+      taskArgs.tickSpacing,
+      { gasLimit: 10000000 }
     );
     const receipt = await deployTrx.wait();
     // console.log(receipt);
@@ -106,24 +107,32 @@ task(
       // TODO: allow values to be overridden with task parameters, as required
       const configDefaults = getConfigDefaults(hre.network.name);
       let trx = await marginEngine.setMarginCalculatorParameters(
-        configDefaults.marginEngineCalculatorParameters
+        configDefaults.marginEngineCalculatorParameters,
+        { gasLimit: 10000000 }
       );
       await trx.wait();
       trx = await marginEngine.setCacheMaxAgeInSeconds(
-        configDefaults.marginEngineCacheMaxAgeInSeconds
+        configDefaults.marginEngineCacheMaxAgeInSeconds,
+        { gasLimit: 10000000 }
       );
       await trx.wait();
       trx = await marginEngine.setLookbackWindowInSeconds(
-        configDefaults.marginEngineLookbackWindowInSeconds
+        configDefaults.marginEngineLookbackWindowInSeconds,
+        { gasLimit: 10000000 }
       );
       await trx.wait();
       trx = await marginEngine.setLiquidatorReward(
-        configDefaults.marginEngineLiquidatorRewardWad
+        configDefaults.marginEngineLiquidatorRewardWad,
+        { gasLimit: 10000000 }
       );
       await trx.wait();
-      trx = await vamm.setFeeProtocol(configDefaults.vammFeeProtocol);
+      trx = await vamm.setFeeProtocol(configDefaults.vammFeeProtocol, {
+        gasLimit: 10000000,
+      });
       await trx.wait();
-      trx = await vamm.setFee(configDefaults.vammFeeWad);
+      trx = await vamm.setFee(configDefaults.vammFeeWad, {
+        gasLimit: 10000000,
+      });
       await trx.wait();
 
       try {

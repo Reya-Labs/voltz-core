@@ -255,7 +255,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     rateOracleTest.address,
     termStartTimestampBN,
     termEndTimestampBN,
-    TICK_SPACING
+    TICK_SPACING,
+    { gasLimit: 10000000 }
   );
   const receiptLogs = (await deployTrx.wait()).logs;
   // console.log("receiptLogs", receiptLogs);

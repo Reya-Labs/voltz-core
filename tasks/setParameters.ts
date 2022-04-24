@@ -17,30 +17,36 @@ task("setParameters", "Sets Parameters in a given pool to defaults").setAction(
 
     const configDefaults = getConfigDefaults(hre.network.name);
     let trx = await marginEngine.setMarginCalculatorParameters(
-      configDefaults.marginEngineCalculatorParameters
+      configDefaults.marginEngineCalculatorParameters,
+      { gasLimit: 10000000 }
     );
 
     await trx.wait();
 
     trx = await marginEngine.setCacheMaxAgeInSeconds(
-      configDefaults.marginEngineCacheMaxAgeInSeconds
+      configDefaults.marginEngineCacheMaxAgeInSeconds,
+      { gasLimit: 10000000 }
     );
     await trx.wait();
 
     trx = await marginEngine.setLookbackWindowInSeconds(
-      configDefaults.marginEngineLookbackWindowInSeconds
+      configDefaults.marginEngineLookbackWindowInSeconds,
+      { gasLimit: 10000000 }
     );
     await trx.wait();
 
     trx = await marginEngine.setLiquidatorReward(
-      configDefaults.marginEngineLiquidatorRewardWad
+      configDefaults.marginEngineLiquidatorRewardWad,
+      { gasLimit: 10000000 }
     );
     await trx.wait();
 
-    trx = await vamm.setFeeProtocol(configDefaults.vammFeeProtocol);
+    trx = await vamm.setFeeProtocol(configDefaults.vammFeeProtocol, {
+      gasLimit: 10000000,
+    });
     await trx.wait();
 
-    trx = await vamm.setFee(configDefaults.vammFeeWad);
+    trx = await vamm.setFee(configDefaults.vammFeeWad, { gasLimit: 10000000 });
     await trx.wait();
   }
 );

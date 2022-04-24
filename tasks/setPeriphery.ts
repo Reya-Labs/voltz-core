@@ -13,7 +13,9 @@ task("setPeriphery", "Sets the periphery").setAction(async (_, hre) => {
   )) as Factory;
 
   // set the periphery in the factory
-  const trx = await factory.setPeriphery(peripheryAddress);
+  const trx = await factory.setPeriphery(peripheryAddress, {
+    gasLimit: 10000000,
+  });
   await trx.wait();
 });
 
