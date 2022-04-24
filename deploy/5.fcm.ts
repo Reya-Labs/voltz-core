@@ -37,7 +37,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const trx = await factory.setMasterFCM(
     masterAaveFCM.address,
-    underlyingYieldBearingProtocolID
+    underlyingYieldBearingProtocolID,
+    { gasLimit: 10000000 }
   );
   await trx.wait();
   return true; // Only execute once

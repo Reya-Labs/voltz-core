@@ -34,7 +34,7 @@ task(
 
     // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
 
-    const trx = await rateOracle.writeOracleEntry();
+    const trx = await rateOracle.writeOracleEntry({ gasLimit: 10000000 });
     await trx.wait();
   });
 

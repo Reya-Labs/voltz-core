@@ -38,7 +38,9 @@ const applyBufferConfig = async (
       currentSize + MAX_BUFFER_GROWTH_PER_TRANSACTION,
       minBufferSize
     );
-    const trx = await r.increaseObservationCardinalityNext(newSize);
+    const trx = await r.increaseObservationCardinalityNext(newSize, {
+      gasLimit: 10000000,
+    });
     await trx.wait();
     console.log(`Increased size of ${r.address}'s buffer to ${newSize}`);
 
@@ -51,7 +53,10 @@ const applyBufferConfig = async (
   // console.log( `current minSecondsSinceLastUpdate of ${r.address} is ${currentVal}` );
 
   if (currentSecondsSinceLastUpdate !== minSecondsSinceLastUpdate) {
-    const trx = await r.setMinSecondsSinceLastUpdate(minSecondsSinceLastUpdate);
+    const trx = await r.setMinSecondsSinceLastUpdate(
+      minSecondsSinceLastUpdate,
+      { gasLimit: 10000000 }
+    );
     await trx.wait();
     console.log(
       `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSecondsSinceLastUpdate}`
@@ -109,7 +114,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             rateOracleIdentifier
           )) as AaveRateOracle;
 
-          const trx = await rateOracleContract.writeOracleEntry();
+          const trx = await rateOracleContract.writeOracleEntry({
+            gasLimit: 10000000,
+          });
           await trx.wait();
         }
       }
@@ -152,7 +159,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     );
 
     // Take a reading
-    const trx = await rateOracleContract.writeOracleEntry();
+    const trx = await rateOracleContract.writeOracleEntry({
+      gasLimit: 10000000,
+    });
     await trx.wait();
 
     // Fast forward time to ensure that the mock rate oracle has enough historical data

@@ -529,7 +529,8 @@ export class ScenarioRunner {
       this.rateOracleTest.address,
       this.termStartTimestampBN,
       this.termEndTimestampBN,
-      this.params.tickSpacing
+      this.params.tickSpacing,
+      { gasLimit: 10000000 }
     );
 
     const receiptLogs = (await deployTrx.wait()).logs;
