@@ -23,10 +23,10 @@ const applyBufferConfig = async (
     secondsWorthOfBuffer <
     maxIrsDurationInSeconds * BUFFER_SIZE_SAFETY_FACTOR
   ) {
-    throw new Error(
-      `Buffer config of {size ${minBufferSize}, minGap ${minSecondsSinceLastUpdate}s} ` +
-        `does not guarantee adequate buffer for an IRS of duration ${maxIrsDurationInSeconds}s`
-    );
+    // throw new Error(
+    //   `Buffer config of {size ${minBufferSize}, minGap ${minSecondsSinceLastUpdate}s} ` +
+    //     `does not guarantee adequate buffer for an IRS of duration ${maxIrsDurationInSeconds}s`
+    // );
   }
 
   let currentSize = (await r.oracleVars())[2];
