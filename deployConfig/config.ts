@@ -28,8 +28,7 @@ const marginCalculatorDefaults1 = {
 };
 
 const kovanConfigDefaults: ConfigDefaults = {
-  // marginEngineLookbackWindowInSeconds: 60 * 60 * 6, // 6 hours
-  marginEngineLookbackWindowInSeconds: 60,
+  marginEngineLookbackWindowInSeconds: 1 * 60 * 60 + 1, // 1 hour 1 second
   // marginEngineLookbackWindowInSeconds: 1209600, // 2 weeks
   // marginEngineCacheMaxAgeInSeconds: 6 * 60 * 60, // 6 hours
   marginEngineCacheMaxAgeInSeconds: 0,
