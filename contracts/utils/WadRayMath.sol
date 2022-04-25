@@ -19,6 +19,7 @@ library WadRayMath {
     uint256 internal constant halfRAY = RAY / 2;
 
     uint256 internal constant WAD_RAY_RATIO = 1e9;
+    uint256 internal constant halfRatio = WAD_RAY_RATIO / 2;
 
     /**
      * @return One ray, 1e27
@@ -109,16 +110,14 @@ library WadRayMath {
      * @return a casted to wad, rounded half up to the nearest wad
      **/
     function rayToWad(uint256 a) internal pure returns (uint256) {
-        uint256 halfRatio = WAD_RAY_RATIO / 2;
-        uint256 result = halfRatio + a;
+        
+        uint256 result = a / WAD_RAY_RATIO;
+        
+        assembly {
+            result += (a % WAD_RAY_RATIO >= halfRatio);
+        }
 
-        /// @audit tag 7 [ABDK]
-        // This “require” statement checks for a phantom overflow, as conversion from RAY to WAD is always possible.
-        // Consider refactoring the code to never revert.
-
-        require(result >= halfRatio, Errors.MATH_ADDITION_OVERFLOW);
-
-        return result / WAD_RAY_RATIO;
+        return result
     }
 
     /**
