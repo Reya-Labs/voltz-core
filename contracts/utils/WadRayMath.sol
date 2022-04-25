@@ -19,6 +19,7 @@ library WadRayMath {
     uint256 internal constant halfRAY = RAY / 2;
 
     uint256 internal constant WAD_RAY_RATIO = 1e9;
+
     uint256 internal constant halfRatio = WAD_RAY_RATIO / 2;
 
     /**
@@ -112,12 +113,12 @@ library WadRayMath {
     function rayToWad(uint256 a) internal pure returns (uint256) {
         
         uint256 result = a / WAD_RAY_RATIO;
-        
-        assembly {
-            result += (a % WAD_RAY_RATIO >= halfRatio);
-        }
 
-        return result
+        if (a % WAD_RAY_RATIO >= halfRatio) {
+            result += 1;
+        }
+        
+        return result;
     }
 
     /**
