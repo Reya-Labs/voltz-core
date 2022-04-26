@@ -259,7 +259,7 @@ describe("FCM Compound", () => {
       const initalExchangeRate = await mockCToken.exchangeRateStored();
 
       // SImulate 1% return in a week
-      await mockCToken.setExchangeRate(initalExchangeRate.mul(10).div(100));
+      await mockCToken.setExchangeRate(initalExchangeRate.mul(101).div(100));
       await rateOracleTest.writeOracleEntry();
 
       await printHistoricalApy();

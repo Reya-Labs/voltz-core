@@ -26,6 +26,11 @@ describe("Compound Rate Oracle", () => {
   const oracleFixture = async () => {
     const { token: _token } = await mockERC20Fixture();
     const { mockCToken: _cToken } = await mockCTokenFixture(_token.address);
+    // Starting exchange rate = 0.02, expressed using 10 ^ (18 + underlyingDecimals - cTokenDecimals)
+    //  = 0.02 * 10 ^ (18 + 18 - 8)
+    //  = 0.02 * 10 ^ 28
+    //  = 2 * 10^26
+    await _cToken.setExchangeRate(BigNumber.from(10).pow(26).mul(2));
     const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
       _cToken.address,
       _token.address
@@ -44,25 +49,32 @@ describe("Compound Rate Oracle", () => {
     it("correctly calculates rate from one timestamp to the next", async () => {
       await testCompoundRateOracle.increaseObservationCardinalityNext(4);
 
-      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-      const rateFromTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await cToken.setExchangeRate(toBn("0.01"));
-      await testCompoundRateOracle.writeOracleEntry();
+      // Starting exchange rate = 0.02, expressed using 10 ^ (18 + underlyingDecimals - cTokenDecimals)
+      //  = 0.02 * 10 ^ (18 + 18 - 8)
+      //  = 0.02 * 10 ^ 28
+      //  = 2 * 10^26
+      let exchangeRate = BigNumber.from(10).pow(26).mul(2);
+      await cToken.setExchangeRate(exchangeRate);
 
       await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
-      console.log("MockCToken.address: ", cToken.address);
-      await cToken.setExchangeRate(toBn("0.1"));
+      // Increase exchange rate by 0.1%
+      exchangeRate = exchangeRate.mul(1001).div(1000);
+      await cToken.setExchangeRate(exchangeRate);
+      const rateFromTimestamp = (await getCurrentTimestamp(provider)) + 1;
+      await testCompoundRateOracle.writeOracleEntry();
+      await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
+
+      // Increase exchange rate by 0.1%
+      exchangeRate = exchangeRate.mul(1001).div(1000);
+      await cToken.setExchangeRate(exchangeRate);
       const rateToTimestamp = (await getCurrentTimestamp(provider)) + 1;
       await testCompoundRateOracle.writeOracleEntry();
       expect(rateFromTimestamp).not.to.eq(rateToTimestamp); // debug
-
-      await testCompoundRateOracle.testGetRateFromTo(
+      const rateFromTo = await testCompoundRateOracle.getRateFromTo(
         rateFromTimestamp,
         rateToTimestamp
       );
-      const rateFromTo = await testCompoundRateOracle.latestRateFromTo();
-
-      const expectedRateFromTo = toBn("9");
+      const expectedRateFromTo = toBn(0.001); // 0.1%
 
       expect(rateFromTo).to.eq(expectedRateFromTo);
     });
