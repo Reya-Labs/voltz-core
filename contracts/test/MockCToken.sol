@@ -11,6 +11,10 @@ contract MockCToken is ICToken, ERC20 {
     address internal _underlyingAsset;
     uint256 internal _rate;
 
+    function balanceOfUnderlying(address owner) external returns (uint256) {
+        return (balanceOf(owner) * exchangeRateCurrent()) / 1e18;
+    }
+
     constructor(
         address underlyingAsset,
         string memory name,
@@ -23,7 +27,11 @@ contract MockCToken is ICToken, ERC20 {
         _rate = rate;
     }
 
-    function exchangeRateStored() external view override returns (uint256) {
+    function exchangeRateCurrent() public override returns (uint256) {
+        return _rate;
+    }
+
+    function exchangeRateStored() public view override returns (uint256) {
         return _rate;
     }
 

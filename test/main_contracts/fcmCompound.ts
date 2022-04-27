@@ -17,7 +17,6 @@ import {
   T_MAX,
   printTraderWithYieldBearingTokensInfo,
 } from "../shared/utilities";
-import { toBn } from "evm-bn";
 import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import {
   ERC20Mock,
@@ -28,6 +27,7 @@ import {
 import { TickMath } from "../shared/tickMath";
 import { advanceTime } from "../helpers/time";
 import { add, div, mul, pow, sub } from "../shared/functions";
+import { toBn } from "../helpers/toBn";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -50,18 +50,28 @@ describe("FCM Compound", () => {
 
   async function getTraderBalance(walletAddress: string) {
     const traderBalanceInCTokens = await mockCToken.balanceOf(walletAddress);
+    const traderBalanceInUnderlyingViaCTokens =
+      await mockCToken.callStatic.balanceOfUnderlying(walletAddress);
     const traderBalanceInUnderlyingTokens = await token.balanceOf(
       walletAddress
     );
     // can add since 1aToken=1Token TODO: MODIFY FOR COMPOUND
+    // const traderOverallBalanceInUnderlyingTokens = add(
+    //   traderBalanceInCTokens,
+    //   traderBalanceInUnderlyingTokens
+    // );
     const traderOverallBalanceInUnderlyingTokens = add(
-      traderBalanceInCTokens,
+      traderBalanceInUnderlyingViaCTokens,
       traderBalanceInUnderlyingTokens
     );
 
     console.log(
       "traderBalanceInCTokens",
-      utils.formatEther(traderBalanceInCTokens)
+      utils.formatUnits(traderBalanceInCTokens, 8)
+    );
+    console.log(
+      "traderBalanceInUnderlyingViaCTokens",
+      utils.formatEther(traderBalanceInUnderlyingViaCTokens)
     );
     console.log(
       "traderBalanceInUnderlyingTokens",
@@ -90,11 +100,20 @@ describe("FCM Compound", () => {
   ) {
     // todo: add more arguments to this function
 
+    console.log(
+      "getTraderApy",
+      traderStartingOverallBalanceInUnderlyingTokens.toString(),
+      traderEndingOverallBalanceInUnderlyingTokens.toString()
+    );
+
     const traderAbsoluteReturn = sub(
       traderEndingOverallBalanceInUnderlyingTokens,
       traderStartingOverallBalanceInUnderlyingTokens
     );
-    const traderReturn = div(traderAbsoluteReturn, toBn("100"));
+    const traderReturn = div(
+      traderAbsoluteReturn,
+      traderStartingOverallBalanceInUnderlyingTokens
+    );
 
     console.log(
       "traderAbsoluteReturn",
@@ -191,11 +210,11 @@ describe("FCM Compound", () => {
         // mint underlyings to the mock cToken
         await token.mint(mockCToken.address, BigNumber.from(10).pow(27));
 
-        // mint aTokens
-        await mockCToken.mint(wallet.address, toBn("100"));
+        // mint cTokens
+        await mockCToken.mint(wallet.address, toBn(5000, 8));
         await mockCToken
           .connect(wallet)
-          .approve(fcmCompound.address, toBn("100"));
+          .approve(fcmCompound.address, toBn(5000, 8));
       }
     );
 
@@ -204,14 +223,14 @@ describe("FCM Compound", () => {
         await fcmCompound.marginEngine(),
         "margin engine address expect"
       ).to.eq(marginEngineCompound.address);
-      expect(
-        await fcmCompound.underlyingYieldBearingToken(),
-        "underlying yield bearing token expect"
-      ).to.eq(mockCToken.address);
-      console.log("0c");
+      expect(await fcmCompound.cToken(), "cToken expect").to.eq(
+        mockCToken.address
+      );
       expect(await fcmCompound.vamm(), "vamm address expect").to.eq(
         vammCompound.address
       );
+
+      await getTraderBalance(wallet.address);
 
       const otherStartingBalance = await token.balanceOf(other.address);
 
@@ -235,10 +254,9 @@ describe("FCM Compound", () => {
       const traderStartingOverallBalanceInUnderlyingTokens =
         await getTraderBalance(wallet.address);
 
-      const allowance = await mockCToken
+      await mockCToken
         .connect(wallet)
         .allowance(wallet.address, fcmCompound.address);
-      console.log("allowance", allowance.toString());
 
       // engage in a fixed taker swap via the fcm
       await fcmCompound
@@ -247,6 +265,8 @@ describe("FCM Compound", () => {
           toBn("100"),
           TickMath.getSqrtRatioAtTick(TICK_SPACING).toString()
         );
+
+      await getTraderBalance(wallet.address);
 
       // do a full scenario with checks
       const traderInfo = await fcmCompound.traders(wallet.address);
@@ -257,14 +277,11 @@ describe("FCM Compound", () => {
       // time passes, trader's margin in yield bearing tokens should be the same as the ctoken balance of the fcm
       await advanceTime(604800); // advance time by one week
       const initalExchangeRate = await mockCToken.exchangeRateStored();
-
       // SImulate 1% return in a week
       await mockCToken.setExchangeRate(initalExchangeRate.mul(101).div(100));
       await rateOracleTest.writeOracleEntry();
 
       await printHistoricalApy();
-
-      console.log("7");
 
       // check a token balance of the fcm
       const cTokenBalanceOfFCM = await mockCToken.balanceOf(
@@ -285,7 +302,9 @@ describe("FCM Compound", () => {
 
       expect(cTokenBalanceOfFCM).to.eq(cTokenBalanceOfTrader);
 
+      await getTraderBalance(wallet.address);
       await fcmCompound.settleTrader();
+      await getTraderBalance(wallet.address);
 
       const traderInfoPostSettlement = await fcmCompound.traders(
         wallet.address
@@ -301,8 +320,6 @@ describe("FCM Compound", () => {
 
       const traderEndingOverallBalanceInUnderlyingTokens =
         await getTraderBalance(wallet.address);
-
-      console.log("8");
 
       const traderAPY = getTraderApy(
         traderStartingOverallBalanceInUnderlyingTokens,
@@ -324,12 +341,6 @@ describe("FCM Compound", () => {
         TICK_SPACING
       );
       const finalPositionMargin = positionInfo.margin;
-      console.log(
-        "finalPositionMargin",
-        utils.formatEther(finalPositionMargin)
-      );
-
-      console.log("9");
 
       await marginEngineCompound
         .connect(other)
@@ -340,7 +351,6 @@ describe("FCM Compound", () => {
           mul(finalPositionMargin, toBn("-1")).add(1)
         );
 
-      console.log("here?");
       const positionInfoPostUpdateMargin =
         await marginEngineCompound.callStatic.getPosition(
           other.address,

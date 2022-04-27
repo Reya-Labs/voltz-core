@@ -40,7 +40,7 @@ const createFixtureLoader = waffle.createFixtureLoader;
 // proceed to write more e2e scenarios with new conditions
 // add new invariants to the scenarios --> use modular code
 
-describe("FCM", () => {
+describe("FCM Aave", () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
   // let factory: Factory;
@@ -100,7 +100,10 @@ describe("FCM", () => {
       traderEndingOverallBalanceInUnderlyingTokens,
       traderStartingOverallBalanceInUnderlyingTokens
     );
-    const traderReturn = div(traderAbsoluteReturn, toBn("100"));
+    const traderReturn = div(
+      traderAbsoluteReturn,
+      traderStartingOverallBalanceInUnderlyingTokens
+    );
 
     console.log(
       "traderAbsoluteReturn",

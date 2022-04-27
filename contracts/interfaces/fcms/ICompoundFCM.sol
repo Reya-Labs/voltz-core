@@ -8,5 +8,5 @@ import "../IERC20Minimal.sol";
 interface ICompoundFCM {
 
     /// The CToken
-    function underlyingYieldBearingToken() external returns (ICToken);
+    function cToken() external returns (ICToken);
 }
