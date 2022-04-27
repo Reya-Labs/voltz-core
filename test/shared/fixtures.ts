@@ -7,6 +7,7 @@ import { TestCompoundRateOracle } from "../../typechain/TestCompoundRateOracle";
 import { AaveFCM } from "../../typechain/AaveFCM";
 
 import {
+  CompoundRateOracle,
   E2ESetup,
   ERC20Mock,
   FixedAndVariableMathTest,
@@ -486,14 +487,17 @@ interface MetaFixtureE2E {
   factory: Factory;
   vammMasterTest: TestVAMM;
   marginEngineMasterTest: TestMarginEngine;
+
   token: ERC20Mock;
   mockAToken: MockAToken;
-  rateOracleTest: TestRateOracle;
+
   aaveLendingPool: MockAaveLendingPool;
-  compoundRateOracleTest: TestCompoundRateOracle;
-  mockCToken: MockCToken;
+
+  rateOracleTest: TestRateOracle;
+
   termStartTimestampBN: BigNumber;
   termEndTimestampBN: BigNumber;
+
   testMarginCalculator: MarginCalculatorTest;
 }
 
@@ -510,12 +514,6 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
     const { rateOracleTest } = await rateOracleTestFixture(
       aaveLendingPool.address,
-      token.address
-    );
-
-    const { mockCToken } = await mockCTokenFixture(token.address);
-    const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
-      mockCToken.address,
       token.address
     );
 
@@ -570,8 +568,82 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
       mockAToken,
       rateOracleTest,
       aaveLendingPool,
-      compoundRateOracleTest,
+      termStartTimestampBN,
+      termEndTimestampBN,
+      testMarginCalculator,
+    };
+  };
+
+  return metaFixtureE2E;
+};
+
+interface CompoundMetaFixtureE2E {
+  factory: Factory;
+  vammMasterTest: TestVAMM;
+  marginEngineMasterTest: TestMarginEngine;
+
+  token: ERC20Mock;
+  mockCToken: MockCToken;
+
+  compoundRateOracleTest: TestCompoundRateOracle;
+
+  termStartTimestampBN: BigNumber;
+  termEndTimestampBN: BigNumber;
+
+  testMarginCalculator: MarginCalculatorTest;
+}
+
+export const createCompoundMetaFixtureE2E = async function (e2eParams: e2eParameters) {
+  const metaFixtureE2E = async function (): Promise<CompoundMetaFixtureE2E> {
+    const { marginEngineMasterTest } = await marginEngineMasterTestFixture();
+    const { vammMasterTest } = await vammMasterTestFixture();
+    const { fcmMasterCompound } = await fcmMasterTestFixture();
+    const { factory } = await factoryFixture(
+      marginEngineMasterTest.address,
+      vammMasterTest.address
+    );
+    const { token } = await mockERC20Fixture();
+
+    const { mockCToken } = await mockCTokenFixture(token.address);
+    await mockCToken.setExchangeRate(BigNumber.from(10).pow(20).mul(2000000));
+
+    const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
+      mockCToken.address,
+      token.address
+    );
+    await compoundRateOracleTest.increaseObservationCardinalityNext(100);
+
+    await compoundRateOracleTest.writeOracleEntry();
+
+    await advanceTimeAndBlock(consts.ONE_MONTH.mul(6), 4);
+
+    await mockCToken.setExchangeRate(BigNumber.from(10).pow(20).mul(2000010));
+    await compoundRateOracleTest.writeOracleEntry();
+
+    const { testMarginCalculator } = await marginCalculatorFixture();
+
+    const termStartTimestamp: number = await getCurrentTimestamp(provider);
+    const termEndTimestamp: number =
+      termStartTimestamp + e2eParams.duration.toNumber();
+    const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
+    const termEndTimestampBN: BigNumber = toBn(termEndTimestamp.toString());
+
+    const UNDERLYING_YIELD_BEARING_PROTOCOL_ID =
+      await compoundRateOracleTest.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
+
+    // set master fcm for aave
+    await factory.setMasterFCM(
+      fcmMasterCompound.address,
+      UNDERLYING_YIELD_BEARING_PROTOCOL_ID
+    );
+
+    return {
+      factory,
+      vammMasterTest,
+      marginEngineMasterTest,
+      token,
       mockCToken,
+      compoundRateOracleTest,
       termStartTimestampBN,
       termEndTimestampBN,
       testMarginCalculator,
