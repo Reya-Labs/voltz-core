@@ -8,7 +8,6 @@ pragma solidity =0.8.9;
 /// @notice Computes sqrt price for ticks of size 1.0001, i.e. sqrt(1.0001^tick) as fixed point Q64.96 numbers. Supports
 /// prices between 2**-128 and 2**128
 library TickMath {
-
     /// @dev MIN_TICK corresponds to an annualized fixed rate of 1000%
     /// @dev MAX_TICK corresponds to an annualized fixed rate of 0.001%
     /// @dev MIN and MAX TICKs can't be safely changed without reinstating getSqrtRatioAtTick removed lines of code from original
