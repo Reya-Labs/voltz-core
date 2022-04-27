@@ -8,6 +8,11 @@ pragma solidity =0.8.9;
 /// @notice Computes sqrt price for ticks of size 1.0001, i.e. sqrt(1.0001^tick) as fixed point Q64.96 numbers. Supports
 /// prices between 2**-128 and 2**128
 library TickMath {
+    /// @dev MIN_TICK corresponds to an annualized fixed rate of 1000%
+    /// @dev MAX_TICK corresponds to an annualized fixed rate of 0.001%
+    /// @dev MIN and MAX TICKs can't be safely changed without reinstating getSqrtRatioAtTick removed lines of code from original
+    /// TickMath.sol implementation in uniswap v3
+
     /// @dev The minimum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**-128
     int24 internal constant MIN_TICK = -69100;
     /// @dev The maximum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**128
@@ -68,16 +73,6 @@ library TickMath {
             ratio = (ratio * 0x31be135f97d08fd981231505542fcfa6) >> 128;
         if (absTick & 0x10000 != 0)
             ratio = (ratio * 0x9aa508b5b7a84e1c677de54f3e99bc9) >> 128;
-        /// @audit tag 8 [ABDK]
-        // Below three if conditions are always false, as the maximum "absTick" value is 0x10DEC.
-        // Consider removing these lines.
-        // a lot of tests start failing after this change
-        if (absTick & 0x20000 != 0)
-            ratio = (ratio * 0x5d6af8dedb81196699c329225ee604) >> 128;
-        if (absTick & 0x40000 != 0)
-            ratio = (ratio * 0x2216e584f5fa1ea926041bedfe98) >> 128;
-        if (absTick & 0x80000 != 0)
-            ratio = (ratio * 0x48a170391f7dc42444e8fa2) >> 128;
         if (tick > 0) ratio = type(uint256).max / ratio;
 
         // this divides by 1<<32 rounding up to go from a Q128.128 to a Q128.96.
