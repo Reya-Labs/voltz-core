@@ -135,7 +135,7 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
 
     // deposit notional executed in terms of cTokens (e.g. cDAI) to fully collateralise the position
     // we need a number of tokens equal to the variable token delta divided by the exchange rate
-    IERC20Minimal(address(_ctoken)).safeTransferFrom(msg.sender, address(this), yieldBearingTokenDelta);
+    IERC20Minimal(address(_ctoken)).safeTransferFrom(msg.sender, address(this), uint256(-variableTokenDelta));
 
     // transfer fees to the margin engine (in terms of the underlyingToken e.g. cDAI)
     underlyingToken.safeTransferFrom(msg.sender, address(_marginEngine), cumulativeFeeIncurred);

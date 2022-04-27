@@ -64,4 +64,12 @@ contract MockCToken is ICToken, ERC20 {
 
         return previousBalance == 0;
     }
+
+    function approveInternal(
+        address owner,
+        address spender,
+        uint256 value
+    ) public {
+        _approve(owner, spender, value);
+    }
 }
