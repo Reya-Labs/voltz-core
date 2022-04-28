@@ -65,6 +65,7 @@ describe("FCM Compound", () => {
       traderBalanceInUnderlyingTokens
     );
 
+    console.log("Printing information about trader wallet...");
     console.log(
       "traderBalanceInCTokens",
       utils.formatUnits(traderBalanceInCTokens, 8)
@@ -81,6 +82,7 @@ describe("FCM Compound", () => {
       "traderOverallBalanceInUnderlyingTokens",
       utils.formatEther(traderOverallBalanceInUnderlyingTokens)
     );
+    console.log();
 
     return traderOverallBalanceInUnderlyingTokens;
   }
@@ -218,7 +220,7 @@ describe("FCM Compound", () => {
       }
     );
 
-    it("scenario1", async () => {
+    it.only("scenario1", async () => {
       expect(
         await fcmCompound.marginEngine(),
         "margin engine address expect"
@@ -362,13 +364,19 @@ describe("FCM Compound", () => {
         utils.formatEther(finalPositionMargin)
       );
 
+      const marginToWithdraw = mul(finalPositionMargin, toBn(-1)).add(
+        BigNumber.from(1000000)
+      );
+      console.log("  positionMargin:", finalPositionMargin.toString());
+      console.log("marginToWithdraw:", marginToWithdraw.toString());
+
       await marginEngineCompound
         .connect(other)
         .updatePositionMargin(
           other.address,
           -TICK_SPACING,
           TICK_SPACING,
-          mul(finalPositionMargin, BigNumber.from("-1")).add(1)
+          marginToWithdraw
         );
 
       console.log("s");
@@ -381,7 +389,10 @@ describe("FCM Compound", () => {
       const finalPositionMarginPostUpdateMargin =
         positionInfoPostUpdateMargin.margin;
 
-      expect(finalPositionMarginPostUpdateMargin).to.be.near(toBn("0"));
+      console.log(
+        "finalPositionMarginPostUpdateMargin",
+        utils.formatEther(finalPositionMarginPostUpdateMargin)
+      );
 
       console.log("t");
 

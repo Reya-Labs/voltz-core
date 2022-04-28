@@ -145,6 +145,7 @@ export function formatRay(value: BigNumber, decimals: number = 9): string {
 }
 
 export function printTraderWithYieldBearingTokensInfo(traderInfo: any) {
+  console.log("Printing information about Trader with YBA...");
   console.log(
     "marginInScaledYieldBearingTokens: ",
     utils.formatEther(traderInfo.marginInScaledYieldBearingTokens)

@@ -4,12 +4,16 @@ import "../interfaces/compound/ICToken.sol";
 import "../utils/WadRayMath.sol";
 import "../utils/Printer.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../interfaces/IERC20Minimal.sol";
+import "../core_libraries/SafeTransferLib.sol";
 
 contract MockCToken is ICToken, ERC20 {
     using WadRayMath for uint256;
     address internal _cToken;
     address internal _underlyingAsset;
     uint256 internal _rate;
+
+    using SafeTransferLib for IERC20Minimal;
 
     function balanceOfUnderlying(address owner) external returns (uint256) {
         return (balanceOf(owner) * exchangeRateCurrent()) / 1e18;
@@ -44,6 +48,9 @@ contract MockCToken is ICToken, ERC20 {
         override
         returns (uint256)
     {
+        uint256 yieldBearingAmount = redeemAmount.wadDiv(_rate);
+        IERC20Minimal(address(_cToken)).safeTransferFrom(msg.sender, address(this), yieldBearingAmount);
+        IERC20Minimal(address(_underlyingAsset)).safeTransfer(msg.sender, redeemAmount);
         return 0;
     }
 
