@@ -127,7 +127,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         }
     }
 
-
     function observeSingle(
         uint32 currentTime,
         uint32 queriedTime,
