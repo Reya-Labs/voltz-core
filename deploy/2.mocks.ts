@@ -18,15 +18,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: doLogging,
   });
+
+  await deploy("MockCToken", {
+    from: deployer,
+    log: doLogging,
+    args: [mockERC20Deploy.address, "Voltz cDAI", "cVDAI"],
+  });
+
   const mockAaveLendingPool = await ethers.getContract("MockAaveLendingPool");
   const trx1 = await mockAaveLendingPool.setReserveNormalizedIncome(
     mockERC20Deploy.address,
-    BigNumber.from(10).pow(27)
+    BigNumber.from(10).pow(27),
+    { gasLimit: 10000000 }
   );
   await trx1.wait();
   const trx2 = await mockAaveLendingPool.setFactorPerSecondInRay(
     mockERC20Deploy.address,
-    "1000000001000000000000000000" // 0.0000001% per second = ~3.2% APY
+    "1000000001000000000000000000", // 0.0000001% per second = ~3.2% APY
+    { gasLimit: 10000000 }
   );
   await trx2.wait();
   return true; // Only execute once

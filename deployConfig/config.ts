@@ -33,7 +33,7 @@ const kovanConfigDefaults: ConfigDefaults = {
   marginEngineCacheMaxAgeInSeconds: 6 * 60 * 60, // 6 hours
   marginEngineLiquidatorRewardWad: toBn(0.1),
   marginEngineCalculatorParameters: marginCalculatorDefaults1,
-  vammFeeProtocol: 0,
+  vammFeeProtocol: 10,
   vammFeeWad: toBn(0.009), // 0.9%, for 30 day pool
   rateOracleBufferSize: 100,
   rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
@@ -52,6 +52,7 @@ const config: ContractsConfigMap = {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe",
     maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough
+    // maxIrsDurationInSeconds: 60 * 60 * 24 * 62, // 32 days. Do not increase without checking that rate oracle buffers are large enough
     configDefaults: kovanConfigDefaults,
 
     // Kovan MockUSDT (USDC has no ABI and faucet not working, so USDT easier to mint)
@@ -67,7 +68,16 @@ const config: ContractsConfigMap = {
       {
         name: "USDC",
         address: "0xe22da380ee6B445bb8273C81944ADEB6E8450422",
-        rateOracleBufferSize: 200,
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+    // See tokens list at https://compound.finance/docs#networks
+    compoundTokens: [
+      {
+        name: "cUSDC",
+        address: "0x4a92e71227d294f041bd82dd8f78591b75140d63",
+        rateOracleBufferSize: 300,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],
@@ -106,9 +116,28 @@ export const getAaveTokens = (
     : undefined;
   // Check for duplicate token names. These must be unique because they are used to name the deployed contracts
   if (aaveTokens && duplicateExists(aaveTokens?.map((t) => t.name))) {
-    throw Error(`Duplicate token names configured for network ${_networkName}`);
+    throw Error(
+      `Duplicate token names configured for Aave on network ${_networkName}`
+    );
   }
   return aaveTokens;
+};
+
+export const getCompoundTokens = (
+  _networkName: string
+): TokenConfig[] | undefined => {
+  const networkName = _networkName;
+
+  const compoundTokens = config[networkName]
+    ? config[networkName].compoundTokens
+    : undefined;
+  // Check for duplicate token names. These must be∫ unique because they are used to name the deployed contracts
+  if (compoundTokens && duplicateExists(compoundTokens?.map((t) => t.name))) {
+    throw Error(
+      `Duplicate token names configured for Compound on network ${_networkName}`
+    );
+  }
+  return compoundTokens;
 };
 
 export const getConfigDefaults = (_networkName: string): ConfigDefaults => {

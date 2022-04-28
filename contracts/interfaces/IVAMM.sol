@@ -10,13 +10,16 @@ import "contracts/utils/CustomErrors.sol";
 interface IVAMM is IPositionStructs, CustomErrors {
     // events
     event Swap(
-        address indexed sender,
+        address sender,
         address indexed recipient,
-        uint160 sqrtPriceX96,
-        uint128 liquidity,
-        int24 tick,
-        int24 tickLower,
-        int24 tickUpper
+        int24 indexed tickLower,
+        int24 indexed tickUpper,
+        int256 desiredNotional,
+        uint160 sqrtPriceLimitX96,
+        uint256 cumulativeFeeIncurred,
+        int256 fixedTokenDelta,
+        int256 variableTokenDelta,
+        int256 fixedTokenDeltaUnbalanced
     );
 
     /// @dev emitted after a given vamm is successfully initialized
@@ -51,6 +54,8 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @dev additionally, the periphery has the logic to take care of lp notional caps in the Alpha State phase of VAMM
     /// @dev __isAlpha is the newly set value for the _isAlpha boolean
     event IsAlpha(bool __isAlpha);
+
+    event VAMMPriceChange(int24 tick);
 
     // structs
 
@@ -243,17 +248,17 @@ interface IVAMM is IPositionStructs, CustomErrors {
 
     /// @notice Initiate an Interest Rate Swap
     /// @param params SwapParams necessary to initiate an Interest Rate Swap
-    /// @return _fixedTokenDelta Fixed Token Delta
-    /// @return _variableTokenDelta Variable Token Delta
-    /// @return _cumulativeFeeIncurred Cumulative Fee Incurred
+    /// @return fixedTokenDelta Fixed Token Delta
+    /// @return variableTokenDelta Variable Token Delta
+    /// @return cumulativeFeeIncurred Cumulative Fee Incurred
     function swap(SwapParams memory params)
         external
         returns (
-            int256 _fixedTokenDelta,
-            int256 _variableTokenDelta,
-            uint256 _cumulativeFeeIncurred,
-            int256 _fixedTokenDeltaUnbalanced,
-            int256 _marginRequirement
+            int256 fixedTokenDelta,
+            int256 variableTokenDelta,
+            uint256 cumulativeFeeIncurred,
+            int256 fixedTokenDeltaUnbalanced,
+            int256 marginRequirement
         );
 
     /// @notice Look up information about a specific tick in the amm

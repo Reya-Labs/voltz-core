@@ -72,17 +72,17 @@ contract E2ESetup is CustomErrors {
 
     uint256 public keepInMindGas;
 
-    function getReserveNormalizedIncome() internal view returns (uint256) {
-        IRateOracle rateOracle = IMarginEngine(MEAddress).rateOracle();
-        IAaveV2LendingPool aaveLendingPool = IAaveV2LendingPool(
-            IAaveRateOracle(address(rateOracle)).aaveLendingPool()
-        );
-        uint256 reserveNormalizedIncome = aaveLendingPool
-            .getReserveNormalizedIncome(
-                IMarginEngine(MEAddress).underlyingToken()
-            );
-        return reserveNormalizedIncome;
-    }
+    // function getReserveNormalizedIncome() internal view returns (uint256) {
+    //     IRateOracle rateOracle = IMarginEngine(MEAddress).rateOracle();
+    //     IAaveV2LendingPool aaveLendingPool = IAaveV2LendingPool(
+    //         IAaveRateOracle(address(rateOracle)).aaveLendingPool()
+    //     );
+    //     uint256 reserveNormalizedIncome = aaveLendingPool
+    //         .getReserveNormalizedIncome(
+    //             IMarginEngine(MEAddress).underlyingToken()
+    //         );
+    //     return reserveNormalizedIncome;
+    // }
 
     function addSwapSnapshot(
         address owner,
@@ -108,7 +108,8 @@ contract E2ESetup is CustomErrors {
         );
 
         // get the current reserve normalized income from Aave
-        uint256 reserveNormalizedIncome = getReserveNormalizedIncome();
+        // uint256 reserveNormalizedIncome = getReserveNormalizedIncome();
+        uint256 reserveNormalizedIncome = 1;
 
         SwapSnapshot memory swapSnapshot = SwapSnapshot({
             reserveNormalizedIncomeAtSwap: reserveNormalizedIncome,
@@ -464,135 +465,135 @@ contract E2ESetup is CustomErrors {
         ) continuousInvariants();
     }
 
-    function computeSettlementCashflowForSwapSnapshot(
-        SwapSnapshot memory snapshot
-    ) internal view returns (int256 settlementCashflow) {
-        // calculate the variable factor for the period the swap was active
-        // needs to be called at the same time as the term end timestamp, otherwise need to cache the reserve normalised income for the term end timestamp in the E2E setup
+    // function computeSettlementCashflowForSwapSnapshot(
+    //     SwapSnapshot memory snapshot
+    // ) internal view returns (int256 settlementCashflow) {
+    //     // calculate the variable factor for the period the swap was active
+    //     // needs to be called at the same time as the term end timestamp, otherwise need to cache the reserve normalised income for the term end timestamp in the E2E setup
 
-        uint256 reserveNormalizedIncomeRay = getReserveNormalizedIncome();
-        uint256 reserveNormalizedIncomeAtSwapInceptionRay = snapshot
-            .reserveNormalizedIncomeAtSwap;
-        uint256 variableFactorFromSwapInceptionToMaturityWad = WadRayMath
-            .rayToWad(
-                WadRayMath
-                    .rayDiv(
-                        reserveNormalizedIncomeRay,
-                        reserveNormalizedIncomeAtSwapInceptionRay
-                    )
-                    .sub(WadRayMath.RAY)
-            );
+    //     uint256 reserveNormalizedIncomeRay = getReserveNormalizedIncome();
+    //     uint256 reserveNormalizedIncomeAtSwapInceptionRay = snapshot
+    //         .reserveNormalizedIncomeAtSwap;
+    //     uint256 variableFactorFromSwapInceptionToMaturityWad = WadRayMath
+    //         .rayToWad(
+    //             WadRayMath
+    //                 .rayDiv(
+    //                     reserveNormalizedIncomeRay,
+    //                     reserveNormalizedIncomeAtSwapInceptionRay
+    //                 )
+    //                 .sub(WadRayMath.RAY)
+    //         );
 
-        // swapInitiationTimestampWad
-        uint256 termEndTimestampWad = IMarginEngine(MEAddress)
-            .termEndTimestampWad();
+    //     // swapInitiationTimestampWad
+    //     uint256 termEndTimestampWad = IMarginEngine(MEAddress)
+    //         .termEndTimestampWad();
 
-        uint256 timeInSecondsBetweenSwapInitiationAndMaturityWad = termEndTimestampWad -
-                snapshot.swapInitiationTimestampWad;
-        uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
-            timeInSecondsBetweenSwapInitiationAndMaturityWad
-        );
+    //     uint256 timeInSecondsBetweenSwapInitiationAndMaturityWad = termEndTimestampWad -
+    //             snapshot.swapInitiationTimestampWad;
+    //     uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
+    //         timeInSecondsBetweenSwapInitiationAndMaturityWad
+    //     );
 
-        uint256 fixedFactorWad = PRBMathUD60x18.mul(
-            snapshot.fixedRateWad,
-            timeInYearsWad
-        );
+    //     uint256 fixedFactorWad = PRBMathUD60x18.mul(
+    //         snapshot.fixedRateWad,
+    //         timeInYearsWad
+    //     );
 
-        int256 variableFixedFactorDelta;
-        if (snapshot.isFT) {
-            variableFixedFactorDelta =
-                int256(fixedFactorWad) -
-                int256(variableFactorFromSwapInceptionToMaturityWad);
-        } else {
-            variableFixedFactorDelta =
-                int256(variableFactorFromSwapInceptionToMaturityWad) -
-                int256(fixedFactorWad);
-        }
+    //     int256 variableFixedFactorDelta;
+    //     if (snapshot.isFT) {
+    //         variableFixedFactorDelta =
+    //             int256(fixedFactorWad) -
+    //             int256(variableFactorFromSwapInceptionToMaturityWad);
+    //     } else {
+    //         variableFixedFactorDelta =
+    //             int256(variableFactorFromSwapInceptionToMaturityWad) -
+    //             int256(fixedFactorWad);
+    //     }
 
-        int256 settlementCashflowWad = PRBMathSD59x18.mul(
-            int256(snapshot.notional),
-            variableFixedFactorDelta
-        );
-        settlementCashflow = PRBMathSD59x18.toInt(settlementCashflowWad);
-    }
+    //     int256 settlementCashflowWad = PRBMathSD59x18.mul(
+    //         int256(snapshot.notional),
+    //         variableFixedFactorDelta
+    //     );
+    //     settlementCashflow = PRBMathSD59x18.toInt(settlementCashflowWad);
+    // }
 
-    function settlementCashflowBasedOnSwapSnapshots(
-        address _owner,
-        int24 tickLower,
-        int24 tickUpper
-    ) public view returns (int256) {
-        (
-            SwapSnapshot[] memory snapshots,
-            uint256 len
-        ) = getPositionSwapsHistory(_owner, tickLower, tickUpper);
+    // function settlementCashflowBasedOnSwapSnapshots(
+    //     address _owner,
+    //     int24 tickLower,
+    //     int24 tickUpper
+    // ) public view returns (int256) {
+    //     (
+    //         SwapSnapshot[] memory snapshots,
+    //         uint256 len
+    //     ) = getPositionSwapsHistory(_owner, tickLower, tickUpper);
 
-        int256 settlementCashflow;
+    //     int256 settlementCashflow;
 
-        for (uint256 i = 0; i < len; i++) {
-            settlementCashflow += computeSettlementCashflowForSwapSnapshot(
-                snapshots[i]
-            );
-        }
+    //     for (uint256 i = 0; i < len; i++) {
+    //         settlementCashflow += computeSettlementCashflowForSwapSnapshot(
+    //             snapshots[i]
+    //         );
+    //     }
 
-        return settlementCashflow;
-    }
+    //     return settlementCashflow;
+    // }
 
-    function invariantPostMaturity() public {
-        // calculate the cashflows for each position based on their swap snapshots and based on their fixed and variable token balances
-        // this only works for Positins that have not minted liquidity since their settlementCashflow is also a function of trades in their tick range
-        // assume in this scenarios all the swapper only swap
+    // function invariantPostMaturity() public {
+    //     // calculate the cashflows for each position based on their swap snapshots and based on their fixed and variable token balances
+    //     // this only works for Positins that have not minted liquidity since their settlementCashflow is also a function of trades in their tick range
+    //     // assume in this scenarios all the swapper only swap
 
-        uint256 termStartTimestampWad = uint256(
-            IMarginEngine(MEAddress).termStartTimestampWad()
-        );
-        uint256 termEndTimestampWad = uint256(
-            IMarginEngine(MEAddress).termEndTimestampWad()
-        );
+    //     uint256 termStartTimestampWad = uint256(
+    //         IMarginEngine(MEAddress).termStartTimestampWad()
+    //     );
+    //     uint256 termEndTimestampWad = uint256(
+    //         IMarginEngine(MEAddress).termEndTimestampWad()
+    //     );
 
-        for (uint256 i = 1; i <= sizeAllPositions; i++) {
-            uint256 variableFactor = IRateOracle(rateOracleAddress)
-                .variableFactor(termStartTimestampWad, termEndTimestampWad);
+    //     for (uint256 i = 1; i <= sizeAllPositions; i++) {
+    //         uint256 variableFactor = IRateOracle(rateOracleAddress)
+    //             .variableFactor(termStartTimestampWad, termEndTimestampWad);
 
-            TestMarginEngine(MEAddress)
-                .updatePositionTokenBalancesAndAccountForFeesTest(
-                    allPositions[i].owner,
-                    allPositions[i].tickLower,
-                    allPositions[i].tickUpper,
-                    false
-                );
+    //         TestMarginEngine(MEAddress)
+    //             .updatePositionTokenBalancesAndAccountForFeesTest(
+    //                 allPositions[i].owner,
+    //                 allPositions[i].tickLower,
+    //                 allPositions[i].tickUpper,
+    //                 false
+    //             );
 
-            Position.Info memory position = IMarginEngine(MEAddress)
-                .getPosition(
-                    allPositions[i].owner,
-                    allPositions[i].tickLower,
-                    allPositions[i].tickUpper
-                );
+    //         Position.Info memory position = IMarginEngine(MEAddress)
+    //             .getPosition(
+    //                 allPositions[i].owner,
+    //                 allPositions[i].tickLower,
+    //                 allPositions[i].tickUpper
+    //             );
 
-            int256 settlementCashflow = FixedAndVariableMath
-                .calculateSettlementCashflow(
-                    position.fixedTokenBalance,
-                    position.variableTokenBalance,
-                    termStartTimestampWad,
-                    termEndTimestampWad,
-                    variableFactor
-                );
+    //         int256 settlementCashflow = FixedAndVariableMath
+    //             .calculateSettlementCashflow(
+    //                 position.fixedTokenBalance,
+    //                 position.variableTokenBalance,
+    //                 termStartTimestampWad,
+    //                 termEndTimestampWad,
+    //                 variableFactor
+    //             );
 
-            int256 settlementCashflowSS = settlementCashflowBasedOnSwapSnapshots(
-                    allPositions[i].owner,
-                    allPositions[i].tickLower,
-                    allPositions[i].tickUpper
-                );
+    //         int256 settlementCashflowSS = settlementCashflowBasedOnSwapSnapshots(
+    //                 allPositions[i].owner,
+    //                 allPositions[i].tickLower,
+    //                 allPositions[i].tickUpper
+    //             );
 
-            int256 approximation = 100000;
+    //         int256 approximation = 100000;
 
-            int256 delta = settlementCashflow - settlementCashflowSS;
+    //         int256 delta = settlementCashflow - settlementCashflowSS;
 
-            require(
-                abs(delta) < uint256(approximation),
-                "settlement cashflows from swap snapshots"
-            );
-        }
-    }
+    //         require(
+    //             abs(delta) < uint256(approximation),
+    //             "settlement cashflows from swap snapshots"
+    //         );
+    //     }
+    // }
 
     function continuousInvariants() public {
         int256 totalFixedTokens = 0;

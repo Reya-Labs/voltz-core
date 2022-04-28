@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity =0.8.9;
 import "./core_libraries/Tick.sol";
@@ -380,7 +380,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     override
     whenNotPaused
     checkCurrentTimestampTermEndTimestampDelta
-    returns (int256 _fixedTokenDelta, int256 _variableTokenDelta, uint256 _cumulativeFeeIncurred, int256 _fixedTokenDeltaUnbalanced, int256 _marginRequirement)
+    returns (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced, int256 marginRequirement)
   {
 
     Tick.checkTicks(params.tickLower, params.tickUpper);
@@ -668,10 +668,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     _variableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128;
     _fixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128;
 
-    _cumulativeFeeIncurred = state.cumulativeFeeIncurred;
-    _fixedTokenDelta = state.fixedTokenDeltaCumulative;
-    _variableTokenDelta = state.variableTokenDeltaCumulative;
-    _fixedTokenDeltaUnbalanced = state.fixedTokenDeltaUnbalancedCumulative;
+    cumulativeFeeIncurred = state.cumulativeFeeIncurred;
+    fixedTokenDelta = state.fixedTokenDeltaCumulative;
+    variableTokenDelta = state.variableTokenDeltaCumulative;
+    fixedTokenDeltaUnbalanced = state.fixedTokenDeltaUnbalancedCumulative;
 
     if (state.protocolFee > 0) {
       _protocolFees += state.protocolFee;
@@ -679,17 +679,22 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
     /// @dev if it is an unwind then state change happen direcly in the MarginEngine to avoid making an unnecessary external call
     if (!(msg.sender == address(_marginEngine) || msg.sender==address(_marginEngine.fcm()))) {
-      _marginRequirement = _marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, state.fixedTokenDeltaUnbalancedCumulative);
+      marginRequirement = _marginEngine.updatePositionPostVAMMInducedSwap(params.recipient, params.tickLower, params.tickUpper, state.fixedTokenDeltaCumulative, state.variableTokenDeltaCumulative, state.cumulativeFeeIncurred, state.fixedTokenDeltaUnbalancedCumulative);
     }
+
+    emit VAMMPriceChange(_vammVars.tick);
 
     emit Swap(
       msg.sender,
       params.recipient,
-      state.sqrtPriceX96,
-      state.liquidity,
-      state.tick,
       params.tickLower,
-      params.tickUpper
+      params.tickUpper,
+      params.amountSpecified,
+      params.sqrtPriceLimitX96,
+      cumulativeFeeIncurred,
+      fixedTokenDelta,
+      variableTokenDelta,
+      fixedTokenDeltaUnbalanced
     );
 
     _unlocked = true;

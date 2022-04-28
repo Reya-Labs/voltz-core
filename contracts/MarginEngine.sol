@@ -381,10 +381,22 @@ contract MarginEngine is
         _position.rewardPerAmount = 0;
 
         emit PositionMarginUpdate(
+            msg.sender,
             _owner,
             _tickLower,
             _tickUpper,
-            _position.margin
+            _marginDelta
+        );
+
+        emit PositionUpdate(
+            _owner,
+            _tickLower,
+            _tickUpper,
+            _position._liquidity,
+            _position.margin,
+            _position.fixedTokenBalance,
+            _position.variableTokenBalance,
+            _position.accumulatedFees
         );
     }
 
@@ -435,11 +447,18 @@ contract MarginEngine is
             _owner,
             _tickLower,
             _tickUpper,
+            _settlementCashflow
+        );
+
+        emit PositionUpdate(
+            _owner,
+            _tickLower,
+            _tickUpper,
+            _position._liquidity,
+            _position.margin,
             _position.fixedTokenBalance,
             _position.variableTokenBalance,
-            _position.margin,
-            _settlementCashflow,
-            true
+            _position.accumulatedFees
         );
     }
 
@@ -451,6 +470,7 @@ contract MarginEngine is
         ) {
             // Cache is stale
             _refreshHistoricalApyCache();
+            emit HistoricalApy(cachedHistoricalApyWad);
         }
         return cachedHistoricalApyWad;
     }
@@ -473,7 +493,8 @@ contract MarginEngine is
     function _getHistoricalApy() internal view returns (uint256) {
         uint256 _from = block.timestamp - _secondsAgo;
 
-        return _rateOracle.getApyFromTo(_from, block.timestamp);
+        uint256 historicalApy = _rateOracle.getApyFromTo(_from, block.timestamp);
+        return historicalApy;
     }
 
     /// @notice Updates the cached historical APY value of the RateOracle even if the cache is not stale
@@ -511,9 +532,11 @@ contract MarginEngine is
             false
         ); // isMint=false
 
-        (
-            bool _isLiquidatable,
-        ) = _isLiquidatablePosition(_position, _tickLower, _tickUpper);
+        (bool _isLiquidatable, ) = _isLiquidatablePosition(
+            _position,
+            _tickLower,
+            _tickUpper
+        );
 
         if (!_isLiquidatable) {
             revert CannotLiquidate();
@@ -537,10 +560,17 @@ contract MarginEngine is
             }
         }
 
+        uint256 _liquidatorRewardValue = 0;
         if (_position._liquidity > 0) {
             /// @dev pass position._liquidity to ensure all of the liqudity is burnt
             _vamm.burn(_owner, _tickLower, _tickUpper, _position._liquidity);
             _position.updateLiquidity(-int128(_position._liquidity));
+
+            /// @dev liquidator reward for burning liquidity
+            _liquidatorRewardValue += PRBMathUD60x18.mul(
+                uint256(_position.margin),
+                _liquidatorRewardWad
+            );
         }
 
         int256 _variableTokenDelta = _unwindPosition(
@@ -550,30 +580,42 @@ contract MarginEngine is
             _tickUpper
         );
 
-        if (_variableTokenDelta == 0) return 0;
+        /// @dev liquidator reward for unwinding position
+        if (_variableTokenDelta != 0) {
+            _liquidatorRewardValue += (_variableTokenDelta < 0)
+                ? PRBMathUD60x18.mul(
+                    uint256(-_variableTokenDelta),
+                    _position.rewardPerAmount
+                )
+                : PRBMathUD60x18.mul(
+                    uint256(_variableTokenDelta),
+                    _position.rewardPerAmount
+                );
+        }
 
-        uint256 _liquidatorRewardValue = (_variableTokenDelta < 0)
-            ? PRBMathUD60x18.mul(
-                uint256(-_variableTokenDelta),
-                _position.rewardPerAmount
-            )
-            : PRBMathUD60x18.mul(
-                uint256(_variableTokenDelta),
-                _position.rewardPerAmount
-            );
-
-        _position.updateMarginViaDelta(-_liquidatorRewardValue.toInt256());
-        _underlyingToken.safeTransfer(msg.sender, _liquidatorRewardValue);
+        if (_liquidatorRewardValue > 0) {
+            _position.updateMarginViaDelta(-_liquidatorRewardValue.toInt256());
+            _underlyingToken.safeTransfer(msg.sender, _liquidatorRewardValue);
+        }
 
         emit PositionLiquidation(
             _owner,
             _tickLower,
             _tickUpper,
+            msg.sender,
+            _variableTokenDelta,
+            _liquidatorRewardValue
+        );
+
+        emit PositionUpdate(
+            _owner,
+            _tickLower,
+            _tickUpper,
+            _position._liquidity,
+            _position.margin,
             _position.fixedTokenBalance,
             _position.variableTokenBalance,
-            _position.margin,
-            _position._liquidity,
-            msg.sender
+            _position.accumulatedFees
         );
 
         return _liquidatorRewardValue;
@@ -616,11 +658,15 @@ contract MarginEngine is
             _position.rewardPerAmount = 0;
         }
 
-        emit PositionPostMintBurnUpdate(
+        emit PositionUpdate(
             _params.owner,
             _params.tickLower,
             _params.tickUpper,
-            _position._liquidity
+            _position._liquidity,
+            _position.margin,
+            _position.fixedTokenBalance,
+            _position.variableTokenBalance,
+            _position.accumulatedFees
         );
     }
 
@@ -693,13 +739,15 @@ contract MarginEngine is
 
         _position.rewardPerAmount = 0;
 
-        emit PositionPostSwapUpdate(
+        emit PositionUpdate(
             _owner,
             _tickLower,
             _tickUpper,
+            _position._liquidity,
+            _position.margin,
             _position.fixedTokenBalance,
             _position.variableTokenBalance,
-            _position.margin
+            _position.accumulatedFees
         );
     }
 
@@ -741,7 +789,11 @@ contract MarginEngine is
                 _variableTokenGrowthInsideX128
             );
             /// @dev collect fees
-            _position.updateMarginViaDelta(_feeDelta.toInt256() - 1);
+            if (_feeDelta > 0) {
+                _position.accumulatedFees += _feeDelta - 1;
+                _position.updateMarginViaDelta(_feeDelta.toInt256() - 1);
+            }
+            
             _position.updateFeeGrowthInside(_feeGrowthInsideX128);
         } else {
             if (_isMintBurn) {
@@ -1256,7 +1308,7 @@ contract MarginEngine is
         int24 _tickLower,
         int24 _tickUpper,
         bool _isLM
-    ) external override returns (uint256 _margin) {
+    ) external override returns (uint256) {
         Position.Info storage _position = positions.get(
             _recipient,
             _tickLower,
@@ -1268,6 +1320,17 @@ contract MarginEngine is
             _tickUpper,
             false
         ); // isMint=false
+        
+        emit PositionUpdate(
+            _recipient,
+            _tickLower,
+            _tickUpper,
+            _position._liquidity,
+            _position.margin,
+            _position.fixedTokenBalance,
+            _position.variableTokenBalance,
+            _position.accumulatedFees
+        );
 
         return
             _getPositionMarginRequirement(

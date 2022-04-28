@@ -1,5 +1,8 @@
 {
-  "name": "voltz-core",
+  "name": "@voltz-protocol/voltz-core",
+  "version": "1.0.0",
+  "description": "Voltz Protocol Core Smart Contracts",
+  "license": "BUSL-1.1",
   "engines": {
     "node": ">=16.0.0"
   },
@@ -89,10 +92,14 @@
     "format:ts:check": "npx prettier '**/*.{json,js,ts,md}' --check",
     "format:check": "npm run format:sol:check && npm run format:ts:check",
     "prepare": "husky install",
-    "deploy:kovan": "hardhat deploy --network kovan --tags Factory,RateOracles,Periphery,FCMs --export deployments/kovanDeployment.json",
-    "deploy:localhost": "npx hardhat node --tags Factory,Mocks,RateOracles,Periphery,FCMs --export deployments/localhostDeployment.json --hostname 0.0.0.0",
+    "deploy:kovan": "hardhat deploy --network kovan --tags Factory,AaveRateOracles,CompoundRateOracles,Periphery,FCMs --export deployments/kovanDeployment.json",
+    "deploy:localhost": "npx hardhat node --tags Factory,Mocks,AaveRateOracles,CompoundRateOracles,Periphery,FCMs --export deployments/localhostDeployment.json --hostname 0.0.0.0",
     "createTestIrs:localhost": "npx hardhat createIrsInstance --network localhost --rate-oracle 'MockTokenRateOracle' --tick-spacing 3000",
     "generateEndToEndActivity:localhost": "npx hardhat test --network localhost test/end_to_end/general_setup/scenario0/scenario0.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Voltz-Protocol/voltz-core"
   },
   "husky": {
     "hooks": {

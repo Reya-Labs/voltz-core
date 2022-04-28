@@ -2,43 +2,66 @@
 
 pragma solidity =0.8.9;
 
-import "../interfaces/rate_oracles/IAaveRateOracle.sol";
-import "../interfaces/aave/IAaveV2LendingPool.sol";
+import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
+import "../interfaces/compound/ICToken.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WadRayMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
-import "../utils/CustomErrors.sol";
 
-contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
+contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
-    /// @inheritdoc IAaveRateOracle
-    IAaveV2LendingPool public override aaveLendingPool;
+    /// @inheritdoc ICompoundRateOracle
+    ICToken public override ctoken;
 
-    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 1; // id of aave v2 is 1
+    /// @inheritdoc ICompoundRateOracle
+    uint256 public override decimals;
 
-    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal _underlying)
-        BaseRateOracle(_underlying)
-    {
+    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of compound is 2
+
+    constructor(
+        ICToken _ctoken,
+        IERC20Minimal underlying,
+        uint8 _decimals
+    ) BaseRateOracle(underlying) {
+        ctoken = _ctoken;
         require(
-            address(_aaveLendingPool) != address(0),
-            "aave pool must exist"
+            ctoken.underlying() == address(underlying),
+            "Tokens do not match"
         );
-        require(address(_underlying) != address(0), "underlying must exist");
-
-        aaveLendingPool = _aaveLendingPool;
+        decimals = _decimals;
         uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = aaveLendingPool.getReserveNormalizedIncome(
-            _underlying
-        );
-
+        uint256 result = exchangeRateInRay();
         (
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
         ) = observations.initialize(blockTimestamp, result);
     }
 
-    /// @notice Store the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray
+    function exchangeRateInRay() internal view returns (uint256 resultRay) {
+        uint256 exchangeRateStored = ctoken.exchangeRateStored();
+        if (exchangeRateStored == 0) {
+            revert CustomErrors.CTokenExchangeRateReturnedZero();
+        }
+
+        // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(10 + Underlying Token Decimals)
+        // source: https://compound.finance/docs/ctokens#exchange-rate and https://compound.finance/docs#protocol-math
+        // We want the same number scaled by 10^27 (ray)
+        // So: if Underlying Token Decimals == 17, no scaling is required
+        //     if Underlying Token Decimals > 17, we scale down by a factor of 10^difference
+        //     if Underlying Token Decimals < 17, we scale up by a factor of 10^difference
+        if (decimals >= 17) {
+            uint256 scalingFactor = 10**(decimals - 17);
+            resultRay = exchangeRateStored / scalingFactor;
+        } else {
+            uint256 scalingFactor = 10**(17 - decimals);
+            resultRay = exchangeRateStored * scalingFactor;
+        }
+
+        return resultRay;
+    }
+
+    /// @notice Store the CToken's current exchange rate, in Ray
     /// @param index The index of the Observation that was most recently written to the observations buffer
     /// @param cardinality The number of populated elements in the observations buffer
     /// @param cardinalityNext The new length of the observations buffer, independent of population
@@ -56,12 +79,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
             return (index, cardinality);
 
-        uint256 resultRay = aaveLendingPool.getReserveNormalizedIncome(
-            underlying
-        );
-        if (resultRay == 0) {
-            revert CustomErrors.AavePoolGetReserveNormalizedIncomeReturnedZero();
-        }
+        uint256 resultRay = exchangeRateInRay();
 
         emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
@@ -98,7 +116,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             return 0;
         }
 
-        // note that we have to convert aave index into "floating rate" for
+        // note that we have to convert comp index into "floating rate" for
         // swap calculations, e.g. an index multiple of 1.04*10**27 corresponds to
         // 0.04*10**27 = 4*10*25
         uint32 currentTime = Time.blockTimestampTruncated();
@@ -140,18 +158,14 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             OracleBuffer.Observation memory rate;
             rate = observations[index];
             if (rate.blockTimestamp != currentTime) {
-                rateValueRay = aaveLendingPool.getReserveNormalizedIncome(
-                    underlying
-                );
+                rateValueRay = exchangeRateInRay();
             } else {
                 rateValueRay = rate.observedValue;
             }
             return rateValueRay;
         }
 
-        uint256 currentValueRay = aaveLendingPool.getReserveNormalizedIncome(
-            underlying
-        );
+        uint256 currentValueRay = exchangeRateInRay();
         (
             OracleBuffer.Observation memory beforeOrAt,
             OracleBuffer.Observation memory atOrAfter
@@ -208,7 +222,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
-        // In the case of Aave, the values we write are obtained by calling aaveLendingPool.getReserveNormalizedIncome(underlying)
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,

@@ -6,30 +6,27 @@ import {
   fixedAndVariableMathFixture,
   sqrtPriceMathFixture,
   tickMathFixture,
-  createMetaFixtureE2E,
-  marginCalculatorFixture,
+  createCompoundMetaFixtureE2E,
 } from "../../shared/fixtures";
-import { formatRay, TICK_SPACING } from "../../shared/utilities";
+import { TICK_SPACING } from "../../shared/utilities";
 import {
   Actor,
+  CompoundFCM,
   E2ESetup,
   ERC20Mock,
   Factory,
   FixedAndVariableMathTest,
   MarginEngine,
-  MockAaveLendingPool,
-  MockAToken,
+  MockCToken,
   Periphery,
   SqrtPriceMathTest,
-  TestAaveFCM,
-  TestRateOracle,
+  TestCompoundRateOracle,
   TickMathTest,
 } from "../../../typechain";
 import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
-import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
+import { getCurrentTimestamp } from "../../helpers/time";
 import { e2eParameters } from "./e2eSetup";
 import { toBn } from "../../helpers/toBn";
-import { consts } from "../../helpers/constants";
 import { createFixtureLoader } from "ethereum-waffle";
 import { extractErrorMessage } from "../../utils/extractErrorMessage";
 
@@ -51,17 +48,16 @@ export class ScenarioRunner {
   owner!: Wallet;
   factory!: Factory;
   token!: ERC20Mock;
-  aToken!: MockAToken;
-  rateOracleTest!: TestRateOracle;
+  cToken!: MockCToken;
+  compoundRateOracleTest!: TestCompoundRateOracle;
 
   termStartTimestampBN!: BigNumber;
   termEndTimestampBN!: BigNumber;
   periphery!: Periphery;
 
-  fcmTest!: TestAaveFCM;
+  fcmTest!: CompoundFCM;
   vammTest!: TestVAMM;
   marginEngineTest!: MarginEngine;
-  aaveLendingPool!: MockAaveLendingPool;
 
   testMarginCalculator!: MarginCalculatorTest;
   marginCalculatorParams: any;
@@ -93,13 +89,11 @@ export class ScenarioRunner {
     await this.token.mint(address, BigNumber.from(10).pow(27));
     await this.token.approve(address, BigNumber.from(10).pow(27));
 
-    await this.token.mint(this.aToken.address, BigNumber.from(10).pow(27));
-    const rni = await this.aaveLendingPool.getReserveNormalizedIncome(
-      this.token.address
-    );
+    await this.token.mint(this.cToken.address, BigNumber.from(10).pow(27));
+    await this.token.approve(this.cToken.address, BigNumber.from(10).pow(27));
 
-    await this.aToken.mint(address, BigNumber.from(10).pow(27), rni);
-    await this.aToken.approve(address, BigNumber.from(10).pow(27));
+    await this.cToken.mint(address, BigNumber.from(10).pow(27));
+    await this.cToken.approve(address, BigNumber.from(10).pow(27));
   }
 
   constructor(params_: e2eParameters, outputFile_: string) {
@@ -154,12 +148,12 @@ export class ScenarioRunner {
     );
     fs.appendFileSync(this.outputFile, "\n");
 
-    const currentReseveNormalizedIncome =
-      await this.aaveLendingPool.getReserveNormalizedIncome(this.token.address);
+    const currentExchangeRate =
+      await this.cToken.callStatic.exchangeRateCurrent();
     fs.appendFileSync(
       this.outputFile,
-      "current reserve normalised income: " +
-        formatRay(currentReseveNormalizedIncome).toString() +
+      "current exchange rate: " +
+        utils.formatEther(currentExchangeRate).toString() +
         "\n"
     );
     fs.appendFileSync(this.outputFile, "\n");
@@ -460,77 +454,36 @@ export class ScenarioRunner {
     fs.appendFileSync(this.outputFile, "\n");
   }
 
-  async getAlreadyDeployedContracts() {
-    this.factory = (await ethers.getContract("Factory")) as Factory;
-    this.token = (await ethers.getContract("ERC20Mock")) as ERC20Mock;
-    this.rateOracleTest = (await ethers.getContract(
-      "TestRateOracle"
-    )) as TestRateOracle;
-    this.aaveLendingPool = (await ethers.getContract(
-      "MockAaveLendingPool"
-    )) as MockAaveLendingPool;
-  }
-
-  async init(isProd: boolean = false) {
+  async init() {
     this.owner = provider.getWallets()[0];
 
-    if (!isProd) {
-      this.loadFixture = createFixtureLoader([this.owner]);
-      // manually do the prerequsite deployments for the scenario
-      ({
-        factory: this.factory,
-        mockAToken: this.aToken,
-        token: this.token,
-        rateOracleTest: this.rateOracleTest,
-        aaveLendingPool: this.aaveLendingPool,
-        termStartTimestampBN: this.termStartTimestampBN,
-        termEndTimestampBN: this.termEndTimestampBN,
-        testMarginCalculator: this.testMarginCalculator,
-      } = await this.loadFixture(await createMetaFixtureE2E(this.params)));
+    this.loadFixture = createFixtureLoader([this.owner]);
+    // manually do the prerequsite deployments for the scenario
+    ({
+      factory: this.factory,
+      mockCToken: this.cToken,
+      token: this.token,
+      compoundRateOracleTest: this.compoundRateOracleTest,
+      termStartTimestampBN: this.termStartTimestampBN,
+      termEndTimestampBN: this.termEndTimestampBN,
+      testMarginCalculator: this.testMarginCalculator,
+    } = await this.loadFixture(
+      await createCompoundMetaFixtureE2E(this.params)
+    ));
 
-      console.log(`factory: ${this.factory.address}`);
-      console.log(`masterVAMM: ${await this.factory.masterVAMM()}`);
-      console.log(
-        `masterMarginEngine: ${await this.factory.masterMarginEngine()}`
-      );
-    } else {
-      await this.getAlreadyDeployedContracts();
-      const termStartTimestamp: number = await getCurrentTimestamp(provider);
-      const termEndTimestamp: number =
-        termStartTimestamp + this.params.duration.toNumber();
-      this.termStartTimestampBN = toBn(termStartTimestamp.toString());
-      this.termEndTimestampBN = toBn(termEndTimestamp.toString());
-      ({ testMarginCalculator: this.testMarginCalculator } =
-        await marginCalculatorFixture());
-      // partial repetition of createMetaFixtureE2E (needs to be more DRY)
-      await this.aaveLendingPool.setReserveNormalizedIncome(
-        this.token.address,
-        "1000000000000000000000000000" // 10^27
-      );
-
-      // await rateOracleTest.testGrow(100);
-      await this.rateOracleTest.increaseObservationCardinalityNext(100);
-      // write oracle entry
-      await this.rateOracleTest.writeOracleEntry();
-      // advance time after first write to the oracle
-      await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
-
-      await this.aaveLendingPool.setReserveNormalizedIncome(
-        this.token.address,
-        "1008000000000000000000000000" // 10^27 * 1.008
-      );
-
-      await this.rateOracleTest.writeOracleEntry();
-    }
+    console.log(`factory: ${this.factory.address}`);
+    console.log(`masterVAMM: ${await this.factory.masterVAMM()}`);
+    console.log(
+      `masterMarginEngine: ${await this.factory.masterMarginEngine()}`
+    );
 
     // deploy an IRS instance
     const deployTrx = await this.factory.deployIrsInstance(
       this.token.address,
-      this.rateOracleTest.address,
+      this.compoundRateOracleTest.address,
       this.termStartTimestampBN,
       this.termEndTimestampBN,
-      this.params.tickSpacing,
-      { gasLimit: 10000000 }
+      this.params.tickSpacing
     );
 
     const receiptLogs = (await deployTrx.wait()).logs;
@@ -556,8 +509,8 @@ export class ScenarioRunner {
     const vammTestFactory = await ethers.getContractFactory("TestVAMM");
     this.vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
 
-    const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
-    this.fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
+    const fcmTestFactory = await ethers.getContractFactory("CompoundFCM");
+    this.fcmTest = fcmTestFactory.attach(fcmAddress) as CompoundFCM;
 
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
@@ -604,7 +557,9 @@ export class ScenarioRunner {
     await this.e2eSetup.setMEAddress(this.marginEngineTest.address);
     await this.e2eSetup.setVAMMAddress(this.vammTest.address);
     await this.e2eSetup.setFCMAddress(this.fcmTest.address);
-    await this.e2eSetup.setRateOracleAddress(this.rateOracleTest.address);
+    await this.e2eSetup.setRateOracleAddress(
+      this.compoundRateOracleTest.address
+    );
     await this.e2eSetup.setPeripheryAddress(this.periphery.address);
 
     // mint and approve the addresses
@@ -633,7 +588,7 @@ export class ScenarioRunner {
         BigNumber.from(10).pow(27)
       );
 
-      await this.aToken.approveInternal(
+      await this.cToken.approveInternal(
         actor.address,
         this.fcmTest.address,
         BigNumber.from(10).pow(27)
@@ -683,17 +638,6 @@ export class ScenarioRunner {
     }
 
     await this.updateCurrentTick();
-  }
-
-  // print the current normalized income
-  async printReserveNormalizedIncome() {
-    const currentReseveNormalizedIncome =
-      await this.aaveLendingPool.getReserveNormalizedIncome(this.token.address);
-    console.log(
-      "currentReseveNormalisedIncome",
-      formatRay(currentReseveNormalizedIncome)
-    ); // in ray
-    console.log("");
   }
 
   public async getInfoSwapViaAMM(swapParams: {
@@ -1002,33 +946,11 @@ export class ScenarioRunner {
       this.marginCalculatorParams
     );
 
-    this.variableFactorWad = await this.rateOracleTest.variableFactorNoCache(
-      this.termStartTimestampBN,
-      this.termEndTimestampBN
-    );
-  }
-
-  // reserveNormalizedIncome format: x.yyyy
-  async advanceAndUpdateApy(
-    time: BigNumber,
-    blockCount: number,
-    reserveNormalizedIncome: number
-  ) {
-    await advanceTimeAndBlock(time, blockCount);
-    console.log(
-      "rni:",
-      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
-        "0".repeat(23)
-    );
-    await this.aaveLendingPool.setReserveNormalizedIncome(
-      this.token.address,
-      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
-        "0".repeat(23)
-    );
-
-    await this.rateOracleTest.writeOracleEntry();
-
-    await this.updateAPYbounds();
+    this.variableFactorWad =
+      await this.compoundRateOracleTest.variableFactorNoCache(
+        this.termStartTimestampBN,
+        this.termEndTimestampBN
+      );
   }
 
   async getVT(towards: string) {
@@ -1102,6 +1024,19 @@ export class ScenarioRunner {
       try {
         await this.e2eSetup.settleYBATrader(p[0]);
       } catch (_) {}
+    }
+
+    console.log("balances at settlement");
+    for (const p of this.positions) {
+      console.log(
+        "cTokens:",
+        utils.formatEther(await this.cToken.balanceOf(p[0]))
+      );
+      console.log(
+        " tokens:",
+        utils.formatEther(await this.token.balanceOf(p[0]))
+      );
+      console.log();
     }
   }
 

@@ -2,18 +2,17 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import {
+  getCompoundTokens,
   getConfigDefaults,
-  getAaveLendingPoolAddress,
-  getAaveTokens,
   getMaxDurationOfIrsInSeconds,
 } from "../deployConfig/config";
-import { AaveRateOracle } from "../typechain";
-
+import { CompoundRateOracle } from "../typechain/CompoundRateOracle";
+import { BaseRateOracle } from "../typechain";
 const MAX_BUFFER_GROWTH_PER_TRANSACTION = 100;
 const BUFFER_SIZE_SAFETY_FACTOR = 1.2; // The buffer must last for 1.2x as long as the longest expected IRS
 
 const applyBufferConfig = async (
-  r: AaveRateOracle,
+  r: BaseRateOracle,
   minBufferSize: number,
   minSecondsSinceLastUpdate: number,
   maxIrsDurationInSeconds: number
@@ -65,49 +64,47 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const doLogging = true;
   const network = hre.network.name;
 
-  // Set up rate oracles for the Aave lending pool, if one exists
-  const existingAaveLendingPoolAddress = getAaveLendingPoolAddress(network);
-  const aaveTokens = getAaveTokens(network);
-  const maxDurationOfIrsInSeconds = getMaxDurationOfIrsInSeconds(
-    hre.network.name
-  );
+  // Set up rate oracles for the supported Compound CTokens, if defined
+  const compoundTokens = getCompoundTokens(network);
+  const maxDurationOfIrsInSeconds = getMaxDurationOfIrsInSeconds(network);
 
-  if (existingAaveLendingPoolAddress && aaveTokens) {
-    const aaveLendingPool = await ethers.getContractAt(
-      "IAaveV2LendingPool",
-      existingAaveLendingPoolAddress
-    );
-
-    for (const token of aaveTokens) {
-      const rateOracleIdentifier = `AaveRateOracle_${token.name}`;
+  if (compoundTokens) {
+    for (const cTokenDefinition of compoundTokens) {
+      const rateOracleIdentifier = `CompoundRateOracle_${cTokenDefinition.name}`;
       let rateOracleContract = (await ethers.getContractOrNull(
         rateOracleIdentifier
-      )) as AaveRateOracle;
+      )) as CompoundRateOracle;
 
       if (!rateOracleContract) {
-        // There is no Aave rate oracle already deployed for this token. Deploy one now.
+        // There is no Compound rate oracle already deployed for this token. Deploy one now.
         // But first, do a sanity check
-        const normalizedIncome =
-          await aaveLendingPool.getReserveNormalizedIncome(token.address);
+        const cToken = await ethers.getContractAt(
+          "ICToken",
+          cTokenDefinition.address
+        );
+        const underlying = await cToken.underlying();
+        const exchangeRate = await cToken.exchangeRateStored();
 
-        if (!normalizedIncome) {
+        if (!exchangeRate) {
           throw Error(
-            `Could not find data for token ${token.name} (${token.address}) in Aaave contract ${aaveLendingPool.address}.`
+            `Could not find data for token ${cTokenDefinition.name} (${cTokenDefinition.address})`
           );
         } else {
+          const decimals = await underlying.decimals();
+
           await deploy(rateOracleIdentifier, {
-            contract: "AaveRateOracle",
+            contract: "CompoundRateOracle",
             from: deployer,
-            args: [aaveLendingPool.address, token.address],
+            args: [cToken.address, underlying.address, decimals],
             log: doLogging,
           });
           console.log(
-            `Created ${token.name} (${token.address}) rate oracle for Aave lending pool ${aaveLendingPool.address}`
+            `Deployed compound rate oracle(${cToken.address}, ${underlying.address}, ${decimals})`
           );
 
           rateOracleContract = (await ethers.getContract(
             rateOracleIdentifier
-          )) as AaveRateOracle;
+          )) as CompoundRateOracle;
 
           const trx = await rateOracleContract.writeOracleEntry();
           await trx.wait();
@@ -116,9 +113,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       // Ensure the buffer is big enough
       await applyBufferConfig(
-        rateOracleContract as AaveRateOracle,
-        token.rateOracleBufferSize,
-        token.minSecondsSinceLastUpdate,
+        rateOracleContract as unknown as BaseRateOracle,
+        cTokenDefinition.rateOracleBufferSize,
+        cTokenDefinition.minSecondsSinceLastUpdate,
         maxDurationOfIrsInSeconds
       );
     }
@@ -126,26 +123,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // Deploy rate oracle pointing at mocks, if mocks exist
   const mockToken = await ethers.getContractOrNull("ERC20Mock");
-  const mockAaveLendingPool = await ethers.getContractOrNull(
-    "MockAaveLendingPool"
-  );
-  if (mockToken && mockAaveLendingPool) {
+  const mockCToken = await ethers.getContractOrNull("MockCToken");
+  if (mockToken && mockCToken) {
+    const decimals = await mockToken.decimals();
     console.log(
-      `Deploy rate oracle for mocked {token, aave}: {${mockToken.address}, ${mockAaveLendingPool.address}}`
+      `Deploy compound rate oracle for mocks: {${mockToken.address}, ${mockCToken.address}, ${decimals}}`
     );
-    await deploy("MockTokenRateOracle", {
-      contract: "AaveRateOracle",
+
+    await deploy("MockCTokenRateOracle", {
+      contract: "CompoundRateOracle",
       from: deployer,
-      args: [mockAaveLendingPool.address, mockToken.address],
+      args: [mockCToken.address, mockToken.address, decimals],
       log: doLogging,
     });
     const rateOracleContract = (await ethers.getContract(
       "MockTokenRateOracle"
-    )) as AaveRateOracle;
+    )) as CompoundRateOracle;
     // Ensure the buffer is big enough
     const configDefaults = getConfigDefaults(network);
     await applyBufferConfig(
-      rateOracleContract as AaveRateOracle,
+      rateOracleContract as unknown as BaseRateOracle,
       configDefaults.rateOracleBufferSize,
       configDefaults.rateOracleMinSecondsSinceLastUpdate,
       maxDurationOfIrsInSeconds
@@ -162,5 +159,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
   return false; // This script is safely re-runnable and will reconfigure existing rate oracles if required
 };
-func.tags = ["RateOracles"];
+func.tags = ["CompoundRateOracles"];
 export default func;
