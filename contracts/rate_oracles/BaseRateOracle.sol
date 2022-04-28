@@ -9,6 +9,8 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 import "../interfaces/IFactory.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../core_libraries/Time.sol";
+import "../utils/WadRayMath.sol";
+
 
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
@@ -55,6 +57,31 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     constructor(IERC20Minimal _underlying) {
         require(address(_underlying) != address(0), "underlying must exist");
         underlying = _underlying;
+    }
+
+
+    /// @notice Calculates the interpolated (counterfactual) rate value
+    /// @param beforeOrAtRateValueRay  Rate Value (in ray) before the timestamp for which we want to calculate the counterfactual rate value
+    /// @param apyFromBeforeOrAtToAtOrAfterWad Apy in the period between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
+    /// @param timeDeltaBeforeOrAtToQueriedTimeWad Time Delta (in wei seconds) between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
+    /// @return rateValueRay Counterfactual (interpolated) rate value in ray
+    /// @dev Given [beforeOrAt, atOrAfter] where the timestamp for which the counterfactual is calculated is within that range (but does not touch any of the bounds)
+    /// @dev We can calculate the apy for [beforeOrAt, atOrAfter] --> refer to this value as apyFromBeforeOrAtToAtOrAfter
+    /// @dev Then we want a counterfactual rate value which results in apy_before_after if the apy is calculated between [beforeOrAt, timestampForCounterfactual]
+    /// @dev Hence (1+rateValueWei/beforeOrAtRateValueWei)^(1/timeInYears) = apyFromBeforeOrAtToAtOrAfter
+    /// @dev Hence rateValueWei = beforeOrAtRateValueWei * (1+apyFromBeforeOrAtToAtOrAfter)^timeInYears - 1)
+    function interpolateRateValue(
+        uint256 beforeOrAtRateValueRay,
+        uint256 apyFromBeforeOrAtToAtOrAfterWad,
+        uint256 timeDeltaBeforeOrAtToQueriedTimeWad
+    ) public virtual pure returns (uint256 rateValueRay) {
+        uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
+            timeDeltaBeforeOrAtToQueriedTimeWad
+        );
+        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad + ONE_IN_WAD;
+        uint256 factorInWad = PRBMathUD60x18.pow(apyPlusOne, timeInYearsWad);
+        uint256 factorInRay = WadRayMath.wadToRay(factorInWad);
+        rateValueRay = WadRayMath.rayMul(beforeOrAtRateValueRay, factorInRay);
     }
 
     /// @inheritdoc IRateOracle

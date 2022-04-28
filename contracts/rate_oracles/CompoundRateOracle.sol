@@ -39,25 +39,25 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     }
 
     function exchangeRateInRay() internal view returns (uint256 resultRay) {
+        uint256 exchangeRateStored = ctoken.exchangeRateStored();
+        if (exchangeRateStored == 0) {
+            revert CustomErrors.CTokenExchangeRateReturnedZero();
+        }
+
         // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(10 + Underlying Token Decimals)
         // source: https://compound.finance/docs/ctokens#exchange-rate and https://compound.finance/docs#protocol-math
         // We want the same number scaled by 10^27 (ray)
         // So: if Underlying Token Decimals == 17, no scaling is required
         //     if Underlying Token Decimals > 17, we scale down by a factor of 10^difference
         //     if Underlying Token Decimals < 17, we scale up by a factor of 10^difference
-        // And if decimals
-        uint256 _exchangeRateStored = ctoken.exchangeRateStored();
         if (decimals >= 17) {
             uint256 scalingFactor = 10**(decimals - 17);
-            resultRay = _exchangeRateStored / scalingFactor;
+            resultRay = exchangeRateStored / scalingFactor;
         } else {
             uint256 scalingFactor = 10**(17 - decimals);
-            resultRay = _exchangeRateStored * scalingFactor;
+            resultRay = exchangeRateStored * scalingFactor;
         }
 
-        if (resultRay == 0) {
-            revert CustomErrors.CTokenExchangeRateReturnedZero();
-        }
         return resultRay;
     }
 
@@ -144,30 +144,6 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         } else {
             return 0;
         }
-    }
-
-    /// @notice Calculates the interpolated (counterfactual) rate value
-    /// @param beforeOrAtRateValueRay  Rate Value (in ray) before the timestamp for which we want to calculate the counterfactual rate value
-    /// @param apyFromBeforeOrAtToAtOrAfterWad Apy in the period between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
-    /// @param timeDeltaBeforeOrAtToQueriedTimeWad Time Delta (in wei seconds) between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
-    /// @return rateValueRay Counterfactual (interpolated) rate value in ray
-    /// @dev Given [beforeOrAt, atOrAfter] where the timestamp for which the counterfactual is calculated is within that range (but does not touch any of the bounds)
-    /// @dev We can calculate the apy for [beforeOrAt, atOrAfter] --> refer to this value as apyFromBeforeOrAtToAtOrAfter
-    /// @dev Then we want a counterfactual rate value which results in apy_before_after if the apy is calculated between [beforeOrAt, timestampForCounterfactual]
-    /// @dev Hence (1+rateValueWei/beforeOrAtRateValueWei)^(1/timeInYears) = apyFromBeforeOrAtToAtOrAfter
-    /// @dev Hence rateValueWei = beforeOrAtRateValueWei * (1+apyFromBeforeOrAtToAtOrAfter)^timeInYears - 1)
-    function interpolateRateValue(
-        uint256 beforeOrAtRateValueRay,
-        uint256 apyFromBeforeOrAtToAtOrAfterWad,
-        uint256 timeDeltaBeforeOrAtToQueriedTimeWad
-    ) public pure returns (uint256 rateValueRay) {
-        uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
-            timeDeltaBeforeOrAtToQueriedTimeWad
-        );
-        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad + ONE_IN_WAD;
-        uint256 factorInWad = PRBMathUD60x18.pow(apyPlusOne, timeInYearsWad);
-        uint256 factorInRay = WadRayMath.wadToRay(factorInWad);
-        rateValueRay = WadRayMath.rayMul(beforeOrAtRateValueRay, factorInRay);
     }
 
     function observeSingle(
