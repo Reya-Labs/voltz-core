@@ -47,6 +47,10 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
   /// @dev in the initialize function we set the vamm and the margiEngine associated with the fcm
   function initialize(IVAMM __vamm, IMarginEngine __marginEngine) external override initializer {
+
+    require(address(__vamm) != address(0), "vamm must exist");
+    require(address(__marginEngine) != address(0), "margin engine must exist");
+
     /// @dev we additionally cache the rateOracle, _aaveLendingPool, underlyingToken, underlyingYieldBearingToken
     _vamm = __vamm;
     _marginEngine = __marginEngine;
@@ -123,7 +127,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
     uint256 currentRNI = _aaveLendingPool.getReserveNormalizedIncome(underlyingToken);
 
-    /// @audit-casting variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision?
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens + uint256(-variableTokenDelta).rayDiv(currentRNI);
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
 
@@ -190,7 +193,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
     /// @dev it is impossible to unwind more variable token exposure than the user already has
     /// @dev hencel, the notionalToUnwind needs to be <= absolute value of the variable token balance of the trader
-    /// @audit-casting variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision?
     require(uint256(-trader.variableTokenBalance) >= notionalToUnwind, "notional to unwind > notional");
 
     // initiate a swap
@@ -213,7 +215,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
     uint256 currentRNI = _aaveLendingPool.getReserveNormalizedIncome(underlyingToken);
 
-    /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision?
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens - uint256(variableTokenDelta).rayDiv(currentRNI);
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
 
@@ -256,7 +257,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     /// @dev hence, we can assume that the variable cashflows from now to maturity is covered by a portion of the trader's collateral in yield bearing tokens
     /// @dev once future variable cashflows are covered, we need to check if the remaining settlement cashflow is covered by the remaining margin in yield bearing tokens
 
-    /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision?
+    require(traderVariableTokenBalance <=0, "VTB sign");
     uint256 marginToCoverVariableLegFromNowToMaturity = uint256(-traderVariableTokenBalance);
     int256 marginToCoverRemainingSettlementCashflow = int256(getTraderMarginInYieldBearingTokens(traderMarginInScaledYieldBearingTokens)) - int256(marginToCoverVariableLegFromNowToMaturity);
 
