@@ -230,9 +230,12 @@ describe("FCM Compound", () => {
         vammCompound.address
       );
 
-      await getTraderBalance(wallet.address);
+      // await getTraderBalance(wallet.address);
 
       const otherStartingBalance = await token.balanceOf(other.address);
+
+      console.log("------OTHER1");
+      await getTraderBalance(other.address);
 
       await marginEngineCompound
         .connect(other)
@@ -242,6 +245,9 @@ describe("FCM Compound", () => {
           TICK_SPACING,
           "1121850791579727450"
         );
+
+      console.log("------OTHER2");
+      await getTraderBalance(other.address);
 
       await vammCompound.initializeVAMM(
         TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
@@ -266,7 +272,7 @@ describe("FCM Compound", () => {
           TickMath.getSqrtRatioAtTick(TICK_SPACING).toString()
         );
 
-      await getTraderBalance(wallet.address);
+      // await getTraderBalance(wallet.address);
 
       // do a full scenario with checks
       const traderInfo = await fcmCompound.traders(wallet.address);
@@ -302,9 +308,13 @@ describe("FCM Compound", () => {
 
       expect(cTokenBalanceOfFCM).to.eq(cTokenBalanceOfTrader);
 
+      console.log("------A");
       await getTraderBalance(wallet.address);
       await fcmCompound.settleTrader();
+      console.log("------B");
       await getTraderBalance(wallet.address);
+      console.log("------OTHER5");
+      await getTraderBalance(other.address);
 
       const traderInfoPostSettlement = await fcmCompound.traders(
         wallet.address
@@ -321,6 +331,7 @@ describe("FCM Compound", () => {
       const traderEndingOverallBalanceInUnderlyingTokens =
         await getTraderBalance(wallet.address);
 
+      console.log("b");
       const traderAPY = getTraderApy(
         traderStartingOverallBalanceInUnderlyingTokens,
         traderEndingOverallBalanceInUnderlyingTokens
@@ -328,6 +339,7 @@ describe("FCM Compound", () => {
 
       expect(traderAPY).to.be.near(toBn("0.010116042450876211")); // around 1% fixed apy secured as expected
 
+      console.log("q");
       // lp settles and collects their margin
       await marginEngineCompound.settlePosition(
         other.address,
@@ -335,12 +347,20 @@ describe("FCM Compound", () => {
         TICK_SPACING
       );
 
+      console.log("------OTHER6");
+      await getTraderBalance(other.address);
+
       const positionInfo = await marginEngineCompound.callStatic.getPosition(
         other.address,
         -TICK_SPACING,
         TICK_SPACING
       );
       const finalPositionMargin = positionInfo.margin;
+      console.log("r");
+      console.log(
+        "finalPositionMargin",
+        utils.formatEther(finalPositionMargin)
+      );
 
       await marginEngineCompound
         .connect(other)
@@ -348,9 +368,10 @@ describe("FCM Compound", () => {
           other.address,
           -TICK_SPACING,
           TICK_SPACING,
-          mul(finalPositionMargin, toBn("-1")).add(1)
+          mul(finalPositionMargin, BigNumber.from("-1")).add(1)
         );
 
+      console.log("s");
       const positionInfoPostUpdateMargin =
         await marginEngineCompound.callStatic.getPosition(
           other.address,
@@ -361,6 +382,8 @@ describe("FCM Compound", () => {
         positionInfoPostUpdateMargin.margin;
 
       expect(finalPositionMarginPostUpdateMargin).to.be.near(toBn("0"));
+
+      console.log("t");
 
       // calculate the return of the LP
 
