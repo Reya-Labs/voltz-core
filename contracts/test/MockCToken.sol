@@ -25,7 +25,7 @@ contract MockCToken is ICToken, ERC20 {
         string memory symbol
     ) ERC20(name, symbol) {
         _underlyingAsset = underlyingAsset;
-        _rate = 10 ** decimals(); // start with rate of 1
+        _rate = 10**decimals(); // start with rate of 1
     }
 
     function setExchangeRate(uint256 rate) external {
