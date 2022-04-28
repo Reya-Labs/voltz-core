@@ -6,6 +6,9 @@ import "../IMarginEngine.sol";
 import "../../utils/CustomErrors.sol";
 import "../IERC20Minimal.sol";
 import "../../core_libraries/TraderWithYieldBearingAssets.sol";
+import "../IVAMM.sol";
+import "../rate_oracles/IRateOracle.sol";
+
 
 interface IFCM is CustomErrors {
     function getTraderWithYieldBearingAssets(address trader)
