@@ -593,7 +593,9 @@ interface CompoundMetaFixtureE2E {
   testMarginCalculator: MarginCalculatorTest;
 }
 
-export const createCompoundMetaFixtureE2E = async function (e2eParams: e2eParameters) {
+export const createCompoundMetaFixtureE2E = async function (
+  e2eParams: e2eParameters
+) {
   const metaFixtureE2E = async function (): Promise<CompoundMetaFixtureE2E> {
     const { marginEngineMasterTest } = await marginEngineMasterTestFixture();
     const { vammMasterTest } = await vammMasterTestFixture();
