@@ -98,11 +98,12 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
   /// @notice Initiate a Fully Collateralised Fixed Taker Swap
   /// @param notional Notional that cover by a fully collateralised fixed taker interest rate swap
   /// @param sqrtPriceLimitX96 The binary fixed point math representation of the sqrtPriceLimit beyond which the fixed taker swap will not be executed with the VAMM
-  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override {
+  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override returns 
+    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) {
 
     require(notional!=0, "notional = 0");
 
-    /// todo: (URGENT) add support for approvals and recipient (similar to how it is implemented in the MarginEngine)
+    // suggestion: add support for approvals and recipient (similar to how it is implemented in the MarginEngine)
 
     // initiate a swap
     // the default tick range for a Position associated with the FCM is tickLower: -tickSpacing and tickUpper: tickSpacing
@@ -115,15 +116,16 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
         tickUpper: tickSpacing
     });
 
-    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, ,) = _vamm.swap(params);
+    (fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced,) = _vamm.swap(params);
 
     require(variableTokenDelta <=0, "VT delta sign");
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
+    // When dealing with wei (or smallest unit of tokens), rather than human denominations like USD and cUSD, we can simply
+    // divide the underlying wei value by the exchange rate to get the number of ctoken wei
     uint256 currentExchangeRate = _ctoken.exchangeRateCurrent();
 
-    /// @audit-casting variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision?
     uint256 yieldBearingTokenDelta = uint256(-variableTokenDelta).wadDiv(currentExchangeRate);
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens + yieldBearingTokenDelta;
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
@@ -138,8 +140,22 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
     // transfer fees to the margin engine (in terms of the underlyingToken e.g. cDAI)
     underlyingToken.safeTransferFrom(msg.sender, address(_marginEngine), cumulativeFeeIncurred);
 
-    emit FullyCollateralisedSwap(msg.sender, trader.marginInScaledYieldBearingTokens, trader.fixedTokenBalance, trader.variableTokenBalance);
-  }
+    emit FullyCollateralisedSwap(
+      msg.sender,
+      notional,
+      sqrtPriceLimitX96,
+      cumulativeFeeIncurred,
+      fixedTokenDelta, 
+      variableTokenDelta,
+      fixedTokenDeltaUnbalanced
+    );
+
+    emit FCMTraderUpdate(
+      msg.sender,
+      trader.marginInScaledYieldBearingTokens,
+      trader.fixedTokenBalance,
+      trader.variableTokenBalance
+    );  }
 
   /// @notice Get Trader Margin In Yield Bearing Tokens
   /// @dev this function takes the scaledBalance associated with a trader and multiplies it by the current Exchange Rate to get the balance (margin) in terms of the underlying token
@@ -165,17 +181,15 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
   /// @notice Unwind Fully Collateralised Fixed Taker Swap
   /// @param notionalToUnwind The amount of notional to unwind (stop securing with a fixed rate)
   /// @param sqrtPriceLimitX96 The sqrt price limit (binary fixed point notation) beyond which the unwind cannot progress
-  function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override {
-
-    // add require statement and isApproval
+  function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override returns 
+    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) {
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
     require(trader.variableTokenBalance <= 0, "Trader VT balance positive");
 
     /// @dev it is impossible to unwind more variable token exposure than the user already has
-    /// @dev hencel, the notionalToUnwind needs to be <= absolute value of the variable token balance of the trader
-    /// @audit-casting variableTokenDelta is expected to be negative here, but what if goes above 0 due to rounding imprecision?
+    /// @dev hence, the notionalToUnwind needs to be <= absolute value of the variable token balance of the trader
     require(uint256(-trader.variableTokenBalance) >= notionalToUnwind, "notional to unwind > notional");
 
     // initiate a swap
@@ -189,7 +203,7 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
         tickUpper: tickSpacing
     });
 
-    (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, ,) = _vamm.swap(params);
+    (fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced,) = _vamm.swap(params);
 
     require(variableTokenDelta >= 0, "VT delta negative");
 
@@ -198,9 +212,6 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
 
     uint256 currentExchangeRate = _ctoken.exchangeRateStored();
 
-    // TODO: does this work with arbitrary numbers of decimals in the exchange rate (exchange rate decimals depends on underlying decimals). Probably not?
-
-    /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision?
     uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens - uint256(variableTokenDelta).wadDiv(currentExchangeRate);
     trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
 
@@ -214,6 +225,22 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
     // variable token delta should be positive
     IERC20Minimal(address(_ctoken)).safeTransfer(msg.sender, uint256(variableTokenDelta));
 
+    emit FullyCollateralisedUnwind(
+      msg.sender,
+      notionalToUnwind,
+      sqrtPriceLimitX96,
+      cumulativeFeeIncurred,
+      fixedTokenDelta, 
+      variableTokenDelta,
+      fixedTokenDeltaUnbalanced
+    );
+
+    emit FCMTraderUpdate(
+      msg.sender,
+      trader.marginInScaledYieldBearingTokens,
+      trader.fixedTokenBalance,
+      trader.variableTokenBalance
+    );
   }
 
 
@@ -295,8 +322,6 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
   /// @dev once settlement cashflows are accounted for, we safeTransfer the scaled yield bearing tokens in the margin account of the trader back to their wallet address
   function settleTrader() external override onlyAfterMaturity returns (int256 traderSettlementCashflow) {
 
-    // todo: recipient as input to the function
-
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
     int256 settlementCashflow = FixedAndVariableMath.calculateSettlementCashflow(trader.fixedTokenBalance, trader.variableTokenBalance, _marginEngine.termStartTimestampWad(), _marginEngine.termEndTimestampWad(), _rateOracle.variableFactor(_marginEngine.termStartTimestampWad(), _marginEngine.termEndTimestampWad()));
@@ -327,7 +352,7 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
   /// @dev in case of Compound this is done by redeeming the underlying token directly from the cToken: https://compound.finance/docs/ctokens#redeem-underlying
   function transferMarginToMarginEngineTrader(address account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine whenNotPaused override {
     if (underlyingToken.balanceOf(address(_ctoken)) >= marginDeltaInUnderlyingTokens) {
-      _ctoken.redeemUnderlying(marginDeltaInUnderlyingTokens);
+      require(_ctoken.redeemUnderlying(marginDeltaInUnderlyingTokens) == 0); // Require success
     } else {
       IERC20Minimal(address(_ctoken)).safeTransfer(account, marginDeltaInUnderlyingTokens);
     }
