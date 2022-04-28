@@ -220,7 +220,7 @@ describe("FCM Compound", () => {
       }
     );
 
-    it.only("scenario1", async () => {
+    it("scenario1", async () => {
       expect(
         await fcmCompound.marginEngine(),
         "margin engine address expect"
