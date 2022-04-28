@@ -14,9 +14,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: ["Voltz USD", "VUSD"],
     log: doLogging,
   });
-  await deploy("MockAaveLendingPool", {
+
+  const mockAaveLendingPoolDeployment = await deploy("MockAaveLendingPool", {
     from: deployer,
     log: doLogging,
+  });
+
+  const mockATokenDeploy = await deploy("MockAToken", {
+    from: deployer,
+    log: doLogging,
+    args: [
+      mockAaveLendingPoolDeployment.address,
+      mockERC20Deploy.address,
+      "Voltz aUSDC",
+      "aVUSD"
+    ],
   });
 
   await deploy("MockCToken", {
@@ -26,18 +38,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   const mockAaveLendingPool = await ethers.getContract("MockAaveLendingPool");
-  const trx1 = await mockAaveLendingPool.setReserveNormalizedIncome(
+
+  await (await mockAaveLendingPool.initReserve(
+    mockERC20Deploy.address,
+    mockATokenDeploy.address,
+    { gasLimit: 10000000 }
+  )).wait();
+
+  await (await mockAaveLendingPool.setReserveNormalizedIncome(
     mockERC20Deploy.address,
     BigNumber.from(10).pow(27),
     { gasLimit: 10000000 }
-  );
-  await trx1.wait();
-  const trx2 = await mockAaveLendingPool.setFactorPerSecondInRay(
+  )).wait();
+
+  await (await mockAaveLendingPool.setFactorPerSecondInRay(
     mockERC20Deploy.address,
     "1000000001000000000000000000", // 0.0000001% per second = ~3.2% APY
     { gasLimit: 10000000 }
-  );
-  await trx2.wait();
+  )).wait();
+
   return true; // Only execute once
 };
 func.tags = ["Mocks"];
