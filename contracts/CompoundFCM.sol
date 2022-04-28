@@ -330,9 +330,10 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
       trader.updateMarginInScaledYieldBearingTokens(updatedTraderMarginInScaledYieldBearingTokens);
     }
 
+    uint256 amountToSettle = trader.marginInScaledYieldBearingTokens;
     trader.updateMarginInScaledYieldBearingTokens(0);
     trader.settleTrader();
-    IERC20Minimal(address(_ctoken)).safeTransfer(msg.sender, trader.marginInScaledYieldBearingTokens);
+    IERC20Minimal(address(_ctoken)).safeTransfer(msg.sender, amountToSettle);
     if (settlementCashflow > 0) {
       // transfers margin in terms of underlying tokens (e.g. USDC) from the margin engine to the msg.sender
       // as long as the margin engine is active and solvent it shoudl be able to cover the settlement cashflows of the fully collateralised traders
