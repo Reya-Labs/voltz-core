@@ -1025,6 +1025,19 @@ export class ScenarioRunner {
         await this.e2eSetup.settleYBATrader(p[0]);
       } catch (_) {}
     }
+
+    console.log("balances at settlement");
+    for (const p of this.positions) {
+      console.log(
+        "cTokens:",
+        utils.formatEther(await this.cToken.balanceOf(p[0]))
+      );
+      console.log(
+        " tokens:",
+        utils.formatEther(await this.token.balanceOf(p[0]))
+      );
+      console.log();
+    }
   }
 
   async updateCurrentTick() {

@@ -120,8 +120,6 @@ contract CompoundFCM is
     ) external override {
         require(notional != 0, "notional = 0");
 
-        /// todo: (URGENT) add support for approvals and recipient (similar to how it is implemented in the MarginEngine)
-
         // initiate a swap
         // the default tick range for a Position associated with the FCM is tickLower: -tickSpacing and tickUpper: tickSpacing
         // isExternal is true since the state updates following a VAMM induced swap are done in the FCM (below)
@@ -163,10 +161,10 @@ contract CompoundFCM is
         IERC20Minimal(address(_ctoken)).safeTransferFrom(
             msg.sender,
             address(this),
-            uint256(-variableTokenDelta)
+            yieldBearingTokenDelta
         );
 
-        // transfer fees to the margin engine (in terms of the underlyingToken e.g. cDAI)
+        // transfer fees to the margin engine (in terms of the underlyingToken e.g. DAI)
         underlyingToken.safeTransferFrom(
             msg.sender,
             address(_marginEngine),
@@ -180,16 +178,12 @@ contract CompoundFCM is
             trader.variableTokenBalance
         );
     }
-
-    /// @notice Get Trader Margin In Yield Bearing Tokens
-    /// @dev this function takes the scaledBalance associated with a trader and multiplies it by the current Exchange Rate to get the balance (margin) in terms of the underlying token
-    /// @param traderMarginInScaledYieldBearingTokens traderMarginInScaledYieldBearingTokens
-    function getTraderMarginInYieldBearingTokens(
+    
+    function getTraderMarginInUnderlyingTokens(
         uint256 traderMarginInScaledYieldBearingTokens
-    ) internal view returns (uint256 marginInYieldBearingTokens) {
-        // uint256 currentExchangeRate = _ctoken.exchangeRateStored();
-        // marginInYieldBearingTokens = traderMarginInScaledYieldBearingTokens.rayMul(currentExchangeRate);
-        return traderMarginInScaledYieldBearingTokens; // NO scaling to do here. Delete this function?
+    ) internal view returns (uint256 marginInUnderlyingTokens) {
+        uint256 currentExchangeRate = _ctoken.exchangeRateStored();
+        return traderMarginInScaledYieldBearingTokens.wadMul(currentExchangeRate);
     }
 
     function getTraderMarginInCTokens(address traderAddress)
@@ -250,12 +244,14 @@ contract CompoundFCM is
             .updateBalancesViaDeltas(fixedTokenDelta, variableTokenDelta);
 
         uint256 currentExchangeRate = _ctoken.exchangeRateStored();
+        uint256 yieldBearingTokenDelta = uint256(variableTokenDelta).wadDiv(
+            currentExchangeRate
+        );
 
         // TODO: does this work with arbitrary numbers of decimals in the exchange rate (exchange rate decimals depends on underlying decimals). Probably not?
 
         /// @audit-casting variableTokenDelta is expected to be positive here, but what if goes below 0 due to rounding imprecision?
-        uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens -
-            uint256(variableTokenDelta).wadDiv(currentExchangeRate);
+        uint256 updatedTraderMargin = trader.marginInScaledYieldBearingTokens - yieldBearingTokenDelta;
         trader.updateMarginInScaledYieldBearingTokens(updatedTraderMargin);
 
         // check the margin requirement of the trader post unwind, if the current balances still support the unwind, they it can happen, otherwise the unwind will get reverted
@@ -274,13 +270,9 @@ contract CompoundFCM is
 
         // transfer the yield bearing tokens to trader address and update margin in terms of yield bearing tokens
         // variable token delta should be positive
-        console.log(
-            "balance of fcm in cTokens:",
-            IERC20Minimal(address(_ctoken)).balanceOf(address(this))
-        );
         IERC20Minimal(address(_ctoken)).safeTransfer(
             msg.sender,
-            uint256(variableTokenDelta)
+            yieldBearingTokenDelta
         );
     }
 
@@ -302,7 +294,7 @@ contract CompoundFCM is
             -traderVariableTokenBalance
         );
         int256 marginToCoverRemainingSettlementCashflow = int256(
-            getTraderMarginInYieldBearingTokens(
+            getTraderMarginInUnderlyingTokens(
                 traderMarginInScaledYieldBearingTokens
             )
         ) - int256(marginToCoverVariableLegFromNowToMaturity);
@@ -419,15 +411,11 @@ contract CompoundFCM is
             );
         }
 
-        // if settlement happens late, additional variable yield beyond maturity will accrue to the trader
-        uint256 traderMarginInYieldBearingTokens = getTraderMarginInYieldBearingTokens(
-                trader.marginInScaledYieldBearingTokens
-            );
         trader.updateMarginInScaledYieldBearingTokens(0);
         trader.settleTrader();
         IERC20Minimal(address(_ctoken)).safeTransfer(
             msg.sender,
-            traderMarginInYieldBearingTokens
+            trader.marginInScaledYieldBearingTokens
         );
         if (settlementCashflow > 0) {
             // transfers margin in terms of underlying tokens (e.g. USDC) from the margin engine to the msg.sender
@@ -452,10 +440,11 @@ contract CompoundFCM is
             marginDeltaInUnderlyingTokens
         ) {
             _ctoken.redeemUnderlying(marginDeltaInUnderlyingTokens);
+            underlyingToken.safeTransfer(account, marginDeltaInUnderlyingTokens);
         } else {
             IERC20Minimal(address(_ctoken)).safeTransfer(
                 account,
-                marginDeltaInUnderlyingTokens
+                marginDeltaInUnderlyingTokens.wadDiv(_ctoken.exchangeRateCurrent())
             );
         }
     }
