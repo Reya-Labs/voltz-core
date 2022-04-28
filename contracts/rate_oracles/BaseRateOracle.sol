@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../core_libraries/Time.sol";
 import "../utils/WadRayMath.sol";
 
-
 /// @notice Common contract base for a Rate Oracle implementation.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
 abstract contract BaseRateOracle is IRateOracle, Ownable {
@@ -59,7 +58,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         underlying = _underlying;
     }
 
-
     /// @notice Calculates the interpolated (counterfactual) rate value
     /// @param beforeOrAtRateValueRay  Rate Value (in ray) before the timestamp for which we want to calculate the counterfactual rate value
     /// @param apyFromBeforeOrAtToAtOrAfterWad Apy in the period between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
@@ -74,7 +72,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint256 beforeOrAtRateValueRay,
         uint256 apyFromBeforeOrAtToAtOrAfterWad,
         uint256 timeDeltaBeforeOrAtToQueriedTimeWad
-    ) public virtual pure returns (uint256 rateValueRay) {
+    ) public pure virtual returns (uint256 rateValueRay) {
         uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
             timeDeltaBeforeOrAtToQueriedTimeWad
         );
