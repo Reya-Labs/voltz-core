@@ -57,9 +57,6 @@ interface IRateOracle is CustomErrors {
     /// @return result The variable factor
     /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). No caching takes place.
     /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
-    /// @dev returns the variable rate of return
-    /// @dev if queried before maturity then returns the rate of return between pool initiation and current timestamp (in wad)
-    /// @dev if queried after maturity then returns the rate of return between pool initiation and maturity timestamp (in wad)
     function variableFactorNoCache(uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns(uint256 result);
 
     

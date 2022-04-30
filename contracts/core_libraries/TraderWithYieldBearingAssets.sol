@@ -7,8 +7,12 @@ import "./FixedAndVariableMath.sol";
 library TraderWithYieldBearingAssets {
     // info stored for each user's position
     struct Info {
-        // For Aave v2 The scaled balance is the sum of all the
-        // updated stored balance divided by the reserve's liquidity index at the moment of the update
+        // For Aave v2 The scaled balance is the sum of all the updated stored balances in the
+        // underlying token, divided by the reserve's liquidity index at the moment of the update
+        //
+        // For componund, the scaled balance is the sum of all the updated stored balances in the
+        // underlying token, divided by the cToken exchange rate at the moment of the update.
+        // This is simply the number of cTokens!
         uint256 marginInScaledYieldBearingTokens;
         int256 fixedTokenBalance;
         int256 variableTokenBalance;
