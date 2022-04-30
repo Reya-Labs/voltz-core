@@ -71,6 +71,42 @@ const config: ContractsConfigMap = {
         rateOracleBufferSize: 200,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
+      {
+        name: "TUSD",
+        address: "0x016750ac630f711882812f24dba6c95b9d35856d",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "UNI",
+        address: "0x075A36BA8846C6B6F53644fDd3bf17E5151789DC",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "BAT",
+        address: "0x2d12186fbb9f9a8c28b3ffdd4c42920f8539d738",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "BUSD",
+        address: "0x4c6E1EFC12FDfD568186b7BAEc0A43fFfb4bCcCf",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "REN",
+        address: "0x5eebf65a6746eed38042353ba84c8e37ed58ac6f",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "MRK",
+        address: "0x61e4CAE3DA7FD189e52a4879C7B8067D7C2Cc0FA",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
     ],
   },
   localhost: {

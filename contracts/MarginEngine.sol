@@ -1175,6 +1175,8 @@ contract MarginEngine is
         );
 
         /// exp2 = variableTokenBalance*worstCaseVariableFactor(from term start to term end)
+        // todo: minimise gas cost of the scenario where the balance is 0
+
         int256 _exp2Wad = PRBMathSD59x18.mul(
             _variableTokenBalanceWad,
             MarginCalculator
