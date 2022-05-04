@@ -537,7 +537,7 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
     // write oracle entry
     await rateOracleTest.writeOracleEntry();
     // advance time after first write to the oracle
-    await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
+    await advanceTimeAndBlock(consts.ONE_MONTH.mul(6), 2); // advance by one month
 
     await aaveLendingPool.setReserveNormalizedIncome(
       token.address,

@@ -174,7 +174,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             uint32 termEndTimestamp = Time.timestampAsUint32(
                 PRBMathUD60x18.toUint(termEndTimestampInWeiSeconds)
             );
-
             settlementRateCache[termStartTimestamp][
                 termEndTimestamp
             ] = resultWad;
@@ -219,7 +218,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
                 termStartTimestamp,
                 Time.blockTimestampTruncated()
             );
-            cacheable = true;
+            cacheable = false;
         }
     }
 
