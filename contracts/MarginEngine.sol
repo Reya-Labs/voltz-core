@@ -197,6 +197,12 @@ contract MarginEngine is
     }
 
     /// @inheritdoc IMarginEngine
+    function setRateOracle(IRateOracle __rateOracle) external override onlyOwner {
+        _rateOracle = __rateOracle;
+        emit RateOracleSetting(_rateOracle);
+    }
+
+    /// @inheritdoc IMarginEngine
     function setFCM(IFCM _newFCM) external override onlyOwner {
         _fcm = _newFCM;
         emit FCMSetting(_fcm);
@@ -211,7 +217,7 @@ contract MarginEngine is
         require(
             (_newSecondsAgo <= MAX_LOOKBACK_WINDOW_IN_SECONDS) &&
                 (_newSecondsAgo >= MIN_LOOKBACK_WINDOW_IN_SECONDS),
-            "look back OOB"
+            "LB OOB"
         );
 
         _secondsAgo = _newSecondsAgo;
@@ -226,7 +232,7 @@ contract MarginEngine is
     {
         require(
             _newCacheMaxAgeInSeconds <= MAX_CACHE_MAX_AGE_IN_SECONDS,
-            "cache max age OOB"
+            "CMA OOB"
         );
 
         _cacheMaxAgeInSeconds = _newCacheMaxAgeInSeconds;
@@ -257,7 +263,7 @@ contract MarginEngine is
     {
         require(
             _newLiquidatorRewardWad <= MAX_LIQUIDATOR_REWARD_WAD,
-            "liquidator reward OOB"
+            "LR OOB"
         );
 
         _liquidatorRewardWad = _newLiquidatorRewardWad;
@@ -342,7 +348,7 @@ contract MarginEngine is
         int24 _tickUpper,
         int256 _marginDelta
     ) external override whenNotPaused nonZeroDelta(_marginDelta) {
-        require(_owner != address(0), "owner must exist");
+        require(_owner != address(0), "O0");
 
         Tick.checkTicks(_tickLower, _tickUpper);
 
@@ -701,7 +707,7 @@ contract MarginEngine is
 
         /// @dev isUnwind means the trader is getting into a swap with the opposite direction to their net position
         /// @dev in that case it does not make sense to revert the transaction if the position margin requirement is not met since
-        /// @dev it could have been even further from the requireemnt prior to the unwind
+        /// @dev it could have been even further from the requirement prior to the unwind
         bool _isUnwind = (_position.variableTokenBalance > 0 &&
             _variableTokenDelta < 0) ||
             (_position.variableTokenBalance < 0 && _variableTokenDelta > 0);
@@ -1176,21 +1182,23 @@ contract MarginEngine is
 
         /// exp2 = variableTokenBalance*worstCaseVariableFactor(from term start to term end)
         // todo: minimise gas cost of the scenario where the balance is 0
-
-        int256 _exp2Wad = PRBMathSD59x18.mul(
-            _variableTokenBalanceWad,
-            MarginCalculator
-                .worstCaseVariableFactorAtMaturity(
-                    _timeInSecondsFromStartToMaturityWad,
-                    _termEndTimestampWad,
-                    Time.blockTimestampScaled(),
-                    _variableTokenBalance < 0,
-                    _isLM,
-                    getHistoricalApy(),
-                    marginCalculatorParameters
-                )
-                .toInt256()
-        );
+        int256 _exp2Wad = 0;
+        if (_variableTokenBalance != 0) {
+            _exp2Wad = PRBMathSD59x18.mul(
+                _variableTokenBalanceWad,
+                MarginCalculator
+                    .worstCaseVariableFactorAtMaturity(
+                        _timeInSecondsFromStartToMaturityWad,
+                        _termEndTimestampWad,
+                        Time.blockTimestampScaled(),
+                        _variableTokenBalance < 0,
+                        _isLM,
+                        getHistoricalApy(),
+                        marginCalculatorParameters
+                    )
+                    .toInt256()
+            );
+        }
 
         // this is the worst case settlement cashflow expected by the position to cover
         int256 _maxCashflowDeltaToCoverPostMaturity = _exp1Wad + _exp2Wad;
@@ -1258,7 +1266,6 @@ contract MarginEngine is
             }
 
             _absoluteVariableTokenBalance = uint256(-_variableTokenBalance);
-            _isVariableTokenBalancePositive = false;
         }
 
         // simulate an adversarial unwind (cumulative position is a Variable Taker --> simulate FT unwind --> movement to the left along the VAMM)
