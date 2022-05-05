@@ -68,16 +68,7 @@ const config: ContractsConfigMap = {
       {
         name: "USDC",
         address: "0xe22da380ee6B445bb8273C81944ADEB6E8450422",
-        rateOracleBufferSize: 300,
-        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
-      },
-    ],
-    // See tokens list at https://compound.finance/docs#networks
-    compoundTokens: [
-      {
-        name: "cUSDC",
-        address: "0x4a92e71227d294f041bd82dd8f78591b75140d63",
-        rateOracleBufferSize: 300,
+        rateOracleBufferSize: 200,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
       {
@@ -85,7 +76,6 @@ const config: ContractsConfigMap = {
         address: "0x016750ac630f711882812f24dba6c95b9d35856d",
         rateOracleBufferSize: 200,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
-        // If migrating, get data points from existing oracle using hardhat's queryRateOracle task
         trustedDataPoints: [
           [1651328512, "1169761008875861964432213844"],
           [1651408548, "1170853556378555583878384899"],
@@ -131,6 +121,15 @@ const config: ContractsConfigMap = {
         name: "MRK",
         address: "0x61e4CAE3DA7FD189e52a4879C7B8067D7C2Cc0FA",
         rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+    // See tokens list at https://compound.finance/docs#networks
+    compoundTokens: [
+      {
+        name: "cUSDC",
+        address: "0x4a92e71227d294f041bd82dd8f78591b75140d63",
+        rateOracleBufferSize: 300,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
     ],

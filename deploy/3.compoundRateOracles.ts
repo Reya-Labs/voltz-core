@@ -7,7 +7,8 @@ import {
   getMaxDurationOfIrsInSeconds,
 } from "../deployConfig/config";
 import { CompoundRateOracle } from "../typechain/CompoundRateOracle";
-import { BaseRateOracle } from "../typechain";
+import { BaseRateOracle, ERC20 } from "../typechain";
+import { BigNumberish } from "ethers";
 const MAX_BUFFER_GROWTH_PER_TRANSACTION = 100;
 const BUFFER_SIZE_SAFETY_FACTOR = 1.2; // The buffer must last for 1.2x as long as the longest expected IRS
 
@@ -82,20 +83,46 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           "ICToken",
           cTokenDefinition.address
         );
-        const underlying = await cToken.underlying();
         const exchangeRate = await cToken.exchangeRateStored();
+
+        const underlying = (await ethers.getContractAt(
+          "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
+          await cToken.underlying()
+        )) as ERC20;
 
         if (!exchangeRate) {
           throw Error(
             `Could not find data for token ${cTokenDefinition.name} (${cTokenDefinition.address})`
           );
         } else {
+          let trustedTimestamps: number[] = [];
+          let trustedObservationValuesInRay: BigNumberish[] = [];
+          console.log(
+            `Adding ${
+              cTokenDefinition.trustedDataPoints
+                ? cTokenDefinition.trustedDataPoints.length
+                : 0
+            } trusted data points`
+          );
+          if (cTokenDefinition.trustedDataPoints) {
+            trustedTimestamps = cTokenDefinition.trustedDataPoints.map(
+              (e) => e[0]
+            );
+            trustedObservationValuesInRay =
+              cTokenDefinition.trustedDataPoints.map((e) => e[1]);
+          }
           const decimals = await underlying.decimals();
 
           await deploy(rateOracleIdentifier, {
             contract: "CompoundRateOracle",
             from: deployer,
-            args: [cToken.address, underlying.address, decimals],
+            args: [
+              cToken.address,
+              underlying.address,
+              decimals,
+              trustedTimestamps,
+              trustedObservationValuesInRay,
+            ],
             log: doLogging,
           });
           console.log(
@@ -105,13 +132,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           rateOracleContract = (await ethers.getContract(
             rateOracleIdentifier
           )) as CompoundRateOracle;
-
-          const trx = await rateOracleContract.writeOracleEntry();
-          await trx.wait();
         }
       }
 
-      // Ensure the buffer is big enough
+      // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
       await applyBufferConfig(
         rateOracleContract as unknown as BaseRateOracle,
         cTokenDefinition.rateOracleBufferSize,
@@ -133,13 +157,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await deploy("MockCTokenRateOracle", {
       contract: "CompoundRateOracle",
       from: deployer,
-      args: [mockCToken.address, mockToken.address, decimals],
+      args: [mockCToken.address, mockToken.address, decimals, [], []],
       log: doLogging,
     });
     const rateOracleContract = (await ethers.getContract(
-      "MockTokenRateOracle"
+      "MockCTokenRateOracle"
     )) as CompoundRateOracle;
-    // Ensure the buffer is big enough
+
+    // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
     const configDefaults = getConfigDefaults(network);
     await applyBufferConfig(
       rateOracleContract as unknown as BaseRateOracle,
@@ -147,10 +172,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       configDefaults.rateOracleMinSecondsSinceLastUpdate,
       maxDurationOfIrsInSeconds
     );
-
-    // Take a reading
-    const trx = await rateOracleContract.writeOracleEntry();
-    await trx.wait();
 
     // Fast forward time to ensure that the mock rate oracle has enough historical data
     await hre.network.provider.send("evm_increaseTime", [

@@ -50,7 +50,14 @@ library OracleBuffer {
         Observation[MAX_BUFFER_LENGTH] storage self,
         uint32[] memory times,
         uint256[] memory observedValues
-    ) internal returns (uint16 cardinality, uint16 cardinalityNext, uint16 rateIndex) {
+    )
+        internal
+        returns (
+            uint16 cardinality,
+            uint16 cardinalityNext,
+            uint16 rateIndex
+        )
+    {
         require(times.length < MAX_BUFFER_LENGTH, "MAXT");
         uint16 length = uint16(times.length);
         require(length == observedValues.length, "Lengths must match");

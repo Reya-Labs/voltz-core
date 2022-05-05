@@ -17,9 +17,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 1; // id of aave v2 is 1
 
-    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal _underlying, uint32[] memory _times, uint256[] memory _results)
-        BaseRateOracle(_underlying)
-    {
+    constructor(
+        IAaveV2LendingPool _aaveLendingPool,
+        IERC20Minimal _underlying,
+        uint32[] memory _times,
+        uint256[] memory _results
+    ) BaseRateOracle(_underlying) {
         require(
             address(_aaveLendingPool) != address(0),
             "aave pool must exist"

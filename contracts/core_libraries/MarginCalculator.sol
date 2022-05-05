@@ -60,10 +60,7 @@ library MarginCalculator {
         IMarginEngine.MarginCalculatorParameters
             memory _marginCalculatorParameters
     ) internal pure returns (int256 timeFactorWad) {
-        require(
-            currentTimestampWad <= termEndTimestampWad,
-            "CT<ET"
-        );
+        require(currentTimestampWad <= termEndTimestampWad, "CT<ET");
 
         int256 betaWad = _marginCalculatorParameters.betaWad;
 

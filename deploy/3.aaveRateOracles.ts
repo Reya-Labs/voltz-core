@@ -133,7 +133,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         }
       }
 
-      // Ensure the buffer is big enough
+      // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
       await applyBufferConfig(
         rateOracleContract as unknown as BaseRateOracle,
         token.rateOracleBufferSize,
@@ -161,7 +161,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const rateOracleContract = (await ethers.getContract(
       "MockTokenRateOracle"
     )) as AaveRateOracle;
-    // Ensure the buffer is big enough
+
+    // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
     const configDefaults = getConfigDefaults(network);
     await applyBufferConfig(
       rateOracleContract as unknown as BaseRateOracle,
