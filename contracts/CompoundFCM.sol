@@ -81,13 +81,6 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
   // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786
   function _authorizeUpgrade(address) internal override onlyOwner {}
 
-  event FullyCollateralisedSwap(
-    address indexed trader,
-    uint256 marginInScaledYieldBearingTokens,
-    int256 fixedTokenBalance,
-    int256 variableTokenBalance
-  );
-
   function getTraderWithYieldBearingAssets(
         address trader
     ) external override view returns (TraderWithYieldBearingAssets.Info memory traderInfo) {
@@ -153,7 +146,8 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
       trader.marginInScaledYieldBearingTokens,
       trader.fixedTokenBalance,
       trader.variableTokenBalance
-    );  }
+    );  
+  }
 
   function getTraderMarginInUnderlyingTokens(uint256 traderMarginInScaledYieldBearingTokens) internal view returns (uint256 marginInYieldBearingTokens) {
       uint256 currentExchangeRate = _ctoken.exchangeRateStored();
@@ -339,6 +333,18 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
       // as long as the margin engine is active and solvent it shoudl be able to cover the settlement cashflows of the fully collateralised traders
       _marginEngine.transferMarginToFCMTrader(msg.sender, uint256(settlementCashflow));
     }
+
+    emit fcmPositionSettlement(
+      msg.sender,
+      settlementCashflow
+    );
+
+    emit FCMTraderUpdate(
+      msg.sender,
+      trader.marginInScaledYieldBearingTokens,
+      trader.fixedTokenBalance,
+      trader.variableTokenBalance
+    );
 
     return settlementCashflow;
   }
