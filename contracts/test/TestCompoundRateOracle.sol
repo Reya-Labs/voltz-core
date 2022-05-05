@@ -25,7 +25,15 @@ contract TestCompoundRateOracle is CompoundRateOracle {
         ICToken cToken,
         IERC20Minimal underlying,
         uint8 _decimals
-    ) CompoundRateOracle(cToken, underlying, _decimals, new uint32[](0), new uint256[](0)) {}
+    )
+        CompoundRateOracle(
+            cToken,
+            underlying,
+            _decimals,
+            new uint32[](0),
+            new uint256[](0)
+        )
+    {}
 
     function getOracleVars()
         external

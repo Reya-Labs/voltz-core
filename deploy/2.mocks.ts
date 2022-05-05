@@ -26,18 +26,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   const mockAaveLendingPool = await ethers.getContract("MockAaveLendingPool");
-  const trx1 = await mockAaveLendingPool.setReserveNormalizedIncome(
+  let trx = await mockAaveLendingPool.setReserveNormalizedIncome(
     mockERC20Deploy.address,
     BigNumber.from(10).pow(27),
     { gasLimit: 10000000 }
   );
-  await trx1.wait();
-  const trx2 = await mockAaveLendingPool.setFactorPerSecondInRay(
+  await trx.wait();
+  trx = await mockAaveLendingPool.setFactorPerSecondInRay(
     mockERC20Deploy.address,
     "1000000001000000000000000000", // 0.0000001% per second = ~3.2% APY
     { gasLimit: 10000000 }
   );
-  await trx2.wait();
+  await trx.wait();
+
+  const mockCToken = await ethers.getContract("MockCToken");
+  // Starting exchange rate = 0.02, expressed using 10 ^ (18 + underlyingDecimals - cTokenDecimals)
+  //  = 0.02 * 10 ^ (18 + 18 - 8)
+  //  = 0.02 * 10 ^ 28
+  //  = 2 * 10^26
+  trx = await mockCToken.setExchangeRate(BigNumber.from(10).pow(26).mul(2));
+  await trx.wait();
+
   return true; // Only execute once
 };
 func.tags = ["Mocks"];
