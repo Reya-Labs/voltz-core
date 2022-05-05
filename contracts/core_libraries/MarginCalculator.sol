@@ -62,12 +62,12 @@ library MarginCalculator {
     ) internal pure returns (int256 timeFactorWad) {
         require(
             currentTimestampWad <= termEndTimestampWad,
-            "endTime must be >= currentTime"
+            "CT<ET"
         );
 
         int256 betaWad = _marginCalculatorParameters.betaWad;
 
-        require(betaWad != 0, "parameters not set");
+        require(betaWad != 0, "B0");
 
         int256 tMaxWad = _marginCalculatorParameters.tMaxWad;
 

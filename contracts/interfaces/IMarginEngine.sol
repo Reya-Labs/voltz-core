@@ -55,6 +55,7 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     // Events
     event HistoricalApyWindowSetting(uint256 secondsAgo);
     event CacheMaxAgeSetting(uint256 cacheMaxAgeInSeconds);
+    event RateOracle(uint256 cacheMaxAgeInSeconds);
 
     event ProtocolCollection(
         address sender,
@@ -64,6 +65,8 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     event LiquidatorRewardSetting(uint256 liquidatorRewardWad);
 
     event VAMMSetting(IVAMM indexed vamm);
+
+    event RateOracleSetting(IRateOracle indexed rateOracle);
 
     event FCMSetting(IFCM indexed fcm);
 
@@ -271,6 +274,10 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @notice sets the Virtual Automated Market Maker (VAMM) attached to the MarginEngine
     /// @dev the VAMM is responsible for price discovery, whereas the management of the underlying collateral and liquidations are handled by the Margin Engine
     function setVAMM(IVAMM _vAMM) external;
+
+    /// @notice sets the Virtual Automated Market Maker (VAMM) attached to the MarginEngine
+    /// @dev the VAMM is responsible for price discovery, whereas the management of the underlying collateral and liquidations are handled by the Margin Engine
+    function setRateOracle(IRateOracle __rateOracle) external;
 
     /// @notice sets the Full Collateralisation Module
     function setFCM(IFCM _newFCM) external;

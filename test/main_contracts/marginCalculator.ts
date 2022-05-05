@@ -111,7 +111,7 @@ describe("MarginCalculator", () => {
           toBn("2"),
           margin_engine_params
         )
-      ).to.be.revertedWith("endTime must be >= currentTime");
+      ).to.be.revertedWith("CT<ET");
     });
 
     it("correctly computes the time factor", async () => {
