@@ -23,7 +23,7 @@ contract TestRateOracle is AaveRateOracle {
 
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
     constructor(IAaveV2LendingPool aaveLendingPool, IERC20Minimal underlying)
-        AaveRateOracle(aaveLendingPool, underlying)
+        AaveRateOracle(aaveLendingPool, underlying, new uint32[](0), new uint256[](0))
     {
         // if not done manually, doesn't work for some reason
         aaveLendingPool = aaveLendingPool;

@@ -1,10 +1,14 @@
 import { BigNumberish } from "ethers";
 
+// timestamp, and observed value in ray
+export type RateOracleDataPoint = [number, BigNumberish];
 export interface TokenConfig {
   name: string;
   address: string;
   rateOracleBufferSize: number;
   minSecondsSinceLastUpdate: number;
+  // If migrating, get trusted data points from existing rate oracle using hardhat's queryRateOracle task
+  trustedDataPoints?: RateOracleDataPoint[];
 }
 
 export interface MarginCalculatorParameters {
@@ -39,12 +43,12 @@ export interface IrsConfig {
 }
 
 export interface ConfigDefaults extends IrsConfig {
-  rateOracleBufferSize: number;
-  rateOracleMinSecondsSinceLastUpdate: number;
+  rateOracleBufferSize: number; // For mock token oracle
+  rateOracleMinSecondsSinceLastUpdate: number; // For mock token oracle
 }
 export interface ContractsConfig {
   aaveLendingPool?: string;
-  maxIrsDurationInSeconds: number; // TODO: make sure that the oracle buffer will last this long
+  maxIrsDurationInSeconds: number;
   configDefaults: ConfigDefaults;
   aaveTokens?: TokenConfig[];
   compoundTokens?: TokenConfig[];

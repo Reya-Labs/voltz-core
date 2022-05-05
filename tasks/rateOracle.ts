@@ -61,6 +61,7 @@ task(
     // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
 
     const oracleVars = await rateOracle.oracleVars();
+    // console.log(`oracleVars,${oracleVars}`);
     let csvOutput = `timestamp,value,rawTimestamp,rawValue`;
 
     for (let i = 0; i <= oracleVars.rateIndex; i++) {
@@ -75,7 +76,7 @@ task(
           `Error reading data from oracle buffer at position ${i}`
         );
       }
-      csvOutput += `\n${observationTimeString},${observedValue},${observation.blockTimestamp},${observation.observedValue}`;
+      csvOutput += `\n${observationTimeString},${observedValue},${observation.blockTimestamp},"${observation.observedValue}"`;
     }
     console.log(csvOutput);
   });
