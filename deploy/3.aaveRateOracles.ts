@@ -8,6 +8,7 @@ import {
   getMaxDurationOfIrsInSeconds,
 } from "../deployConfig/config";
 import { AaveRateOracle, BaseRateOracle } from "../typechain";
+import { BigNumberish } from "ethers";
 
 const MAX_BUFFER_GROWTH_PER_TRANSACTION = 100;
 const BUFFER_SIZE_SAFETY_FACTOR = 1.2; // The buffer must last for 1.2x as long as the longest expected IRS
@@ -98,10 +99,28 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             `Could not find data for token ${token.name} (${token.address}) in Aaave contract ${aaveLendingPool.address}.`
           );
         } else {
+          let trustedTimestamps: number[] = [];
+          let trustedObservationValuesInRay: BigNumberish[] = [];
+          console.log(
+            `Adding ${
+              token.trustedDataPoints ? token.trustedDataPoints.length : 0
+            } trusted data points`
+          );
+          if (token.trustedDataPoints) {
+            trustedTimestamps = token.trustedDataPoints.map((e) => e[0]);
+            trustedObservationValuesInRay = token.trustedDataPoints.map(
+              (e) => e[1]
+            );
+          }
           await deploy(rateOracleIdentifier, {
             contract: "AaveRateOracle",
             from: deployer,
-            args: [aaveLendingPool.address, token.address],
+            args: [
+              aaveLendingPool.address,
+              token.address,
+              trustedTimestamps,
+              trustedObservationValuesInRay,
+            ],
             log: doLogging,
           });
           console.log(
@@ -111,11 +130,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           rateOracleContract = (await ethers.getContract(
             rateOracleIdentifier
           )) as AaveRateOracle;
-
-          const trx = await rateOracleContract.writeOracleEntry({
-            gasLimit: 10000000,
-          });
-          await trx.wait();
         }
       }
 
@@ -141,7 +155,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await deploy("MockTokenRateOracle", {
       contract: "AaveRateOracle",
       from: deployer,
-      args: [mockAaveLendingPool.address, mockToken.address],
+      args: [mockAaveLendingPool.address, mockToken.address, [], []],
       log: doLogging,
     });
     const rateOracleContract = (await ethers.getContract(
@@ -155,12 +169,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       configDefaults.rateOracleMinSecondsSinceLastUpdate,
       maxDurationOfIrsInSeconds
     );
-
-    // Take a reading
-    const trx = await rateOracleContract.writeOracleEntry({
-      gasLimit: 10000000,
-    });
-    await trx.wait();
 
     // Fast forward time to ensure that the mock rate oracle has enough historical data
     await hre.network.provider.send("evm_increaseTime", [

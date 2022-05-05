@@ -39,19 +39,30 @@ library OracleBuffer {
             });
     }
 
-    /// @notice Initialize the oracle array by writing the first slot. Called once for the lifecycle of the observations array
+    /// @notice Initialize the oracle array by writing the first slot(s). Called once for the lifecycle of the observations array
     /// @param self The stored oracle array
-    /// @param time The time of the oracle initialization, via block.timestamp truncated to uint32
-    /// @param observedValue The observed value (semantics may differ for different types of rate oracle)
+    /// @param times The times to populate in the Oracle buffe (block.timestamps truncated to uint32)
+    /// @param observedValues The observed values to populate in the oracle buffer (semantics may differ for different types of rate oracle)
     /// @return cardinality The number of populated elements in the oracle array
     /// @return cardinalityNext The new length of the oracle array, independent of population
+    /// @return rateIndex The index of the most recently populated element of the array
     function initialize(
         Observation[MAX_BUFFER_LENGTH] storage self,
-        uint32 time,
-        uint256 observedValue
-    ) internal returns (uint16 cardinality, uint16 cardinalityNext) {
-        self[0] = observation(time, observedValue);
-        return (1, 1);
+        uint32[] memory times,
+        uint256[] memory observedValues
+    ) internal returns (uint16 cardinality, uint16 cardinalityNext, uint16 rateIndex) {
+        require(times.length < MAX_BUFFER_LENGTH, "MAXT");
+        uint16 length = uint16(times.length);
+        require(length == observedValues.length, "Lengths must match");
+        require(length > 0, "0T");
+        uint32 prevTime = 0;
+        for (uint16 i = 0; i < length; i++) {
+            require(prevTime < times[i], "input unordered");
+
+            self[i] = observation(times[i], observedValues[i]);
+            prevTime = times[i];
+        }
+        return (length, length, length - 1);
     }
 
     /// @notice Writes an oracle observation to the array

@@ -7,6 +7,7 @@ import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WadRayMath.sol";
 import "../rate_oracles/BaseRateOracle.sol";
+import "./OracleBuffer.sol";
 
 contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
@@ -16,25 +17,37 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 1; // id of aave v2 is 1
 
-    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal _underlying)
+    constructor(IAaveV2LendingPool _aaveLendingPool, IERC20Minimal _underlying, uint32[] memory _times, uint256[] memory _results)
         BaseRateOracle(_underlying)
     {
         require(
             address(_aaveLendingPool) != address(0),
             "aave pool must exist"
         );
+        aaveLendingPool = _aaveLendingPool;
         require(address(_underlying) != address(0), "underlying must exist");
 
-        aaveLendingPool = _aaveLendingPool;
-        uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = aaveLendingPool.getReserveNormalizedIncome(
+        // If we're using even half the max buffer size, something has gone wrong
+        require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
+        uint16 length = uint16(_times.length);
+        require(length == _results.length, "Lengths must match");
+
+        // We must pass equal-sized dynamic arrays containing initial timestamps and observed values
+        uint32[] memory times = new uint32[](length + 1);
+        uint256[] memory results = new uint256[](length + 1);
+        for (uint256 i = 0; i < length; i++) {
+            times[i] = _times[i];
+            results[i] = _results[i];
+        }
+        times[length] = Time.blockTimestampTruncated();
+        results[length] = aaveLendingPool.getReserveNormalizedIncome(
             _underlying
         );
-
         (
             oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
-        ) = observations.initialize(blockTimestamp, result);
+            oracleVars.rateCardinalityNext,
+            oracleVars.rateIndex
+        ) = observations.initialize(times, results);
     }
 
     /// @notice Store the Aave Lending Pool's current normalized income per unit of an underlying asset, in Ray

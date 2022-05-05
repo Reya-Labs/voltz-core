@@ -22,7 +22,9 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     constructor(
         ICToken _ctoken,
         IERC20Minimal underlying,
-        uint8 _decimals
+        uint8 _decimals,
+        uint32[] memory _times,
+        uint256[] memory _results
     ) BaseRateOracle(underlying) {
         ctoken = _ctoken;
         require(
@@ -30,12 +32,26 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             "Tokens do not match"
         );
         decimals = _decimals;
-        uint32 blockTimestamp = Time.blockTimestampTruncated();
-        uint256 result = exchangeRateInRay();
+
+        // If we're using even half the max buffer size, something has gone wrong
+        require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
+        uint16 length = uint16(_times.length);
+        require(length == _results.length, "Lengths must match");
+
+        // We must pass equal-sized dynamic arrays containing initial timestamps and observed values
+        uint32[] memory times = new uint32[](length + 1);
+        uint256[] memory results = new uint256[](length + 1);
+        for (uint256 i = 0; i < length; i++) {
+            times[i] = _times[i];
+            results[i] = _results[i];
+        }
+        times[length] = Time.blockTimestampTruncated();
+        results[length] = exchangeRateInRay();
         (
             oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
-        ) = observations.initialize(blockTimestamp, result);
+            oracleVars.rateCardinalityNext,
+            oracleVars.rateIndex
+        ) = observations.initialize(times, results);
     }
 
     function exchangeRateInRay() internal view returns (uint256 resultRay) {
