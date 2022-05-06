@@ -109,6 +109,12 @@ To deploy our contracts to the kovan testnet, first check the configuration for 
 
 `npm run deploy:kovan`
 
+To verify the deployed contracts in etherscan, ensure that you have a valid `ETHERSCAN_API_KEY` value defined in your `.env` file and then run:
+
+`npx hardhat --network kovan etherscan-verify --solc-input`
+
+(At the time of writing the `--solc-input` flag is required due to some solidity issues. The result is somewhat unsatisfactory because all known contract code is displayed in etherscan for each contract, rather than just the relevant contracts. See [here](https://github.com/wighawag/hardhat-deploy/issues/263) for some discussion, but note that for us it seems to fail even with solc 0.8.9. See )
+
 #### Mint tokens for testing
 
 There is a task for this. Run `npx hardhat help mintTestTokens` for task usage.
