@@ -250,39 +250,20 @@ contract Periphery is IPeriphery {
         currentTick = vamm.vammVars().tick;
     }
 
-    function estimatedCashflowAtMaturity(
-        IMarginEngine marginEngine,
-        address _owner,
-        int24 _tickLower,
-        int24 _tickUpper
-    ) external override returns (int256 estimatedSettlementCashflow) {
-        uint256 historicalAPYWad = marginEngine.getHistoricalApy();
-
-        uint256 termStartTimestampWad = marginEngine.termStartTimestampWad();
-        uint256 termEndTimestampWad = marginEngine.termEndTimestampWad();
-
-        uint256 termInYears = FixedAndVariableMath.accrualFact(
-            termEndTimestampWad - termStartTimestampWad
-        );
-
-        // calculate the estimated variable factor from start to maturity
-        uint256 _estimatedVariableFactorFromStartToMaturity = PRBMathUD60x18
-            .pow((PRBMathUD60x18.fromUint(1) + historicalAPYWad), termInYears) -
-            PRBMathUD60x18.fromUint(1);
-
-        Position.Info memory position = marginEngine.getPosition(
-            _owner,
-            _tickLower,
-            _tickUpper
-        );
-
-        estimatedSettlementCashflow = FixedAndVariableMath
-            .calculateSettlementCashflow(
-                position.fixedTokenBalance,
-                position.variableTokenBalance,
+    function calculateCashflowFromTo(
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 termStartTimestampWad,
+        uint256 termEndTimestampWad,
+        uint256 variableFactorFromTo
+    ) external view override returns (int256 cashflow) {
+        return
+            FixedAndVariableMath.calculateSettlementCashflow(
+                fixedTokenBalance,
+                variableTokenBalance,
                 termStartTimestampWad,
                 termEndTimestampWad,
-                _estimatedVariableFactorFromStartToMaturity
+                variableFactorFromTo
             );
     }
 }

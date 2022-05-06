@@ -69,10 +69,11 @@ interface IPeriphery is CustomErrors {
             int24 _tickAfter
         );
 
-    function estimatedCashflowAtMaturity(
-        IMarginEngine marginEngine,
-        address _owner,
-        int24 _tickLower,
-        int24 _tickUpper
-    ) external returns (int256 estimatedSettlementCashflow);
+    function calculateCashflowFromTo(
+        int256 fixedTokenBalance,
+        int256 variableTokenBalance,
+        uint256 termStartTimestampWad,
+        uint256 termEndTimestampWad,
+        uint256 variableFactorFromTo
+    ) external view returns (int256 cashflow);
 }
