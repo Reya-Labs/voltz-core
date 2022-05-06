@@ -249,21 +249,4 @@ contract Periphery is IPeriphery {
         IVAMM vamm = marginEngine.vamm();
         currentTick = vamm.vammVars().tick;
     }
-
-    function calculateCashflowFromTo(
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        uint256 termStartTimestampWad,
-        uint256 termEndTimestampWad,
-        uint256 variableFactorFromTo
-    ) external view override returns (int256 cashflow) {
-        return
-            FixedAndVariableMath.calculateSettlementCashflow(
-                fixedTokenBalance,
-                variableTokenBalance,
-                termStartTimestampWad,
-                termEndTimestampWad,
-                variableFactorFromTo
-            );
-    }
 }

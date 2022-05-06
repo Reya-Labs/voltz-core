@@ -68,12 +68,4 @@ interface IPeriphery is CustomErrors {
             int256 _marginRequirement,
             int24 _tickAfter
         );
-
-    function calculateCashflowFromTo(
-        int256 fixedTokenBalance,
-        int256 variableTokenBalance,
-        uint256 termStartTimestampWad,
-        uint256 termEndTimestampWad,
-        uint256 variableFactorFromTo
-    ) external view returns (int256 cashflow);
 }
