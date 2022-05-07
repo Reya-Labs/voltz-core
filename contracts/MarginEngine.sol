@@ -420,9 +420,6 @@ contract MarginEngine is
             false
         );
 
-        /// @audit [ABDK] This line is way too long.
-        /// Consider reformatting and/or refactoring.
-
         int256 _settlementCashflow = FixedAndVariableMath
             .calculateSettlementCashflow(
                 _position.fixedTokenBalance,

@@ -115,12 +115,9 @@ describe("LiquidatorBot", async () => {
       .approve(periphery.address, BigNumber.from(10).pow(27));
   });
 
-
   it("active lp management strategy", async () => {
-        
+
+
     
-
-
-  })
-
+  });
 });
