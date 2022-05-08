@@ -117,7 +117,22 @@ describe("LiquidatorBot", async () => {
 
   it("active lp management strategy", async () => {
 
-
+    // other deposits margin into the lp vault
     
+
+    // liquidity gets traded left <-> right (ft followed by vt)
+
+    // fees get generated
+
+    // rebalance
+
+    // market conditions have changed, and now liquidity is traded right <-> left (vt followed by ft)
+
+    // fees get generated
+
+    // withdraw
+
+    // calculate the apy?
+
   });
 });

@@ -110,6 +110,18 @@ export async function marginEngineMasterTestFixture() {
   return { marginEngineMasterTest };
 }
 
+
+export async function activeLPManagementStrategyTestFixture() {
+
+  const activeLPManagementStrategyTestFactory = await ethers.getContractFactory(
+    "TestActiveLPManagementStrategy"
+  );
+
+  // const activeLPManagementStrategyTest = (await activeLPManagementStrategyTestFactory.deploy()) as Act
+
+}
+
+
 export async function liquidatorBotTestFixture() {
   const liquidatorBotTestFactory = await ethers.getContractFactory(
     "TestLiquidatorBot"
