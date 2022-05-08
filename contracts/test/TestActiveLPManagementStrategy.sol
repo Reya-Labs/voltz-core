@@ -8,6 +8,7 @@ import "../interfaces/IERC20Minimal.sol";
 import "../interfaces/IPeriphery.sol";
 import "../core_libraries/SafeTransferLib.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../core_libraries/FixedAndVariableMath.sol";
 
 
 // deposit
@@ -160,6 +161,37 @@ contract TestActiveLPManagementStrategy is Ownable {
 
     }
 
+    
+    function _calculateMarginToWithdraw() internal returns (int256 _marginToWithdraw) {
+
+        // assumes lp has no unnetted variable liabilities
+
+        // get total position margin
+
+        Position.Info memory _position = marginEngine.getPosition(
+            address(this),
+            tickLower,
+            tickUpper
+        );
+
+        _marginToWithdraw = _position.margin;
+
+        // get settlement cashflow
+        int256 _settlementCashflow = FixedAndVariableMath
+            .calculateSettlementCashflow(
+                _position.fixedTokenBalance,
+                0, // _position.variableTokenBalance,
+                marginEngine.termStartTimestampWad(),
+                marginEngine.termEndTimestampWad(),
+                0 // variable factor is zero since does not apply in case variableTokenBalance is zero
+            );
+
+        if (_settlementCashflow < 0) {
+            _marginToWithdraw -= _settlementCashflow;
+        }
+
+    }
+    
     // the owner of the rebalance could be a multisig of operators
     function rebalance(
         int24 _updatedTickLower,
@@ -173,9 +205,7 @@ contract TestActiveLPManagementStrategy is Ownable {
         // _unwind();
 
         // manually calculate the settlement cashflow
-        // uint256 marginToWithdraw = _calculateMarginToWithdraw();
-        // uint256 marginToWithdraw = 400 * 10**18
-        uint256 marginToWithdraw = 0;
+        int256 marginToWithdraw = _calculateMarginToWithdraw();
 
         if (marginToWithdraw > 0) {
 
@@ -184,7 +214,7 @@ contract TestActiveLPManagementStrategy is Ownable {
                 address(this),
                 tickLower,
                 tickUpper,
-                -marginToWithdraw.toInt256()
+                -marginToWithdraw
             );
 
         }

@@ -163,7 +163,7 @@ describe("Active LP Management Strategy", async () => {
 
 
     // liquidity gets traded left <-> right (ft followed by vt)
-    await periphery.swap(
+    await periphery.connect(other).swap(
       {
         marginEngine: marginEngineTest.address,
         isFT: true,
@@ -175,7 +175,7 @@ describe("Active LP Management Strategy", async () => {
       }
     );
 
-    await periphery.swap(
+    await periphery.connect(other).swap(
       {
         marginEngine: marginEngineTest.address,
         isFT: false,
@@ -187,12 +187,42 @@ describe("Active LP Management Strategy", async () => {
       }
     );
       
-
-    // fees get generated
-
+    
     // rebalance
+    await activeLPManagementStrategyTest.connect(wallet).rebalance(
+      updatedTickLower,
+      updatedTickUpper
+    );
+
+
+    // checks
+
+    
 
     // market conditions have changed, and now liquidity is traded right <-> left (vt followed by ft)
+    await periphery.connect(other).swap(
+      {
+        marginEngine: marginEngineTest.address,
+        isFT: false,
+        notional: lpDepositAmount.mul(5),
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        marginDelta: lpDepositAmount,
+        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(updatedTickLower).toString()
+      }
+    );
+
+    // await periphery.connect(other).swap(
+    //   {
+    //     marginEngine: marginEngineTest.address,
+    //     isFT: true,
+    //     notional: lpDepositAmount.mul(5),
+    //     tickLower: -TICK_SPACING,
+    //     tickUpper: TICK_SPACING,
+    //     marginDelta: lpDepositAmount,
+    //     sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(updatedTickUpper).toString()
+    //   }
+    // );
 
     // fees get generated
 
