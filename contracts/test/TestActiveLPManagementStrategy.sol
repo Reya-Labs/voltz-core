@@ -75,26 +75,30 @@ contract TestActiveLPManagementStrategy is Ownable {
 
     
     function _burn() internal {
+
+            // can introduce more granular controls
+            if (tickUpper > tickLower) {
+                
+                Position.Info memory position = marginEngine.getPosition(
+                    address(this),
+                    tickLower,
+                    tickUpper
+                );
+
+                uint128 positionLiquidity = position._liquidity;
+
+                if (positionLiquidity > 0) {
+
+                    vamm.burn(
+                        address(this),
+                        tickLower,
+                        tickUpper,
+                        positionLiquidity
+                    );
+
+                }
+            }
         
-        Position.Info memory position = marginEngine.getPosition(
-            address(this),
-            tickLower,
-            tickUpper
-        );
-
-        uint128 positionLiquidity = position._liquidity;
-
-        if (positionLiquidity > 0) {
-
-            vamm.burn(
-                address(this),
-                tickLower,
-                tickUpper,
-                positionLiquidity
-            );
-
-        }
-
     }
     
     function _mintAll() internal {
@@ -106,6 +110,8 @@ contract TestActiveLPManagementStrategy is Ownable {
         if (marginInactive > 0) {
             
             uint256 notionalToMint = marginInactive * LEVERAGE;
+            underlyingToken.approve(address(periphery), marginInactive);
+
             periphery.mintOrBurn(
                 IPeriphery.MintOrBurnParams({
                     marginEngine: marginEngine,
@@ -124,6 +130,8 @@ contract TestActiveLPManagementStrategy is Ownable {
     function _mint(uint256 _marginDelta) internal {
 
         uint256 notionalToMint = _marginDelta * LEVERAGE;
+
+        underlyingToken.approve(address(periphery), _marginDelta);
         periphery.mintOrBurn(IPeriphery.MintOrBurnParams({
             marginEngine: marginEngine,
             tickLower: tickLower,

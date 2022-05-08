@@ -148,7 +148,8 @@ describe("Active LP Management Strategy", async () => {
     );
 
     // checks
-    
+    expect(await activeLPManagementStrategyTest.tickLower()).to.eq(startingTickLower);
+    expect(await activeLPManagementStrategyTest.tickUpper()).to.eq(startingTickUpper);
 
     
     // approve the lp optimizer to deposit erc20 tokens
@@ -158,6 +159,10 @@ describe("Active LP Management Strategy", async () => {
     await activeLPManagementStrategyTest.connect(other).deposit(
       lpDepositAmount
     );
+
+    // checks
+    
+
     
     // liquidity gets traded left <-> right (ft followed by vt)
 
