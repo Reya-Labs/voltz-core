@@ -24,6 +24,7 @@ import {
   TICK_SPACING,
 } from "../shared/utilities"; 
 import { consts } from "../helpers/constants";
+import { TickMath } from "../shared/tickMath";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -153,18 +154,39 @@ describe("Active LP Management Strategy", async () => {
 
     
     // approve the lp optimizer to deposit erc20 tokens
-    await token.connect(other).approve(activeLPManagementStrategyTest.address, lpDepositAmount);
+    await token.connect(wallet).approve(activeLPManagementStrategyTest.address, lpDepositAmount);
     
     // other deposits margin into the lp vault
-    await activeLPManagementStrategyTest.connect(other).deposit(
+    await activeLPManagementStrategyTest.connect(wallet).deposit(
       lpDepositAmount
     );
 
-    // checks
-    
 
-    
     // liquidity gets traded left <-> right (ft followed by vt)
+    await periphery.swap(
+      {
+        marginEngine: marginEngineTest.address,
+        isFT: true,
+        notional: lpDepositAmount.mul(5),
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        marginDelta: lpDepositAmount,
+        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(startingTickUpper).toString()
+      }
+    );
+
+    await periphery.swap(
+      {
+        marginEngine: marginEngineTest.address,
+        isFT: false,
+        notional: lpDepositAmount.mul(5),
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        marginDelta: lpDepositAmount,
+        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(startingTickLower).toString()
+      }
+    );
+      
 
     // fees get generated
 
