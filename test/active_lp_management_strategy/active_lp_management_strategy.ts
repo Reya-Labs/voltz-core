@@ -118,13 +118,16 @@ describe("Active LP Management Strategy", async () => {
     // initialize vamm at -TICK_SPACING
     await vammTest.initializeVAMM(TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString());
 
+    // set fee parameter
+    await vammTest.setFee(toBn("0.01"));
+
     // starting tick range
     const startingTickLower = -TICK_SPACING;
     const startingTickUpper = 0;
 
     // updated tick range
-    const updatedTickLower = 0;
-    const updatedTickUpper = TICK_SPACING;
+    const updatedTickLower = -(TICK_SPACING * 2);
+    const updatedTickUpper = -TICK_SPACING;
 
     // in underlying tokens (e.g. DAI)
     const lpDepositAmount = BigNumber.from(10).pow(18).mul(500); // 18 decimals
@@ -191,8 +194,18 @@ describe("Active LP Management Strategy", async () => {
         sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(startingTickLower).toString()
       }
     );
+
+    // check fee income
+    let position = await marginEngineTest.callStatic.getPosition(
+      activeLPManagementStrategyTest.address,
+      startingTickLower,
+      startingTickUpper
+    );
+
+    let cumulativeGeneratedFees = position.accumulatedFees;
+
+    console.log("generated fees before rebalance ", utils.formatEther(cumulativeGeneratedFees));
       
-    
     // rebalance
     await activeLPManagementStrategyTest.connect(wallet).rebalance(
       updatedTickLower,
@@ -200,6 +213,9 @@ describe("Active LP Management Strategy", async () => {
     );
 
     // checks
+    expect(await activeLPManagementStrategyTest.tickLower()).to.eq(updatedTickLower);
+    expect(await activeLPManagementStrategyTest.tickUpper()).to.eq(updatedTickUpper);
+
 
     // market conditions have changed, and now liquidity is traded right <-> left (vt followed by ft)
     await periphery.connect(other).swap(
@@ -214,23 +230,31 @@ describe("Active LP Management Strategy", async () => {
       }
     );
 
-    // await periphery.connect(other).swap(
-    //   {
-    //     marginEngine: marginEngineTest.address,
-    //     isFT: true,
-    //     notional: lpDepositAmount.mul(5),
-    //     tickLower: -TICK_SPACING,
-    //     tickUpper: TICK_SPACING,
-    //     marginDelta: lpDepositAmount,
-    //     sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(updatedTickUpper).toString()
-    //   }
-    // );
+    await periphery.connect(other).swap(
+      {
+        marginEngine: marginEngineTest.address,
+        isFT: true,
+        notional: lpDepositAmount.mul(5),
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        marginDelta: lpDepositAmount,
+        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(updatedTickUpper).toString()
+      }
+    );
 
-    // fees get generated
 
-    // withdraw
+    // check fee income
+    position = await marginEngineTest.callStatic.getPosition(
+      activeLPManagementStrategyTest.address,
+      updatedTickLower,
+      updatedTickUpper
+    );
 
-    // calculate the apy?
+
+    cumulativeGeneratedFees = cumulativeGeneratedFees.add(position.accumulatedFees);
+
+    console.log("generated fees after rebalance ", utils.formatEther(cumulativeGeneratedFees));
+
 
   });
 });
