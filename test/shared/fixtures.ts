@@ -305,8 +305,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
 
   await aaveLendingPool.initReserve(token.address, mockAToken.address);
 
-  await rateOracleTest.increaseObservationCardinalityNext(5);
-  await compoundRateOracleTest.increaseObservationCardinalityNext(5);
+  await rateOracleTest.increaseObservationCardinalityNext(10);
+  await compoundRateOracleTest.increaseObservationCardinalityNext(10);
   // write oracle entry
   await rateOracleTest.writeOracleEntry();
   await compoundRateOracleTest.writeOracleEntry();

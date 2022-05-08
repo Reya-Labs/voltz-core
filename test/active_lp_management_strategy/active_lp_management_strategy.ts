@@ -9,6 +9,7 @@ import {
   Periphery,
   TestActiveLPManagementStrategy,
   TestMarginEngine,
+  TestVAMM,
 } from "../../typechain";
 import {
   APY_UPPER_MULTIPLIER,
@@ -32,6 +33,7 @@ describe("Active LP Management Strategy", async () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
   let marginEngineTest: TestMarginEngine;
+  let vammTest: TestVAMM;
   let periphery: Periphery;
   let factory: Factory;
   let activeLPManagementStrategyTest: TestActiveLPManagementStrategy;
@@ -44,7 +46,7 @@ describe("Active LP Management Strategy", async () => {
   });
 
   beforeEach("deploy fixture", async () => {
-    ({ token, marginEngineTest, factory } =
+    ({ token, marginEngineTest, vammTest, factory } =
       await loadFixture(metaFixture));
 
     await token.mint(wallet.address, BigNumber.from(10).pow(27).mul(2));
@@ -88,7 +90,7 @@ describe("Active LP Management Strategy", async () => {
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
-    await marginEngineTest.setLookbackWindowInSeconds(consts.ONE_DAY);
+    await marginEngineTest.setLookbackWindowInSeconds(consts.ONE_DAY.div(4)); // 6 hours
 
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
@@ -112,6 +114,9 @@ describe("Active LP Management Strategy", async () => {
   });
 
   it("active lp management strategy", async () => {
+
+    // initialize vamm at -TICK_SPACING
+    await vammTest.initializeVAMM(TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString());
 
     // starting tick range
     const startingTickLower = -TICK_SPACING;
@@ -193,7 +198,6 @@ describe("Active LP Management Strategy", async () => {
       updatedTickLower,
       updatedTickUpper
     );
-
 
     // checks
 

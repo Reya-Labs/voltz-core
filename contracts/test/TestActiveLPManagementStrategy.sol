@@ -163,6 +163,8 @@ contract TestActiveLPManagementStrategy is Ownable {
 
     
     function _calculateMarginToWithdraw() internal returns (int256 _marginToWithdraw) {
+
+        // margin requirement calculation in here
         
         if (tickUpper > tickLower) {
 
@@ -189,8 +191,10 @@ contract TestActiveLPManagementStrategy is Ownable {
                 );
 
             if (_settlementCashflow < 0) {
-                _marginToWithdraw -= _settlementCashflow;
+                _marginToWithdraw += _settlementCashflow;
             }
+
+            _marginToWithdraw -= 10 ** 18; // temp: subtract one wad
 
         }
 
