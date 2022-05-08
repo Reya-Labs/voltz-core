@@ -1,7 +1,10 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
 import { expect } from "../shared/expect";
-import { activeLPManagementStrategyTestFixture, metaFixture } from "../shared/fixtures";
+import {
+  activeLPManagementStrategyTestFixture,
+  metaFixture,
+} from "../shared/fixtures";
 import { toBn } from "evm-bn";
 import {
   ERC20Mock,
@@ -23,7 +26,7 @@ import {
   XI_LOWER,
   T_MAX,
   TICK_SPACING,
-} from "../shared/utilities"; 
+} from "../shared/utilities";
 import { consts } from "../helpers/constants";
 import { TickMath } from "../shared/tickMath";
 
@@ -46,8 +49,9 @@ describe("Active LP Management Strategy", async () => {
   });
 
   beforeEach("deploy fixture", async () => {
-    ({ token, marginEngineTest, vammTest, factory } =
-      await loadFixture(metaFixture));
+    ({ token, marginEngineTest, vammTest, factory } = await loadFixture(
+      metaFixture
+    ));
 
     await token.mint(wallet.address, BigNumber.from(10).pow(27).mul(2));
 
@@ -114,9 +118,10 @@ describe("Active LP Management Strategy", async () => {
   });
 
   it("active lp management strategy", async () => {
-
     // initialize vamm at -TICK_SPACING
-    await vammTest.initializeVAMM(TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString());
+    await vammTest.initializeVAMM(
+      TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
+    );
 
     // set fee parameter
     await vammTest.setFee(toBn("0.01"));
@@ -131,10 +136,16 @@ describe("Active LP Management Strategy", async () => {
 
     // in underlying tokens (e.g. DAI)
     const lpDepositAmount = BigNumber.from(10).pow(18).mul(500); // 18 decimals
-    console.log("deposit amount ", utils.formatEther(lpDepositAmount.toString()), " VUSD");
+    console.log(
+      "deposit amount ",
+      utils.formatEther(lpDepositAmount.toString()),
+      " VUSD"
+    );
 
     // deploy the lp optimizer smart contract
-    ({ activeLPManagementStrategyTest } = await loadFixture(activeLPManagementStrategyTestFixture));
+    ({ activeLPManagementStrategyTest } = await loadFixture(
+      activeLPManagementStrategyTestFixture
+    ));
 
     // set margin engine and vamm in the lp optimizer
     // marginEngineTest refers to a test margin engine for a given IRS pool
@@ -145,55 +156,64 @@ describe("Active LP Management Strategy", async () => {
     );
 
     // checks
-    expect(await activeLPManagementStrategyTest.underlyingToken()).to.eq(token.address);
-    expect(await activeLPManagementStrategyTest.marginEngine()).to.eq(marginEngineTest.address);
-    expect(await activeLPManagementStrategyTest.vamm()).to.eq(await marginEngineTest.vamm());
-    expect(await activeLPManagementStrategyTest.periphery()).to.eq(periphery.address);
+    expect(await activeLPManagementStrategyTest.underlyingToken()).to.eq(
+      token.address
+    );
+    expect(await activeLPManagementStrategyTest.marginEngine()).to.eq(
+      marginEngineTest.address
+    );
+    expect(await activeLPManagementStrategyTest.vamm()).to.eq(
+      await marginEngineTest.vamm()
+    );
+    expect(await activeLPManagementStrategyTest.periphery()).to.eq(
+      periphery.address
+    );
 
     // rebalance
-    await activeLPManagementStrategyTest.connect(wallet).rebalance(
-      startingTickLower,
+    await activeLPManagementStrategyTest
+      .connect(wallet)
+      .rebalance(startingTickLower, startingTickUpper);
+
+    // checks
+    expect(await activeLPManagementStrategyTest.tickLower()).to.eq(
+      startingTickLower
+    );
+    expect(await activeLPManagementStrategyTest.tickUpper()).to.eq(
       startingTickUpper
     );
 
-    // checks
-    expect(await activeLPManagementStrategyTest.tickLower()).to.eq(startingTickLower);
-    expect(await activeLPManagementStrategyTest.tickUpper()).to.eq(startingTickUpper);
-
-    
     // approve the lp optimizer to deposit erc20 tokens
-    await token.connect(wallet).approve(activeLPManagementStrategyTest.address, lpDepositAmount);
-    
-    // other deposits margin into the lp vault
-    await activeLPManagementStrategyTest.connect(wallet).deposit(
-      lpDepositAmount
-    );
+    await token
+      .connect(wallet)
+      .approve(activeLPManagementStrategyTest.address, lpDepositAmount);
 
+    // other deposits margin into the lp vault
+    await activeLPManagementStrategyTest
+      .connect(wallet)
+      .deposit(lpDepositAmount);
 
     // liquidity gets traded left <-> right (ft followed by vt)
-    await periphery.connect(other).swap(
-      {
-        marginEngine: marginEngineTest.address,
-        isFT: true,
-        notional: lpDepositAmount.mul(5),
-        tickLower: -TICK_SPACING,
-        tickUpper: TICK_SPACING,
-        marginDelta: lpDepositAmount,
-        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(startingTickUpper).toString()
-      }
-    );
+    await periphery.connect(other).swap({
+      marginEngine: marginEngineTest.address,
+      isFT: true,
+      notional: lpDepositAmount.mul(5),
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      marginDelta: lpDepositAmount,
+      sqrtPriceLimitX96:
+        TickMath.getSqrtRatioAtTick(startingTickUpper).toString(),
+    });
 
-    await periphery.connect(other).swap(
-      {
-        marginEngine: marginEngineTest.address,
-        isFT: false,
-        notional: lpDepositAmount.mul(5),
-        tickLower: -TICK_SPACING,
-        tickUpper: TICK_SPACING,
-        marginDelta: lpDepositAmount,
-        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(startingTickLower).toString()
-      }
-    );
+    await periphery.connect(other).swap({
+      marginEngine: marginEngineTest.address,
+      isFT: false,
+      notional: lpDepositAmount.mul(5),
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      marginDelta: lpDepositAmount,
+      sqrtPriceLimitX96:
+        TickMath.getSqrtRatioAtTick(startingTickLower).toString(),
+    });
 
     // check fee income
     let position = await marginEngineTest.callStatic.getPosition(
@@ -204,44 +224,46 @@ describe("Active LP Management Strategy", async () => {
 
     let cumulativeGeneratedFees = position.accumulatedFees;
 
-    console.log("generated fees before rebalance ", utils.formatEther(cumulativeGeneratedFees));
-      
+    console.log(
+      "generated fees before rebalance ",
+      utils.formatEther(cumulativeGeneratedFees)
+    );
+
     // rebalance
-    await activeLPManagementStrategyTest.connect(wallet).rebalance(
-      updatedTickLower,
+    await activeLPManagementStrategyTest
+      .connect(wallet)
+      .rebalance(updatedTickLower, updatedTickUpper);
+
+    // checks
+    expect(await activeLPManagementStrategyTest.tickLower()).to.eq(
+      updatedTickLower
+    );
+    expect(await activeLPManagementStrategyTest.tickUpper()).to.eq(
       updatedTickUpper
     );
 
-    // checks
-    expect(await activeLPManagementStrategyTest.tickLower()).to.eq(updatedTickLower);
-    expect(await activeLPManagementStrategyTest.tickUpper()).to.eq(updatedTickUpper);
-
-
     // market conditions have changed, and now liquidity is traded right <-> left (vt followed by ft)
-    await periphery.connect(other).swap(
-      {
-        marginEngine: marginEngineTest.address,
-        isFT: false,
-        notional: lpDepositAmount.mul(5),
-        tickLower: -TICK_SPACING,
-        tickUpper: TICK_SPACING,
-        marginDelta: lpDepositAmount,
-        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(updatedTickLower).toString()
-      }
-    );
+    await periphery.connect(other).swap({
+      marginEngine: marginEngineTest.address,
+      isFT: false,
+      notional: lpDepositAmount.mul(5),
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      marginDelta: lpDepositAmount,
+      sqrtPriceLimitX96:
+        TickMath.getSqrtRatioAtTick(updatedTickLower).toString(),
+    });
 
-    await periphery.connect(other).swap(
-      {
-        marginEngine: marginEngineTest.address,
-        isFT: true,
-        notional: lpDepositAmount.mul(5),
-        tickLower: -TICK_SPACING,
-        tickUpper: TICK_SPACING,
-        marginDelta: lpDepositAmount,
-        sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(updatedTickUpper).toString()
-      }
-    );
-
+    await periphery.connect(other).swap({
+      marginEngine: marginEngineTest.address,
+      isFT: true,
+      notional: lpDepositAmount.mul(5),
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      marginDelta: lpDepositAmount,
+      sqrtPriceLimitX96:
+        TickMath.getSqrtRatioAtTick(updatedTickUpper).toString(),
+    });
 
     // check fee income
     position = await marginEngineTest.callStatic.getPosition(
@@ -250,11 +272,13 @@ describe("Active LP Management Strategy", async () => {
       updatedTickUpper
     );
 
+    cumulativeGeneratedFees = cumulativeGeneratedFees.add(
+      position.accumulatedFees
+    );
 
-    cumulativeGeneratedFees = cumulativeGeneratedFees.add(position.accumulatedFees);
-
-    console.log("generated fees after rebalance ", utils.formatEther(cumulativeGeneratedFees));
-
-
+    console.log(
+      "generated fees after rebalance ",
+      utils.formatEther(cumulativeGeneratedFees)
+    );
   });
 });

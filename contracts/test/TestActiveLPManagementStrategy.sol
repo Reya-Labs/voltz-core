@@ -10,7 +10,6 @@ import "../core_libraries/SafeTransferLib.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 
-
 // deposit
 // rebalance
 /// strategy off-chain invokes the rebalance function based on a model for tick range setting
@@ -19,7 +18,7 @@ import "../core_libraries/FixedAndVariableMath.sol";
 //// f(time delta from now) -> come up with bounds on realized fixedRate -> optimial tick range
 // withdraw
 /// when can you withdraw (only after maturity of a pool)
-/// is there room for more flexibility where the vault always keeps some cash for withdrawals 
+/// is there room for more flexibility where the vault always keeps some cash for withdrawals
 /// and discincentivises withdraws with fees if done before maturity
 
 // extra
@@ -42,7 +41,6 @@ import "../core_libraries/FixedAndVariableMath.sol";
 // funding rate risk
 
 contract TestActiveLPManagementStrategy is Ownable {
-
     using SafeCast for uint256;
     using SafeCast for int256;
 
@@ -74,42 +72,34 @@ contract TestActiveLPManagementStrategy is Ownable {
         periphery = _periphery;
     }
 
-    
     function _burn() internal {
+        // can introduce more granular controls
+        if (tickUpper > tickLower) {
+            Position.Info memory position = marginEngine.getPosition(
+                address(this),
+                tickLower,
+                tickUpper
+            );
 
-            // can introduce more granular controls
-            if (tickUpper > tickLower) {
-                
-                Position.Info memory position = marginEngine.getPosition(
+            uint128 positionLiquidity = position._liquidity;
+
+            if (positionLiquidity > 0) {
+                vamm.burn(
                     address(this),
                     tickLower,
-                    tickUpper
+                    tickUpper,
+                    positionLiquidity
                 );
-
-                uint128 positionLiquidity = position._liquidity;
-
-                if (positionLiquidity > 0) {
-
-                    vamm.burn(
-                        address(this),
-                        tickLower,
-                        tickUpper,
-                        positionLiquidity
-                    );
-
-                }
             }
-        
+        }
     }
-    
-    function _mintAll() internal {
 
+    function _mintAll() internal {
         uint256 marginInactive = underlyingToken.balanceOf(address(this));
 
         // might want to have a floor for the conditional statement to avoid spending gas on small inactive ampounts
         // or aim to keep some of the underlying in the contract to optimise for withdrawal UX
         if (marginInactive > 0) {
-            
             uint256 notionalToMint = marginInactive * LEVERAGE;
             underlyingToken.approve(address(periphery), marginInactive);
 
@@ -123,28 +113,25 @@ contract TestActiveLPManagementStrategy is Ownable {
                     marginDelta: marginInactive
                 })
             );
-
         }
-
     }
 
     function _mint(uint256 _marginDelta) internal {
-
         uint256 notionalToMint = _marginDelta * LEVERAGE;
 
         underlyingToken.approve(address(periphery), _marginDelta);
-        periphery.mintOrBurn(IPeriphery.MintOrBurnParams({
-            marginEngine: marginEngine,
-            tickLower: tickLower,
-            tickUpper: tickUpper,
-            notional: notionalToMint,
-            isMint: true,
-            marginDelta: _marginDelta
-        }));
-
+        periphery.mintOrBurn(
+            IPeriphery.MintOrBurnParams({
+                marginEngine: marginEngine,
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                notional: notionalToMint,
+                isMint: true,
+                marginDelta: _marginDelta
+            })
+        );
     }
-    
-    
+
     function deposit(uint256 depositAmountInUnderlyingTokens) external {
         require(
             depositAmountInUnderlyingTokens > 0,
@@ -158,16 +145,15 @@ contract TestActiveLPManagementStrategy is Ownable {
         );
 
         _mint(depositAmountInUnderlyingTokens);
-
     }
 
-    
-    function _calculateMarginToWithdraw() internal returns (int256 _marginToWithdraw) {
-
+    function _calculateMarginToWithdraw()
+        internal
+        returns (int256 _marginToWithdraw)
+    {
         // margin requirement calculation in here
-        
-        if (tickUpper > tickLower) {
 
+        if (tickUpper > tickLower) {
             // assumes lp has no unnetted variable liabilities
 
             // get total position margin
@@ -194,18 +180,15 @@ contract TestActiveLPManagementStrategy is Ownable {
                 _marginToWithdraw += _settlementCashflow;
             }
 
-            _marginToWithdraw -= 10 ** 18; // temp: subtract one wad
-
+            _marginToWithdraw -= 10**18; // temp: subtract one wad
         }
-
     }
-    
-    // the owner of the rebalance could be a multisig of operators
-    function rebalance(
-        int24 _updatedTickLower,
-        int24 _updatedTickUpper
-    ) external onlyOwner {
 
+    // the owner of the rebalance could be a multisig of operators
+    function rebalance(int24 _updatedTickLower, int24 _updatedTickUpper)
+        external
+        onlyOwner
+    {
         // burn all liquidity
         _burn();
 
@@ -216,7 +199,6 @@ contract TestActiveLPManagementStrategy is Ownable {
         int256 marginToWithdraw = _calculateMarginToWithdraw();
 
         if (marginToWithdraw > 0) {
-
             // withdraw margin net settlement cashflow
             marginEngine.updatePositionMargin(
                 address(this),
@@ -224,14 +206,12 @@ contract TestActiveLPManagementStrategy is Ownable {
                 tickUpper,
                 -marginToWithdraw
             );
-
         }
-        
+
         // update tickLower & tickUpper
         (tickLower, tickUpper) = (_updatedTickLower, _updatedTickUpper);
 
         // mint liquidity in the updated tick range
         _mintAll();
-
     }
 }
