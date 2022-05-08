@@ -7,6 +7,8 @@ import "../interfaces/IVAMM.sol";
 import "../interfaces/IERC20Minimal.sol";
 import "../interfaces/IPeriphery.sol";
 import "../core_libraries/SafeTransferLib.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 
 // deposit
 // rebalance
@@ -38,7 +40,7 @@ import "../core_libraries/SafeTransferLib.sol";
 // liquidations
 // funding rate risk
 
-contract TestActiveLPManagementStrategy {
+contract TestActiveLPManagementStrategy is Ownable {
 
     using SafeCast for uint256;
     using SafeCast for int256;
@@ -73,12 +75,55 @@ contract TestActiveLPManagementStrategy {
 
     
     function _burn() internal {
+        
+        Position.Info memory position = marginEngine.getPosition(
+            address(this),
+            tickLower,
+            tickUpper
+        );
+
+        uint128 positionLiquidity = position._liquidity;
+
+        if (positionLiquidity > 0) {
+
+            vamm.burn(
+                address(this),
+                tickLower,
+                tickUpper,
+                positionLiquidity
+            );
+
+        }
 
     }
     
+    function _mintAll() internal {
+
+        uint256 marginInactive = underlyingToken.balanceOf(address(this));
+
+        // might want to have a floor for the conditional statement to avoid spending gas on small inactive ampounts
+        // or aim to keep some of the underlying in the contract to optimise for withdrawal UX
+        if (marginInactive > 0) {
+            
+            uint256 notionalToMint = marginInactive * LEVERAGE;
+            periphery.mintOrBurn(
+                IPeriphery.MintOrBurnParams({
+                    marginEngine: marginEngine,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    notional: notionalToMint,
+                    isMint: true,
+                    marginDelta: marginInactive
+                })
+            );
+
+        }
+
+    }
+
     function _mint(uint256 _marginDelta) internal {
 
-        uint256 notionalToMint = depositAmountInUnderlyingTokens * LEVERAGE;
+        uint256 notionalToMint = _marginDelta * LEVERAGE;
         periphery.mintOrBurn(IPeriphery.MintOrBurnParams({
             marginEngine: marginEngine,
             tickLower: tickLower,
@@ -89,6 +134,7 @@ contract TestActiveLPManagementStrategy {
         }));
 
     }
+    
     
     function deposit(uint256 depositAmountInUnderlyingTokens) external {
         require(
@@ -110,30 +156,36 @@ contract TestActiveLPManagementStrategy {
     function rebalance(
         int24 _updatedTickLower,
         int24 _updatedTickUpper
-    ) external {
+    ) external onlyOwner {
 
         // burn all liquidity
         _burn();
 
         // unwind to net out the position
-        _unwind();
+        // _unwind();
 
         // manually calculate the settlement cashflow
-        uint256 marginToWithdraw = _calculateMarginToWithdraw();
-        
-        // withdraw margin net settlement cashflow
-        marginEngine.updatePositionMargin(
-            address(this),
-            tickLower,
-            tickUpper,
-            -marginToWithdraw.toInt256()
-        );
+        // uint256 marginToWithdraw = _calculateMarginToWithdraw();
+        // uint256 marginToWithdraw = 400 * 10**18
+        uint256 marginToWithdraw = 0;
+
+        if (marginToWithdraw > 0) {
+
+            // withdraw margin net settlement cashflow
+            marginEngine.updatePositionMargin(
+                address(this),
+                tickLower,
+                tickUpper,
+                -marginToWithdraw.toInt256()
+            );
+
+        }
         
         // update tickLower & tickUpper
         (tickLower, tickUpper) = (_updatedTickLower, _updatedTickUpper);
 
         // mint liquidity in the updated tick range
-        _mint(marginToWithdraw);
+        _mintAll();
 
     }
 }

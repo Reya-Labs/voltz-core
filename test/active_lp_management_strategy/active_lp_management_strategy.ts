@@ -112,6 +112,14 @@ describe("Active LP Management Strategy", async () => {
 
   it("active lp management strategy", async () => {
 
+    // starting tick range
+    const startingTickLower = -TICK_SPACING;
+    const startingTickUpper = 0;
+
+    // updated tick range
+    const updatedTickLower = 0;
+    const updatedTickUpper = TICK_SPACING;
+
     // in underlying tokens (e.g. DAI)
     const lpDepositAmount = BigNumber.from(10).pow(18).mul(500); // 18 decimals
     console.log("deposit amount ", utils.formatEther(lpDepositAmount.toString()), " VUSD");
@@ -134,7 +142,14 @@ describe("Active LP Management Strategy", async () => {
     expect(await activeLPManagementStrategyTest.periphery()).to.eq(periphery.address);
 
     // rebalance
+    await activeLPManagementStrategyTest.connect(wallet).rebalance(
+      startingTickLower,
+      startingTickUpper
+    );
+
+    // checks
     
+
     
     // approve the lp optimizer to deposit erc20 tokens
     await token.connect(other).approve(activeLPManagementStrategyTest.address, lpDepositAmount);
