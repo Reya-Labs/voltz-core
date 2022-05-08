@@ -1,16 +1,14 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
 import { expect } from "../shared/expect";
-import { liquidatorBotTestFixture, metaFixture } from "../shared/fixtures";
+import { activeLPManagementStrategyTestFixture, metaFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
 import {
   ERC20Mock,
   Factory,
-  MockAaveLendingPool,
   Periphery,
-  TestLiquidatorBot,
+  TestActiveLPManagementStrategy,
   TestMarginEngine,
-  TestRateOracle,
 } from "../../typechain";
 import {
   APY_UPPER_MULTIPLIER,
@@ -24,21 +22,18 @@ import {
   XI_LOWER,
   T_MAX,
   TICK_SPACING,
-} from "../shared/utilities";
-import { advanceTimeAndBlock } from "../helpers/time";
+} from "../shared/utilities"; 
 import { consts } from "../helpers/constants";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
-describe("LiquidatorBot", async () => {
+describe("Active LP Management Strategy", async () => {
   let wallet: Wallet, other: Wallet;
   let token: ERC20Mock;
   let marginEngineTest: TestMarginEngine;
   let periphery: Periphery;
   let factory: Factory;
-  let aaveLendingPool: MockAaveLendingPool;
-  let rateOracleTest: TestRateOracle;
-  let liquidatorBotTest: TestLiquidatorBot;
+  let activeLPManagementStrategyTest: TestActiveLPManagementStrategy;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
@@ -48,7 +43,7 @@ describe("LiquidatorBot", async () => {
   });
 
   beforeEach("deploy fixture", async () => {
-    ({ token, marginEngineTest, factory, aaveLendingPool, rateOracleTest } =
+    ({ token, marginEngineTest, factory } =
       await loadFixture(metaFixture));
 
     await token.mint(wallet.address, BigNumber.from(10).pow(27).mul(2));
@@ -117,9 +112,38 @@ describe("LiquidatorBot", async () => {
 
   it("active lp management strategy", async () => {
 
-    // other deposits margin into the lp vault
-    
+    // in underlying tokens (e.g. DAI)
+    const lpDepositAmount = BigNumber.from(10).pow(18).mul(500); // 18 decimals
+    console.log("deposit amount ", utils.formatEther(lpDepositAmount.toString()), " VUSD");
 
+    // deploy the lp optimizer smart contract
+    ({ activeLPManagementStrategyTest } = await loadFixture(activeLPManagementStrategyTestFixture));
+
+    // set margin engine and vamm in the lp optimizer
+    // marginEngineTest refers to a test margin engine for a given IRS pool
+    // periphery refers to the Voltz Periphery contract which abstracts away the complexities of interactive with the voltz core directly
+    await activeLPManagementStrategyTest.setMarginEngineAndVAMM(
+      marginEngineTest.address,
+      periphery.address
+    );
+
+    // checks
+    expect(await activeLPManagementStrategyTest.underlyingToken()).to.eq(token.address);
+    expect(await activeLPManagementStrategyTest.marginEngine()).to.eq(marginEngineTest.address);
+    expect(await activeLPManagementStrategyTest.vamm()).to.eq(await marginEngineTest.vamm());
+    expect(await activeLPManagementStrategyTest.periphery()).to.eq(periphery.address);
+
+    // rebalance
+    
+    
+    // approve the lp optimizer to deposit erc20 tokens
+    await token.connect(other).approve(activeLPManagementStrategyTest.address, lpDepositAmount);
+    
+    // other deposits margin into the lp vault
+    await activeLPManagementStrategyTest.connect(other).deposit(
+      lpDepositAmount
+    );
+    
     // liquidity gets traded left <-> right (ft followed by vt)
 
     // fees get generated

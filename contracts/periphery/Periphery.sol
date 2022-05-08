@@ -15,6 +15,7 @@ import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "hardhat/console.sol";
 
 contract Periphery is IPeriphery {
     using SafeCast for uint256;
@@ -45,6 +46,8 @@ contract Periphery is IPeriphery {
         bool _isMint
     ) {
         uint256 _lpNotionalCap = lpNotionalCaps[_marginEngine];
+
+        console.log("_lpNotionalCap", _lpNotionalCap);
 
         if (_isMint) {
             lpNotionalCumulatives[_marginEngine] += _notionalDelta;

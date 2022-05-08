@@ -39,6 +39,10 @@ import "../core_libraries/SafeTransferLib.sol";
 // funding rate risk
 
 contract TestActiveLPManagementStrategy {
+
+    using SafeCast for uint256;
+    using SafeCast for int256;
+
     IMarginEngine public marginEngine;
     IVAMM public vamm;
     IERC20Minimal public underlyingToken;
@@ -64,8 +68,28 @@ contract TestActiveLPManagementStrategy {
         marginEngine = _marginEngine;
         vamm = marginEngine.vamm();
         underlyingToken = marginEngine.underlyingToken();
+        periphery = _periphery;
     }
 
+    
+    function _burn() internal {
+
+    }
+    
+    function _mint(uint256 _marginDelta) internal {
+
+        uint256 notionalToMint = depositAmountInUnderlyingTokens * LEVERAGE;
+        periphery.mintOrBurn(IPeriphery.MintOrBurnParams({
+            marginEngine: marginEngine,
+            tickLower: tickLower,
+            tickUpper: tickUpper,
+            notional: notionalToMint,
+            isMint: true,
+            marginDelta: _marginDelta
+        }));
+
+    }
+    
     function deposit(uint256 depositAmountInUnderlyingTokens) external {
         require(
             depositAmountInUnderlyingTokens > 0,
@@ -78,35 +102,38 @@ contract TestActiveLPManagementStrategy {
             depositAmountInUnderlyingTokens
         );
 
-        uint256 notionalToMint = depositAmountInUnderlyingTokens * LEVERAGE;
-        periphery.mintOrBurn(IPeriphery.MintOrBurnParams({
-            marginEngine: marginEngine,
-            tickLower: tickLower,
-            tickUpper: tickUpper,
-            notional: notionalToMint,
-            isMint: true,
-            marginDelta: depositAmountInUnderlyingTokens
-        }));
+        _mint(depositAmountInUnderlyingTokens);
+
     }
 
     // the owner of the rebalance could be a multisig of operators
     function rebalance(
-        int24 _tickLower,
-        int24 _tickUpper
+        int24 _updatedTickLower,
+        int24 _updatedTickUpper
     ) external {
 
-        // require checks
-
         // burn all liquidity
+        _burn();
 
-        // swap to net out the position
-
-        // withdraw all margin
+        // unwind to net out the position
+        _unwind();
 
         // manually calculate the settlement cashflow
+        uint256 marginToWithdraw = _calculateMarginToWithdraw();
+        
+        // withdraw margin net settlement cashflow
+        marginEngine.updatePositionMargin(
+            address(this),
+            tickLower,
+            tickUpper,
+            -marginToWithdraw.toInt256()
+        );
+        
+        // update tickLower & tickUpper
+        (tickLower, tickUpper) = (_updatedTickLower, _updatedTickUpper);
 
-        // todo: figure out how to check for the margin requirement?
-
+        // mint liquidity in the updated tick range
+        _mint(marginToWithdraw);
 
     }
 }
