@@ -197,8 +197,6 @@ describe("Active LP Management Strategy", async () => {
 
     // checks
 
-    
-
     // market conditions have changed, and now liquidity is traded right <-> left (vt followed by ft)
     await periphery.connect(other).swap(
       {

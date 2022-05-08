@@ -163,31 +163,35 @@ contract TestActiveLPManagementStrategy is Ownable {
 
     
     function _calculateMarginToWithdraw() internal returns (int256 _marginToWithdraw) {
+        
+        if (tickUpper > tickLower) {
 
-        // assumes lp has no unnetted variable liabilities
+            // assumes lp has no unnetted variable liabilities
 
-        // get total position margin
+            // get total position margin
 
-        Position.Info memory _position = marginEngine.getPosition(
-            address(this),
-            tickLower,
-            tickUpper
-        );
-
-        _marginToWithdraw = _position.margin;
-
-        // get settlement cashflow
-        int256 _settlementCashflow = FixedAndVariableMath
-            .calculateSettlementCashflow(
-                _position.fixedTokenBalance,
-                0, // _position.variableTokenBalance,
-                marginEngine.termStartTimestampWad(),
-                marginEngine.termEndTimestampWad(),
-                0 // variable factor is zero since does not apply in case variableTokenBalance is zero
+            Position.Info memory _position = marginEngine.getPosition(
+                address(this),
+                tickLower,
+                tickUpper
             );
 
-        if (_settlementCashflow < 0) {
-            _marginToWithdraw -= _settlementCashflow;
+            _marginToWithdraw = _position.margin;
+
+            // get settlement cashflow
+            int256 _settlementCashflow = FixedAndVariableMath
+                .calculateSettlementCashflow(
+                    _position.fixedTokenBalance,
+                    0, // _position.variableTokenBalance,
+                    marginEngine.termStartTimestampWad(),
+                    marginEngine.termEndTimestampWad(),
+                    0 // variable factor is zero since does not apply in case variableTokenBalance is zero
+                );
+
+            if (_settlementCashflow < 0) {
+                _marginToWithdraw -= _settlementCashflow;
+            }
+
         }
 
     }
