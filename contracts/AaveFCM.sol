@@ -122,6 +122,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     (fixedTokenDelta, variableTokenDelta, cumulativeFeeIncurred, fixedTokenDeltaUnbalanced,) = _vamm.swap(params);
 
     require(variableTokenDelta <=0, "VT delta sign");
+    require(variableTokenDelta > type(int256).min, "VT delta min"); // avoid overflow
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
@@ -190,6 +191,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
     require(trader.variableTokenBalance <= 0, "Trader VT balance positive");
+    require(trader.variableTokenBalance > type(int256).min, "Trader VT balance min"); // avoid overflow
 
     /// @dev it is impossible to unwind more variable token exposure than the user already has
     /// @dev hencel, the notionalToUnwind needs to be <= absolute value of the variable token balance of the trader
@@ -256,14 +258,16 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     /// @dev we can be confident the variable token balance of a fully collateralised fixed taker is always going to be negative (or zero)
     /// @dev hence, we can assume that the variable cashflows from now to maturity is covered by a portion of the trader's collateral in yield bearing tokens
     /// @dev once future variable cashflows are covered, we need to check if the remaining settlement cashflow is covered by the remaining margin in yield bearing tokens
-
     require(traderVariableTokenBalance <=0, "VTB sign");
+    require(traderVariableTokenBalance > type(int256).min, "VTB min"); // avoid overflow
+
     uint256 marginToCoverVariableLegFromNowToMaturity = uint256(-traderVariableTokenBalance);
-    int256 marginToCoverRemainingSettlementCashflow = int256(getTraderMarginInYieldBearingTokens(traderMarginInScaledYieldBearingTokens)) - int256(marginToCoverVariableLegFromNowToMaturity);
+    int256 marginToCoverRemainingSettlementCashflow = getTraderMarginInYieldBearingTokens(traderMarginInScaledYieldBearingTokens).toInt256() - marginToCoverVariableLegFromNowToMaturity.toInt256();
 
     int256 remainingSettlementCashflow = calculateRemainingSettlementCashflow(traderFixedTokenBalance, traderVariableTokenBalance);
 
     if (remainingSettlementCashflow < 0) {
+      require(remainingSettlementCashflow > type(int256).min, "RSC min"); // avoid overflow
 
       if (-remainingSettlementCashflow > marginToCoverRemainingSettlementCashflow) {
         revert CustomErrors.MarginRequirementNotMetFCM(int256(marginToCoverVariableLegFromNowToMaturity) + remainingSettlementCashflow);
@@ -331,6 +335,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
     trader.updateBalancesViaDeltas(-trader.fixedTokenBalance, -trader.variableTokenBalance);
 
     if (settlementCashflow < 0) {
+      require(settlementCashflow > type(int256).min, "SC min"); // avoid overflow
       uint256 currentRNI = _aaveLendingPool.getReserveNormalizedIncome(underlyingToken);
       uint256 updatedTraderMarginInScaledYieldBearingTokens = trader.marginInScaledYieldBearingTokens - uint256(-settlementCashflow).rayDiv(currentRNI);
       trader.updateMarginInScaledYieldBearingTokens(updatedTraderMarginInScaledYieldBearingTokens);
@@ -365,6 +370,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgrad
 
   /// @notice Transfer Margin (in underlying tokens) from the FCM to a MarginEngine trader
   /// @dev in case of aave this is done by withdrawing aTokens from the aaveLendingPools resulting in burning of the aTokens in exchange for the ability to transfer underlying tokens to the margin engine trader
+  /// @dev if the underlying cannot be withdrawn from the aToken, we assume that this is because Aave is at 100% utilisation and we transfer the appropriate number of aTokens instead
   function transferMarginToMarginEngineTrader(address account, uint256 marginDeltaInUnderlyingTokens) external onlyMarginEngine whenNotPaused override {
     if (underlyingToken.balanceOf(address(_underlyingYieldBearingToken)) >= marginDeltaInUnderlyingTokens) {
       _aaveLendingPool.withdraw(underlyingToken, marginDeltaInUnderlyingTokens, account);

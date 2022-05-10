@@ -6,16 +6,19 @@ import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
 import "../interfaces/compound/ICToken.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WadRayMath.sol";
-import "../rate_oracles/BaseRateOracle.sol";
+import "./BaseRateOracle.sol";
 
 contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     /// @inheritdoc ICompoundRateOracle
-    ICToken public override ctoken;
+    ICToken public immutable override ctoken;
 
     /// @inheritdoc ICompoundRateOracle
-    uint256 public override decimals;
+    uint8 public immutable override decimals;
+
+    uint256 private immutable scaleDownFactor;
+    uint256 private immutable scaleUpFactor;
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of compound is 2
 
@@ -32,6 +35,10 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             "Tokens do not match"
         );
         decimals = _decimals;
+
+        // Decimals affects how the rates are encoded in compound
+        scaleDownFactor = decimals >= 17 ? 10**(decimals - 17) : 0;
+        scaleUpFactor  = decimals < 17 ? 10**(17 - decimals) : 0;
 
         // If we're using even half the max buffer size, something has gone wrong
         require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
@@ -66,19 +73,17 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         // So: if Underlying Token Decimals == 17, no scaling is required
         //     if Underlying Token Decimals > 17, we scale down by a factor of 10^difference
         //     if Underlying Token Decimals < 17, we scale up by a factor of 10^difference
-        if (decimals >= 17) {
-            uint256 scalingFactor = 10**(decimals - 17);
-            resultRay = exchangeRateStored / scalingFactor;
+        if (decimals >= 17) {   
+            resultRay = exchangeRateStored / scaleDownFactor;
         } else {
-            uint256 scalingFactor = 10**(17 - decimals);
-            resultRay = exchangeRateStored * scalingFactor;
+            resultRay = exchangeRateStored * scaleUpFactor;
         }
 
         return resultRay;
     }
 
     /// @notice Store the CToken's current exchange rate, in Ray
-    /// @param index The index of the Observation that was most recently written to the observations buffer
+    /// @param index The index of the Observation that was most recently written to the observations buffer. (Note that at least one Observation is written at contract construction time, so this is always defined.)
     /// @param cardinality The number of populated elements in the observations buffer
     /// @param cardinalityNext The new length of the observations buffer, independent of population
     /// @return indexUpdated The new index of the most recently written element in the oracle array

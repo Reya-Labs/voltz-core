@@ -2,7 +2,7 @@
 
 pragma solidity =0.8.9;
 import "../compound/ICToken.sol";
-import "../rate_oracles/IRateOracle.sol";
+import "./IRateOracle.sol";
 
 interface ICompoundRateOracle is IRateOracle {
 
@@ -12,6 +12,6 @@ interface ICompoundRateOracle is IRateOracle {
 
     /// @notice Gets the number of decimals of the underlying
     /// @return Number of decimals of the underlying
-    function decimals() external view returns (uint);
+    function decimals() external view returns (uint8);
 
 }
