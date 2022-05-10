@@ -6,6 +6,7 @@ import {
 import { toBn } from "../test/helpers/toBn";
 import { IRateOracle, MarginEngine, VAMM } from "../typechain";
 import { utils } from "ethers";
+import { isAddress } from "ethers/lib/utils";
 
 task(
   "createIrsInstance",
@@ -24,14 +25,21 @@ task(
   .addOptionalParam(
     "tickSpacing",
     "The tick spacing for the VAMM",
-    1000,
+    60,
     types.int
   )
   .setAction(async (taskArgs, hre) => {
-    console.log(`Deploying IRS for rate oracle ${taskArgs.rateOracle}`);
-    const rateOracle = (await hre.ethers.getContract(
-      taskArgs.rateOracle
-    )) as IRateOracle;
+    let rateOracle;
+    if (isAddress(taskArgs.rateOracle)) {
+      rateOracle = (await hre.ethers.getContractAt(
+        "BaseRateOracle",
+        taskArgs.rateOracle
+      )) as IRateOracle;
+    } else {
+      rateOracle = (await hre.ethers.getContract(
+        taskArgs.rateOracle
+      )) as IRateOracle;
+    }
     const underlyingTokenAddress = await rateOracle.underlying();
     const underlyingToken = await hre.ethers.getContractAt(
       "IERC20Minimal",
@@ -105,6 +113,8 @@ task(
 
       // Set the config for our IRS instance
       // TODO: allow values to be overridden with task parameters, as required
+      console.log(`Configuring IRS...`);
+
       const configDefaults = getConfigDefaults(hre.network.name);
       let trx = await marginEngine.setMarginCalculatorParameters(
         configDefaults.marginEngineCalculatorParameters,
@@ -134,6 +144,7 @@ task(
         gasLimit: 10000000,
       });
       await trx.wait();
+      console.log(`IRS configured.`);
 
       try {
         await marginEngine.getHistoricalApy();
