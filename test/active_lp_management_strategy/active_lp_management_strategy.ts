@@ -118,23 +118,25 @@ describe("Active LP Management Strategy", async () => {
   });
 
   it("active lp management strategy", async () => {
-    // initialize vamm at -TICK_SPACING
+    /// setup
+
+    // initialize the vamm
     await vammTest.initializeVAMM(
       TickMath.getSqrtRatioAtTick(-TICK_SPACING).toString()
     );
 
-    // set fee parameter
+    // set fee parameter to 1% where fee income = (notional traded * feeParameter * timeInYearsFromTradeToMaturity)
     await vammTest.setFee(toBn("0.01"));
 
-    // starting tick range
+    // starting tick range for the active lp strategy
     const startingTickLower = -TICK_SPACING;
     const startingTickUpper = 0;
 
-    // updated tick range
+    // updated tick range for the active lp strategy
     const updatedTickLower = -(TICK_SPACING * 2);
     const updatedTickUpper = -TICK_SPACING;
 
-    // in underlying tokens (e.g. DAI)
+    // deposit amount of the liquidity provider in underlying tokens (e.g. DAI)
     const lpDepositAmount = BigNumber.from(10).pow(18).mul(500); // 18 decimals
     console.log(
       "deposit amount ",
@@ -149,7 +151,7 @@ describe("Active LP Management Strategy", async () => {
 
     // set margin engine and vamm in the lp optimizer
     // marginEngineTest refers to a test margin engine for a given IRS pool
-    // periphery refers to the Voltz Periphery contract which abstracts away the complexities of interactive with the voltz core directly
+    // periphery refers to the Voltz Periphery contract which abstracts away the complexities of interacting with the voltz core contracts directly
     await activeLPManagementStrategyTest.setMarginEngineAndVAMM(
       marginEngineTest.address,
       periphery.address
@@ -187,7 +189,7 @@ describe("Active LP Management Strategy", async () => {
       .connect(wallet)
       .approve(activeLPManagementStrategyTest.address, lpDepositAmount);
 
-    // other deposits margin into the lp vault
+    // wallet deposits margin into the lp vault
     await activeLPManagementStrategyTest
       .connect(wallet)
       .deposit(lpDepositAmount);
@@ -280,5 +282,7 @@ describe("Active LP Management Strategy", async () => {
       "generated fees after rebalance ",
       utils.formatEther(cumulativeGeneratedFees)
     );
+
+    // if we assume that the above interactions (volume is traded) once every two days, then the APY an LP can expect is around 100-200%
   });
 });

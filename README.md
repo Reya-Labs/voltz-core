@@ -16,7 +16,6 @@ In order to test out a simple Active LP Optimizer on top of Voltz Protocol, head
 
 Refer to [Active LP Strategy](https://github.com/Voltz-Protocol/voltz-core/blob/main/contracts/test/TestActiveLPManagementStrategy.sol) to check out a simple active lp strategy contract implementation.
 
-
 ## Liquidator Bot (example)
 
 In order to test out a simple liquidator bot simulation on top of Voltz, head over to [Liquidator Bot Simulation](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/liquidator_bot/liquidator_bot.ts).

@@ -10,36 +10,6 @@ import "../core_libraries/SafeTransferLib.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 
-// deposit
-// rebalance
-/// strategy off-chain invokes the rebalance function based on a model for tick range setting
-//// bollinger bands
-//// apy upper and lower bounds from the margin engine
-//// f(time delta from now) -> come up with bounds on realized fixedRate -> optimial tick range
-// withdraw
-/// when can you withdraw (only after maturity of a pool)
-/// is there room for more flexibility where the vault always keeps some cash for withdrawals
-/// and discincentivises withdraws with fees if done before maturity
-
-// extra
-// ownership
-// erc20 lp tokens --> represent share of the vault strategy
-//// create fungible erc20 assets that represent active lp strategies
-//// they can then be used as collateral and priced...
-// margin management & margin requirements
-/// dynamically adjusting margin depending on volatility and/or apy bounds
-// liquidity rolling
-//// from one maturity into another
-// compounding
-//// frequency of fee collection (gas cost) vs. benefits from compound margin
-// active IRS strategy alongside active LP strategy
-// use of apy bounds to derive rebalancing tick range
-
-// things to keep in mind
-// mean reversion
-// liquidations
-// funding rate risk
-
 contract TestActiveLPManagementStrategy is Ownable {
     using SafeCast for uint256;
     using SafeCast for int256;
@@ -59,8 +29,7 @@ contract TestActiveLPManagementStrategy is Ownable {
     function setMarginEngineAndVAMM(
         IMarginEngine _marginEngine,
         IPeriphery _periphery
-    ) external {
-        // in order to restrict this function to only be callable by the owner of the bot you can apply the onlyOwner modifier by OZ
+    ) external onlyOwner {
         require(address(_marginEngine) != address(0), "me must exist");
         require(
             (address(marginEngine) != address(_marginEngine)),
@@ -96,9 +65,6 @@ contract TestActiveLPManagementStrategy is Ownable {
 
     function _mintAll() internal {
         uint256 marginInactive = underlyingToken.balanceOf(address(this));
-
-        // might want to have a floor for the conditional statement to avoid spending gas on small inactive ampounts
-        // or aim to keep some of the underlying in the contract to optimise for withdrawal UX
         if (marginInactive > 0) {
             uint256 notionalToMint = marginInactive * LEVERAGE;
             underlyingToken.approve(address(periphery), marginInactive);
@@ -151,8 +117,6 @@ contract TestActiveLPManagementStrategy is Ownable {
         internal
         returns (int256 _marginToWithdraw)
     {
-        // margin requirement calculation in here
-
         if (tickUpper > tickLower) {
             // assumes lp has no unnetted variable liabilities
 
@@ -192,7 +156,7 @@ contract TestActiveLPManagementStrategy is Ownable {
         // burn all liquidity
         _burn();
 
-        // unwind to net out the position
+        // unwind to net out the position (if unnetted fixed and variable token balances)
         // _unwind();
 
         // manually calculate the settlement cashflow
