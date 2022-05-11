@@ -10,6 +10,12 @@ This repository contains the smart contracts that power Voltz Protocol. Over tim
 
 We would love to see how you can build and improve upon what we've built here at Voltz.
 
+## Active LP Optimization
+
+In order to test out a simple Active LP Optimizer on top of Voltz Protocol, head over to [Active LP Simulation](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/active_lp_management_strategy/active_lp_management_strategy.ts).
+
+Refer to [Active LP Strategy](https://github.com/Voltz-Protocol/voltz-core/blob/main/contracts/test/TestActiveLPManagementStrategy.sol) to check out a simple active lp strategy contract implementation.
+
 ## Liquidator Bot (example)
 
 In order to test out a simple liquidator bot simulation on top of Voltz, head over to [Liquidator Bot Simulation](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/liquidator_bot/liquidator_bot.ts).

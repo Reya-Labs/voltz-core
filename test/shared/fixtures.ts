@@ -15,6 +15,7 @@ import {
   MockAToken,
   MockCToken,
   SqrtPriceMathTest,
+  TestActiveLPManagementStrategy,
   TestLiquidatorBot,
   TickMathTest,
 } from "../../typechain";
@@ -108,6 +109,17 @@ export async function marginEngineMasterTestFixture() {
     (await marginEngineMasterTestFactory.deploy()) as TestMarginEngine;
 
   return { marginEngineMasterTest };
+}
+
+export async function activeLPManagementStrategyTestFixture() {
+  const activeLPManagementStrategyTestFactory = await ethers.getContractFactory(
+    "TestActiveLPManagementStrategy"
+  );
+
+  const activeLPManagementStrategyTest =
+    (await activeLPManagementStrategyTestFactory.deploy()) as TestActiveLPManagementStrategy;
+
+  return { activeLPManagementStrategyTest };
 }
 
 export async function liquidatorBotTestFixture() {
@@ -266,7 +278,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { mockCToken } = await mockCTokenFixture(token.address);
 
   const decimals = await token.decimals();
-  console.log("decimals", decimals);
+  // console.log("decimals", decimals);
 
   // Starting exchange rate = 0.02, expressed using 10 ^ (18 + underlyingDecimals - cTokenDecimals)
   //  = 0.02 * 10 ^ (18 + 18 - 8)
@@ -276,7 +288,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
 
   const exchangeRateStored = await mockCToken.exchangeRateStored();
 
-  console.log("exchangeRateStored", exchangeRateStored.toString());
+  // console.log("exchangeRateStored", exchangeRateStored.toString());
 
   const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
     mockCToken.address,
@@ -290,8 +302,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
 
   await aaveLendingPool.initReserve(token.address, mockAToken.address);
 
-  await rateOracleTest.increaseObservationCardinalityNext(5);
-  await compoundRateOracleTest.increaseObservationCardinalityNext(5);
+  await rateOracleTest.increaseObservationCardinalityNext(10);
+  await compoundRateOracleTest.increaseObservationCardinalityNext(10);
   // write oracle entry
   await rateOracleTest.writeOracleEntry();
   await compoundRateOracleTest.writeOracleEntry();
