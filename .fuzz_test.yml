@@ -1,0 +1,30 @@
+analyze:
+    remappings:
+      - "@openzeppelin=./node_modules/@openzeppelin"
+fuzz:
+    ide: hardhat
+    
+    no_assert: True
+    
+    build_directory: artifacts
+    
+    deployed_contract_address: "0xE451980132E65465d0a498c53f0b5227326Dd73F"
+    
+    additional_contracts_addresses:
+        - "0x75537828f2ce51be7289709686A69CbFDbB714F1"
+        - "0x5392A33F7F677f59e833FEBF4016cDDD88fF9E67"
+        - "0x59b670e9fA9D0A427751Af201D676719a970857b"
+
+    number_of_cores: 4
+
+    campaign_name_prefix: "VoltzTest"
+    
+    key: "MXczMzBnN1NUVFJmRU5PUTh0QUlwT0s4S005d2ZnWmY6OmRpbGlnZW5jZS51cy5hdXRoMC5jb20=::v1.MXc6N-gmpWnycsYIiiNMtsd0d-IFZ8ol-DB8DsK0VF6gjpjfw_GNme1_8dOyDitVZpPZZmdPNWzfSuggZ10uRcU"
+    
+    rpc_url: "http://localhost:8545"
+
+    targets:
+        - "contracts/VAMM.sol"
+        - "contracts/MarginEngine.sol"
+        - "contracts/CompoundFCM.sol"
+        - "contracts/rate_oracles/CompoundRateOracle.sol"
