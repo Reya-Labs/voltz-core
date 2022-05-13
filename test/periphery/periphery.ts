@@ -113,11 +113,9 @@ describe("Periphery", async () => {
   });
 
   it("set lp notional cap works as expected with margin engine owner", async () => {
-    await expect(
-      periphery.setLPNotionalCap(marginEngineTest.address, toBn("10"))
-    )
+    await expect(periphery.setLPNotionalCap(vammTest.address, toBn("10")))
       .to.emit(periphery, "NotionalCap")
-      .withArgs(marginEngineTest.address, toBn("10"));
+      .withArgs(vammTest.address, toBn("10"));
   });
 
   it("set lp notional reverts if invoked by a non-owner", async () => {
@@ -129,7 +127,7 @@ describe("Periphery", async () => {
   });
 
   it("check can't mint beyond the notional cap", async () => {
-    await periphery.setLPNotionalCap(marginEngineTest.address, toBn("10"));
+    await periphery.setLPNotionalCap(vammTest.address, toBn("10"));
 
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,

@@ -22,54 +22,50 @@ contract Periphery is IPeriphery {
 
     using SafeTransferLib for IERC20Minimal;
 
-    /// @dev Voltz Protocol marginEngine => LP Notional Cap in Underlying Tokens
+    /// @dev Voltz Protocol vamm => LP Notional Cap in Underlying Tokens
     /// @dev LP notional cap of zero implies no notional cap
     /// @inheritdoc IPeriphery
-    mapping(IMarginEngine => uint256) public override lpNotionalCaps;
+    mapping(IVAMM => uint256) public override lpNotionalCaps;
 
-    /// @dev amount of notional (coming from the periphery) in terms of underlying tokens taken up by LPs in a given MarginEngine
+    /// @dev amount of notional (coming from the periphery) in terms of underlying tokens taken up by LPs in a given VAMM
     /// @inheritdoc IPeriphery
-    mapping(IMarginEngine => uint256) public override lpNotionalCumulatives;
+    mapping(IVAMM => uint256) public override lpNotionalCumulatives;
 
-    modifier marginEngineOwnerOnly(IMarginEngine _marginEngine) {
-        require(address(_marginEngine) != address(0), "me addr zero");
-        address marginEngineOwner = OwnableUpgradeable(address(_marginEngine))
-            .owner();
-        require(msg.sender == marginEngineOwner, "only me owner");
+    modifier vammOwnerOnly(IVAMM _vamm) {
+        require(address(_vamm) != address(0), "me addr zero");
+        address vammOwner = OwnableUpgradeable(address(_vamm)).owner();
+        require(msg.sender == vammOwner, "only me owner");
         _;
     }
 
-    modifier checkLPNotionalCap(
-        IMarginEngine _marginEngine,
+    function checkLPNotionalCap(
+        IVAMM _vamm,
         uint256 _notionalDelta,
         bool _isMint
-    ) {
-        uint256 _lpNotionalCap = lpNotionalCaps[_marginEngine];
-
+    ) internal {
         if (_isMint) {
-            lpNotionalCumulatives[_marginEngine] += _notionalDelta;
+            lpNotionalCumulatives[_vamm] += _notionalDelta;
+            uint256 _lpNotionalCap = lpNotionalCaps[_vamm];
 
             if (_lpNotionalCap > 0) {
                 /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
                 require(
-                    lpNotionalCumulatives[_marginEngine] < _lpNotionalCap,
+                    lpNotionalCumulatives[_vamm] < _lpNotionalCap,
                     "lp cap limit"
                 );
             }
         } else {
-            lpNotionalCumulatives[_marginEngine] -= _notionalDelta;
+            lpNotionalCumulatives[_vamm] -= _notionalDelta;
         }
-
-        _;
     }
 
-    function setLPNotionalCap(
-        IMarginEngine _marginEngine,
-        uint256 _lpNotionalCapNew
-    ) external marginEngineOwnerOnly(_marginEngine) {
-        if (lpNotionalCaps[_marginEngine] != _lpNotionalCapNew) {
-            lpNotionalCaps[_marginEngine] = _lpNotionalCapNew;
-            emit NotionalCap(_marginEngine, lpNotionalCaps[_marginEngine]);
+    function setLPNotionalCap(IVAMM _vamm, uint256 _lpNotionalCapNew)
+        external
+        vammOwnerOnly(_vamm)
+    {
+        if (lpNotionalCaps[_vamm] != _lpNotionalCapNew) {
+            lpNotionalCaps[_vamm] = _lpNotionalCapNew;
+            emit NotionalCap(_vamm, lpNotionalCaps[_vamm]);
         }
     }
 
@@ -98,12 +94,12 @@ contract Periphery is IPeriphery {
     function mintOrBurn(MintOrBurnParams memory params)
         external
         override
-        checkLPNotionalCap(params.marginEngine, params.notional, params.isMint)
         returns (int256 positionMarginRequirement)
     {
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         IVAMM vamm = params.marginEngine.vamm();
+        checkLPNotionalCap(vamm, params.notional, params.isMint);
 
         IVAMM.VAMMVars memory _v = vamm.vammVars();
         bool vammUnlocked = _v.sqrtPriceX96 != 0;
