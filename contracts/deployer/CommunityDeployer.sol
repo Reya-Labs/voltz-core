@@ -33,8 +33,12 @@ contract CommunityDeployer {
     /// @notice mapping of voltz genesis token ids to a boolean, if true that means the token id has already voted
     mapping(uint256 => bool) public hasTokenIdVoted;
 
+    /// @notice voting end block timestamp (once this contract is deployed, voting is considered to be officially started)
+    uint256 public blockTimestampVotingEnd;
 
-    constructor() {}
+    constructor() {
+        blockTimestampVotingEnd = block.timestamp + VOTING_PERIOD_IN_SECONDS;
+    }
 
     modifier isQuorumReached() {
         require(yesVoteCount >= quorumVotes, "quorum not reached");
@@ -45,6 +49,8 @@ contract CommunityDeployer {
     function deploy() external isQuorumReached {}
 
     function castVote(uint256 _tokenId, bool _yesVote) external {
+
+        require(block.timestamp <= blockTimestampVotingEnd, "voting period over");
 
         // check if the msg.sender is the owner of _tokenId
         address ownerOfTokenId = ERC721(VOLTZ_GENESIS_NFT).ownerOf(_tokenId);

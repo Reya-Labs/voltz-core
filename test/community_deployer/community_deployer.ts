@@ -80,7 +80,7 @@ describe("CommunityDeployer", () => {
 
     })
 
-    it.skip("fails to cast a vote once the voting period is over", async () => {
+    it("fails to cast a vote once the voting period is over", async () => {
         const tokenId = "679616669464162953633912649788656402604891550845";
         await advanceTimeAndBlock(BigNumber.from(172801), 1);
         await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("voting period over");
