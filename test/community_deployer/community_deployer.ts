@@ -1,8 +1,9 @@
 import { expect } from "../shared/expect";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { CommunityDeployer } from "../../typechain/CommunityDeployer";
 import { advanceTimeAndBlock } from "../helpers/time";
 import { BigNumber } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 describe("CommunityDeployer", () => {
 
@@ -10,6 +11,7 @@ describe("CommunityDeployer", () => {
     // in order to test with the original nft, need to fork mainnet and impersonate
 
     let communityDeployer: CommunityDeployer;
+    let abSigner: SignerWithAddress;
 
     beforeEach(async () => {
 
@@ -18,6 +20,15 @@ describe("CommunityDeployer", () => {
         );
 
         communityDeployer = (await communityDeployerFactory.deploy()) as CommunityDeployer;
+
+        const abAddress = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462";
+
+        await network.provider.request({
+            method: "hardhat_impersonateAccount",
+            params: [abAddress],
+        });
+
+        abSigner = await ethers.getSigner(abAddress);
 
     })
 
