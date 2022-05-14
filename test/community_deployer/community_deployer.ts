@@ -9,6 +9,7 @@ describe("CommunityDeployer", () => {
 
     // below tests work under the assumption that the quorum is 1
     // in order to test with the original nft, need to fork mainnet and impersonate
+    // write up a readme for the community deployer
 
     let communityDeployer: CommunityDeployer;
     let abSigner: SignerWithAddress;
@@ -36,7 +37,7 @@ describe("CommunityDeployer", () => {
         
         const tokenId = "679616669464162953633912649788656402604891550845";
 
-        await communityDeployer.castVote(tokenId, true); // true --> yes vote
+        await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
 
         const yesVoteCount = await communityDeployer.yesVoteCount();
 
@@ -44,11 +45,11 @@ describe("CommunityDeployer", () => {
 
     })
 
-    it.skip("correctly casts a no vote", async () => {
+    it("correctly casts a no vote", async () => {
 
         const tokenId = "679616669464162953633912649788656402604891550845";
 
-        await communityDeployer.castVote(tokenId, false); // false --> no vote
+        await communityDeployer.connect(abSigner).castVote(tokenId, false); // false --> no vote
 
         const noVoteCount = await communityDeployer.noVoteCount();
 
@@ -56,26 +57,26 @@ describe("CommunityDeployer", () => {
 
     })
 
-    it.skip("fails to cast a vote if does not own the genesis nft", async () => {
+    it("fails to cast a vote if does not own the genesis nft", async () => {
 
         const tokenId = "1348980968939277319790359517796813954796348367904";
 
-        await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("only nft owner");
-        await expect(communityDeployer.castVote(tokenId, false)).to.be.revertedWith("only nft owner");
+        await expect(communityDeployer.connect(abSigner).castVote(tokenId, true)).to.be.revertedWith("only token owner");
+        await expect(communityDeployer.connect(abSigner).castVote(tokenId, false)).to.be.revertedWith("only token owner");
 
     })
 
-    it.skip("fails to cast a duplicate vote", async () => {
+    it("fails to cast a duplicate vote", async () => {
 
         const tokenId = "679616669464162953633912649788656402604891550845";
 
-        await communityDeployer.castVote(tokenId, true); // true --> yes vote
+        await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
 
         const yesVoteCount = await communityDeployer.yesVoteCount();
 
         expect(yesVoteCount).to.eq(1);
 
-        await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("duplicate vote");
+        await expect(communityDeployer.connect(abSigner).castVote(tokenId, true)).to.be.revertedWith("duplicate vote");
 
     })
 
