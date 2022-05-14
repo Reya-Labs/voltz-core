@@ -33,57 +33,57 @@ describe("CommunityDeployer", () => {
 
     })
 
-    // it("correctly casts a no vote", async () => {
+    it.skip("correctly casts a no vote", async () => {
 
-    //     const tokenId = "679616669464162953633912649788656402604891550845";
+        const tokenId = "679616669464162953633912649788656402604891550845";
 
-    //     await communityDeployer.castVote(tokenId, false); // false --> no vote
+        await communityDeployer.castVote(tokenId, false); // false --> no vote
 
-    //     const noVoteCount = await communityDeployer.noVoteCount();
+        const noVoteCount = await communityDeployer.noVoteCount();
 
-    //     expect(noVoteCount).to.eq(1);
+        expect(noVoteCount).to.eq(1);
 
-    // })
+    })
 
-    // it("fails to cast a vote if does not own the genesis nft", async () => {
+    it.skip("fails to cast a vote if does not own the genesis nft", async () => {
 
-    //     const tokenId = "1348980968939277319790359517796813954796348367904";
+        const tokenId = "1348980968939277319790359517796813954796348367904";
 
-    //     await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("only nft owner");
-    //     await expect(communityDeployer.castVote(tokenId, false)).to.be.revertedWith("only nft owner");
+        await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("only nft owner");
+        await expect(communityDeployer.castVote(tokenId, false)).to.be.revertedWith("only nft owner");
 
-    // })
+    })
 
-    // it("fails to cast a duplicate vote", async () => {
+    it.skip("fails to cast a duplicate vote", async () => {
 
-    //     const tokenId = "679616669464162953633912649788656402604891550845";
+        const tokenId = "679616669464162953633912649788656402604891550845";
 
-    //     await communityDeployer.castVote(tokenId, true); // true --> yes vote
+        await communityDeployer.castVote(tokenId, true); // true --> yes vote
 
-    //     const yesVoteCount = await communityDeployer.yesVoteCount();
+        const yesVoteCount = await communityDeployer.yesVoteCount();
 
-    //     expect(yesVoteCount).to.eq(1);
+        expect(yesVoteCount).to.eq(1);
 
-    //     await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("duplicate vote");
+        await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("duplicate vote");
 
-    // })
+    })
 
-    // it("fails to cast a vote once the voting period is over", async () => {
-    //     const tokenId = "679616669464162953633912649788656402604891550845";
-    //     await advanceTimeAndBlock(BigNumber.from(172801), 1);
-    //     await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("voting period over");
-    // })
+    it.skip("fails to cast a vote once the voting period is over", async () => {
+        const tokenId = "679616669464162953633912649788656402604891550845";
+        await advanceTimeAndBlock(BigNumber.from(172801), 1);
+        await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("voting period over");
+    })
 
-    // it("unable to queue if voting period is not over", async () => {
+    // it.skip("unable to queue if voting period is not over", async () => {
     //     await expect(communityDeployer.queue()).to.be.revertedWith("voting is ongoing")
     // })
 
-    // it("unable to queue if quorum is not reached", async () => {
+    // it.skip("unable to queue if quorum is not reached", async () => {
     //     await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
     //     await expect(communityDeployer.queue()).to.be.revertedWith("quorum is not reached");
     // })
 
-    // it("unable to queue if no votes >= yes votes", async () => {
+    // it.skip("unable to queue if no votes >= yes votes", async () => {
     //     const tokenId = "679616669464162953633912649788656402604891550845";
     //     await communityDeployer.castVote(tokenId, true); // true --> yes vote
     //     const yesVoteCount = await communityDeployer.yesVoteCount();
@@ -98,7 +98,7 @@ describe("CommunityDeployer", () => {
     // })
 
     
-    // it("unable to deploy if not queued", async () => {
+    // it.skip("unable to deploy if not queued", async () => {
     //     const tokenId = "679616669464162953633912649788656402604891550845";
     //     await communityDeployer.castVote(tokenId, true); // true --> yes vote
     //     const yesVoteCount = await communityDeployer.yesVoteCount();
@@ -108,7 +108,7 @@ describe("CommunityDeployer", () => {
 
     // })
 
-    // it("unable to deploy if timelock period is not over", async () => {
+    // it.skip("unable to deploy if timelock period is not over", async () => {
     //     const tokenId = "679616669464162953633912649788656402604891550845";
     //     await communityDeployer.castVote(tokenId, true); // true --> yes vote
     //     const yesVoteCount = await communityDeployer.yesVoteCount();
@@ -118,7 +118,7 @@ describe("CommunityDeployer", () => {
     //     await expect(communityDeployer.deploy()).to.be.revertedWith("timelock is ongoing");
     // })
 
-    // it("voltz factory is successfully deployed", async () => {
+    // it.skip("voltz factory is successfully deployed", async () => {
     //     const tokenId = "679616669464162953633912649788656402604891550845";
     //     await communityDeployer.castVote(tokenId, true); // true --> yes vote
     //     const yesVoteCount = await communityDeployer.yesVoteCount();
