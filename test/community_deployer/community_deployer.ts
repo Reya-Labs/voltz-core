@@ -86,9 +86,9 @@ describe("CommunityDeployer", () => {
         await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("voting period over");
     })
 
-    // it.skip("unable to queue if voting period is not over", async () => {
-    //     await expect(communityDeployer.queue()).to.be.revertedWith("voting is ongoing")
-    // })
+    it("unable to queue if voting period is not over", async () => {
+        await expect(communityDeployer.queue()).to.be.revertedWith("voting is ongoing")
+    })
 
     // it.skip("unable to queue if quorum is not reached", async () => {
     //     await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over

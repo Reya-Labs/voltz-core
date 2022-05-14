@@ -40,14 +40,20 @@ contract CommunityDeployer {
         blockTimestampVotingEnd = block.timestamp + VOTING_PERIOD_IN_SECONDS;
     }
 
-    modifier isQuorumReached() {
+    
+    
+    function deploy() external {
         require(yesVoteCount >= quorumVotes, "quorum not reached");
-
-        _;
     }
 
-    function deploy() external isQuorumReached {}
+    function queue() external {
+        require(block.timestamp > blockTimestampVotingEnd, "voting is ongoing");
+    }
 
+
+    /// @notice Vote for the proposal to deploy the Voltz Factory contract
+    /// @param _tokenId id of the ERC721 Voltz Genesis NFT token which is used to vote
+    /// @param _yesVote if this boolean is true then the msg.sender is casting a yes vote, if the boolean is false the msg.sender is casting a no vote
     function castVote(uint256 _tokenId, bool _yesVote) external {
 
         require(block.timestamp <= blockTimestampVotingEnd, "voting period over");
