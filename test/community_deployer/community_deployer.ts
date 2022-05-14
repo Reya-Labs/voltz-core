@@ -95,19 +95,19 @@ describe("CommunityDeployer", () => {
         await expect(communityDeployer.queue()).to.be.revertedWith("quorum not reached");
     })
 
-    // it.skip("unable to queue if no votes >= yes votes", async () => {
-    //     const tokenId = "679616669464162953633912649788656402604891550845";
-    //     await communityDeployer.castVote(tokenId, true); // true --> yes vote
-    //     const yesVoteCount = await communityDeployer.yesVoteCount();
-    //     expect(yesVoteCount).to.eq(1); // the quorum is reached
+    it("unable to queue if no votes >= yes votes", async () => {
+        const tokenId = "679616669464162953633912649788656402604891550845";
+        await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
+        const yesVoteCount = await communityDeployer.yesVoteCount();
+        expect(yesVoteCount).to.eq(1); // the quorum is reached
 
-    //     const anotherTokenId = "851623991281074935064194053396682782023750630549";
-    //     await communityDeployer.castVote(anotherTokenId, false); // false --> no vote
-    //     const noVoteCount = await communityDeployer.noVoteCount();
-    //     expect(noVoteCount).to.eq(1);  // number of no votes == number of yes votes
-    //     await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-    //     await expect(communityDeployer.queue()).to.be.revertedWith("no >= yes");
-    // })
+        const anotherTokenId = "851623991281074935064194053396682782023750630549";
+        await communityDeployer.connect(abSigner).castVote(anotherTokenId, false); // false --> no vote
+        const noVoteCount = await communityDeployer.noVoteCount();
+        expect(noVoteCount).to.eq(1);  // number of no votes == number of yes votes
+        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+        await expect(communityDeployer.queue()).to.be.revertedWith("no >= yes");
+    })
 
     
     // it.skip("unable to deploy if not queued", async () => {

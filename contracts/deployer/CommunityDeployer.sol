@@ -49,6 +49,7 @@ contract CommunityDeployer {
     function queue() external {
         require(block.timestamp > blockTimestampVotingEnd, "voting is ongoing");
         require(yesVoteCount >= QUORUM_VOTES, "quorum not reached");
+        require(yesVoteCount > noVoteCount, "no >= yes");
     }
 
 
