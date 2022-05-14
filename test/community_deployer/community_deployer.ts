@@ -110,37 +110,39 @@ describe("CommunityDeployer", () => {
     })
 
     
-    // it.skip("unable to deploy if not queued", async () => {
-    //     const tokenId = "679616669464162953633912649788656402604891550845";
-    //     await communityDeployer.castVote(tokenId, true); // true --> yes vote
-    //     const yesVoteCount = await communityDeployer.yesVoteCount();
-    //     expect(yesVoteCount).to.eq(1); // the quorum is reached
-    //     await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-    //     await expect(communityDeployer.deploy()).to.be.revertedWith("not queued");
+    it("unable to deploy if not queued", async () => {
+        const tokenId = "679616669464162953633912649788656402604891550845";
+        await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
+        const yesVoteCount = await communityDeployer.yesVoteCount();
+        expect(yesVoteCount).to.eq(1); // the quorum is reached
+        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+        await expect(communityDeployer.deploy()).to.be.revertedWith("not queued");
+    })
 
-    // })
+    it("unable to deploy if timelock period is not over", async () => {
+        const tokenId = "679616669464162953633912649788656402604891550845";
+        await communityDeployer.castVote(tokenId, true); // true --> yes vote
+        const yesVoteCount = await communityDeployer.yesVoteCount();
+        expect(yesVoteCount).to.eq(1); // the quorum is reached
+        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+        await communityDeployer.queue();
+        await expect(communityDeployer.deploy()).to.be.revertedWith("timelock is ongoing");
+    })
 
-    // it.skip("unable to deploy if timelock period is not over", async () => {
-    //     const tokenId = "679616669464162953633912649788656402604891550845";
-    //     await communityDeployer.castVote(tokenId, true); // true --> yes vote
-    //     const yesVoteCount = await communityDeployer.yesVoteCount();
-    //     expect(yesVoteCount).to.eq(1); // the quorum is reached
-    //     await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-    //     await communityDeployer.queue();
-    //     await expect(communityDeployer.deploy()).to.be.revertedWith("timelock is ongoing");
-    // })
+    it("voltz factory is successfully deployed", async () => {
+        const tokenId = "679616669464162953633912649788656402604891550845";
+        await communityDeployer.castVote(tokenId, true); // true --> yes vote
+        const yesVoteCount = await communityDeployer.yesVoteCount();
+        expect(yesVoteCount).to.eq(1); // the quorum is reached
+        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+        await communityDeployer.queue();
+        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the timelock is over
+        await communityDeployer.deploy();
+        const factoryAddress = await communityDeployer.voltzFactory();
+        expect(factoryAddress).to.not.eq("0"); // make sure this test works
+        
+        // todo: check master margin engine and master vamm
 
-    // it.skip("voltz factory is successfully deployed", async () => {
-    //     const tokenId = "679616669464162953633912649788656402604891550845";
-    //     await communityDeployer.castVote(tokenId, true); // true --> yes vote
-    //     const yesVoteCount = await communityDeployer.yesVoteCount();
-    //     expect(yesVoteCount).to.eq(1); // the quorum is reached
-    //     await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-    //     await communityDeployer.queue();
-    //     await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the timelock is over
-    //     await communityDeployer.deploy();
-    //     const factoryAddress = await communityDeployer.factoryAddress();
-    //     expect(factoryAddress).to.not.eq("0"); // make sure this test works
-    // })
+    })
 
 })

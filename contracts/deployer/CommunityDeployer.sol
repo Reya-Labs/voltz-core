@@ -3,11 +3,18 @@
 pragma solidity =0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "../Factory.sol";
+import "../interfaces/IFactory.sol";
+import "../interfaces/IVAMM.sol";
+import "../interfaces/IMarginEngine.sol";
 
-
+// assign ownership of the factory to the gnosis safe multisig after the deployment
 // add events
-// add interface
-// add deployment timelock
+// verify with etherscan
+// we are unable to deploy both the master vamm and the master margin engine in this contract since in that scenario it would
+// exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
+// to the community deployer as constants
+
 
 contract CommunityDeployer {
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
@@ -36,20 +43,43 @@ contract CommunityDeployer {
     /// @notice voting end block timestamp (once this contract is deployed, voting is considered to be officially started)
     uint256 public blockTimestampVotingEnd;
 
+    /// @notice timelock end block timestamp (once the proposal is queued, the timelock period pre-deployment is considered to be officially started)
+    uint256 public blockTimestampTimelockEnd;
+
+    /// @notice isQueued needs to be true in order for the timelock period to start in advance of the deployment
+    bool public isQueued;
+
+    /// @notice Voltz Factory to be deployed in a scenario where a successful vote is followed by the queue and deployment
+    IFactory public voltzFactory;
+
+    /// @notice Master Margine Engine of Voltz Protocol
+    IMarginEngine public constant masterMarginEngine = address(0); // todo: replace with the correct mainnet address once deployed
+    
+    /// @notice Master VAMM of Voltz Protocol
+    IVAMM public constant masterVAMM = address(0); // todo: replace with the correct mainnet address once deployed
+    
+
     constructor() {
         blockTimestampVotingEnd = block.timestamp + VOTING_PERIOD_IN_SECONDS;
     }
 
     
-    
+    /// @notice Deploy the Voltz Factory by passing the masterVAMM and the masterMarginEngine into the Factory constructor
     function deploy() external {
-        
+        require(isQueued, "not queued");
+        require(block.timestamp > blockTimestampTimelockEnd, "timelock is ongoing");
+        voltzFactory = new Factory(masterMarginEngine, masterVAMM);
     }
 
+    
+    /// @notice Queue the deployment of the Voltz Factory
     function queue() external {
         require(block.timestamp > blockTimestampVotingEnd, "voting is ongoing");
         require(yesVoteCount >= QUORUM_VOTES, "quorum not reached");
         require(yesVoteCount > noVoteCount, "no >= yes");
+        require(isQueued == false, "already queued"); // todo: test this
+        isQueued = true; 
+        blockTimestampTimelockEnd = block.timestamp + TIMELOCK_PERIOD_IN_SECONDS;
     }
 
 
