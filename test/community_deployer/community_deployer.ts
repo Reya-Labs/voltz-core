@@ -90,10 +90,10 @@ describe("CommunityDeployer", () => {
         await expect(communityDeployer.queue()).to.be.revertedWith("voting is ongoing")
     })
 
-    // it.skip("unable to queue if quorum is not reached", async () => {
-    //     await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-    //     await expect(communityDeployer.queue()).to.be.revertedWith("quorum is not reached");
-    // })
+    it("unable to queue if quorum is not reached", async () => {
+        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+        await expect(communityDeployer.queue()).to.be.revertedWith("quorum not reached");
+    })
 
     // it.skip("unable to queue if no votes >= yes votes", async () => {
     //     const tokenId = "679616669464162953633912649788656402604891550845";

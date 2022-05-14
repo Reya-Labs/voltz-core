@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract CommunityDeployer {
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
-    uint256 public constant quorumVotes = 1; // TODO: make sure to change before deployment!!!
+    uint256 public constant QUORUM_VOTES = 1; // TODO: make sure to change before deployment!!!
 
     /// @notice Voting Period In Seconds, i.e. after 2 days elapse since the deployement of this contract, nft holders won't be able to vote
     uint256 public constant VOTING_PERIOD_IN_SECONDS = 172800; // 2 days
@@ -43,11 +43,12 @@ contract CommunityDeployer {
     
     
     function deploy() external {
-        require(yesVoteCount >= quorumVotes, "quorum not reached");
+        
     }
 
     function queue() external {
         require(block.timestamp > blockTimestampVotingEnd, "voting is ongoing");
+        require(yesVoteCount >= QUORUM_VOTES, "quorum not reached");
     }
 
 
