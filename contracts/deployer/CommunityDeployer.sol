@@ -53,10 +53,10 @@ contract CommunityDeployer {
     IFactory public voltzFactory;
 
     /// @notice Master Margine Engine of Voltz Protocol
-    IMarginEngine public constant masterMarginEngine = address(0); // todo: replace with the correct mainnet address once deployed
+    IMarginEngine public constant masterMarginEngine = IMarginEngine(address(0)); // todo: replace with the correct mainnet address once deployed
     
     /// @notice Master VAMM of Voltz Protocol
-    IVAMM public constant masterVAMM = address(0); // todo: replace with the correct mainnet address once deployed
+    IVAMM public constant masterVAMM = IVAMM(address(0)); // todo: replace with the correct mainnet address once deployed
     
 
     constructor() {
