@@ -6,143 +6,145 @@ import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 describe("CommunityDeployer", () => {
+  // below tests work under the assumption that the quorum is 1
+  // in order to test with the original nft, need to fork mainnet and impersonate
+  // write up a readme for the community deployer
+  // add tests (with skip) that check the constants such as quorum, master margin engine and master vamm
 
-    // below tests work under the assumption that the quorum is 1
-    // in order to test with the original nft, need to fork mainnet and impersonate
-    // write up a readme for the community deployer
+  let communityDeployer: CommunityDeployer;
+  let abSigner: SignerWithAddress;
 
-    let communityDeployer: CommunityDeployer;
-    let abSigner: SignerWithAddress;
+  beforeEach(async () => {
+    const communityDeployerFactory = await ethers.getContractFactory(
+      "CommunityDeployer"
+    );
 
-    beforeEach(async () => {
+    communityDeployer =
+      (await communityDeployerFactory.deploy()) as CommunityDeployer;
 
-        const communityDeployerFactory = await ethers.getContractFactory(
-            "CommunityDeployer"
-        );
+    const abAddress = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462";
 
-        communityDeployer = (await communityDeployerFactory.deploy()) as CommunityDeployer;
+    await network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [abAddress],
+    });
 
-        const abAddress = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462";
+    abSigner = await ethers.getSigner(abAddress);
+  });
 
-        await network.provider.request({
-            method: "hardhat_impersonateAccount",
-            params: [abAddress],
-        });
+  it("correctly casts a yes vote", async () => {
+    const tokenId = "679616669464162953633912649788656402604891550845";
 
-        abSigner = await ethers.getSigner(abAddress);
+    await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
 
-    })
+    const yesVoteCount = await communityDeployer.yesVoteCount();
 
-    it("correctly casts a yes vote", async () => {
-        
-        const tokenId = "679616669464162953633912649788656402604891550845";
+    expect(yesVoteCount).to.eq(1);
+  });
 
-        await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
+  it("correctly casts a no vote", async () => {
+    const tokenId = "679616669464162953633912649788656402604891550845";
 
-        const yesVoteCount = await communityDeployer.yesVoteCount();
+    await communityDeployer.connect(abSigner).castVote(tokenId, false); // false --> no vote
 
-        expect(yesVoteCount).to.eq(1);
+    const noVoteCount = await communityDeployer.noVoteCount();
 
-    })
+    expect(noVoteCount).to.eq(1);
+  });
 
-    it("correctly casts a no vote", async () => {
+  it("fails to cast a vote if does not own the genesis nft", async () => {
+    const tokenId = "1348980968939277319790359517796813954796348367904";
 
-        const tokenId = "679616669464162953633912649788656402604891550845";
+    await expect(
+      communityDeployer.connect(abSigner).castVote(tokenId, true)
+    ).to.be.revertedWith("only token owner");
+    await expect(
+      communityDeployer.connect(abSigner).castVote(tokenId, false)
+    ).to.be.revertedWith("only token owner");
+  });
 
-        await communityDeployer.connect(abSigner).castVote(tokenId, false); // false --> no vote
+  it("fails to cast a duplicate vote", async () => {
+    const tokenId = "679616669464162953633912649788656402604891550845";
 
-        const noVoteCount = await communityDeployer.noVoteCount();
+    await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
 
-        expect(noVoteCount).to.eq(1);
+    const yesVoteCount = await communityDeployer.yesVoteCount();
 
-    })
+    expect(yesVoteCount).to.eq(1);
 
-    it("fails to cast a vote if does not own the genesis nft", async () => {
+    await expect(
+      communityDeployer.connect(abSigner).castVote(tokenId, true)
+    ).to.be.revertedWith("duplicate vote");
+  });
 
-        const tokenId = "1348980968939277319790359517796813954796348367904";
+  it("fails to cast a vote once the voting period is over", async () => {
+    const tokenId = "679616669464162953633912649788656402604891550845";
+    await advanceTimeAndBlock(BigNumber.from(172801), 1);
+    await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith(
+      "voting period over"
+    );
+  });
 
-        await expect(communityDeployer.connect(abSigner).castVote(tokenId, true)).to.be.revertedWith("only token owner");
-        await expect(communityDeployer.connect(abSigner).castVote(tokenId, false)).to.be.revertedWith("only token owner");
+  it("unable to queue if voting period is not over", async () => {
+    await expect(communityDeployer.queue()).to.be.revertedWith(
+      "voting is ongoing"
+    );
+  });
 
-    })
+  it("unable to queue if quorum is not reached", async () => {
+    await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+    await expect(communityDeployer.queue()).to.be.revertedWith(
+      "quorum not reached"
+    );
+  });
 
-    it("fails to cast a duplicate vote", async () => {
+  it("unable to queue if no votes >= yes votes", async () => {
+    const tokenId = "679616669464162953633912649788656402604891550845";
+    await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
+    const yesVoteCount = await communityDeployer.yesVoteCount();
+    expect(yesVoteCount).to.eq(1); // the quorum is reached
 
-        const tokenId = "679616669464162953633912649788656402604891550845";
+    const anotherTokenId = "851623991281074935064194053396682782023750630549";
+    await communityDeployer.connect(abSigner).castVote(anotherTokenId, false); // false --> no vote
+    const noVoteCount = await communityDeployer.noVoteCount();
+    expect(noVoteCount).to.eq(1); // number of no votes == number of yes votes
+    await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+    await expect(communityDeployer.queue()).to.be.revertedWith("no >= yes");
+  });
 
-        await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
+  it("unable to deploy if not queued", async () => {
+    const tokenId = "679616669464162953633912649788656402604891550845";
+    await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
+    const yesVoteCount = await communityDeployer.yesVoteCount();
+    expect(yesVoteCount).to.eq(1); // the quorum is reached
+    await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+    await expect(communityDeployer.deploy()).to.be.revertedWith("not queued");
+  });
 
-        const yesVoteCount = await communityDeployer.yesVoteCount();
+  it("unable to deploy if timelock period is not over", async () => {
+    const tokenId = "679616669464162953633912649788656402604891550845";
+    await communityDeployer.castVote(tokenId, true); // true --> yes vote
+    const yesVoteCount = await communityDeployer.yesVoteCount();
+    expect(yesVoteCount).to.eq(1); // the quorum is reached
+    await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+    await communityDeployer.queue();
+    await expect(communityDeployer.deploy()).to.be.revertedWith(
+      "timelock is ongoing"
+    );
+  });
 
-        expect(yesVoteCount).to.eq(1);
+  it("voltz factory is successfully deployed", async () => {
+    const tokenId = "679616669464162953633912649788656402604891550845";
+    await communityDeployer.castVote(tokenId, true); // true --> yes vote
+    const yesVoteCount = await communityDeployer.yesVoteCount();
+    expect(yesVoteCount).to.eq(1); // the quorum is reached
+    await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
+    await communityDeployer.queue();
+    await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the timelock is over
+    await communityDeployer.deploy();
+    const factoryAddress = await communityDeployer.voltzFactory();
+    expect(factoryAddress).to.not.eq("0"); // make sure this test works
 
-        await expect(communityDeployer.connect(abSigner).castVote(tokenId, true)).to.be.revertedWith("duplicate vote");
-
-    })
-
-    it("fails to cast a vote once the voting period is over", async () => {
-        const tokenId = "679616669464162953633912649788656402604891550845";
-        await advanceTimeAndBlock(BigNumber.from(172801), 1);
-        await expect(communityDeployer.castVote(tokenId, true)).to.be.revertedWith("voting period over");
-    })
-
-    it("unable to queue if voting period is not over", async () => {
-        await expect(communityDeployer.queue()).to.be.revertedWith("voting is ongoing")
-    })
-
-    it("unable to queue if quorum is not reached", async () => {
-        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-        await expect(communityDeployer.queue()).to.be.revertedWith("quorum not reached");
-    })
-
-    it("unable to queue if no votes >= yes votes", async () => {
-        const tokenId = "679616669464162953633912649788656402604891550845";
-        await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
-        const yesVoteCount = await communityDeployer.yesVoteCount();
-        expect(yesVoteCount).to.eq(1); // the quorum is reached
-
-        const anotherTokenId = "851623991281074935064194053396682782023750630549";
-        await communityDeployer.connect(abSigner).castVote(anotherTokenId, false); // false --> no vote
-        const noVoteCount = await communityDeployer.noVoteCount();
-        expect(noVoteCount).to.eq(1);  // number of no votes == number of yes votes
-        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-        await expect(communityDeployer.queue()).to.be.revertedWith("no >= yes");
-    })
-
-    
-    it("unable to deploy if not queued", async () => {
-        const tokenId = "679616669464162953633912649788656402604891550845";
-        await communityDeployer.connect(abSigner).castVote(tokenId, true); // true --> yes vote
-        const yesVoteCount = await communityDeployer.yesVoteCount();
-        expect(yesVoteCount).to.eq(1); // the quorum is reached
-        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-        await expect(communityDeployer.deploy()).to.be.revertedWith("not queued");
-    })
-
-    it("unable to deploy if timelock period is not over", async () => {
-        const tokenId = "679616669464162953633912649788656402604891550845";
-        await communityDeployer.castVote(tokenId, true); // true --> yes vote
-        const yesVoteCount = await communityDeployer.yesVoteCount();
-        expect(yesVoteCount).to.eq(1); // the quorum is reached
-        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-        await communityDeployer.queue();
-        await expect(communityDeployer.deploy()).to.be.revertedWith("timelock is ongoing");
-    })
-
-    it("voltz factory is successfully deployed", async () => {
-        const tokenId = "679616669464162953633912649788656402604891550845";
-        await communityDeployer.castVote(tokenId, true); // true --> yes vote
-        const yesVoteCount = await communityDeployer.yesVoteCount();
-        expect(yesVoteCount).to.eq(1); // the quorum is reached
-        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the voting period is over
-        await communityDeployer.queue();
-        await advanceTimeAndBlock(BigNumber.from(172801), 1); // make sure the timelock is over
-        await communityDeployer.deploy();
-        const factoryAddress = await communityDeployer.voltzFactory();
-        expect(factoryAddress).to.not.eq("0"); // make sure this test works
-        
-        // todo: check master margin engine and master vamm
-
-    })
-
-})
+    // todo: check master margin engine and master vamm
+  });
+});

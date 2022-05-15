@@ -11,7 +11,9 @@ This repository contains the smart contracts that power Voltz Protocol. Over tim
 We would love to see how you can build and improve upon what we've built here at Voltz.
 
 ## Community Deployment
+
 In order to test out the Community Deployer, make sure to do the following:
+
 - unskip the tests in community_deployer.ts
 - make sure the tests run on top of a mainnet fork (this can be configured in hardhat.config.ts)
 
