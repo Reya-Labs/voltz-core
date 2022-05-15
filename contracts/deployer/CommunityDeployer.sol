@@ -40,14 +40,13 @@ contract CommunityDeployer {
     uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 172800; // 2 days
 
     /// @notice Volts Genesis NFT mainnet address
+    // uncomment for mainnet
     // address public constant VOLTZ_GENESIS_NFT =
     //     0x8C7E68e7706842BFc70053C4cED21500488e73a8; // todo: ensure this is the correct address
     
-    // https://testnets.opensea.io/assets/0x6e51888cb440397e4f079e365149dd614e8c3304/1390849295786071768276380950238675083608645509734
-    // https://rinkeby.etherscan.io/token/0x6e51888cb440397e4f079e365149dd614e8c3304
-    // uncomment for rinkeby
+    // uncomment for kovan
     address public constant VOLTZ_GENESIS_NFT =
-        0x6e51888CB440397e4F079E365149dD614e8c3304;
+        0x4E6EC49f301F718e301AE82142917F541967EDc5;
 
     /// @notice Master Margine Engine of Voltz Protocol
     IMarginEngine public constant masterMarginEngine =
