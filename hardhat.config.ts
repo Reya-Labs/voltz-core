@@ -82,9 +82,12 @@ const config: HardhatUserConfig = {
     // ropsten: {
     //   url: `${process.env.ROPSTEN_URL}`,
     // },
-    // rinkeby: {
-    //   url: `${process.env.RINKEBY_URL}`,
-    // },
+    rinkeby: {
+      url: `${process.env.RINKEBY_URL}`,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
+    },
     // goerli: {
     //   url: `${process.env.GOERLI_URL}`,
     // },

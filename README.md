@@ -17,6 +17,8 @@ In order to test out the Community Deployer, make sure to do the following:
 - unskip the tests in community_deployer.ts
 - make sure the tests run on top of a mainnet fork (this can be configured in hardhat.config.ts)
 
+In order to deploy on Rinkeby Testnet: npx hardhat run scripts/deploy_community_deployer_rinkeby.ts --network rinkeby
+
 ## Active LP Optimization
 
 In order to test out a simple Active LP Optimizer on top of Voltz Protocol, head over to [Active LP Simulation](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/active_lp_management_strategy/active_lp_management_strategy.ts).

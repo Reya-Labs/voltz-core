@@ -6,7 +6,7 @@ async function main() {
   const communityDeployer = await communityDeployerFactory.deploy(); 
   await communityDeployer.deployed();
   
-  console.log("Community Deployer deployed to:", registry.address);
+  console.log("Community Deployer deployed to:", communityDeployer.address);
   
 }
 
