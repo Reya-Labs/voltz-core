@@ -28,14 +28,20 @@ contract CommunityDeployer {
 
     /// @notice Volts Genesis NFT mainnet address
     address public constant VOLTZ_GENESIS_NFT =
-        0x8C7E68e7706842BFc70053C4cED21500488e73a8;
+        0x8C7E68e7706842BFc70053C4cED21500488e73a8; // todo: ensure this is the correct address
+    
+    // https://testnets.opensea.io/assets/0x6e51888cb440397e4f079e365149dd614e8c3304/1390849295786071768276380950238675083608645509734
+    // https://rinkeby.etherscan.io/token/0x6e51888cb440397e4f079e365149dd614e8c3304
+    // uncomment for rinkeby
+    // address public constant VOLTZ_GENESIS_NFT =
+    //     0x6e51888CB440397e4F079E365149dD614e8c3304; // todo: ensure this is the correct address
 
     /// @notice Master Margine Engine of Voltz Protocol
     IMarginEngine public constant masterMarginEngine =
-        IMarginEngine(address(0)); // todo: replace with the correct mainnet address once deployedx
+        IMarginEngine(address(0x15e3484EB4Ae66B9186699DB76024cBC363c1f2B)); // todo: replace with the correct mainnet address once deployedx
 
     /// @notice Master VAMM of Voltz Protocol
-    IVAMM public constant masterVAMM = IVAMM(address(0)); // todo: replace with the correct mainnet address once deployed
+    IVAMM public constant masterVAMM = IVAMM(address(0x15e3484EB4Ae66B9186699DB76024cBC363c1f2B)); // todo: replace with the correct mainnet address once deployed
 
     /// @notice Total number of votes in favour of deploying voltz protocol
     uint256 public yesVoteCount;
