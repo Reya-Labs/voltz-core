@@ -8,13 +8,27 @@ import "../interfaces/IFactory.sol";
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IMarginEngine.sol";
 
-// assign ownership of the factory to the gnosis safe multisig after the deployment
-// add events
-// verify with etherscan
+
+
+
 // we are unable to deploy both the master vamm and the master margin engine in this contract since in that scenario it would
 // exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
 // to the community deployer as constants
+
+
+
+
+
+// todo: deploy community depoloyer on rinkeby, link to the voltz nft on rinkeby
+// todo: verify with etherscan
+// todo: cast vote in the UI
+// todo: show the total yes/no votes in the UI
+// todo: show the start and end timestamps for voting and timelock in the UI
+// todo: show the quorum in the UI (can be hardcoded actually)
+// todo: queue in the UI
+// todo: deploy in the UI
 // todo: need to agree on the quorum
+// todo assign ownership of the factory to the gnosis safe multisig after the deployment
 
 contract CommunityDeployer {
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
