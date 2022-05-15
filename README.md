@@ -17,7 +17,10 @@ In order to test out the Community Deployer, make sure to do the following:
 - unskip the tests in community_deployer.ts
 - make sure the tests run on top of a mainnet fork (this can be configured in hardhat.config.ts)
 
-In order to deploy on Rinkeby Testnet: npx hardhat run scripts/deploy_community_deployer_rinkeby.ts --network rinkeby
+In order to deploy on Rinkeby Testnet: npx hardhat run scripts/deploy_community_deployer_rinkeby.ts --network kovan
+
+Community Deployer Address Kovan: 0x2dfB12390a40EF010d16a0e1f843190eD1B4ACCf
+Mock NFT Address Kovan: 
 
 ## Active LP Optimization
 

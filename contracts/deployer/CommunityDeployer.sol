@@ -17,16 +17,15 @@ import "../interfaces/IMarginEngine.sol";
 
 
 
-
-
 // todo: deploy community depoloyer on rinkeby, link to the voltz nft on rinkeby
-// todo: verify with etherscan
 // todo: cast vote in the UI
 // todo: show the total yes/no votes in the UI
 // todo: show the start and end timestamps for voting and timelock in the UI
 // todo: show the quorum in the UI (can be hardcoded actually)
 // todo: queue in the UI
 // todo: deploy in the UI
+// todo: verify with etherscan
+
 // todo: need to agree on the quorum
 // todo assign ownership of the factory to the gnosis safe multisig after the deployment
 
@@ -41,14 +40,14 @@ contract CommunityDeployer {
     uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 172800; // 2 days
 
     /// @notice Volts Genesis NFT mainnet address
-    address public constant VOLTZ_GENESIS_NFT =
-        0x8C7E68e7706842BFc70053C4cED21500488e73a8; // todo: ensure this is the correct address
+    // address public constant VOLTZ_GENESIS_NFT =
+    //     0x8C7E68e7706842BFc70053C4cED21500488e73a8; // todo: ensure this is the correct address
     
     // https://testnets.opensea.io/assets/0x6e51888cb440397e4f079e365149dd614e8c3304/1390849295786071768276380950238675083608645509734
     // https://rinkeby.etherscan.io/token/0x6e51888cb440397e4f079e365149dd614e8c3304
     // uncomment for rinkeby
-    // address public constant VOLTZ_GENESIS_NFT =
-    //     0x6e51888CB440397e4F079E365149dD614e8c3304; // todo: ensure this is the correct address
+    address public constant VOLTZ_GENESIS_NFT =
+        0x6e51888CB440397e4F079E365149dD614e8c3304;
 
     /// @notice Master Margine Engine of Voltz Protocol
     IMarginEngine public constant masterMarginEngine =
