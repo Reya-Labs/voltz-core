@@ -62,6 +62,7 @@
     "@openzeppelin/contracts-upgradeable": "^4.4.2",
     "@openzeppelin/upgrades": "^2.8.0",
     "@uniswap/sdk-core": "^3.0.1",
+    "ethereumjs-util": "^7.1.4",
     "hardhat-prettier": "0.0.1",
     "hardhat-tracer": "^1.0.0-alpha.6",
     "jsbi": "^4.0.0",
