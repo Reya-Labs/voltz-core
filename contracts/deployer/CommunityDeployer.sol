@@ -70,8 +70,10 @@ contract CommunityDeployer {
     bytes32 public merkleRoot;
 
     // This is a packed array of booleans.
-    mapping(uint256 => uint256) private claimedBitMap;
+    mapping(uint256 => uint256) private votedBitMap;
 
+    // This event is triggered whenever a call to cast a vote succeeds
+    event Voted(uint256 index, address account, uint256 numberOfVotes); // todo: write a unit test
 
     constructor(
         IVAMM _masterVAMM,
@@ -88,6 +90,22 @@ contract CommunityDeployer {
         quorumVotes = _quorumVotes;
         ownerAddress = _ownerAddress;
         merkleRoot = _merkleRoot;
+    }
+
+    
+    
+    function hasVoted(uint256 index) public view returns (bool) {
+        uint256 claimedWordIndex = index / 256;
+        uint256 claimedBitIndex = index % 256;
+        uint256 claimedWord = claimedBitMap[claimedWordIndex];
+        uint256 mask = (1 << claimedBitIndex);
+        return claimedWord & mask == mask;
+    }
+
+    function _setVoted(uint256 index) private {
+        uint256 claimedWordIndex = index / 256;
+        uint256 claimedBitIndex = index % 256;
+        claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
     }
 
     /// @notice Deploy the Voltz Factory by passing the masterVAMM and the masterMarginEngine into the Factory constructor
@@ -116,27 +134,31 @@ contract CommunityDeployer {
     /// @notice Vote for the proposal to deploy the Voltz Factory contract
     /// @param _tokenId id of the ERC721 Voltz Genesis NFT token which is used to vote
     /// @param _yesVote if this boolean is true then the msg.sender is casting a yes vote, if the boolean is false the msg.sender is casting a no vote
-    function castVote(uint256 _tokenId, bool _yesVote) external {
+    function castVote(uint256 _index, uint256 _numberOfVotes, bool _yesVote, bytes32[] calldata merkleProof) external {
         require(
             block.timestamp <= blockTimestampVotingEnd,
             "voting period over"
         );
 
-        // check if the msg.sender is the owner of _tokenId
-        address ownerOfTokenId = ERC721(voltzGenesisNFT).ownerOf(_tokenId);
-        require(msg.sender == ownerOfTokenId, "only token owner");
-        require(hasTokenIdVoted[_tokenId] == false, "duplicate vote");
+        // check if msg.sender has already voted
+        require(!hasVoted(_index), 'duplicate vote');
 
-        // update the counter
+        // verify the merkle proof
+        bytes32 node = keccak256(abi.encodePacked(index, msg.sender, _numberOfVotes));
+        require(MerkleProof.verify(merkleProof, merkleRoot, node), 'invalid merkle proof');
+
+        // mark hasVoted
+        _setVoted(index);
+
+        // cast the vote
         if (_yesVote) {
-            yesVoteCount++;
+            yesVoteCount += _numberOfVotes;
         } else {
-            noVoteCount++;
+            noVoteCount += _numberOfVotes;
         }
 
-        // event in here
+        // emit an event
+        emit Voted(index, msg.sender, _numberOfVotes);
 
-        // update the hasTokenIdVoted mapping to ensure the token id cannot be reused for a duplicate vote
-        hasTokenIdVoted[_tokenId] = true;
     }
 }
