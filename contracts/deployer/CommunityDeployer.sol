@@ -7,13 +7,13 @@ import "../Factory.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IMarginEngine.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 // we are unable to deploy both the master vamm and the master margin engine in this contract since in that scenario it would
 // exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
 // to the community deployer as constants
 
 
-// todo assign ownership of the factory to the gnosis safe multisig after the deployment (logic to reassign ownership)
 // todo: make quorum votes into the constructor
 // todo: figure out how to do a snapshot
 // todo: figure out how to do a merkle tree with counts
@@ -29,6 +29,9 @@ contract CommunityDeployer {
     /// @notice Timelock Period In Seconds, once the deployment is queued, 2 days need to pass in order to make deployment of the Voltz Factory possible
     uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 2 days;
 
+    /// @notice Multisig owner address
+    address public ownerAddress;
+    
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     uint256 public quorumVotes;
     
@@ -62,12 +65,13 @@ contract CommunityDeployer {
     /// @notice Voltz Factory to be deployed in a scenario where a successful vote is followed by the queue and deployment
     IFactory public voltzFactory;
 
-    constructor(IVAMM _masterVAMM, IMarginEngine _masterMarginEngine, address _voltzGenesisNFT, uint256 _quorumVotes) {
+    constructor(IVAMM _masterVAMM, IMarginEngine _masterMarginEngine, address _voltzGenesisNFT, uint256 _quorumVotes, address _ownerAddress) {
         blockTimestampVotingEnd = block.timestamp + VOTING_PERIOD_IN_SECONDS;
         masterVAMM = _masterVAMM;
         masterMarginEngine = _masterMarginEngine;
         voltzGenesisNFT = _voltzGenesisNFT;
         quorumVotes = _quorumVotes;
+        ownerAddress = _ownerAddress; 
     }
 
     /// @notice Deploy the Voltz Factory by passing the masterVAMM and the masterMarginEngine into the Factory constructor
@@ -78,6 +82,7 @@ contract CommunityDeployer {
             "timelock is ongoing"
         );
         voltzFactory = new Factory(masterMarginEngine, masterVAMM);
+        Ownable(address(voltzFactory)).transferOwnership(ownerAddress); // todo: write a unit test
     }
 
     /// @notice Queue the deployment of the Voltz Factory
