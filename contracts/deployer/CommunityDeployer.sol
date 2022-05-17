@@ -8,7 +8,7 @@ import "../interfaces/IFactory.sol";
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IMarginEngine.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /// @notice
 // we are unable to deploy both the master vamm and the master margin engine in this contract since in that scenario it would
@@ -90,19 +90,19 @@ contract CommunityDeployer {
     }
 
     function hasVoted(uint256 index) public view returns (bool) {
-        uint256 claimedWordIndex = index / 256;
-        uint256 claimedBitIndex = index % 256;
-        uint256 claimedWord = claimedBitMap[claimedWordIndex];
-        uint256 mask = (1 << claimedBitIndex);
-        return claimedWord & mask == mask;
+        uint256 votedWordIndex = index / 256;
+        uint256 votedBitIndex = index % 256;
+        uint256 votedWord = votedBitMap[votedWordIndex];
+        uint256 mask = (1 << votedBitIndex);
+        return votedWord & mask == mask;
     }
 
     function _setVoted(uint256 index) private {
-        uint256 claimedWordIndex = index / 256;
-        uint256 claimedBitIndex = index % 256;
-        claimedBitMap[claimedWordIndex] =
-            claimedBitMap[claimedWordIndex] |
-            (1 << claimedBitIndex);
+        uint256 votedWordIndex = index / 256;
+        uint256 votedBitIndex = index % 256;
+        votedBitMap[votedWordIndex] =
+            votedBitMap[votedWordIndex] |
+            (1 << votedBitIndex);
     }
 
     /// @notice Deploy the Voltz Factory by passing the masterVAMM and the masterMarginEngine into the Factory constructor
@@ -129,13 +129,15 @@ contract CommunityDeployer {
     }
 
     /// @notice Vote for the proposal to deploy the Voltz Factory contract
-    /// @param _tokenId id of the ERC721 Voltz Genesis NFT token which is used to vote
+    /// @param _index index of the voter
+    /// @param _numberOfVotes number of voltz genesis nfts held by the msg.sender before the snapshot was taken
     /// @param _yesVote if this boolean is true then the msg.sender is casting a yes vote, if the boolean is false the msg.sender is casting a no vote
+    /// @param _merkleProof merkle proof that needs to be verified against the merkle root to check the msg.sender against the snapshot
     function castVote(
         uint256 _index,
         uint256 _numberOfVotes,
         bool _yesVote,
-        bytes32[] calldata merkleProof
+        bytes32[] calldata _merkleProof
     ) external {
         require(
             block.timestamp <= blockTimestampVotingEnd,
@@ -146,16 +148,16 @@ contract CommunityDeployer {
         require(!hasVoted(_index), "duplicate vote");
 
         // verify the merkle proof
-        bytes32 node = keccak256(
-            abi.encodePacked(index, msg.sender, _numberOfVotes)
+        bytes32 _node = keccak256(
+            abi.encodePacked(_index, msg.sender, _numberOfVotes)
         );
         require(
-            MerkleProof.verify(merkleProof, merkleRoot, node),
+            MerkleProof.verify(_merkleProof, merkleRoot, _node),
             "invalid merkle proof"
         );
 
         // mark hasVoted
-        _setVoted(index);
+        _setVoted(_index);
 
         // cast the vote
         if (_yesVote) {
@@ -165,6 +167,6 @@ contract CommunityDeployer {
         }
 
         // emit an event
-        emit Voted(index, msg.sender, _numberOfVotes);
+        emit Voted(_index, msg.sender, _numberOfVotes);
     }
 }

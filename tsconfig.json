@@ -6,7 +6,8 @@
     "esModuleInterop": true,
     "outDir": "dist",
     "declaration": true,
-    "lib": ["es2019", "ES2021.String"]
+    "lib": ["es2019", "ES2021.String"],
+    "resolveJsonModule": true,
   },
   "include": ["./scripts", "./test", "./typechain", "./deploy"],
   "files": ["./hardhat.config.ts"]

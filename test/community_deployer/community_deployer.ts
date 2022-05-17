@@ -2,16 +2,16 @@ import { expect } from "../shared/expect";
 import { ethers, network } from "hardhat";
 import { CommunityDeployer } from "../../typechain/CommunityDeployer";
 import { advanceTimeAndBlock } from "../helpers/time";
-import { BigNumber } from "ethers";
+import { BigNumber, Wallet } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { MockGenesisNFT } from "../../typechain";
+// import CommunityDeployerJSON from '../../artifacts/contracts/deployer/CommunityDeployer.sol/CommunityDeployer.json';
 
 /// CONSTANTS
 const MASTER_VAMM_ADDRESS = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462"; // dummy value
 const MASTER_MARGIN_ENGINE_ADDRESS = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462"; // dummy value
 const QUORUM_VOTES = 1;
-
-
+const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 describe("CommunityDeployer", () => {
   // below tests work under the assumption that the quorum is 1
@@ -21,35 +21,29 @@ describe("CommunityDeployer", () => {
   let communityDeployer: CommunityDeployer;
   let mockGenesisNFT: MockGenesisNFT;
   let abSigner: SignerWithAddress;
+  let wallet: Wallet;
 
   beforeEach(async () => {
 
     // deploy mock genesis nft
     const mockGenesisNFTFactory = await ethers.getContractFactory("MockGenesisNFT");
     mockGenesisNFT = (await mockGenesisNFTFactory.deploy()) as MockGenesisNFT;
-
-    // owner address in the wallet address
-
-    // generate a merkle root
-
-
-    // IVAMM _masterVAMM,
-    // IMarginEngine _masterMarginEngine,
-    // address _voltzGenesisNFT
-    // uint256 _quorumVotes,
-    // address _ownerAddress,
-    // bytes32 _merkleRoot
-
-    // todo: pass correct values
-
+    [wallet,] = await (ethers as any).getSigners();
+    
     // deploy community deployer
-
     const communityDeployerFactory = await ethers.getContractFactory(
       "CommunityDeployer"
     );
 
     communityDeployer =
-      (await communityDeployerFactory.deploy()) as CommunityDeployer;
+      (await communityDeployerFactory.deploy(
+        MASTER_VAMM_ADDRESS,
+        MASTER_MARGIN_ENGINE_ADDRESS,
+        mockGenesisNFT.address,
+        QUORUM_VOTES,
+        wallet.address,
+        ZERO_BYTES32
+      )) as CommunityDeployer;
 
     const abAddress = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462";
 
