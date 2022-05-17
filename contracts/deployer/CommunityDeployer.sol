@@ -16,7 +16,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 // to the community deployer as constants
 
 // todo: figure out how to do a snapshot
-// todo: (optional) events
+// todo: where do I get the index from?
 // todo: A script to deploy the MasterVAMM, MasterMarginEngine, and Deployer
 // todo: verify with etherscan
 
