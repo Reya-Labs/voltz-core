@@ -8,14 +8,16 @@ import "../interfaces/IFactory.sol";
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IMarginEngine.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
+
+/// @notice
 // we are unable to deploy both the master vamm and the master margin engine in this contract since in that scenario it would
 // exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
 // to the community deployer as constants
 
-// todo: make quorum votes into the constructor
-// todo: figure out how to do a snapshot
 // todo: figure out how to do a merkle tree with counts
+// todo: figure out how to do a snapshot 
 // todo: (optional) events
 // todo: A script to deploy the MasterVAMM, MasterMarginEngine, and Deployer
 // todo: verify with etherscan
@@ -63,12 +65,21 @@ contract CommunityDeployer {
     /// @notice Voltz Factory to be deployed in a scenario where a successful vote is followed by the queue and deployment
     IFactory public voltzFactory;
 
+
+    // Merkle Tree
+    bytes32 public merkleRoot;
+
+    // This is a packed array of booleans.
+    mapping(uint256 => uint256) private claimedBitMap;
+
+
     constructor(
         IVAMM _masterVAMM,
         IMarginEngine _masterMarginEngine,
         address _voltzGenesisNFT,
         uint256 _quorumVotes,
-        address _ownerAddress
+        address _ownerAddress,
+        bytes32 _merkleRoot
     ) {
         blockTimestampVotingEnd = block.timestamp + VOTING_PERIOD_IN_SECONDS;
         masterVAMM = _masterVAMM;
@@ -76,6 +87,7 @@ contract CommunityDeployer {
         voltzGenesisNFT = _voltzGenesisNFT;
         quorumVotes = _quorumVotes;
         ownerAddress = _ownerAddress;
+        merkleRoot = _merkleRoot;
     }
 
     /// @notice Deploy the Voltz Factory by passing the masterVAMM and the masterMarginEngine into the Factory constructor
