@@ -8,52 +8,38 @@ import "../interfaces/IFactory.sol";
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IMarginEngine.sol";
 
-
-
-
 // we are unable to deploy both the master vamm and the master margin engine in this contract since in that scenario it would
 // exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
 // to the community deployer as constants
 
 
-
-// todo: deploy community depoloyer on rinkeby, link to the voltz nft on rinkeby
-// todo: cast vote in the UI
-// todo: show the total yes/no votes in the UI
-// todo: show the start and end timestamps for voting and timelock in the UI
-// todo: show the quorum in the UI (can be hardcoded actually)
-// todo: queue in the UI
-// todo: deploy in the UI
+// todo assign ownership of the factory to the gnosis safe multisig after the deployment (logic to reassign ownership)
+// todo: make quorum votes into the constructor
+// todo: figure out how to do a snapshot
+// todo: figure out how to do a merkle tree with counts
+// todo: (optional) events
+// todo: A script to deploy the MasterVAMM, MasterMarginEngine, and Deployer
 // todo: verify with etherscan
 
-// todo: need to agree on the quorum
-// todo assign ownership of the factory to the gnosis safe multisig after the deployment
-
 contract CommunityDeployer {
-    /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
-    uint256 public constant QUORUM_VOTES = 1; // TODO: make sure to change before deployment!!!
-
+    
     /// @notice Voting Period In Seconds, i.e. after 2 days elapse since the deployement of this contract, nft holders won't be able to vote
-    uint256 public constant VOTING_PERIOD_IN_SECONDS = 172800; // 2 days
+    uint256 public constant VOTING_PERIOD_IN_SECONDS = 2 days;
 
     /// @notice Timelock Period In Seconds, once the deployment is queued, 2 days need to pass in order to make deployment of the Voltz Factory possible
-    uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 172800; // 2 days
+    uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 2 days;
 
-    /// @notice Volts Genesis NFT mainnet address
-    // uncomment for mainnet
-    // address public constant VOLTZ_GENESIS_NFT =
-    //     0x8C7E68e7706842BFc70053C4cED21500488e73a8; // todo: ensure this is the correct address
+    /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
+    uint256 public quorumVotes;
     
-    // uncomment for kovan
-    address public constant VOLTZ_GENESIS_NFT =
-        0x4E6EC49f301F718e301AE82142917F541967EDc5;
+    // 0x4E6EC49f301F718e301AE82142917F541967EDc5
+    address public voltzGenesisNFT;
 
     /// @notice Master Margine Engine of Voltz Protocol
-    IMarginEngine public constant masterMarginEngine =
-        IMarginEngine(address(0x15e3484EB4Ae66B9186699DB76024cBC363c1f2B)); // todo: replace with the correct mainnet address once deployedx
+    IMarginEngine public masterMarginEngine;
 
     /// @notice Master VAMM of Voltz Protocol
-    IVAMM public constant masterVAMM = IVAMM(address(0x15e3484EB4Ae66B9186699DB76024cBC363c1f2B)); // todo: replace with the correct mainnet address once deployed
+    IVAMM public masterVAMM;
 
     /// @notice Total number of votes in favour of deploying voltz protocol
     uint256 public yesVoteCount;
@@ -76,8 +62,12 @@ contract CommunityDeployer {
     /// @notice Voltz Factory to be deployed in a scenario where a successful vote is followed by the queue and deployment
     IFactory public voltzFactory;
 
-    constructor() {
+    constructor(IVAMM _masterVAMM, IMarginEngine _masterMarginEngine, address _voltzGenesisNFT, uint256 _quorumVotes) {
         blockTimestampVotingEnd = block.timestamp + VOTING_PERIOD_IN_SECONDS;
+        masterVAMM = _masterVAMM;
+        masterMarginEngine = _masterMarginEngine;
+        voltzGenesisNFT = _voltzGenesisNFT;
+        quorumVotes = _quorumVotes;
     }
 
     /// @notice Deploy the Voltz Factory by passing the masterVAMM and the masterMarginEngine into the Factory constructor
@@ -93,7 +83,7 @@ contract CommunityDeployer {
     /// @notice Queue the deployment of the Voltz Factory
     function queue() external {
         require(block.timestamp > blockTimestampVotingEnd, "voting is ongoing");
-        require(yesVoteCount >= QUORUM_VOTES, "quorum not reached");
+        require(yesVoteCount >= quorumVotes, "quorum not reached");
         require(yesVoteCount > noVoteCount, "no >= yes");
         require(isQueued == false, "already queued"); // todo: test this
         isQueued = true;
@@ -112,7 +102,7 @@ contract CommunityDeployer {
         );
 
         // check if the msg.sender is the owner of _tokenId
-        address ownerOfTokenId = ERC721(VOLTZ_GENESIS_NFT).ownerOf(_tokenId);
+        address ownerOfTokenId = ERC721(voltzGenesisNFT).ownerOf(_tokenId);
         require(msg.sender == ownerOfTokenId, "only token owner");
         require(hasTokenIdVoted[_tokenId] == false, "duplicate vote");
 
@@ -122,6 +112,8 @@ contract CommunityDeployer {
         } else {
             noVoteCount++;
         }
+
+        // event in here
 
         // update the hasTokenIdVoted mapping to ensure the token id cannot be reused for a duplicate vote
         hasTokenIdVoted[_tokenId] = true;

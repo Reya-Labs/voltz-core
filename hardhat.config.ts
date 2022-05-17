@@ -84,7 +84,7 @@ const config: HardhatUserConfig = {
     // },
     rinkeby: {
       url: `${process.env.RINKEBY_URL}`,
-      accounts: [`${process.env.RINKEBY_PRIVATE_KEY}`]
+      accounts: [`${process.env.RINKEBY_PRIVATE_KEY}`],
     },
     // goerli: {
     //   url: `${process.env.GOERLI_URL}`,
