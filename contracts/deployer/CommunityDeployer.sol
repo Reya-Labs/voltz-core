@@ -10,14 +10,12 @@ import "../interfaces/IMarginEngine.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 
-
 /// @notice
 // we are unable to deploy both the master vamm and the master margin engine in this contract since in that scenario it would
 // exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
 // to the community deployer as constants
 
-// todo: figure out how to do a merkle tree with counts
-// todo: figure out how to do a snapshot 
+// todo: figure out how to do a snapshot
 // todo: (optional) events
 // todo: A script to deploy the MasterVAMM, MasterMarginEngine, and Deployer
 // todo: verify with etherscan
@@ -65,7 +63,6 @@ contract CommunityDeployer {
     /// @notice Voltz Factory to be deployed in a scenario where a successful vote is followed by the queue and deployment
     IFactory public voltzFactory;
 
-
     // Merkle Tree
     bytes32 public merkleRoot;
 
@@ -92,8 +89,6 @@ contract CommunityDeployer {
         merkleRoot = _merkleRoot;
     }
 
-    
-    
     function hasVoted(uint256 index) public view returns (bool) {
         uint256 claimedWordIndex = index / 256;
         uint256 claimedBitIndex = index % 256;
@@ -105,7 +100,9 @@ contract CommunityDeployer {
     function _setVoted(uint256 index) private {
         uint256 claimedWordIndex = index / 256;
         uint256 claimedBitIndex = index % 256;
-        claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
+        claimedBitMap[claimedWordIndex] =
+            claimedBitMap[claimedWordIndex] |
+            (1 << claimedBitIndex);
     }
 
     /// @notice Deploy the Voltz Factory by passing the masterVAMM and the masterMarginEngine into the Factory constructor
@@ -134,18 +131,28 @@ contract CommunityDeployer {
     /// @notice Vote for the proposal to deploy the Voltz Factory contract
     /// @param _tokenId id of the ERC721 Voltz Genesis NFT token which is used to vote
     /// @param _yesVote if this boolean is true then the msg.sender is casting a yes vote, if the boolean is false the msg.sender is casting a no vote
-    function castVote(uint256 _index, uint256 _numberOfVotes, bool _yesVote, bytes32[] calldata merkleProof) external {
+    function castVote(
+        uint256 _index,
+        uint256 _numberOfVotes,
+        bool _yesVote,
+        bytes32[] calldata merkleProof
+    ) external {
         require(
             block.timestamp <= blockTimestampVotingEnd,
             "voting period over"
         );
 
         // check if msg.sender has already voted
-        require(!hasVoted(_index), 'duplicate vote');
+        require(!hasVoted(_index), "duplicate vote");
 
         // verify the merkle proof
-        bytes32 node = keccak256(abi.encodePacked(index, msg.sender, _numberOfVotes));
-        require(MerkleProof.verify(merkleProof, merkleRoot, node), 'invalid merkle proof');
+        bytes32 node = keccak256(
+            abi.encodePacked(index, msg.sender, _numberOfVotes)
+        );
+        require(
+            MerkleProof.verify(merkleProof, merkleRoot, node),
+            "invalid merkle proof"
+        );
 
         // mark hasVoted
         _setVoted(index);
@@ -159,6 +166,5 @@ contract CommunityDeployer {
 
         // emit an event
         emit Voted(index, msg.sender, _numberOfVotes);
-
     }
 }

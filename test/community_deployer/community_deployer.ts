@@ -4,17 +4,46 @@ import { CommunityDeployer } from "../../typechain/CommunityDeployer";
 import { advanceTimeAndBlock } from "../helpers/time";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { MockGenesisNFT } from "../../typechain";
+
+/// CONSTANTS
+const MASTER_VAMM_ADDRESS = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462"; // dummy value
+const MASTER_MARGIN_ENGINE_ADDRESS = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462"; // dummy value
+const QUORUM_VOTES = 1;
+
+
 
 describe("CommunityDeployer", () => {
   // below tests work under the assumption that the quorum is 1
   // in order to test with the original nft, need to fork mainnet and impersonate
-  // write up a readme for the community deployer
   // add tests (with skip) that check the constants such as quorum, master margin engine and master vamm
 
   let communityDeployer: CommunityDeployer;
+  let mockGenesisNFT: MockGenesisNFT;
   let abSigner: SignerWithAddress;
 
   beforeEach(async () => {
+
+    // deploy mock genesis nft
+    const mockGenesisNFTFactory = await ethers.getContractFactory("MockGenesisNFT");
+    mockGenesisNFT = (await mockGenesisNFTFactory.deploy()) as MockGenesisNFT;
+
+    // owner address in the wallet address
+
+    // generate a merkle root
+
+
+    // IVAMM _masterVAMM,
+    // IMarginEngine _masterMarginEngine,
+    // address _voltzGenesisNFT
+    // uint256 _quorumVotes,
+    // address _ownerAddress,
+    // bytes32 _merkleRoot
+
+    // todo: pass correct values
+
+    // deploy community deployer
+
     const communityDeployerFactory = await ethers.getContractFactory(
       "CommunityDeployer"
     );
