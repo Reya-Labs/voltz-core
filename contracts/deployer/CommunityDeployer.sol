@@ -13,7 +13,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
 // to the community deployer as constants
 
-
 // todo: make quorum votes into the constructor
 // todo: figure out how to do a snapshot
 // todo: figure out how to do a merkle tree with counts
@@ -22,7 +21,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // todo: verify with etherscan
 
 contract CommunityDeployer {
-    
     /// @notice Voting Period In Seconds, i.e. after 2 days elapse since the deployement of this contract, nft holders won't be able to vote
     uint256 public constant VOTING_PERIOD_IN_SECONDS = 2 days;
 
@@ -31,10 +29,10 @@ contract CommunityDeployer {
 
     /// @notice Multisig owner address
     address public ownerAddress;
-    
+
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     uint256 public quorumVotes;
-    
+
     // 0x4E6EC49f301F718e301AE82142917F541967EDc5
     address public voltzGenesisNFT;
 
@@ -65,13 +63,19 @@ contract CommunityDeployer {
     /// @notice Voltz Factory to be deployed in a scenario where a successful vote is followed by the queue and deployment
     IFactory public voltzFactory;
 
-    constructor(IVAMM _masterVAMM, IMarginEngine _masterMarginEngine, address _voltzGenesisNFT, uint256 _quorumVotes, address _ownerAddress) {
+    constructor(
+        IVAMM _masterVAMM,
+        IMarginEngine _masterMarginEngine,
+        address _voltzGenesisNFT,
+        uint256 _quorumVotes,
+        address _ownerAddress
+    ) {
         blockTimestampVotingEnd = block.timestamp + VOTING_PERIOD_IN_SECONDS;
         masterVAMM = _masterVAMM;
         masterMarginEngine = _masterMarginEngine;
         voltzGenesisNFT = _voltzGenesisNFT;
         quorumVotes = _quorumVotes;
-        ownerAddress = _ownerAddress; 
+        ownerAddress = _ownerAddress;
     }
 
     /// @notice Deploy the Voltz Factory by passing the masterVAMM and the masterMarginEngine into the Factory constructor
