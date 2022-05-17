@@ -55,6 +55,20 @@ describe("CommunityDeployer", () => {
     abSigner = await ethers.getSigner(abAddress);
   });
 
+  it("merkle root: returns zero merkle root", async () => {
+    expect(await communityDeployer.merkleRoot()).to.eq(ZERO_BYTES32);
+  })
+
+  it("fails to cast for empty proof", async () => {
+    await expect(communityDeployer.castVote(0, 1, true, [])).to.be.revertedWith(
+      "invalid merkle proof"
+    );
+  })
+
+  describe("two account tree", () => {
+    let tree: BalanceTree;
+  })
+
   it("correctly casts a yes vote", async () => {
     const tokenId = "679616669464162953633912649788656402604891550845";
 
