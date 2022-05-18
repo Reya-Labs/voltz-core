@@ -7,8 +7,7 @@ import {
 import fs from "fs";
 
 const QUORUM_VOTES = 185;
-const VOLTZ_GENESIS_NFT_ADDRESS = "0x8C7E68e7706842BFc70053C4cED21500488e73a8";
-const MULTISIG_ADDRESS = ""; // todo: create a gnosis safe
+const MULTISIG_ADDRESS = "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   try {
@@ -41,7 +40,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       args: [
         masterVammDeploy.address,
         masterMarginEngineDeploy.address,
-        VOLTZ_GENESIS_NFT_ADDRESS,
         QUORUM_VOTES,
         MULTISIG_ADDRESS,
         merkleDistributorInfo.merkleRoot,
