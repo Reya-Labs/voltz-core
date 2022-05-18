@@ -15,9 +15,12 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 // exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
 // to the community deployer as constants
 
+
+// todo: investigate https://github.com/Uniswap/merkle-distributor/tree/master/scripts 
+// todo: A script to deploy the MasterVAMM, MasterMarginEngine, and Deployer
+// where the deployer needs to generate the merkle root from the correct snapshot data
 // todo: figure out how to do a snapshot
 // todo: where do I get the index from?
-// todo: A script to deploy the MasterVAMM, MasterMarginEngine, and Deployer
 // todo: verify with etherscan
 
 contract CommunityDeployer {
