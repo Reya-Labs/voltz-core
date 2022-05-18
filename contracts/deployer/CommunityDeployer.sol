@@ -15,7 +15,6 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 // exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
 // to the community deployer as constants
 
-
 // todo: deploy on kovan
 // todo: adjust the webflow ui
 // todo: investigate https://github.com/Uniswap/merkle-distributor/tree/master/scripts

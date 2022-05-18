@@ -3,9 +3,8 @@ import { ethers } from "hardhat";
 import { CommunityDeployer } from "../../typechain/CommunityDeployer";
 import { advanceTimeAndBlock } from "../helpers/time";
 import { BigNumber, Wallet } from "ethers";
-import { Factory, MockGenesisNFT } from "../../typechain";
+import { Factory } from "../../typechain";
 import BalanceTree from "./balance-tree";
-// import CommunityDeployerJSON from '../../artifacts/contracts/deployer/CommunityDeployer.sol/CommunityDeployer.json';
 
 /// CONSTANTS
 const MASTER_VAMM_ADDRESS = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462"; // dummy value
