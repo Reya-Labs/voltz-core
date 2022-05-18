@@ -19,15 +19,9 @@ describe("CommunityDeployer", () => {
   // add tests (with skip) that check the constants such as quorum, master margin engine and master vamm
 
   let communityDeployer: CommunityDeployer;
-  let mockGenesisNFT: MockGenesisNFT;
   let wallet: Wallet, other: Wallet;
 
   beforeEach(async () => {
-    // deploy mock genesis nft
-    const mockGenesisNFTFactory = await ethers.getContractFactory(
-      "MockGenesisNFT"
-    );
-    mockGenesisNFT = (await mockGenesisNFTFactory.deploy()) as MockGenesisNFT;
     [wallet, other] = await (ethers as any).getSigners();
   });
 
@@ -48,7 +42,6 @@ describe("CommunityDeployer", () => {
       communityDeployer = (await communityDeployerFactory.deploy(
         MASTER_VAMM_ADDRESS,
         MASTER_MARGIN_ENGINE_ADDRESS,
-        mockGenesisNFT.address,
         QUORUM_VOTES,
         wallet.address,
         tree.getHexRoot()

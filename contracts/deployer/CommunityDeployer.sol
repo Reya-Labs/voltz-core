@@ -16,7 +16,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 // to the community deployer as constants
 
 // todo: investigate https://github.com/Uniswap/merkle-distributor/tree/master/scripts
-// todo: gnosis safe 
+// todo: gnosis safe
 // todo: A script to deploy the MasterVAMM, MasterMarginEngine, and Deployer
 // where the deployer needs to generate the merkle root from the correct snapshot data
 // todo: do we want to check if you still hold the nft after the snapshot?
@@ -35,9 +35,6 @@ contract CommunityDeployer {
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     uint256 public quorumVotes;
-
-    // 0x4E6EC49f301F718e301AE82142917F541967EDc5
-    address public voltzGenesisNFT;
 
     /// @notice Master Margine Engine of Voltz Protocol
     IMarginEngine public masterMarginEngine;
@@ -78,7 +75,6 @@ contract CommunityDeployer {
     constructor(
         IVAMM _masterVAMM,
         IMarginEngine _masterMarginEngine,
-        address _voltzGenesisNFT,
         uint256 _quorumVotes,
         address _ownerAddress,
         bytes32 _merkleRoot
@@ -86,7 +82,6 @@ contract CommunityDeployer {
         blockTimestampVotingEnd = block.timestamp + VOTING_PERIOD_IN_SECONDS;
         masterVAMM = _masterVAMM;
         masterMarginEngine = _masterMarginEngine;
-        voltzGenesisNFT = _voltzGenesisNFT;
         quorumVotes = _quorumVotes;
         ownerAddress = _ownerAddress;
         merkleRoot = _merkleRoot;
