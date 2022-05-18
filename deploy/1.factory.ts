@@ -1,5 +1,8 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
+import { parseBalanceMap } from "../deployConfig/parse-balance-map";
+import fs from 'fs'
+
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   try {
@@ -16,11 +19,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       from: deployer,
       log: doLogging,
     });
-    await deploy("Factory", {
-      from: deployer,
-      args: [masterMarginEngineDeploy.address, masterVammDeploy.address],
-      log: doLogging,
-    });
+
+    const json = JSON.parse(fs.readFileSync("deployConfig/nftSnapshot.json", { encoding: 'utf8' }));
+    const merkleDistributorInfo = JSON.stringify(parseBalanceMap(json));
+    console.log(merkleDistributorInfo);
+
     return true; // Only execute once
   } catch (e) {
     console.error(e);
