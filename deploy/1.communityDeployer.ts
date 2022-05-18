@@ -32,7 +32,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     console.log("Total Genesis NFT count", merkleDistributorInfo.tokenTotal);
     console.log("Merkle Root", merkleDistributorInfo.merkleRoot);
-    console.log("First User Info: ", merkleDistributorInfo.claims[0]);
 
     const communityDeployer = await deploy("CommunityDeployer", {
       from: deployer,
