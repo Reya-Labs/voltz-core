@@ -16,6 +16,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 // to the community deployer as constants
 
 // todo: investigate https://github.com/Uniswap/merkle-distributor/tree/master/scripts
+// todo: gnosis safe 
 // todo: A script to deploy the MasterVAMM, MasterMarginEngine, and Deployer
 // where the deployer needs to generate the merkle root from the correct snapshot data
 // todo: do we want to check if you still hold the nft after the snapshot?

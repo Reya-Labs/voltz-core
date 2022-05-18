@@ -7,7 +7,7 @@ const { isAddress, getAddress } = utils;
 // It is completely sufficient for recreating the entire merkle tree.
 // Anyone can verify that all air drops are included in the tree,
 // and the tree has no additional distributions.
-interface MerkleDistributorInfo {
+export interface MerkleDistributorInfo {
   merkleRoot: string;
   tokenTotal: string;
   claims: {
