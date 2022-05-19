@@ -1,15 +1,6 @@
 import { task } from "hardhat/config";
 import { utils } from "ethers";
-import { BaseRateOracle } from "../typechain";
-
-function isAddress(address: string): boolean {
-  try {
-    utils.getAddress(address);
-  } catch (e) {
-    return false;
-  }
-  return true;
-}
+import { getRateOracle } from "./helpers";
 
 task(
   "writeRateOracle",
@@ -20,18 +11,7 @@ task(
     "The address of a rate oracle, or the name of the rate oracle as defined in deployments/<network> (e.g. 'AaveRateOracle_USDT'"
   )
   .setAction(async (taskArgs, hre) => {
-    let rateOracle;
-    if (isAddress(taskArgs.rateOracle)) {
-      rateOracle = (await hre.ethers.getContractAt(
-        "BaseRateOracle",
-        taskArgs.rateOracle
-      )) as BaseRateOracle;
-    } else {
-      rateOracle = (await hre.ethers.getContract(
-        taskArgs.rateOracle
-      )) as BaseRateOracle;
-    }
-
+    const rateOracle = await getRateOracle(hre, taskArgs.rateOracle);
     // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
 
     const trx = await rateOracle.writeOracleEntry({ gasLimit: 10000000 });
@@ -47,17 +27,7 @@ task(
     "The address of a rate oracle, or the name of the rate oracle as defined in deployments/<network> (e.g. 'AaveRateOracle_USDT'"
   )
   .setAction(async (taskArgs, hre) => {
-    let rateOracle;
-    if (isAddress(taskArgs.rateOracle)) {
-      rateOracle = (await hre.ethers.getContractAt(
-        "BaseRateOracle",
-        taskArgs.rateOracle
-      )) as BaseRateOracle;
-    } else {
-      rateOracle = (await hre.ethers.getContract(
-        taskArgs.rateOracle
-      )) as BaseRateOracle;
-    }
+    const rateOracle = await getRateOracle(hre, taskArgs.rateOracle);
     // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
 
     const oracleVars = await rateOracle.oracleVars();

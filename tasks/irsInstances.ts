@@ -4,9 +4,9 @@ import {
   getMaxDurationOfIrsInSeconds,
 } from "../deployConfig/config";
 import { toBn } from "../test/helpers/toBn";
-import { IRateOracle, MarginEngine, VAMM, Factory } from "../typechain";
+import { MarginEngine, VAMM, Factory } from "../typechain";
 import { utils } from "ethers";
-import { isAddress } from "ethers/lib/utils";
+import { getRateOracle } from "./helpers";
 
 task(
   "createIrsInstance",
@@ -29,17 +29,7 @@ task(
     types.int
   )
   .setAction(async (taskArgs, hre) => {
-    let rateOracle;
-    if (isAddress(taskArgs.rateOracle)) {
-      rateOracle = (await hre.ethers.getContractAt(
-        "BaseRateOracle",
-        taskArgs.rateOracle
-      )) as IRateOracle;
-    } else {
-      rateOracle = (await hre.ethers.getContract(
-        taskArgs.rateOracle
-      )) as IRateOracle;
-    }
+    const rateOracle = await getRateOracle(hre, taskArgs.rateOracle);
     const underlyingTokenAddress = await rateOracle.underlying();
     const underlyingToken = await hre.ethers.getContractAt(
       "IERC20Minimal",
