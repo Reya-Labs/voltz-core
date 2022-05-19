@@ -17,28 +17,64 @@ import "hardhat-deploy";
 
 dotenv.config();
 
+let someTasksNotImported = false;
+
+interface TypeScriptError {
+  diagnosticText: string;
+  diagnosticCodes: number[];
+}
 // We can't import some tasks unless we've already built the solidity code and generated types with typechain
 // Luckily we don't need these tasks, and can ignore them, if types are missing
-const loadModuleIgnoreErrors = async (modulePath: string) => {
+const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
   try {
     return await import(modulePath);
   } catch (e) {
-    // Ignore
-    // console.log(`Could not load task from ${modulePath}: ${JSON.stringify(e)}`);
+    // if (typeof e == "object" && e.diagnosticText) {
+    //   console.log("has diagnostictext");
+    // }
+    if (
+      typeof e == "object" &&
+      e &&
+      "diagnosticText" in e &&
+      "diagnosticCodes" in e
+    ) {
+      // console.log("has diagnosticText:", e.diagnoticText);
+      let msg = (e as TypeScriptError).diagnosticText;
+      if (msg.includes("TS2307") && msg.includes("typechain")) {
+        // console.log( `Could not load task from ${modulePath}: ${JSON.stringify(e)}` );
+        // Most likely cause of this error is that the contracts have not been built yet. Ignore import to allow build to go ahead!
+        if (!someTasksNotImported) {
+          someTasksNotImported = true;
+          console.log(
+            "Some tasks could not be imported because contract types are not present"
+          );
+        }
+      } else {
+        console.log(
+          `Failure compiling task ${modulePath}: ${JSON.stringify(e)}`
+        );
+        // throw e;
+      }
+    } else {
+      console.log(
+        `Could not load task from ${modulePath}: ${JSON.stringify(e)}`
+      );
+      throw e;
+    }
   }
 };
 
-loadModuleIgnoreErrors("./tasks/createIrsInstance");
-loadModuleIgnoreErrors("./tasks/listIrsInstances");
-loadModuleIgnoreErrors("./tasks/mintTestTokens");
-loadModuleIgnoreErrors("./tasks/mintLiquidity");
-loadModuleIgnoreErrors("./tasks/updatePositionMargin");
-loadModuleIgnoreErrors("./tasks/increaseObservationCardinalityNext");
-loadModuleIgnoreErrors("./tasks/advanceTimeAndBlock");
-loadModuleIgnoreErrors("./tasks/updateAPYFor15Days");
-loadModuleIgnoreErrors("./tasks/rateOracle");
-loadModuleIgnoreErrors("./tasks/setParameters");
-loadModuleIgnoreErrors("./tasks/setPeriphery");
+loadModuleIfContractsAreBuilt("./tasks/createIrsInstance");
+loadModuleIfContractsAreBuilt("./tasks/listIrsInstances");
+loadModuleIfContractsAreBuilt("./tasks/mintTestTokens");
+loadModuleIfContractsAreBuilt("./tasks/mintLiquidity");
+loadModuleIfContractsAreBuilt("./tasks/updatePositionMargin");
+loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
+loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
+loadModuleIfContractsAreBuilt("./tasks/updateAPYFor15Days");
+loadModuleIfContractsAreBuilt("./tasks/rateOracle");
+loadModuleIfContractsAreBuilt("./tasks/setParameters");
+loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html

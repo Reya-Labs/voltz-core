@@ -37,7 +37,7 @@ task("updateAPYFor15Days", "updateAPYFor15Days").setAction(async (_, hre) => {
   )) as MarginEngine;
 
   await marginEngine.setCacheMaxAgeInSeconds(BigNumber.from(86400));
-  await marginEngine.setSecondsAgo(BigNumber.from(86400 * 7));
+  await marginEngine.setLookbackWindowInSeconds(BigNumber.from(86400 * 7));
 
   await marginEngine.getHistoricalApy();
   console.log(
