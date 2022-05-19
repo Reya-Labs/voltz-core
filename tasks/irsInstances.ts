@@ -4,9 +4,90 @@ import {
   getMaxDurationOfIrsInSeconds,
 } from "../deployConfig/config";
 import { toBn } from "../test/helpers/toBn";
-import { MarginEngine, VAMM, Factory } from "../typechain";
+import {
+  MarginEngine,
+  VAMM,
+  Factory,
+  IMarginEngine,
+  IVAMM,
+} from "../typechain";
 import { utils } from "ethers";
-import { getRateOracle } from "./helpers";
+import {
+  getIRSByMarginEngineAddress,
+  getRateOracleByNameOrAddress,
+} from "./helpers";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { ConfigDefaults } from "../deployConfig/types";
+
+async function configureIrs(
+  hre: HardhatRuntimeEnvironment,
+  marginEngine: IMarginEngine,
+  vamm: IVAMM,
+  config: ConfigDefaults
+) {
+  // Set the config for our IRS instance
+  // TODO: allow values to be overridden with task parameters, as required
+  console.log(`Configuring IRS...`);
+
+  let trx = await marginEngine.setMarginCalculatorParameters(
+    config.marginEngineCalculatorParameters,
+    { gasLimit: 10000000 }
+  );
+  await trx.wait();
+  trx = await marginEngine.setCacheMaxAgeInSeconds(
+    config.marginEngineCacheMaxAgeInSeconds,
+    { gasLimit: 10000000 }
+  );
+  await trx.wait();
+  trx = await marginEngine.setLookbackWindowInSeconds(
+    config.marginEngineLookbackWindowInSeconds,
+    { gasLimit: 10000000 }
+  );
+  await trx.wait();
+  trx = await marginEngine.setLiquidatorReward(
+    config.marginEngineLiquidatorRewardWad,
+    { gasLimit: 10000000 }
+  );
+  await trx.wait();
+
+  const currentVammVars = await vamm.vammVars();
+  const currentFeeProtocol = currentVammVars.feeProtocol;
+  if (currentFeeProtocol === 0) {
+    // Fee protocol can only be set if it has never been set
+    trx = await vamm.setFeeProtocol(config.vammFeeProtocol, {
+      gasLimit: 10000000,
+    });
+    await trx.wait();
+  }
+
+  const currentFeeWad = await vamm.feeWad();
+  if (currentFeeWad.toString() === "0") {
+    // Fee  can only be set if it has never been set
+    trx = await vamm.setFee(config.vammFeeWad, {
+      gasLimit: 10000000,
+    });
+    await trx.wait();
+  }
+
+  console.log(`IRS configured.`);
+
+  try {
+    await marginEngine.getHistoricalApy();
+    const historicalApy = await marginEngine.getHistoricalApyReadOnly();
+    console.log(
+      `Margin Engine's historical apy: ${historicalApy} (${utils.formatEther(
+        historicalApy
+      )})`
+    );
+  } catch (e) {
+    console.error(
+      `WARNING: Could not get historical APY; misconfigured window or uninitialized rate oracle?`
+    );
+    console.log(
+      `Lookback window = ${await marginEngine.lookbackWindowInSeconds()}s`
+    );
+  }
+}
 
 task(
   "createIrsInstance",
@@ -29,7 +110,10 @@ task(
     types.int
   )
   .setAction(async (taskArgs, hre) => {
-    const rateOracle = await getRateOracle(hre, taskArgs.rateOracle);
+    const rateOracle = await getRateOracleByNameOrAddress(
+      hre,
+      taskArgs.rateOracle
+    );
     const underlyingTokenAddress = await rateOracle.underlying();
     const underlyingToken = await hre.ethers.getContractAt(
       "IERC20Minimal",
@@ -101,58 +185,32 @@ task(
         vammAddress
       )) as VAMM;
 
-      // Set the config for our IRS instance
-      // TODO: allow values to be overridden with task parameters, as required
-      console.log(`Configuring IRS...`);
-
-      const configDefaults = getConfigDefaults(hre.network.name);
-      let trx = await marginEngine.setMarginCalculatorParameters(
-        configDefaults.marginEngineCalculatorParameters,
-        { gasLimit: 10000000 }
+      await configureIrs(
+        hre,
+        marginEngine,
+        vamm,
+        getConfigDefaults(hre.network.name)
       );
-      await trx.wait();
-      trx = await marginEngine.setCacheMaxAgeInSeconds(
-        configDefaults.marginEngineCacheMaxAgeInSeconds,
-        { gasLimit: 10000000 }
-      );
-      await trx.wait();
-      trx = await marginEngine.setLookbackWindowInSeconds(
-        configDefaults.marginEngineLookbackWindowInSeconds,
-        { gasLimit: 10000000 }
-      );
-      await trx.wait();
-      trx = await marginEngine.setLiquidatorReward(
-        configDefaults.marginEngineLiquidatorRewardWad,
-        { gasLimit: 10000000 }
-      );
-      await trx.wait();
-      trx = await vamm.setFeeProtocol(configDefaults.vammFeeProtocol, {
-        gasLimit: 10000000,
-      });
-      await trx.wait();
-      trx = await vamm.setFee(configDefaults.vammFeeWad, {
-        gasLimit: 10000000,
-      });
-      await trx.wait();
-      console.log(`IRS configured.`);
-
-      try {
-        await marginEngine.getHistoricalApy();
-        const historicalApy = await marginEngine.getHistoricalApyReadOnly();
-        console.log(
-          `Margin Engine's historical apy: ${historicalApy} (${utils.formatEther(
-            historicalApy
-          )})`
-        );
-      } catch (e) {
-        console.error(
-          `WARNING: Could not get historical APY; misconfigured window or uninitialized rate oracle?`
-        );
-        console.log(
-          `Lookback window = ${await marginEngine.lookbackWindowInSeconds()}s`
-        );
-      }
     }
+  });
+
+task(
+  "resetIrsConfigToDefault",
+  "Resets the configuration of a Margin Engine and its VAMM to the configured defaults"
+)
+  .addParam("marginEngine", "The address of the margin engine")
+  .setAction(async (taskArgs, hre) => {
+    const { marginEngine, vamm } = await getIRSByMarginEngineAddress(
+      hre,
+      taskArgs.marginEngine
+    );
+
+    await configureIrs(
+      hre,
+      marginEngine,
+      vamm,
+      getConfigDefaults(hre.network.name)
+    );
   });
 
 task(
