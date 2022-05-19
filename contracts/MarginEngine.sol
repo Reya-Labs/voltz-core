@@ -221,6 +221,10 @@ contract MarginEngine is
         );
 
         _secondsAgo = _newSecondsAgo;
+
+        // Cache invalidated
+        _refreshHistoricalApyCache();
+
         emit HistoricalApyWindowSetting(_secondsAgo);
     }
 
@@ -477,8 +481,7 @@ contract MarginEngine is
         return cachedHistoricalApyWad;
     }
 
-    /// @notice Computes the historical APY value of the RateOracle
-    /// @dev The lookback window used by this function is determined by the _secondsAgo state variable
+    /// @inheritdoc IMarginEngine
     function getHistoricalApyReadOnly() public view returns (uint256) {
         if (
             block.timestamp - cachedHistoricalApyWadRefreshTimestamp >
