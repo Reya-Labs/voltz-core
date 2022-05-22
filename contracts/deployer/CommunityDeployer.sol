@@ -13,14 +13,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 /// @notice
 // we are unable to deploy both the master vamm and the master margin engine in this contract since in that scenario it would
 // exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
-// to the community deployer as constants
-
-
-// todo: adjust the webflow ui
-// todo: investigate https://github.com/Uniswap/merkle-distributor/tree/master/scripts
-// todo: do we want to check if you still hold the nft after the snapshot?
-// todo: where do I get the index from?
-// todo: verify with etherscan
+// to the community deployer
+// verify with etherscan
 
 contract CommunityDeployer {
     /// @notice Voting Period In Seconds, i.e. after 2 days elapse since the deployement of this contract, nft holders won't be able to vote
@@ -69,7 +63,7 @@ contract CommunityDeployer {
     mapping(uint256 => uint256) private votedBitMap;
 
     // This event is triggered whenever a call to cast a vote succeeds
-    event Voted(uint256 index, address account, uint256 numberOfVotes); // todo: write a unit test
+    event Voted(uint256 index, address account, uint256 numberOfVotes, bool yesVote);
 
     constructor(
         IVAMM _masterVAMM,
@@ -110,7 +104,7 @@ contract CommunityDeployer {
             "timelock is ongoing"
         );
         voltzFactory = new Factory(masterMarginEngine, masterVAMM);
-        Ownable(address(voltzFactory)).transferOwnership(ownerAddress); // todo: write a unit test
+        Ownable(address(voltzFactory)).transferOwnership(ownerAddress);
     }
 
     /// @notice Queue the deployment of the Voltz Factory
@@ -118,7 +112,7 @@ contract CommunityDeployer {
         require(block.timestamp > blockTimestampVotingEnd, "voting is ongoing");
         require(yesVoteCount >= quorumVotes, "quorum not reached");
         require(yesVoteCount > noVoteCount, "no >= yes");
-        require(isQueued == false, "already queued"); // todo: test this
+        require(isQueued == false, "already queued");
         isQueued = true;
         blockTimestampTimelockEnd =
             block.timestamp +
@@ -164,6 +158,6 @@ contract CommunityDeployer {
         }
 
         // emit an event
-        emit Voted(_index, msg.sender, _numberOfVotes);
+        emit Voted(_index, msg.sender, _numberOfVotes, _yesVote);
     }
 }

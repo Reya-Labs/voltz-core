@@ -64,7 +64,7 @@ describe("CommunityDeployer", () => {
         communityDeployer.connect(wallet).castVote(0, 100, true, proof0)
       )
         .to.emit(communityDeployer, "Voted")
-        .withArgs(0, wallet.address, 100);
+        .withArgs(0, wallet.address, 100, true);
 
       const proof1 = tree.getProof(1, other.address, BigNumber.from(101));
 
@@ -72,7 +72,7 @@ describe("CommunityDeployer", () => {
         communityDeployer.connect(other).castVote(1, 101, true, proof1)
       )
         .to.emit(communityDeployer, "Voted")
-        .withArgs(1, other.address, 101);
+        .withArgs(1, other.address, 101, true);
     });
 
     it("casts the vote", async () => {
@@ -197,11 +197,5 @@ describe("CommunityDeployer", () => {
       const masterVAMMAddress = await factory.masterVAMM();
       expect(masterVAMMAddress).to.eq(MASTER_VAMM_ADDRESS);
     });
-
-    // other unit tests include
-    // cannot vote for address other than proof
-    // cannot vote more than proof
-    // gas consumption test
-    // larger trees
   });
 });
