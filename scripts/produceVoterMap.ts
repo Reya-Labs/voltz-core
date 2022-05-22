@@ -1,12 +1,12 @@
-
-
 import fs from "fs";
-import { parseBalanceMap, MerkleDistributorInfo } from "../deployConfig/parse-balance-map";
-
+import {
+  parseBalanceMap,
+  MerkleDistributorInfo,
+} from "../deployConfig/parse-balance-map";
 
 const json = JSON.parse(
-    fs.readFileSync("deployConfig/nftSnapshot.json", { encoding: "utf8" })
-  );
+  fs.readFileSync("deployConfig/nftSnapshot.json", { encoding: "utf8" })
+);
 
 const merkleDistributorInfo: MerkleDistributorInfo = parseBalanceMap(json);
 
@@ -14,9 +14,12 @@ const voters = merkleDistributorInfo.claims;
 
 const votersJSON = JSON.stringify(voters);
 
-fs.writeFile('scripts/voters.json', votersJSON, 'utf8', (err) => {
-    if (err) {  console.error(err);  return; };
-    console.log("File has been created");
+fs.writeFile("scripts/voters.json", votersJSON, "utf8", (err) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+  console.log("File has been created");
 });
 
 // get claim for a particular address

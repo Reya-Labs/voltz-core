@@ -12,7 +12,6 @@ const MASTER_MARGIN_ENGINE_ADDRESS =
   "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462"; // dummy value
 const QUORUM_VOTES = 1;
 
-
 const { provider } = waffle;
 
 describe("CommunityDeployer", () => {

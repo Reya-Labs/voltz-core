@@ -17,7 +17,6 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 // verify with etherscan
 
 contract CommunityDeployer {
-
     /// @notice Timelock Period In Seconds, once the deployment is queued, 2 days need to pass in order to make deployment of the Voltz Factory possible
     uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 2 days;
 
@@ -61,7 +60,12 @@ contract CommunityDeployer {
     mapping(uint256 => uint256) private votedBitMap;
 
     // This event is triggered whenever a call to cast a vote succeeds
-    event Voted(uint256 index, address account, uint256 numberOfVotes, bool yesVote);
+    event Voted(
+        uint256 index,
+        address account,
+        uint256 numberOfVotes,
+        bool yesVote
+    );
 
     constructor(
         IVAMM _masterVAMM,

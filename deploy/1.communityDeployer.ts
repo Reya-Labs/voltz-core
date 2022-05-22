@@ -8,6 +8,7 @@ import fs from "fs";
 
 const QUORUM_VOTES = 185;
 const MULTISIG_ADDRESS = "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0";
+const BLOCK_TIMESTAMP_VOTING_END = 1653469200; // Wednesday, 25 May 2022 09:00:00
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   try {
@@ -42,6 +43,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         QUORUM_VOTES,
         MULTISIG_ADDRESS,
         merkleDistributorInfo.merkleRoot,
+        BLOCK_TIMESTAMP_VOTING_END,
       ],
     });
 
