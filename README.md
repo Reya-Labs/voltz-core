@@ -13,6 +13,10 @@ We would love to see how you can build and improve upon what we've built here at
 ## Community Deployment
 
 Community Deployer Address Kovan: 0x9ff64338E09F46708Af86d72Dc9F0E226B07a279
+Community Deployer Address Mainnet: 0xFa9DDF4569206625370D2A8546f42c1CC924063c
+
+Master Margin Engine Address Mainnet: 0xcc3b4F054477c10c8c9ba1143D70251088C24bEa
+Master VAMM Address Mainnet: 0xdBB86A7982f183ee0C52Fce584e32C728ACADe98
 
 ## Active LP Optimization
 

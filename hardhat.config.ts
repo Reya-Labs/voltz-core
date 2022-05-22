@@ -78,6 +78,10 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       url: `${process.env.MAINNET_URL}`,
+      chainId: 1,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
     },
     // ropsten: {
     //   url: `${process.env.ROPSTEN_URL}`,
@@ -91,6 +95,7 @@ const config: HardhatUserConfig = {
     // },
     kovan: {
       url: `${process.env.KOVAN_URL}`,
+      chainId: 42,
       // gasPrice: 1,
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
