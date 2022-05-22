@@ -1,7 +1,7 @@
 import { expect } from "../shared/expect";
-import { ethers } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { CommunityDeployer } from "../../typechain/CommunityDeployer";
-import { advanceTimeAndBlock } from "../helpers/time";
+import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 import { BigNumber, Wallet } from "ethers";
 import { Factory } from "../../typechain";
 import BalanceTree from "./balance-tree";
@@ -11,6 +11,9 @@ const MASTER_VAMM_ADDRESS = "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462"; // dum
 const MASTER_MARGIN_ENGINE_ADDRESS =
   "0x067232D22d5bb8DC7cDaBa5A909ac8b089539462"; // dummy value
 const QUORUM_VOTES = 1;
+
+
+const { provider } = waffle;
 
 describe("CommunityDeployer", () => {
   // below tests work under the assumption that the quorum is 1
@@ -38,12 +41,16 @@ describe("CommunityDeployer", () => {
         "CommunityDeployer"
       );
 
+      const currentTimestamp = await getCurrentTimestamp(provider);
+      const blockTimestampVotingEnd = currentTimestamp + 172800;
+
       communityDeployer = (await communityDeployerFactory.deploy(
         MASTER_VAMM_ADDRESS,
         MASTER_MARGIN_ENGINE_ADDRESS,
         QUORUM_VOTES,
         wallet.address,
-        tree.getHexRoot()
+        tree.getHexRoot(),
+        blockTimestampVotingEnd
       )) as CommunityDeployer;
     });
 
