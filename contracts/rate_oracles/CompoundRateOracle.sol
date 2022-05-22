@@ -38,7 +38,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
         // Decimals affects how the rates are encoded in compound
         scaleDownFactor = decimals >= 17 ? 10**(decimals - 17) : 0;
-        scaleUpFactor  = decimals < 17 ? 10**(17 - decimals) : 0;
+        scaleUpFactor = decimals < 17 ? 10**(17 - decimals) : 0;
 
         // If we're using even half the max buffer size, something has gone wrong
         require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
@@ -73,7 +73,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         // So: if Underlying Token Decimals == 17, no scaling is required
         //     if Underlying Token Decimals > 17, we scale down by a factor of 10^difference
         //     if Underlying Token Decimals < 17, we scale up by a factor of 10^difference
-        if (decimals >= 17) {   
+        if (decimals >= 17) {
             resultRay = exchangeRateStored / scaleDownFactor;
         } else {
             resultRay = exchangeRateStored * scaleUpFactor;

@@ -70,6 +70,10 @@ const config: HardhatUserConfig = {
       //   url: `${process.env.KOVAN_URL}`,
       //   blockNumber: 31458273,
       // },
+      // forking: {
+      //   url: `${process.env.MAINNET_URL}`,
+      //   blockNumber: 14774005,
+      // },
       allowUnlimitedContractSize: true,
     },
     mainnet: {
@@ -80,6 +84,7 @@ const config: HardhatUserConfig = {
     // },
     // rinkeby: {
     //   url: `${process.env.RINKEBY_URL}`,
+    //   accounts: [`${process.env.RINKEBY_PRIVATE_KEY}`],
     // },
     // goerli: {
     //   url: `${process.env.GOERLI_URL}`,
