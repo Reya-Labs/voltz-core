@@ -22,6 +22,14 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of compound is 2
 
+    // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(10 + Underlying Token Decimals)
+    // source: https://compound.finance/docs/ctokens#exchange-rate and https://compound.finance/docs#protocol-math
+    // We want the same number scaled by 10^27 (ray)
+    // So: if Underlying Token Decimals == 17, no scaling is required
+    //     if Underlying Token Decimals > 17, we scale down by a factor of 10^difference
+    //     if Underlying Token Decimals < 17, we scale up by a factor of 10^difference
+    uint8 constant DECIMALS_SCALING_THRESHOLD = 17;
+
     constructor(
         ICToken _ctoken,
         IERC20Minimal underlying,
@@ -37,8 +45,8 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         decimals = _decimals;
 
         // Decimals affects how the rates are encoded in compound
-        scaleDownFactor = decimals >= 17 ? 10**(decimals - 17) : 0;
-        scaleUpFactor = decimals < 17 ? 10**(17 - decimals) : 0;
+        scaleDownFactor = decimals >= DECIMALS_SCALING_THRESHOLD ? 10**(decimals - DECIMALS_SCALING_THRESHOLD) : 0;
+        scaleUpFactor = decimals < DECIMALS_SCALING_THRESHOLD ? 10**(DECIMALS_SCALING_THRESHOLD - decimals) : 0;
 
         // If we're using even half the max buffer size, something has gone wrong
         require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
@@ -73,7 +81,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         // So: if Underlying Token Decimals == 17, no scaling is required
         //     if Underlying Token Decimals > 17, we scale down by a factor of 10^difference
         //     if Underlying Token Decimals < 17, we scale up by a factor of 10^difference
-        if (decimals >= 17) {
+        if (decimals >= DECIMALS_SCALING_THRESHOLD) {
             resultRay = exchangeRateStored / scaleDownFactor;
         } else {
             resultRay = exchangeRateStored * scaleUpFactor;
