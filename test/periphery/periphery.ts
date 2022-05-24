@@ -125,7 +125,7 @@ describe("Periphery", async () => {
         .setLPMarginCap(marginEngineTest.address, toBn("10"))
     ).to.be.revertedWith("only vamm owner");
   });
-
+  
   it("check can't mint beyond the margin cap", async () => {
     await periphery.setLPMarginCap(vammTest.address, toBn("10"));
 
