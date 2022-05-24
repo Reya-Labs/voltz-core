@@ -110,6 +110,7 @@ contract Factory is IFactory, Ownable {
     IVAMM vamm = IVAMM(address(new VoltzERC1967Proxy(address(masterVAMM), "")));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
     vamm.initialize(marginEngine, _tickSpacing);
+    console.log("vamm in deploy irs:", address(marginEngine), address(vamm));
     marginEngine.setVAMM(vamm);
 
     IRateOracle r = IRateOracle(_rateOracle);

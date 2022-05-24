@@ -6,6 +6,8 @@ import "contracts/test/Actor.sol";
 import "contracts/test/TestMarginEngine.sol";
 import "contracts/test/TestVAMM.sol";
 import "contracts/test/TestAaveFCM.sol";
+import "contracts/test/MockAaveLendingPool.sol";
+import "contracts/test/MockCToken.sol";
 import "contracts/utils/Printer.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
@@ -142,6 +144,8 @@ contract E2ESetup is CustomErrors {
     address public FCMAddress;
     address public rateOracleAddress;
     address public peripheryAddress;
+    address public aaveLendingPool;
+    address public cToken;
 
     function setPeripheryAddress(address _peripheryAddress) public {
         console.log("set _peripheryAddress", _peripheryAddress);
@@ -162,6 +166,14 @@ contract E2ESetup is CustomErrors {
 
     function setRateOracleAddress(address _rateOracleAddress) public {
         rateOracleAddress = _rateOracleAddress;
+    }
+
+    function setAaveLendingPool(address _aaveLendingPool) public {
+        aaveLendingPool = _aaveLendingPool;
+    }
+
+    function setCToken(address _cToken) public {
+        cToken = _cToken;
     }
 
     function initiateFullyCollateralisedFixedTakerSwap(
@@ -422,5 +434,28 @@ contract E2ESetup is CustomErrors {
         }
 
         return snapshots;
+    }
+
+    function setNewRate(uint256 rate) public {
+        uint8 yieldBearingProtocolID = IRateOracle(rateOracleAddress)
+            .UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
+
+        IERC20Minimal underlyingToken = IRateOracle(rateOracleAddress)
+            .underlying();
+
+        if (yieldBearingProtocolID == 1) {
+            // Aave
+            MockAaveLendingPool(aaveLendingPool).setReserveNormalizedIncome(
+                underlyingToken,
+                rate
+            );
+        }
+
+        if (yieldBearingProtocolID == 2) {
+            // Compound
+            MockCToken(cToken).setExchangeRate(rate);
+        }
+
+        IRateOracle(rateOracleAddress).writeOracleEntry();
     }
 }

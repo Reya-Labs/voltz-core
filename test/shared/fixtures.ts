@@ -11,6 +11,8 @@ import {
   E2ESetup,
   ERC20Mock,
   FixedAndVariableMathTest,
+  IRateOracle,
+  MarginEngine,
   MockAaveLendingPool,
   MockAToken,
   MockCToken,
@@ -18,6 +20,7 @@ import {
   TestActiveLPManagementStrategy,
   TestLiquidatorBot,
   TickMathTest,
+  VAMM,
 } from "../../typechain";
 
 import { consts } from "../helpers/constants";

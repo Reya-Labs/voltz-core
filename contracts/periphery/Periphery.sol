@@ -105,6 +105,8 @@ contract Periphery is IPeriphery {
 
         IVAMM vamm = params.marginEngine.vamm();
 
+        console.log("margin engine:", address(params.marginEngine));
+        console.log("vamm:", address(vamm));
         IVAMM.VAMMVars memory _v = vamm.vammVars();
         bool vammUnlocked = _v.sqrtPriceX96 != 0;
 

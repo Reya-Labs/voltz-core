@@ -8,12 +8,7 @@ fuzz:
     
     build_directory: artifacts
     
-    deployed_contract_address: "0xE451980132E65465d0a498c53f0b5227326Dd73F"
-    
-    additional_contracts_addresses:
-        - "0x75537828f2ce51be7289709686A69CbFDbB714F1"
-        - "0x5392A33F7F677f59e833FEBF4016cDDD88fF9E67"
-        - "0x59b670e9fA9D0A427751Af201D676719a970857b"
+    deployed_contract_address: "0x4A679253410272dd5232B3Ff7cF5dbB88f295319"
 
     number_of_cores: 4
 
@@ -24,6 +19,7 @@ fuzz:
     rpc_url: "http://localhost:8545"
 
     targets:
+        - "contracts/test/E2ESetup.sol"
         - "contracts/VAMM.sol"
         - "contracts/MarginEngine.sol"
         - "contracts/CompoundFCM.sol"
