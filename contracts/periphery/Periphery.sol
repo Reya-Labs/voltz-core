@@ -133,6 +133,18 @@ contract Periphery is IPeriphery {
                     )
                 )
             ];
+
+            /// @dev update snapshot with the most up to date position margin
+            positionMarginSnapshots[
+                keccak256(
+                    abi.encodePacked(
+                        msg.sender,
+                        params.tickLower,
+                        params.tickUpper
+                    )
+                )
+            ] = _position.margin;
+
             checkLPMarginCap(
                 vamm,
                 params.marginDelta,
