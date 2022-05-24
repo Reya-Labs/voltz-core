@@ -183,12 +183,14 @@ describe("Periphery", async () => {
       marginDelta: 0,
     });
 
-    await marginEngineTest.connect(wallet).updatePositionMargin(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING,
-      toBn("11")
-    );
+    await marginEngineTest
+      .connect(wallet)
+      .updatePositionMargin(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("11")
+      );
 
     await expect(
       periphery.connect(wallet).mintOrBurn({
@@ -217,14 +219,16 @@ describe("Periphery", async () => {
       marginDelta: toBn("9"),
     });
 
-
-    await expect(marginEngineTest.connect(wallet).updatePositionMargin(
-      wallet.address,
-      -TICK_SPACING,
-      TICK_SPACING,
-      toBn("2")
-    )).to.be.revertedWith("periphery only");
-
+    await expect(
+      marginEngineTest
+        .connect(wallet)
+        .updatePositionMargin(
+          wallet.address,
+          -TICK_SPACING,
+          TICK_SPACING,
+          toBn("2")
+        )
+    ).to.be.revertedWith("periphery only");
   });
 
   it("check can't mint beyond the margin cap", async () => {

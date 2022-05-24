@@ -14,7 +14,6 @@ import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "hardhat/console.sol";
 
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
@@ -50,14 +49,6 @@ contract Periphery is IPeriphery {
         int256 positionMarginSnapshot
     ) internal {
         if (positionMarginSnapshot != currentPositionMargin) {
-            console.log(
-                "currentPositionMargin",
-                currentPositionMargin.toUint256()
-            );
-            console.log(
-                "positionMarginSnapshot",
-                positionMarginSnapshot.toUint256()
-            );
             int256 unaccountedMarginDelta = currentPositionMargin -
                 positionMarginSnapshot;
             lpMarginCumulatives[_vamm] += unaccountedMarginDelta;
@@ -69,12 +60,6 @@ contract Periphery is IPeriphery {
 
         if (_lpMarginCap > 0) {
             /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
-
-            console.log(
-                "lpMarginCumulatives[_vamm]",
-                lpMarginCumulatives[_vamm].toUint256()
-            );
-            console.log("_lpMarginCap", _lpMarginCap.toUint256());
 
             require(lpMarginCumulatives[_vamm] < _lpMarginCap, "lp cap limit");
         }
@@ -138,19 +123,6 @@ contract Periphery is IPeriphery {
                 abi.encodePacked(msg.sender, params.tickLower, params.tickUpper)
             )
         ];
-
-        console.log(
-            "position snapshot got updated ",
-            positionMarginSnapshots[
-                keccak256(
-                    abi.encodePacked(
-                        msg.sender,
-                        params.tickLower,
-                        params.tickUpper
-                    )
-                )
-            ].toUint256()
-        );
 
         checkLPMarginCap(
             vamm,
