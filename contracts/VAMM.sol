@@ -15,14 +15,13 @@ import "./interfaces/IFactory.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./utils/FixedPoint128.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "./VoltzPausable.sol";
 
 
-contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+contract VAMM is VAMMStorage, IVAMM, Initializable, VoltzPausable, UUPSUpgradeable {
   using SafeCast for uint256;
   using SafeCast for int256;
   using Tick for mapping(int24 => Tick.Info);

@@ -15,13 +15,12 @@ import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./utils/WadRayMath.sol";
 import "./utils/Printer.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "./VoltzPausable.sol";
 
-contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, VoltzPausable, UUPSUpgradeable {
 
   using WadRayMath for uint256;
   using SafeCast for uint256;
@@ -91,7 +90,7 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
   /// @notice Initiate a Fully Collateralised Fixed Taker Swap
   /// @param notional Notional that cover by a fully collateralised fixed taker interest rate swap
   /// @param sqrtPriceLimitX96 The binary fixed point math representation of the sqrtPriceLimit beyond which the fixed taker swap will not be executed with the VAMM
-  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override returns 
+  function initiateFullyCollateralisedFixedTakerSwap(uint256 notional, uint160 sqrtPriceLimitX96) external override whenNotPaused returns 
     (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) {
 
     require(notional!=0, "notional = 0");
@@ -170,7 +169,7 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
   /// @notice Unwind Fully Collateralised Fixed Taker Swap
   /// @param notionalToUnwind The amount of notional to unwind (stop securing with a fixed rate)
   /// @param sqrtPriceLimitX96 The sqrt price limit (binary fixed point notation) beyond which the unwind cannot progress
-  function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override returns 
+  function unwindFullyCollateralisedFixedTakerSwap(uint256 notionalToUnwind, uint160 sqrtPriceLimitX96) external override whenNotPaused returns 
     (int256 fixedTokenDelta, int256 variableTokenDelta, uint256 cumulativeFeeIncurred, int256 fixedTokenDeltaUnbalanced) {
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
@@ -315,7 +314,7 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, O
   /// @dev if the settlement cashflow of the trader is positive, then the settleTrader() function invokes the transferMarginToFCMTrader function of the MarginEngine which transfers the settlement cashflow the trader in terms of the underlying tokens
   /// @dev if settlement cashflow of the trader is negative, we need to update trader's margin in terms of scaled yield bearing tokens to account the settlement casflow
   /// @dev once settlement cashflows are accounted for, we safeTransfer the scaled yield bearing tokens in the margin account of the trader back to their wallet address
-  function settleTrader() external override onlyAfterMaturity returns (int256 traderSettlementCashflow) {
+  function settleTrader() external override onlyAfterMaturity whenNotPaused returns (int256 traderSettlementCashflow) {
 
     TraderWithYieldBearingAssets.Info storage trader = traders[msg.sender];
 
