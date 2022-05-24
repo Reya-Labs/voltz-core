@@ -118,13 +118,107 @@ describe("Periphery", async () => {
       .withArgs(vammTest.address, toBn("10"));
   });
 
-  it("set lp notional reverts if invoked by a non-owner", async () => {
+  it("set lp margin reverts if invoked by a non-owner", async () => {
     await expect(
       periphery
         .connect(other)
         .setLPMarginCap(marginEngineTest.address, toBn("10"))
     ).to.be.revertedWith("only vamm owner");
   });
+
+  it("an lp deposits margin through margin engine, then tries to go over limit", async () => {
+    
+    await periphery.setLPMarginCap(vammTest.address, toBn("10"));
+
+    await marginEngineTest.connect(wallet).updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("11")
+    );
+
+    await expect(
+      periphery.connect(wallet).mintOrBurn({
+        marginEngine: marginEngineTest.address,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        notional: toBn("2"),
+        isMint: true,
+        marginDelta: 0,
+      })
+    ).to.be.revertedWith("lp cap limit");
+
+  });
+
+
+  it("an lp mints, burns, deposits, remints", async () => { 
+    
+    await periphery.setLPMarginCap(vammTest.address, toBn("10"));
+
+    await vammTest.setIsAlpha(true);
+
+    await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
+
+    await expect(vammTest.mint(
+      wallet.address,
+      -TICK_SPACING, 
+      TICK_SPACING,
+      2
+    )).to.be.revertedWith("periphery only");
+    
+    await periphery.connect(wallet).mintOrBurn({
+      marginEngine: marginEngineTest.address,
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      notional: toBn("2"),
+      isMint: true,
+      marginDelta: toBn("9"),
+    });
+
+
+    await expect(vammTest.burn(
+      wallet.address,
+      -TICK_SPACING, 
+      TICK_SPACING,
+      2
+    )).to.be.revertedWith("periphery only");
+
+    await periphery.connect(wallet).mintOrBurn({
+      marginEngine: marginEngineTest.address,
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      notional: toBn("2"),
+      isMint: false,
+      marginDelta: 0,
+    });
+
+    // await marginEngineTest.connect(wallet).updatePositionMargin(
+    //   wallet.address,
+    //   -TICK_SPACING,
+    //   TICK_SPACING,
+    //   toBn("11")
+    // );
+
+    // await expect(
+    //   periphery.connect(wallet).mintOrBurn({
+    //     marginEngine: marginEngineTest.address,
+    //     tickLower: -TICK_SPACING,
+    //     tickUpper: TICK_SPACING,
+    //     notional: toBn("2"),
+    //     isMint: true,
+    //     marginDelta: 0,
+    //   })
+    // ).to.be.revertedWith("lp cap limit");
+    
+  });
+
+  // it("an lp cannot deposit more margin via margin engine after minting via periphery", async () => {
+    
+  // })
+
+  // it("lp cannot mint via the vamm", async () => {
+
+  // })
   
   it("check can't mint beyond the margin cap", async () => {
     await periphery.setLPMarginCap(vammTest.address, toBn("10"));

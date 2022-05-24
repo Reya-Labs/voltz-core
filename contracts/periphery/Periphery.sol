@@ -9,12 +9,12 @@ import "../interfaces/IVAMM.sol";
 import "../interfaces/IPeriphery.sol";
 import "../utils/TickMath.sol";
 import "./peripheral_libraries/LiquidityAmounts.sol";
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "hardhat/console.sol";
 
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
@@ -50,6 +50,8 @@ contract Periphery is IPeriphery {
         int256 positionMarginSnapshot
     ) internal {
         if (positionMarginSnapshot != currentPositionMargin) {
+            console.log("currentPositionMargin", currentPositionMargin.toUint256());
+            console.log("positionMarginSnapshot", positionMarginSnapshot.toUint256());
             int256 unaccountedMarginDelta = currentPositionMargin -
                 positionMarginSnapshot;
             lpMarginCumulatives[_vamm] += unaccountedMarginDelta;
@@ -57,16 +59,18 @@ contract Periphery is IPeriphery {
 
         lpMarginCumulatives[_vamm] += _marginDelta;
 
-        if (_marginDelta > 0) {
-            int256 _lpMarginCap = lpMarginCaps[_vamm];
+        int256 _lpMarginCap = lpMarginCaps[_vamm];
 
-            if (_lpMarginCap > 0) {
-                /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
-                require(
-                    lpMarginCumulatives[_vamm] < _lpMarginCap,
-                    "lp cap limit"
-                );
-            }
+        if (_lpMarginCap > 0) {
+            /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
+
+            console.log("lpMarginCumulatives[_vamm]", lpMarginCumulatives[_vamm].toUint256());
+            console.log("_lpMarginCap", _lpMarginCap.toUint256());
+
+            require(
+                lpMarginCumulatives[_vamm] < _lpMarginCap,
+                "lp cap limit"
+            );
         }
     }
 
@@ -118,45 +122,37 @@ contract Periphery is IPeriphery {
 
         IVAMM vamm = params.marginEngine.vamm();
 
-        if (params.marginDelta != 0) {
-            Position.Info memory _position = params.marginEngine.getPosition(
-                msg.sender,
-                params.tickLower,
-                params.tickUpper
-            );
-            int256 positionMarginSnapshot = positionMarginSnapshots[
-                keccak256(
-                    abi.encodePacked(
-                        msg.sender,
-                        params.tickLower,
-                        params.tickUpper
-                    )
+        Position.Info memory _position = params.marginEngine.getPosition(
+            msg.sender,
+            params.tickLower,
+            params.tickUpper
+        );
+        int256 _positionMarginSnapshot = positionMarginSnapshots[
+            keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    params.tickLower,
+                    params.tickUpper
                 )
-            ];
+            )
+        ];
 
-            /// @dev update snapshot with the most up to date position margin
-            positionMarginSnapshots[
-                keccak256(
-                    abi.encodePacked(
-                        msg.sender,
-                        params.tickLower,
-                        params.tickUpper
-                    )
+        console.log("position snapshot got updated ", positionMarginSnapshots[
+            keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    params.tickLower,
+                    params.tickUpper
                 )
-            ] = _position.margin;
+            )
+        ].toUint256());
 
-            checkLPMarginCap(
-                vamm,
-                params.marginDelta,
-                _position.margin,
-                positionMarginSnapshot
-            );
-        }
-
-        // IVAMM _vamm,
-        // int256 _marginDelta,
-        // int256 currentPositionMargin,
-        // int256 positionMarginSnapshot
+        checkLPMarginCap(
+            vamm,
+            params.marginDelta,
+            _position.margin,
+            _positionMarginSnapshot
+        );
 
         IVAMM.VAMMVars memory _v = vamm.vammVars();
         bool vammUnlocked = _v.sqrtPriceX96 != 0;
@@ -184,6 +180,17 @@ contract Periphery is IPeriphery {
                 params.marginDelta
             );
         }
+
+        /// @dev update position margin snapshot with the most up to date position margin
+        positionMarginSnapshots[
+            keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    params.tickLower,
+                    params.tickUpper
+                )
+            )
+        ] = _position.margin + params.marginDelta;
 
         // compute the liquidity amount for the amount of notional (amount1) specified
 
