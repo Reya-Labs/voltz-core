@@ -112,9 +112,9 @@ describe("Periphery", async () => {
       .approve(periphery.address, BigNumber.from(10).pow(27));
   });
 
-  it("set lp notional cap works as expected with margin engine owner", async () => {
-    await expect(periphery.setLPNotionalCap(vammTest.address, toBn("10")))
-      .to.emit(periphery, "NotionalCap")
+  it("set lp margin cap works as expected with margin engine owner", async () => {
+    await expect(periphery.setLPMarginCap(vammTest.address, toBn("10")))
+      .to.emit(periphery, "MarginCap")
       .withArgs(vammTest.address, toBn("10"));
   });
 
@@ -122,12 +122,12 @@ describe("Periphery", async () => {
     await expect(
       periphery
         .connect(other)
-        .setLPNotionalCap(marginEngineTest.address, toBn("10"))
-    ).to.be.revertedWith("only me owner");
+        .setLPMarginCap(marginEngineTest.address, toBn("10"))
+    ).to.be.revertedWith("only vamm owner");
   });
 
-  it("check can't mint beyond the notional cap", async () => {
-    await periphery.setLPNotionalCap(vammTest.address, toBn("10"));
+  it("check can't mint beyond the margin cap", async () => {
+    await periphery.setLPMarginCap(vammTest.address, toBn("10"));
 
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,
@@ -135,7 +135,7 @@ describe("Periphery", async () => {
       tickUpper: TICK_SPACING,
       notional: toBn("9"),
       isMint: true,
-      marginDelta: toBn("10"),
+      marginDelta: toBn("9"),
     });
 
     await expect(
@@ -145,13 +145,13 @@ describe("Periphery", async () => {
         tickUpper: TICK_SPACING,
         notional: toBn("2"),
         isMint: true,
-        marginDelta: toBn("10"),
+        marginDelta: toBn("2"),
       })
     ).to.be.revertedWith("lp cap limit");
   });
 
   it("check can't mint beyond the notional cap", async () => {
-    await periphery.setLPNotionalCap(marginEngineTest.address, toBn("10"));
+    await periphery.setLPMarginCap(marginEngineTest.address, toBn("10"));
 
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,

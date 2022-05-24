@@ -204,7 +204,7 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
 
     /// @notice Sets the liquidator reward: proportion of liquidated position's margin paid as a reward to the liquidator
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external;
-    
+
     /// @notice Function that sets the _isAlpha state variable, if it is set to true the protocol is in the Alpha State
     /// @dev if the Margin Engine is at the alpha state, lp margin updates can only be done via the periphery which in turn takes care of margin caps for the LPs
     /// @dev this function can only be called by the owner of the VAMM
