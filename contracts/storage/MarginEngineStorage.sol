@@ -25,6 +25,7 @@ contract MarginEngineStorageV1 {
     IRateOracle internal _rateOracle;
     IMarginEngine.MarginCalculatorParameters
         internal marginCalculatorParameters;
+    bool internal _isAlpha;
 }
 
 contract MarginEngineStorage is MarginEngineStorageV1 {
