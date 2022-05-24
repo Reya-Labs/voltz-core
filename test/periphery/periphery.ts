@@ -183,32 +183,49 @@ describe("Periphery", async () => {
       marginDelta: 0,
     });
 
-    // await marginEngineTest.connect(wallet).updatePositionMargin(
-    //   wallet.address,
-    //   -TICK_SPACING,
-    //   TICK_SPACING,
-    //   toBn("11")
-    // );
+    await marginEngineTest.connect(wallet).updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("11")
+    );
 
-    // await expect(
-    //   periphery.connect(wallet).mintOrBurn({
-    //     marginEngine: marginEngineTest.address,
-    //     tickLower: -TICK_SPACING,
-    //     tickUpper: TICK_SPACING,
-    //     notional: toBn("2"),
-    //     isMint: true,
-    //     marginDelta: 0,
-    //   })
-    // ).to.be.revertedWith("lp cap limit");
+    await expect(
+      periphery.connect(wallet).mintOrBurn({
+        marginEngine: marginEngineTest.address,
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        notional: toBn("2"),
+        isMint: true,
+        marginDelta: 0,
+      })
+    ).to.be.revertedWith("lp cap limit");
   });
 
-  // it("an lp cannot deposit more margin via margin engine after minting via periphery", async () => {
+  it("an lp cannot deposit more margin via margin engine after minting via periphery", async () => {
+    await periphery.setLPMarginCap(vammTest.address, toBn("10"));
 
-  // })
+    await vammTest.setIsAlpha(true);
+    await marginEngineTest.setIsAlpha(true);
 
-  // it("lp cannot mint via the vamm", async () => {
+    await periphery.connect(wallet).mintOrBurn({
+      marginEngine: marginEngineTest.address,
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      notional: toBn("2"),
+      isMint: true,
+      marginDelta: toBn("9"),
+    });
 
-  // })
+
+    await expect(marginEngineTest.connect(wallet).updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("2")
+    )).to.be.revertedWith("periphery only");
+
+  });
 
   it("check can't mint beyond the margin cap", async () => {
     await periphery.setLPMarginCap(vammTest.address, toBn("10"));
