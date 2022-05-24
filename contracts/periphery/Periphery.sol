@@ -16,7 +16,6 @@ import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
 contract Periphery is IPeriphery {
@@ -34,7 +33,6 @@ contract Periphery is IPeriphery {
     /// @inheritdoc IPeriphery
     mapping(IVAMM => int256) public override lpMarginCumulatives;
 
-
     /// @dev alpha lp margin mapping
     mapping(bytes32 => int256) internal positionMarginSnapshots;
 
@@ -51,14 +49,14 @@ contract Periphery is IPeriphery {
         int256 currentPositionMargin,
         int256 positionMarginSnapshot
     ) internal {
-
         if (positionMarginSnapshot != currentPositionMargin) {
-            int256 unaccountedMarginDelta = currentPositionMargin - positionMarginSnapshot;
+            int256 unaccountedMarginDelta = currentPositionMargin -
+                positionMarginSnapshot;
             lpMarginCumulatives[_vamm] += unaccountedMarginDelta;
         }
 
         lpMarginCumulatives[_vamm] += _marginDelta;
-        
+
         if (_marginDelta > 0) {
             int256 _lpMarginCap = lpMarginCaps[_vamm];
 
@@ -70,7 +68,6 @@ contract Periphery is IPeriphery {
                 );
             }
         }
-
     }
 
     function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew)
@@ -92,13 +89,15 @@ contract Periphery is IPeriphery {
         IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
 
         if (_marginDelta > 0) {
-            
             _underlyingToken.safeTransferFrom(
                 msg.sender,
                 address(this),
                 _marginDelta.toUint256()
             );
-            _underlyingToken.approve(address(_marginEngine), _marginDelta.toUint256());
+            _underlyingToken.approve(
+                address(_marginEngine),
+                _marginDelta.toUint256()
+            );
         }
 
         _marginEngine.updatePositionMargin(
@@ -120,9 +119,26 @@ contract Periphery is IPeriphery {
         IVAMM vamm = params.marginEngine.vamm();
 
         if (params.marginDelta != 0) {
-            Position.Info memory _position = params.marginEngine.getPosition(msg.sender, params.tickLower, params.tickUpper);
-            int256 positionMarginSnapshot = positionMarginSnapshots[keccak256(abi.encodePacked(msg.sender, params.tickLower, params.tickUpper))];
-            checkLPMarginCap(vamm, params.marginDelta, _position.margin, positionMarginSnapshot);
+            Position.Info memory _position = params.marginEngine.getPosition(
+                msg.sender,
+                params.tickLower,
+                params.tickUpper
+            );
+            int256 positionMarginSnapshot = positionMarginSnapshots[
+                keccak256(
+                    abi.encodePacked(
+                        msg.sender,
+                        params.tickLower,
+                        params.tickUpper
+                    )
+                )
+            ];
+            checkLPMarginCap(
+                vamm,
+                params.marginDelta,
+                _position.margin,
+                positionMarginSnapshot
+            );
         }
 
         // IVAMM _vamm,
