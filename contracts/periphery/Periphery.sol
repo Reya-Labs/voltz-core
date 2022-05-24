@@ -60,7 +60,7 @@ contract Periphery is IPeriphery {
         lpMarginCumulatives[_vamm] += _marginDelta;
         
         if (_marginDelta > 0) {
-            uint256 _lpMarginCap = lpMarginCaps[_vamm];
+            int256 _lpMarginCap = lpMarginCaps[_vamm];
 
             if (_lpMarginCap > 0) {
                 /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
@@ -73,7 +73,7 @@ contract Periphery is IPeriphery {
 
     }
 
-    function setLPMarginCap(IVAMM _vamm, uint256 _lpMarginCapNew)
+    function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew)
         external
         vammOwnerOnly(_vamm)
     {
@@ -90,12 +90,17 @@ contract Periphery is IPeriphery {
         int256 _marginDelta
     ) internal {
         IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
-        _underlyingToken.safeTransferFrom(
-            msg.sender,
-            address(this),
-            _marginDelta
-        );
-        _underlyingToken.approve(address(_marginEngine), _marginDelta);
+
+        if (_marginDelta > 0) {
+            
+            _underlyingToken.safeTransferFrom(
+                msg.sender,
+                address(this),
+                _marginDelta.toUint256()
+            );
+            _underlyingToken.approve(address(_marginEngine), _marginDelta.toUint256());
+        }
+
         _marginEngine.updatePositionMargin(
             msg.sender,
             _tickLower,
@@ -117,8 +122,13 @@ contract Periphery is IPeriphery {
         if (params.marginDelta != 0) {
             Position.Info memory _position = params.marginEngine.getPosition(msg.sender, params.tickLower, params.tickUpper);
             int256 positionMarginSnapshot = positionMarginSnapshots[keccak256(abi.encodePacked(msg.sender, params.tickLower, params.tickUpper))];
-            checkLPMarginCap(vamm, params.marginDelta > 0, _position.margin, positionMarginSnapshot);
+            checkLPMarginCap(vamm, params.marginDelta, _position.margin, positionMarginSnapshot);
         }
+
+        // IVAMM _vamm,
+        // int256 _marginDelta,
+        // int256 currentPositionMargin,
+        // int256 positionMarginSnapshot
 
         IVAMM.VAMMVars memory _v = vamm.vammVars();
         bool vammUnlocked = _v.sqrtPriceX96 != 0;

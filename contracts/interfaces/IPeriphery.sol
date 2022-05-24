@@ -10,7 +10,7 @@ interface IPeriphery is CustomErrors {
     // events
 
     /// @dev emitted after new lp margin cap is set
-    event MarginCap(IVAMM _vamm, uint256 _lpMarginCapNew);
+    event MarginCap(IVAMM _vamm, int256 _lpMarginCapNew);
 
     // structs
 

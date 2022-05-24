@@ -76,7 +76,7 @@ contract TestActiveLPManagementStrategy is Ownable {
                     tickUpper: tickUpper,
                     notional: notionalToMint,
                     isMint: true,
-                    marginDelta: marginInactive
+                    marginDelta: marginInactive.toInt256()
                 })
             );
         }
@@ -93,7 +93,7 @@ contract TestActiveLPManagementStrategy is Ownable {
                 tickUpper: tickUpper,
                 notional: notionalToMint,
                 isMint: true,
-                marginDelta: _marginDelta
+                marginDelta: _marginDelta.toInt256()
             })
         );
     }
