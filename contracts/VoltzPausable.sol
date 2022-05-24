@@ -17,6 +17,12 @@ contract VoltzPausable is PausableUpgradeable, AccessControlUpgradeable, Ownable
         __Ownable_init();
     }
 
+    // TODO: function to let those with VOLTZ_PAUSER role pause the contract
+    // TODO: functions to let the Owner grant & revoke Pauser rights
+    // TODO: Make all pausable contract inherit this
+    // TODO: reduce contract sizes (e.g. MarginEngine) back to aceptable levels
+    // TODO: write tests!
+
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
