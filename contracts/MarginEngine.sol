@@ -342,6 +342,20 @@ contract MarginEngine is
     }
 
     /// @inheritdoc IMarginEngine
+    function isAlpha() external view override returns (bool) {
+        return _isAlpha;
+    }
+
+    /// @inheritdoc IMarginEngine
+    function setIsAlpha(bool __isAlpha) external override onlyOwner {
+
+        require(_isAlpha != __isAlpha, "alpha state already set");
+        _isAlpha = __isAlpha;
+        emit IsAlpha(_isAlpha);
+
+    }
+
+    /// @inheritdoc IMarginEngine
     function updatePositionMargin(
         address _owner,
         int24 _tickLower,
@@ -357,6 +371,12 @@ contract MarginEngine is
             _tickLower,
             _tickUpper
         );
+
+        /// @dev if in alpha & the position has a non-zero liqudiity balance (is an LP) --> revert (unless call via periphery)
+        if (_isAlpha && _position._liquidity > 0) {
+            IPeriphery _periphery = _factory.periphery();
+            require(msg.sender==address(_periphery), "periphery only");
+        }
 
         _updatePositionTokenBalancesAndAccountForFees(
             _position,

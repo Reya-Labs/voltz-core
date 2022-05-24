@@ -50,7 +50,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
     event Fee(uint256 feeWad);
 
     /// @dev emitted after the _isAlpha boolean is updated by the owner of the VAMM
-    /// @dev _isAlpha boolean dictates whether the Margin Engine is in the Alpha State, i.e. mints can only be done via the periphery
+    /// @dev _isAlpha boolean dictates whether the VAMM is in the Alpha State, i.e. mints can only be done via the periphery
     /// @dev additionally, the periphery has the logic to take care of lp notional caps in the Alpha State phase of VAMM
     /// @dev __isAlpha is the newly set value for the _isAlpha boolean
     event IsAlpha(bool __isAlpha);
