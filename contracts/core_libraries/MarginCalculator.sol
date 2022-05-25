@@ -13,7 +13,7 @@ import "../interfaces/IFactory.sol";
 import "../interfaces/IMarginEngine.sol";
 import "../utils/FullMath.sol";
 import "../utils/FixedPoint96.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "../utils/SafeCastUni.sol";
 
 /// @title Margin Calculator
 /// @notice Margin Calculator Performs the calculations necessary to establish Margin Requirements on Voltz Protocol
@@ -21,8 +21,8 @@ library MarginCalculator {
     using PRBMathSD59x18 for int256;
     using PRBMathUD60x18 for uint256;
 
-    using SafeCast for uint256;
-    using SafeCast for int256;
+    using SafeCastUni for uint256;
+    using SafeCastUni for int256;
 
     // structs
 
@@ -145,11 +145,7 @@ library MarginCalculator {
                 )
         );
 
-        if (apyBoundIntWad < 0) {
-            apyBoundWad = 0;
-        } else {
-            apyBoundWad = uint256(apyBoundIntWad);
-        }
+        apyBoundWad = apyBoundIntWad < 0 ? 0 : uint256(apyBoundIntWad);
     }
 
     /// @notice Calculates the Worst Case Variable Factor At Maturity

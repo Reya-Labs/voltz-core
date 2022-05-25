@@ -2,15 +2,15 @@
 
 pragma solidity =0.8.9;
 import "../utils/LiquidityMath.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../utils/TickMath.sol";
+import "../utils/SafeCastUni.sol";
 import "../utils/Printer.sol";
 
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
-    using SafeCast for int256;
-    using SafeCast for uint256;
+    using SafeCastUni for int256;
+    using SafeCastUni for uint256;
 
     int24 public constant MAXIMUM_TICK_SPACING = 16384;
 
