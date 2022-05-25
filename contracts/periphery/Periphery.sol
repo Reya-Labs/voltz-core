@@ -35,7 +35,8 @@ contract Periphery is IPeriphery {
     mapping(IVAMM => int256) public override lpMarginCumulatives;
 
     /// @dev alpha lp margin mapping
-    mapping(IVAMM => mapping(bytes32 => int256)) internal positionMarginSnapshots;
+    mapping(IVAMM => mapping(bytes32 => int256))
+        internal positionMarginSnapshots;
 
     modifier vammOwnerOnly(IVAMM _vamm) {
         require(address(_vamm) != address(0), "vamm addr zero");
