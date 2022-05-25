@@ -217,7 +217,7 @@ contract Periphery is IPeriphery {
 
         bool _isAlpha = params.marginEngine.isAlpha();
 
-        if (_isAlpha && _position._liquidity>0) { 
+        if (_isAlpha && _position._liquidity > 0) {
             revert("lp swap alpha");
         }
 
