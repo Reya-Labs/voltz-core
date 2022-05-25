@@ -33,8 +33,7 @@ contract Periphery is IPeriphery {
     mapping(IVAMM => int256) public override lpMarginCumulatives;
 
     /// @dev alpha lp margin mapping
-    mapping(bytes32 => int256)
-        internal positionMarginSnapshots;
+    mapping(bytes32 => int256) internal positionMarginSnapshots;
 
     modifier vammOwnerOnly(IVAMM _vamm) {
         require(address(_vamm) != address(0), "vamm addr zero");
@@ -150,7 +149,13 @@ contract Periphery is IPeriphery {
         );
         int256 _positionMarginSnapshot = positionMarginSnapshots[
             keccak256(
-                abi.encodePacked(msg.sender, address(vamm), address(params.marginEngine), params.tickLower, params.tickUpper)
+                abi.encodePacked(
+                    msg.sender,
+                    address(vamm),
+                    address(params.marginEngine),
+                    params.tickLower,
+                    params.tickUpper
+                )
             )
         ];
 
@@ -192,7 +197,13 @@ contract Periphery is IPeriphery {
         /// @dev update position margin snapshot with the most up to date position margin
         positionMarginSnapshots[
             keccak256(
-                abi.encodePacked(msg.sender, address(vamm), address(params.marginEngine), params.tickLower, params.tickUpper)
+                abi.encodePacked(
+                    msg.sender,
+                    address(vamm),
+                    address(params.marginEngine),
+                    params.tickLower,
+                    params.tickUpper
+                )
             )
         ] = _position.margin + params.marginDelta;
 
