@@ -32,10 +32,8 @@ contract Periphery is IPeriphery {
     /// @inheritdoc IPeriphery
     mapping(IVAMM => int256) public override lpMarginCumulatives;
 
-    /// @audit can this be gamed? if we are just filtering by IVAMM in the mapping (similar to the earlier discovered bug with notional caps)
-
     /// @dev alpha lp margin mapping
-    mapping(IVAMM => mapping(bytes32 => int256))
+    mapping(bytes32 => int256)
         internal positionMarginSnapshots;
 
     modifier vammOwnerOnly(IVAMM _vamm) {
@@ -150,9 +148,9 @@ contract Periphery is IPeriphery {
             params.tickLower,
             params.tickUpper
         );
-        int256 _positionMarginSnapshot = positionMarginSnapshots[vamm][
+        int256 _positionMarginSnapshot = positionMarginSnapshots[
             keccak256(
-                abi.encodePacked(msg.sender, params.tickLower, params.tickUpper)
+                abi.encodePacked(msg.sender, address(vamm), address(params.marginEngine), params.tickLower, params.tickUpper)
             )
         ];
 
@@ -192,9 +190,9 @@ contract Periphery is IPeriphery {
         }
 
         /// @dev update position margin snapshot with the most up to date position margin
-        positionMarginSnapshots[vamm][
+        positionMarginSnapshots[
             keccak256(
-                abi.encodePacked(msg.sender, params.tickLower, params.tickUpper)
+                abi.encodePacked(msg.sender, address(vamm), address(params.marginEngine), params.tickLower, params.tickUpper)
             )
         ] = _position.margin + params.marginDelta;
 
