@@ -197,7 +197,11 @@ contract MarginEngine is
     }
 
     /// @inheritdoc IMarginEngine
-    function setRateOracle(IRateOracle __rateOracle) external override onlyOwner {
+    function setRateOracle(IRateOracle __rateOracle)
+        external
+        override
+        onlyOwner
+    {
         _rateOracle = __rateOracle;
         emit RateOracleSetting(_rateOracle);
     }
@@ -261,10 +265,7 @@ contract MarginEngine is
         override
         onlyOwner
     {
-        require(
-            _newLiquidatorRewardWad <= MAX_LIQUIDATOR_REWARD_WAD,
-            "LR OOB"
-        );
+        require(_newLiquidatorRewardWad <= MAX_LIQUIDATOR_REWARD_WAD, "LR OOB");
 
         _liquidatorRewardWad = _newLiquidatorRewardWad;
         emit LiquidatorRewardSetting(_liquidatorRewardWad);
@@ -348,11 +349,9 @@ contract MarginEngine is
 
     /// @inheritdoc IMarginEngine
     function setIsAlpha(bool __isAlpha) external override onlyOwner {
-
         require(_isAlpha != __isAlpha, "alpha state already set");
         _isAlpha = __isAlpha;
         emit IsAlpha(_isAlpha);
-
     }
 
     /// @inheritdoc IMarginEngine
@@ -372,10 +371,10 @@ contract MarginEngine is
             _tickUpper
         );
 
-        /// @dev if in alpha & the position has a non-zero liqudiity balance (is an LP) --> revert (unless call via periphery)
-        if (_isAlpha && _position._liquidity > 0) {
+        /// @dev if in alpha --> revert (unless call via periphery)
+        if (_isAlpha) {
             IPeriphery _periphery = _factory.periphery();
-            require(msg.sender==address(_periphery), "periphery only");
+            require(msg.sender == address(_periphery), "periphery only");
         }
 
         _updatePositionTokenBalancesAndAccountForFees(
@@ -515,7 +514,10 @@ contract MarginEngine is
     function _getHistoricalApy() internal view returns (uint256) {
         uint256 _from = block.timestamp - _secondsAgo;
 
-        uint256 historicalApy = _rateOracle.getApyFromTo(_from, block.timestamp);
+        uint256 historicalApy = _rateOracle.getApyFromTo(
+            _from,
+            block.timestamp
+        );
         return historicalApy;
     }
 
@@ -815,7 +817,7 @@ contract MarginEngine is
                 _position.accumulatedFees += _feeDelta - 1;
                 _position.updateMarginViaDelta(_feeDelta.toInt256() - 1);
             }
-            
+
             _position.updateFeeGrowthInside(_feeGrowthInsideX128);
         } else {
             if (_isMintBurn) {
@@ -1345,7 +1347,7 @@ contract MarginEngine is
             _tickUpper,
             false
         ); // isMint=false
-        
+
         emit PositionUpdate(
             _recipient,
             _tickLower,

@@ -33,7 +33,7 @@ contract Periphery is IPeriphery {
     mapping(IVAMM => int256) public override lpMarginCumulatives;
 
     /// @dev alpha lp margin mapping
-    mapping(bytes32 => int256) internal positionMarginSnapshots;
+    mapping(bytes32 => int256) internal lastAccountedMargin;
 
     modifier vammOwnerOnly(IVAMM _vamm) {
         require(address(_vamm) != address(0), "vamm addr zero");
@@ -42,27 +42,34 @@ contract Periphery is IPeriphery {
         _;
     }
 
-    function checkLPMarginCap(
+    function accountLPMarginCap(
         IVAMM _vamm,
-        int256 _marginDelta,
-        int256 currentPositionMargin,
-        int256 positionMarginSnapshot
+        bytes32 encodedPosition,
+        int256 newMargin,
+        bool isLPBefore,
+        bool isLPAfter
     ) internal {
-        if (positionMarginSnapshot != currentPositionMargin) {
-            int256 unaccountedMarginDelta = currentPositionMargin -
-                positionMarginSnapshot;
-            lpMarginCumulatives[_vamm] += unaccountedMarginDelta;
+        if (isLPAfter) {
+            // added some liquidity, need to account for margin
+            lpMarginCumulatives[_vamm] -= lastAccountedMargin[encodedPosition];
+
+            lastAccountedMargin[encodedPosition] = newMargin;
+
+            lpMarginCumulatives[_vamm] += lastAccountedMargin[encodedPosition];
+        } else {
+            if (isLPBefore) {
+                lpMarginCumulatives[_vamm] -= lastAccountedMargin[
+                    encodedPosition
+                ];
+
+                lastAccountedMargin[encodedPosition] = 0;
+            }
         }
 
-        lpMarginCumulatives[_vamm] += _marginDelta;
-
-        int256 _lpMarginCap = lpMarginCaps[_vamm];
-
-        if (_lpMarginCap > 0) {
-            /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
-
-            require(lpMarginCumulatives[_vamm] < _lpMarginCap, "lp cap limit");
-        }
+        require(
+            lpMarginCumulatives[_vamm] <= lpMarginCaps[_vamm],
+            "lp cap limit"
+        );
     }
 
     function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew)
@@ -100,12 +107,6 @@ contract Periphery is IPeriphery {
             _tickUpper
         );
 
-        bool _isAlpha = _marginEngine.isAlpha();
-
-        if (_isAlpha && _position._liquidity > 0) {
-            revert("lp swap alpha");
-        }
-
         IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
 
         if (_fullyWithdraw) {
@@ -130,6 +131,34 @@ contract Periphery is IPeriphery {
             _tickUpper,
             _marginDelta
         );
+
+        _position = _marginEngine.getPosition(
+            msg.sender,
+            _tickLower,
+            _tickUpper
+        );
+
+        bool _isAlpha = _marginEngine.isAlpha();
+        IVAMM _vamm = _marginEngine.vamm();
+
+        if (_isAlpha && _position._liquidity > 0) {
+            bytes32 encodedPosition = keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    address(_vamm),
+                    address(_marginEngine),
+                    _tickLower,
+                    _tickUpper
+                )
+            );
+            accountLPMarginCap(
+                _vamm,
+                encodedPosition,
+                _position.margin,
+                true,
+                true
+            );
+        }
     }
 
     /// @notice Add liquidity to an initialized pool
@@ -146,24 +175,6 @@ contract Periphery is IPeriphery {
             msg.sender,
             params.tickLower,
             params.tickUpper
-        );
-        int256 _positionMarginSnapshot = positionMarginSnapshots[
-            keccak256(
-                abi.encodePacked(
-                    msg.sender,
-                    address(vamm),
-                    address(params.marginEngine),
-                    params.tickLower,
-                    params.tickUpper
-                )
-            )
-        ];
-
-        checkLPMarginCap(
-            vamm,
-            params.marginDelta,
-            _position.margin,
-            _positionMarginSnapshot
         );
 
         IVAMM.VAMMVars memory _v = vamm.vammVars();
@@ -194,19 +205,6 @@ contract Periphery is IPeriphery {
             );
         }
 
-        /// @dev update position margin snapshot with the most up to date position margin
-        positionMarginSnapshots[
-            keccak256(
-                abi.encodePacked(
-                    msg.sender,
-                    address(vamm),
-                    address(params.marginEngine),
-                    params.tickLower,
-                    params.tickUpper
-                )
-            )
-        ] = _position.margin + params.marginDelta;
-
         // compute the liquidity amount for the amount of notional (amount1) specified
 
         uint128 liquidity = LiquidityAmounts.getLiquidityForAmount1(
@@ -214,6 +212,8 @@ contract Periphery is IPeriphery {
             sqrtRatioBX96,
             params.notional
         );
+
+        bool isLPBefore = _position._liquidity > 0;
 
         positionMarginRequirement = 0;
         if (params.isMint) {
@@ -230,6 +230,33 @@ contract Periphery is IPeriphery {
                 params.tickLower,
                 params.tickUpper,
                 liquidity
+            );
+        }
+
+        _position = params.marginEngine.getPosition(
+            msg.sender,
+            params.tickLower,
+            params.tickUpper
+        );
+
+        bool isLPAfter = _position._liquidity > 0;
+
+        if (params.marginEngine.isAlpha() && (isLPBefore || isLPAfter)) {
+            bytes32 encodedPosition = keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    address(vamm),
+                    address(params.marginEngine),
+                    params.tickLower,
+                    params.tickUpper
+                )
+            );
+            accountLPMarginCap(
+                vamm,
+                encodedPosition,
+                _position.margin,
+                isLPBefore,
+                isLPAfter
             );
         }
     }

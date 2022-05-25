@@ -27,6 +27,8 @@ import {
 } from "../shared/utilities";
 import { TickMath } from "../shared/tickMath";
 import { mul } from "../shared/functions";
+import { advanceTimeAndBlock } from "../helpers/time";
+import { consts } from "../helpers/constants";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -130,14 +132,17 @@ describe("Periphery", async () => {
 
   it("an lp deposits margin through margin engine, then tries to go over limit", async () => {
     await periphery.setLPMarginCap(vammTest.address, toBn("10"));
+    await vammTest.setIsAlpha(true);
+    await marginEngineTest.setIsAlpha(true);
 
-    await marginEngineTest
+    await periphery
       .connect(wallet)
       .updatePositionMargin(
-        wallet.address,
+        marginEngineTest.address,
         -TICK_SPACING,
         TICK_SPACING,
-        toBn("11")
+        toBn("11"),
+        false
       );
 
     await expect(
@@ -156,6 +161,7 @@ describe("Periphery", async () => {
     await periphery.setLPMarginCap(vammTest.address, toBn("10"));
 
     await vammTest.setIsAlpha(true);
+    await marginEngineTest.setIsAlpha(true);
 
     await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
 
@@ -185,13 +191,25 @@ describe("Periphery", async () => {
       marginDelta: 0,
     });
 
-    await marginEngineTest
+    await expect(
+      marginEngineTest
+        .connect(wallet)
+        .updatePositionMargin(
+          wallet.address,
+          -TICK_SPACING,
+          TICK_SPACING,
+          toBn("11")
+        )
+    ).to.be.revertedWith("periphery only");
+
+    periphery
       .connect(wallet)
       .updatePositionMargin(
-        wallet.address,
+        marginEngineTest.address,
         -TICK_SPACING,
         TICK_SPACING,
-        toBn("11")
+        toBn("11"),
+        false
       );
 
     await expect(
@@ -236,6 +254,9 @@ describe("Periphery", async () => {
   it("check can't mint beyond the margin cap", async () => {
     await periphery.setLPMarginCap(vammTest.address, toBn("10"));
 
+    await vammTest.setIsAlpha(true);
+    await marginEngineTest.setIsAlpha(true);
+
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,
       tickLower: -TICK_SPACING,
@@ -258,6 +279,8 @@ describe("Periphery", async () => {
   });
 
   it("lp cannot swap via the periphery", async () => {
+    await periphery.setLPMarginCap(vammTest.address, toBn("10"));
+
     await vammTest.setIsAlpha(true);
     await marginEngineTest.setIsAlpha(true);
 
@@ -280,11 +303,11 @@ describe("Periphery", async () => {
         tickUpper: TICK_SPACING,
         marginDelta: toBn("1000"),
       })
-    ).to.be.revertedWith("lp swap alpha");
+    ).to.be.revertedWith("lp cap limit");
   });
 
   it("check can't mint beyond the notional cap", async () => {
-    await periphery.setLPMarginCap(marginEngineTest.address, toBn("10"));
+    await periphery.setLPMarginCap(vammTest.address, toBn("10"));
 
     await periphery.mintOrBurn({
       marginEngine: marginEngineTest.address,
@@ -1020,6 +1043,60 @@ describe("Periphery", async () => {
     expect(traderVariableTokenBalance).to.be.closeTo(
       "-5007499619400846835",
       10
+    );
+
+    await advanceTimeAndBlock(consts.ONE_MONTH.mul(12), 12);
+
+    console.log(
+      "balance of other before: ",
+      (await token.balanceOf(other.address)).toString()
+    );
+
+    console.log(
+      "margin before: ",
+      (
+        await marginEngineTest.callStatic.getPosition(
+          other.address,
+          -TICK_SPACING,
+          TICK_SPACING
+        )
+      ).margin.toString()
+    );
+
+    await periphery
+      .connect(other)
+      .settlePositionAndWithdrawMargin(
+        marginEngineTest.address,
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
+
+    console.log(
+      "margin after: ",
+      (
+        await marginEngineTest.callStatic.getPosition(
+          other.address,
+          -TICK_SPACING,
+          TICK_SPACING
+        )
+      ).margin.toString()
+    );
+
+    console.log(
+      "isSettled: ",
+      (
+        await marginEngineTest.callStatic.getPosition(
+          other.address,
+          -TICK_SPACING,
+          TICK_SPACING
+        )
+      ).isSettled.toString()
+    );
+
+    console.log(
+      "balance of other after: ",
+      (await token.balanceOf(other.address)).toString()
     );
   });
 });
