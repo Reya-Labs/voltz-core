@@ -15,8 +15,6 @@ import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-// disable LP swaps in alpha so that the LPs cannot deposit margin via the swap flow
-
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
 contract Periphery is IPeriphery {
@@ -33,6 +31,9 @@ contract Periphery is IPeriphery {
     /// @dev amount of margin (coming from the periphery) in terms of underlying tokens taken up by LPs in a given VAMM
     /// @inheritdoc IPeriphery
     mapping(IVAMM => int256) public override lpMarginCumulatives;
+
+
+    /// @audit can this be gamed? if we are just filtering by IVAMM in the mapping (similar to the earlier discovered bug with notional caps)
 
     /// @dev alpha lp margin mapping
     mapping(IVAMM => mapping(bytes32 => int256))
@@ -70,6 +71,7 @@ contract Periphery is IPeriphery {
 
     function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew)
         external
+        override
         vammOwnerOnly(_vamm)
     {
         if (lpMarginCaps[_vamm] != _lpMarginCapNew) {
@@ -83,7 +85,20 @@ contract Periphery is IPeriphery {
         int24 _tickLower,
         int24 _tickUpper,
         int256 _marginDelta
-    ) internal {
+    ) public override {
+
+        Position.Info memory _position = _marginEngine.getPosition(
+            msg.sender,
+            _tickLower,
+            _tickUpper
+        );
+
+        bool _isAlpha = _marginEngine.isAlpha();
+
+        if (_isAlpha && _position._liquidity > 0) {
+            revert("lp swap alpha");
+        }
+
         IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
 
         if (_marginDelta > 0) {
@@ -208,18 +223,6 @@ contract Periphery is IPeriphery {
         )
     {
         Tick.checkTicks(params.tickLower, params.tickUpper);
-
-        Position.Info memory _position = params.marginEngine.getPosition(
-            msg.sender,
-            params.tickLower,
-            params.tickUpper
-        );
-
-        bool _isAlpha = params.marginEngine.isAlpha();
-
-        if (_isAlpha && _position._liquidity > 0) {
-            revert("lp swap alpha");
-        }
 
         IVAMM _vamm = params.marginEngine.vamm();
 
