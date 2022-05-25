@@ -15,6 +15,8 @@ import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+// disable LP swaps in alpha so that the LPs cannot deposit margin via the swap flow
+
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
 contract Periphery is IPeriphery {
@@ -33,7 +35,7 @@ contract Periphery is IPeriphery {
     mapping(IVAMM => int256) public override lpMarginCumulatives;
 
     /// @dev alpha lp margin mapping
-    mapping(bytes32 => int256) internal positionMarginSnapshots;
+    mapping(IVAMM => mapping(bytes32 => int256)) internal positionMarginSnapshots;
 
     modifier vammOwnerOnly(IVAMM _vamm) {
         require(address(_vamm) != address(0), "vamm addr zero");
@@ -118,7 +120,7 @@ contract Periphery is IPeriphery {
             params.tickLower,
             params.tickUpper
         );
-        int256 _positionMarginSnapshot = positionMarginSnapshots[
+        int256 _positionMarginSnapshot = positionMarginSnapshots[vamm][
             keccak256(
                 abi.encodePacked(msg.sender, params.tickLower, params.tickUpper)
             )
@@ -159,7 +161,7 @@ contract Periphery is IPeriphery {
         }
 
         /// @dev update position margin snapshot with the most up to date position margin
-        positionMarginSnapshots[
+        positionMarginSnapshots[vamm][
             keccak256(
                 abi.encodePacked(msg.sender, params.tickLower, params.tickUpper)
             )
