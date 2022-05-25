@@ -32,7 +32,6 @@ contract Periphery is IPeriphery {
     /// @inheritdoc IPeriphery
     mapping(IVAMM => int256) public override lpMarginCumulatives;
 
-
     /// @audit can this be gamed? if we are just filtering by IVAMM in the mapping (similar to the earlier discovered bug with notional caps)
 
     /// @dev alpha lp margin mapping
@@ -86,7 +85,6 @@ contract Periphery is IPeriphery {
         int24 _tickUpper,
         int256 _marginDelta
     ) public override {
-
         Position.Info memory _position = _marginEngine.getPosition(
             msg.sender,
             _tickLower,
