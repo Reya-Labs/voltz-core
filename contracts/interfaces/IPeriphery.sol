@@ -64,4 +64,15 @@ interface IPeriphery is CustomErrors {
             int256 _marginRequirement,
             int24 _tickAfter
         );
+    
+
+    function updatePositionMargin(
+        IMarginEngine _marginEngine,
+        int24 _tickLower,
+        int24 _tickUpper,
+        int256 _marginDelta
+    ) external;
+
+    function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew)
+        external;
 }
