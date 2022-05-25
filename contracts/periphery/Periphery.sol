@@ -209,6 +209,18 @@ contract Periphery is IPeriphery {
     {
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
+        Position.Info memory _position = params.marginEngine.getPosition(
+            msg.sender,
+            params.tickLower,
+            params.tickUpper
+        );
+
+        bool _isAlpha = params.marginEngine.isAlpha();
+
+        if (_isAlpha && _position._liquidity>0) { 
+            revert("lp swap alpha");
+        }
+
         IVAMM _vamm = params.marginEngine.vamm();
 
         if ((params.tickLower == 0) && (params.tickUpper == 0)) {
