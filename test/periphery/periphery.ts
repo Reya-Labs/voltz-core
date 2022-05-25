@@ -257,6 +257,34 @@ describe("Periphery", async () => {
     ).to.be.revertedWith("lp cap limit");
   });
 
+  it("lp cannot swap via the periphery", async () => {
+
+    await vammTest.setIsAlpha(true);
+    await marginEngineTest.setIsAlpha(true);
+
+    await periphery.connect(wallet).mintOrBurn({
+      marginEngine: marginEngineTest.address,
+      tickLower: -TICK_SPACING,
+      tickUpper: TICK_SPACING,
+      notional: toBn("9"),
+      isMint: true,
+      marginDelta: toBn("9"),
+    });
+    
+    await expect(periphery.connect(wallet).swap(
+      {
+        marginEngine: marginEngineTest.address,
+        isFT: false,
+        notional: toBn("10000"),
+        sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+        marginDelta: toBn("1000"),
+      }
+    )).to.be.revertedWith("lp swap alpha");
+
+  });
+
   it("check can't mint beyond the notional cap", async () => {
     await periphery.setLPMarginCap(marginEngineTest.address, toBn("10"));
 
@@ -306,6 +334,7 @@ describe("Periphery", async () => {
       "alpha state already set"
     );
   });
+
 
   it("can't mint or burn with vamm when alpha but can mint with periphery", async () => {
     await vammTest.setIsAlpha(true);
