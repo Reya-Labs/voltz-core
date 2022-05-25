@@ -69,8 +69,16 @@ interface IPeriphery is CustomErrors {
         IMarginEngine _marginEngine,
         int24 _tickLower,
         int24 _tickUpper,
-        int256 _marginDelta
+        int256 _marginDelta,
+        bool _fullyWithdraw
     ) external;
 
     function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew) external;
+
+    function settlePositionAndWithdrawMargin(
+        IMarginEngine _marginEngine,
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external;
 }

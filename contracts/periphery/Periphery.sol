@@ -79,11 +79,27 @@ contract Periphery is IPeriphery {
         }
     }
 
+    function settlePositionAndWithdrawMargin(
+        IMarginEngine _marginEngine,
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external override {
+        _marginEngine.settlePosition(
+            msg.sender,
+            _tickLower,
+            _tickUpper
+        );
+
+        updatePositionMargin(_marginEngine, _tickLower, _tickUpper, 0, true); // fully withdraw
+    }
+
     function updatePositionMargin(
         IMarginEngine _marginEngine,
         int24 _tickLower,
         int24 _tickUpper,
-        int256 _marginDelta
+        int256 _marginDelta,
+        bool _fullyWithdraw
     ) public override {
         Position.Info memory _position = _marginEngine.getPosition(
             msg.sender,
@@ -98,6 +114,10 @@ contract Periphery is IPeriphery {
         }
 
         IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
+
+        if (_fullyWithdraw) {
+            _marginDelta = -_position.margin;
+        }
 
         if (_marginDelta > 0) {
             _underlyingToken.safeTransferFrom(
@@ -170,7 +190,8 @@ contract Periphery is IPeriphery {
                 params.marginEngine,
                 params.tickLower,
                 params.tickUpper,
-                params.marginDelta
+                params.marginDelta,
+                false // _fullyWithdraw
             );
         }
 
@@ -251,7 +272,8 @@ contract Periphery is IPeriphery {
                 params.marginEngine,
                 params.tickLower,
                 params.tickUpper,
-                params.marginDelta.toInt256()
+                params.marginDelta.toInt256(),
+                false // _fullyWithdraw
             );
         }
 
