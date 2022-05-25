@@ -30,8 +30,6 @@ import { mul } from "../shared/functions";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
-
-
 // todo: test scenario with two vamms, two caps, two position snapshot mappings effectively
 
 describe("Periphery", async () => {
