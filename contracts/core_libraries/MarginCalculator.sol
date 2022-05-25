@@ -227,7 +227,7 @@ library MarginCalculator {
     ) internal pure returns (uint256 fixedTokenDeltaUnbalanced) {
         SimulatedUnwindLocalVars memory simulatedUnwindLocalVars;
 
-        // require checks
+        /// @dev fixedRateDeviationMinWad is in percentage points
 
         // calculate fixedRateStart
 
@@ -236,6 +236,8 @@ library MarginCalculator {
             sqrtRatioCurrX96,
             FixedPoint96.Q96
         );
+
+        /// @dev fixedRateStartWad is in percentage points
 
         simulatedUnwindLocalVars.fixedRateStartWad = ONE_UINT.div(
             simulatedUnwindLocalVars.sqrtRatioCurrWad.mul(
@@ -290,6 +292,8 @@ library MarginCalculator {
         }
 
         // calculate fixedTokenDeltaUnbalancedWad
+
+        /// @dev simulatedUnwindLocalVars.fixedRateCFWad is in percentage points
 
         simulatedUnwindLocalVars
             .fixedTokenDeltaUnbalancedWad = variableTokenDeltaAbsolute
