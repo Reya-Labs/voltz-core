@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: agpl-3.0
+// SPDX-License-Identifier: Apache-2.0
 
 pragma solidity =0.8.9;
 
@@ -26,23 +26,6 @@ contract MockAToken is IAToken, ERC20 {
     ) ERC20(name, symbol) {
         _pool = pool;
         _underlyingAsset = underlyingAsset;
-    }
-
-    /**
-     * @dev See {IERC20-approve}.
-     *
-     * Requirements:
-     *
-     * - `spender` cannot be the zero address.
-     */
-    function approve(address spender, uint256 amount)
-        public
-        virtual
-        override(ERC20)
-        returns (bool)
-    {
-        _approve(_msgSender(), spender, amount);
-        return true;
     }
 
     /**
@@ -75,7 +58,7 @@ contract MockAToken is IAToken, ERC20 {
         address user,
         uint256 amount,
         uint256 index
-    ) external override returns (bool) {
+    ) external returns (bool) {
         uint256 previousBalance = super.balanceOf(user);
 
         uint256 amountScaled = amount.rayDiv(index);
@@ -110,90 +93,6 @@ contract MockAToken is IAToken, ERC20 {
         IERC20Minimal(_underlyingAsset).transfer(receiverOfUnderlying, amount);
 
         emit Transfer(user, address(0), amount);
-    }
-
-    /**
-     * @dev Returns the scaled balance of the user. The scaled balance is the sum of all the
-     * updated stored balance divided by the reserve's liquidity index at the moment of the update
-     * @param user The user whose balance is calculated
-     * @return The scaled balance of the user
-     **/
-    function scaledBalanceOf(address user)
-        external
-        view
-        override
-        returns (uint256)
-    {
-        return super.balanceOf(user);
-    }
-
-    /**
-     * @dev Returns the scaled balance of the user and the scaled total supply.
-     * @param user The address of the user
-     * @return The scaled balance of the user
-     * @return The scaled balance and the scaled total supply
-     **/
-    function getScaledUserBalanceAndSupply(address user)
-        external
-        view
-        override
-        returns (uint256, uint256)
-    {
-        return (super.balanceOf(user), super.totalSupply());
-    }
-
-    /**
-     * @dev calculates the total supply of the specific aToken
-     * since the balance of every single user increases over time, the total supply
-     * does that too.
-     * @return the current total supply
-     **/
-    // AB: when add IERC20Minimal to the override: Invalid contract specified in override list: "IERC20Minimal" (investigate)
-    // https://github.com/aave/protocol-v2/blob/61c2273a992f655c6d3e7d716a0c2f1b97a55a92/contracts/protocol/tokenization/AToken.sol#L248
-    function totalSupply() public view override(ERC20) returns (uint256) {
-        uint256 currentSupplyScaled = super.totalSupply();
-
-        if (currentSupplyScaled == 0) {
-            return 0;
-        }
-
-        return
-            currentSupplyScaled.rayMul(
-                _pool.getReserveNormalizedIncome(_underlyingAsset)
-            );
-    }
-
-    /**
-     * @dev Returns the scaled total supply of the variable debt token. Represents sum(debt/index)
-     * @return the scaled total supply
-     **/
-    function scaledTotalSupply()
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return super.totalSupply();
-    }
-
-    /**
-     * @dev Returns the address of the underlying asset of this aToken (E.g. WETH for aWETH)
-     **/
-    function UNDERLYING_ASSET_ADDRESS()
-        public
-        view
-        override
-        returns (IERC20Minimal)
-    {
-        return _underlyingAsset;
-    }
-
-    /**
-     * @dev Returns the address of the lending pool where this aToken is used
-     **/
-    function POOL() public view returns (IAaveV2LendingPool) {
-        return _pool;
     }
 
     /**

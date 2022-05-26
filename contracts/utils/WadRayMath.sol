@@ -1,54 +1,41 @@
-// SPDX-License-Identifier: agpl-3.0
-
+// SPDX-License-Identifier: Apache-2.0
 // solhint-disable const-name-snakecase
 
 pragma solidity =0.8.9;
-import "./Errors.sol";
 
 /**
  * @title WadRayMath library
- * @author Aave
+ * @author Voltz, matching an interface and terminology used by Aave for consistency
  * @dev Provides mul and div function for wads (decimal numbers with 18 digits precision) and rays (decimals with 27 digits)
  **/
-
 library WadRayMath {
-    uint256 internal constant WAD = 1e18;
-    uint256 internal constant halfWAD = WAD / 2;
-
-    uint256 internal constant RAY = 1e27;
-    uint256 internal constant halfRAY = RAY / 2;
-
-    uint256 internal constant WAD_RAY_RATIO = 1e9;
-
-    uint256 internal constant halfRatio = WAD_RAY_RATIO / 2;
-
-    /**
-     * @return One ray, 1e27
-     **/
-    function ray() internal pure returns (uint256) {
-        return RAY;
+    enum Mode {
+        WAD_MODE,
+        RAY_MODE
     }
 
-    /**
-     * @return One wad, 1e18
-     **/
+    uint256 public constant WAD = 1e18;
+    uint256 public constant RAY = 1e27;
 
-    function wad() internal pure returns (uint256) {
-        return WAD;
-    }
+    uint256 public constant HALF_WAD = WAD / 2;
+    uint256 public constant HALF_RAY = RAY / 2;
 
-    /**
-     * @return Half ray, 1e27/2
-     **/
-    function halfRay() internal pure returns (uint256) {
-        return halfRAY;
-    }
+    uint256 public constant WAD_RAY_RATIO = RAY / WAD;
+    uint256 internal constant HALF_RATIO = WAD_RAY_RATIO / 2;
 
-    /**
-     * @return Half ray, 1e18/2
-     **/
-    function halfWad() internal pure returns (uint256) {
-        return halfWAD;
+    // Multiplies two values in WAD_MODE or RAY_MODE, rounding up
+    function _mul(
+        uint256 a,
+        uint256 b,
+        Mode m
+    ) private pure returns (uint256) {
+        if (a == 0 || b == 0) {
+            return 0;
+        }
+
+        return
+            (a * b + (m == Mode.RAY_MODE ? HALF_RAY : HALF_WAD)) /
+            (m == Mode.RAY_MODE ? RAY : WAD);
     }
 
     /**
@@ -58,24 +45,7 @@ library WadRayMath {
      * @return The result of a*b, in wad
      **/
     function wadMul(uint256 a, uint256 b) internal pure returns (uint256) {
-        if (a == 0 || b == 0) {
-            return 0;
-        }
-
-        return (a * b + halfWAD) / WAD;
-    }
-
-    /**
-     * @dev Divides two wad, rounding half up to the nearest wad
-     * @param a Wad
-     * @param b Wad
-     * @return The result of a/b, in wad
-     **/
-    function wadDiv(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b != 0, Errors.MATH_DIVISION_BY_ZERO);
-        uint256 halfB = b / 2;
-
-        return (a * WAD + halfB) / b;
+        return _mul(a, b, Mode.WAD_MODE);
     }
 
     /**
@@ -85,11 +55,29 @@ library WadRayMath {
      * @return The result of a*b, in ray
      **/
     function rayMul(uint256 a, uint256 b) internal pure returns (uint256) {
-        if (a == 0 || b == 0) {
-            return 0;
-        }
+        return _mul(a, b, Mode.RAY_MODE);
+    }
 
-        return (a * b + halfRAY) / RAY;
+    // Divides two values in WAD_MODE or RAY_MODE, rounding up
+    function _div(
+        uint256 a,
+        uint256 b,
+        Mode m
+    ) private pure returns (uint256) {
+        require(b != 0, "DIV0");
+        uint256 halfB = b / 2;
+
+        return (a * (m == Mode.RAY_MODE ? RAY : WAD) + halfB) / b;
+    }
+
+    /**
+     * @dev Divides two wad, rounding half up to the nearest wad
+     * @param a Wad
+     * @param b Wad
+     * @return The result of a/b, in wad
+     **/
+    function wadDiv(uint256 a, uint256 b) internal pure returns (uint256) {
+        return _div(a, b, Mode.WAD_MODE);
     }
 
     /**
@@ -99,34 +87,31 @@ library WadRayMath {
      * @return The result of a/b, in ray
      **/
     function rayDiv(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b != 0, Errors.MATH_DIVISION_BY_ZERO);
-        uint256 halfB = b / 2;
-
-        return (a * RAY + halfB) / b;
+        return _div(a, b, Mode.RAY_MODE);
     }
 
     /**
-     * @dev Casts ray down to wad
-     * @param a Ray
-     * @return a casted to wad, rounded half up to the nearest wad
+     * @dev Scales a value in WAD up to a value in RAY
+     * @param a WAD value
+     * @return a, scaled up to a value in RAY
      **/
-    function rayToWad(uint256 a) internal pure returns (uint256) {
-        uint256 result = a / WAD_RAY_RATIO;
-
-        if (a % WAD_RAY_RATIO >= halfRatio) {
-            result += 1;
-        }
-
+    function wadToRay(uint256 a) internal pure returns (uint256) {
+        uint256 result = a * WAD_RAY_RATIO;
         return result;
     }
 
     /**
-     * @dev Converts wad up to ray
-     * @param a Wad
-     * @return a converted in ray
+     * @dev Scales a value in RAY down to a value in WAD
+     * @param a RAY value
+     * @return a, scaled down to a value in WAD (rounded up to the nearest WAD)
      **/
-    function wadToRay(uint256 a) internal pure returns (uint256) {
-        uint256 result = a * WAD_RAY_RATIO;
+    function rayToWad(uint256 a) internal pure returns (uint256) {
+        uint256 result = a / WAD_RAY_RATIO;
+
+        if (a % WAD_RAY_RATIO >= HALF_RATIO) {
+            result += 1;
+        }
+
         return result;
     }
 }

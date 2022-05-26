@@ -237,7 +237,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
             uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
                 (atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp) *
-                    WadRayMath.wad()
+                    WadRayMath.WAD
             );
 
             uint256 apyFromBeforeOrAtToAtOrAfterWad = computeApyFromRate(
@@ -249,7 +249,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             rateValueRay = interpolateRateValue(
                 beforeOrAt.observedValue,
                 apyFromBeforeOrAtToAtOrAfterWad,
-                (queriedTime - beforeOrAt.blockTimestamp) * WadRayMath.wad()
+                (queriedTime - beforeOrAt.blockTimestamp) * WadRayMath.WAD
             );
         }
     }

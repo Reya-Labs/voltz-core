@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: agpl-3.0
+// SPDX-License-Identifier: Apache-2.0
 
 pragma solidity =0.8.9;
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
-import "../aave/AaveDataTypes.sol";
 import "../interfaces/aave/IAToken.sol";
 import "../utils/Printer.sol";
 
@@ -15,7 +14,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
     mapping(IERC20Minimal => uint256) internal startTime;
     mapping(IERC20Minimal => uint256) internal factorPerSecondInRay; // E.g. 1000000001000000000000000000 for 0.0000001% per second = ~3.2% APY
 
-    mapping(IERC20Minimal => AaveDataTypes.ReserveData) internal _reserves;
+    mapping(IERC20Minimal => IAaveV2LendingPool.ReserveData) internal _reserves;
 
     function getReserveNormalizedIncome(IERC20Minimal _underlyingAsset)
         public
@@ -56,7 +55,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
     }
 
     function initReserve(IERC20Minimal asset, address aTokenAddress) external {
-        AaveDataTypes.ReserveData memory reserveData;
+        IAaveV2LendingPool.ReserveData memory reserveData;
         reserveData.aTokenAddress = aTokenAddress;
 
         _reserves[asset] = reserveData;
@@ -71,7 +70,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
         external
         view
         override
-        returns (AaveDataTypes.ReserveData memory)
+        returns (IAaveV2LendingPool.ReserveData memory)
     {
         return _reserves[asset];
     }
@@ -81,7 +80,7 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
         uint256 amount,
         address to
     ) external override returns (uint256) {
-        AaveDataTypes.ReserveData storage reserve = _reserves[asset];
+        ReserveData storage reserve = _reserves[asset];
         address aToken = reserve.aTokenAddress;
 
         uint256 userBalance = IERC20Minimal(aToken).balanceOf(msg.sender);
@@ -92,26 +91,6 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
             amountToWithdraw = userBalance;
         }
 
-        //  ValidationLogic.validateWithdraw(
-        //   asset,
-        //   amountToWithdraw,
-        //   userBalance,
-        //   _reserves,
-        //   _usersConfig[msg.sender],
-        //   _reservesList,
-        //   _reservesCount,
-        //   _addressesProvider.getPriceOracle()
-        // );
-
-        // reserve.updateState();
-        // reserve.updateInterestRates(asset, aToken, 0, amountToWithdraw);
-
-        // if (amountToWithdraw == userBalance) {
-        //   _usersConfig[msg.sender].setUsingAsCollateral(reserve.id, false);
-        //   emit ReserveUsedAsCollateralDisabled(asset, msg.sender);
-        // }
-
-        // AB: replaced reserve.liquidityIndex with getReserveNormalizedIncome()
         IAToken(aToken).burn(
             msg.sender,
             to,

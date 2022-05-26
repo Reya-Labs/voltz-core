@@ -16,7 +16,6 @@ import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./utils/WadRayMath.sol";
 import "./utils/Printer.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "./aave/AaveDataTypes.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -56,7 +55,7 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, VoltzPausable
     _rateOracle = _marginEngine.rateOracle();
     _aaveLendingPool = IAaveV2LendingPool(IAaveRateOracle(address(_rateOracle)).aaveLendingPool());
     underlyingToken = _marginEngine.underlyingToken();
-    AaveDataTypes.ReserveData memory _aaveReserveData = _aaveLendingPool.getReserveData(underlyingToken);
+    IAaveV2LendingPool.ReserveData memory _aaveReserveData = _aaveLendingPool.getReserveData(underlyingToken);
     _underlyingYieldBearingToken = IERC20Minimal(_aaveReserveData.aTokenAddress);
     tickSpacing = _vamm.tickSpacing(); // retrieve tick spacing of the VAM
 

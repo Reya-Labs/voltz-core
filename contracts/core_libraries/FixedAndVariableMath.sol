@@ -21,7 +21,7 @@ library FixedAndVariableMath {
     /// @param variableTokenBalance The current balance of the variable side of the position
     /// @param termStartTimestampWad When did the position begin, in seconds
     /// @param termEndTimestampWad When does the position reach maturity, in seconds
-    /// @param variableFactorToMaturityWad What factor expresses the current remaining variable rate, up to position maturity? (in WAD)
+    /// @param variableFactorToMaturityWad What factor expresses the current remaining variable rate, up to position maturity? (in wad)
     /// @return cashflow The remaining cashflow of the position
     function calculateSettlementCashflow(
         int256 fixedTokenBalance,

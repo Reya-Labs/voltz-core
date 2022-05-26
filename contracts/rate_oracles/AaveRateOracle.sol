@@ -205,7 +205,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
 
             uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
                 (atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp) *
-                    WadRayMath.wad()
+                    WadRayMath.WAD
             );
 
             uint256 apyFromBeforeOrAtToAtOrAfterWad = computeApyFromRate(
@@ -217,7 +217,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             rateValueRay = interpolateRateValue(
                 beforeOrAt.observedValue,
                 apyFromBeforeOrAtToAtOrAfterWad,
-                (queriedTime - beforeOrAt.blockTimestamp) * WadRayMath.wad()
+                (queriedTime - beforeOrAt.blockTimestamp) * WadRayMath.WAD
             );
         }
     }
