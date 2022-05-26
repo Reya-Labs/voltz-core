@@ -21,7 +21,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./VoltzPausable.sol";
 
 
-contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+contract VAMM is VAMMStorage, IVAMM, Initializable, VoltzPausable, UUPSUpgradeable {
   using SafeCastUni for uint256;
   using SafeCastUni for int256;
   using Tick for mapping(int24 => Tick.Info);
