@@ -45,8 +45,12 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         decimals = _decimals;
 
         // Decimals affects how the rates are encoded in compound
-        scaleDownFactor = decimals >= DECIMALS_SCALING_THRESHOLD ? 10**(decimals - DECIMALS_SCALING_THRESHOLD) : 0;
-        scaleUpFactor = decimals < DECIMALS_SCALING_THRESHOLD ? 10**(DECIMALS_SCALING_THRESHOLD - decimals) : 0;
+        scaleDownFactor = decimals >= DECIMALS_SCALING_THRESHOLD
+            ? 10**(decimals - DECIMALS_SCALING_THRESHOLD)
+            : 0;
+        scaleUpFactor = decimals < DECIMALS_SCALING_THRESHOLD
+            ? 10**(DECIMALS_SCALING_THRESHOLD - decimals)
+            : 0;
 
         // If we're using even half the max buffer size, something has gone wrong
         require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
