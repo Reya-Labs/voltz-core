@@ -39,9 +39,7 @@ const applyBufferConfig = async (
       currentSize + MAX_BUFFER_GROWTH_PER_TRANSACTION,
       minBufferSize
     );
-    const trx = await r.increaseObservationCardinalityNext(newSize, {
-      gasLimit: 10000000,
-    });
+    const trx = await r.increaseObservationCardinalityNext(newSize);
     await trx.wait();
     console.log(`Increased size of ${r.address}'s buffer to ${newSize}`);
 
@@ -54,10 +52,7 @@ const applyBufferConfig = async (
   // console.log( `current minSecondsSinceLastUpdate of ${r.address} is ${currentVal}` );
 
   if (currentSecondsSinceLastUpdate !== minSecondsSinceLastUpdate) {
-    const trx = await r.setMinSecondsSinceLastUpdate(
-      minSecondsSinceLastUpdate,
-      { gasLimit: 10000000 }
-    );
+    const trx = await r.setMinSecondsSinceLastUpdate(minSecondsSinceLastUpdate);
     await trx.wait();
     console.log(
       `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSecondsSinceLastUpdate}`
