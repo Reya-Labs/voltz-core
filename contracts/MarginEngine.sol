@@ -8,7 +8,7 @@ import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/fcms/IFCM.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "./VoltzPausable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
@@ -20,8 +20,7 @@ contract MarginEngine is
     MarginEngineStorage,
     IMarginEngine,
     Initializable,
-    OwnableUpgradeable,
-    PausableUpgradeable,
+    VoltzPausable,
     UUPSUpgradeable
 {
     using SafeCastUni for uint256;
