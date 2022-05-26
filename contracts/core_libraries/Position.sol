@@ -15,8 +15,6 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 /// @dev Positions store additional state for tracking fees owed to the position as well as their fixed and variable token balances
 library Position {
     using Position for Info;
-    using SafeCast for uint256;
-    using SafeCast for int256;
 
     // info stored for each user's position
     struct Info {

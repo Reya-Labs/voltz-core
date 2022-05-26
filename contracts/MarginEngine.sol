@@ -13,6 +13,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "./storage/MarginEngineStorage.sol";
+import "./utils/SafeCastUni.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract MarginEngine is
@@ -23,8 +24,8 @@ contract MarginEngine is
     PausableUpgradeable,
     UUPSUpgradeable
 {
-    using SafeCast for uint256;
-    using SafeCast for int256;
+    using SafeCastUni for uint256;
+    using SafeCastUni for int256;
     using Tick for mapping(int24 => Tick.Info);
 
     using Position for mapping(bytes32 => Position.Info);

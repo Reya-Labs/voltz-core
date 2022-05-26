@@ -9,7 +9,6 @@ import "../core_libraries/SafeTransferLib.sol";
 
 contract MockCToken is ICToken, ERC20 {
     using WadRayMath for uint256;
-    address internal _cToken;
     address internal _underlyingAsset;
     uint256 internal _rate;
 
@@ -49,11 +48,8 @@ contract MockCToken is ICToken, ERC20 {
         returns (uint256)
     {
         uint256 yieldBearingAmount = redeemAmount.wadDiv(_rate);
-        IERC20Minimal(address(_cToken)).safeTransferFrom(
-            msg.sender,
-            address(this),
-            yieldBearingAmount
-        );
+        uint256 cTokenBalance = balanceOf(msg.sender);
+        _burn(msg.sender, cTokenBalance);
         IERC20Minimal(address(_underlyingAsset)).safeTransfer(
             msg.sender,
             redeemAmount

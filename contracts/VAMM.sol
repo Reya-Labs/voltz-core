@@ -6,7 +6,7 @@ import "./storage/VAMMStorage.sol";
 import "./interfaces/IVAMM.sol";
 import "./interfaces/IPeriphery.sol";
 import "./core_libraries/TickBitmap.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "./utils/SafeCastUni.sol";
 import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
@@ -23,8 +23,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 
 contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
-  using SafeCast for uint256;
-  using SafeCast for int256;
+  using SafeCastUni for uint256;
+  using SafeCastUni for int256;
   using Tick for mapping(int24 => Tick.Info);
   using TickBitmap for mapping(int16 => uint256);
 
@@ -54,7 +54,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
     
     if (_isAlpha) {
       IPeriphery _periphery = _factory.periphery();
-      require(msg.sender==address(_periphery), "periphery only");
+      require(msg.sender==address(_periphery), "pphry only");
     }
 
     _;
@@ -68,7 +68,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   /// @inheritdoc IVAMM
   function initialize(IMarginEngine __marginEngine, int24 __tickSpacing) external override initializer {
 
-    require(address(__marginEngine) != address(0), "ME must be set");
+    require(address(__marginEngine) != address(0), "ME = 0");
     // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
     // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
     // 16384 ticks represents a >5x price change with ticks of 1 bips
@@ -208,7 +208,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
   function setFee(uint256 newFeeWad) external override onlyOwner {
     require(newFeeWad >= 0 && newFeeWad <= MAX_FEE, "fee range");
-    require(_feeWad != newFeeWad, "fee value already set");
+    require(_feeWad != newFeeWad, "fee alrdy set");
 
     _feeWad = newFeeWad;
     emit Fee(_feeWad);
@@ -218,7 +218,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   /// @inheritdoc IVAMM
   function setIsAlpha(bool __isAlpha) external override onlyOwner {
 
-    require(_isAlpha != __isAlpha, "alpha state already set");
+    require(_isAlpha != __isAlpha, "alpha alrdy set");
     _isAlpha = __isAlpha;
     emit IsAlpha(_isAlpha);
 

@@ -8,7 +8,6 @@ import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IPeriphery.sol";
 import "../utils/TickMath.sol";
-import "./peripheral_libraries/LiquidityAmounts.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../core_libraries/SafeTransferLib.sol";
@@ -19,6 +18,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 contract Periphery is IPeriphery {
     using SafeCast for uint256;
     using SafeCast for int256;
+    uint256 internal constant Q96 = 2**96;
 
     using SafeTransferLib for IERC20Minimal;
 
@@ -36,6 +36,25 @@ contract Periphery is IPeriphery {
         address vammOwner = OwnableUpgradeable(address(_vamm)).owner();
         require(msg.sender == vammOwner, "only me owner");
         _;
+    }
+
+    /// @notice Computes the amount of liquidity received for a given notional amount and price range
+    /// @dev Calculates amount1 / (sqrt(upper) - sqrt(lower)).
+    /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary
+    /// @param sqrtRatioBX96 A sqrt price representing the second tick boundary
+    /// @param notionalAmount The amount of notional being sent in
+    /// @return liquidity The amount of returned liquidity
+    function getLiquidityForNotional(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint256 notionalAmount
+    ) public pure returns (uint128 liquidity) {
+        if (sqrtRatioAX96 > sqrtRatioBX96)
+            (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+        return
+            FullMath
+                .mulDiv(notionalAmount, Q96, sqrtRatioBX96 - sqrtRatioAX96)
+                .toUint128();
     }
 
     function checkLPNotionalCap(
@@ -132,7 +151,7 @@ contract Periphery is IPeriphery {
 
         // compute the liquidity amount for the amount of notional (amount1) specified
 
-        uint128 liquidity = LiquidityAmounts.getLiquidityForAmount1(
+        uint128 liquidity = getLiquidityForNotional(
             sqrtRatioAX96,
             sqrtRatioBX96,
             params.notional

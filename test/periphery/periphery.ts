@@ -196,7 +196,7 @@ describe("Periphery", async () => {
       .withArgs(true);
 
     await expect(vammTest.setIsAlpha(true)).to.be.revertedWith(
-      "alpha state already set"
+      "alpha alrdy set"
     );
   });
 
@@ -212,7 +212,7 @@ describe("Periphery", async () => {
         TICK_SPACING,
         toBn("10000000")
       )
-    ).to.be.revertedWith("periphery only");
+    ).to.be.revertedWith("pphry only");
 
     await expect(
       vammTest.burn(
@@ -221,7 +221,7 @@ describe("Periphery", async () => {
         TICK_SPACING,
         toBn("10000000")
       )
-    ).to.be.revertedWith("periphery only");
+    ).to.be.revertedWith("pphry only");
   });
 
   it("swap quoter on revert: margin requirement not met", async () => {
