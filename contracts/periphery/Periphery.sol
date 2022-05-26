@@ -138,7 +138,7 @@ contract Periphery is IPeriphery {
         int24 _tickLower,
         int24 _tickUpper
     ) external override {
-        _marginEngine.settlePosition(msg.sender, _tickLower, _tickUpper);
+        _marginEngine.settlePosition(_owner, _tickLower, _tickUpper);
 
         updatePositionMargin(_marginEngine, _tickLower, _tickUpper, 0, true); // fully withdraw
     }

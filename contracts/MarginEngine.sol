@@ -353,7 +353,6 @@ contract MarginEngine is
 
     /// @inheritdoc IMarginEngine
     function setIsAlpha(bool __isAlpha) external override onlyOwner {
-        require(_isAlpha != __isAlpha, "alpha state already set");
         _isAlpha = __isAlpha;
         emit IsAlpha(_isAlpha);
     }
