@@ -378,7 +378,7 @@ contract MarginEngine is
         /// @dev if in alpha --> revert (unless call via periphery)
         if (_isAlpha) {
             IPeriphery _periphery = _factory.periphery();
-            require(msg.sender == address(_periphery), "periphery only");
+            require(msg.sender == address(_periphery), "pphry only");
         }
 
         _updatePositionTokenBalancesAndAccountForFees(

@@ -167,7 +167,7 @@ describe("Periphery", async () => {
 
     await expect(
       vammTest.mint(wallet.address, -TICK_SPACING, TICK_SPACING, 2)
-    ).to.be.revertedWith("periphery only");
+    ).to.be.revertedWith("pphry only");
 
     await periphery.connect(wallet).mintOrBurn({
       marginEngine: marginEngineTest.address,
@@ -180,7 +180,7 @@ describe("Periphery", async () => {
 
     await expect(
       vammTest.burn(wallet.address, -TICK_SPACING, TICK_SPACING, 2)
-    ).to.be.revertedWith("periphery only");
+    ).to.be.revertedWith("pphry only");
 
     await periphery.connect(wallet).mintOrBurn({
       marginEngine: marginEngineTest.address,
@@ -200,7 +200,7 @@ describe("Periphery", async () => {
           TICK_SPACING,
           toBn("11")
         )
-    ).to.be.revertedWith("periphery only");
+    ).to.be.revertedWith("pphry only");
 
     periphery
       .connect(wallet)
@@ -248,7 +248,7 @@ describe("Periphery", async () => {
           TICK_SPACING,
           toBn("2")
         )
-    ).to.be.revertedWith("periphery only");
+    ).to.be.revertedWith("pphry only");
   });
 
   it("check can't mint beyond the margin cap", async () => {
