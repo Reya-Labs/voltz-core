@@ -113,6 +113,9 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       url: `${process.env.MAINNET_URL}`,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
     },
     // ropsten: {
     //   url: `${process.env.ROPSTEN_URL}`,
