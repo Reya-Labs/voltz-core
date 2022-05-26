@@ -296,10 +296,14 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     function setCacheMaxAgeInSeconds(uint256 _cacheMaxAgeInSeconds) external;
 
     /// @notice Get Historical APY
-    /// @dev The lookback window used by this function is determined by the secondsAgo state variable
+    /// @dev The lookback window used by this function is determined by `lookbackWindowInSeconds`
     /// @dev refresh the historical apy cache if necessary
     /// @return historicalAPY (Wad)
     function getHistoricalApy() external returns (uint256);
+
+    /// @notice Computes the historical APY value of the RateOracle, without updating the cached value
+    /// @dev The lookback window used by this function is determined by `lookbackWindowInSeconds`
+    function getHistoricalApyReadOnly() external view returns (uint256);
 
     function getPositionMarginRequirement(
         address _recipient,
