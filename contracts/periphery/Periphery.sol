@@ -8,12 +8,14 @@ import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IPeriphery.sol";
 import "../utils/TickMath.sol";
-import "hardhat/console.sol";
+import "./peripheral_libraries/LiquidityAmounts.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
+/// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
 contract Periphery is IPeriphery {
     using SafeCast for uint256;
@@ -22,19 +24,22 @@ contract Periphery is IPeriphery {
 
     using SafeTransferLib for IERC20Minimal;
 
-    /// @dev Voltz Protocol vamm => LP Notional Cap in Underlying Tokens
-    /// @dev LP notional cap of zero implies no notional cap
+    /// @dev Voltz Protocol vamm => LP Margin Cap in Underlying Tokens
+    /// @dev LP margin cap of zero implies no margin cap
     /// @inheritdoc IPeriphery
-    mapping(IVAMM => uint256) public override lpNotionalCaps;
+    mapping(IVAMM => int256) public override lpMarginCaps;
 
-    /// @dev amount of notional (coming from the periphery) in terms of underlying tokens taken up by LPs in a given VAMM
+    /// @dev amount of margin (coming from the periphery) in terms of underlying tokens taken up by LPs in a given VAMM
     /// @inheritdoc IPeriphery
-    mapping(IVAMM => uint256) public override lpNotionalCumulatives;
+    mapping(IVAMM => int256) public override lpMarginCumulatives;
+
+    /// @dev alpha lp margin mapping
+    mapping(bytes32 => int256) internal lastAccountedMargin;
 
     modifier vammOwnerOnly(IVAMM _vamm) {
-        require(address(_vamm) != address(0), "me addr zero");
+        require(address(_vamm) != address(0), "vamm addr zero");
         address vammOwner = OwnableUpgradeable(address(_vamm)).owner();
-        require(msg.sender == vammOwner, "only me owner");
+        require(msg.sender == vammOwner, "only vamm owner");
         _;
     }
 
@@ -59,54 +64,121 @@ contract Periphery is IPeriphery {
 
     function checkLPNotionalCap(
         IVAMM _vamm,
-        uint256 _notionalDelta,
-        bool _isMint
+        bytes32 encodedPosition,
+        int256 newMargin,
+        bool isLPBefore,
+        bool isLPAfter
     ) internal {
-        if (_isMint) {
-            lpNotionalCumulatives[_vamm] += _notionalDelta;
-            uint256 _lpNotionalCap = lpNotionalCaps[_vamm];
+        if (isLPAfter) {
+            // added some liquidity, need to account for margin
+            lpMarginCumulatives[_vamm] -= lastAccountedMargin[encodedPosition];
 
-            if (_lpNotionalCap > 0) {
-                /// @dev if > 0 the cap assumed to have been set, if == 0 assume no cap by convention
-                require(
-                    lpNotionalCumulatives[_vamm] < _lpNotionalCap,
-                    "lp cap limit"
-                );
-            }
+            lastAccountedMargin[encodedPosition] = newMargin;
+
+            lpMarginCumulatives[_vamm] += lastAccountedMargin[encodedPosition];
         } else {
-            lpNotionalCumulatives[_vamm] -= _notionalDelta;
+            if (isLPBefore) {
+                lpMarginCumulatives[_vamm] -= lastAccountedMargin[
+                    encodedPosition
+                ];
+
+                lastAccountedMargin[encodedPosition] = 0;
+            }
+        }
+
+        require(
+            lpMarginCumulatives[_vamm] <= lpMarginCaps[_vamm],
+            "lp cap limit"
+        );
+    }
+
+    function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew)
+        external
+        override
+        vammOwnerOnly(_vamm)
+    {
+        if (lpMarginCaps[_vamm] != _lpMarginCapNew) {
+            lpMarginCaps[_vamm] = _lpMarginCapNew;
+            emit MarginCap(_vamm, lpMarginCaps[_vamm]);
         }
     }
 
-    function setLPNotionalCap(IVAMM _vamm, uint256 _lpNotionalCapNew)
-        external
-        vammOwnerOnly(_vamm)
-    {
-        if (lpNotionalCaps[_vamm] != _lpNotionalCapNew) {
-            lpNotionalCaps[_vamm] = _lpNotionalCapNew;
-            emit NotionalCap(_vamm, lpNotionalCaps[_vamm]);
-        }
+    function settlePositionAndWithdrawMargin(
+        IMarginEngine _marginEngine,
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external override {
+        _marginEngine.settlePosition(msg.sender, _tickLower, _tickUpper);
+
+        updatePositionMargin(_marginEngine, _tickLower, _tickUpper, 0, true); // fully withdraw
     }
 
     function updatePositionMargin(
         IMarginEngine _marginEngine,
         int24 _tickLower,
         int24 _tickUpper,
-        uint256 _marginDelta
-    ) internal {
-        IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
-        _underlyingToken.safeTransferFrom(
+        int256 _marginDelta,
+        bool _fullyWithdraw
+    ) public override {
+        Position.Info memory _position = _marginEngine.getPosition(
             msg.sender,
-            address(this),
-            _marginDelta
+            _tickLower,
+            _tickUpper
         );
-        _underlyingToken.approve(address(_marginEngine), _marginDelta);
+
+        IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
+
+        if (_fullyWithdraw) {
+            _marginDelta = -_position.margin;
+        }
+
+        if (_marginDelta > 0) {
+            _underlyingToken.safeTransferFrom(
+                msg.sender,
+                address(this),
+                _marginDelta.toUint256()
+            );
+            _underlyingToken.approve(
+                address(_marginEngine),
+                _marginDelta.toUint256()
+            );
+        }
+
         _marginEngine.updatePositionMargin(
             msg.sender,
             _tickLower,
             _tickUpper,
-            _marginDelta.toInt256()
+            _marginDelta
         );
+
+        _position = _marginEngine.getPosition(
+            msg.sender,
+            _tickLower,
+            _tickUpper
+        );
+
+        bool _isAlpha = _marginEngine.isAlpha();
+        IVAMM _vamm = _marginEngine.vamm();
+
+        if (_isAlpha && _position._liquidity > 0) {
+            bytes32 encodedPosition = keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    address(_vamm),
+                    address(_marginEngine),
+                    _tickLower,
+                    _tickUpper
+                )
+            );
+            accountLPMarginCap(
+                _vamm,
+                encodedPosition,
+                _position.margin,
+                true,
+                true
+            );
+        }
     }
 
     /// @notice Add liquidity to an initialized pool
@@ -118,7 +190,12 @@ contract Periphery is IPeriphery {
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         IVAMM vamm = params.marginEngine.vamm();
-        checkLPNotionalCap(vamm, params.notional, params.isMint);
+
+        Position.Info memory _position = params.marginEngine.getPosition(
+            msg.sender,
+            params.tickLower,
+            params.tickUpper
+        );
 
         IVAMM.VAMMVars memory _v = vamm.vammVars();
         bool vammUnlocked = _v.sqrtPriceX96 != 0;
@@ -138,14 +215,13 @@ contract Periphery is IPeriphery {
             vamm.initializeVAMM(sqrtRatioAtMidTickX96);
         }
 
-        // if margin delta is positive, top up position margin
-
-        if (params.marginDelta > 0) {
+        if (params.marginDelta != 0) {
             updatePositionMargin(
                 params.marginEngine,
                 params.tickLower,
                 params.tickUpper,
-                params.marginDelta
+                params.marginDelta,
+                false // _fullyWithdraw
             );
         }
 
@@ -156,6 +232,8 @@ contract Periphery is IPeriphery {
             sqrtRatioBX96,
             params.notional
         );
+
+        bool isLPBefore = _position._liquidity > 0;
 
         positionMarginRequirement = 0;
         if (params.isMint) {
@@ -172,6 +250,33 @@ contract Periphery is IPeriphery {
                 params.tickLower,
                 params.tickUpper,
                 liquidity
+            );
+        }
+
+        _position = params.marginEngine.getPosition(
+            msg.sender,
+            params.tickLower,
+            params.tickUpper
+        );
+
+        bool isLPAfter = _position._liquidity > 0;
+
+        if (params.marginEngine.isAlpha() && (isLPBefore || isLPAfter)) {
+            bytes32 encodedPosition = keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    address(vamm),
+                    address(params.marginEngine),
+                    params.tickLower,
+                    params.tickUpper
+                )
+            );
+            accountLPMarginCap(
+                vamm,
+                encodedPosition,
+                _position.margin,
+                isLPBefore,
+                isLPAfter
             );
         }
     }
@@ -207,7 +312,7 @@ contract Periphery is IPeriphery {
                 _tickUpper = TickMath.MAX_TICK;
             }
 
-            /// @audit add unit testsl, checks of tickLower/tickUpper divisiblilty by tickSpacing
+            /// @audit add unit tests, checks of tickLower/tickUpper divisiblilty by tickSpacing
             params.tickLower = _tickLower;
             params.tickUpper = _tickUpper;
         }
@@ -219,7 +324,8 @@ contract Periphery is IPeriphery {
                 params.marginEngine,
                 params.tickLower,
                 params.tickUpper,
-                params.marginDelta
+                params.marginDelta.toInt256(),
+                false // _fullyWithdraw
             );
         }
 

@@ -9,8 +9,8 @@ import "contracts/utils/CustomErrors.sol";
 interface IPeriphery is CustomErrors {
     // events
 
-    /// @dev emitted after new lp notional cap is set
-    event NotionalCap(IVAMM _vamm, uint256 _lpNotionalCapNew);
+    /// @dev emitted after new lp margin cap is set
+    event MarginCap(IVAMM _vamm, int256 _lpMarginCapNew);
 
     // structs
 
@@ -20,7 +20,7 @@ interface IPeriphery is CustomErrors {
         int24 tickUpper;
         uint256 notional;
         bool isMint;
-        uint256 marginDelta;
+        int256 marginDelta;
     }
 
     struct SwapPeripheryParams {
@@ -42,11 +42,11 @@ interface IPeriphery is CustomErrors {
 
     /// @param _vamm VAMM for which to get the lp cap in underlying tokens
     /// @return Notional Cap for liquidity providers that mint or burn via periphery (enforced in the core if isAlpha is set to true)
-    function lpNotionalCaps(IVAMM _vamm) external returns (uint256);
+    function lpMarginCaps(IVAMM _vamm) external returns (int256);
 
     /// @param _vamm VAMM for which to get the lp notional cumulative in underlying tokens
     /// @return Total amount of notional supplied by the LPs to a given VAMM via the periphery
-    function lpNotionalCumulatives(IVAMM _vamm) external returns (uint256);
+    function lpMarginCumulatives(IVAMM _vamm) external returns (int256);
 
     // non-view functions
 
@@ -64,4 +64,21 @@ interface IPeriphery is CustomErrors {
             int256 _marginRequirement,
             int24 _tickAfter
         );
+
+    function updatePositionMargin(
+        IMarginEngine _marginEngine,
+        int24 _tickLower,
+        int24 _tickUpper,
+        int256 _marginDelta,
+        bool _fullyWithdraw
+    ) external;
+
+    function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew) external;
+
+    function settlePositionAndWithdrawMargin(
+        IMarginEngine _marginEngine,
+        address _owner,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external;
 }

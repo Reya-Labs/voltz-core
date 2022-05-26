@@ -111,6 +111,12 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
         uint256 accumulatedFees
     );
 
+    /// @dev emitted after the _isAlpha boolean is updated by the owner of the Margin Engine
+    /// @dev _isAlpha boolean dictates whether the Margin Engine is in the Alpha State, i.e. margin updates can only be done via the periphery
+    /// @dev additionally, the periphery has the logic to take care of lp margin caps in the Alpha State phase of the Margin Engine
+    /// @dev __isAlpha is the newly set value for the _isAlpha boolean
+    event IsAlpha(bool __isAlpha);
+
     // immutables
 
     /// @notice The Full Collateralisation Module (FCM)
@@ -161,6 +167,9 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @return The VAMM
     function vamm() external view returns (IVAMM);
 
+    /// @return If true, the Margin Engine Proxy is currently in alpha state, hence margin updates of LPs can only be done via the periphery. If false, lps can directly update their margin via Margin Engine.
+    function isAlpha() external view returns (bool);
+
     /// @notice Returns the information about a position by the position's key
     /// @param _owner The address of the position owner
     /// @param _tickLower The lower tick boundary of the position
@@ -195,6 +204,11 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
 
     /// @notice Sets the liquidator reward: proportion of liquidated position's margin paid as a reward to the liquidator
     function setLiquidatorReward(uint256 _liquidatorRewardWad) external;
+
+    /// @notice Function that sets the _isAlpha state variable, if it is set to true the protocol is in the Alpha State
+    /// @dev if the Margin Engine is at the alpha state, lp margin updates can only be done via the periphery which in turn takes care of margin caps for the LPs
+    /// @dev this function can only be called by the owner of the VAMM
+    function setIsAlpha(bool __isAlpha) external;
 
     /// @notice updates the margin account of a position which can be uniquily identified with its _owner, tickLower, tickUpper
     /// @dev if the position has positive liquidity then before the margin update, we call the updatePositionTokenBalancesAndAccountForFees functon that calculates up to date
