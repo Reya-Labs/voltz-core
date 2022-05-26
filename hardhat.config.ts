@@ -92,7 +92,7 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 60, // As high as is possible without blowing contract size limits
+        runs: 10, // As high as is possible without blowing contract size limits
       },
     },
   },

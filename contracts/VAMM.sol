@@ -21,7 +21,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./VoltzPausable.sol";
 
 
-contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+contract VAMM is VAMMStorage, IVAMM, Initializable, VoltzPausable, UUPSUpgradeable {
   using SafeCastUni for uint256;
   using SafeCastUni for int256;
   using Tick for mapping(int24 => Tick.Info);
@@ -199,7 +199,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
   function setFeeProtocol(uint8 feeProtocol) external override onlyOwner {
     require(feeProtocol == 0 || (feeProtocol >= 3 && feeProtocol <= 50), "PR range");
-    require(_vammVars.feeProtocol != feeProtocol, "PF value already set");
 
     _vammVars.feeProtocol = feeProtocol;
     emit FeeProtocol(feeProtocol);
@@ -207,7 +206,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
 
   function setFee(uint256 newFeeWad) external override onlyOwner {
     require(newFeeWad >= 0 && newFeeWad <= MAX_FEE, "fee range");
-    require(_feeWad != newFeeWad, "fee alrdy set");
 
     _feeWad = newFeeWad;
     emit Fee(_feeWad);
@@ -216,11 +214,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
   
   /// @inheritdoc IVAMM
   function setIsAlpha(bool __isAlpha) external override onlyOwner {
-
-    require(_isAlpha != __isAlpha, "alpha alrdy set");
     _isAlpha = __isAlpha;
     emit IsAlpha(_isAlpha);
-
   }
 
   // todo: prevent burning directly via the vamm if in Alpha State
@@ -481,7 +476,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, Pausable
       step.fixedTokenDeltaUnbalanced = -step.amountOut.toInt256();
 
       // update cumulative fee incurred while initiating an interest rate swap
-      state.cumulativeFeeIncurred = state.cumulativeFeeIncurred + step.feeAmount;
+      state.cumulativeFeeIncurred += step.feeAmount;
 
       // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
       if (cache.feeProtocol > 0) {
