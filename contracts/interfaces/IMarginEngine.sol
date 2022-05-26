@@ -325,37 +325,4 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
         int24 _tickUpper,
         bool _isLM
     ) external returns (uint256);
-
-    struct ApyBoundVars {
-        /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t_max) where t is the maturity timestamp, s is the current timestamp and beta is a diffusion process parameter set via calibration, t_max is the max possible duration of an IRS AMM
-        int256 timeFactorWad;
-        /// @dev 1 - timeFactor
-        int256 oneMinusTimeFactorWad;
-        /// @dev k = (4 * alpha/sigmaSquared)
-        int256 kWad;
-        /// @dev zeta = (sigmaSquared*(1-timeFactor))/ 4 * beta
-        int256 zetaWad;
-        /// @dev lambdaNum = 4 * beta * timeFactor * historicalApy
-        int256 lambdaNumWad;
-        /// @dev lambdaDen = sigmaSquared * (1 - timeFactor)
-        int256 lambdaDenWad;
-        /// @dev lambda = lambdaNum / lambdaDen
-        int256 lambdaWad;
-        /// @dev critical value multiplier = 2(k+2lambda)
-        int256 criticalValueMultiplierWad;
-        /// @dev critical value = sqrt(2(k+2*lambda))*xiUpper (for upper bound calculation), critical value = sqrt(2(k+2*lambda))*xiLower (for lower bound calculation)
-        int256 criticalValueWad;
-    }
-
-    struct SimulatedUnwindLocalVars {
-        uint256 sqrtRatioCurrWad;
-        uint256 fixedRateStartWad;
-        uint256 upperDWad;
-        uint256 scaledTimeWad;
-        int256 expInputWad;
-        int256 oneMinusTimeFactorWad;
-        uint256 dWad;
-        uint256 fixedRateCFWad;
-        uint256 fixedTokenDeltaUnbalancedWad;
-    }
 }
