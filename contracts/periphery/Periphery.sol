@@ -8,7 +8,6 @@ import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
 import "../interfaces/IPeriphery.sol";
 import "../utils/TickMath.sol";
-import "./peripheral_libraries/LiquidityAmounts.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
@@ -101,6 +100,36 @@ contract Periphery is IPeriphery {
             lpMarginCaps[_vamm] = _lpMarginCapNew;
             emit MarginCap(_vamm, lpMarginCaps[_vamm]);
         }
+    }
+
+    function accountLPMarginCap(
+        IVAMM _vamm,
+        bytes32 encodedPosition,
+        int256 newMargin,
+        bool isLPBefore,
+        bool isLPAfter
+    ) internal {
+        if (isLPAfter) {
+            // added some liquidity, need to account for margin
+            lpMarginCumulatives[_vamm] -= lastAccountedMargin[encodedPosition];
+
+            lastAccountedMargin[encodedPosition] = newMargin;
+
+            lpMarginCumulatives[_vamm] += lastAccountedMargin[encodedPosition];
+        } else {
+            if (isLPBefore) {
+                lpMarginCumulatives[_vamm] -= lastAccountedMargin[
+                    encodedPosition
+                ];
+
+                lastAccountedMargin[encodedPosition] = 0;
+            }
+        }
+
+        require(
+            lpMarginCumulatives[_vamm] <= lpMarginCaps[_vamm],
+            "lp cap limit"
+        );
     }
 
     function settlePositionAndWithdrawMargin(
