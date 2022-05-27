@@ -16,13 +16,13 @@ import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./utils/WadRayMath.sol";
 import "./utils/Printer.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./aave/AaveDataTypes.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "./VoltzPausable.sol";
 
-contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, VoltzPausable, UUPSUpgradeable {
+contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
   using WadRayMath for uint256;
   using SafeCast for uint256;
@@ -39,6 +39,15 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, VoltzPausable
     }
     _;
   }
+
+  modifier whenNotPaused() {
+        require(!paused, "Paused");
+        _;
+  }
+
+  function setPausability(bool state) external onlyMarginEngine {
+        paused = state;
+    }
 
   // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
   /// @custom:oz-upgrades-unsafe-allow constructor
@@ -61,7 +70,6 @@ contract AaveFCM is AaveFCMStorage, IFCM, IAaveFCM, Initializable, VoltzPausable
     tickSpacing = _vamm.tickSpacing(); // retrieve tick spacing of the VAM
 
     __Ownable_init();
-    __Pausable_init();
     __UUPSUpgradeable_init();
   }
 

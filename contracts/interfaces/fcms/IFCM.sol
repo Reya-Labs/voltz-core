@@ -10,6 +10,8 @@ import "../IVAMM.sol";
 import "../rate_oracles/IRateOracle.sol";
 
 interface IFCM is CustomErrors {
+    function setPausability(bool state) external;
+
     function getTraderWithYieldBearingAssets(address trader)
         external
         view

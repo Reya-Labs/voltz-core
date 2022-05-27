@@ -2,31 +2,26 @@
 
 pragma solidity =0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "hardhat/console.sol";
 
-contract VoltzPausable is PausableUpgradeable, OwnableUpgradeable {
+contract VoltzPausable is OwnableUpgradeable {
     bytes32 public constant VOLTZ_PAUSER = keccak256("VOLTZ_PAUSER");
 
     mapping(address => bool) private pauser;
+    bool public paused;
 
-    function grantPauser(address account) external onlyOwner {
-        pauser[account] = true;
+    modifier whenNotPaused() {
+        require(!paused, "Paused");
+        _;
     }
 
-    function revokePauser(address account) external onlyOwner {
-        pauser[account] = false;
+    function changePauser(address account, bool permission) external onlyOwner {
+        pauser[account] = permission;
     }
 
-    function pause() external {
-        require(pauser[msg.sender], "no pauser role");
-        _pause();
-    }
-
-    function unpause() external {
-        require(pauser[msg.sender], "no pauser role");
-        _unpause();
+    function setPausability(bool state) external {
+        require(pauser[msg.sender], "no role");
+        paused = state;
     }
 }

@@ -26,6 +26,7 @@ contract MarginEngineStorageV1 {
     IMarginEngine.MarginCalculatorParameters
         internal marginCalculatorParameters;
     bool internal _isAlpha;
+    bool public paused;
 }
 
 contract MarginEngineStorage is MarginEngineStorageV1 {

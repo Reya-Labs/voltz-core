@@ -17,10 +17,10 @@ import "./utils/Printer.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "./VoltzPausable.sol";
 
-contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, VoltzPausable, UUPSUpgradeable {
+contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
   using WadRayMath for uint256;
   using SafeCast for uint256;
@@ -38,6 +38,15 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, V
     _;
   }
 
+  modifier whenNotPaused() {
+        require(!paused, "Paused");
+        _;
+  }
+
+  function setPausability(bool state) external onlyMarginEngine {
+        paused = state;
+    }
+
   // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor () initializer {}
@@ -53,7 +62,6 @@ contract CompoundFCM is CompoundFCMStorage, IFCM, ICompoundFCM, Initializable, V
     tickSpacing = _vamm.tickSpacing(); // retrieve tick spacing of the VAM
 
     __Ownable_init();
-    __Pausable_init();
     __UUPSUpgradeable_init();
   }
 
