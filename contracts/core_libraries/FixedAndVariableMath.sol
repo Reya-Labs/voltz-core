@@ -86,8 +86,9 @@ library FixedAndVariableMath {
             timeInSecondsWad = currentTimestampWad - termStartTimestampWad;
         }
 
-        uint256 timeInYearsWad = accrualFact(timeInSecondsWad);
-        fixedFactorValueWad = timeInYearsWad.div(ONE_HUNDRED_IN_WAD);
+        fixedFactorValueWad = accrualFact(timeInSecondsWad).div(
+            ONE_HUNDRED_IN_WAD
+        );
     }
 
     /// @notice Calculate the fixed token balance for a position over a timespan
@@ -131,27 +132,18 @@ library FixedAndVariableMath {
         uint256 termStartTimestampWad,
         uint256 termEndTimestampWad
     ) internal view returns (int256) {
-        int256 excessFixedAccruedBalanceWad;
-        int256 excessVariableAccruedBalanceWad;
-        int256 excessBalanceWad;
-
-        excessFixedAccruedBalanceWad = amountFixedWad.mul(
-            int256(
-                fixedFactor(false, termStartTimestampWad, termEndTimestampWad)
-            )
-        );
-
-        excessVariableAccruedBalanceWad = amountVariableWad.mul(
-            int256(accruedVariableFactorWad)
-        );
-
         /// @dev cashflows accrued since the inception of the IRS AMM
 
-        excessBalanceWad =
-            excessFixedAccruedBalanceWad +
-            excessVariableAccruedBalanceWad;
-
-        return excessBalanceWad;
+        return
+            amountFixedWad.mul(
+                int256(
+                    fixedFactor(
+                        false,
+                        termStartTimestampWad,
+                        termEndTimestampWad
+                    )
+                )
+            ) + amountVariableWad.mul(int256(accruedVariableFactorWad));
     }
 
     /// @notice Calculate the fixed token balance given both fixed and variable balances

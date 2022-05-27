@@ -18,10 +18,10 @@ import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./utils/FixedPoint128.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./VoltzPausable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 
-contract VAMM is VAMMStorage, IVAMM, Initializable, VoltzPausable, UUPSUpgradeable {
+contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgradeable {
   using SafeCastUni for uint256;
   using SafeCastUni for int256;
   using Tick for mapping(int24 => Tick.Info);
@@ -29,6 +29,23 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, VoltzPausable, UUPSUpgradeab
 
   /// @dev 0.02 = 2% is the max fee as proportion of notional scaled by time to maturity (in wei fixed point notation 0.02 -> 2 * 10^16)
   uint256 public constant MAX_FEE = 20000000000000000;
+
+  bytes32 public constant VOLTZ_PAUSER = keccak256("VOLTZ_PAUSER");
+
+  modifier whenNotPaused() {
+        require(!paused, "Paused");
+        _;
+    }
+
+  function changePauser(address account, bool permission) external onlyOwner {
+      pauser[account] = permission;
+  }
+
+  function setPausability(bool state) external {
+      require(pauser[msg.sender], "no role");
+      paused = state;
+      _marginEngine.setPausability(state);
+  }
 
   /// @dev Mutually exclusive reentrancy protection into the vamm to/from a method. This method also prevents entrance
   /// to a function before the vamm is initialized. The reentrancy guard is required throughout the contract.
@@ -82,7 +99,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, VoltzPausable, UUPSUpgradeab
     termEndTimestampWad = _marginEngine.termEndTimestampWad();
 
     __Ownable_init();
-    __Pausable_init();
     __UUPSUpgradeable_init();
   }
 
