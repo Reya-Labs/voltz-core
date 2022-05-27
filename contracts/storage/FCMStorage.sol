@@ -17,6 +17,7 @@ contract FCMStorageV1 {
     IVAMM internal _vamm;
     mapping(address => TraderWithYieldBearingAssets.Info) public traders;
     IERC20Minimal public underlyingToken;
+    bool public paused;
 }
 
 contract AaveFCMStorageV1 {

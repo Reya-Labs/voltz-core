@@ -13,6 +13,8 @@ import "contracts/utils/CustomErrors.sol";
 interface IMarginEngine is IPositionStructs, CustomErrors {
     // structs
 
+    function setPausability(bool state) external;
+
     struct MarginCalculatorParameters {
         /// @dev Upper bound of the underlying pool (e.g. Aave v2 USDC lending pool) APY from the initiation of the IRS AMM and until its maturity (18 decimals fixed point number)
         uint256 apyUpperMultiplierWad;

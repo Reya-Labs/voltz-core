@@ -32,6 +32,9 @@ contract VAMMStorageV1 {
     mapping(int16 => uint256) internal _tickBitmap;
     IVAMM.VAMMVars internal _vammVars;
     bool internal _isAlpha;
+
+    mapping(address => bool) internal pauser;
+    bool public paused;
 }
 
 contract VAMMStorage is VAMMStorageV1 {

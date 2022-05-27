@@ -7,19 +7,19 @@ import "./interfaces/rate_oracles/IRateOracle.sol";
 import "./interfaces/fcms/IFCM.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
-import "./VoltzPausable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./core_libraries/SafeTransferLib.sol";
 import "./storage/MarginEngineStorage.sol";
 import "./utils/SafeCastUni.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "contracts/utils/SqrtPriceMath.sol";
 
 contract MarginEngine is
     MarginEngineStorage,
     IMarginEngine,
     Initializable,
-    VoltzPausable,
+    OwnableUpgradeable,
     UUPSUpgradeable
 {
     using PRBMathSD59x18 for int256;
@@ -44,6 +44,16 @@ contract MarginEngine is
     uint256 public constant MIN_LOOKBACK_WINDOW_IN_SECONDS = 3600; // one hour
     uint256 public constant MAX_CACHE_MAX_AGE_IN_SECONDS = 1209600; // two weeks
     uint256 public constant MAX_LIQUIDATOR_REWARD_WAD = 3e17; // 30%
+
+    modifier whenNotPaused() {
+        require(!paused, "Paused");
+        _;
+    }
+
+    function setPausability(bool state) external onlyVAMM {
+        paused = state;
+        _fcm.setPausability(state);
+    }
 
     /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t_max) where t is the maturity timestamp, and t_max is the max number of seconds for the IRS AMM duration, s is the current timestamp and beta is a diffusion process parameter set via calibration
     function computeTimeFactor() internal view returns (int256 timeFactorWad) {
@@ -231,7 +241,6 @@ contract MarginEngine is
         // _cacheMaxAgeInSeconds = 6 hours; // can be changed by owner
 
         __Ownable_init();
-        __Pausable_init();
         __UUPSUpgradeable_init();
     }
 
