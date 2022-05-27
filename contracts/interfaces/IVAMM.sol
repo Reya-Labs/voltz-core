@@ -9,7 +9,7 @@ import "contracts/utils/CustomErrors.sol";
 
 interface IVAMM is IPositionStructs, CustomErrors {
     function setPausability(bool state) external;
-    
+
     // events
     event Swap(
         address sender,
