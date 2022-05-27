@@ -350,10 +350,6 @@ describe("Periphery", async () => {
     await expect(vammTest.setIsAlpha(true))
       .to.emit(vammTest, "IsAlpha")
       .withArgs(true);
-
-    await expect(vammTest.setIsAlpha(true)).to.be.revertedWith(
-      "alpha alrdy set"
-    );
   });
 
   it("can't mint or burn with vamm when alpha but can mint with periphery", async () => {
