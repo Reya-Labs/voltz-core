@@ -388,10 +388,16 @@ contract MarginEngine is
             "LB OOB"
         );
 
-        _secondsAgo = _newSecondsAgo;
+        if (_secondsAgo == 0) {
+            // First time setting the value. Anything goes.
+            _secondsAgo = _newSecondsAgo;
+        } else {
+            // Updating value. Invalidate cache and make sure we can read the rates we need from the rate oracle.
+            _secondsAgo = _newSecondsAgo;
 
-        // // Cache invalidated
-        // _refreshHistoricalApyCache();
+            // Cache invalidated
+            _refreshHistoricalApyCache();
+        }
 
         emit HistoricalApyWindowSetting(_secondsAgo);
     }
