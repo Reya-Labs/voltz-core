@@ -390,8 +390,8 @@ contract MarginEngine is
 
         _secondsAgo = _newSecondsAgo;
 
-        // Cache invalidated
-        _refreshHistoricalApyCache();
+        // // Cache invalidated
+        // _refreshHistoricalApyCache();
 
         emit HistoricalApyWindowSetting(_secondsAgo);
     }
