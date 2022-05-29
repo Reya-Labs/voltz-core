@@ -134,6 +134,13 @@ const config: HardhatUserConfig = {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
+    rinkeby: {
+      url: `${process.env.RINKEBY_URL}`,
+      // gasPrice: 1,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
+    },
   },
   namedAccounts: {
     deployer: {
