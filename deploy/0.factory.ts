@@ -1,6 +1,10 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 
+
+// todo: need a more elegant way to handle factory deployed via the community manager
+const DEPLOY_FACTORY: boolean = false;
+
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   try {
     const { deploy } = hre.deployments;
@@ -16,11 +20,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       from: deployer,
       log: doLogging,
     });
-    await deploy("Factory", {
-      from: deployer,
-      args: [masterMarginEngineDeploy.address, masterVammDeploy.address],
-      log: doLogging,
-    });
+
+    if (DEPLOY_FACTORY) {
+      await deploy("Factory", {
+        from: deployer,
+        args: [masterMarginEngineDeploy.address, masterVammDeploy.address],
+        log: doLogging,
+      });
+    }
+
     return true; // Only execute once
   } catch (e) {
     console.error(e);
