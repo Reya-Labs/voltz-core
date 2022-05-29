@@ -1,7 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 
-
 // todo: need a more elegant way to handle factory deployed via the community manager
 const DEPLOY_FACTORY: boolean = false;
 
