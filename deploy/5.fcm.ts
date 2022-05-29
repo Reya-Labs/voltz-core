@@ -14,7 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   let compoundRateOracle = await ethers.getContractOrNull(
     "MockCTokenRateOracle"
   );
-  // const factory = (await ethers.getContract("Factory")) as Factory;
+  const factory = (await ethers.getContract("Factory")) as Factory;
   let underlyingYieldBearingProtocolID_AaveV2: number;
   let underlyingYieldBearingProtocolID_Compound: number;
 
@@ -50,12 +50,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log: doLogging,
     });
 
-    // const trx = await factory.setMasterFCM(
-    //   masterAaveFCM.address,
-    //   underlyingYieldBearingProtocolID_AaveV2,
-    //   { gasLimit: 10000000 }
-    // );
-    // await trx.wait();
+    const trx = await factory.setMasterFCM(
+      masterAaveFCM.address,
+      underlyingYieldBearingProtocolID_AaveV2,
+      { gasLimit: 10000000 }
+    );
+    await trx.wait();
   }
 
   if (compoundRateOracle) {
@@ -66,12 +66,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log: doLogging,
     });
 
-    // const trx = await factory.setMasterFCM(
-    //   masterCompoundFCM.address,
-    //   underlyingYieldBearingProtocolID_Compound,
-    //   { gasLimit: 10000000 }
-    // );
-    // await trx.wait();
+    const trx = await factory.setMasterFCM(
+      masterCompoundFCM.address,
+      underlyingYieldBearingProtocolID_Compound,
+      { gasLimit: 10000000 }
+    );
+    await trx.wait();
   }
 
   return true; // Only execute once
