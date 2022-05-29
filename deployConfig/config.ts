@@ -44,6 +44,19 @@ const kovanConfigDefaults: ConfigDefaults = {
   rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // FOr mock token oracle. 6 hours
 };
 
+// TODO: update these and make them settable *per-duration-per-token*? That's a lot of data so maybe better just to have IRS creation script read it from file.
+const mainnetConfigDefaults: ConfigDefaults = {
+  marginEngineLookbackWindowInSeconds: 60 * 60 * 24 * 25, // 25 days
+  // marginEngineLookbackWindowInSeconds: 1209600, // 2 weeks
+  marginEngineCacheMaxAgeInSeconds: 6 * 60 * 60, // 6 hours
+  marginEngineLiquidatorRewardWad: toBn(0.1),
+  marginEngineCalculatorParameters: marginCalculatorDefaults1,
+  vammFeeProtocol: 10,
+  vammFeeWad: toBn(0.009), // 0.9%, for 30 day pool
+  rateOracleBufferSize: 200, // For mock token oracle. Ignored on mainnet.
+  rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // For mock token oracle. Ignored on mainnet.
+};
+
 const localhostConfigDefaults = {
   ...kovanConfigDefaults,
   marginEngineLookbackWindowInSeconds: 60 * 60, // 1 hour
@@ -141,13 +154,49 @@ const kovanConfig = {
   ],
 };
 
+const mainnetConfig = {
+  // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
+  aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
+  maxIrsDurationInSeconds: 60 * 60 * 24 * 92, // 92 days. Do not increase without checking that rate oracle buffers are large enough
+  configDefaults: mainnetConfigDefaults,
+
+  // Kovan MockUSDT (USDC has no ABI and faucet not working, so USDT easier to mint)
+  // See tokens list at https://aave.github.io/aave-addresses/kovan.json
+  aaveTokens: [
+    {
+      name: "USDC",
+      address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      rateOracleBufferSize: 500,
+      minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+    },
+    {
+      name: "DAI",
+      address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      rateOracleBufferSize: 500,
+      minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      trustedDataPoints: kovanTusdDataPoints,
+    },
+  ],
+  // See tokens list at https://compound.finance/docs#networks
+  compoundTokens: [
+    {
+      name: "cDAI",
+      address: "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643",
+      rateOracleBufferSize: 500,
+      minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+    },
+  ],
+};
+
 const config: ContractsConfigMap = {
   kovan: kovanConfig,
   localhost: {
     maxIrsDurationInSeconds: 60 * 60 * 24 * 30, // 30 days. Do not increase without checking that rate oracle buffers are large enough
     configDefaults: localhostConfigDefaults,
   },
+  mainnet: mainnetConfig,
   // hardhat: kovanConfig, // uncomment if testing against a kovan fork
+  // hardhat: mainnetConfig, // uncomment if testing against a mainnet fork
   hardhat: {
     maxIrsDurationInSeconds: 60 * 60 * 24 * 30, // 30 days. Do not increase without checking that rate oracle buffers are large enough
     configDefaults: localhostConfigDefaults,
