@@ -32,7 +32,6 @@ const marginCalculatorDefaults1 = {
   minMarginToIncentiviseLiquidators: 0,
 };
 
-
 // same for rinkeby
 const kovanConfigDefaults: ConfigDefaults = {
   marginEngineLookbackWindowInSeconds: 60 * 60 * 6, // 6 hours
@@ -71,9 +70,7 @@ const kovanTusdDataPoints: RateOracleDataPoint[] = [
   [1651740940, "117664985657398114295162823"],
 ];
 
-
 const rinkebyConfig = {
-
   // See tokens list at https://compound.finance/docs#networks
   compoundTokens: [
     {
@@ -86,8 +83,7 @@ const rinkebyConfig = {
 
   configDefaults: kovanConfigDefaults,
   maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough
-
-}
+};
 
 const kovanConfig = {
   // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
