@@ -2,7 +2,11 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import { Factory } from "../typechain";
-import { getAaveTokens, getCompoundTokens } from "../deployConfig/config";
+import {
+  getAaveTokens,
+  getCompoundTokens,
+  factoryOwnedByMultisig,
+} from "../deployConfig/config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
@@ -17,6 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const factory = (await ethers.getContract("Factory")) as Factory;
   let underlyingYieldBearingProtocolID_AaveV2: number;
   let underlyingYieldBearingProtocolID_Compound: number;
+  const skipFactoryConfig = factoryOwnedByMultisig(hre.network.name);
 
   // Get Aave ID
   if (!aaveRateOracle && aaveTokens) {
@@ -50,12 +55,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log: doLogging,
     });
 
-    const trx = await factory.setMasterFCM(
-      masterAaveFCM.address,
-      underlyingYieldBearingProtocolID_AaveV2,
-      { gasLimit: 10000000 }
-    );
-    await trx.wait();
+    if (skipFactoryConfig) {
+      console.log(
+        `SKIPPING FACTORY CONFIG. CALL setMasterFCM("${masterAaveFCM.address}", ${underlyingYieldBearingProtocolID_AaveV2}) from multisig.`
+      );
+    } else {
+      const trx = await factory.setMasterFCM(
+        masterAaveFCM.address,
+        underlyingYieldBearingProtocolID_AaveV2,
+        { gasLimit: 10000000 }
+      );
+      await trx.wait();
+    }
   }
 
   if (compoundRateOracle) {
@@ -66,12 +77,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log: doLogging,
     });
 
-    const trx = await factory.setMasterFCM(
-      masterCompoundFCM.address,
-      underlyingYieldBearingProtocolID_Compound,
-      { gasLimit: 10000000 }
-    );
-    await trx.wait();
+    if (skipFactoryConfig) {
+      console.log(
+        `SKIPPING FACTORY CONFIG. CALL setMasterFCM("${masterCompoundFCM.address}", ${underlyingYieldBearingProtocolID_Compound}) from multisig.`
+      );
+    } else {
+      const trx = await factory.setMasterFCM(
+        masterCompoundFCM.address,
+        underlyingYieldBearingProtocolID_Compound,
+        { gasLimit: 10000000 }
+      );
+      await trx.wait();
+    }
   }
 
   return true; // Only execute once

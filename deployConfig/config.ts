@@ -175,6 +175,8 @@ const mainnetConfig = {
   aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
   maxIrsDurationInSeconds: 60 * 60 * 24 * 92, // 92 days. Do not increase without checking that rate oracle buffers are large enough
   configDefaults: mainnetConfigDefaults,
+  skipFactoryDeploy: true, // On mainnet we use a community deployer
+  factoryOwnedByMultisig: true, // On mainnet, transactions to the factory must go through a multisig
 
   // Kovan MockUSDT (USDC has no ABI and faucet not working, so USDT easier to mint)
   // See tokens list at https://aave.github.io/aave-addresses/kovan.json
@@ -227,6 +229,19 @@ export const getAaveLendingPoolAddress = (
   return config[_networkName]
     ? config[_networkName].aaveLendingPool
     : undefined;
+};
+
+export const skipFactoryDeploy = (_networkName: string): boolean => {
+  // const networkName = _networkName || network.name;
+  return config[_networkName]
+    ? !!config[_networkName].skipFactoryDeploy
+    : false;
+};
+export const factoryOwnedByMultisig = (_networkName: string): boolean => {
+  // const networkName = _networkName || network.name;
+  return config[_networkName]
+    ? !!config[_networkName].factoryOwnedByMultisig
+    : false;
 };
 
 export const getMaxDurationOfIrsInSeconds = (_networkName: string): number => {
