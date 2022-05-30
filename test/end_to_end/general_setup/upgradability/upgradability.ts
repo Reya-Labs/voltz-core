@@ -137,6 +137,38 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       initMEBalance.add(toBn("1210"))
     );
 
+    // old storage
+    const liquidatorRewardBefore =
+      await this.marginEngineTest.liquidatorRewardWad();
+
+    const underlyingTokenBefore = await this.marginEngineTest.underlyingToken();
+
+    const termStartTimestampBefore =
+      await this.marginEngineTest.termStartTimestampWad();
+
+    const termEndTimestampBefore =
+      await this.marginEngineTest.termEndTimestampWad();
+
+    const fcmBefore = await this.marginEngineTest.fcm();
+
+    const vammBefore = await this.marginEngineTest.vamm();
+
+    const rateOracleBefore = await this.marginEngineTest.rateOracle();
+
+    const factoryBefore = await this.marginEngineTest.factory();
+
+    const secondsAgoBefore =
+      await this.marginEngineTest.lookbackWindowInSeconds();
+
+    const isAlphaBefore = await this.marginEngineTest.isAlpha();
+
+    const ownerBefore = await this.marginEngineTest.owner();
+
+    const cacheMaxAgeInSecondsBefore =
+      await this.marginEngineTest.cacheMaxAgeInSeconds();
+
+    // upgrade
+
     const marginEngineEmergencyMasterFactory = await ethers.getContractFactory(
       "MarginEngineEmergency"
     );
@@ -183,6 +215,47 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     expect(await this.token.balanceOf(this.marginEngineTest.address)).to.be.eq(
       initMEBalance
+    );
+
+    // check new storage
+    expect(await marginEngineEmergency.liquidatorRewardWad()).to.be.eq(
+      liquidatorRewardBefore
+    );
+
+    expect(await marginEngineEmergency.underlyingToken()).to.be.eq(
+      underlyingTokenBefore
+    );
+
+    expect(await marginEngineEmergency.termStartTimestampWad()).to.be.eq(
+      termStartTimestampBefore
+    );
+
+    expect(await marginEngineEmergency.termEndTimestampWad()).to.be.eq(
+      termEndTimestampBefore
+    );
+
+    expect(await marginEngineEmergency.fcm()).to.be.eq(fcmBefore);
+
+    expect(await marginEngineEmergency.vamm()).to.be.eq(vammBefore);
+
+    expect(await marginEngineEmergency.rateOracle()).to.be.eq(rateOracleBefore);
+
+    expect(await marginEngineEmergency.factory()).to.be.eq(factoryBefore);
+
+    expect(await marginEngineEmergency.lookbackWindowInSeconds()).to.be.eq(
+      secondsAgoBefore
+    );
+
+    expect(await marginEngineEmergency.isAlpha()).to.be.eq(isAlphaBefore);
+
+    expect(await marginEngineEmergency.owner()).to.be.eq(ownerBefore);
+
+    expect(await marginEngineEmergency.cacheMaxAgeInSeconds()).to.be.eq(
+      cacheMaxAgeInSecondsBefore
+    );
+
+    expect(await marginEngineEmergency.liquidatorRewardWad()).to.be.eq(
+      liquidatorRewardBefore
     );
   }
 }
