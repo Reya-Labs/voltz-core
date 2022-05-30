@@ -19,6 +19,17 @@ import {
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ConfigDefaults } from "../deployConfig/types";
 
+async function getIrsInstanceEvents(
+  hre: HardhatRuntimeEnvironment
+): Promise<utils.LogDescription[]> {
+  const factory = (await hre.ethers.getContract("Factory")) as Factory;
+  // console.log(`Listing IRS instances created by Factory ${factory.address}`);
+
+  const logs = await factory.queryFilter(factory.filters.IrsInstance());
+  const events = logs.map((l) => factory.interface.parseLog(l));
+  return events;
+}
+
 async function configureIrs(
   hre: HardhatRuntimeEnvironment,
   marginEngine: IMarginEngine,
@@ -217,11 +228,7 @@ task(
   "listIrsInstances",
   "Lists IRS instances deployed by the current factory"
 ).setAction(async (taskArgs, hre) => {
-  const factory = (await hre.ethers.getContract("Factory")) as Factory;
-  // console.log(`Listing IRS instances created by Factory ${factory.address}`);
-
-  const logs = await factory.queryFilter(factory.filters.IrsInstance());
-  const events = logs.map((l) => factory.interface.parseLog(l));
+  const events = await getIrsInstanceEvents(hre);
 
   let csvOutput = `underlyingToken,rateOracle,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,lookbackWindowInSeconds,cacheMaxAgeInSeconds,historicalAPY`;
 
@@ -257,5 +264,64 @@ task(
 
   console.log(csvOutput);
 });
+
+task(
+  "pauseAllIrsInstances",
+  "Pause all IRS instances deployed by the current factory"
+)
+  .addParam(
+    "pause",
+    "True to pause; false to unpause",
+    undefined,
+    types.boolean
+  )
+  .setAction(async (taskArgs, hre) => {
+    const events = await getIrsInstanceEvents(hre);
+
+    if (taskArgs.pause) {
+      console.log(
+        `PAUSING ${events.length} IRS instances on network ${hre.network.name}.`
+      );
+      console.log(`THESE INSTANCES WILL BECOME UNUSABLE.`);
+    } else {
+      console.log(
+        `UNpausing ${events.length} IRS instances. They will be usable again.`
+      );
+    }
+
+    const prompts = require("prompts");
+    const response = await prompts({
+      type: "confirm",
+      name: "proceed",
+      message: "Are you sure you wish to continue?",
+    });
+
+    console.log("response", response.proceed);
+
+    if (response.proceed) {
+      for (const e of events) {
+        const a = e.args;
+        const vamm = await hre.ethers.getContractAt("VAMM", a.vamm);
+        const isPaused = await vamm.paused();
+
+        if (isPaused === taskArgs.pause) {
+          console.log(
+            `VAMM at ${vamm.address} is already ${
+              isPaused ? "paused" : "unpaused"
+            }.`
+          );
+        } else {
+          process.stdout.write(
+            `${taskArgs.pause ? "Pausing" : "Unpausing"} VAMM at ${
+              vamm.address
+            }...`
+          );
+          const trx = await vamm.setPausability(taskArgs.pause);
+          await trx.wait();
+          console.log(" done.");
+        }
+      }
+    }
+  });
 
 module.exports = {};
