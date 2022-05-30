@@ -74,6 +74,7 @@ loadModuleIfContractsAreBuilt("./tasks/updateAPYFor15Days");
 loadModuleIfContractsAreBuilt("./tasks/rateOracle");
 loadModuleIfContractsAreBuilt("./tasks/setParameters");
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
+loadModuleIfContractsAreBuilt("./tasks/decodeTransactionData");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
