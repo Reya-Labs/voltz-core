@@ -11,7 +11,7 @@ import {
   IMarginEngine,
   IVAMM,
 } from "../typechain";
-import { utils } from "ethers";
+import { ethers, utils } from "ethers";
 import {
   getIRSByMarginEngineAddress,
   getRateOracleByNameOrAddress,
@@ -264,6 +264,54 @@ task(
 
   console.log(csvOutput);
 });
+
+task(
+  "predictIrsAddresses",
+  "Predicts the IRS addresses used by a not-yet-created IRS instance"
+)
+  .addParam(
+    "fcm",
+    "True if an FCM will be deployed; false if not (this affects future addresses)",
+    true,
+    types.boolean
+  )
+  .addOptionalParam("factory", "Factory address (defaults to deployments data)")
+  .setAction(async (taskArgs, hre) => {
+    let factoryAddress;
+
+    if (taskArgs.factory) {
+      factoryAddress = taskArgs.factory;
+    } else {
+      const factory = (await hre.ethers.getContract("Factory")) as Factory;
+      factoryAddress = factory.address;
+    }
+
+    let nonce = await hre.ethers.provider.getTransactionCount(factoryAddress);
+    if (nonce === 0) {
+      // Contract nonces start at 1
+      nonce++;
+    }
+    const nextMarginEngine = ethers.utils.getContractAddress({
+      from: factoryAddress,
+      nonce: nonce,
+    });
+    const nextVAMM = await ethers.utils.getContractAddress({
+      from: factoryAddress,
+      nonce: nonce + 1,
+    });
+
+    console.log(
+      `Next MarginEngine (nonce=${nonce}) will be at ${nextMarginEngine}`
+    );
+    console.log(`Next VAMM (nonce=${nonce + 1}) will be at ${nextVAMM}`);
+    if (taskArgs.fcm) {
+      const nextFCM = await ethers.utils.getContractAddress({
+        from: factoryAddress,
+        nonce: nonce + 2,
+      });
+      console.log(`Next FCM (nonce=${nonce + 2}) will be at ${nextFCM}`);
+    }
+  });
 
 task(
   "pauseAllIrsInstances",
