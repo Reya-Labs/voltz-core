@@ -9,6 +9,7 @@ import {
   encodeSqrtRatioX96,
   MIN_DELTA_IM,
   MIN_DELTA_LM,
+  MIN_SQRT_RATIO,
   TICK_SPACING,
   T_MAX,
   XI_LOWER,
@@ -53,8 +54,8 @@ const e2eParams: e2eParameters = {
   },
   lookBackWindowAPY: consts.ONE_WEEK,
   startingPrice: encodeSqrtRatioX96(1, 1),
-  feeProtocol: 5,
-  fee: toBn("0.01"),
+  feeProtocol: 0,
+  fee: toBn("0"),
   tickSpacing: TICK_SPACING,
   positions: [
     [0, -TICK_SPACING, TICK_SPACING],
@@ -73,13 +74,22 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     const otherWallet = provider.getWallets()[1];
 
+    console.log("owner address:", this.owner.address);
+    console.log("other address:", otherWallet.address);
+
     await this.mintAndApprove(this.owner.address);
     await this.token.approve(
       this.marginEngineTest.address,
       BigNumber.from(10).pow(27)
     );
 
+    await this.mintAndApprove(otherWallet.address);
+    await this.token
+      .connect(otherWallet)
+      .approve(this.marginEngineTest.address, BigNumber.from(10).pow(27));
+
     const initOwnerBalance = await this.token.balanceOf(this.owner.address);
+    const initOtherBalance = await this.token.balanceOf(otherWallet.address);
     const initMEBalance = await this.token.balanceOf(
       this.marginEngineTest.address
     );
@@ -91,12 +101,40 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       toBn("210")
     );
 
+    await this.vammTest.mint(
+      this.owner.address,
+      -this.params.tickSpacing,
+      this.params.tickSpacing,
+      toBn("1000000")
+    );
+
+    await this.marginEngineTest
+      .connect(otherWallet)
+      .updatePositionMargin(
+        otherWallet.address,
+        -this.params.tickSpacing,
+        this.params.tickSpacing,
+        toBn("1000")
+      );
+
+    await this.vammTest.connect(otherWallet).swap({
+      recipient: otherWallet.address,
+      amountSpecified: toBn("-15000"),
+      sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
+      tickLower: -this.params.tickSpacing,
+      tickUpper: this.params.tickSpacing,
+    });
+
     expect(await this.token.balanceOf(this.owner.address)).to.be.eq(
       initOwnerBalance.sub(toBn("210"))
     );
 
+    expect(await this.token.balanceOf(otherWallet.address)).to.be.eq(
+      initOtherBalance.sub(toBn("1000"))
+    );
+
     expect(await this.token.balanceOf(this.marginEngineTest.address)).to.be.eq(
-      initMEBalance.add(toBn("210"))
+      initMEBalance.add(toBn("1210"))
     );
 
     const marginEngineEmergencyMasterFactory = await ethers.getContractFactory(
@@ -117,14 +155,30 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.marginEngineTest.address
     ) as MarginEngineEmergency;
 
+    // is owner preserved?
+    expect(await marginEngineEmergency.owner()).to.be.eq(this.owner.address);
+
+    // does the new functionality work?
     await marginEngineEmergency.emergencyWithdrawal(
       this.owner.address,
       -this.params.tickSpacing,
       this.params.tickSpacing
     );
 
+    await marginEngineEmergency
+      .connect(otherWallet)
+      .emergencyWithdrawal(
+        otherWallet.address,
+        -this.params.tickSpacing,
+        this.params.tickSpacing
+      );
+
     expect(await this.token.balanceOf(this.owner.address)).to.be.eq(
       initOwnerBalance
+    );
+
+    expect(await this.token.balanceOf(otherWallet.address)).to.be.eq(
+      initOtherBalance
     );
 
     expect(await this.token.balanceOf(this.marginEngineTest.address)).to.be.eq(
