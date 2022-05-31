@@ -1,7 +1,41 @@
-// import { utils } from "ethers";
-import { ethers } from "ethers";
+import { utils, ethers } from "ethers";
 import { task } from "hardhat/config";
-// import { toBn } from "../test/helpers/toBn";
+const marginCalculatorParamNames = [
+  "apyUpperMultiplierWad",
+  "apyLowerMultiplierWad",
+  "sigmaSquaredWad",
+  "alphaWad",
+  "betaWad",
+  "xiUpperWad",
+  "xiLowerWad",
+  "tMaxWad",
+  "devMulLeftUnwindLMWad",
+  "devMulRightUnwindLMWad",
+  "devMulLeftUnwindIMWad",
+  "devMulRightUnwindIMWad",
+  "fixedRateDeviationMinLeftUnwindLMWad",
+  "fixedRateDeviationMinRightUnwindLMWad",
+  "fixedRateDeviationMinLeftUnwindIMWad",
+  "fixedRateDeviationMinRightUnwindIMWad",
+  "gammaWad",
+  "minMarginToIncentiviseLiquidators",
+];
+
+function printMarginCalculatorParams(td: ethers.utils.TransactionDescription) {
+  const mcp = td.args[0];
+  console.log(JSON.stringify(td.args, null, 2));
+  console.log(`MarginCalculator.setMarginCalculatorParameters(`);
+
+  for (let i = 0; i < marginCalculatorParamNames.length; i++) {
+    console.log(
+      `  ${mcp[i].toString().padStart(27)}, // ${utils
+        .formatUnits(mcp[i])
+        .toString()
+        .padStart(10)} ${marginCalculatorParamNames[i]}`
+    );
+  }
+  console.log(`)`);
+}
 
 task(
   "decodeTransactionData",
@@ -30,9 +64,15 @@ task(
     }
 
     if (contractType && result) {
-      console.log(`${contractType}.${result.name}(
+      if (result.name === "setMarginCalculatorParameters") {
+        printMarginCalculatorParams(result);
+      } else {
+        console.log(
+          `${contractType}.${result.name}(
   ${result.args}
-)`);
+)`
+        );
+      }
     } else {
       console.log(`No matching function found in contracts: ${contractTypes}`);
     }
