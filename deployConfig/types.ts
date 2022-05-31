@@ -49,6 +49,8 @@ export interface ConfigDefaults extends IrsConfig {
 export interface ContractsConfig {
   aaveLendingPool?: string;
   maxIrsDurationInSeconds: number;
+  skipFactoryDeploy?: boolean;
+  factoryOwnedByMultisig?: boolean;
   configDefaults: ConfigDefaults;
   aaveTokens?: TokenConfig[];
   compoundTokens?: TokenConfig[];

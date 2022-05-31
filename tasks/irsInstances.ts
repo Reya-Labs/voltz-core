@@ -11,13 +11,24 @@ import {
   IMarginEngine,
   IVAMM,
 } from "../typechain";
-import { utils } from "ethers";
+import { ethers, utils } from "ethers";
 import {
   getIRSByMarginEngineAddress,
   getRateOracleByNameOrAddress,
 } from "./helpers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ConfigDefaults } from "../deployConfig/types";
+
+async function getIrsInstanceEvents(
+  hre: HardhatRuntimeEnvironment
+): Promise<utils.LogDescription[]> {
+  const factory = (await hre.ethers.getContract("Factory")) as Factory;
+  // console.log(`Listing IRS instances created by Factory ${factory.address}`);
+
+  const logs = await factory.queryFilter(factory.filters.IrsInstance());
+  const events = logs.map((l) => factory.interface.parseLog(l));
+  return events;
+}
 
 async function configureIrs(
   hre: HardhatRuntimeEnvironment,
@@ -217,11 +228,7 @@ task(
   "listIrsInstances",
   "Lists IRS instances deployed by the current factory"
 ).setAction(async (taskArgs, hre) => {
-  const factory = (await hre.ethers.getContract("Factory")) as Factory;
-  // console.log(`Listing IRS instances created by Factory ${factory.address}`);
-
-  const logs = await factory.queryFilter(factory.filters.IrsInstance());
-  const events = logs.map((l) => factory.interface.parseLog(l));
+  const events = await getIrsInstanceEvents(hre);
 
   let csvOutput = `underlyingToken,rateOracle,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,lookbackWindowInSeconds,cacheMaxAgeInSeconds,historicalAPY`;
 
@@ -257,5 +264,122 @@ task(
 
   console.log(csvOutput);
 });
+
+task(
+  "predictIrsAddresses",
+  "Predicts the IRS addresses used by a not-yet-created IRS instance"
+)
+  .addParam(
+    "fcm",
+    "True if an FCM will be deployed; false if not (this affects future addresses)",
+    true,
+    types.boolean
+  )
+  .addOptionalParam("factory", "Factory address (defaults to deployments data)")
+  .setAction(async (taskArgs, hre) => {
+    let factoryAddress;
+
+    if (taskArgs.factory) {
+      factoryAddress = taskArgs.factory;
+    } else {
+      const factory = (await hre.ethers.getContract("Factory")) as Factory;
+      factoryAddress = factory.address;
+    }
+
+    let nonce = await hre.ethers.provider.getTransactionCount(factoryAddress);
+    if (nonce === 0) {
+      // Contract nonces start at 1
+      nonce++;
+    }
+
+    console.log("Past addresses:");
+    for (let i = 1; i < nonce; i++) {
+      const address = ethers.utils.getContractAddress({
+        from: factoryAddress,
+        nonce: i,
+      });
+      console.log(`(${i})`.padStart(6) + ` ${address}`);
+    }
+
+    const nextMarginEngine = ethers.utils.getContractAddress({
+      from: factoryAddress,
+      nonce: nonce,
+    });
+    const nextVAMM = await ethers.utils.getContractAddress({
+      from: factoryAddress,
+      nonce: nonce + 1,
+    });
+
+    console.log(
+      `Next MarginEngine (nonce=${nonce}) will be at ${nextMarginEngine}`
+    );
+    console.log(`Next VAMM (nonce=${nonce + 1}) will be at ${nextVAMM}`);
+    if (taskArgs.fcm) {
+      const nextFCM = await ethers.utils.getContractAddress({
+        from: factoryAddress,
+        nonce: nonce + 2,
+      });
+      console.log(`Next FCM (nonce=${nonce + 2}) will be at ${nextFCM}`);
+    }
+  });
+
+task(
+  "pauseAllIrsInstances",
+  "Pause all IRS instances deployed by the current factory"
+)
+  .addParam(
+    "pause",
+    "True to pause; false to unpause",
+    undefined,
+    types.boolean
+  )
+  .setAction(async (taskArgs, hre) => {
+    const events = await getIrsInstanceEvents(hre);
+
+    if (taskArgs.pause) {
+      console.log(
+        `PAUSING ${events.length} IRS instances on network ${hre.network.name}.`
+      );
+      console.log(`THESE INSTANCES WILL BECOME UNUSABLE.`);
+    } else {
+      console.log(
+        `UNpausing ${events.length} IRS instances. They will be usable again.`
+      );
+    }
+
+    const prompts = require("prompts");
+    const response = await prompts({
+      type: "confirm",
+      name: "proceed",
+      message: "Are you sure you wish to continue?",
+    });
+
+    console.log("response", response.proceed);
+
+    if (response.proceed) {
+      for (const e of events) {
+        const a = e.args;
+        const vamm = await hre.ethers.getContractAt("VAMM", a.vamm);
+        const isPaused = await vamm.paused();
+
+        if (isPaused === taskArgs.pause) {
+          console.log(
+            `VAMM at ${vamm.address} is already ${
+              isPaused ? "paused" : "unpaused"
+            }.`
+          );
+        } else {
+          process.stdout.write(
+            `${taskArgs.pause ? "Pausing" : "Unpausing"} VAMM at ${
+              vamm.address
+            }...`
+          );
+          const trx = await vamm.setPausability(taskArgs.pause);
+          await trx.wait();
+          console.log(" done.");
+        }
+      }
+    }
+  });
 
 module.exports = {};
