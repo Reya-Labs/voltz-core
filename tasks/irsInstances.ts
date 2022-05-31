@@ -291,6 +291,16 @@ task(
       // Contract nonces start at 1
       nonce++;
     }
+
+    console.log("Past addresses:");
+    for (let i = 1; i < nonce; i++) {
+      const address = ethers.utils.getContractAddress({
+        from: factoryAddress,
+        nonce: i,
+      });
+      console.log(`(${i})`.padStart(6) + ` ${address}`);
+    }
+
     const nextMarginEngine = ethers.utils.getContractAddress({
       from: factoryAddress,
       nonce: nonce,
