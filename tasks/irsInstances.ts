@@ -347,6 +347,7 @@ task(
       );
     }
 
+    // eslint-disable-next-line node/no-missing-require
     const prompts = require("prompts");
     const response = await prompts({
       type: "confirm",
