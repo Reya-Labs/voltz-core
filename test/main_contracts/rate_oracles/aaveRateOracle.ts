@@ -139,10 +139,6 @@ describe("Aave Rate Oracle", () => {
         aaveLendingPool.address,
         token.address
       )) as TestRateOracle;
-      // await testRateOracle.initializeTestRateOracle({
-      //   tick: 1,
-      //   liquidity: 1
-      // });
     });
 
     it("increases the cardinality next for the first call", async () => {
@@ -545,12 +541,8 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("target is beforeOrAt", async () => {
-      await testRateOracle.testGetSurroundingRates(beforeOrAtTimestamp);
-
-      const realizedBeforeOrAtRateValue =
-        await testRateOracle.latestBeforeOrAtRateValue();
-      const realizedAtOrAfterValue =
-        await testRateOracle.latestAfterOrAtRateValue();
+      const [realizedBeforeOrAtRateValue, realizedAtOrAfterValue] =
+        await testRateOracle.testGetSurroundingRates(beforeOrAtTimestamp);
 
       expect(realizedBeforeOrAtRateValue).to.eq(
         toBn("1.0", consts.AAVE_RATE_DECIMALS)
@@ -561,12 +553,8 @@ describe("Aave Rate Oracle", () => {
     });
 
     it("target is atOrAfter", async () => {
-      await testRateOracle.testGetSurroundingRates(atOrAfterTimestamp);
-
-      const realizedBeforeOrAtRateValue =
-        await testRateOracle.latestBeforeOrAtRateValue();
-      const realizedAtOrAfterValue =
-        await testRateOracle.latestAfterOrAtRateValue();
+      const [realizedBeforeOrAtRateValue, realizedAtOrAfterValue] =
+        await testRateOracle.testGetSurroundingRates(atOrAfterTimestamp);
 
       expect(realizedBeforeOrAtRateValue).to.eq(
         toBn("1.1", consts.AAVE_RATE_DECIMALS)
@@ -579,14 +567,9 @@ describe("Aave Rate Oracle", () => {
         (beforeOrAtTimestamp + atOrAfterTimestamp) / 2
       );
 
-      await testRateOracle.testGetSurroundingRates(targetTimestamp);
-
-      const realizedBeforeOrAtRateValue =
-        await testRateOracle.latestBeforeOrAtRateValue();
-      const realizedAtOrAfterValue =
-        await testRateOracle.latestAfterOrAtRateValue();
-
       // does binary search
+      const [realizedBeforeOrAtRateValue, realizedAtOrAfterValue] =
+        await testRateOracle.testGetSurroundingRates(targetTimestamp);
 
       expect(realizedBeforeOrAtRateValue).to.eq(
         toBn("1.0", consts.AAVE_RATE_DECIMALS)

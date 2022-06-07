@@ -11,15 +11,6 @@ import "../interfaces/compound/ICToken.sol";
 contract TestCompoundRateOracle is CompoundRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
-    int24 public tick;
-    uint128 public liquidity;
-
-    uint256 public latestObservedRateValue;
-    uint256 public latestRateFromTo;
-
-    uint256 public latestBeforeOrAtRateValue;
-    uint256 public latestAfterOrAtRateValue;
-
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
     constructor(
         ICToken cToken,
@@ -35,54 +26,47 @@ contract TestCompoundRateOracle is CompoundRateOracle {
         )
     {}
 
-    function getOracleVars()
-        external
-        view
-        returns (
-            uint16,
-            uint16,
-            uint16
-        )
-    {
-        return (
-            oracleVars.rateIndex,
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
-        );
-    }
+    // function getOracleVars()
+    //     external
+    //     view
+    //     returns (
+    //         uint16,
+    //         uint16,
+    //         uint16
+    //     )
+    // {
+    //     return (
+    //         oracleVars.rateIndex,
+    //         oracleVars.rateCardinality,
+    //         oracleVars.rateCardinalityNext
+    //     );
+    // }
 
     function getRate(uint16 index) external view returns (uint256, uint256) {
         OracleBuffer.Observation memory rate = observations[index];
         return (rate.blockTimestamp, rate.observedValue);
     }
 
-    function testObserveSingle(uint32 queriedTime)
-        external
-        returns (uint256 observedValue)
-    {
-        latestObservedRateValue = observeSingle(
-            Time.blockTimestampTruncated(),
-            queriedTime,
-            oracleVars.rateIndex,
-            oracleVars.rateCardinality
-        );
-        return latestObservedRateValue;
-    }
+    // function testObserveSingle(uint32 queriedTime)
+    //     external
+    //     returns (uint256 observedValue)
+    // {
+    //     latestObservedRateValue = observeSingle(
+    //         Time.blockTimestampTruncated(),
+    //         queriedTime,
+    //         oracleVars.rateIndex,
+    //         oracleVars.rateCardinality
+    //     );
+    //     return latestObservedRateValue;
+    // }
 
-    function testGrow(uint16 _rateCardinalityNext) external {
-        oracleVars.rateCardinalityNext = observations.grow(
-            oracleVars.rateCardinalityNext,
-            _rateCardinalityNext
-        );
-    }
-
-    function testGetRateFromTo(uint256 from, uint256 to)
-        external
-        returns (uint256)
-    {
-        latestRateFromTo = getRateFromTo(from, to);
-        return latestRateFromTo;
-    }
+    // function testGetRateFromTo(uint256 from, uint256 to)
+    //     external
+    //     returns (uint256)
+    // {
+    //     latestRateFromTo = getRateFromTo(from, to);
+    //     return latestRateFromTo;
+    // }
 
     // function testBinarySearch(uint32 target)
     //     external
@@ -125,7 +109,31 @@ contract TestCompoundRateOracle is CompoundRateOracle {
     //             oracleVars.rateIndex,
     //             oracleVars.rateCardinality
     //         );
+    
+    function testGetSurroundingRates(uint32 target)
+        external
+        view
+        returns (
+            uint256 latestBeforeOrAtRateValue,
+            uint256 latestAfterOrAtRateValue
+        )
+    {
+        uint256 currentValue = getCurrentRateInRay();
 
+        (
+            OracleBuffer.Observation memory beforeOrAt,
+            OracleBuffer.Observation memory atOrAfter
+        ) = observations.getSurroundingObservations(
+                target,
+                Time.blockTimestampTruncated(),
+                currentValue,
+                oracleVars.rateIndex,
+                oracleVars.rateCardinality
+            );
+
+        latestBeforeOrAtRateValue = beforeOrAt.observedValue;
+        latestAfterOrAtRateValue = atOrAfter.observedValue;
+    }
     //     latestBeforeOrAtRateValue = beforeOrAt.observedValue;
     //     latestAfterOrAtRateValue = atOrAfter.observedValue;
     // }

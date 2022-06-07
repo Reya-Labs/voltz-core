@@ -508,7 +508,6 @@ export class ScenarioRunner {
         "1000000000000000000000000000" // 10^27
       );
 
-      // await rateOracleTest.testGrow(100);
       await this.rateOracleTest.increaseObservationCardinalityNext(100);
       // write oracle entry
       await this.rateOracleTest.writeOracleEntry();

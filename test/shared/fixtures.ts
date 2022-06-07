@@ -264,12 +264,18 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   );
   const { token } = await mockERC20Fixture();
   const { aaveLendingPool } = await mockAaveLendingPoolFixture();
-  const { rateOracleTest } = await rateOracleTestFixture(
-    aaveLendingPool.address,
-    token.address
+  await aaveLendingPool.setReserveNormalizedIncome(
+    token.address,
+    BigNumber.from(10).pow(27)
   );
 
   const { mockAToken } = await mockATokenFixture(
+    aaveLendingPool.address,
+    token.address
+  );
+  await aaveLendingPool.initReserve(token.address, mockAToken.address);
+
+  const { rateOracleTest } = await rateOracleTestFixture(
     aaveLendingPool.address,
     token.address
   );
@@ -294,13 +300,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     mockCToken.address,
     token.address
   );
-
-  await aaveLendingPool.setReserveNormalizedIncome(
-    token.address,
-    BigNumber.from(10).pow(27)
-  );
-
-  await aaveLendingPool.initReserve(token.address, mockAToken.address);
 
   await rateOracleTest.increaseObservationCardinalityNext(10);
   await compoundRateOracleTest.increaseObservationCardinalityNext(10);
@@ -443,6 +442,10 @@ export const metaFixtureScenario1E2E =
     );
     const { token } = await mockERC20Fixture();
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
+    await aaveLendingPool.setReserveNormalizedIncome(
+      token.address,
+      "1000000000000000000000000000" // 10^27
+    );
     const { rateOracleTest } = await rateOracleTestFixture(
       aaveLendingPool.address,
       token.address
@@ -456,11 +459,6 @@ export const metaFixtureScenario1E2E =
     );
 
     const { testMarginCalculator } = await marginCalculatorFixture();
-
-    await aaveLendingPool.setReserveNormalizedIncome(
-      token.address,
-      "1000000000000000000000000000" // 10^27
-    );
 
     await rateOracleTest.increaseObservationCardinalityNext(100);
     // write oracle entry
@@ -525,13 +523,6 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
     );
     const { token } = await mockERC20Fixture();
     const { aaveLendingPool } = await mockAaveLendingPoolFixture();
-    const { rateOracleTest } = await rateOracleTestFixture(
-      aaveLendingPool.address,
-      token.address
-    );
-
-    const { testMarginCalculator } = await marginCalculatorFixture();
-
     const { mockAToken } = await mockATokenFixture(
       aaveLendingPool.address,
       token.address
@@ -543,8 +534,13 @@ export const createMetaFixtureE2E = async function (e2eParams: e2eParameters) {
     );
 
     await aaveLendingPool.initReserve(token.address, mockAToken.address);
+    const { rateOracleTest } = await rateOracleTestFixture(
+      aaveLendingPool.address,
+      token.address
+    );
 
-    // await rateOracleTest.testGrow(100);
+    const { testMarginCalculator } = await marginCalculatorFixture();
+
     await rateOracleTest.increaseObservationCardinalityNext(100);
     // write oracle entry
     await rateOracleTest.writeOracleEntry();

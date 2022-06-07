@@ -62,10 +62,10 @@ interface IRateOracle is CustomErrors {
     
     /// @notice Calculates the observed interest returned by the underlying in a given period
     /// @dev Reverts if we have no data point for either timestamp
-    /// @param from The timestamp of the start of the period, in seconds
-    /// @param to The timestamp of the end of the period, in seconds
-    /// @return The "floating rate" expressed in Wad, e.g. 4% is encoded as 0.04*10**18 = 4*10*16
-    function getRateFromTo(uint256 from, uint256 to)
+    /// @param _from The timestamp of the start of the period, in seconds
+    /// @param _to The timestamp of the end of the period, in seconds
+    /// @return The "floating rate" expressed in Wad, e.g. 4% is encoded as 0.04*10**18 = 4*10**16
+    function getRateFromTo(uint256 _from, uint256 _to)
         external
         view
         returns (uint256);
