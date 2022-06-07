@@ -30,6 +30,7 @@ import {
   TestVAMM,
   TickMathTest,
 } from "../../typechain";
+import { ONE_YEAR_IN_SECONDS } from "../shared/constants";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
@@ -101,6 +102,36 @@ describe("MarginCalculator", () => {
     };
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
+  });
+
+  describe("#getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind", async () => {
+    it("first example", async () => {
+      const variableTokenDeltaAbsolute = toBn("1000");
+      const sqrtRatioCurrX96 = encodeSqrtRatioX96(1, 1);
+      const startingFixedRateMultiplierWad = toBn("1.5");
+      const fixedRateDeviationMinWad = toBn("0.2");
+      const currentTimestamp = (await getCurrentTimestamp(provider)) + 604800;
+      const termEndTimestampScaled = toBn(
+        (currentTimestamp + 3 * 604800).toString() // add a week
+      );
+      const gammaWad = toBn("1.0");
+      const isFTUnwind = true;
+
+      const realized =
+        await testMarginCalculator.getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
+          variableTokenDeltaAbsolute,
+          BigNumber.from(sqrtRatioCurrX96.toString()),
+          startingFixedRateMultiplierWad,
+          fixedRateDeviationMinWad,
+          termEndTimestampScaled,
+          toBn(currentTimestamp.toString()),
+          ONE_YEAR_IN_SECONDS,
+          gammaWad,
+          isFTUnwind
+        );
+
+      console.log("simulated unwind:", utils.formatEther(realized));
+    });
   });
 
   describe("#computeTimeFactor", async () => {

@@ -1008,22 +1008,22 @@ export class ScenarioRunner {
     );
   }
 
-  // reserveNormalizedIncome format: x.yyyy
+  // reserveNormalizedIncome format: x.yyyyyy
   async advanceAndUpdateApy(
     time: BigNumber,
     blockCount: number,
     reserveNormalizedIncome: number
   ) {
     await advanceTimeAndBlock(time, blockCount);
-    console.log(
-      "rni:",
-      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
-        "0".repeat(23)
-    );
+    // console.log(
+    //   "rni:",
+    //   Math.floor(reserveNormalizedIncome * 1000000 + 0.5).toString() +
+    //     "0".repeat(21)
+    // );
     await this.aaveLendingPool.setReserveNormalizedIncome(
       this.token.address,
-      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
-        "0".repeat(23)
+      Math.floor(reserveNormalizedIncome * 1000000 + 0.5).toString() +
+        "0".repeat(21)
     );
 
     await this.rateOracleTest.writeOracleEntry();
