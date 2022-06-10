@@ -3,24 +3,16 @@
 pragma solidity =0.8.9;
 import "../rate_oracles/BaseRateOracle.sol";
 import "../rate_oracles/OracleBuffer.sol";
-import "../rate_oracles/AaveRateOracle.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../utils/WadRayMath.sol";
 import "hardhat/console.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 
-contract TestRateOracle is AaveRateOracle {
+/// @notice Common contract base for a Test Rate Oracle implementation.
+///  This contract is abstract. To make the contract deployable, define a constructor.
+/// @dev Each specific rate oracle implementation will need to implement the virtual functions
+abstract contract TestRateOracle is BaseRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
-
-    // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
-    constructor(IAaveV2LendingPool aaveLendingPool, IERC20Minimal underlying)
-        AaveRateOracle(
-            aaveLendingPool,
-            underlying,
-            new uint32[](0),
-            new uint256[](0)
-        )
-    {}
 
     function getRate(uint16 index) external view returns (uint256, uint256) {
         OracleBuffer.Observation memory rate = observations[index];

@@ -208,7 +208,7 @@ export async function rateOracleTestFixture(
   _underlyingAddress: string
 ) {
   const rateOracleTestFactory = await ethers.getContractFactory(
-    "TestRateOracle"
+    "TestAaveRateOracle"
   );
   const rateOracleTest = (await rateOracleTestFactory.deploy(
     _aaveLendingPoolAddress,
@@ -231,7 +231,7 @@ export async function compoundRateOracleTestFixture(
     18 // token decimals
   )) as TestCompoundRateOracle;
 
-  return { compoundRateOracleTest };
+  return compoundRateOracleTest;
 }
 
 interface MetaFixture {
@@ -296,7 +296,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
 
   // console.log("exchangeRateStored", exchangeRateStored.toString());
 
-  const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
+  const compoundRateOracleTest = await compoundRateOracleTestFixture(
     mockCToken.address,
     token.address
   );
@@ -453,7 +453,7 @@ export const metaFixtureScenario1E2E =
 
     const cToken = (await mockERC20Fixture()).token;
     const { mockCToken } = await mockCTokenFixture(token.address);
-    const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
+    const compoundRateOracleTest = await compoundRateOracleTestFixture(
       cToken.address,
       token.address
     );
@@ -618,7 +618,7 @@ export const createCompoundMetaFixtureE2E = async function (
     const { mockCToken } = await mockCTokenFixture(token.address);
     await mockCToken.setExchangeRate(BigNumber.from(10).pow(20).mul(2000000));
 
-    const { compoundRateOracleTest } = await compoundRateOracleTestFixture(
+    const compoundRateOracleTest = await compoundRateOracleTestFixture(
       mockCToken.address,
       token.address
     );

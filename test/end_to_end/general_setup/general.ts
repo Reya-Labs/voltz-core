@@ -464,7 +464,7 @@ export class ScenarioRunner {
     this.factory = (await ethers.getContract("Factory")) as Factory;
     this.token = (await ethers.getContract("ERC20Mock")) as ERC20Mock;
     this.rateOracleTest = (await ethers.getContract(
-      "TestRateOracle"
+      "TestAaveRateOracle"
     )) as TestRateOracle;
     this.aaveLendingPool = (await ethers.getContract(
       "MockAaveLendingPool"

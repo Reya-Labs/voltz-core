@@ -32,12 +32,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     { gasLimit: 10000000 }
   );
   await trx.wait();
-  trx = await mockAaveLendingPool.setFactorPerSecondInRay(
-    mockERC20Deploy.address,
-    "1000000001000000000000000000", // 0.0000001% per second = ~3.2% APY
-    { gasLimit: 10000000 }
-  );
-  await trx.wait();
+  // trx = await mockAaveLendingPool.setFactorPerSecondInRay(
+  //   mockERC20Deploy.address,
+  //   "1000000001000000000000000000", // 0.0000001% per second = ~3.2% APY
+  //   { gasLimit: 10000000 }
+  // );
+  // await trx.wait();
 
   const mockCToken = await ethers.getContract("MockCToken");
   // Starting exchange rate = 0.02, expressed using 10 ^ (18 + underlyingDecimals - cTokenDecimals)

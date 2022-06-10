@@ -37,7 +37,6 @@ export const consts = {
   AAVE_DUMMY_REFERRAL_CODE: 0,
   AAVE_RATE_DECIMALS: 27,
   NORMALIZED_RATE_DECIMALS: 27,
-  COMPOUND_DAY0_EXCHANGE_RATE_AS_DECIMAL: 0.02,
 
   ZERO_BYTES: utils.formatBytes32String(""),
   RANDOM_BYTES: utils.formatBytes32String("ZpTw6Y3Ft4ruk7pmwTJF"),
