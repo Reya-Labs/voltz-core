@@ -22,6 +22,8 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
             address(_aaveLendingPool) != address(0),
             "aave pool must exist"
         );
+        // Check that underlying was set in BaseRateOracle
+        require(address(underlying) != address(0), "underlying must exist");
         aaveLendingPool = _aaveLendingPool;
 
         _populateInitialObservations(_times, _results);

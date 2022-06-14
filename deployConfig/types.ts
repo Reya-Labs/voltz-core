@@ -48,6 +48,8 @@ export interface ConfigDefaults extends IrsConfig {
 }
 export interface ContractsConfig {
   aaveLendingPool?: string;
+  lidoStETH?: string;
+  rocketPoolRocketToken?: string;
   maxIrsDurationInSeconds: number;
   skipFactoryDeploy?: boolean;
   factoryOwnedByMultisig?: boolean;

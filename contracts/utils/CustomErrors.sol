@@ -75,6 +75,12 @@ interface CustomErrors {
     /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
     error AavePoolGetReserveNormalizedIncomeReturnedZero();
 
+    /// @dev getPooledEthByShares() returned zero for Lido's stETH.
+    error LidoGetPooledEthBySharesReturnedZero();
+
+    /// @dev getEthValue() returned zero for RocketPool's RETH.
+    error RocketPoolGetEthValueReturnedZero();
+
     /// @dev ctoken.exchangeRateStored() returned zero for a given Compound ctoken. Oracle only supports active Compound assets.
     error CTokenExchangeRateReturnedZero();
 

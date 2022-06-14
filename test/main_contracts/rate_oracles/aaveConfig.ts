@@ -1,7 +1,6 @@
 import {
   ERC20Mock,
   MockAaveLendingPool,
-  TestAaveRateOracle,
   TestRateOracle,
 } from "../../../typechain";
 import { toBn } from "../../helpers/toBn";

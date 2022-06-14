@@ -1,16 +1,6 @@
-import { BigNumber, Wallet } from "ethers";
 import {
-  rateOracleTestFixture,
-  mockERC20Fixture,
-  // mockAaveLendingPoolFixture,
-  compoundRateOracleTestFixture,
-  mockCTokenFixture,
-} from "../../shared/fixtures";
-import {
-  ERC20Mock,
   // MockAaveLendingPool,
   MockCToken,
-  TestCompoundRateOracle,
   TestRateOracle,
 } from "../../../typechain";
 import { toBn } from "../../helpers/toBn";
