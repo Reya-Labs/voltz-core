@@ -126,6 +126,15 @@ contract Actor is CustomErrors {
         factory.setApproval(intAddress, allowIntegration);
     }
 
+    function depositMarginAsETH(
+        address peripheryAddress,
+        address _marginEngine,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external payable {
+        IPeriphery(peripheryAddress).depositMarginAsETH{value: msg.value}(IMarginEngine(_marginEngine), _tickLower, _tickUpper);
+    }
+
     function liquidatePosition(
         address MEAddress,
         int24 tickLower,

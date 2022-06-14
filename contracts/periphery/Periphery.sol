@@ -23,7 +23,7 @@ contract Periphery is IPeriphery {
 
     using SafeTransferLib for IERC20Minimal;
 
-    IWETH weth;
+    IWETH public weth;
 
     constructor(IWETH _weth) public {
         weth = _weth;
@@ -160,8 +160,8 @@ contract Periphery is IPeriphery {
 
         uint256 marginDelta = msg.value;
 
-        weth.deposit();
-        _underlyingToken.transferFrom(address(this), msg.sender, marginDelta);
+        weth.deposit{value: msg.value}();
+        _underlyingToken.safeTransfer(msg.sender, marginDelta);
 
         updatePositionMargin(
             _marginEngine,

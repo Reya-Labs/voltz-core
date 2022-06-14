@@ -35,6 +35,8 @@ export interface e2eParameters {
 
   skipped: boolean;
   isWETH?: boolean;
+
+  noMintTokens?: boolean;
 }
 
 export const e2eScenarios: e2eParameters[] = [

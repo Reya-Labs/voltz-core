@@ -400,6 +400,21 @@ contract E2ESetup is CustomErrors {
         );
     }
 
+    function depositMarginAsETH(
+        address _owner,
+        int24 tickLower,
+        int24 tickUpper
+    ) public payable {
+        this.addPosition(_owner, tickLower, tickUpper);
+
+        Actor(_owner).depositMarginAsETH{value: msg.value}(
+            peripheryAddress,
+            MEAddress,
+            tickLower,
+            tickUpper
+        );
+    }
+
     function getPositionSwapsHistory(
         address owner,
         int24 tickLower,

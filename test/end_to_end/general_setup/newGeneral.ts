@@ -204,7 +204,9 @@ export class ScenarioRunner {
 
     // periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
-    this.periphery = (await peripheryFactory.deploy()) as Periphery;
+    this.periphery = (await peripheryFactory.deploy(
+      this.weth.address
+    )) as Periphery;
   }
 
   async deployLibraryContracts() {
@@ -319,8 +321,11 @@ export class ScenarioRunner {
     await this.e2eSetup.setPeripheryAddress(this.periphery.address);
     await this.e2eSetup.setAaveLendingPool(this.aaveLendingPool.address);
 
-    /// approve tokens to the owner
-    await this.mintAndApprove(this.owner.address, MAX_AMOUNT);
+    // eslint-disable-next-line no-empty
+    if (this.params.noMintTokens) {
+    } else {
+      await this.mintAndApprove(this.owner.address, MAX_AMOUNT);
+    }
 
     /// spawn up the actors
     this.actors = [];
@@ -330,7 +335,11 @@ export class ScenarioRunner {
 
       /// push new actor
       this.actors.push(actor);
-      await this.mintAndApprove(actor.address, MAX_AMOUNT);
+      // eslint-disable-next-line no-empty
+      if (this.params.noMintTokens) {
+      } else {
+        await this.mintAndApprove(actor.address, MAX_AMOUNT);
+      }
 
       /// set manually the approval of contracts to act on behalf of actors
       for (const ad of [
@@ -341,6 +350,7 @@ export class ScenarioRunner {
       ]) {
         await this.token.approveInternal(actor.address, ad, MAX_AMOUNT);
         await this.aToken.approveInternal(actor.address, ad, MAX_AMOUNT);
+        await this.e2eSetup.setIntegrationApproval(actor.address, ad, true);
       }
     }
 
