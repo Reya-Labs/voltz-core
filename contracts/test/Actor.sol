@@ -132,7 +132,11 @@ contract Actor is CustomErrors {
         int24 _tickLower,
         int24 _tickUpper
     ) external payable {
-        IPeriphery(peripheryAddress).depositMarginAsETH{value: msg.value}(IMarginEngine(_marginEngine), _tickLower, _tickUpper);
+        IPeriphery(peripheryAddress).depositMarginAsETH{value: msg.value}(
+            IMarginEngine(_marginEngine),
+            _tickLower,
+            _tickUpper
+        );
     }
 
     function liquidatePosition(
