@@ -9,6 +9,7 @@ import { toBn } from "evm-bn";
 import {
   ERC20Mock,
   Factory,
+  MockWETH,
   Periphery,
   TestActiveLPManagementStrategy,
   TestMarginEngine,
@@ -96,10 +97,14 @@ describe("Active LP Management Strategy", async () => {
 
     await marginEngineTest.setLookbackWindowInSeconds(consts.ONE_DAY.div(4)); // 6 hours
 
+    // deploy mock WETH
+    const wethFactory = await ethers.getContractFactory("MockWETH");
+    const weth = (await wethFactory.deploy()) as MockWETH;
+
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
 
-    periphery = (await peripheryFactory.deploy()) as Periphery;
+    periphery = (await peripheryFactory.deploy(weth.address)) as Periphery;
 
     // set the periphery in the factory
     await expect(factory.setPeriphery(periphery.address))

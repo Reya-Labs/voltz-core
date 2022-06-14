@@ -23,6 +23,12 @@ contract Periphery is IPeriphery {
 
     using SafeTransferLib for IERC20Minimal;
 
+    IWETH weth;
+
+    constructor(IWETH _weth) public {
+        weth = _weth;
+    }
+
     /// @dev Voltz Protocol vamm => LP Margin Cap in Underlying Tokens
     /// @dev LP margin cap of zero implies no margin cap
     /// @inheritdoc IPeriphery
@@ -141,6 +147,29 @@ contract Periphery is IPeriphery {
         _marginEngine.settlePosition(_owner, _tickLower, _tickUpper);
 
         updatePositionMargin(_marginEngine, _tickLower, _tickUpper, 0, true); // fully withdraw
+    }
+
+    function depositMarginAsETH(
+        IMarginEngine _marginEngine,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) public payable override {
+        IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
+
+        require(address(_underlyingToken) == address(weth), "No WETH pool");
+
+        uint256 marginDelta = msg.value;
+
+        weth.deposit();
+        weth.transferFrom(address(this), msg.sender, marginDelta);
+
+        updatePositionMargin(
+            _marginEngine,
+            _tickLower,
+            _tickUpper,
+            int256(marginDelta),
+            false
+        );
     }
 
     function updatePositionMargin(

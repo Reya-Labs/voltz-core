@@ -5,12 +5,15 @@ pragma solidity =0.8.9;
 import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
 import "contracts/utils/CustomErrors.sol";
+import "contracts/interfaces/IWETH.sol";
 
 interface IPeriphery is CustomErrors {
     // events
 
     /// @dev emitted after new lp margin cap is set
     event MarginCap(IVAMM _vamm, int256 _lpMarginCapNew);
+
+    event WETHSetting(IWETH _weth);
 
     // structs
 
@@ -72,6 +75,12 @@ interface IPeriphery is CustomErrors {
         int256 _marginDelta,
         bool _fullyWithdraw
     ) external;
+
+    function depositMarginAsETH(
+        IMarginEngine _marginEngine,
+        int24 _tickLower,
+        int24 _tickUpper
+    ) external payable;
 
     function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew) external;
 

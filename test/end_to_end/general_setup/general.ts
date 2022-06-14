@@ -19,6 +19,7 @@ import {
   MarginEngine,
   MockAaveLendingPool,
   MockAToken,
+  MockWETH,
   Periphery,
   SqrtPriceMathTest,
   TestAaveFCM,
@@ -559,9 +560,13 @@ export class ScenarioRunner {
     const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
     this.fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
 
+    // deploy mock WETH
+    const wethFactory = await ethers.getContractFactory("MockWETH");
+    const weth = (await wethFactory.deploy()) as MockWETH;
+
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
-    this.periphery = (await peripheryFactory.deploy()) as Periphery;
+    this.periphery = (await peripheryFactory.deploy(weth.address)) as Periphery;
 
     // deploy Fixed and Variable Math test
     ({ testFixedAndVariableMath: this.testFixedAndVariableMath } =
