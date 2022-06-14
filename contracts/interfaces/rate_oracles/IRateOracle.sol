@@ -42,6 +42,7 @@ interface IRateOracle is CustomErrors {
     function minSecondsSinceLastUpdate() external view returns (uint256);
 
     /// @notice Gets the address of the underlying token of the RateOracle
+    /// @dev may be unset (`address(0)`) if the underlying is ETH
     /// @return underlying The address of the underlying token
     function underlying() external view returns (IERC20Minimal);
 

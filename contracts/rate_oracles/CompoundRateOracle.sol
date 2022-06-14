@@ -38,6 +38,8 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             ctoken.underlying() == address(underlying),
             "Tokens do not match"
         );
+        // Check that underlying was set in BaseRateOracle
+        require(address(underlying) != address(0), "underlying must exist");
         decimals = _decimals;
 
         // Decimals affects how the rates are encoded in compound

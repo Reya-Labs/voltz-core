@@ -19,6 +19,13 @@ abstract contract TestRateOracle is BaseRateOracle {
         return (rate.blockTimestamp, rate.observedValue);
     }
 
+    function getLatestRateValue() external view returns (uint256) {
+        OracleBuffer.Observation memory rate = observations[
+            oracleVars.rateIndex
+        ];
+        return rate.observedValue;
+    }
+
     function binarySearch(uint32 target)
         external
         view

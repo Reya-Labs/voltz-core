@@ -56,7 +56,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     constructor(IERC20Minimal _underlying) {
-        require(address(_underlying) != address(0), "underlying must exist");
         underlying = _underlying;
     }
 

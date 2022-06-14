@@ -14,6 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: ["Voltz USD", "VUSD"],
     log: doLogging,
   });
+
   await deploy("MockAaveLendingPool", {
     from: deployer,
     log: doLogging,
@@ -23,6 +24,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: doLogging,
     args: [mockERC20Deploy.address, "Voltz cDAI", "cVDAI"],
+  });
+
+  await deploy("MockStEth", {
+    from: deployer,
+    log: doLogging,
+  });
+
+  await deploy("MockRocketEth", {
+    from: deployer,
+    log: doLogging,
   });
 
   const mockAaveLendingPool = await ethers.getContract("MockAaveLendingPool");

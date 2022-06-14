@@ -1,6 +1,7 @@
 import { BigNumber, Wallet } from "ethers";
-import { ethers, waffle, deployments } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
+import path from "path";
 import { toBn } from "../../helpers/toBn";
 import { div, sub, add, pow } from "../../shared/functions";
 import {
@@ -12,8 +13,10 @@ import {
 import Decimal from "decimal.js-light";
 import { TestRateOracle } from "../../../typechain";
 import { consts } from "../../helpers/constants";
-import { ConfigForGenericTests as CompoundConfig } from "./compoundRateOracle";
-import { ConfigForGenericTests as AaveConfig } from "./aaveRateOracle";
+import { ConfigForGenericTests as CompoundConfig } from "./compoundConfig";
+import { ConfigForGenericTests as AaveConfig } from "./aaveConfig";
+import { ConfigForGenericTests as LidoConfig } from "./lidoConfig";
+import { ConfigForGenericTests as RocketPoolConfig } from "./rocketPoolConfig";
 
 const { provider } = waffle;
 
@@ -25,13 +28,22 @@ function computeApyFromRate(rateFromTo: BigNumber, timeInYears: BigNumber) {
 }
 
 let testRateOracle: TestRateOracle;
-const CONFIGURATIONS_UNDER_TEST = [CompoundConfig, AaveConfig];
+
+// Modify this list to test new rate oracles
+const CONFIGURATIONS_UNDER_TEST = [
+  CompoundConfig,
+  AaveConfig,
+  LidoConfig,
+  RocketPoolConfig,
+];
 
 describe("Generic Rate Oracle Tests", () => {
-  for (let Config of CONFIGURATIONS_UNDER_TEST) {
+  for (const Config of CONFIGURATIONS_UNDER_TEST) {
     // console.log(`Testing ${Config.configName}...`);
 
-    describe(`${Config.configName} Rate Oracle`, () => {
+    describe(`${Config.configName} Rate Oracle (from ${path.basename(
+      __filename
+    )})`, () => {
       let wallet: Wallet, other: Wallet;
       let loadFixture: ReturnType<typeof waffle.createFixtureLoader>;
 
@@ -218,8 +230,8 @@ describe("Generic Rate Oracle Tests", () => {
       });
 
       describe("#getApyFromTo", async () => {
-        const expectedApy = 1.3707526909509977; // This is equivalent to compounding by 1.00000001 per second for 365 days = 31536000 seconds
-        const twoYearMultiple = 1.8789629397494015; // This is equivalent to compounding by 1.00000001 per second for 2 years = 63072000 seconds
+        const expectedApy = 1.370752690950997; // This is equivalent to compounding by 1.00000001 per second for 365 days = 31536000 seconds
+        const twoYearMultiple = 1.878962939749401; // This is equivalent to compounding by 1.00000001 per second for 2 years = 63072000 seconds
         let startTime: number;
 
         beforeEach("deploy and initialize test oracle", async () => {

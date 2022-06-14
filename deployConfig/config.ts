@@ -173,6 +173,10 @@ const kovanConfig = {
 const mainnetConfig = {
   // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
   aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
+  // Lido deployment info at https://github.com/lidofinance/lido-dao/tree/816bf1d0995ba5cfdfc264de4acda34a7fe93eba#mainnet
+  lidoStETH: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+  // RocketPool deployment info at ???
+  rocketPoolRocketToken: "0xae78736cd615f374d3085123a210448e74fc6393",
   maxIrsDurationInSeconds: 60 * 60 * 24 * 92, // 92 days. Do not increase without checking that rate oracle buffers are large enough
   configDefaults: mainnetConfigDefaults,
   skipFactoryDeploy: true, // On mainnet we use a community deployer
