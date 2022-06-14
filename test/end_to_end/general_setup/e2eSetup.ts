@@ -34,6 +34,7 @@ export interface e2eParameters {
   positions: [number, number, number][]; // list of [index of actor, lower tick, upper tick]
 
   skipped: boolean;
+  isWETH?: boolean;
 }
 
 export const e2eScenarios: e2eParameters[] = [

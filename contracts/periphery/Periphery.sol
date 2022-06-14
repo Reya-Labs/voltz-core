@@ -161,7 +161,7 @@ contract Periphery is IPeriphery {
         uint256 marginDelta = msg.value;
 
         weth.deposit();
-        weth.transferFrom(address(this), msg.sender, marginDelta);
+        _underlyingToken.transferFrom(address(this), msg.sender, marginDelta);
 
         updatePositionMargin(
             _marginEngine,

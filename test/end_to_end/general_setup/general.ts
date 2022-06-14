@@ -562,7 +562,7 @@ export class ScenarioRunner {
 
     // deploy mock WETH
     const wethFactory = await ethers.getContractFactory("MockWETH");
-    const weth = (await wethFactory.deploy()) as MockWETH;
+    const weth = (await wethFactory.deploy("Wrapped ETH", "WETH")) as MockWETH;
 
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");

@@ -16,6 +16,7 @@ import {
   MarginEngine,
   MockAaveLendingPool,
   MockAToken,
+  MockWETH,
   Periphery,
   SqrtPriceMathTest,
   TickMathTest,
@@ -46,6 +47,7 @@ export class ScenarioRunner {
   owner!: Wallet;
 
   // tokens
+  weth!: MockWETH;
   token!: ERC20Mock;
   aToken!: MockAToken;
 
@@ -113,12 +115,24 @@ export class ScenarioRunner {
       masterVAMM.address
     )) as Factory;
 
+    // Wrapped ETH
+    const MockWETHFactory = await ethers.getContractFactory("MockWETH");
+    this.weth = (await MockWETHFactory.deploy(
+      "Wrapped ETH",
+      "WETH"
+    )) as MockWETH;
+
     // underlying token
-    const MockERC20Factory = await ethers.getContractFactory("ERC20Mock");
-    this.token = (await MockERC20Factory.deploy(
-      "Voltz USD",
-      "VUSD"
-    )) as ERC20Mock;
+    if (this.params.isWETH) {
+        this.token = this.weth as ERC20Mock;
+    }
+    else {
+        const MockERC20Factory = await ethers.getContractFactory("ERC20Mock");
+        this.token = (await MockERC20Factory.deploy(
+        "Voltz USD",
+        "VUSD"
+        )) as ERC20Mock;
+    }
 
     // mock aave lending pool
     const MockAaveLendingPoolFactory = await ethers.getContractFactory(
