@@ -124,14 +124,13 @@ export class ScenarioRunner {
 
     // underlying token
     if (this.params.isWETH) {
-        this.token = this.weth as ERC20Mock;
-    }
-    else {
-        const MockERC20Factory = await ethers.getContractFactory("ERC20Mock");
-        this.token = (await MockERC20Factory.deploy(
+      this.token = this.weth as ERC20Mock;
+    } else {
+      const MockERC20Factory = await ethers.getContractFactory("ERC20Mock");
+      this.token = (await MockERC20Factory.deploy(
         "Voltz USD",
         "VUSD"
-        )) as ERC20Mock;
+      )) as ERC20Mock;
     }
 
     // mock aave lending pool

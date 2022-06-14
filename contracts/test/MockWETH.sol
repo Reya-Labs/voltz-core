@@ -8,9 +8,10 @@ import "contracts/test/ERC20Mock.sol";
 contract MockWETH is ERC20Mock, IWETH {
     constructor(string memory name, string memory symbol)
         payable
-        ERC20Mock(name, symbol) {}
+        ERC20Mock(name, symbol)
+    {}
 
-    function deposit() public override payable {
+    function deposit() public payable override {
         _mint(msg.sender, msg.value);
     }
 
