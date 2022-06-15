@@ -81,17 +81,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         value: ethers.utils.parseEther("210"),
       };
 
-      await this.e2eSetup.depositMarginAsETH(
-        this.positions[0][0],
-        this.positions[0][1],
-        this.positions[0][2],
-        tempOverrides
-      );
-
       // add 1,000,000 liquidity to Position 0
       await this.e2eSetup.mintOrBurnViaPeriphery(
         this.positions[0][0],
-        mintOrBurnParameters
+        mintOrBurnParameters,
+        tempOverrides
       );
     }
 
@@ -114,16 +108,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         value: ethers.utils.parseEther("1000"),
       };
 
-      await this.e2eSetup.depositMarginAsETH(
-        this.positions[2][0],
-        this.positions[2][1],
-        this.positions[2][2],
-        tempOverrides
-      );
-
       await this.e2eSetup.swapViaPeriphery(
         this.positions[2][0],
-        swapParameters
+        swapParameters,
+        tempOverrides
       );
     }
 
@@ -146,17 +134,11 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         value: ethers.utils.parseEther("2500"),
       };
 
-      await this.e2eSetup.depositMarginAsETH(
-        this.positions[1][0],
-        this.positions[1][1],
-        this.positions[1][2],
-        tempOverrides
-      );
-
       // add 1,000,000 liquidity to Position 0
       await this.e2eSetup.mintOrBurnViaPeriphery(
         this.positions[1][0],
-        mintOrBurnParameters
+        mintOrBurnParameters,
+        tempOverrides
       );
     }
 
@@ -179,16 +161,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         value: ethers.utils.parseEther("1000"),
       };
 
-      await this.e2eSetup.depositMarginAsETH(
-        this.positions[3][0],
-        this.positions[3][1],
-        this.positions[3][2],
-        tempOverrides
-      );
-
       await this.e2eSetup.swapViaPeriphery(
         this.positions[3][0],
-        swapParameters
+        swapParameters,
+        tempOverrides
       );
     }
 

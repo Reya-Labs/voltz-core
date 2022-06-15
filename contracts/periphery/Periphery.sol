@@ -13,6 +13,7 @@ import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "contracts/utils/Printer.sol";
 
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
@@ -149,36 +150,13 @@ contract Periphery is IPeriphery {
         updatePositionMargin(_marginEngine, _tickLower, _tickUpper, 0, true); // fully withdraw
     }
 
-    function depositMarginAsETH(
-        IMarginEngine _marginEngine,
-        int24 _tickLower,
-        int24 _tickUpper
-    ) public payable override {
-        IERC20Minimal _underlyingToken = _marginEngine.underlyingToken();
-
-        require(address(_underlyingToken) == address(weth), "No WETH pool");
-
-        uint256 marginDelta = msg.value;
-
-        weth.deposit{value: msg.value}();
-        _underlyingToken.safeTransfer(msg.sender, marginDelta);
-
-        updatePositionMargin(
-            _marginEngine,
-            _tickLower,
-            _tickUpper,
-            int256(marginDelta),
-            false
-        );
-    }
-
     function updatePositionMargin(
         IMarginEngine _marginEngine,
         int24 _tickLower,
         int24 _tickUpper,
         int256 _marginDelta,
         bool _fullyWithdraw
-    ) public override {
+    ) public payable override {
         Position.Info memory _position = _marginEngine.getPosition(
             msg.sender,
             _tickLower,
@@ -190,6 +168,19 @@ contract Periphery is IPeriphery {
         if (_fullyWithdraw) {
             _marginDelta = -_position.margin;
         }
+
+        if (msg.value > 0) {
+            if (address(_underlyingToken) == address(weth)) {
+                uint256 ethPassed = msg.value;
+
+                weth.deposit{value: msg.value}();
+                _underlyingToken.safeTransfer(msg.sender, ethPassed);
+
+                _marginDelta += ethPassed.toInt256();
+            }
+        }
+
+        Printer.printInt256("margin Delta:", _marginDelta);
 
         if (_marginDelta > 0) {
             _underlyingToken.safeTransferFrom(
@@ -243,6 +234,7 @@ contract Periphery is IPeriphery {
     function mintOrBurn(MintOrBurnParams memory params)
         external
         override
+        payable
         returns (int256 positionMarginRequirement)
     {
         Tick.checkTicks(params.tickLower, params.tickUpper);
@@ -273,7 +265,7 @@ contract Periphery is IPeriphery {
             vamm.initializeVAMM(sqrtRatioAtMidTickX96);
         }
 
-        if (params.marginDelta != 0) {
+        if (params.marginDelta != 0 || msg.value > 0) {
             updatePositionMargin(
                 params.marginEngine,
                 params.tickLower,
@@ -341,6 +333,7 @@ contract Periphery is IPeriphery {
 
     function swap(SwapPeripheryParams memory params)
         external
+        payable
         override
         returns (
             int256 _fixedTokenDelta,
@@ -377,7 +370,7 @@ contract Periphery is IPeriphery {
 
         // if margin delta is positive, top up position margin
 
-        if (params.marginDelta > 0) {
+        if (params.marginDelta > 0 || msg.value > 0) {
             updatePositionMargin(
                 params.marginEngine,
                 params.tickLower,

@@ -244,9 +244,9 @@ contract E2ESetup is CustomErrors {
     function mintOrBurnViaPeriphery(
         address trader,
         IPeriphery.MintOrBurnParams memory params
-    ) public returns (int256 positionMarginRequirement) {
+    ) public payable returns (int256 positionMarginRequirement) {
         addPosition(trader, params.tickLower, params.tickUpper);
-        positionMarginRequirement = Actor(trader).mintOrBurnViaPeriphery(
+        positionMarginRequirement = Actor(trader).mintOrBurnViaPeriphery{value: msg.value}(
             peripheryAddress,
             params
         );
@@ -257,6 +257,7 @@ contract E2ESetup is CustomErrors {
         IPeriphery.SwapPeripheryParams memory params
     )
         public
+        payable
         returns (
             int256 _fixedTokenDelta,
             int256 _variableTokenDelta,
@@ -272,7 +273,7 @@ contract E2ESetup is CustomErrors {
             _cumulativeFeeIncurred,
             _fixedTokenDeltaUnbalanced,
             _marginRequirement
-        ) = Actor(trader).swapViaPeriphery(peripheryAddress, params);
+        ) = Actor(trader).swapViaPeriphery{value: msg.value}(peripheryAddress, params);
     }
 
     function mintViaAMM(
@@ -397,21 +398,6 @@ contract E2ESetup is CustomErrors {
             tickLower,
             tickUpper,
             marginDelta
-        );
-    }
-
-    function depositMarginAsETH(
-        address _owner,
-        int24 tickLower,
-        int24 tickUpper
-    ) public payable {
-        this.addPosition(_owner, tickLower, tickUpper);
-
-        Actor(_owner).depositMarginAsETH{value: msg.value}(
-            peripheryAddress,
-            MEAddress,
-            tickLower,
-            tickUpper
         );
     }
 

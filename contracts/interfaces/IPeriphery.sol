@@ -55,10 +55,12 @@ interface IPeriphery is CustomErrors {
 
     function mintOrBurn(MintOrBurnParams memory params)
         external
+        payable
         returns (int256 positionMarginRequirement);
 
     function swap(SwapPeripheryParams memory params)
         external
+        payable
         returns (
             int256 _fixedTokenDelta,
             int256 _variableTokenDelta,
@@ -74,12 +76,6 @@ interface IPeriphery is CustomErrors {
         int24 _tickUpper,
         int256 _marginDelta,
         bool _fullyWithdraw
-    ) external;
-
-    function depositMarginAsETH(
-        IMarginEngine _marginEngine,
-        int24 _tickLower,
-        int24 _tickUpper
     ) external payable;
 
     function setLPMarginCap(IVAMM _vamm, int256 _lpMarginCapNew) external;

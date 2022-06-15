@@ -18,8 +18,8 @@ contract Actor is CustomErrors {
     function mintOrBurnViaPeriphery(
         address peripheryAddress,
         IPeriphery.MintOrBurnParams memory params
-    ) external returns (int256 positionMarginRequirement) {
-        positionMarginRequirement = IPeriphery(peripheryAddress).mintOrBurn(
+    ) external payable returns (int256 positionMarginRequirement) {
+        positionMarginRequirement = IPeriphery(peripheryAddress).mintOrBurn{value: msg.value}(
             params
         );
     }
@@ -29,6 +29,7 @@ contract Actor is CustomErrors {
         IPeriphery.SwapPeripheryParams memory params
     )
         external
+        payable
         returns (
             int256 _fixedTokenDelta,
             int256 _variableTokenDelta,
@@ -44,7 +45,7 @@ contract Actor is CustomErrors {
             _fixedTokenDeltaUnbalanced,
             _marginRequirement,
 
-        ) = IPeriphery(peripheryAddress).swap(params);
+        ) = IPeriphery(peripheryAddress).swap{value: msg.value}(params);
     }
 
     function updatePositionMarginViaAMM(
@@ -124,19 +125,6 @@ contract Actor is CustomErrors {
         IFactory factory = IMarginEngine(MEAddress).factory();
         // set integration approval
         factory.setApproval(intAddress, allowIntegration);
-    }
-
-    function depositMarginAsETH(
-        address peripheryAddress,
-        address _marginEngine,
-        int24 _tickLower,
-        int24 _tickUpper
-    ) external payable {
-        IPeriphery(peripheryAddress).depositMarginAsETH{value: msg.value}(
-            IMarginEngine(_marginEngine),
-            _tickLower,
-            _tickUpper
-        );
     }
 
     function liquidatePosition(
