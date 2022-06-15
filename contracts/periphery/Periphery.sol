@@ -13,7 +13,6 @@ import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "contracts/utils/Printer.sol";
 
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
@@ -180,8 +179,6 @@ contract Periphery is IPeriphery {
             }
         }
 
-        Printer.printInt256("margin Delta:", _marginDelta);
-
         if (_marginDelta > 0) {
             _underlyingToken.safeTransferFrom(
                 msg.sender,
@@ -233,8 +230,8 @@ contract Periphery is IPeriphery {
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params)
         external
-        override
         payable
+        override
         returns (int256 positionMarginRequirement)
     {
         Tick.checkTicks(params.tickLower, params.tickUpper);

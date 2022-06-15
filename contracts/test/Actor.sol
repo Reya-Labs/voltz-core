@@ -19,9 +19,9 @@ contract Actor is CustomErrors {
         address peripheryAddress,
         IPeriphery.MintOrBurnParams memory params
     ) external payable returns (int256 positionMarginRequirement) {
-        positionMarginRequirement = IPeriphery(peripheryAddress).mintOrBurn{value: msg.value}(
-            params
-        );
+        positionMarginRequirement = IPeriphery(peripheryAddress).mintOrBurn{
+            value: msg.value
+        }(params);
     }
 
     function swapViaPeriphery(

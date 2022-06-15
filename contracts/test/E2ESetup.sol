@@ -246,10 +246,9 @@ contract E2ESetup is CustomErrors {
         IPeriphery.MintOrBurnParams memory params
     ) public payable returns (int256 positionMarginRequirement) {
         addPosition(trader, params.tickLower, params.tickUpper);
-        positionMarginRequirement = Actor(trader).mintOrBurnViaPeriphery{value: msg.value}(
-            peripheryAddress,
-            params
-        );
+        positionMarginRequirement = Actor(trader).mintOrBurnViaPeriphery{
+            value: msg.value
+        }(peripheryAddress, params);
     }
 
     function swapViaPeriphery(
@@ -273,7 +272,10 @@ contract E2ESetup is CustomErrors {
             _cumulativeFeeIncurred,
             _fixedTokenDeltaUnbalanced,
             _marginRequirement
-        ) = Actor(trader).swapViaPeriphery{value: msg.value}(peripheryAddress, params);
+        ) = Actor(trader).swapViaPeriphery{value: msg.value}(
+            peripheryAddress,
+            params
+        );
     }
 
     function mintViaAMM(
