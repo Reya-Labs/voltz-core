@@ -75,6 +75,7 @@ loadModuleIfContractsAreBuilt("./tasks/rateOracle");
 loadModuleIfContractsAreBuilt("./tasks/setParameters");
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
 loadModuleIfContractsAreBuilt("./tasks/decodeTransactionData");
+loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
