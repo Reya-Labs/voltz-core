@@ -2,18 +2,16 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import { Factory } from "../typechain";
-import {
-  getAaveTokens,
-  getCompoundTokens,
-  factoryOwnedByMultisig,
-} from "../deployConfig/config";
+import { getConfig } from "../deployConfig/config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
-  const aaveTokens = getAaveTokens(hre.network.name);
-  const compoundTokens = getCompoundTokens(hre.network.name);
+  const config = getConfig(hre.network.name);
+  const aaveTokens = config.aaveConfig?.aaveTokens;
+  const compoundTokens = config.compoundConfig?.compoundTokens;
+  const skipFactoryConfig = config.factoryOwnedByMultisig;
   let aaveRateOracle = await ethers.getContractOrNull("MockTokenRateOracle");
   let compoundRateOracle = await ethers.getContractOrNull(
     "MockCTokenRateOracle"
@@ -21,7 +19,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const factory = (await ethers.getContract("Factory")) as Factory;
   let underlyingYieldBearingProtocolID_AaveV2: number;
   let underlyingYieldBearingProtocolID_Compound: number;
-  const skipFactoryConfig = factoryOwnedByMultisig(hre.network.name);
 
   // Get Aave ID
   if (!aaveRateOracle && aaveTokens) {
