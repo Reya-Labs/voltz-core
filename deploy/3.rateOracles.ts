@@ -7,13 +7,14 @@ import {
   getConfig,
 } from "../deployConfig/config";
 import { BaseRateOracle, ERC20 } from "../typechain";
-import { TokenConfig } from "../deployConfig/types";
-import { config } from "dotenv";
+import { RateOracleConfigDefaults } from "../deployConfig/types";
+import { BigNumber } from "ethers";
 
 interface RateOracleInstanceInfo {
   contractName: string;
   args: any[];
-  tokenDefinition: TokenConfig;
+  suffix: string | null;
+  rateOracleConfig: RateOracleConfigDefaults;
   maxIrsDurationInSeconds: number;
 }
 
@@ -25,13 +26,14 @@ const deployAndConfigureRateOracleInstance = async (
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
 
-  const rateOracleIdentifier = `${instance.contractName}_${instance.tokenDefinition.name}`;
+  const rateOracleIdentifier =
+    instance.contractName + (instance.suffix ? "_" + instance.suffix : "");
   let rateOracleContract = (await ethers.getContractOrNull(
     rateOracleIdentifier
   )) as BaseRateOracle;
 
   if (!rateOracleContract) {
-    // There is no Aave rate oracle already deployed for this token. Deploy one now.
+    // There is no rate oracle already deployed with this rateOracleIdentifier. Deploy one now.
     await deploy(rateOracleIdentifier, {
       contract: instance.contractName,
       from: deployer,
@@ -39,7 +41,9 @@ const deployAndConfigureRateOracleInstance = async (
       log: doLogging,
     });
     console.log(
-      `Deployed ${rateOracleIdentifier} (args: ${instance.args.join(",")})`
+      `Deployed ${rateOracleIdentifier} (args: ${JSON.stringify(
+        instance.args
+      )})`
     );
 
     rateOracleContract = (await ethers.getContract(
@@ -50,8 +54,8 @@ const deployAndConfigureRateOracleInstance = async (
   // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
   await applyBufferConfig(
     rateOracleContract as unknown as BaseRateOracle,
-    instance.tokenDefinition.rateOracleBufferSize,
-    instance.tokenDefinition.minSecondsSinceLastUpdate,
+    BigNumber.from(instance.rateOracleConfig.rateOracleBufferSize).toNumber(),
+    instance.rateOracleConfig.rateOracleMinSecondsSinceLastUpdate,
     instance.maxIrsDurationInSeconds
   );
 };
@@ -88,10 +92,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         trustedObservationValuesInRay,
       ];
 
-      deployAndConfigureRateOracleInstance(hre, {
+      await deployAndConfigureRateOracleInstance(hre, {
         args,
-        tokenDefinition,
-        contractName: "CompoundRateOracle",
+        suffix: tokenDefinition.name,
+        contractName: "AaveRateOracle",
+        rateOracleConfig: aaveConfig.defaults,
         maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
       });
     }
@@ -133,37 +138,68 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         trustedObservationValuesInRay,
       ];
 
-      deployAndConfigureRateOracleInstance(hre, {
+      await deployAndConfigureRateOracleInstance(hre, {
         args,
-        tokenDefinition,
+        suffix: tokenDefinition.name,
         contractName: "CompoundRateOracle",
+        rateOracleConfig: compoundConfig.defaults,
         maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
       });
     }
   }
   // End of Compound Rate Oracles
+
+  // Lido Rate Oracle
   const lidoConfig = deployConfig.lidoConfig;
   const lidoStETHAddress = lidoConfig?.lidoStETH;
 
-  // Lido Rate Oracle
-  // if (lidoStETHAddress) {
-  //   const { trustedTimestamps, trustedObservationValuesInRay } =
-  //     convertTrustedRateOracleDataPoints(lidoConfig.defaults.trustedDataPoints);
+  if (lidoStETHAddress) {
+    const { trustedTimestamps, trustedObservationValuesInRay } =
+      convertTrustedRateOracleDataPoints(lidoConfig.defaults.trustedDataPoints);
 
-  //   // For Aave, the first two constructor args are lending pool address and underlying token address
-  //   // For Aave, the address in the tokenDefinition is the address of the underlying token
-  //   const args = [
-  //     lidoStETHAddress,
-  //     trustedTimestamps,
-  //     trustedObservationValuesInRay,
-  //   ];
+    // For Lido, the first constructor arg is the stEth address
+    const args = [
+      lidoStETHAddress,
+      trustedTimestamps,
+      trustedObservationValuesInRay,
+    ];
 
-  //   deployAndConfigureRateOracleInstance(hre, {
-  //     args,
-  //     contractName: "CompoundRateOracle",
-  //     maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds
-  //   });
-  // }
+    await deployAndConfigureRateOracleInstance(hre, {
+      args,
+      suffix: null,
+      contractName: "LidoRateOracle",
+      rateOracleConfig: lidoConfig.defaults,
+      maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+    });
+  }
+  // End of Lido Rate Oracle
+
+  // RocketPool Rate Oracle
+  const rocketPoolConfig = deployConfig.rocketPoolConfig;
+  const rocketEthAddress = rocketPoolConfig?.rocketPoolRocketToken;
+
+  if (rocketEthAddress) {
+    const { trustedTimestamps, trustedObservationValuesInRay } =
+      convertTrustedRateOracleDataPoints(
+        rocketPoolConfig.defaults.trustedDataPoints
+      );
+
+    // For RocketPool, the first constructor arg is the rocketEth (RETH) address
+    const args = [
+      rocketEthAddress,
+      trustedTimestamps,
+      trustedObservationValuesInRay,
+    ];
+
+    await deployAndConfigureRateOracleInstance(hre, {
+      args,
+      suffix: null,
+      contractName: "RocketPoolRateOracle",
+      rateOracleConfig: rocketPoolConfig.defaults,
+      maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+    });
+  }
+  // End of Rocket Pool Rate Oracle
 
   return false; // This script is safely re-runnable and will reconfigure existing rate oracles if required
 };

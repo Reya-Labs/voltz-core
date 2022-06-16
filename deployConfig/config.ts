@@ -4,7 +4,6 @@ import type {
   IrsConfigDefaults,
   RateOracleConfigDefaults,
   RateOracleDataPoint,
-  TokenConfig,
 } from "./types";
 // import { network } from "hardhat"; // Not importable from tasks
 import { toBn } from "../test/helpers/toBn";
@@ -69,8 +68,8 @@ const mainnetIrsConfigDefaults: IrsConfigDefaults = {
 };
 
 const mainnetRateOracleConfigDefaults: RateOracleConfigDefaults = {
-  rateOracleBufferSize: 200, // For mock token oracle. Ignored on mainnet.
-  rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // For mock token oracle. Ignored on mainnet.
+  rateOracleBufferSize: 500, // Used for Mocks, and for platforms with no token config
+  rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // Used for Mocks, and for platforms with no token config
   trustedDataPoints: [],
 };
 
@@ -103,6 +102,23 @@ const kovanTusdDataPoints: RateOracleDataPoint[] = [
   [1651695080, "1175738736810554064345300115"],
   [1651719332, "1176220228335523022742931331"],
   [1651740940, "117664985657398114295162823"],
+];
+
+const mainnetStEthDataPoints: RateOracleDataPoint[] = [
+  [1651879799, "1070485578483524870126761205"],
+  [1652516485, "1071226893624992827247560170"],
+  [1653154520, "1072111386102180338298911312"],
+  [1653721964, "1072807737405152312769803194"],
+  [1654456927, "1073871010466494060427628061"],
+  [1655050461, "1074697726413162893057905270"],
+];
+
+const mainnetRocketEthDataPoints: RateOracleDataPoint[] = [
+  [1652583270, "1024583990875469414982436935"],
+  [1653143338, "1025254611747488178020328436"],
+  [1653711038, "1025922983935784513304611982"],
+  [1654277948, "1026599253986324262373044488"],
+  [1654868735, "1027304108017384923832661768"],
 ];
 
 const rinkebyConfig = {
@@ -229,14 +245,24 @@ const mainnetConfig: ContractsConfig = {
       },
     ],
   },
-  // lidoConfig: {
-  //   // Lido deployment info at https://github.com/lidofinance/lido-dao/tree/816bf1d0995ba5cfdfc264de4acda34a7fe93eba#mainnet
-  //   lidoStETH: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
-  // },
-  // rocketPoolConfig: {
-  //   // RocketPool deployment info at ???
-  //   rocketPoolRocketToken: "0xae78736cd615f374d3085123a210448e74fc6393",
-  // },
+  lidoConfig: {
+    // Lido deployment info at https://github.com/lidofinance/lido-dao/tree/816bf1d0995ba5cfdfc264de4acda34a7fe93eba#mainnet
+    lidoStETH: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+    defaults: {
+      rateOracleBufferSize: 200,
+      trustedDataPoints: mainnetStEthDataPoints,
+      rateOracleMinSecondsSinceLastUpdate: 18 * 60 * 60, // Lido rates only get updated once a day
+    },
+  },
+  rocketPoolConfig: {
+    // RocketPool deployment info at ???
+    rocketPoolRocketToken: "0xae78736cd615f374d3085123a210448e74fc6393",
+    defaults: {
+      rateOracleBufferSize: 200,
+      trustedDataPoints: mainnetRocketEthDataPoints,
+      rateOracleMinSecondsSinceLastUpdate: 18 * 60 * 60, // Lido rates only get updated once a day
+    },
+  },
   skipFactoryDeploy: true, // On mainnet we use a community deployer
   factoryOwnedByMultisig: true, // On mainnet, transactions to the factory must go through a multisig
 
@@ -260,10 +286,11 @@ const localhostConfig: ContractsConfig = {
 const config: ContractsConfigMap = {
   kovan: kovanConfig,
   rinkeby: rinkebyConfig,
+  // localhost: mainnetConfig, // Uncomment if testing against a fork of an existing mainnet system
   localhost: localhostConfig,
   mainnet: mainnetConfig,
   // hardhat: kovanConfig, // uncomment if testing against a kovan fork
-  // hardhat: mainnetConfig, // uncomment if testing against a mainnet fork
+  // hardhat: { ...mainnetConfig, skipFactoryDeploy: false, }, // uncomment if deploying a new system against a mainnet fork
   hardhat: localhostConfig,
 };
 
@@ -304,12 +331,7 @@ export const convertTrustedRateOracleDataPoints = (
 ): TrustedDataPoints => {
   let trustedTimestamps: number[] = [];
   let trustedObservationValuesInRay: BigNumberish[] = [];
-  console.log(
-    `Adding ${
-      trustedDataPoints ? trustedDataPoints.length : 0
-    } trusted data points`
-  );
-  if (trustedDataPoints) {
+  if (trustedDataPoints?.length > 0) {
     trustedTimestamps = trustedDataPoints.map((e) => e[0]);
     trustedObservationValuesInRay = trustedDataPoints.map((e) => e[1]);
   }
@@ -336,6 +358,13 @@ export const applyBufferConfig = async (
   let currentSize = (await r.oracleVars())[2];
   // console.log(`currentSize of ${r.address} is ${currentSize}`);
 
+  const bufferWasTooSmall = currentSize < minBufferSize;
+  if (bufferWasTooSmall) {
+    process.stdout.write(
+      `Increasing size of ${r.address}'s buffer to ${minBufferSize}.`
+    );
+  }
+
   while (currentSize < minBufferSize) {
     // Growing the buffer can use a lot of gas so we may split buffer growth into multiple trx
     const newSize = Math.min(
@@ -344,9 +373,12 @@ export const applyBufferConfig = async (
     );
     const trx = await r.increaseObservationCardinalityNext(newSize);
     await trx.wait();
-    console.log(`Increased size of ${r.address}'s buffer to ${newSize}`);
-
+    process.stdout.write(`.`);
     currentSize = (await r.oracleVars())[2];
+  }
+
+  if (bufferWasTooSmall) {
+    console.log(" Done.");
   }
 
   const currentSecondsSinceLastUpdate = (

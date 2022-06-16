@@ -8,7 +8,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
-  const factory = (await ethers.getContract("Factory")) as Factory;
 
   const periphery = await deploy("Periphery", {
     from: deployer,
@@ -22,6 +21,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       `!! SKIPPING FACTORY CONFIG. CALL setPeriphery("${periphery.address}") from multisig.`
     );
   } else {
+    const factory = (await ethers.getContract("Factory")) as Factory;
     const trx = await factory.setPeriphery(periphery.address, {
       gasLimit: 10000000,
     });
