@@ -16,7 +16,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   let compoundRateOracle = await ethers.getContractOrNull(
     "MockCTokenRateOracle"
   );
-  const factory = (await ethers.getContract("Factory")) as Factory;
   let underlyingYieldBearingProtocolID_AaveV2: number;
   let underlyingYieldBearingProtocolID_Compound: number;
 
@@ -57,6 +56,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `SKIPPING FACTORY CONFIG. CALL setMasterFCM("${masterAaveFCM.address}", ${underlyingYieldBearingProtocolID_AaveV2}) from multisig.`
       );
     } else {
+      const factory = (await ethers.getContract("Factory")) as Factory;
       const trx = await factory.setMasterFCM(
         masterAaveFCM.address,
         underlyingYieldBearingProtocolID_AaveV2,
@@ -79,6 +79,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         `SKIPPING FACTORY CONFIG. CALL setMasterFCM("${masterCompoundFCM.address}", ${underlyingYieldBearingProtocolID_Compound}) from multisig.`
       );
     } else {
+      const factory = (await ethers.getContract("Factory")) as Factory;
       const trx = await factory.setMasterFCM(
         masterCompoundFCM.address,
         underlyingYieldBearingProtocolID_Compound,
