@@ -1,8 +1,5 @@
 import { task, types } from "hardhat/config";
-import {
-  getConfigDefaults,
-  getMaxDurationOfIrsInSeconds,
-} from "../deployConfig/config";
+import { getConfig } from "../deployConfig/config";
 import { toBn } from "../test/helpers/toBn";
 import {
   MarginEngine,
@@ -17,7 +14,7 @@ import {
   getRateOracleByNameOrAddress,
 } from "./helpers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { ConfigDefaults } from "../deployConfig/types";
+import { IrsConfigDefaults } from "../deployConfig/types";
 
 async function getIrsInstanceEvents(
   hre: HardhatRuntimeEnvironment
@@ -34,7 +31,7 @@ async function configureIrs(
   hre: HardhatRuntimeEnvironment,
   marginEngine: IMarginEngine,
   vamm: IVAMM,
-  config: ConfigDefaults
+  config: IrsConfigDefaults
 ) {
   // Set the config for our IRS instance
   // TODO: allow values to be overridden with task parameters, as required
@@ -149,7 +146,8 @@ task(
     const endDay = new Date(tomorrow);
 
     const maxIrsDurationInDays =
-      getMaxDurationOfIrsInSeconds(hre.network.name) / (60 * 60 * 24);
+      getConfig(hre.network.name).irsConfig.maxIrsDurationInSeconds /
+      (60 * 60 * 24);
 
     if (maxIrsDurationInDays < taskArgs.daysDuration) {
       throw new Error(
@@ -200,7 +198,7 @@ task(
         hre,
         marginEngine,
         vamm,
-        getConfigDefaults(hre.network.name)
+        getConfig(hre.network.name).irsConfig
       );
     }
   });
@@ -220,7 +218,7 @@ task(
       hre,
       marginEngine,
       vamm,
-      getConfigDefaults(hre.network.name)
+      getConfig(hre.network.name).irsConfig
     );
   });
 

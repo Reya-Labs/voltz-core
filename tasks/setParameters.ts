@@ -1,6 +1,6 @@
 import { task } from "hardhat/config";
 import { MarginEngine, VAMM } from "../typechain";
-import { getConfigDefaults } from "../deployConfig/config";
+import { getConfig } from "../deployConfig/config";
 
 task("setParameters", "Sets Parameters in a given pool to defaults").setAction(
   async (_, hre) => {
@@ -15,7 +15,7 @@ task("setParameters", "Sets Parameters in a given pool to defaults").setAction(
 
     const vamm = (await hre.ethers.getContractAt("VAMM", vammAddress)) as VAMM;
 
-    const configDefaults = getConfigDefaults(hre.network.name);
+    const configDefaults = getConfig(hre.network.name).irsConfig;
     let trx = await marginEngine.setMarginCalculatorParameters(
       configDefaults.marginEngineCalculatorParameters,
       { gasLimit: 10000000 }

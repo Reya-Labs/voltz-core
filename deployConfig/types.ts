@@ -7,7 +7,9 @@ export interface TokenConfig {
   address: string;
   rateOracleBufferSize: number;
   minSecondsSinceLastUpdate: number;
-  // If migrating, get trusted data points from existing rate oracle using hardhat's queryRateOracle task
+  // If migrating, get trusted data points from either:
+  // - an existing rate oracle, using hardhat's queryRateOracle task
+  // - the source of the data, using hardhat's getHistoricalData task
   trustedDataPoints?: RateOracleDataPoint[];
 }
 
@@ -32,30 +34,47 @@ export interface MarginCalculatorParameters {
   minMarginToIncentiviseLiquidators: BigNumberish;
 }
 
-export interface IrsConfig {
+export interface IrsConfigDefaults {
   marginEngineLookbackWindowInSeconds: BigNumberish;
   marginEngineCacheMaxAgeInSeconds: BigNumberish;
   marginEngineLiquidatorRewardWad: BigNumberish;
   marginEngineCalculatorParameters: MarginCalculatorParameters;
   vammFeeProtocol: BigNumberish;
   vammFeeWad: BigNumberish;
-  rateOracleBufferSize: BigNumberish;
+  maxIrsDurationInSeconds: number;
+}
+export interface RateOracleConfigDefaults {
+  rateOracleBufferSize: BigNumberish; // For mock token oracle or platforms with only a single token
+  rateOracleMinSecondsSinceLastUpdate: number; // For mock token oracle or platforms with only a single token
+  trustedDataPoints: RateOracleDataPoint[]; // For mock token oracle or platforms with only a single token
+}
+export interface AaveConfig {
+  aaveLendingPool?: string;
+  aaveTokens: TokenConfig[];
+  defaults: RateOracleConfigDefaults;
 }
 
-export interface ConfigDefaults extends IrsConfig {
-  rateOracleBufferSize: number; // For mock token oracle
-  rateOracleMinSecondsSinceLastUpdate: number; // For mock token oracle
+export interface CompoundConfig {
+  compoundTokens: TokenConfig[];
+  defaults: RateOracleConfigDefaults;
+}
+
+export interface LidoConfig {
+  lidoStETH?: string;
+  defaults: RateOracleConfigDefaults;
+}
+export interface RocketPoolConfig {
+  rocketPoolRocketToken?: string;
+  defaults: RateOracleConfigDefaults;
 }
 export interface ContractsConfig {
-  aaveLendingPool?: string;
-  lidoStETH?: string;
-  rocketPoolRocketToken?: string;
-  maxIrsDurationInSeconds: number;
+  irsConfig: IrsConfigDefaults;
+  aaveConfig?: AaveConfig;
+  compoundConfig?: CompoundConfig;
+  lidoConfig?: LidoConfig;
+  rocketPoolConfig?: RocketPoolConfig;
   skipFactoryDeploy?: boolean;
   factoryOwnedByMultisig?: boolean;
-  configDefaults: ConfigDefaults;
-  aaveTokens?: TokenConfig[];
-  compoundTokens?: TokenConfig[];
 }
 export interface ContractsConfigMap {
   [key: string]: ContractsConfig;
