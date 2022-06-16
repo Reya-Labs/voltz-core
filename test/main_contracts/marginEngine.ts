@@ -493,6 +493,144 @@ describe("MarginEngine", () => {
       expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
     });
 
+    it("liquidate and unwind LP", async () => {
+      await token.mint(other.address, BigNumber.from(10).pow(27));
+      await token.approve(other.address, BigNumber.from(10).pow(27));
+
+      await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
+
+      await vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1000000000")
+      );
+
+      await marginEngineTest.setPosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1000"),
+        toBn("0"),
+        toBn("0"),
+        toBn("0"),
+        toBn("-1000000"),
+        toBn("-10"),
+        toBn("0"),
+        false
+      );
+
+      await marginEngineTest.updatePositionMargin(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1")
+      );
+
+      {
+        const positionInfo = await marginEngineTest.callStatic.getPosition(
+          other.address,
+          -TICK_SPACING,
+          TICK_SPACING
+        );
+        expect(positionInfo.variableTokenBalance).to.not.be.equal(0);
+
+        console.log(
+          "variable token balance:",
+          utils.formatEther(positionInfo.variableTokenBalance)
+        );
+      }
+
+      await marginEngineTest.setIsAlpha(true);
+      await vammTest.setIsAlpha(true);
+
+      await marginEngineTest.liquidatePosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
+
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
+
+      console.log(
+        "variable token balance:",
+        utils.formatEther(positionInfo.variableTokenBalance)
+      );
+      expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
+    });
+
+    it("liquidate and unwind LP", async () => {
+      await token.mint(other.address, BigNumber.from(10).pow(27));
+      await token.approve(other.address, BigNumber.from(10).pow(27));
+
+      await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
+
+      await vammTest.mint(
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1000000000")
+      );
+
+      await marginEngineTest.setPosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1000"),
+        toBn("0"),
+        toBn("0"),
+        toBn("0"),
+        toBn("-1000000"),
+        toBn("-10"),
+        toBn("0"),
+        false
+      );
+
+      await marginEngineTest.updatePositionMargin(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING,
+        toBn("1")
+      );
+
+      {
+        const positionInfo = await marginEngineTest.callStatic.getPosition(
+          other.address,
+          -TICK_SPACING,
+          TICK_SPACING
+        );
+        expect(positionInfo.variableTokenBalance).to.not.be.equal(0);
+
+        console.log(
+          "variable token balance:",
+          utils.formatEther(positionInfo.variableTokenBalance)
+        );
+      }
+
+      await marginEngineTest.setIsAlpha(true);
+      await vammTest.setIsAlpha(true);
+
+      await marginEngineTest
+        .connect(other)
+        .liquidatePosition(other.address, -TICK_SPACING, TICK_SPACING);
+
+      const positionInfo = await marginEngineTest.callStatic.getPosition(
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      );
+
+      console.log(
+        "variable token balance:",
+        utils.formatEther(positionInfo.variableTokenBalance)
+      );
+      expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
+    });
+
     it("not enough liquidity to unwind position", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
