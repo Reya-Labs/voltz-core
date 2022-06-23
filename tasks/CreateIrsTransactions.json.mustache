@@ -1,0 +1,372 @@
+{
+  "version": "1.0",
+  "chainId": "1",
+  "createdAt": 1654007302649,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.8.0",
+    "createdFromSafeAddress": "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x6e317afc197279541328cf252e50867cfa15d2ed7e7426244328bdf15b94cfe7"
+  },
+  "transactions": [
+    {
+      "to": "{{factoryAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IERC20Minimal",
+            "name": "_underlyingToken",
+            "type": "address"
+          },
+          {
+            "internalType": "contract IRateOracle",
+            "name": "_rateOracle",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_termStartTimestampWad",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_termEndTimestampWad",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int24",
+            "name": "_tickSpacing",
+            "type": "int24"
+          }
+        ],
+        "name": "deployIrsInstance",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_underlyingToken": "{{underlyingTokenAddress}}",
+        "_rateOracle": "{{rateOracleAddress}}",
+        "_termStartTimestampWad": "{{termStartTimestampWad}}",
+        "_termEndTimestampWad": "{{termEndTimestampWad}}",
+        "_tickSpacing": "{{tickSpacing}}"
+      }
+    },
+    {
+      "to": "{{predictedMarginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_newCacheMaxAgeInSeconds",
+            "type": "uint256"
+          }
+        ],
+        "name": "setCacheMaxAgeInSeconds",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_marginCalculatorParameters": "",
+        "_newCacheMaxAgeInSeconds": "21600"
+      }
+    },
+    {
+      "to": "{{predictedMarginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_newSecondsAgo",
+            "type": "uint256"
+          }
+        ],
+        "name": "setLookbackWindowInSeconds",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_newSecondsAgo": "21600"
+      }
+    },
+    {
+      "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "newFeeWad",
+            "type": "uint256"
+          }
+        ],
+        "name": "setFee",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "newFeeWad": "3000000000000000"
+      }
+    },
+    {
+      "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "bool",
+            "name": "__isAlpha",
+            "type": "bool"
+          }
+        ],
+        "name": "setIsAlpha",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "__isAlpha": "true"
+      }
+    },
+    {
+      "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "permission",
+            "type": "bool"
+          }
+        ],
+        "name": "changePauser",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "account": "0x44A62Dd868534422C29Eb781Fd259FEEC17DF700",
+        "permission": "true"
+      }
+    },
+    {
+      "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "permission",
+            "type": "bool"
+          }
+        ],
+        "name": "changePauser",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "account": "0x4a02c244dCED6797d864B408F646Afe470147159",
+        "permission": "true"
+      }
+    },
+    {
+      "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "permission",
+            "type": "bool"
+          }
+        ],
+        "name": "changePauser",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "account": "0xA73d7b822Bfad43500a26aC38956dfEaBD3E066d",
+        "permission": "true"
+      }
+    },
+    {
+      "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "permission",
+            "type": "bool"
+          }
+        ],
+        "name": "changePauser",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "account": "0x140d001689979ee77C2FB4c8d4B5F3E209135776",
+        "permission": "true"
+      }
+    },
+    {
+      "to": "{{peripheryAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "_vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "_lpMarginCapNew",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_vamm": "{{predictedVammAddress}}",
+        "_lpMarginCapNew": "1000000000000000000000"
+      }
+    },
+    {
+      "to": "{{predictedMarginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "apyUpperMultiplierWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "apyLowerMultiplierWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "int256",
+                "name": "sigmaSquaredWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "alphaWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "betaWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "xiUpperWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "xiLowerWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "tMaxWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "devMulLeftUnwindLMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "devMulRightUnwindLMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "devMulLeftUnwindIMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "devMulRightUnwindIMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fixedRateDeviationMinLeftUnwindLMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fixedRateDeviationMinRightUnwindLMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fixedRateDeviationMinLeftUnwindIMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fixedRateDeviationMinRightUnwindIMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "gammaWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "minMarginToIncentiviseLiquidators",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IMarginEngine.MarginCalculatorParameters",
+            "name": "_marginCalculatorParameters",
+            "type": "tuple"
+          }
+        ],
+        "name": "setMarginCalculatorParameters",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_newSecondsAgo": "",
+        "_marginCalculatorParameters": "[\"1500000000000000000\",\"700000000000000000\",\"500000000000000000\",\"100000000000000000\",\"1000000000000000000\",\"2000000000000000000\",\"1500000000000000000\",\"31536000000000000000000000\",\"500000000000000000\",\"500000000000000000\",\"1500000000000000000\",\"1500000000000000000\",\"5000000000000000000\",\"5000000000000000000\",\"10000000000000000000\",\"10000000000000000000\",\"1000000000000000000\",0]"
+      }
+    }
+  ]
+}
