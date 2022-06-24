@@ -17,6 +17,7 @@ const cTokenAddresses = {
   cWBTC2: "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
   cUSDT: "0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9",
   cTUSD: "0x12392f67bdf24fae0af363c24ac620a2f67dad86",
+  cETH: "0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5",
 };
 const aTokenUnderlyingAddresses = {
   aDAI: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
@@ -24,6 +25,7 @@ const aTokenUnderlyingAddresses = {
   aWBTC: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
   aUSDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
   aTUSD: "0x0000000000085d4780B73119b644AE5ecd22b376",
+  aWETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
 };
 
 task(
@@ -101,11 +103,17 @@ task(
           cTokenAddresses[key as keyof typeof cTokenAddresses]
         )) as ICToken;
         cTokens.set(key, cToken);
-        const underlying = (await hre.ethers.getContractAt(
-          "IERC20Minimal",
-          await cToken.underlying()
-        )) as IERC20Minimal;
-        const decimals = await underlying.decimals();
+        let decimals;
+        if (key === "cETH") {
+          // There is no underlying ERC20 token for cETH, but we know ETH uses 18 decimals
+          decimals = 18;
+        } else {
+          const underlying = (await hre.ethers.getContractAt(
+            "IERC20Minimal",
+            await cToken.underlying()
+          )) as IERC20Minimal;
+          decimals = await underlying.decimals();
+        }
         compoundDecimals.set(key, decimals);
       }
       compoundHeader = "," + headers.join(",");

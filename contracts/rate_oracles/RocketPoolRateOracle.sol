@@ -10,7 +10,7 @@ import "../utils/WadRayMath.sol";
 contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
     IRocketEth public override rocketEth;
 
-    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 4; // id of RocketPool is 3
+    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 4; // id of RocketPool is 4
 
     constructor(
         IRocketEth _rocketEth,

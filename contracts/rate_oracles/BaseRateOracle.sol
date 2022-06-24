@@ -133,7 +133,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     /// matters is that we can divide one "rate" by another "rate" to get the factor of growth between the two timestamps.
     /// For example if we have rates of { (t=0, rate=5), (t=100, rate=5.5) }, we can divide 5.5 by 5 to get a growth factor
     /// of 1.1, suggesting that 10% growth in capital was experienced between timesamp 0 and timestamp 100.
-    /// @dev It is important that the rate is normalised to Ray for storage, so that we can perform consistent math across all rates.
+    /// @dev FOr convenience, the rate is normalised to Ray for storage, so that we can perform consistent math across all rates.
     /// @dev This function should revert if a valid rate cannot be discerned
     /// @return the rate in Ray (decimal scaled up by 10^27 for storage in a uint256)
     function getCurrentRateInRay() public view virtual returns (uint256);
