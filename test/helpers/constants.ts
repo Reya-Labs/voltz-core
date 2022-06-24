@@ -36,6 +36,7 @@ export const consts = {
   AAVE_V2_LENDING_POOL_ADDRESS: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9",
   AAVE_DUMMY_REFERRAL_CODE: 0,
   AAVE_RATE_DECIMALS: 27,
+  NORMALIZED_RATE_DECIMALS: 27,
 
   ZERO_BYTES: utils.formatBytes32String(""),
   RANDOM_BYTES: utils.formatBytes32String("ZpTw6Y3Ft4ruk7pmwTJF"),

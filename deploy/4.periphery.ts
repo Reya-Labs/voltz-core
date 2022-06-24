@@ -2,13 +2,12 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { Factory } from "../typechain";
 import { ethers } from "hardhat";
-import { factoryOwnedByMultisig } from "../deployConfig/config";
+import { getConfig } from "../deployConfig/config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
-  const factory = (await ethers.getContract("Factory")) as Factory;
 
   const periphery = await deploy("Periphery", {
     from: deployer,
@@ -16,12 +15,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   // set the periphery in the factory
-  const skipFactoryConfig = factoryOwnedByMultisig(hre.network.name);
+  const skipFactoryConfig = getConfig(hre.network.name).factoryOwnedByMultisig;
   if (skipFactoryConfig) {
     console.log(
       `!! SKIPPING FACTORY CONFIG. CALL setPeriphery("${periphery.address}") from multisig.`
     );
   } else {
+    const factory = (await ethers.getContract("Factory")) as Factory;
     const trx = await factory.setPeriphery(periphery.address, {
       gasLimit: 10000000,
     });

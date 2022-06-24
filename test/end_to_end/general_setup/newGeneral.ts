@@ -140,6 +140,12 @@ export class ScenarioRunner {
     this.aaveLendingPool =
       (await MockAaveLendingPoolFactory.deploy()) as MockAaveLendingPool;
 
+    // initialize aave lending pool
+    await this.aaveLendingPool.setReserveNormalizedIncome(
+      this.token.address,
+      this.getRateInRay(1)
+    );
+
     // rate oracle
     const rateOracleFactory = await ethers.getContractFactory("AaveRateOracle");
     this.rateOracle = (await rateOracleFactory.deploy(
@@ -157,12 +163,6 @@ export class ScenarioRunner {
       "Voltz aUSD",
       "aVUSD"
     )) as MockAToken;
-
-    // initialize aave lending pool
-    await this.aaveLendingPool.setReserveNormalizedIncome(
-      this.token.address,
-      this.getRateInRay(1)
-    );
 
     await this.aaveLendingPool.initReserve(
       this.token.address,

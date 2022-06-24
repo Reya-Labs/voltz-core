@@ -14,6 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: ["Voltz USD", "VUSD"],
     log: doLogging,
   });
+
   await deploy("MockAaveLendingPool", {
     from: deployer,
     log: doLogging,
@@ -25,6 +26,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [mockERC20Deploy.address, "Voltz cDAI", "cVDAI"],
   });
 
+  await deploy("MockStEth", {
+    from: deployer,
+    log: doLogging,
+  });
+
+  await deploy("MockRocketEth", {
+    from: deployer,
+    log: doLogging,
+  });
+
   const mockAaveLendingPool = await ethers.getContract("MockAaveLendingPool");
   let trx = await mockAaveLendingPool.setReserveNormalizedIncome(
     mockERC20Deploy.address,
@@ -32,12 +43,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     { gasLimit: 10000000 }
   );
   await trx.wait();
-  trx = await mockAaveLendingPool.setFactorPerSecondInRay(
-    mockERC20Deploy.address,
-    "1000000001000000000000000000", // 0.0000001% per second = ~3.2% APY
-    { gasLimit: 10000000 }
-  );
-  await trx.wait();
+  // trx = await mockAaveLendingPool.setFactorPerSecondInRay(
+  //   mockERC20Deploy.address,
+  //   "1000000001000000000000000000", // 0.0000001% per second = ~3.2% APY
+  //   { gasLimit: 10000000 }
+  // );
+  // await trx.wait();
 
   const mockCToken = await ethers.getContract("MockCToken");
   // Starting exchange rate = 0.02, expressed using 10 ^ (18 + underlyingDecimals - cTokenDecimals)

@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { skipFactoryDeploy } from "../deployConfig/config";
+import { getConfig } from "../deployConfig/config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   try {
@@ -18,7 +18,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log: doLogging,
     });
 
-    const skipFactory = skipFactoryDeploy(hre.network.name);
+    const skipFactory = getConfig(hre.network.name).skipFactoryDeploy;
     if (!skipFactory) {
       await deploy("Factory", {
         from: deployer,

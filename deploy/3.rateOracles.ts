@@ -1,0 +1,208 @@
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { DeployFunction } from "hardhat-deploy/types";
+import { ethers } from "hardhat";
+import {
+  applyBufferConfig,
+  convertTrustedRateOracleDataPoints,
+  getConfig,
+} from "../deployConfig/config";
+import { BaseRateOracle, ERC20 } from "../typechain";
+import { RateOracleConfigDefaults } from "../deployConfig/types";
+import { BigNumber } from "ethers";
+
+interface RateOracleInstanceInfo {
+  contractName: string;
+  args: any[];
+  suffix: string | null;
+  rateOracleConfig: RateOracleConfigDefaults;
+  maxIrsDurationInSeconds: number;
+}
+
+const deployAndConfigureRateOracleInstance = async (
+  hre: HardhatRuntimeEnvironment,
+  instance: RateOracleInstanceInfo
+) => {
+  const { deploy } = hre.deployments;
+  const { deployer } = await hre.getNamedAccounts();
+  const doLogging = true;
+
+  const rateOracleIdentifier =
+    instance.contractName + (instance.suffix ? "_" + instance.suffix : "");
+  let rateOracleContract = (await ethers.getContractOrNull(
+    rateOracleIdentifier
+  )) as BaseRateOracle;
+
+  if (!rateOracleContract) {
+    // There is no rate oracle already deployed with this rateOracleIdentifier. Deploy one now.
+    await deploy(rateOracleIdentifier, {
+      contract: instance.contractName,
+      from: deployer,
+      args: instance.args,
+      log: doLogging,
+    });
+    console.log(
+      `Deployed ${rateOracleIdentifier} (args: ${JSON.stringify(
+        instance.args
+      )})`
+    );
+
+    rateOracleContract = (await ethers.getContract(
+      rateOracleIdentifier
+    )) as BaseRateOracle;
+  }
+
+  // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
+  await applyBufferConfig(
+    rateOracleContract as unknown as BaseRateOracle,
+    BigNumber.from(instance.rateOracleConfig.rateOracleBufferSize).toNumber(),
+    instance.rateOracleConfig.rateOracleMinSecondsSinceLastUpdate,
+    instance.maxIrsDurationInSeconds
+  );
+};
+
+const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  const network = hre.network.name;
+  const deployConfig = getConfig(network);
+
+  // Aave Rate Oracles
+  // Configure these if we have a lending pool and one or more tokens configured
+  const aaveConfig = deployConfig.aaveConfig;
+  const existingAaveLendingPoolAddress = aaveConfig?.aaveLendingPool;
+  const aaveTokens = aaveConfig?.aaveTokens;
+
+  if (existingAaveLendingPoolAddress && aaveTokens) {
+    const aaveLendingPool = await ethers.getContractAt(
+      "IAaveV2LendingPool",
+      existingAaveLendingPoolAddress
+    );
+
+    for (const tokenDefinition of aaveTokens) {
+      const { trustedTimestamps, trustedObservationValuesInRay } =
+        convertTrustedRateOracleDataPoints(
+          tokenDefinition.trustedDataPoints ||
+            aaveConfig.defaults.trustedDataPoints
+        );
+
+      // For Aave, the first two constructor args are lending pool address and underlying token address
+      // For Aave, the address in the tokenDefinition is the address of the underlying token
+      const args = [
+        aaveLendingPool.address,
+        tokenDefinition.address,
+        trustedTimestamps,
+        trustedObservationValuesInRay,
+      ];
+
+      await deployAndConfigureRateOracleInstance(hre, {
+        args,
+        suffix: tokenDefinition.name,
+        contractName: "AaveRateOracle",
+        rateOracleConfig: aaveConfig.defaults,
+        maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+      });
+    }
+  }
+  // End of Aave Rate Oracles
+
+  // Compound Rate Oracles
+  // Configure these if we have a one or more cTokens configured
+  const compoundConfig = deployConfig.compoundConfig;
+  const compoundTokens = compoundConfig && compoundConfig.compoundTokens;
+
+  if (compoundTokens) {
+    for (const tokenDefinition of compoundTokens) {
+      const cToken = await ethers.getContractAt(
+        "ICToken",
+        tokenDefinition.address
+      );
+
+      const underlying = (await ethers.getContractAt(
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
+        await cToken.underlying()
+      )) as ERC20;
+
+      const decimals = await underlying.decimals();
+
+      const { trustedTimestamps, trustedObservationValuesInRay } =
+        convertTrustedRateOracleDataPoints(
+          tokenDefinition.trustedDataPoints ||
+            compoundConfig.defaults.trustedDataPoints
+        );
+
+      // For Compound, the first three constructor args are the cToken address, underylying address and decimals of the underlying
+      // For Compound, the address in the tokenDefinition is the address of the underlying cToken
+      const args = [
+        cToken.address,
+        underlying.address,
+        decimals,
+        trustedTimestamps,
+        trustedObservationValuesInRay,
+      ];
+
+      await deployAndConfigureRateOracleInstance(hre, {
+        args,
+        suffix: tokenDefinition.name,
+        contractName: "CompoundRateOracle",
+        rateOracleConfig: compoundConfig.defaults,
+        maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+      });
+    }
+  }
+  // End of Compound Rate Oracles
+
+  // Lido Rate Oracle
+  const lidoConfig = deployConfig.lidoConfig;
+  const lidoStETHAddress = lidoConfig?.lidoStETH;
+
+  if (lidoStETHAddress) {
+    const { trustedTimestamps, trustedObservationValuesInRay } =
+      convertTrustedRateOracleDataPoints(lidoConfig.defaults.trustedDataPoints);
+
+    // For Lido, the first constructor arg is the stEth address
+    const args = [
+      lidoStETHAddress,
+      trustedTimestamps,
+      trustedObservationValuesInRay,
+    ];
+
+    await deployAndConfigureRateOracleInstance(hre, {
+      args,
+      suffix: null,
+      contractName: "LidoRateOracle",
+      rateOracleConfig: lidoConfig.defaults,
+      maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+    });
+  }
+  // End of Lido Rate Oracle
+
+  // RocketPool Rate Oracle
+  const rocketPoolConfig = deployConfig.rocketPoolConfig;
+  const rocketEthAddress = rocketPoolConfig?.rocketPoolRocketToken;
+
+  if (rocketEthAddress) {
+    const { trustedTimestamps, trustedObservationValuesInRay } =
+      convertTrustedRateOracleDataPoints(
+        rocketPoolConfig.defaults.trustedDataPoints
+      );
+
+    // For RocketPool, the first constructor arg is the rocketEth (RETH) address
+    const args = [
+      rocketEthAddress,
+      trustedTimestamps,
+      trustedObservationValuesInRay,
+    ];
+
+    await deployAndConfigureRateOracleInstance(hre, {
+      args,
+      suffix: null,
+      contractName: "RocketPoolRateOracle",
+      rateOracleConfig: rocketPoolConfig.defaults,
+      maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+    });
+  }
+  // End of Rocket Pool Rate Oracle
+
+  return false; // This script is safely re-runnable and will reconfigure existing rate oracles if required
+};
+func.tags = ["RateOracles"];
+func.id = "RateOracles";
+export default func;
