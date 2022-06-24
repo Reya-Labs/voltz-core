@@ -23,6 +23,12 @@ contract Periphery is IPeriphery {
 
     using SafeTransferLib for IERC20Minimal;
 
+    IWETH public weth;
+
+    constructor(IWETH _weth) public {
+        weth = _weth;
+    }
+
     /// @dev Voltz Protocol vamm => LP Margin Cap in Underlying Tokens
     /// @dev LP margin cap of zero implies no margin cap
     /// @inheritdoc IPeriphery
@@ -149,7 +155,7 @@ contract Periphery is IPeriphery {
         int24 _tickUpper,
         int256 _marginDelta,
         bool _fullyWithdraw
-    ) public override {
+    ) public payable override {
         Position.Info memory _position = _marginEngine.getPosition(
             msg.sender,
             _tickLower,
@@ -160,6 +166,17 @@ contract Periphery is IPeriphery {
 
         if (_fullyWithdraw) {
             _marginDelta = -_position.margin;
+        }
+
+        if (msg.value > 0) {
+            if (address(_underlyingToken) == address(weth)) {
+                uint256 ethPassed = msg.value;
+
+                weth.deposit{value: msg.value}();
+                _underlyingToken.safeTransfer(msg.sender, ethPassed);
+
+                _marginDelta += ethPassed.toInt256();
+            }
         }
 
         if (_marginDelta > 0) {
@@ -213,6 +230,7 @@ contract Periphery is IPeriphery {
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params)
         external
+        payable
         override
         returns (int256 positionMarginRequirement)
     {
@@ -244,7 +262,7 @@ contract Periphery is IPeriphery {
             vamm.initializeVAMM(sqrtRatioAtMidTickX96);
         }
 
-        if (params.marginDelta != 0) {
+        if (params.marginDelta != 0 || msg.value > 0) {
             updatePositionMargin(
                 params.marginEngine,
                 params.tickLower,
@@ -312,6 +330,7 @@ contract Periphery is IPeriphery {
 
     function swap(SwapPeripheryParams memory params)
         external
+        payable
         override
         returns (
             int256 _fixedTokenDelta,
@@ -348,7 +367,7 @@ contract Periphery is IPeriphery {
 
         // if margin delta is positive, top up position margin
 
-        if (params.marginDelta > 0) {
+        if (params.marginDelta > 0 || msg.value > 0) {
             updatePositionMargin(
                 params.marginEngine,
                 params.tickLower,
