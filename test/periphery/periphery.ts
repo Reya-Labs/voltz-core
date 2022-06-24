@@ -6,6 +6,7 @@ import { toBn } from "evm-bn";
 import {
   ERC20Mock,
   Factory,
+  MockWETH,
   Periphery,
   TestMarginEngine,
   TestVAMM,
@@ -95,10 +96,14 @@ describe("Periphery", async () => {
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
+    // deploy mock WETH
+    const wethFactory = await ethers.getContractFactory("MockWETH");
+    const weth = (await wethFactory.deploy("Wrapped ETH", "WETH")) as MockWETH;
+
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
 
-    periphery = (await peripheryFactory.deploy()) as Periphery;
+    periphery = (await peripheryFactory.deploy(weth.address)) as Periphery;
 
     // set the periphery in the factory
     await expect(factory.setPeriphery(periphery.address))

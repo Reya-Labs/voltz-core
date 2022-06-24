@@ -7,6 +7,7 @@ import {
   ERC20Mock,
   Factory,
   MockAaveLendingPool,
+  MockWETH,
   Periphery,
   TestLiquidatorBot,
   TestMarginEngine,
@@ -94,10 +95,14 @@ describe("LiquidatorBot", async () => {
 
     await marginEngineTest.setLookbackWindowInSeconds(consts.ONE_DAY);
 
+    // deploy mock WETH
+    const wethFactory = await ethers.getContractFactory("MockWETH");
+    const weth = (await wethFactory.deploy("Wrapped ETH", "WETH")) as MockWETH;
+
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
 
-    periphery = (await peripheryFactory.deploy()) as Periphery;
+    periphery = (await peripheryFactory.deploy(weth.address)) as Periphery;
 
     // set the periphery in the factory
     await expect(factory.setPeriphery(periphery.address))
