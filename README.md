@@ -59,9 +59,11 @@ We are extremely excited to have the support of individuals and teams that wish 
 ```
 git clone https://github.com/voltzprotocol/voltz-core.git
 cd voltz-core
-npm install
+npm install 
 npx husky install
 ```
+
+Note: if `npm install` fails with [this error](https://github.com/statechannels/go-nitro/pull/751), then run `npm install --legacy-peer-deps` instead.
 
 ### Compile
 
