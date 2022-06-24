@@ -180,17 +180,13 @@ contract Periphery is IPeriphery {
                     _tickUpper,
                     _marginDelta
                 );
-            }
-            else {
+            } else {
                 if (msg.value > 0) {
                     uint256 ethPassed = msg.value;
 
                     weth.deposit{value: msg.value}();
 
-                    _underlyingToken.approve(
-                        address(_marginEngine),
-                        ethPassed
-                    );
+                    _underlyingToken.approve(address(_marginEngine), ethPassed);
 
                     _marginEngine.updatePositionMargin(
                         msg.sender,
@@ -200,8 +196,7 @@ contract Periphery is IPeriphery {
                     );
                 }
             }
-        }
-        else {
+        } else {
             if (_marginDelta > 0) {
                 _underlyingToken.safeTransferFrom(
                     msg.sender,
@@ -212,7 +207,7 @@ contract Periphery is IPeriphery {
                     address(_marginEngine),
                     _marginDelta.toUint256()
                 );
-            
+
                 _marginEngine.updatePositionMargin(
                     msg.sender,
                     _tickLower,
