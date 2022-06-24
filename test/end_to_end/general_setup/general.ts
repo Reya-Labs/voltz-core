@@ -725,24 +725,17 @@ export class ScenarioRunner {
         tickAfter = parseInt(result[5]);
       },
       (error: any) => {
-        const message = extractErrorMessage(error);
-
-        if (!message) {
-          throw new Error("Cannot decode additional margin amount");
-        }
-
-        if (message.includes("MarginRequirementNotMet")) {
-          const args: string[] = message
-            .split("MarginRequirementNotMet")[1]
-            .split("(")[1]
-            .split(")")[0]
-            .replaceAll(" ", "")
-            .split(",");
-
-          marginRequirement = BigNumber.from(args[0]);
-          tickAfter = parseInt(args[1]);
-          fee = BigNumber.from(args[4]);
-          availableNotional = BigNumber.from(args[3]);
+        if (error.message.includes("MarginRequirementNotMet")) {
+          marginRequirement = BigNumber.from(
+            error.errorArgs.marginRequirement.toString()
+          );
+          tickAfter = parseInt(error.errorArgs.tick.toString());
+          fee = BigNumber.from(
+            error.errorArgs.cumulativeFeeIncurred.toString()
+          );
+          availableNotional = BigNumber.from(
+            error.errorArgs.variableTokenDelta.toString()
+          );
         } else {
           throw new Error("Additional margin amount cannot be established");
         }
@@ -881,21 +874,8 @@ export class ScenarioRunner {
           marginRequirement = BigNumber.from(result);
         },
         (error) => {
-          const message = extractErrorMessage(error);
-
-          if (!message) {
-            throw new Error("Cannot decode additional margin amount");
-          }
-
-          if (message.includes("MarginLessThanMinimum")) {
-            const args: string[] = message
-              .split("MarginLessThanMinimum")[1]
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-
-            marginRequirement = BigNumber.from(args[0]);
+          if (error.message.includes("MarginLessThanMinimum")) {
+            marginRequirement = error.errorArgs.marginRequirement;
           } else {
             throw new Error("Additional margin amount cannot be established");
           }
