@@ -80,20 +80,20 @@
     "test": "npx hardhat test",
     "test:gas": "cross-env REPORT_GAS=true npx hardhat test",
     "test:gasreport": "cross-env REPORT_GAS_TO_FILE=gasCosts.txt REPORT_GAS=true npx hardhat test",
-    "check": "npm run fix && npm run lint",
-    "fix": "npm run format && npm run lint:fix",
-    "lint": "npm run lint:sol && npm run lint:ts",
-    "lint:fix": "npm run lint:sol:fix && npm run lint:ts:fix",
+    "check": "yarn fix && yarn lint",
+    "fix": "yarn format && yarn lint:fix",
+    "lint": "yarn lint:sol && yarn lint:ts",
+    "lint:fix": "yarn lint:sol:fix && yarn lint:ts:fix",
     "lint:sol": "npx solhint 'contracts/**/*.sol'",
     "lint:sol:fix": "npx solhint 'contracts/**/*.sol' --fix",
     "lint:ts": "npx eslint '**/*.{js,ts}' --ext .js,.ts --ignore-pattern 'node_modules'",
     "lint:ts:fix": "npx eslint '**/*.{js,ts}' --ext .js,.ts --ignore-pattern 'node_modules' --fix",
-    "format": "npm run format:sol && npm run format:ts",
+    "format": "yarn format:sol && yarn format:ts",
     "format:sol": "npx prettier contracts/**/*.sol --write",
     "format:ts": "npx prettier '**/*.{json,js,ts,md}' --write",
     "format:sol:check": "npx prettier contracts/**/*.sol --check",
     "format:ts:check": "npx prettier '**/*.{json,js,ts,md}' --check",
-    "format:check": "npm run format:sol:check && npm run format:ts:check",
+    "format:check": "yarn format:sol:check && yarn format:ts:check",
     "prepare": "husky install",
     "deploy:kovan": "hardhat deploy --network kovan --tags Factory,AaveRateOracles,CompoundRateOracles,Periphery,FCMs --export deployments/kovanDeployment.json",
     "deploy:mainnet": "hardhat deploy --network mainnet --tags Factory,AaveRateOracles,CompoundRateOracles,Periphery,FCMs --export deployments/mainnetDeployment.json",
@@ -109,7 +109,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "npm run check && hh size-contracts"
+      "pre-push": "yarn check && hh size-contracts"
     }
   }
 }

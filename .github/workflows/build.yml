@@ -18,14 +18,14 @@ jobs:
           node-version: "16"
           cache: "npm"
 
-      - name: Install NPM dependencies
-        run: npm install
+      - name: Install dependencies
+        run: yarn
 
       - name: Compile contracts
-        run: npm run compile
+        run: yarn compile
 
       - name: Check formatting
-        run: npm run lint
+        run: yarn lint
 
       - name: Run tests
-        run: npm run test
+        run: yarn test
