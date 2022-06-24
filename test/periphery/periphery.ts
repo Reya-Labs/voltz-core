@@ -616,17 +616,15 @@ describe("Periphery", async () => {
       })
       .then(
         (result) => {
-          console.log("on success");
+          console.log("on success", result);
           marginRequirement = parseFloat(utils.formatEther(result));
         },
         (error) => {
-          if (error.message.includes("MarginLessThanMinimum")) {
-            const args: string[] = error.message
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-            marginRequirement = parseFloat(utils.formatEther(args[0]));
+          console.log("on revert", error);
+          if (error.errorSignature.includes("MarginLessThanMinimum")) {
+            marginRequirement = parseFloat(
+              utils.formatEther(error.errorArgs.marginRequirement.toString())
+            );
           } else {
             console.error(error);
           }
@@ -800,13 +798,9 @@ describe("Periphery", async () => {
         (error) => {
           console.log("on revert");
           if (error.message.includes("MarginLessThanMinimum")) {
-            const args: string[] = error.message
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-
-            marginRequirement = parseFloat(utils.formatEther(args[0]));
+            marginRequirement = parseFloat(
+              utils.formatEther(error.errorArgs.marginRequirement.toString())
+            );
           } else {
             console.error(error);
           }
