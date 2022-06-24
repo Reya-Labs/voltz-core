@@ -168,44 +168,68 @@ contract Periphery is IPeriphery {
             _marginDelta = -_position.margin;
         }
 
-        if (msg.value > 0) {
-            if (address(_underlyingToken) == address(weth)) {
-                uint256 ethPassed = msg.value;
+        // if WETH pools, accept deposit only in ETH
+        if (address(_underlyingToken) == address(weth)) {
+            require(_marginDelta <= 0, "INV");
 
-                weth.deposit{value: msg.value}();
-                _underlyingToken.safeTransfer(msg.sender, ethPassed);
+            if (_marginDelta < 0) {
+                require(msg.value == 0, "INV");
+                _marginEngine.updatePositionMargin(
+                    msg.sender,
+                    _tickLower,
+                    _tickUpper,
+                    _marginDelta
+                );
+            }
+            else {
+                if (msg.value > 0) {
+                    uint256 ethPassed = msg.value;
 
-                _marginDelta += ethPassed.toInt256();
+                    weth.deposit{value: msg.value}();
+
+                    _underlyingToken.approve(
+                        address(_marginEngine),
+                        ethPassed
+                    );
+
+                    _marginEngine.updatePositionMargin(
+                        msg.sender,
+                        _tickLower,
+                        _tickUpper,
+                        ethPassed.toInt256()
+                    );
+                }
+            }
+        }
+        else {
+            if (_marginDelta > 0) {
+                _underlyingToken.safeTransferFrom(
+                    msg.sender,
+                    address(this),
+                    _marginDelta.toUint256()
+                );
+                _underlyingToken.approve(
+                    address(_marginEngine),
+                    _marginDelta.toUint256()
+                );
+            
+                _marginEngine.updatePositionMargin(
+                    msg.sender,
+                    _tickLower,
+                    _tickUpper,
+                    _marginDelta
+                );
             }
         }
 
-        if (_marginDelta > 0) {
-            _underlyingToken.safeTransferFrom(
-                msg.sender,
-                address(this),
-                _marginDelta.toUint256()
-            );
-            _underlyingToken.approve(
-                address(_marginEngine),
-                _marginDelta.toUint256()
-            );
-        }
-
-        _marginEngine.updatePositionMargin(
-            msg.sender,
-            _tickLower,
-            _tickUpper,
-            _marginDelta
-        );
+        bool _isAlpha = _marginEngine.isAlpha();
+        IVAMM _vamm = _marginEngine.vamm();
 
         _position = _marginEngine.getPosition(
             msg.sender,
             _tickLower,
             _tickUpper
         );
-
-        bool _isAlpha = _marginEngine.isAlpha();
-        IVAMM _vamm = _marginEngine.vamm();
 
         if (_isAlpha && _position._liquidity > 0) {
             bytes32 encodedPosition = keccak256(
