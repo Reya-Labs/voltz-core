@@ -68,6 +68,7 @@ export interface RocketPoolConfig {
   defaults: RateOracleConfigDefaults;
 }
 export interface ContractsConfig {
+  weth?: string;
   irsConfig: IrsConfigDefaults;
   aaveConfig?: AaveConfig;
   compoundConfig?: CompoundConfig;
