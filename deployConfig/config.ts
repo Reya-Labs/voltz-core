@@ -137,6 +137,35 @@ const rinkebyConfig = {
   },
 };
 
+const goerliConfig = {
+  irsConfig: kovanIrsConfigDefaults,
+  compoundConfig: {
+    // See tokens list at https://compound.finance/docs#networks
+    weth: "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
+    compoundTokens: [
+      {
+        name: "cETH",
+        address: "0x20572e4c090f15667cf7378e16fad2ea0e2f3eff",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "cDAI",
+        address: "0x822397d9a55d0fefd20f5c4bcab33c5f65bd28eb",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "cUSDC",
+        address: "0xcec4a43ebb02f9b80916f1c718338169d6d5c1f0",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+    defaults: kovanRateOracleConfigDefaults,
+  },
+};
+
 const kovanConfig = {
   irsConfig: kovanIrsConfigDefaults,
   weth: "0xd0a1e359811322d97991e03f863a0c30c2cf029c",
@@ -292,6 +321,7 @@ const localhostConfig: ContractsConfig = {
 
 const config: ContractsConfigMap = {
   kovan: kovanConfig,
+  goerli: goerliConfig,
   rinkeby: rinkebyConfig,
   // localhost: mainnetConfig, // Uncomment if testing against a fork of an existing mainnet system
   localhost: localhostConfig,

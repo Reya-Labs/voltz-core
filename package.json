@@ -98,6 +98,7 @@
     "format:check": "yarn format:sol:check && yarn format:ts:check",
     "prepare": "husky install",
     "deploy:kovan": "hardhat deploy --network kovan --tags Factory,RateOracles,Periphery,FCMs --export deployments/kovanDeployment.json",
+    "deploy:goerli": "hardhat deploy --network goerli --tags Factory,RateOracles,Periphery,FCMs --export deployments/goerliDeployment.json",
     "deploy:mainnet": "hardhat deploy --network mainnet --tags Factory,RateOracles,Periphery,FCMs --export deployments/mainnetDeployment.json",
     "deploy:rinkeby": "hardhat deploy --network rinkeby --tags Factory,RateOracles,Periphery,FCMs --export deployments/rinkebyDeployment.json",
     "deployCommunity:kovan": "hardhat deploy --network kovan --tags CommunityDeployer --export deployments/kovanCommunityVote.json",

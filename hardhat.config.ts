@@ -143,6 +143,13 @@ const config: HardhatUserConfig = {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
+    goerli: {
+      url: `${process.env.GOERLI_URL}`,
+      // gasPrice: 1,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
+    },
   },
   namedAccounts: {
     deployer: {
