@@ -34,6 +34,9 @@ const deployAndConfigureRateOracleInstance = async (
 
   if (!rateOracleContract) {
     // There is no rate oracle already deployed with this rateOracleIdentifier. Deploy one now.
+    console.log("instance.contractName:", instance.contractName);
+    console.log("deployer:", deployer);
+    console.log("args:", instance.args);
     await deploy(rateOracleIdentifier, {
       contract: instance.contractName,
       from: deployer,
@@ -70,6 +73,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const existingAaveLendingPoolAddress = aaveConfig?.aaveLendingPool;
   const aaveTokens = aaveConfig?.aaveTokens;
 
+  console.log("aaveTokens", aaveTokens);
+  console.log("existingAaveLendingPoolAddress", existingAaveLendingPoolAddress);
   if (existingAaveLendingPoolAddress && aaveTokens) {
     const aaveLendingPool = await ethers.getContractAt(
       "IAaveV2LendingPool",

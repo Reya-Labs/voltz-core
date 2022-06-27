@@ -10,7 +10,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const doLogging = true;
 
   const config = getConfig(hre.network.name);
-  const weth = config.weth;
+
+  let weth: string | undefined;
+  if (config.weth) {
+    weth = config.weth;
+  } else {
+    const wethContract = await ethers.getContractOrNull("MockWETH");
+
+    if (wethContract) {
+      weth = wethContract.address;
+    }
+  }
 
   console.log(`The address of WETH9 for this environment is ${weth}`);
   if (!weth) {
