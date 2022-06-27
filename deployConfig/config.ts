@@ -139,6 +139,7 @@ const rinkebyConfig = {
 
 const kovanConfig = {
   irsConfig: kovanIrsConfigDefaults,
+  weth: "0xd0a1e359811322d97991e03f863a0c30c2cf029c",
   aaveConfig: {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe",
@@ -165,6 +166,12 @@ const kovanConfig = {
         rateOracleBufferSize: 200,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
         trustedDataPoints: kovanTusdDataPoints,
+      },
+      {
+        name: "WETH",
+        address: "0xd0a1e359811322d97991e03f863a0c30c2cf029c",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
       // {
       //   name: "UNI",
@@ -214,6 +221,7 @@ const kovanConfig = {
 
 const mainnetConfig: ContractsConfig = {
   irsConfig: mainnetIrsConfigDefaults,
+  weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
   aaveConfig: {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
