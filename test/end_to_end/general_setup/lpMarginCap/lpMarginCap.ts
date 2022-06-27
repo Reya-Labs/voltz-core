@@ -300,7 +300,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-
     {
       const mintOrBurnParameters = {
         marginEngine: this.marginEngine.address,

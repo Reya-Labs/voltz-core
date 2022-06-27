@@ -78,7 +78,8 @@ interface IPeriphery is CustomErrors {
 
     function setLPMarginCap(IVAMM vamm, int256 lpMarginCapNew) external;
 
-    function setLPMarginCumulative(IVAMM vamm, int256 lpMarginCumulative) external;
+    function setLPMarginCumulative(IVAMM vamm, int256 lpMarginCumulative)
+        external;
 
     function settlePositionAndWithdrawMargin(
         IMarginEngine marginEngine,

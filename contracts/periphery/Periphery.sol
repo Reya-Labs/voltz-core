@@ -54,7 +54,12 @@ contract Periphery is IPeriphery {
     }
 
     /// @inheritdoc IPeriphery
-    function lpMarginCumulatives(IVAMM vamm) external view override returns (int256) {
+    function lpMarginCumulatives(IVAMM vamm)
+        external
+        view
+        override
+        returns (int256)
+    {
         return _lpMarginCumulatives[vamm];
     }
 
@@ -86,9 +91,9 @@ contract Periphery is IPeriphery {
         emit MarginCap(vamm, _lpMarginCaps[vamm]);
     }
 
-    function setLPMarginCumulative(IVAMM vamm, int256 lpMarginCumulative) 
+    function setLPMarginCumulative(IVAMM vamm, int256 lpMarginCumulative)
         external
-        override 
+        override
         vammOwnerOnly(vamm)
     {
         _lpMarginCumulatives[vamm] = lpMarginCumulative;
@@ -106,19 +111,28 @@ contract Periphery is IPeriphery {
         console.log("newMargin", newMargin.toUint256());
         if (isLPAfter) {
             // added some liquidity, need to account for margin
-            console.log("margin before:", _lastAccountedMargin[encodedPosition].toUint256());
+            console.log(
+                "margin before:",
+                _lastAccountedMargin[encodedPosition].toUint256()
+            );
             _lpMarginCumulatives[vamm] -= _lastAccountedMargin[encodedPosition];
 
             _lastAccountedMargin[encodedPosition] = newMargin;
 
-            console.log("margin after:", _lastAccountedMargin[encodedPosition].toUint256());
+            console.log(
+                "margin after:",
+                _lastAccountedMargin[encodedPosition].toUint256()
+            );
             _lpMarginCumulatives[vamm] += _lastAccountedMargin[encodedPosition];
         } else {
             if (isLPBefore) {
                 _lpMarginCumulatives[vamm] -= _lastAccountedMargin[
                     encodedPosition
                 ];
-                console.log("margin before:", _lastAccountedMargin[encodedPosition].toUint256());
+                console.log(
+                    "margin before:",
+                    _lastAccountedMargin[encodedPosition].toUint256()
+                );
 
                 _lastAccountedMargin[encodedPosition] = 0;
                 console.log("margin before: 0");
@@ -158,14 +172,14 @@ contract Periphery is IPeriphery {
         bool isAlpha = marginEngine.isAlpha();
         IVAMM vamm = marginEngine.vamm();
         bytes32 encodedPosition = keccak256(
-                abi.encodePacked(
-                    msg.sender,
-                    address(vamm),
-                    address(marginEngine),
-                    tickLower,
-                    tickUpper
-                )
-            );
+            abi.encodePacked(
+                msg.sender,
+                address(vamm),
+                address(marginEngine),
+                tickLower,
+                tickUpper
+            )
+        );
 
         if (isAlpha && position._liquidity > 0) {
             if (_lastAccountedMargin[encodedPosition] == 0) {
@@ -228,11 +242,7 @@ contract Periphery is IPeriphery {
             }
         }
 
-        position = marginEngine.getPosition(
-            msg.sender,
-            tickLower,
-            tickUpper
-        );
+        position = marginEngine.getPosition(msg.sender, tickLower, tickUpper);
 
         if (isAlpha && position._liquidity > 0) {
             accountLPMarginCap(
@@ -264,14 +274,14 @@ contract Periphery is IPeriphery {
 
         bool isAlpha = params.marginEngine.isAlpha();
         bytes32 encodedPosition = keccak256(
-                abi.encodePacked(
-                    msg.sender,
-                    address(vamm),
-                    address(params.marginEngine),
-                    params.tickLower,
-                    params.tickUpper
-                )
-            );
+            abi.encodePacked(
+                msg.sender,
+                address(vamm),
+                address(params.marginEngine),
+                params.tickLower,
+                params.tickUpper
+            )
+        );
 
         bool isLPBefore = position._liquidity > 0;
         if (isAlpha && isLPBefore) {
