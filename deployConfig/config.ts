@@ -238,7 +238,6 @@ const mainnetConfig: ContractsConfig = {
         address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         rateOracleBufferSize: 500,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
-        trustedDataPoints: kovanTusdDataPoints,
       },
     ],
   },
