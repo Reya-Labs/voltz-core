@@ -139,9 +139,9 @@ const rinkebyConfig = {
 
 const goerliConfig = {
   irsConfig: kovanIrsConfigDefaults,
+  weth: "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
   compoundConfig: {
     // See tokens list at https://compound.finance/docs#networks
-    weth: "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
     compoundTokens: [
       {
         name: "cETH",

@@ -227,6 +227,7 @@ export async function compoundRateOracleTestFixture(
   );
   const compoundRateOracleTest = (await compoundRateOracleTestFactory.deploy(
     _cTokenAddress,
+    false,
     _underlyingAddress,
     18 // token decimals
   )) as TestCompoundRateOracle;

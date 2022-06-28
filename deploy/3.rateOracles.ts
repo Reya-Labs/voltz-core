@@ -34,6 +34,7 @@ const deployAndConfigureRateOracleInstance = async (
 
   if (!rateOracleContract) {
     // There is no rate oracle already deployed with this rateOracleIdentifier. Deploy one now.
+    console.log("rateOracleIdentifier", rateOracleIdentifier);
     console.log("instance.contractName:", instance.contractName);
     console.log("deployer:", deployer);
     console.log("args:", instance.args);
@@ -120,12 +121,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         tokenDefinition.address
       );
 
-      const underlying = (await ethers.getContractAt(
-        "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-        await cToken.underlying()
-      )) as ERC20;
+      console.log("cToken", cToken.address);
 
-      const decimals = await underlying.decimals();
+      let underlyingAddress: string;
+      let underlyingDecimals: number;
+      let ethPool: boolean;
+
+      if (tokenDefinition.name === "cETH") {
+        if (deployConfig.weth) {
+          underlyingAddress = deployConfig.weth;
+          underlyingDecimals = 18;
+          ethPool = true;
+        } else {
+          throw new Error("WETH not deployed");
+        }
+      } else {
+        const underlying = (await ethers.getContractAt(
+          "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
+          await cToken.underlying()
+        )) as ERC20;
+
+        underlyingAddress = underlying.address;
+        underlyingDecimals = await underlying.decimals();
+        ethPool = false;
+      }
 
       const { trustedTimestamps, trustedObservationValuesInRay } =
         convertTrustedRateOracleDataPoints(
@@ -137,8 +156,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       // For Compound, the address in the tokenDefinition is the address of the underlying cToken
       const args = [
         cToken.address,
-        underlying.address,
-        decimals,
+        ethPool,
+        underlyingAddress,
+        underlyingDecimals,
         trustedTimestamps,
         trustedObservationValuesInRay,
       ];
