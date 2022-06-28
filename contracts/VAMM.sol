@@ -77,6 +77,17 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
     
   }
 
+  modifier checkIsAlphaBurn() {
+    
+    if (_isAlpha) {
+      IPeriphery _periphery = _factory.periphery();
+      require(msg.sender==address(_periphery) || msg.sender==address(_marginEngine), "pphry only");
+    }
+
+    _;
+    
+  }
+
   // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor () initializer {}
@@ -234,13 +245,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
     emit IsAlpha(_isAlpha);
   }
 
-  // todo: prevent burning directly via the vamm if in Alpha State
   function burn(
     address recipient,
     int24 tickLower,
     int24 tickUpper,
     uint128 amount
-  ) external override checkIsAlpha whenNotPaused lock returns(int256 positionMarginRequirement) {
+  ) external override checkIsAlphaBurn whenNotPaused lock returns(int256 positionMarginRequirement) {
 
     /// @dev if msg.sender is the MarginEngine, it is a burn induced by a position liquidation
 

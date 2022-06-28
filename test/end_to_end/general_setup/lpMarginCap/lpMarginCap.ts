@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { BigNumber } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
@@ -20,7 +20,8 @@ import {
   XI_UPPER,
 } from "../../../shared/utilities";
 import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { ScenarioRunner } from "../newGeneral";
+import { Periphery } from "../../../../typechain";
 
 const { provider } = waffle;
 
@@ -69,31 +70,29 @@ const e2eParams: e2eParameters = {
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
-
     await this.factory.setPeriphery(this.periphery.address);
 
     const otherWallet = provider.getWallets()[1];
 
-    await expect(this.vammTest.connect(otherWallet).setIsAlpha(true)).to.be
+    await expect(this.vamm.connect(otherWallet).setIsAlpha(true)).to.be
       .reverted;
 
-    await expect(this.marginEngineTest.connect(otherWallet).setIsAlpha(true)).to
-      .be.reverted;
+    await expect(this.marginEngine.connect(otherWallet).setIsAlpha(true)).to.be
+      .reverted;
 
     await expect(
       this.periphery
         .connect(otherWallet)
-        .setLPMarginCap(this.vammTest.address, toBn("1000"))
+        .setLPMarginCap(this.vamm.address, toBn("1000"))
     ).to.be.reverted;
 
-    await this.vammTest.setIsAlpha(true);
-    await this.marginEngineTest.setIsAlpha(true);
-    await this.periphery.setLPMarginCap(this.vammTest.address, toBn("1000"));
+    await this.vamm.setIsAlpha(true);
+    await this.marginEngine.setIsAlpha(true);
+    await this.periphery.setLPMarginCap(this.vamm.address, toBn("1000"));
 
     {
       const mintOrBurnParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         tickLower: this.positions[0][1],
         tickUpper: this.positions[0][2],
         notional: toBn("6000"),
@@ -109,19 +108,17 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     }
 
     expect(
-      await this.periphery.lpMarginCumulatives(this.vammTest.address)
+      await this.periphery.lpMarginCumulatives(this.vamm.address)
     ).to.be.equal(toBn("210"));
 
     // two days pass and set reserve normalised income
-    await this.advanceAndUpdateApy(consts.ONE_DAY.mul(2), 1, 1.0081); // advance 2 days
-
-    // Trader 0 engages in a swap that (almost) consumes all of the liquidity of Position 0
-    await this.exportSnapshot("BEFORE FIRST SWAP");
+    await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0081));
 
     {
       // Trader 0 buys 2,995 VT
       const swapParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         isFT: false,
         notional: toBn("2995"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -135,12 +132,9 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.exportSnapshot("AFTER FIRST SWAP");
-
-    await this.updateCurrentTick();
-
     // one week passes
-    await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.01);
+    await advanceTimeAndBlock(consts.ONE_WEEK, 2);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.01));
 
     // add 5,000,000 liquidity to Position 1
 
@@ -149,7 +143,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     {
       const mintOrBurnParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         tickLower: this.positions[1][1],
         tickUpper: this.positions[1][2],
         notional: toBn("30000"),
@@ -165,7 +159,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         )
       ).to.be.revertedWith("lp cap limit");
 
-      await this.periphery.setLPMarginCap(this.vammTest.address, toBn("3000"));
+      await this.periphery.setLPMarginCap(this.vamm.address, toBn("3000"));
 
       await this.e2eSetup.mintOrBurnViaPeriphery(
         this.positions[1][0],
@@ -173,51 +167,18 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
 
       expect(
-        await this.periphery.lpMarginCumulatives(this.vammTest.address)
-      ).to.be.equal(toBn("2710"));
-    }
-
-    {
-      const mintOrBurnParameters = {
-        marginEngine: this.marginEngineTest.address,
-        tickLower: this.positions[1][1],
-        tickUpper: this.positions[1][2],
-        notional: toBn("30000"),
-        isMint: true,
-        marginDelta: toBn("2500"),
-      };
-
-      // add 1,000,000 liquidity to Position 0
-      await expect(
-        this.e2eSetup.mintOrBurnViaPeriphery(
-          this.positions[1][0],
-          mintOrBurnParameters
-        )
-      ).to.be.revertedWith("lp cap limit");
-
-      await this.vammTest.setIsAlpha(false);
-      await this.marginEngineTest.setIsAlpha(false);
-
-      await this.e2eSetup.mintOrBurnViaPeriphery(
-        this.positions[1][0],
-        mintOrBurnParameters
-      );
-
-      expect(
-        await this.periphery.lpMarginCumulatives(this.vammTest.address)
+        await this.periphery.lpMarginCumulatives(this.vamm.address)
       ).to.be.equal(toBn("2710"));
     }
 
     // a week passes
-    await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125);
-
-    // Trader 1 engages in a swap
-    await this.exportSnapshot("BEFORE SECOND SWAP");
+    await advanceTimeAndBlock(consts.ONE_WEEK, 2);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0125));
 
     {
       // Trader 0 buys 2,995 VT
       const swapParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         isFT: false,
         notional: toBn("15000"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -231,15 +192,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.exportSnapshot("AFTER SECOND SWAP");
-
-    // Trader 0 engages in a reverse swap
-    await this.exportSnapshot("BEFORE THIRD (REVERSE) SWAP");
-
     {
       // Trader 0 buys 2,995 VT
       const swapParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         isFT: true,
         notional: toBn("10000"),
         sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
@@ -253,19 +209,16 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.exportSnapshot("AFTER THIRD (REVERSE) SWAP");
-
-    await this.updateCurrentTick();
-
     // two weeks pass
-    await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(2), 2, 1.013); // advance two weeks
+    await advanceTimeAndBlock(consts.ONE_WEEK.mul(2), 2); // advance two weeks
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.013));
 
     {
       const mintOrBurnParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         tickLower: this.positions[0][1],
         tickUpper: this.positions[0][2],
-        notional: toBn("2995.35"),
+        notional: toBn("3000"),
         isMint: false,
         marginDelta: toBn("0"),
       };
@@ -277,14 +230,116 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(8), 4, 1.0132); // advance eight weeks (4 days before maturity)
+    // same results if this flag is true or false
+    const deployNewPeriphery = true;
+    if (deployNewPeriphery) {
+      /// deploy new periphery
+      const peripheryFactory = await ethers.getContractFactory("Periphery");
+      this.periphery = (await peripheryFactory.deploy(
+        this.weth.address
+      )) as Periphery;
+
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.e2eSetup.setPeripheryAddress(this.periphery.address);
+
+      const MAX_AMOUNT = BigNumber.from(10).pow(27);
+
+      for (let i = 0; i < this.params.numActors; i++) {
+        // eslint-disable-next-line no-empty
+        if (this.params.noMintTokens) {
+        } else {
+          await this.mintAndApprove(this.actors[i].address, MAX_AMOUNT);
+        }
+
+        /// set manually the approval of contracts to act on behalf of actors
+        for (const ad of [
+          this.fcm.address,
+          this.periphery.address,
+          this.vamm.address,
+          this.marginEngine.address,
+        ]) {
+          await this.token.approveInternal(
+            this.actors[i].address,
+            ad,
+            MAX_AMOUNT
+          );
+          await this.aToken.approveInternal(
+            this.actors[i].address,
+            ad,
+            MAX_AMOUNT
+          );
+          await this.e2eSetup.setIntegrationApproval(
+            this.actors[i].address,
+            ad,
+            true
+          );
+        }
+      }
+
+      await this.periphery.setLPMarginCap(this.vamm.address, toBn("3000"));
+      await this.periphery.setLPMarginCumulative(
+        this.vamm.address,
+        toBn("2710")
+      );
+    }
+
+    {
+      const mintOrBurnParameters = {
+        marginEngine: this.marginEngine.address,
+        tickLower: this.positions[0][1],
+        tickUpper: this.positions[0][2],
+        notional: toBn("6000"),
+        isMint: true,
+        marginDelta: toBn("90"),
+      };
+
+      // add 1,000,000 liquidity to Position 0
+      await this.e2eSetup.mintOrBurnViaPeriphery(
+        this.positions[0][0],
+        mintOrBurnParameters
+      );
+    }
+
+    {
+      const mintOrBurnParameters = {
+        marginEngine: this.marginEngine.address,
+        tickLower: this.positions[1][1],
+        tickUpper: this.positions[1][2],
+        notional: toBn("30000"),
+        isMint: true,
+        marginDelta: toBn("2500"),
+      };
+
+      // add 1,000,000 liquidity to Position 0
+      await expect(
+        this.e2eSetup.mintOrBurnViaPeriphery(
+          this.positions[1][0],
+          mintOrBurnParameters
+        )
+      ).to.be.revertedWith("lp cap limit");
+
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+
+      await this.e2eSetup.mintOrBurnViaPeriphery(
+        this.positions[1][0],
+        mintOrBurnParameters
+      );
+
+      expect(
+        await this.periphery.lpMarginCumulatives(this.vamm.address)
+      ).to.be.equal(toBn("2800"));
+    }
+
+    // await this.factory.setPeriphery(this.periphery.address);
+
+    await advanceTimeAndBlock(consts.ONE_WEEK.mul(8), 4); // advance eight weeks (4 days before maturity)
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0132));
 
     await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
 
     // settle positions and traders
     // await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 

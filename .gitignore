@@ -13,3 +13,4 @@ deployments/localhost/
 cache
 artifacts
 .txt
+.fuzz_test.yml

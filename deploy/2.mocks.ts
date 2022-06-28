@@ -26,6 +26,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [mockERC20Deploy.address, "Voltz cDAI", "cVDAI"],
   });
 
+  await deploy("MockWETH", {
+    from: deployer,
+    log: doLogging,
+    args: ["Voltz WETH", "VWETH"],
+  });
+
   await deploy("MockStEth", {
     from: deployer,
     log: doLogging,

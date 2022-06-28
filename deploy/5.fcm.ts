@@ -12,9 +12,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const aaveTokens = config.aaveConfig?.aaveTokens;
   const compoundTokens = config.compoundConfig?.compoundTokens;
   const skipFactoryConfig = config.factoryOwnedByMultisig;
-  let aaveRateOracle = await ethers.getContractOrNull("MockTokenRateOracle");
+  let aaveRateOracle = await ethers.getContractOrNull("MockAaveRateOracle");
   let compoundRateOracle = await ethers.getContractOrNull(
-    "MockCTokenRateOracle"
+    "MockCompoundRateOracle"
   );
   let underlyingYieldBearingProtocolID_AaveV2: number;
   let underlyingYieldBearingProtocolID_Compound: number;

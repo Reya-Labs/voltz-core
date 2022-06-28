@@ -9,9 +9,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
 
+  const weth = await ethers.getContractOrNull("MockWETH");
+
+  if (!weth) {
+    throw new Error("WETH not deployed");
+  }
+
   const periphery = await deploy("Periphery", {
     from: deployer,
     log: doLogging,
+    args: [weth.address],
   });
 
   // set the periphery in the factory

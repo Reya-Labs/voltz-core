@@ -6,6 +6,7 @@ import { toBn } from "evm-bn";
 import {
   ERC20Mock,
   Factory,
+  MockWETH,
   Periphery,
   TestMarginEngine,
   TestVAMM,
@@ -95,10 +96,14 @@ describe("Periphery", async () => {
 
     await marginEngineTest.setMarginCalculatorParameters(margin_engine_params);
 
+    // deploy mock WETH
+    const wethFactory = await ethers.getContractFactory("MockWETH");
+    const weth = (await wethFactory.deploy("Wrapped ETH", "WETH")) as MockWETH;
+
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
 
-    periphery = (await peripheryFactory.deploy()) as Periphery;
+    periphery = (await peripheryFactory.deploy(weth.address)) as Periphery;
 
     // set the periphery in the factory
     await expect(factory.setPeriphery(periphery.address))
@@ -616,17 +621,15 @@ describe("Periphery", async () => {
       })
       .then(
         (result) => {
-          console.log("on success");
+          console.log("on success", result);
           marginRequirement = parseFloat(utils.formatEther(result));
         },
         (error) => {
-          if (error.message.includes("MarginLessThanMinimum")) {
-            const args: string[] = error.message
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-            marginRequirement = parseFloat(utils.formatEther(args[0]));
+          console.log("on revert", error);
+          if (error.errorSignature.includes("MarginLessThanMinimum")) {
+            marginRequirement = parseFloat(
+              utils.formatEther(error.errorArgs.marginRequirement.toString())
+            );
           } else {
             console.error(error);
           }
@@ -800,13 +803,9 @@ describe("Periphery", async () => {
         (error) => {
           console.log("on revert");
           if (error.message.includes("MarginLessThanMinimum")) {
-            const args: string[] = error.message
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-
-            marginRequirement = parseFloat(utils.formatEther(args[0]));
+            marginRequirement = parseFloat(
+              utils.formatEther(error.errorArgs.marginRequirement.toString())
+            );
           } else {
             console.error(error);
           }
