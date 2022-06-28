@@ -14,9 +14,10 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
 
     constructor(
         IStETH _stEth,
+        IWETH _weth,
         uint32[] memory _times,
         uint256[] memory _results
-    ) BaseRateOracle(IERC20Minimal(address(0))) {
+    ) BaseRateOracle(IERC20Minimal(address(_weth))) {
         // Underlying is ETH, so no address needed
         require(address(_stEth) != address(0), "stETH must exist");
         stEth = _stEth;

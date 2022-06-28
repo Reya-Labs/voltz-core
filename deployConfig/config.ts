@@ -164,6 +164,22 @@ const goerliConfig = {
     ],
     defaults: kovanRateOracleConfigDefaults,
   },
+  lidoConfig: {
+    lidoStETH: "0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F",
+    defaults: {
+      rateOracleBufferSize: 300,
+      trustedDataPoints: [],
+      rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // Lido rates only get updated once a day
+    },
+  },
+  rocketPoolConfig: {
+    rocketPoolRocketToken: "0x178e141a0e3b34152f73ff610437a7bf9b83267a",
+    defaults: {
+      rateOracleBufferSize: 300,
+      trustedDataPoints: [],
+      rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60,
+    },
+  },
 };
 
 const kovanConfig = {

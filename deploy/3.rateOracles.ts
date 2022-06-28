@@ -133,7 +133,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           underlyingDecimals = 18;
           ethPool = true;
         } else {
-          throw new Error("WETH not deployed");
+          throw new Error("WETH not found");
         }
       } else {
         const underlying = (await ethers.getContractAt(
@@ -182,9 +182,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { trustedTimestamps, trustedObservationValuesInRay } =
       convertTrustedRateOracleDataPoints(lidoConfig.defaults.trustedDataPoints);
 
+    let wethAddress: string;
+    if (deployConfig.weth) {
+      wethAddress = deployConfig.weth;
+    } else {
+      throw new Error("WETH not found");
+    }
+
     // For Lido, the first constructor arg is the stEth address
     const args = [
       lidoStETHAddress,
+      wethAddress,
       trustedTimestamps,
       trustedObservationValuesInRay,
     ];
@@ -209,9 +217,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         rocketPoolConfig.defaults.trustedDataPoints
       );
 
+    let wethAddress: string;
+    if (deployConfig.weth) {
+      wethAddress = deployConfig.weth;
+    } else {
+      throw new Error("WETH not found");
+    }
+
     // For RocketPool, the first constructor arg is the rocketEth (RETH) address
     const args = [
       rocketEthAddress,
+      wethAddress,
       trustedTimestamps,
       trustedObservationValuesInRay,
     ];
