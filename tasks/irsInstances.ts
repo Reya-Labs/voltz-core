@@ -8,13 +8,41 @@ import {
   IMarginEngine,
   IVAMM,
 } from "../typechain";
-import { ethers, utils } from "ethers";
+import { BigNumberish, ethers, utils } from "ethers";
 import {
   getIRSByMarginEngineAddress,
   getRateOracleByNameOrAddress,
 } from "./helpers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { IrsConfigDefaults } from "../deployConfig/types";
+import mustache from "mustache";
+import * as fs from "fs";
+import path from "path";
+
+interface MultisigTemplateData {
+  factoryAddress: string;
+  predictedMarginEngineAddress: string;
+  predictedVammAddress: string;
+  peripheryAddress: string;
+  underlyingTokenAddress: string;
+  rateOracleAddress: string;
+  termStartTimestampWad: BigNumberish;
+  termEndTimestampWad: BigNumberish;
+  tickSpacing: number;
+}
+
+async function writeIrsCreationTransactionsToGnosisSafeTemplate(
+  data: MultisigTemplateData
+) {
+  // Get external template with fetch
+  const template = fs.readFileSync(
+    path.join(__dirname, "CreateIrsTransactions.json.mustache"),
+    "utf8"
+  );
+  const output = mustache.render(template, data);
+
+  console.log("Output:\n", output);
+}
 
 async function getIrsInstanceEvents(
   hre: HardhatRuntimeEnvironment
@@ -105,6 +133,10 @@ task(
     "rateOracle",
     "The name of the rate oracle as defined in deployments/<network> (e.g. 'AaveRateOracle_USDT'"
   )
+  .addFlag(
+    "multisig",
+    "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
+  )
   .addOptionalParam(
     "daysDuration",
     "The number of days between the start and end time of the IRS contract",
@@ -162,44 +194,68 @@ task(
     console.log(
       `Creating test IRS for mock token/rate oracle: {${underlyingToken.address}, ${rateOracle.address}}`
     );
-    const deployTrx = await factory.deployIrsInstance(
-      underlyingToken.address,
-      rateOracle.address,
-      toBn(startTimestamp), // converting to wad
-      toBn(endTimestamp), // converting to wad
-      taskArgs.tickSpacing,
-      { gasLimit: 10000000 }
-    );
-    const receipt = await deployTrx.wait();
-    // console.log(receipt);
 
-    if (!receipt.status) {
-      console.error("IRS creation failed!");
+    if (taskArgs.multisig) {
+      const nonce = await getFactoryNonce(hre, factory.address);
+
+      const data = {
+        factoryAddress: factory.address,
+        underlyingTokenAddress: underlyingToken.address,
+        rateOracleAddress: rateOracle.address,
+        termStartTimestampWad: toBn(startTimestamp),
+        termEndTimestampWad: toBn(endTimestamp),
+        tickSpacing: taskArgs.tickSpacing,
+        predictedMarginEngineAddress: await ethers.utils.getContractAddress({
+          from: factory.address,
+          nonce: nonce,
+        }),
+        predictedVammAddress: await ethers.utils.getContractAddress({
+          from: factory.address,
+          nonce: nonce + 1,
+        }),
+        peripheryAddress: await factory.periphery(),
+      };
+      writeIrsCreationTransactionsToGnosisSafeTemplate(data);
     } else {
-      const event = receipt.events.filter(
-        (e: { event: string }) => e.event === "IrsInstance"
-      )[0];
-      //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
-      console.log(`IRS created successfully. Event args were: ${event.args}`);
-
-      const marginEngineAddress = event.args[5];
-      const vammAddress = event.args[6];
-
-      const marginEngine = (await hre.ethers.getContractAt(
-        "MarginEngine",
-        marginEngineAddress
-      )) as MarginEngine;
-      const vamm = (await hre.ethers.getContractAt(
-        "VAMM",
-        vammAddress
-      )) as VAMM;
-
-      await configureIrs(
-        hre,
-        marginEngine,
-        vamm,
-        getConfig(hre.network.name).irsConfig
+      const deployTrx = await factory.deployIrsInstance(
+        underlyingToken.address,
+        rateOracle.address,
+        toBn(startTimestamp), // converting to wad
+        toBn(endTimestamp), // converting to wad
+        taskArgs.tickSpacing,
+        { gasLimit: 10000000 }
       );
+      const receipt = await deployTrx.wait();
+      // console.log(receipt);
+
+      if (!receipt.status) {
+        console.error("IRS creation failed!");
+      } else {
+        const event = receipt.events.filter(
+          (e: { event: string }) => e.event === "IrsInstance"
+        )[0];
+        //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
+        console.log(`IRS created successfully. Event args were: ${event.args}`);
+
+        const marginEngineAddress = event.args[5];
+        const vammAddress = event.args[6];
+
+        const marginEngine = (await hre.ethers.getContractAt(
+          "MarginEngine",
+          marginEngineAddress
+        )) as MarginEngine;
+        const vamm = (await hre.ethers.getContractAt(
+          "VAMM",
+          vammAddress
+        )) as VAMM;
+
+        await configureIrs(
+          hre,
+          marginEngine,
+          vamm,
+          getConfig(hre.network.name).irsConfig
+        );
+      }
     }
   });
 
@@ -263,6 +319,18 @@ task(
   console.log(csvOutput);
 });
 
+async function getFactoryNonce(
+  hre: HardhatRuntimeEnvironment,
+  factoryAddress: string
+) {
+  let nonce = await hre.ethers.provider.getTransactionCount(factoryAddress);
+  if (nonce === 0) {
+    // Contract nonces start at 1
+    nonce++;
+  }
+  return nonce;
+}
+
 task(
   "predictIrsAddresses",
   "Predicts the IRS addresses used by a not-yet-created IRS instance"
@@ -284,11 +352,7 @@ task(
       factoryAddress = factory.address;
     }
 
-    let nonce = await hre.ethers.provider.getTransactionCount(factoryAddress);
-    if (nonce === 0) {
-      // Contract nonces start at 1
-      nonce++;
-    }
+    const nonce = await getFactoryNonce(hre, factoryAddress);
 
     console.log("Past addresses:");
     for (let i = 1; i < nonce; i++) {
@@ -299,7 +363,7 @@ task(
       console.log(`(${i})`.padStart(6) + ` ${address}`);
     }
 
-    const nextMarginEngine = ethers.utils.getContractAddress({
+    const nextMarginEngine = await ethers.utils.getContractAddress({
       from: factoryAddress,
       nonce: nonce,
     });
