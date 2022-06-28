@@ -28,6 +28,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
 
     constructor(
         ICToken _ctoken,
+        bool ethPool,
         IERC20Minimal underlying,
         uint8 _decimals,
         uint32[] memory _times,
@@ -35,7 +36,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     ) BaseRateOracle(underlying) {
         ctoken = _ctoken;
         require(
-            ctoken.underlying() == address(underlying),
+            ethPool || ctoken.underlying() == address(underlying),
             "Tokens do not match"
         );
         // Check that underlying was set in BaseRateOracle
