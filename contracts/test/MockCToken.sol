@@ -88,7 +88,7 @@ contract MockCToken is ICToken, ERC20 {
         _supplyRatePerBlock = supplyRatePerBlock;
     }
 
-    function supplyRatePerBlock() public view override returns(uint256) {
+    function supplyRatePerBlock() public view override returns (uint256) {
         return _supplyRatePerBlock;
     }
 }
