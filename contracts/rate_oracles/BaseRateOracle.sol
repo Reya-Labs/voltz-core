@@ -284,8 +284,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function getApyFromTo(uint256 from, uint256 to)
         public
         view
-        override
         virtual
+        override
         returns (uint256 apyFromToWad)
     {
         require(from <= to, "Misordered dates");
@@ -307,7 +307,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function variableFactor(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public override(IRateOracle) virtual returns (uint256 resultWad) {
+    ) public virtual override(IRateOracle) returns (uint256 resultWad) {
         bool cacheable;
 
         (resultWad, cacheable) = _variableFactor(
@@ -334,7 +334,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function variableFactorNoCache(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public view override(IRateOracle) virtual returns (uint256 resultWad) {
+    ) public view virtual override(IRateOracle) returns (uint256 resultWad) {
         (resultWad, ) = _variableFactor(
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds

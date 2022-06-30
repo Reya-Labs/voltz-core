@@ -14,14 +14,15 @@ contract MockLidoOracle is ILidoOracle {
      */
     function getLastCompletedReportDelta()
         external
-        override
         view
+        override
         returns (
             uint256 postTotalPooledEther,
             uint256 preTotalPooledEther,
             uint256 timeElapsed
-        ) {
-        return (sharesMultiplier * 101 / 100, sharesMultiplier, 86400);
+        )
+    {
+        return ((sharesMultiplier * 101) / 100, sharesMultiplier, 86400);
     }
 
     /**
@@ -30,21 +31,22 @@ contract MockLidoOracle is ILidoOracle {
      */
     function getCurrentFrame()
         external
-        override
         view
+        override
         returns (
             uint256 frameEpochId,
             uint256 frameStartTime,
             uint256 frameEndTime
-        ) {
+        )
+    {
         // solhint-disable-next-line not-rely-on-time
         return (0, block.timestamp - 43200, block.timestamp + 43200);
     }
 
     /**
-      * @notice Returns staking rewards fee rate
-      */
-    function getFee() external override view returns (uint16 feeBasisPoints) {
+     * @notice Returns staking rewards fee rate
+     */
+    function getFee() external view override returns (uint16 feeBasisPoints) {
         return 1000;
     }
 }
