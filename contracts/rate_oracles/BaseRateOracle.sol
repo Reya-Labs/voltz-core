@@ -380,7 +380,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
+    ) internal virtual returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         OracleBuffer.Observation memory last = observations[index];
         uint32 blockTimestamp = Time.blockTimestampTruncated();
 
