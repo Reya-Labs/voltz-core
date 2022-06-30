@@ -47,8 +47,8 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         require(length == _results.length, "Lengths must match");
 
         // We must pass equal-sized dynamic arrays containing initial timestamps and observed values
-        uint32[] memory times = new uint32[](length+1);
-        uint256[] memory results = new uint256[](length+1);
+        uint32[] memory times = new uint32[](length + 1);
+        uint256[] memory results = new uint256[](length + 1);
         for (uint256 i = 0; i < length; i++) {
             times[i] = _times[i];
             results[i] = _results[i];
@@ -99,7 +99,8 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         // compute the rate in ray
         resultRay =
             ((postTotalPooledEther - preTotalPooledEther) *
-                timeSinceLastUpdate) / preTotalPooledEther +
+                timeSinceLastUpdate) /
+            preTotalPooledEther +
             lastUpdatedRate;
 
         return resultRay;
