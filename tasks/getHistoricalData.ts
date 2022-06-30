@@ -5,6 +5,7 @@ import {
   ICToken,
   IERC20Minimal,
   ILidoOracle,
+  IStETH,
 } from "../typechain";
 import { BigNumber } from "ethers";
 
@@ -93,10 +94,10 @@ task(
       console.error(`Invalid block range: ${fromBlock}-${toBlock}`);
     }
 
-    const stETH = await hre.ethers.getContractAt(
+    const stETH = (await hre.ethers.getContractAt(
       "IStETH",
       lidoStEthMainnetAddress
-    );
+    )) as IStETH;
 
     const lidoOracle = (await hre.ethers.getContractAt(
       "ILidoOracle",
@@ -151,6 +152,8 @@ task(
     }${taskArgs.rocket ? ",rocket_rate" : ""}${compoundHeader}${aaveHeader}`;
     console.log(headerRow);
 
+    let lastUpdatedRate: BigNumber | null = null;
+
     for (
       let b = fromBlock;
       b <= currentBlockNumber;
@@ -158,8 +161,7 @@ task(
     ) {
       const rowValues: (BigNumber | null)[] = [];
       const block = await hre.ethers.provider.getBlock(b);
-      const timestamp = block.timestamp;
-      const timeString = new Date(timestamp * 1000).toISOString();
+      let timestamp = block.timestamp;
 
       // Lido
       if (taskArgs.lido) {
@@ -167,14 +169,6 @@ task(
           // extract preTotalPooledEther
           // extract postTotalPooledEther
           // extract timeElapsed
-          const lastCompletedReportDelta =
-            await lidoOracle.getLastCompletedReportDelta({
-              blockTag: b,
-            });
-
-          const slope = lastCompletedReportDelta.postTotalPooledEther.sub(
-            lastCompletedReportDelta.preTotalPooledEther
-          );
 
           // extract frameStartTime
           const currentFrame = await lidoOracle.getCurrentFrame({
@@ -186,62 +180,22 @@ task(
             blockTag: b,
           });
 
-          console.log(
-            "postTotalPooledEther",
-            lastCompletedReportDelta.postTotalPooledEther.toString()
-          );
-
-          console.log(
-            "preTotalPooledEther",
-            lastCompletedReportDelta.preTotalPooledEther.toString()
-          );
-
-          // compute interpolated liquidity index
-          console.log("timestamp", timestamp.toString());
-          console.log(
-            "currentFrame.frameStartTime:",
-            currentFrame.frameStartTime.toString()
-          );
-          console.log(
-            "in-between:",
-            BigNumber.from(timestamp)
-              .sub(currentFrame.frameStartTime)
-              .toString()
-          );
-          console.log(
-            "timeElapsed:",
-            BigNumber.from(lastCompletedReportDelta.timeElapsed).toString()
-          );
-          const linearAdditiveTerm = slope
-            .mul(
-              BigNumber.from(timestamp.toString()).sub(
-                currentFrame.frameStartTime
-              )
-            )
-            .div(BigNumber.from(lastCompletedReportDelta.timeElapsed));
-
-          const interpolatedLiquidityIndex = r.add(linearAdditiveTerm);
-
-          console.log(
-            "slope",
-            slope.div(BigNumber.from(10).pow(18)).toNumber() / 1e9
-          );
-          console.log(
-            "rawLiquidityIndex",
-            r.div(BigNumber.from(10).pow(18)).toNumber() / 1e9
-          );
-          console.log(
-            "linearAdditiveTerm:",
-            linearAdditiveTerm.div(BigNumber.from(10).pow(18)).toNumber() / 1e9
-          );
-          console.log(
-            "interpolatedLiquidityIndex",
-            interpolatedLiquidityIndex
-              .div(BigNumber.from(10).pow(18))
-              .toNumber() / 1e9
-          );
-
-          rowValues.push(interpolatedLiquidityIndex);
+          if (lastUpdatedRate) {
+            console.log("dif:", r.sub(lastUpdatedRate).toString());
+            if (r.sub(lastUpdatedRate).gt(BigNumber.from(10).pow(10))) {
+              lastUpdatedRate = r;
+              timestamp = currentFrame.frameStartTime.toNumber();
+              rowValues.push(lastUpdatedRate);
+            } else {
+              rowValues.push(null);
+            }
+          } else {
+            console.log("in here?");
+            lastUpdatedRate = r;
+            console.log("lastUpdatedRate", lastUpdatedRate);
+            timestamp = currentFrame.frameStartTime.toNumber();
+            rowValues.push(lastUpdatedRate);
+          }
         } else {
           rowValues.push(null);
         }
@@ -320,6 +274,8 @@ task(
           }
         }
       }
+
+      const timeString = new Date(timestamp * 1000).toISOString();
 
       if (rowValues.every((element) => element === null)) {
         // Nothing of interest to write - skip this row
