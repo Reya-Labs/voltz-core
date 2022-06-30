@@ -16,6 +16,8 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 3; // id of Lido is 3
 
+    uint256 public constant override RATE_VALUE_UPDATE_EPSILON = 1e10;
+
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     constructor(
@@ -90,13 +92,14 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
         uint32 frameStartTimeTruncated = Time.timestampAsUint32(frameStartTime);
 
+        uint256 resultRay = stEth.getPooledEthByShares(WadRayMath.RAY);
+
         // early return (to increase ttl of data in the observations buffer) if we've already written an observation recently
         if (
-            frameStartTimeTruncated - minSecondsSinceLastUpdate <
-            last.blockTimestamp
+            (frameStartTimeTruncated - minSecondsSinceLastUpdate <
+                last.blockTimestamp) ||
+            ((resultRay - last.observedValue) < RATE_VALUE_UPDATE_EPSILON)
         ) return (index, cardinality);
-
-        uint256 resultRay = stEth.getPooledEthByShares(WadRayMath.RAY);
 
         emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
