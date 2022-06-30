@@ -72,6 +72,40 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         return resultRay;
     }
 
+    function writeRate(
+        uint16 index,
+        uint16 cardinality,
+        uint16 cardinalityNext
+    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
+        OracleBuffer.Observation memory last = observations[index];
+
+        // early return (to increase ttl of data in the observations buffer) if we've already written an observation recently
+        if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
+            return (index, cardinality);
+
+        (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
+        uint256 resultRay = stEth.getPooledEthByShares(WadRayMath.RAY);
+
+        emit OracleBufferUpdate(
+            Time.blockTimestampScaled(),
+            address(this),
+            index,
+            blockTimestamp,
+            resultRay,
+            cardinality,
+            cardinalityNext
+        );
+
+        return
+            observations.write(
+                index,
+                frameStartTime,
+                resultRay,
+                cardinality,
+                cardinalityNext
+            );
+    }
+
     /// @inheritdoc IRateOracle
     function getApyFromTo(uint256 from, uint256 to)
         public
