@@ -22,7 +22,8 @@ contract MockLidoOracle is ILidoOracle {
             uint256 timeElapsed
         )
     {
-        return ((sharesMultiplier * 101) / 100, sharesMultiplier, 86400);
+        // 101 ether, 100 ether, 1 day
+        return (1e20 + 1e18, 1e20, 86400);
     }
 
     /**

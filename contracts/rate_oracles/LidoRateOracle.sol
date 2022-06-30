@@ -126,7 +126,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         if (
             (frameStartTimeTruncated - minSecondsSinceLastUpdate <
                 last.blockTimestamp) ||
-            ((resultRay - last.observedValue) < RATE_VALUE_UPDATE_EPSILON)
+            (resultRay < RATE_VALUE_UPDATE_EPSILON + last.observedValue)
         ) return (index, cardinality);
 
         emit OracleBufferUpdate(
