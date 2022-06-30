@@ -3,7 +3,10 @@ import { toBn } from "../test/helpers/toBn";
 import { IAaveV2LendingPool, ICToken, IERC20Minimal } from "../typechain";
 import { BigNumber } from "ethers";
 
+// todo: export rates data to csv
+
 const lidoStEthMainnetAddress = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
+const lidoOracleMainnetAddress = "0x442af784A788A5bd6F42A01Ebe9F287a871243fb";
 const lidoStEthMainnetStartBlock = 11593216;
 const rocketEthMainnetAddress = "0xae78736Cd615f374D3085123A210448E74Fc6393";
 const rocketEthnMainnetStartBlock = 13326304;
@@ -41,7 +44,7 @@ task(
   .addParam(
     "blockInterval",
     "Script will fetch data every `blockInterval` blocks (between `fromBlock` and `toBlock`)",
-    5760,
+    1440, // around every 6 hours
     types.int
   )
   .addOptionalParam(
@@ -68,6 +71,10 @@ task(
       console.error("Only mainnet supported");
     }
 
+    console.log(hre.network.name);
+    const fs = require("fs");
+    // fs.writeFileSync("rates_data.txt", "");
+
     const currentBlock = await hre.ethers.provider.getBlock("latest");
     const currentBlockNumber = currentBlock.number;
     let toBlock = currentBlockNumber;
@@ -85,6 +92,12 @@ task(
       "IStETH",
       lidoStEthMainnetAddress
     );
+
+    const lidoOracle = await hre.ethers.getContractAt(
+      "ILidoOracle",
+      lidoOracleMainnetAddress
+    );
+
     const rocketEth = await hre.ethers.getContractAt(
       "IRocketEth",
       rocketEthMainnetAddress
@@ -146,9 +159,40 @@ task(
       // Lido
       if (taskArgs.lido) {
         if (b >= lidoStEthMainnetStartBlock) {
+
+          // extract preTotalPooledEther
+          // extract postTotalPooledEther
+          // extract timeElapsed
+          const lastCompletedReportDelta = await lidoOracle.getLastCompletedReportDelta(
+            {
+              blockTag: b,
+            }
+          );
+        
+          const slope = (lastCompletedReportDelta.postTotalPooledEther - lastCompletedReportDelta.preTotalPooledEther);
+          
+          // extract frameStartTime
+          const currentFrame = await lidoOracle.getCurrentFrame(
+            {
+              blockTag: b
+            }
+          );
+
+          const timeFactor = (timestamp - currentFrame.frameStartTime) / lastCompletedReportDelta.timeElapsed;
+
+          // extract getPooledEthByShares
           const r = await stETH.getPooledEthByShares(toBn(1, 27), {
             blockTag: b,
           });
+
+          // compute interpolated liquidity index
+          const linearAdditiveTerm = slope * timeFactor
+          
+          // const interpolatedLiquidityIndex = linearAdditiveTerm * 1000000000 + r;
+
+          console.log("rawLiquidityIndex", r.toString());
+          // console.log("interpolatedLiquidityIndex", interpolatedLiquidityIndex.toString());
+          
           rowValues.push(r);
         } else {
           rowValues.push(null);
@@ -235,6 +279,10 @@ task(
         // We have some non-null values to write
         const values = rowValues.map((e) => (e ? e.toString() : "-"));
         console.log(`${b},${timestamp},${timeString},${values.join(",")}`);
+        fs.appendFileSync(
+          "rates_data_with_interpolation.txt",
+          `${b},${timestamp},${timeString},${values.join(",")}` + "\n"
+        );
       }
     }
   });
