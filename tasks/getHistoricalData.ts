@@ -1,6 +1,11 @@
 import { task, types } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
-import { IAaveV2LendingPool, ICToken, IERC20Minimal } from "../typechain";
+import {
+  IAaveV2LendingPool,
+  ICToken,
+  IERC20Minimal,
+  ILidoOracle,
+} from "../typechain";
 import { BigNumber } from "ethers";
 
 // todo: export rates data to csv
@@ -93,10 +98,10 @@ task(
       lidoStEthMainnetAddress
     );
 
-    const lidoOracle = await hre.ethers.getContractAt(
+    const lidoOracle = (await hre.ethers.getContractAt(
       "ILidoOracle",
       lidoOracleMainnetAddress
-    );
+    )) as ILidoOracle;
 
     const rocketEth = await hre.ethers.getContractAt(
       "IRocketEth",
@@ -159,41 +164,84 @@ task(
       // Lido
       if (taskArgs.lido) {
         if (b >= lidoStEthMainnetStartBlock) {
-
           // extract preTotalPooledEther
           // extract postTotalPooledEther
           // extract timeElapsed
-          const lastCompletedReportDelta = await lidoOracle.getLastCompletedReportDelta(
-            {
+          const lastCompletedReportDelta =
+            await lidoOracle.getLastCompletedReportDelta({
               blockTag: b,
-            }
-          );
-        
-          const slope = (lastCompletedReportDelta.postTotalPooledEther - lastCompletedReportDelta.preTotalPooledEther);
-          
-          // extract frameStartTime
-          const currentFrame = await lidoOracle.getCurrentFrame(
-            {
-              blockTag: b
-            }
+            });
+
+          const slope = lastCompletedReportDelta.postTotalPooledEther.sub(
+            lastCompletedReportDelta.preTotalPooledEther
           );
 
-          const timeFactor = (timestamp - currentFrame.frameStartTime) / lastCompletedReportDelta.timeElapsed;
+          // extract frameStartTime
+          const currentFrame = await lidoOracle.getCurrentFrame({
+            blockTag: b,
+          });
 
           // extract getPooledEthByShares
           const r = await stETH.getPooledEthByShares(toBn(1, 27), {
             blockTag: b,
           });
 
-          // compute interpolated liquidity index
-          const linearAdditiveTerm = slope * timeFactor
-          
-          // const interpolatedLiquidityIndex = linearAdditiveTerm * 1000000000 + r;
+          console.log(
+            "postTotalPooledEther",
+            lastCompletedReportDelta.postTotalPooledEther.toString()
+          );
 
-          console.log("rawLiquidityIndex", r.toString());
-          // console.log("interpolatedLiquidityIndex", interpolatedLiquidityIndex.toString());
-          
-          rowValues.push(r);
+          console.log(
+            "preTotalPooledEther",
+            lastCompletedReportDelta.preTotalPooledEther.toString()
+          );
+
+          // compute interpolated liquidity index
+          console.log("timestamp", timestamp.toString());
+          console.log(
+            "currentFrame.frameStartTime:",
+            currentFrame.frameStartTime.toString()
+          );
+          console.log(
+            "in-between:",
+            BigNumber.from(timestamp)
+              .sub(currentFrame.frameStartTime)
+              .toString()
+          );
+          console.log(
+            "timeElapsed:",
+            BigNumber.from(lastCompletedReportDelta.timeElapsed).toString()
+          );
+          const linearAdditiveTerm = slope
+            .mul(
+              BigNumber.from(timestamp.toString()).sub(
+                currentFrame.frameStartTime
+              )
+            )
+            .div(BigNumber.from(lastCompletedReportDelta.timeElapsed));
+
+          const interpolatedLiquidityIndex = r.add(linearAdditiveTerm);
+
+          console.log(
+            "slope",
+            slope.div(BigNumber.from(10).pow(18)).toNumber() / 1e9
+          );
+          console.log(
+            "rawLiquidityIndex",
+            r.div(BigNumber.from(10).pow(18)).toNumber() / 1e9
+          );
+          console.log(
+            "linearAdditiveTerm:",
+            linearAdditiveTerm.div(BigNumber.from(10).pow(18)).toNumber() / 1e9
+          );
+          console.log(
+            "interpolatedLiquidityIndex",
+            interpolatedLiquidityIndex
+              .div(BigNumber.from(10).pow(18))
+              .toNumber() / 1e9
+          );
+
+          rowValues.push(interpolatedLiquidityIndex);
         } else {
           rowValues.push(null);
         }
