@@ -3,7 +3,7 @@ import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
 import path from "path";
 import { toBn } from "../../helpers/toBn";
-import { div, sub, add, pow } from "../../shared/functions";
+import { div, sub, add, pow, mul } from "../../shared/functions";
 import {
   advanceTime,
   advanceTimeAndBlock,
@@ -106,8 +106,19 @@ describe("Generic Rate Oracle Tests", () => {
             await testRateOracle.observations(0);
           // console.log(`currentTimestamp: ${currentTimestamp}`);
           // console.log(`rateTimestamp: ${rateTimestamp.valueOf()}`);
+
+          let interpolation = 0;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            interpolation = 0.005;
+          }
+
           expect(rateValue).to.eq(
-            toBn(Config.startingExchangeRate, consts.NORMALIZED_RATE_DECIMALS)
+            toBn(
+              Config.startingExchangeRate + interpolation,
+              consts.NORMALIZED_RATE_DECIMALS
+            )
           );
           expect(rateTimestamp).to.eq(currentTimestamp + 1);
         });
@@ -135,8 +146,19 @@ describe("Generic Rate Oracle Tests", () => {
           expect(rateCardinality).to.eq(4);
           const [rateTimestamp, rateValue, _] =
             await testRateOracle.observations(2);
+
+          let interpolation = 0;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            interpolation = 0.005;
+          }
+
           expect(rateValue).to.eq(
-            toBn(Config.startingExchangeRate, consts.NORMALIZED_RATE_DECIMALS)
+            toBn(
+              Config.startingExchangeRate + interpolation,
+              consts.NORMALIZED_RATE_DECIMALS
+            )
           );
           expect(rateTimestamp).to.eq(currentTimestamp + 1);
         });
@@ -153,6 +175,14 @@ describe("Generic Rate Oracle Tests", () => {
           const currentTimestamp = await getCurrentTimestamp(provider);
           await testRateOracle.writeOracleEntry();
           [rateIndex, rateCardinality] = await testRateOracle.oracleVars();
+
+          let interpolation = 0;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            interpolation = 0.005;
+          }
+
           expect(rateIndex).to.eq(1);
           expect(rateCardinality).to.eq(4);
           const minSecondsSinceLastUpdate =
@@ -165,7 +195,10 @@ describe("Generic Rate Oracle Tests", () => {
           const [rateTimestamp, rateValue, _] =
             await testRateOracle.observations(1);
           expect(rateValue).to.eq(
-            toBn(Config.startingExchangeRate, consts.NORMALIZED_RATE_DECIMALS)
+            toBn(
+              Config.startingExchangeRate + interpolation,
+              consts.NORMALIZED_RATE_DECIMALS
+            )
           );
           expect(rateTimestamp).to.eq(currentTimestamp + 1); // TImestemp from *before* last write
         });
@@ -181,11 +214,15 @@ describe("Generic Rate Oracle Tests", () => {
 
           await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
           const rateFromTimestamp = (await getCurrentTimestamp(provider)) + 1;
+
+          // for Lido: 1.005, for any: 1
           await testRateOracle.writeOracleEntry();
 
           await advanceTimeAndBlock(BigNumber.from(86400), 2); // advance by one day
           // set new liquidity index value
           await Config.setRateAsDecimal(Config.startingExchangeRate * 1.1);
+
+          // for Lido: 1.105, for any: 1.1
           await testRateOracle.writeOracleEntry();
           const rateToTimestamp = await getCurrentTimestamp(provider);
 
@@ -194,7 +231,10 @@ describe("Generic Rate Oracle Tests", () => {
             rateToTimestamp
           );
 
-          const expectedRateFromTo = toBn("0.1");
+          const expectedRateFromTo =
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+              ? toBn((1.105 / 1.005 - 1).toString())
+              : toBn((1.1 / 1 - 1).toString());
 
           expect(rateFromTo).to.be.closeTo(
             expectedRateFromTo,
@@ -221,7 +261,11 @@ describe("Generic Rate Oracle Tests", () => {
             rateToTimestamp
           );
 
-          const expectedRateFromTo = toBn("0.1");
+          const expectedRateFromTo =
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+              ? toBn(((1.215 / 1.005) ** 0.5 - 1).toString())
+              : toBn(((1.21 / 1) ** 0.5 - 1).toString());
+
           expect(rateFromTo).to.be.closeTo(
             expectedRateFromTo,
             10_000_000_000_000
@@ -237,18 +281,25 @@ describe("Generic Rate Oracle Tests", () => {
         beforeEach("deploy and initialize test oracle", async () => {
           ({ testRateOracle } = await loadFixture(Config.oracleFixture));
 
+          let shift = 0;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            shift = 0.005;
+          }
+
           await testRateOracle.increaseObservationCardinalityNext(10);
-          await Config.setRateAsDecimal(1);
+          await Config.setRateAsDecimal(1 - shift);
           await testRateOracle.writeOracleEntry();
           startTime = await getCurrentTimestamp();
 
           // One year passes
-          await Config.setRateAsDecimal(expectedApy);
+          await Config.setRateAsDecimal(expectedApy - shift);
           await setTimeNextBlock(startTime + 31536000); // One year after first reading
           await testRateOracle.writeOracleEntry();
 
           // Another year passes
-          await Config.setRateAsDecimal(twoYearMultiple);
+          await Config.setRateAsDecimal(twoYearMultiple - shift);
           await setTimeNextBlock(startTime + 2 * 31536000); // Two years year after first reading
           await testRateOracle.writeOracleEntry();
 
@@ -261,8 +312,18 @@ describe("Generic Rate Oracle Tests", () => {
             startTime,
             startTime + 31536000
           );
+
+          let multiplier = 10000;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            multiplier = 9000;
+          }
+
           expect(apy).to.be.closeTo(
-            toBn(expectedApy - 1), // convert rate to APY in wad
+            toBn(expectedApy - 1)
+              .mul(BigNumber.from(multiplier))
+              .div(BigNumber.from(10000)), // convert rate to APY in wad
             100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
           );
         });
@@ -272,8 +333,18 @@ describe("Generic Rate Oracle Tests", () => {
             startTime,
             startTime + 2 * 31536000
           );
+
+          let multiplier = 10000;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            multiplier = 9000;
+          }
+
           expect(apy).to.be.closeTo(
-            toBn(expectedApy - 1), // convert rate to APY in wad
+            toBn(expectedApy - 1)
+              .mul(BigNumber.from(multiplier))
+              .div(BigNumber.from(10000)), // convert rate to APY in wad
             100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
           );
         });
@@ -283,8 +354,18 @@ describe("Generic Rate Oracle Tests", () => {
             startTime + 100000,
             startTime + 10000000
           );
+
+          let multiplier = 10000;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            multiplier = 9000;
+          }
+
           expect(apy).to.be.closeTo(
-            toBn(expectedApy - 1), // convert rate to APY in wad
+            toBn(expectedApy - 1)
+              .mul(BigNumber.from(multiplier))
+              .div(BigNumber.from(10000)), // convert rate to APY in wad
             100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
           );
         });
@@ -294,8 +375,18 @@ describe("Generic Rate Oracle Tests", () => {
             startTime + 20000000,
             startTime + 40000000
           );
+
+          let multiplier = 10000;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            multiplier = 9000;
+          }
+
           expect(apy).to.be.closeTo(
-            toBn(expectedApy - 1), // convert rate to APY in wad
+            toBn(expectedApy - 1)
+              .mul(BigNumber.from(multiplier))
+              .div(BigNumber.from(10000)), // convert rate to APY in wad
             100000 // within 100k for a percentage expressed in ray = within 0.0000000001%
           );
         });
@@ -417,14 +508,24 @@ describe("Generic Rate Oracle Tests", () => {
             (beforeOrAtTimestamp + afterOrAtTimestamp) / 2
           );
 
+          let interpolation = 0;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            interpolation = 0.005;
+          }
+
           const [beforeOrAtRateValue, afterOrAtRateValue] =
             await testRateOracle.binarySearch(targetTimestamp);
           expect(beforeOrAtRateValue.observedValue).to.eq(
-            toBn(Config.startingExchangeRate, consts.NORMALIZED_RATE_DECIMALS)
+            toBn(
+              Config.startingExchangeRate + interpolation,
+              consts.NORMALIZED_RATE_DECIMALS
+            )
           );
           expect(afterOrAtRateValue.observedValue).to.eq(
             toBn(
-              Config.startingExchangeRate * 1.1,
+              Config.startingExchangeRate * 1.1 + interpolation,
               consts.NORMALIZED_RATE_DECIMALS
             )
           );
@@ -457,11 +558,24 @@ describe("Generic Rate Oracle Tests", () => {
           const [realizedBeforeOrAtRateValue, realizedAtOrAfterValue] =
             await testRateOracle.testGetSurroundingRates(beforeOrAtTimestamp);
 
+          let interpolation = 0;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            interpolation = 0.005;
+          }
+
           expect(realizedBeforeOrAtRateValue).to.eq(
-            toBn(Config.startingExchangeRate, consts.NORMALIZED_RATE_DECIMALS)
+            toBn(
+              Config.startingExchangeRate + interpolation,
+              consts.NORMALIZED_RATE_DECIMALS
+            )
           );
           expect(realizedAtOrAfterValue).to.eq(
-            toBn("1.1", consts.NORMALIZED_RATE_DECIMALS)
+            toBn(
+              (1.1 + interpolation).toString(),
+              consts.NORMALIZED_RATE_DECIMALS
+            )
           );
         });
 
@@ -469,8 +583,18 @@ describe("Generic Rate Oracle Tests", () => {
           const [realizedBeforeOrAtRateValue, realizedAtOrAfterValue] =
             await testRateOracle.testGetSurroundingRates(atOrAfterTimestamp);
 
+          let interpolation = 0;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            interpolation = 0.005;
+          }
+
           expect(realizedBeforeOrAtRateValue).to.eq(
-            toBn("1.1", consts.NORMALIZED_RATE_DECIMALS)
+            toBn(
+              (1.1 + interpolation).toString(),
+              consts.NORMALIZED_RATE_DECIMALS
+            )
           );
           expect(realizedAtOrAfterValue).to.eq(0);
         });
@@ -484,11 +608,24 @@ describe("Generic Rate Oracle Tests", () => {
           const [realizedBeforeOrAtRateValue, realizedAtOrAfterValue] =
             await testRateOracle.testGetSurroundingRates(targetTimestamp);
 
+          let interpolation = 0;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            interpolation = 0.005;
+          }
+
           expect(realizedBeforeOrAtRateValue).to.eq(
-            toBn(Config.startingExchangeRate, consts.NORMALIZED_RATE_DECIMALS)
+            toBn(
+              Config.startingExchangeRate + interpolation,
+              consts.NORMALIZED_RATE_DECIMALS
+            )
           );
           expect(realizedAtOrAfterValue).to.eq(
-            toBn("1.1", consts.NORMALIZED_RATE_DECIMALS)
+            toBn(
+              (1.1 + interpolation).toString(),
+              consts.NORMALIZED_RATE_DECIMALS
+            )
           );
         });
 
@@ -543,9 +680,22 @@ describe("Generic Rate Oracle Tests", () => {
               termStartTimestampBN,
               termEndTimestampBN
             );
-          const expectedVariableFactor = toBn("0.1");
+          const expectedVariableFactor =
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+              ? toBn((1.105 / 1.005 - 1).toString())
+              : toBn((1.1 / 1 - 1).toString());
+
+          let multiplier = 10000;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            multiplier = 9000;
+          }
+
           expect(realizedVariableFactor).to.be.closeTo(
-            expectedVariableFactor,
+            expectedVariableFactor
+              .mul(BigNumber.from(multiplier))
+              .div(BigNumber.from(10000)),
             10_000_000_000_000
           ); // within 1e13 of 1e17 = within 0.01%
         });
@@ -559,9 +709,22 @@ describe("Generic Rate Oracle Tests", () => {
               termStartTimestampBN,
               termEndTimestampBN
             );
-          const expectedVariableFactor = toBn("0.1");
+
+          let multiplier = 10000;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            multiplier = 9000;
+          }
+
+          const expectedVariableFactor =
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+              ? toBn((1.105 / 1.005 - 1).toString())
+              : toBn((1.1 / 1 - 1).toString());
           expect(realizedVariableFactor).to.be.closeTo(
-            expectedVariableFactor,
+            expectedVariableFactor
+              .mul(BigNumber.from(multiplier))
+              .div(BigNumber.from(10000)),
             10_000_000_000_000
           ); // within 1e13 of 1e17 = within 0.01%
         });
@@ -581,8 +744,24 @@ describe("Generic Rate Oracle Tests", () => {
               termEndTimestampBN
             );
 
-          const expectedVariableFactor = toBn("0.2");
-          expect(realizedVariableFactor).to.eq(expectedVariableFactor);
+          let multiplier = 10000;
+          if (
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+          ) {
+            multiplier = 9000;
+          }
+
+          const expectedVariableFactor =
+            (await testRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()) === 3
+              ? toBn((1.205 / 1.005 - 1).toString())
+              : toBn((1.2 / 1 - 1).toString());
+
+          expect(realizedVariableFactor).to.be.closeTo(
+            expectedVariableFactor
+              .mul(BigNumber.from(multiplier))
+              .div(BigNumber.from(10000)),
+            10_000_000_000_000
+          );
         });
 
         it("reverts if termStartTimestamp is too old", async () => {

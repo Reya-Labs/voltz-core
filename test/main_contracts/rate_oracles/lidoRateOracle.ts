@@ -31,9 +31,9 @@ describe(`Lido Rate Oracle`, () => {
     });
 
     const sampleRates = [
-      1,
-      123,
-      "123456789012345678901234567890",
+      BigNumber.from("1"),
+      BigNumber.from("123"),
+      BigNumber.from("123456789012345678901234567890"),
       BigNumber.from(10).pow(50),
     ];
 
@@ -43,7 +43,9 @@ describe(`Lido Rate Oracle`, () => {
         await mockStEth.setSharesMultiplierInRay(rate);
         await testLidoRateOracle.writeOracleEntry();
         const observedRate = await testLidoRateOracle.getLatestRateValue();
-        expect(observedRate).to.eq(BigNumber.from(rate));
+        expect(observedRate).to.eq(
+          BigNumber.from(rate.add(BigNumber.from(10).pow(24).mul(5)))
+        );
       });
     }
   });

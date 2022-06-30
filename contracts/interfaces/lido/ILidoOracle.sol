@@ -2,9 +2,7 @@
 
 pragma solidity =0.8.9;
 
-interface IStETH {
-
-    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
+interface ILidoOracle {
 
     /**
      * @notice Report beacon balance and its change during the last frame
@@ -30,4 +28,9 @@ interface IStETH {
             uint256 frameStartTime,
             uint256 frameEndTime
         );
+
+    /**
+      * @notice Returns staking rewards fee rate
+      */
+    function getFee() external view returns (uint16 feeBasisPoints);
 }
