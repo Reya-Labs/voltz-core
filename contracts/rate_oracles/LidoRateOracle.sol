@@ -46,18 +46,28 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
             revert CustomErrors.LidoGetPooledEthBySharesReturnedZero();
         }
 
-        (uint256 postTotalPooledEther, uint256 preTotalPooledEther, uint256 timeElapsed) = lidoOracle.getLastCompletedReportDelta();
-        (, uint256 frameStartTime,) = lidoOracle.getCurrentFrame();
+        (
+            uint256 postTotalPooledEther,
+            uint256 preTotalPooledEther,
+            uint256 timeElapsed
+        ) = lidoOracle.getLastCompletedReportDelta();
+        (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
 
         // slope in ray
-        uint256 slope = postTotalPooledEther * WadRayMath.RAY / preTotalPooledEther;
+        uint256 slope = (postTotalPooledEther * WadRayMath.RAY) /
+            preTotalPooledEther;
 
         // time since last update in ray
         // solhint-disable-next-line not-rely-on-time
-        uint256 timeSinceLastUpdate = (block.timestamp - frameStartTime) * WadRayMath.RAY / timeElapsed;
+        uint256 timeSinceLastUpdate = ((block.timestamp - frameStartTime) *
+            WadRayMath.RAY) / timeElapsed;
 
         // compute the rate in ray
-        resultRay = (postTotalPooledEther - preTotalPooledEther) * timeSinceLastUpdate / WadRayMath.RAY + lastUpdatedRate;
+        resultRay =
+            ((postTotalPooledEther - preTotalPooledEther) *
+                timeSinceLastUpdate) /
+            WadRayMath.RAY +
+            lastUpdatedRate;
 
         return resultRay;
     }
@@ -72,7 +82,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         uint256 raw = BaseRateOracle.getApyFromTo(from, to);
         uint256 fee = uint256(lidoOracle.getFee());
 
-        return raw * (10000 - fee) / 10000;
+        return (raw * (10000 - fee)) / 10000;
     }
 
     /// @inheritdoc IRateOracle
@@ -80,20 +90,31 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
     ) public override(IRateOracle, BaseRateOracle) returns (uint256 resultWad) {
-        uint256 raw = BaseRateOracle.variableFactor(termStartTimestampInWeiSeconds, termEndTimestampInWeiSeconds);
+        uint256 raw = BaseRateOracle.variableFactor(
+            termStartTimestampInWeiSeconds,
+            termEndTimestampInWeiSeconds
+        );
         uint256 fee = uint256(lidoOracle.getFee());
 
-        return raw * (10000 - fee) / 10000;
+        return (raw * (10000 - fee)) / 10000;
     }
 
     /// @inheritdoc IRateOracle
     function variableFactorNoCache(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public view override(IRateOracle, BaseRateOracle) returns (uint256 resultWad) {
-        uint256 raw = BaseRateOracle.variableFactorNoCache(termStartTimestampInWeiSeconds, termEndTimestampInWeiSeconds);
+    )
+        public
+        view
+        override(IRateOracle, BaseRateOracle)
+        returns (uint256 resultWad)
+    {
+        uint256 raw = BaseRateOracle.variableFactorNoCache(
+            termStartTimestampInWeiSeconds,
+            termEndTimestampInWeiSeconds
+        );
         uint256 fee = uint256(lidoOracle.getFee());
 
-        return raw * (10000 - fee) / 10000;
+        return (raw * (10000 - fee)) / 10000;
     }
 }

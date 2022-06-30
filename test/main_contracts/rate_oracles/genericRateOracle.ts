@@ -3,7 +3,7 @@ import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
 import path from "path";
 import { toBn } from "../../helpers/toBn";
-import { div, sub, add, pow, mul } from "../../shared/functions";
+import { div, sub, add, pow } from "../../shared/functions";
 import {
   advanceTime,
   advanceTimeAndBlock,

@@ -6,10 +6,20 @@ import "./TestRateOracle.sol";
 
 contract TestLidoRateOracle is LidoRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
-    
+
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
-    constructor(IStETH _stEth, ILidoOracle _lidoOracle, IWETH _weth)
-        LidoRateOracle(_stEth, _lidoOracle, _weth, new uint32[](0), new uint256[](0))
+    constructor(
+        IStETH _stEth,
+        ILidoOracle _lidoOracle,
+        IWETH _weth
+    )
+        LidoRateOracle(
+            _stEth,
+            _lidoOracle,
+            _weth,
+            new uint32[](0),
+            new uint256[](0)
+        )
     {}
 
     function getRate(uint16 index) external view returns (uint256, uint256) {
