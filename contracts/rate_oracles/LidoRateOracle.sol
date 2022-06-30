@@ -7,12 +7,16 @@ import "../interfaces/lido/IStETH.sol";
 import "../interfaces/lido/ILidoOracle.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 import "../utils/WadRayMath.sol";
+import "./OracleBuffer.sol";
+import "../core_libraries/Time.sol";
 
 contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
     IStETH public override stEth;
     ILidoOracle public override lidoOracle;
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 3; // id of Lido is 3
+
+    using OracleBuffer for OracleBuffer.Observation[65535];
 
     constructor(
         IStETH _stEth,
@@ -76,21 +80,23 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
+    ) internal override(BaseRateOracle) returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         OracleBuffer.Observation memory last = observations[index];
 
+        (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
+        uint32 frameStartTimeTruncated = Time.timestampAsUint32(frameStartTime);
+
         // early return (to increase ttl of data in the observations buffer) if we've already written an observation recently
-        if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
+        if (frameStartTimeTruncated - minSecondsSinceLastUpdate < last.blockTimestamp)
             return (index, cardinality);
 
-        (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
         uint256 resultRay = stEth.getPooledEthByShares(WadRayMath.RAY);
 
         emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
             address(this),
             index,
-            blockTimestamp,
+            frameStartTimeTruncated,
             resultRay,
             cardinality,
             cardinalityNext
@@ -99,7 +105,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         return
             observations.write(
                 index,
-                frameStartTime,
+                frameStartTimeTruncated,
                 resultRay,
                 cardinality,
                 cardinalityNext
