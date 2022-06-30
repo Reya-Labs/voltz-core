@@ -61,6 +61,7 @@ export interface CompoundConfig {
 
 export interface LidoConfig {
   lidoStETH?: string;
+  lidoOracle?: string;
   defaults: RateOracleConfigDefaults;
 }
 export interface RocketPoolConfig {

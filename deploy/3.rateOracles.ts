@@ -43,6 +43,7 @@ const deployAndConfigureRateOracleInstance = async (
       from: deployer,
       args: instance.args,
       log: doLogging,
+      gasLimit: 20000000,
     });
     console.log(
       `Deployed ${rateOracleIdentifier} (args: ${JSON.stringify(
@@ -177,6 +178,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Lido Rate Oracle
   const lidoConfig = deployConfig.lidoConfig;
   const lidoStETHAddress = lidoConfig?.lidoStETH;
+  const lidoOracleAddress = lidoConfig?.lidoOracle;
 
   if (lidoStETHAddress) {
     const { trustedTimestamps, trustedObservationValuesInRay } =
@@ -192,6 +194,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // For Lido, the first constructor arg is the stEth address
     const args = [
       lidoStETHAddress,
+      lidoOracleAddress,
       wethAddress,
       trustedTimestamps,
       trustedObservationValuesInRay,
