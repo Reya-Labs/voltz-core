@@ -36,6 +36,38 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         _populateInitialObservations(_times, _results);
     }
 
+    /// @dev this must be called at the *end* of the constructor, after the contract member variables have been set, because it needs to read rates.
+    function _populateInitialObservations(
+        uint32[] memory _times,
+        uint256[] memory _results
+    ) internal override {
+        // If we're using even half the max buffer size, something has gone wrong
+        require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
+        uint16 length = uint16(_times.length);
+        require(length == _results.length, "Lengths must match");
+
+        // We must pass equal-sized dynamic arrays containing initial timestamps and observed values
+        uint32[] memory times = new uint32[](length+1);
+        uint256[] memory results = new uint256[](length+1);
+        for (uint256 i = 0; i < length; i++) {
+            times[i] = _times[i];
+            results[i] = _results[i];
+        }
+
+        (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
+        uint32 frameStartTimeTruncated = Time.timestampAsUint32(frameStartTime);
+        uint256 resultRay = stEth.getPooledEthByShares(WadRayMath.RAY);
+
+        times[length] = frameStartTimeTruncated;
+        results[length] = resultRay;
+
+        (
+            oracleVars.rateCardinality,
+            oracleVars.rateCardinalityNext,
+            oracleVars.rateIndex
+        ) = observations.initialize(times, results);
+    }
+
     /// @inheritdoc BaseRateOracle
     function getCurrentRateInRay()
         public
@@ -59,10 +91,6 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         ) = lidoOracle.getLastCompletedReportDelta();
         (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
 
-        // slope in ray
-        uint256 slope = (postTotalPooledEther * WadRayMath.RAY) /
-            preTotalPooledEther;
-
         // time since last update in ray
         // solhint-disable-next-line not-rely-on-time
         uint256 timeSinceLastUpdate = ((block.timestamp - frameStartTime) *
@@ -71,8 +99,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         // compute the rate in ray
         resultRay =
             ((postTotalPooledEther - preTotalPooledEther) *
-                timeSinceLastUpdate) /
-            WadRayMath.RAY +
+                timeSinceLastUpdate) / preTotalPooledEther +
             lastUpdatedRate;
 
         return resultRay;

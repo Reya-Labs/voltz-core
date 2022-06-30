@@ -63,7 +63,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function _populateInitialObservations(
         uint32[] memory _times,
         uint256[] memory _results
-    ) internal {
+    ) internal virtual {
         // If we're using even half the max buffer size, something has gone wrong
         require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
         uint16 length = uint16(_times.length);
