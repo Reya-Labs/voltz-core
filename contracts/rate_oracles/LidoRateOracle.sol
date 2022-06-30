@@ -80,15 +80,21 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) internal override(BaseRateOracle) returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
+    )
+        internal
+        override(BaseRateOracle)
+        returns (uint16 indexUpdated, uint16 cardinalityUpdated)
+    {
         OracleBuffer.Observation memory last = observations[index];
 
         (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
         uint32 frameStartTimeTruncated = Time.timestampAsUint32(frameStartTime);
 
         // early return (to increase ttl of data in the observations buffer) if we've already written an observation recently
-        if (frameStartTimeTruncated - minSecondsSinceLastUpdate < last.blockTimestamp)
-            return (index, cardinality);
+        if (
+            frameStartTimeTruncated - minSecondsSinceLastUpdate <
+            last.blockTimestamp
+        ) return (index, cardinality);
 
         uint256 resultRay = stEth.getPooledEthByShares(WadRayMath.RAY);
 
