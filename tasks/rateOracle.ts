@@ -36,6 +36,9 @@ task(
     );
     // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
 
+    const underlying = await rateOracle.underlying();
+    console.log("Underlying token:", underlying);
+
     const oracleVars = await rateOracle.oracleVars();
     // console.log(`oracleVars,${oracleVars}`);
     let csvOutput = `timestamp,value,rawTimestamp,rawValue`;

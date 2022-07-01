@@ -43,11 +43,4 @@ contract MockLidoOracle is ILidoOracle {
         // solhint-disable-next-line not-rely-on-time
         return (0, block.timestamp - 43200, block.timestamp + 43200);
     }
-
-    /**
-     * @notice Returns staking rewards fee rate
-     */
-    function getFee() external view override returns (uint16 feeBasisPoints) {
-        return 1000;
-    }
 }

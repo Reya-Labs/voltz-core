@@ -66,6 +66,7 @@ const e2eParams: e2eParameters = {
     [3, -TICK_SPACING, TICK_SPACING],
   ],
   skipped: false,
+  isWETH: true,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {

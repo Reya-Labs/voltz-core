@@ -28,9 +28,4 @@ interface ILidoOracle {
             uint256 frameStartTime,
             uint256 frameEndTime
         );
-
-    /**
-      * @notice Returns staking rewards fee rate
-      */
-    function getFee() external view returns (uint16 feeBasisPoints);
 }

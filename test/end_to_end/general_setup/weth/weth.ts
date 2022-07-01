@@ -207,6 +207,9 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await advanceTimeAndBlock(consts.ONE_WEEK.mul(9), 4); // advance eight weeks (4 days before maturity)
 
+    const apy = await this.marginEngine.callStatic.getHistoricalApy();
+    console.log("apy:", ethers.utils.parseEther(apy.toString()));
+
     await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
 
     // settle positions and traders
