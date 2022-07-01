@@ -1,19 +1,15 @@
 import { expect } from "chai";
 import { ethers, waffle } from "hardhat";
-import { BigNumber } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
-import { advanceTimeAndBlock } from "../../../helpers/time";
 import {
   ALPHA,
   APY_LOWER_MULTIPLIER,
   APY_UPPER_MULTIPLIER,
   BETA,
   encodeSqrtRatioX96,
-  MAX_SQRT_RATIO,
   MIN_DELTA_IM,
   MIN_DELTA_LM,
-  MIN_SQRT_RATIO,
   TICK_SPACING,
   T_MAX,
   XI_LOWER,
@@ -21,7 +17,7 @@ import {
 } from "../../../shared/utilities";
 import { e2eParameters } from "../e2eSetup";
 import { ScenarioRunner } from "../newGeneral";
-import { IRateOracle, Periphery } from "../../../../typechain";
+import { IRateOracle } from "../../../../typechain";
 
 const { provider } = waffle;
 
