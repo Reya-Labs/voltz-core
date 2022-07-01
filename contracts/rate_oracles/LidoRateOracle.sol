@@ -157,7 +157,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         returns (uint256 apyFromToWad)
     {
         uint256 raw = BaseRateOracle.getApyFromTo(from, to);
-        uint256 fee = uint256(lidoOracle.getFee());
+        uint256 fee = uint256(stEth.getFee());
 
         return (raw * (10000 - fee)) / 10000;
     }
@@ -171,7 +171,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds
         );
-        uint256 fee = uint256(lidoOracle.getFee());
+        uint256 fee = uint256(stEth.getFee());
 
         return (raw * (10000 - fee)) / 10000;
     }
@@ -190,7 +190,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds
         );
-        uint256 fee = uint256(lidoOracle.getFee());
+        uint256 fee = uint256(stEth.getFee());
 
         return (raw * (10000 - fee)) / 10000;
     }
