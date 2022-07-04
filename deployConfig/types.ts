@@ -61,6 +61,7 @@ export interface CompoundConfig {
 
 export interface LidoConfig {
   lidoStETH?: string;
+  lidoOracle?: string;
   defaults: RateOracleConfigDefaults;
 }
 export interface RocketPoolConfig {
@@ -68,6 +69,7 @@ export interface RocketPoolConfig {
   defaults: RateOracleConfigDefaults;
 }
 export interface ContractsConfig {
+  weth?: string;
   irsConfig: IrsConfigDefaults;
   aaveConfig?: AaveConfig;
   compoundConfig?: CompoundConfig;

@@ -17,10 +17,10 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
+import { e2eParametersGeneral } from "../e2eSetup";
 import { ScenarioRunner } from "../newGeneral";
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 4,
   marginCalculatorParams: {
@@ -63,6 +63,7 @@ const e2eParams: e2eParameters = {
   skipped: false,
   isWETH: true,
   noMintTokens: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
@@ -206,6 +207,9 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     }
 
     await advanceTimeAndBlock(consts.ONE_WEEK.mul(9), 4); // advance eight weeks (4 days before maturity)
+
+    const apy = await this.marginEngine.callStatic.getHistoricalApy();
+    console.log("apy:", ethers.utils.parseEther(apy.toString()));
 
     await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
 

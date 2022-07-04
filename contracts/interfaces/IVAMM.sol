@@ -287,4 +287,11 @@ interface IVAMM is IPositionStructs, CustomErrors {
             int256 variableTokenGrowthInsideX128,
             uint256 feeGrowthInsideX128
         );
+
+    /// @notice refreshes the Rate Oracle attached to the Margin Engine
+    function refreshRateOracle() external;
+
+    /// @notice The rateOracle contract which lets the protocol access historical apys in the yield bearing pools it is built on top of
+    /// @return The underlying ERC20 token (e.g. USDC)
+    function getRateOracle() external view returns (IRateOracle);
 }

@@ -9,8 +9,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
 
-  const weth = await ethers.getContractOrNull("MockWETH");
+  const config = getConfig(hre.network.name);
 
+  let weth: string | undefined;
+  if (config.weth) {
+    weth = config.weth;
+  } else {
+    const wethContract = await ethers.getContractOrNull("MockWETH");
+
+    if (wethContract) {
+      weth = wethContract.address;
+    }
+  }
+
+  console.log(`The address of WETH9 for this environment is ${weth}`);
   if (!weth) {
     throw new Error("WETH not deployed");
   }
@@ -18,7 +30,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const periphery = await deploy("Periphery", {
     from: deployer,
     log: doLogging,
-    args: [weth.address],
+    args: [weth],
   });
 
   // set the periphery in the factory

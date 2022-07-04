@@ -14,9 +14,10 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
 
     constructor(
         IRocketEth _rocketEth,
+        IWETH _weth,
         uint32[] memory _times,
         uint256[] memory _results
-    ) BaseRateOracle(IERC20Minimal(address(0))) {
+    ) BaseRateOracle(IERC20Minimal(address(_weth))) {
         // Underlying is ETH, so no address needed
         require(address(_rocketEth) != address(0), "RETH must exist");
         rocketEth = _rocketEth;

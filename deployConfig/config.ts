@@ -105,20 +105,56 @@ const kovanTusdDataPoints: RateOracleDataPoint[] = [
 ];
 
 const mainnetStEthDataPoints: RateOracleDataPoint[] = [
-  [1651879799, "1070485578483524870126761205"],
-  [1652516485, "1071226893624992827247560170"],
-  [1653154520, "1072111386102180338298911312"],
-  [1653721964, "1072807737405152312769803194"],
-  [1654456927, "1073871010466494060427628061"],
-  [1655050461, "1074697726413162893057905270"],
+  // [1654603223, "1074107057218833282983247582"],
+  // [1654689623, "1074224739278887190525724305"],
+  // [1654776023, "1074343227559078157387295600"],
+  // [1654862423, "1074461441965947673156514950"],
+  // [1654948823, "1074579547277770633179477005"],
+  // [1655035223, "1074697726413162893057906899"],
+  // [1655121623, "1074815253005896144158097617"],
+  // [1655208023, "1074932721311129347085273203"],
+  // [1655294423, "1075050717667875386693668635"],
+  // [1655380823, "1075167764286668509116196355"],
+  // [1655467223, "1075285097535351188536724995"],
+  // [1655553623, "1075402348080286520084149090"],
+  // [1655640023, "1075518323108559521472390546"],
+  // [1655726423, "1075635871399553395975439325"],
+  [1655812823, "1075753005957224757634508350"],
+  [1655899223, "1075870157728924987622204368"],
+  [1655985623, "1075986987249309892706409445"],
+  [1656072023, "1076104367462616827049814244"],
+  [1656158423, "1076221273888978950003372815"],
+  [1656244823, "1076338244388204416534613903"],
+  [1656331223, "1076454877601569321869671702"],
+  [1656417623, "1076571805980165022361453919"],
+  [1656504023, "1076688660297006942565885179"],
+  // [1656590423, "1076805850648432598627797695"],
 ];
 
 const mainnetRocketEthDataPoints: RateOracleDataPoint[] = [
-  [1652583270, "1024583990875469414982436935"],
-  [1653143338, "1025254611747488178020328436"],
-  [1653711038, "1025922983935784513304611982"],
-  [1654277948, "1026599253986324262373044488"],
-  [1654868735, "1027304108017384923832661768"],
+  // [1654675354, "1027094919285384123607191853"],
+  // [1654760004, "1027197987462039863431813806"],
+  // [1654845243, "1027304108017384923832661768"],
+  // [1654930349, "1027407532010818332514656018"],
+  // [1655014434, "1027506135897336606399828613"],
+  // [1655100155, "1027610544918212630548787268"],
+  // [1655185846, "1027711269610859760832754547"],
+  // [1655272224, "1027815867812309024715116363"],
+  // [1655358252, "1027916443504608293076967304"],
+  // [1655443568, "1028020261352758203022591045"],
+  // [1655528738, "1028123706255948268702655006"],
+  // [1655614702, "1028225193334701894377733481"],
+  // [1655700909, "1028327594600088450724742946"],
+  [1655786422, "1028430127337714540873785202"],
+  [1655879001, "1028537459816155530029681806"],
+  [1655972162, "1028648713128345690215441392"],
+  [1656065693, "1028759852902103566947339476"],
+  [1656157685, "1028870792044367037579410399"],
+  [1656251754, "1028983791573806158062493864"],
+  [1656343866, "1029096447561969681971221330"],
+  [1656437966, "1029211414125755348808435812"],
+  [1656531522, "1029316227654002773627484408"],
+  // [1656621004, "1029429559372708185506969368"],
 ];
 
 const rinkebyConfig = {
@@ -137,8 +173,55 @@ const rinkebyConfig = {
   },
 };
 
+const goerliConfig = {
+  irsConfig: kovanIrsConfigDefaults,
+  weth: "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
+  compoundConfig: {
+    // See tokens list at https://compound.finance/docs#networks
+    compoundTokens: [
+      {
+        name: "cETH",
+        address: "0x20572e4c090f15667cf7378e16fad2ea0e2f3eff",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "cDAI",
+        address: "0x822397d9a55d0fefd20f5c4bcab33c5f65bd28eb",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "cUSDC",
+        address: "0xcec4a43ebb02f9b80916f1c718338169d6d5c1f0",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+    defaults: kovanRateOracleConfigDefaults,
+  },
+  lidoConfig: {
+    lidoStETH: "0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F",
+    lidoOracle: "0x24d8451BC07e7aF4Ba94F69aCDD9ad3c6579D9FB",
+    defaults: {
+      rateOracleBufferSize: 300,
+      trustedDataPoints: [],
+      rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // Lido rates only get updated once a day
+    },
+  },
+  rocketPoolConfig: {
+    rocketPoolRocketToken: "0x178e141a0e3b34152f73ff610437a7bf9b83267a",
+    defaults: {
+      rateOracleBufferSize: 300,
+      trustedDataPoints: [],
+      rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60,
+    },
+  },
+};
+
 const kovanConfig = {
   irsConfig: kovanIrsConfigDefaults,
+  weth: "0xd0a1e359811322d97991e03f863a0c30c2cf029c",
   aaveConfig: {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe",
@@ -165,6 +248,12 @@ const kovanConfig = {
         rateOracleBufferSize: 200,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
         trustedDataPoints: kovanTusdDataPoints,
+      },
+      {
+        name: "WETH",
+        address: "0xd0a1e359811322d97991e03f863a0c30c2cf029c",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
       // {
       //   name: "UNI",
@@ -214,6 +303,7 @@ const kovanConfig = {
 
 const mainnetConfig: ContractsConfig = {
   irsConfig: mainnetIrsConfigDefaults,
+  weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
   aaveConfig: {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
@@ -230,7 +320,6 @@ const mainnetConfig: ContractsConfig = {
         address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         rateOracleBufferSize: 500,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
-        trustedDataPoints: kovanTusdDataPoints,
       },
     ],
   },
@@ -248,8 +337,9 @@ const mainnetConfig: ContractsConfig = {
   lidoConfig: {
     // Lido deployment info at https://github.com/lidofinance/lido-dao/tree/816bf1d0995ba5cfdfc264de4acda34a7fe93eba#mainnet
     lidoStETH: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+    lidoOracle: "0x442af784A788A5bd6F42A01Ebe9F287a871243fb",
     defaults: {
-      rateOracleBufferSize: 200,
+      rateOracleBufferSize: 500,
       trustedDataPoints: mainnetStEthDataPoints,
       rateOracleMinSecondsSinceLastUpdate: 18 * 60 * 60, // Lido rates only get updated once a day
     },
@@ -258,7 +348,7 @@ const mainnetConfig: ContractsConfig = {
     // RocketPool deployment info at ???
     rocketPoolRocketToken: "0xae78736cd615f374d3085123a210448e74fc6393",
     defaults: {
-      rateOracleBufferSize: 200,
+      rateOracleBufferSize: 500,
       trustedDataPoints: mainnetRocketEthDataPoints,
       rateOracleMinSecondsSinceLastUpdate: 18 * 60 * 60, // Lido rates only get updated once a day
     },
@@ -285,6 +375,7 @@ const localhostConfig: ContractsConfig = {
 
 const config: ContractsConfigMap = {
   kovan: kovanConfig,
+  goerli: goerliConfig,
   rinkeby: rinkebyConfig,
   // localhost: mainnetConfig, // Uncomment if testing against a fork of an existing mainnet system
   localhost: localhostConfig,

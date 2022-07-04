@@ -34,11 +34,16 @@ const deployAndConfigureRateOracleInstance = async (
 
   if (!rateOracleContract) {
     // There is no rate oracle already deployed with this rateOracleIdentifier. Deploy one now.
+    console.log("rateOracleIdentifier", rateOracleIdentifier);
+    console.log("instance.contractName:", instance.contractName);
+    console.log("deployer:", deployer);
+    console.log("args:", instance.args);
     await deploy(rateOracleIdentifier, {
       contract: instance.contractName,
       from: deployer,
       args: instance.args,
       log: doLogging,
+      gasLimit: 20000000,
     });
     console.log(
       `Deployed ${rateOracleIdentifier} (args: ${JSON.stringify(
@@ -70,6 +75,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const existingAaveLendingPoolAddress = aaveConfig?.aaveLendingPool;
   const aaveTokens = aaveConfig?.aaveTokens;
 
+  console.log("aaveTokens", aaveTokens);
+  console.log("existingAaveLendingPoolAddress", existingAaveLendingPoolAddress);
   if (existingAaveLendingPoolAddress && aaveTokens) {
     const aaveLendingPool = await ethers.getContractAt(
       "IAaveV2LendingPool",
@@ -115,12 +122,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         tokenDefinition.address
       );
 
-      const underlying = (await ethers.getContractAt(
-        "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-        await cToken.underlying()
-      )) as ERC20;
+      console.log("cToken", cToken.address);
 
-      const decimals = await underlying.decimals();
+      let underlyingAddress: string;
+      let underlyingDecimals: number;
+      let ethPool: boolean;
+
+      if (tokenDefinition.name === "cETH") {
+        if (deployConfig.weth) {
+          underlyingAddress = deployConfig.weth;
+          underlyingDecimals = 18;
+          ethPool = true;
+        } else {
+          throw new Error("WETH not found");
+        }
+      } else {
+        const underlying = (await ethers.getContractAt(
+          "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
+          await cToken.underlying()
+        )) as ERC20;
+
+        underlyingAddress = underlying.address;
+        underlyingDecimals = await underlying.decimals();
+        ethPool = false;
+      }
 
       const { trustedTimestamps, trustedObservationValuesInRay } =
         convertTrustedRateOracleDataPoints(
@@ -132,8 +157,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       // For Compound, the address in the tokenDefinition is the address of the underlying cToken
       const args = [
         cToken.address,
-        underlying.address,
-        decimals,
+        ethPool,
+        underlyingAddress,
+        underlyingDecimals,
         trustedTimestamps,
         trustedObservationValuesInRay,
       ];
@@ -152,14 +178,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Lido Rate Oracle
   const lidoConfig = deployConfig.lidoConfig;
   const lidoStETHAddress = lidoConfig?.lidoStETH;
+  const lidoOracleAddress = lidoConfig?.lidoOracle;
 
   if (lidoStETHAddress) {
     const { trustedTimestamps, trustedObservationValuesInRay } =
       convertTrustedRateOracleDataPoints(lidoConfig.defaults.trustedDataPoints);
 
+    let wethAddress: string;
+    if (deployConfig.weth) {
+      wethAddress = deployConfig.weth;
+    } else {
+      throw new Error("WETH not found");
+    }
+
     // For Lido, the first constructor arg is the stEth address
     const args = [
       lidoStETHAddress,
+      lidoOracleAddress,
+      wethAddress,
       trustedTimestamps,
       trustedObservationValuesInRay,
     ];
@@ -184,9 +220,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         rocketPoolConfig.defaults.trustedDataPoints
       );
 
+    let wethAddress: string;
+    if (deployConfig.weth) {
+      wethAddress = deployConfig.weth;
+    } else {
+      throw new Error("WETH not found");
+    }
+
     // For RocketPool, the first constructor arg is the rocketEth (RETH) address
     const args = [
       rocketEthAddress,
+      wethAddress,
       trustedTimestamps,
       trustedObservationValuesInRay,
     ];

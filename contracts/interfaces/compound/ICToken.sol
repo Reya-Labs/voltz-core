@@ -24,4 +24,6 @@ interface ICToken {
      * @notice Underlying asset for this CToken
      */
   function underlying() external view returns (address);
+
+  function supplyRatePerBlock() external view returns (uint256);
 }

@@ -1,10 +1,12 @@
-import { TestRateOracle } from "../../../typechain";
+import { MockLidoOracle, MockWETH, TestRateOracle } from "../../../typechain";
 import { deployments, ethers } from "hardhat";
 import { toBn } from "../../helpers/toBn";
 import { consts } from "../../helpers/constants";
 import { MockStEth } from "../../../typechain/MockStEth";
 
 let stEth: MockStEth;
+let lidoOracle: MockLidoOracle;
+let weth: MockWETH;
 
 export const ConfigForGenericTests = {
   configName: "Lido",
@@ -15,13 +17,17 @@ export const ConfigForGenericTests = {
 
     // store stEth for use when setting rates
     stEth = (await ethers.getContract("MockStEth")) as MockStEth;
+    lidoOracle = (await ethers.getContract("MockLidoOracle")) as MockLidoOracle;
+    weth = (await ethers.getContract("MockWETH")) as MockWETH;
 
     const TestRateOracleFactory = await ethers.getContractFactory(
       "TestLidoRateOracle"
     );
 
     const testRateOracle = (await TestRateOracleFactory.deploy(
-      stEth.address
+      stEth.address,
+      lidoOracle.address,
+      weth.address
     )) as TestRateOracle;
     return { testRateOracle, stEth };
   },

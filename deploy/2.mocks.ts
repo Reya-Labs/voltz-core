@@ -32,6 +32,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: ["Voltz WETH", "VWETH"],
   });
 
+  await deploy("MockLidoOracle", {
+    from: deployer,
+    log: doLogging,
+  });
+
   await deploy("MockStEth", {
     from: deployer,
     log: doLogging,

@@ -11,6 +11,7 @@ contract MockCToken is ICToken, ERC20 {
     using WadRayMath for uint256;
     address internal _underlyingAsset;
     uint256 internal _rate;
+    uint256 internal _supplyRatePerBlock;
 
     using SafeTransferLib for IERC20Minimal;
 
@@ -81,5 +82,13 @@ contract MockCToken is ICToken, ERC20 {
         uint256 value
     ) public {
         _approve(owner, spender, value);
+    }
+
+    function setSupplyRatePerBlock(uint256 supplyRatePerBlock) external {
+        _supplyRatePerBlock = supplyRatePerBlock;
+    }
+
+    function supplyRatePerBlock() public view override returns (uint256) {
+        return _supplyRatePerBlock;
     }
 }

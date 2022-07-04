@@ -1,10 +1,11 @@
-import { TestRateOracle } from "../../../typechain";
+import { MockWETH, TestRateOracle } from "../../../typechain";
 import { deployments, ethers } from "hardhat";
 import { toBn } from "../../helpers/toBn";
 import { consts } from "../../helpers/constants";
 import { MockRocketEth } from "../../../typechain/MockRocketEth";
 
 let rocketEth: MockRocketEth;
+let weth: MockWETH;
 
 export const ConfigForGenericTests = {
   configName: "RocketPool",
@@ -15,13 +16,15 @@ export const ConfigForGenericTests = {
 
     // store rocketEth for use when setting rates
     rocketEth = (await ethers.getContract("MockRocketEth")) as MockRocketEth;
+    weth = (await ethers.getContract("MockWETH")) as MockWETH;
 
     const TestRateOracleFactory = await ethers.getContractFactory(
       "TestRocketPoolRateOracle"
     );
 
     const testRateOracle = (await TestRateOracleFactory.deploy(
-      rocketEth.address
+      rocketEth.address,
+      weth.address
     )) as TestRateOracle;
     return { testRateOracle, rocketEth: rocketEth };
   },

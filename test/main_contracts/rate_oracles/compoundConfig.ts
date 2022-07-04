@@ -29,6 +29,7 @@ export const ConfigForGenericTests = {
     // We deploy our own rate oracle (rather than using hardhat-depoy) because we want a *Test*RateOracle which opens up some private state
     const testRateOracle = (await TestRateOracleFactory.deploy(
       cToken.address,
+      false,
       token.address,
       await token.decimals()
     )) as TestRateOracle;

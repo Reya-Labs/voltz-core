@@ -63,7 +63,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function _populateInitialObservations(
         uint32[] memory _times,
         uint256[] memory _results
-    ) internal {
+    ) internal virtual {
         // If we're using even half the max buffer size, something has gone wrong
         require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
         uint16 length = uint16(_times.length);
@@ -284,6 +284,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function getApyFromTo(uint256 from, uint256 to)
         public
         view
+        virtual
         override
         returns (uint256 apyFromToWad)
     {
@@ -306,7 +307,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function variableFactor(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public override(IRateOracle) returns (uint256 resultWad) {
+    ) public virtual override(IRateOracle) returns (uint256 resultWad) {
         bool cacheable;
 
         (resultWad, cacheable) = _variableFactor(
@@ -333,7 +334,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function variableFactorNoCache(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public view override(IRateOracle) returns (uint256 resultWad) {
+    ) public view virtual override(IRateOracle) returns (uint256 resultWad) {
         (resultWad, ) = _variableFactor(
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds
@@ -379,7 +380,11 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
+    )
+        internal
+        virtual
+        returns (uint16 indexUpdated, uint16 cardinalityUpdated)
+    {
         OracleBuffer.Observation memory last = observations[index];
         uint32 blockTimestamp = Time.blockTimestampTruncated();
 
