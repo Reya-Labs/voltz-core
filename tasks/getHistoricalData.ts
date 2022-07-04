@@ -10,6 +10,16 @@ const rocketEthnMainnetStartBlock = 13326304;
 const compoundMainnetStartBlock = 7710760; // cUSDC deployment
 const aaveLendingPoolAddress = "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9";
 const aaveLendingPoolStartBlock = 11367585;
+const lidoMarginEngineAddress = "0x21F9151d6e06f834751b614C2Ff40Fc28811B235";
+const rocketMarginEngineAddress = "0xB1125ba5878cF3A843bE686c6c2486306f03E301";
+const voltzLidoStartBlock = 14977662;
+const voltzRocketStartBlock = 14977668;
+// const lidoMarginEngineStartBlock = 15058080; // For first Lido Margin Engine
+const rocketRateOracle1Address = "0xC6E151da56403Bf2eDF68eE586cF78eE5781D45F";
+const rocketRateOracle2Address = "0x1dEa21b51CfDd4c62cB67812D454aBE860Be24A2";
+const lidoRateOracle1Address = "0x464c7Dc02a400C2eF5a27B45552877A8D7116361";
+const lidoRateOracle2Address = "0x208eA737deA529bafb3cD77d722c8ec4A4a637c9";
+const lidoOracleAddress = "0x442af784a788a5bd6f42a01ebe9f287a871243fb";
 const cTokenAddresses = {
   cDAI: "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
   cUSDC: "0x39aa39c021dfbae8fac545936693ac917d5e7563",
@@ -27,6 +37,7 @@ const aTokenUnderlyingAddresses = {
   aTUSD: "0x0000000000085d4780B73119b644AE5ecd22b376",
   aWETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
 };
+const blocksPerDay = 6570; // 13.15 seconds per block
 
 task(
   "getHistoricalData",
@@ -41,7 +52,13 @@ task(
   .addParam(
     "blockInterval",
     "Script will fetch data every `blockInterval` blocks (between `fromBlock` and `toBlock`)",
-    5760,
+    blocksPerDay,
+    types.int
+  )
+  .addParam(
+    "lookbackWindow",
+    "The lookback window to use, in seconds, when querying data from a RateOracle",
+    60 * 60 * 24 * 28, // 28 days
     types.int
   )
   .addOptionalParam(
@@ -51,6 +68,14 @@ task(
     types.int
   )
   .addFlag("lido", "Get rates data from Lido for their ETH staking returns")
+  .addFlag(
+    "voltzRocket",
+    "Get historical APY values from some of our RocketPool rate oracle(s) and margin engine(s)"
+  )
+  .addFlag(
+    "voltzLido",
+    "Get historical APY values from some of our Lido rate oracle(s) and margin engine(s)"
+  )
   .addFlag(
     "rocket",
     "Get rates data from RocketPool for their ETH staking returns"
@@ -88,6 +113,34 @@ task(
     const rocketEth = await hre.ethers.getContractAt(
       "IRocketEth",
       rocketEthMainnetAddress
+    );
+    const lidoMarginEngine = await hre.ethers.getContractAt(
+      "MarginEngine",
+      lidoMarginEngineAddress
+    );
+    const rocketMarginEngine = await hre.ethers.getContractAt(
+      "MarginEngine",
+      rocketMarginEngineAddress
+    );
+    const rocketRateOracle1 = await hre.ethers.getContractAt(
+      "BaseRateOracle",
+      rocketRateOracle1Address
+    );
+    const rocketRateOracle2 = await hre.ethers.getContractAt(
+      "BaseRateOracle",
+      rocketRateOracle2Address
+    );
+    const lidoRateOracle1 = await hre.ethers.getContractAt(
+      "BaseRateOracle",
+      lidoRateOracle1Address
+    );
+    const lidoRateOracle2 = await hre.ethers.getContractAt(
+      "BaseRateOracle",
+      lidoRateOracle2Address
+    );
+    const lidoOracle = await hre.ethers.getContractAt(
+      "ILidoOracle",
+      lidoOracleAddress
     );
 
     let compoundHeader = "";
@@ -128,16 +181,18 @@ task(
       aaveHeader = "," + headers.join(",");
     }
 
-    const headerRow = `block,timestamp,time${
-      taskArgs.lido ? ",lido_rate" : ""
-    }${taskArgs.rocket ? ",rocket_rate" : ""}${compoundHeader}${aaveHeader}`;
+    const headerRow = `block,timestamp,time${taskArgs.lido ? ",lido" : ""}${
+      taskArgs.voltzLido
+        ? ",lido_margin_engine_APY,lido_rate_oracle1_APY,lido_rate_oracle2_APY,lido_frame_epoch_id,lido_frame_start,lido_frame_end"
+        : ""
+    }${taskArgs.rocket ? ",rocket_rate" : ""}${
+      taskArgs.voltzRocket
+        ? ",rocket_margin_engine_APY,rocket_rate_oracle1_APY,rocket_rate_oracle2_APY"
+        : ""
+    }${compoundHeader}${aaveHeader}`;
     console.log(headerRow);
 
-    for (
-      let b = fromBlock;
-      b <= currentBlockNumber;
-      b += taskArgs.blockInterval
-    ) {
+    for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
       const rowValues: (BigNumber | null)[] = [];
       const block = await hre.ethers.provider.getBlock(b);
       const timestamp = block.timestamp;
@@ -155,6 +210,54 @@ task(
         }
       }
 
+      // Voltz-Lido
+      if (taskArgs.voltzLido) {
+        if (b >= voltzLidoStartBlock) {
+          try {
+            const r_me = await lidoMarginEngine.getHistoricalApyReadOnly({
+              blockTag: b,
+            });
+            rowValues.push(r_me);
+          } catch (e) {
+            rowValues.push(null);
+          }
+
+          const r_ro1 = await lidoRateOracle1.getApyFromTo(
+            // block.timestamp - 28 * 60 * 60, // 28 hours
+            block.timestamp - taskArgs.lookbackWindow,
+            block.timestamp,
+            {
+              blockTag: b,
+            }
+          );
+          rowValues.push(r_ro1);
+
+          try {
+            const r_ro2 = await lidoRateOracle2.getApyFromTo(
+              // block.timestamp - 28 * 60 * 60, // 28 hours
+              block.timestamp - taskArgs.lookbackWindow,
+              block.timestamp,
+              {
+                blockTag: b,
+              }
+            );
+            rowValues.push(r_ro2);
+          } catch (e) {
+            rowValues.push(null);
+          }
+
+          const frame = await lidoOracle.getCurrentFrame({
+            blockTag: b,
+          });
+          rowValues.push(frame);
+        } else {
+          rowValues.push(null);
+          rowValues.push(null);
+          rowValues.push(null);
+          rowValues.push(null);
+        }
+      }
+
       // Rocket
       if (taskArgs.rocket) {
         if (b >= rocketEthnMainnetStartBlock) {
@@ -163,6 +266,48 @@ task(
           });
           rowValues.push(r);
         } else {
+          rowValues.push(null);
+        }
+      }
+
+      // Voltz-Rocket
+      if (taskArgs.voltzRocket) {
+        if (b >= voltzRocketStartBlock) {
+          try {
+            const r_me = await rocketMarginEngine.getHistoricalApyReadOnly({
+              blockTag: b,
+            });
+            rowValues.push(r_me);
+          } catch (e) {
+            rowValues.push(null);
+          }
+
+          const r_ro1 = await rocketRateOracle1.getApyFromTo(
+            // block.timestamp - 28 * 60 * 60, // 28 hours
+            block.timestamp - taskArgs.lookbackWindow,
+            block.timestamp,
+            {
+              blockTag: b,
+            }
+          );
+          rowValues.push(r_ro1);
+
+          try {
+            const r_ro2 = await rocketRateOracle2.getApyFromTo(
+              // block.timestamp - 28 * 60 * 60, // 28 hours
+              block.timestamp - taskArgs.lookbackWindow,
+              block.timestamp,
+              {
+                blockTag: b,
+              }
+            );
+            rowValues.push(r_ro2);
+          } catch (e) {
+            rowValues.push(null);
+          }
+        } else {
+          rowValues.push(null);
+          rowValues.push(null);
           rowValues.push(null);
         }
       }
