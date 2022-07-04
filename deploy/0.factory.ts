@@ -8,24 +8,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await hre.getNamedAccounts();
     const doLogging = true;
 
-    // Factory, and master contracts that get cloned for each IRS instance
-    const masterMarginEngineDeploy = await deploy("MarginEngine", {
-      from: deployer,
-      log: doLogging,
-    });
+    // // Factory, and master contracts that get cloned for each IRS instance
+    // const masterMarginEngineDeploy = await deploy("MarginEngine", {
+    //   from: deployer,
+    //   log: doLogging,
+    // });
     const masterVammDeploy = await deploy("VAMM", {
       from: deployer,
       log: doLogging,
     });
 
-    const skipFactory = getConfig(hre.network.name).skipFactoryDeploy;
-    if (!skipFactory) {
-      await deploy("Factory", {
-        from: deployer,
-        args: [masterMarginEngineDeploy.address, masterVammDeploy.address],
-        log: doLogging,
-      });
-    }
+    // const skipFactory = getConfig(hre.network.name).skipFactoryDeploy;
+    // if (!skipFactory) {
+    //   await deploy("Factory", {
+    //     from: deployer,
+    //     args: [masterMarginEngineDeploy.address, masterVammDeploy.address],
+    //     log: doLogging,
+    //   });
+    // }
 
     return true; // Only execute once
   } catch (e) {
