@@ -19,13 +19,13 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
+import { e2eParametersGeneral } from "../e2eSetup";
 import { ScenarioRunner } from "../newGeneral";
 import { Periphery } from "../../../../typechain";
 
 const { provider } = waffle;
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 4,
   marginCalculatorParams: {
@@ -66,12 +66,17 @@ const e2eParams: e2eParameters = {
     [3, -TICK_SPACING, TICK_SPACING],
   ],
   skipped: false,
-  isWETH: true,
+  isWETH: false,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     await this.factory.setPeriphery(this.periphery.address);
+
+    if (!this.fcm) {
+      throw new Error("No FCM");
+    }
 
     const otherWallet = provider.getWallets()[1];
 

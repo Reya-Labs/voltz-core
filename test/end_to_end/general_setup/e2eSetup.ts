@@ -39,6 +39,30 @@ export interface e2eParameters {
   noMintTokens?: boolean;
 }
 
+export interface e2eParametersGeneral {
+  duration: BigNumber;
+  lookBackWindowAPY: BigNumber;
+
+  numActors: number;
+
+  marginCalculatorParams: any;
+
+  startingPrice: JSBI;
+  tickSpacing: number;
+
+  feeProtocol: number;
+  fee: BigNumber;
+
+  positions: [number, number, number][]; // list of [index of actor, lower tick, upper tick]
+
+  skipped: boolean;
+  isWETH?: boolean;
+
+  noMintTokens?: boolean;
+
+  rateOracle: number;
+}
+
 export const e2eScenarios: e2eParameters[] = [
   {
     duration: consts.ONE_MONTH.mul(3),

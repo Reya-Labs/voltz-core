@@ -2,8 +2,10 @@ import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
 import { formatRay } from "../../shared/utilities";
 import {
+  AaveFCM,
   // AaveFCM,
   Actor,
+  CompoundFCM,
   E2ESetup,
   ERC20Mock,
   Factory,
@@ -25,7 +27,7 @@ import {
   VAMM,
 } from "../../../typechain";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
-import { e2eParameters } from "./e2eSetup";
+import { e2eParametersGeneral } from "./e2eSetup";
 import { extractErrorMessage } from "../../utils/extractErrorMessage";
 import { consts } from "../../helpers/constants";
 import { toBn } from "evm-bn";
@@ -43,7 +45,7 @@ const MAX_AMOUNT = BigNumber.from(10).pow(27);
 
 export class ScenarioRunner {
   // scenario parameters
-  params: e2eParameters;
+  params: e2eParametersGeneral;
 
   // wallets
   owner!: Wallet;
@@ -62,7 +64,7 @@ export class ScenarioRunner {
   aaveLendingPool!: MockAaveLendingPool;
 
   // irs-specific contracts
-  fcm!: IFCM;
+  fcm?: IFCM;
   vamm!: IVAMM;
   marginEngine!: IMarginEngine;
 
@@ -84,7 +86,7 @@ export class ScenarioRunner {
   // file to output logs during e2e scenario
   outputFile!: string;
 
-  constructor(params: e2eParameters, outputFile: string) {
+  constructor(params: e2eParametersGeneral, outputFile: string) {
     this.params = params;
     this.outputFile = outputFile;
 
@@ -108,16 +110,43 @@ export class ScenarioRunner {
     const masterVAMMFactory = await ethers.getContractFactory("VAMM");
     const masterVAMM = (await masterVAMMFactory.deploy()) as VAMM;
 
-    // master fcm
-    // const masterFCMFactory = await ethers.getContractFactory("AaveFCM");
-    // const masterFCM = (await masterFCMFactory.deploy()) as AaveFCM;
-
     // factory
     const factoryFactory = await ethers.getContractFactory("Factory");
     this.factory = (await factoryFactory.deploy(
       masterMarginEngine.address,
       masterVAMM.address
     )) as Factory;
+
+    // master fcm
+    switch (this.params.rateOracle) {
+      case 1: {
+        const masterFCMFactory = await ethers.getContractFactory("AaveFCM");
+        const masterFCM = (await masterFCMFactory.deploy()) as AaveFCM;
+
+        await this.factory.setMasterFCM(masterFCM.address, 1);
+        break;
+      }
+
+      case 2: {
+        const masterFCMFactory = await ethers.getContractFactory("CompoundFCM");
+        const masterFCM = (await masterFCMFactory.deploy()) as CompoundFCM;
+
+        await this.factory.setMasterFCM(masterFCM.address, 2);
+        break;
+      }
+
+      case 3: {
+        break;
+      }
+
+      case 4: {
+        break;
+      }
+
+      default: {
+        throw new Error("Unrecognized rate oracle");
+      }
+    }
 
     // Wrapped ETH
     const MockWETHFactory = await ethers.getContractFactory("MockWETH");
@@ -150,15 +179,6 @@ export class ScenarioRunner {
       this.getRateInRay(1)
     );
 
-    // // Aave Rate Oracle
-    // const rateOracleFactory = await ethers.getContractFactory("AaveRateOracle");
-    // this.rateOracle = (await rateOracleFactory.deploy(
-    //   this.aaveLendingPool.address,
-    //   this.token.address,
-    //   [],
-    //   []
-    // )) as IRateOracle;
-
     const mockStEthFactory = await ethers.getContractFactory("MockStEth");
     this.stETH = (await mockStEthFactory.deploy()) as IStETH;
 
@@ -167,15 +187,50 @@ export class ScenarioRunner {
     );
     this.lidoOracle = (await mockLidoOracleFactory.deploy()) as ILidoOracle;
 
-    // Lido Rate Oracle
-    const rateOracleFactory = await ethers.getContractFactory("LidoRateOracle");
-    this.rateOracle = (await rateOracleFactory.deploy(
-      this.stETH.address,
-      this.lidoOracle.address,
-      this.weth.address,
-      [],
-      []
-    )) as IRateOracle;
+    switch (this.params.rateOracle) {
+      case 1: {
+        const rateOracleFactory = await ethers.getContractFactory(
+          "AaveRateOracle"
+        );
+        this.rateOracle = (await rateOracleFactory.deploy(
+          this.aaveLendingPool.address,
+          this.token.address,
+          [],
+          []
+        )) as IRateOracle;
+
+        break;
+      }
+
+      case 2: {
+        // To be added
+        break;
+      }
+
+      case 3: {
+        // To be added
+        break;
+      }
+
+      case 4: {
+        // Lido Rate Oracle
+        const rateOracleFactory = await ethers.getContractFactory(
+          "LidoRateOracle"
+        );
+        this.rateOracle = (await rateOracleFactory.deploy(
+          this.stETH.address,
+          this.lidoOracle.address,
+          this.weth.address,
+          [],
+          []
+        )) as IRateOracle;
+        break;
+      }
+
+      default: {
+        throw new Error("Unrecognized rate oracle");
+      }
+    }
 
     // mock aToken
     const mockATokenFactory = await ethers.getContractFactory("MockAToken");
@@ -206,15 +261,6 @@ export class ScenarioRunner {
 
     /// advance time by one year to always have rate look-back window away
     await advanceTimeAndBlock(consts.ONE_YEAR, 4);
-
-    // // master fcm
-    // const UNDERLYING_YIELD_BEARING_PROTOCOL_ID =
-    //   await this.rateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
-
-    // await this.factory.setMasterFCM(
-    //   masterFCM.address,
-    //   UNDERLYING_YIELD_BEARING_PROTOCOL_ID
-    // );
 
     // get dates
     const termStartTimestamp: number = await getCurrentTimestamp(provider);
@@ -283,7 +329,7 @@ export class ScenarioRunner {
     // get IRS contracts
     const marginEngineAddress = log.args.marginEngine;
     const vammAddress = log.args.vamm;
-    // const fcmAddress = log.args.fcm;
+    const fcmAddress = log.args.fcm;
 
     const marginEngineFactory = await ethers.getContractFactory("MarginEngine");
     this.marginEngine = marginEngineFactory.attach(
@@ -293,8 +339,33 @@ export class ScenarioRunner {
     const vammFactory = await ethers.getContractFactory("VAMM");
     this.vamm = vammFactory.attach(vammAddress) as IVAMM;
 
-    // const fcmFactory = await ethers.getContractFactory("AaveFCM");
-    // this.fcm = fcmFactory.attach(fcmAddress) as IFCM;
+    switch (this.params.rateOracle) {
+      case 1: {
+        const fcmFactory = await ethers.getContractFactory("AaveFCM");
+        this.fcm = fcmFactory.attach(fcmAddress) as IFCM;
+
+        break;
+      }
+
+      case 2: {
+        const fcmFactory = await ethers.getContractFactory("CompoundFCM");
+        this.fcm = fcmFactory.attach(fcmAddress) as IFCM;
+
+        break;
+      }
+
+      case 3: {
+        break;
+      }
+
+      case 4: {
+        break;
+      }
+
+      default: {
+        throw new Error("Unrecognized rate oracle");
+      }
+    }
   }
 
   async configureIRS() {
@@ -338,10 +409,13 @@ export class ScenarioRunner {
     /// set all contracts in E2E
     await this.e2eSetup.setMEAddress(this.marginEngine.address);
     await this.e2eSetup.setVAMMAddress(this.vamm.address);
-    // await this.e2eSetup.setFCMAddress(this.fcm.address);
     await this.e2eSetup.setRateOracleAddress(this.rateOracle.address);
     await this.e2eSetup.setPeripheryAddress(this.periphery.address);
     await this.e2eSetup.setAaveLendingPool(this.aaveLendingPool.address);
+
+    if (this.fcm) {
+      await this.e2eSetup.setFCMAddress(this.fcm.address);
+    }
 
     // eslint-disable-next-line no-empty
     if (this.params.noMintTokens) {
@@ -365,7 +439,6 @@ export class ScenarioRunner {
 
       /// set manually the approval of contracts to act on behalf of actors
       for (const ad of [
-        // this.fcm.address,
         this.periphery.address,
         this.vamm.address,
         this.marginEngine.address,
@@ -373,6 +446,24 @@ export class ScenarioRunner {
         await this.token.approveInternal(actor.address, ad, MAX_AMOUNT);
         await this.aToken.approveInternal(actor.address, ad, MAX_AMOUNT);
         await this.e2eSetup.setIntegrationApproval(actor.address, ad, true);
+      }
+
+      if (this.fcm) {
+        await this.token.approveInternal(
+          actor.address,
+          this.fcm.address,
+          MAX_AMOUNT
+        );
+        await this.aToken.approveInternal(
+          actor.address,
+          this.fcm.address,
+          MAX_AMOUNT
+        );
+        await this.e2eSetup.setIntegrationApproval(
+          actor.address,
+          this.fcm.address,
+          true
+        );
       }
     }
 
@@ -408,7 +499,7 @@ export class ScenarioRunner {
     await this.deployIRSContracts();
     console.log(`VAMM: ${this.vamm.address}`);
     console.log(`marginEngine: ${this.marginEngine.address}`);
-    // console.log(`FCM: ${this.fcm.address}`);
+    console.log(`FCM: ${this.fcm ? this.fcm.address : "Undefined"}`);
     console.log();
 
     // configure the IRS instance
