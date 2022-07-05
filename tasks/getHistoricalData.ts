@@ -1,12 +1,19 @@
 import { task, types } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
-import { IAaveV2LendingPool, ICToken, IERC20Minimal } from "../typechain";
+import {
+  IAaveV2LendingPool,
+  ICToken,
+  IERC20Minimal,
+  IRocketNetworkBalances,
+} from "../typechain";
 import { BigNumber } from "ethers";
 
 const lidoStEthMainnetAddress = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
 const lidoStEthMainnetStartBlock = 11593216;
 const rocketEthMainnetAddress = "0xae78736Cd615f374D3085123A210448E74Fc6393";
 const rocketEthnMainnetStartBlock = 13326304;
+const RocketNetworkBalancesEthMainnet =
+  "0x138313f102ce9a0662f826fca977e3ab4d6e5539";
 const compoundMainnetStartBlock = 7710760; // cUSDC deployment
 const aaveLendingPoolAddress = "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9";
 const aaveLendingPoolStartBlock = 11367585;
@@ -110,6 +117,10 @@ task(
       "IStETH",
       lidoStEthMainnetAddress
     );
+    const rocketNetworkBalancesEth = (await hre.ethers.getContractAt(
+      "IRocketNetworkBalances",
+      RocketNetworkBalancesEthMainnet
+    )) as IRocketNetworkBalances;
     const rocketEth = await hre.ethers.getContractAt(
       "IRocketEth",
       rocketEthMainnetAddress
@@ -264,6 +275,20 @@ task(
           const r = await rocketEth.getEthValue(toBn(1, 27), {
             blockTag: b,
           });
+
+          const latestBlock =
+            await rocketNetworkBalancesEth.getLatestReportableBlock({
+              blockTag: b,
+            });
+
+          const balancesBlock = await rocketNetworkBalancesEth.getBalancesBlock(
+            {
+              blockTag: b,
+            }
+          );
+
+          console.log("latestBlock:", latestBlock.toString());
+          console.log("balancesBlock:", balancesBlock.toString());
           rowValues.push(r);
         } else {
           rowValues.push(null);
