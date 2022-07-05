@@ -53,7 +53,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await deploy("MockCompoundRateOracle", {
       contract: "CompoundRateOracle",
       from: deployer,
-      args: [mockCToken.address, mockToken.address, decimals, [], []],
+      args: [mockCToken.address, false, mockToken.address, decimals, [], []],
       log: doLogging,
     });
     mockRateOracles.push({
