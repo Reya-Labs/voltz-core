@@ -8,14 +8,13 @@ import "contracts/test/MockRocketEth.sol";
  * @dev RocketNetworkBalances mock - only for testing purposes.
  */
 contract MockRocketNetworkBalances is IRocketNetworkBalances {
-
     MockRocketEth public _mockRocketEth;
 
-    constructor (MockRocketEth mockRocketEth) {
+    constructor(MockRocketEth mockRocketEth) {
         _mockRocketEth = mockRocketEth;
     }
 
-    function getBalancesBlock() external override view returns (uint256) {
+    function getBalancesBlock() external view override returns (uint256) {
         return _mockRocketEth.getLastUpdatedBlock();
     }
 }

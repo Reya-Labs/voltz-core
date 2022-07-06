@@ -25,7 +25,10 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
         require(address(_rocketEth) != address(0), "RETH must exist");
         rocketEth = _rocketEth;
 
-        require(address(_rocketNetworkBalances) != address(0), "RNB must exist");
+        require(
+            address(_rocketNetworkBalances) != address(0),
+            "RNB must exist"
+        );
         rocketNetworkBalances = _rocketNetworkBalances;
 
         _populateInitialObservations(_times, _results);
@@ -61,10 +64,12 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
         if (resultRay == 0) {
             revert CustomErrors.RocketPoolGetEthValueReturnedZero();
         }
-        
+
         // TODO: need to change this due to the approximation of block
         uint256 lastUpdatedBlock = rocketNetworkBalances.getBalancesBlock();
-        uint256 lastUpdatedTimestamp = block.timestamp - (block.number - lastUpdatedBlock) * 15;
+        uint256 lastUpdatedTimestamp = block.timestamp -
+            (block.number - lastUpdatedBlock) *
+            15;
 
         return (Time.timestampAsUint32(lastUpdatedTimestamp), resultRay);
     }

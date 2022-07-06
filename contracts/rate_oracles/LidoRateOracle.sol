@@ -83,7 +83,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         if (lastUpdatedRate == 0) {
             revert CustomErrors.LidoGetPooledEthBySharesReturnedZero();
         }
-        
+
         (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
 
         // TODO: need to change this

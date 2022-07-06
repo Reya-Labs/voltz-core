@@ -157,7 +157,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     /// @return the rate in Ray (decimal scaled up by 10^27 for storage in a uint256)
     function getCurrentRateInRay() public view virtual returns (uint256);
 
-
     /// @notice Get the last updated rate in Ray with the accompanying truncated timestamp
     function getLastUpdatedRate() public view virtual returns (uint32, uint256);
 
@@ -402,10 +401,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    )
-        internal
-        returns (uint16 indexUpdated, uint16 cardinalityUpdated)
-    {
+    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         OracleBuffer.Observation memory last = observations[index];
 
         (uint32 timestamp, uint256 rateInRay) = getLastUpdatedRate();

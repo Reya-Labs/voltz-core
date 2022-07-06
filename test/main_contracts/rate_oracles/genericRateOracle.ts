@@ -13,9 +13,9 @@ import {
 import Decimal from "decimal.js-light";
 import { TestRateOracle } from "../../../typechain";
 import { consts } from "../../helpers/constants";
-import { ConfigForGenericTests as CompoundConfig } from "./compoundConfig";
-import { ConfigForGenericTests as AaveConfig } from "./aaveConfig";
-import { ConfigForGenericTests as LidoConfig } from "./lidoConfig";
+// import { ConfigForGenericTests as CompoundConfig } from "./compoundConfig";
+// import { ConfigForGenericTests as AaveConfig } from "./aaveConfig";
+// import { ConfigForGenericTests as LidoConfig } from "./lidoConfig";
 import { ConfigForGenericTests as RocketPoolConfig } from "./rocketPoolConfig";
 
 const { provider } = waffle;

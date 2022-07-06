@@ -1,10 +1,9 @@
 import { MockWETH, TestRateOracle } from "../../../typechain";
-import { deployments, ethers } from "hardhat";
+import { deployments, ethers, waffle } from "hardhat";
 import { toBn } from "../../helpers/toBn";
 import { consts } from "../../helpers/constants";
 import { MockRocketEth } from "../../../typechain/MockRocketEth";
 import { MockRocketNetworkBalances } from "../../../typechain/MockRocketNetworkBalances";
-import { waffle } from "hardhat";
 
 let rocketEth: MockRocketEth;
 let rocketNetworkBalances: MockRocketNetworkBalances;

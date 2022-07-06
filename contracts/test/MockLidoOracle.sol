@@ -10,7 +10,7 @@ import "contracts/test/MockStEth.sol";
 contract MockLidoOracle is ILidoOracle {
     uint256 private sharesMultiplier = 1e27;
     MockStEth public mockStEth;
-    
+
     constructor(MockStEth _mockStEth) {
         mockStEth = _mockStEth;
     }
