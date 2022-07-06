@@ -2,12 +2,18 @@
 pragma solidity =0.8.9;
 
 import "contracts/interfaces/lido/ILidoOracle.sol";
+import "contracts/test/MockStEth.sol";
 
 /**
  * @dev Lido Oracle mock - only for testing purposes.
  */
 contract MockLidoOracle is ILidoOracle {
     uint256 private sharesMultiplier = 1e27;
+    MockStEth public mockStEth;
+    
+    constructor(MockStEth _mockStEth) {
+        mockStEth = _mockStEth;
+    }
 
     /**
      * @notice Report beacon balance and its change during the last frame
@@ -41,6 +47,7 @@ contract MockLidoOracle is ILidoOracle {
         )
     {
         // solhint-disable-next-line not-rely-on-time
-        return (0, block.timestamp - 43200, block.timestamp + 43200);
+        uint256 lastUpdatedTimestamp = mockStEth.getlastUpdatedTimestamp();
+        return (0, lastUpdatedTimestamp, lastUpdatedTimestamp + 86400);
     }
 }

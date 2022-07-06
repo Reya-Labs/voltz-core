@@ -20,6 +20,7 @@ import {
   MarginEngine,
   MockAaveLendingPool,
   MockAToken,
+  MockStEth,
   MockWETH,
   Periphery,
   SqrtPriceMathTest,
@@ -182,10 +183,16 @@ export class ScenarioRunner {
     const mockStEthFactory = await ethers.getContractFactory("MockStEth");
     this.stETH = (await mockStEthFactory.deploy()) as IStETH;
 
+    await (this.stETH as MockStEth).setSharesMultiplierInRay(
+      this.getRateInRay(1)
+    );
+
     const mockLidoOracleFactory = await ethers.getContractFactory(
       "MockLidoOracle"
     );
-    this.lidoOracle = (await mockLidoOracleFactory.deploy()) as ILidoOracle;
+    this.lidoOracle = (await mockLidoOracleFactory.deploy(
+      this.stETH.address
+    )) as ILidoOracle;
 
     switch (this.params.rateOracle) {
       case 1: {

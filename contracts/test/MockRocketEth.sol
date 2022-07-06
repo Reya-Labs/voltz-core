@@ -6,12 +6,18 @@ pragma solidity =0.8.9;
  */
 contract MockRocketEth {
     uint256 private rethMultiplier = 1e27;
+    uint256 private lastUpdatedBlock;
 
     function getEthValue(uint256 _rethAmount) public view returns (uint256) {
         return (_rethAmount * rethMultiplier) / 1e27;
     }
 
+    function getLastUpdatedBlock() public view returns (uint256) {
+        return lastUpdatedBlock;
+    }
+
     function setRethMultiplierInRay(uint256 _rethMultiplier) public {
         rethMultiplier = _rethMultiplier;
+        lastUpdatedBlock = block.number;
     }
 }

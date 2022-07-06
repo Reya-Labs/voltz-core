@@ -14,7 +14,4 @@ interface ILidoRateOracle is IRateOracle {
     /// @notice Gets the address of the Lido Oracle
     /// @return Address of the Lido Oracle
     function lidoOracle() external view returns (ILidoOracle);
-
-    function RATE_VALUE_UPDATE_EPSILON() external view returns (uint256); 
-
 }

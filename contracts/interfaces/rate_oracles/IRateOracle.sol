@@ -15,6 +15,7 @@ interface IRateOracle is CustomErrors {
 
     // events
     event MinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate);
+    event RateValueUpdateEpsilonUpdate(uint256 _rateValueUpdateEpsilon);
     event OracleBufferUpdate(
         uint256 blockTimestampScaled,
         address source,
@@ -87,6 +88,10 @@ interface IRateOracle is CustomErrors {
     /// @dev Can only be set by the Factory Owner
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external;
 
+    /// @notice Sets rateValueUpdateEpsilon: The minimum delta between new rate and last rate
+    /// @dev Can only be set by the Factory Owner
+    function setRateValueUpdateEpsilon(uint256 _rateValueUpdateEpsilon) external;
+
     /// @notice Increase the maximum number of rates observations that this RateOracle will store
     /// @dev This method is no-op if the RateOracle already has an observationCardinalityNext greater than or equal to
     /// the input observationCardinalityNext.
@@ -101,4 +106,8 @@ interface IRateOracle is CustomErrors {
     /// @notice unique ID of the underlying yield bearing protocol (e.g. Aave v2 has id 1)
     /// @return yieldBearingProtocolID unique id of the underlying yield bearing protocol
     function UNDERLYING_YIELD_BEARING_PROTOCOL_ID() external view returns(uint8 yieldBearingProtocolID);
+
+    /// @notice the difference between the new rate and the last rate should exceed the epsilon (in RAY) 
+    /// in order to add new rate to the oracle buffer
+    function rateValueUpdateEpsilon() external view returns(uint256 epsilon);
 }

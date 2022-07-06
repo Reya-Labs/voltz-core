@@ -13,7 +13,7 @@ import "../utils/WadRayMath.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 ///  This contract is abstract. To make the contract deployable override the
-/// `getCurrentRateInRay` function and the UNDERLYING_YIELD_BEARING_PROTOCOL_ID constant.
+/// `getCurrentRateInRay` and `getLastUpdatedRate`` functions and the UNDERLYING_YIELD_BEARING_PROTOCOL_ID constant.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
 abstract contract BaseRateOracle is IRateOracle, Ownable {
     uint256 public constant ONE_IN_WAD = 1e18;
@@ -30,6 +30,9 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         /// @dev the next maximum number of rates to store, triggered in rates.write
         uint16 rateCardinalityNext;
     }
+
+    /// @inheritdoc IRateOracle
+    uint256 public override rateValueUpdateEpsilon;
 
     /// @inheritdoc IRateOracle
     IERC20Minimal public immutable override underlying;
@@ -55,6 +58,19 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
+    /// @inheritdoc IRateOracle
+    function setRateValueUpdateEpsilon(uint256 _rateValueUpdateEpsilon)
+        external
+        override
+        onlyOwner
+    {
+        if (rateValueUpdateEpsilon != _rateValueUpdateEpsilon) {
+            rateValueUpdateEpsilon = _rateValueUpdateEpsilon;
+
+            emit RateValueUpdateEpsilonUpdate(_rateValueUpdateEpsilon);
+        }
+    }
+
     constructor(IERC20Minimal _underlying) {
         underlying = _underlying;
     }
@@ -63,7 +79,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function _populateInitialObservations(
         uint32[] memory _times,
         uint256[] memory _results
-    ) internal virtual {
+    ) internal {
         // If we're using even half the max buffer size, something has gone wrong
         require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
         uint16 length = uint16(_times.length);
@@ -76,8 +92,11 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             times[i] = _times[i];
             results[i] = _results[i];
         }
-        times[length] = Time.blockTimestampTruncated();
-        results[length] = getCurrentRateInRay();
+
+        (uint32 timestamp, uint256 rateInRay) = getLastUpdatedRate();
+        times[length] = timestamp;
+        results[length] = rateInRay;
+
         (
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext,
@@ -137,6 +156,10 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     /// @dev This function should revert if a valid rate cannot be discerned
     /// @return the rate in Ray (decimal scaled up by 10^27 for storage in a uint256)
     function getCurrentRateInRay() public view virtual returns (uint256);
+
+
+    /// @notice Get the last updated rate in Ray with the accompanying truncated timestamp
+    function getLastUpdatedRate() public view virtual returns (uint32, uint256);
 
     /// @inheritdoc IRateOracle
     function getRateFromTo(uint256 _from, uint256 _to)
@@ -284,7 +307,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function getApyFromTo(uint256 from, uint256 to)
         public
         view
-        virtual
         override
         returns (uint256 apyFromToWad)
     {
@@ -307,7 +329,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function variableFactor(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public virtual override(IRateOracle) returns (uint256 resultWad) {
+    ) public override(IRateOracle) returns (uint256 resultWad) {
         bool cacheable;
 
         (resultWad, cacheable) = _variableFactor(
@@ -334,7 +356,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function variableFactorNoCache(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public view virtual override(IRateOracle) returns (uint256 resultWad) {
+    ) public view override(IRateOracle) returns (uint256 resultWad) {
         (resultWad, ) = _variableFactor(
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds
@@ -370,7 +392,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
-    /// @notice Store the current rate (returned by getCurrentRateInRay) into our buffer, unless a rate was written less than minSecondsSinceLastUpdate ago
+    /// @notice Store the last updated rate (returned by getLastUpdatedRate) into our buffer, unless a rate was written less than minSecondsSinceLastUpdate ago
     /// @param index The index of the Observation that was most recently written to the observations buffer. (Note that at least one Observation is written at contract construction time, so this is always defined.)
     /// @param cardinality The number of populated elements in the observations buffer
     /// @param cardinalityNext The new length of the observations buffer, independent of population
@@ -382,24 +404,26 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint16 cardinalityNext
     )
         internal
-        virtual
         returns (uint16 indexUpdated, uint16 cardinalityUpdated)
     {
         OracleBuffer.Observation memory last = observations[index];
-        uint32 blockTimestamp = Time.blockTimestampTruncated();
+
+        (uint32 timestamp, uint256 rateInRay) = getLastUpdatedRate();
 
         // early return (to increase ttl of data in the observations buffer) if we've already written an observation recently
-        if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
+        if (timestamp < last.blockTimestamp + minSecondsSinceLastUpdate)
             return (index, cardinality);
 
-        uint256 resultRay = getCurrentRateInRay();
+        // early return if the rate hasn't changed significantly
+        if (rateInRay < rateValueUpdateEpsilon + last.observedValue)
+            return (index, cardinality);
 
         emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
             address(this),
             index,
-            blockTimestamp,
-            resultRay,
+            timestamp,
+            rateInRay,
             cardinality,
             cardinalityNext
         );
@@ -407,8 +431,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         return
             observations.write(
                 index,
-                blockTimestamp,
-                resultRay,
+                timestamp,
+                rateInRay,
                 cardinality,
                 cardinalityNext
             );

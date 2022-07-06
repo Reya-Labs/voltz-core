@@ -43,4 +43,19 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         }
         return resultRay;
     }
+
+    /// @inheritdoc BaseRateOracle
+    function getLastUpdatedRate()
+        public
+        view
+        override
+        returns (uint32 timestamp, uint256 resultRay)
+    {
+        resultRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
+        if (resultRay == 0) {
+            revert CustomErrors.AavePoolGetReserveNormalizedIncomeReturnedZero();
+        }
+
+        return (Time.blockTimestampTruncated(), resultRay);
+    }
 }
