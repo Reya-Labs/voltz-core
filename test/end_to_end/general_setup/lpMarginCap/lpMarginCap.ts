@@ -65,7 +65,6 @@ const e2eParams: e2eParametersGeneral = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: false,
   isWETH: false,
   rateOracle: 1,
 };
@@ -337,24 +336,18 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       ).to.be.equal(toBn("2800"));
     }
 
-    // await this.factory.setPeriphery(this.periphery.address);
-
     await advanceTimeAndBlock(consts.ONE_WEEK.mul(8), 4); // advance eight weeks (4 days before maturity)
     await this.e2eSetup.setNewRate(this.getRateInRay(1.0132));
 
     await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
 
     // settle positions and traders
-    // await this.settlePositions();
+    await this.settlePositions();
   }
 }
 
 const test = async () => {
-  console.log("LP Margin Cap");
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/lpMarginCap/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };

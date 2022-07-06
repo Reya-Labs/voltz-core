@@ -63,6 +63,8 @@ const e2eParams: e2eParameters = {
   skipped: true,
 };
 
+// TODO: put all margin requirements into a file (and ignore it in git)
+
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
     await this.exportSnapshot("START");

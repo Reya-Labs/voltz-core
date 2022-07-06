@@ -15,10 +15,10 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../../general_setup/e2eSetup";
-import { ScenarioRunner } from "../../general_setup/general";
+import { e2eParametersGeneral } from "../../general_setup/e2eSetup";
+import { ScenarioRunner } from "../../general_setup/newGeneral";
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_YEAR,
   numActors: 2,
   marginCalculatorParams: {
@@ -58,46 +58,52 @@ const e2eParams: e2eParameters = {
     [0, -24840, -20700],
     [1, -24840, -20700],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
-  // notional traded in this scenario\
-  // 1M of notional
+  // notional traded in this scenario: 1M
   NOTIONAL: BigNumber = toBn("1000000");
   override async run() {
-    await this.exportSnapshot("START");
+    await this.rateOracle.increaseObservationCardinalityNext(1000);
+    await this.rateOracle.increaseObservationCardinalityNext(2000);
+    await this.rateOracle.increaseObservationCardinalityNext(3000);
+    await this.rateOracle.increaseObservationCardinalityNext(4000);
+    await this.rateOracle.increaseObservationCardinalityNext(5000);
+    await this.rateOracle.increaseObservationCardinalityNext(6000);
 
-    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
-    await this.rateOracleTest.increaseObservationCardinalityNext(2000);
-    await this.rateOracleTest.increaseObservationCardinalityNext(3000);
-    await this.rateOracleTest.increaseObservationCardinalityNext(4000);
-    await this.rateOracleTest.increaseObservationCardinalityNext(5000);
-    await this.rateOracleTest.increaseObservationCardinalityNext(6000);
-
+    // list of events [timestamp in seconds, operation]
     let events: [BigNumber, () => Promise<void>][] = [];
     const days = 20;
 
+    // current time
     let time = toBn("0");
+
+    // accumulated Reserve Normalized Income
     let acc_rni = 1;
+
+    // we simulate this scenario as RNI goes from 1 to 2 in one year
     const left_rni = 2 - acc_rni;
 
+    // push all RNI updates in events
     for (let i = 0; i < days * 4; i++) {
       time = time.add(consts.ONE_HOUR.mul(6));
       const f = async () => {
         acc_rni += left_rni / 365 / 4;
-        await this.advanceAndUpdateApy(consts.ONE_HOUR.mul(6), 1, acc_rni);
+        await advanceTimeAndBlock(consts.ONE_HOUR.mul(6), 1);
+        await this.e2eSetup.setNewRate(this.getRateInRay(acc_rni));
       };
       events.push([time, f]);
     }
 
     time = consts.ONE_DAY.mul(10).add(1);
 
+    // push mint to events
     const f = async () => {
       const positionMarginRequirement = await this.getMintInfoViaPeriphery(
         this.positions[0][0],
         {
-          marginEngine: this.marginEngineTest.address,
+          marginEngine: this.marginEngine.address,
           tickLower: this.positions[0][1],
           tickUpper: this.positions[0][2],
           notional: this.NOTIONAL,
@@ -107,7 +113,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
 
       await this.e2eSetup.mintOrBurnViaPeriphery(this.positions[0][0], {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         tickLower: this.positions[0][1],
         tickUpper: this.positions[0][2],
         notional: this.NOTIONAL,
@@ -117,14 +123,17 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     };
     events.push([consts.ONE_DAY.mul(10).add(1), f]);
 
+    // push swaps to events
     for (let i = 10; i < days; i++) {
       time = time.add(consts.ONE_DAY);
+
+      // FULL FT and FULL VT
       const f = async () => {
         {
           const { marginRequirement } = await this.getInfoSwapViaPeriphery(
             this.positions[1][0],
             {
-              marginEngine: this.marginEngineTest.address,
+              marginEngine: this.marginEngine.address,
               isFT: true,
               notional: this.NOTIONAL,
               sqrtPriceLimitX96: BigNumber.from(
@@ -137,7 +146,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           );
 
           await this.e2eSetup.swapViaPeriphery(this.positions[1][0], {
-            marginEngine: this.marginEngineTest.address,
+            marginEngine: this.marginEngine.address,
             isFT: true,
             notional: this.NOTIONAL,
             sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(
@@ -148,11 +157,12 @@ class ScenarioRunnerInstance extends ScenarioRunner {
             marginDelta: toBn(marginRequirement.toString()),
           });
         }
+
         {
           const { marginRequirement } = await this.getInfoSwapViaPeriphery(
             this.positions[1][0],
             {
-              marginEngine: this.marginEngineTest.address,
+              marginEngine: this.marginEngine.address,
               isFT: false,
               notional: this.NOTIONAL,
               sqrtPriceLimitX96: BigNumber.from(
@@ -165,7 +175,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           );
 
           await this.e2eSetup.swapViaPeriphery(this.positions[1][0], {
-            marginEngine: this.marginEngineTest.address,
+            marginEngine: this.marginEngine.address,
             isFT: false,
             notional: this.NOTIONAL,
             sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(
@@ -180,6 +190,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       events.push([time, f]);
     }
 
+    // sort events list by time
     events = events.sort((a, b) => {
       if (b[0].gt(a[0])) {
         return -1;
@@ -190,31 +201,24 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       return 0;
     });
 
+    // simulate all actions
     for (let i = 0; i < events.length; i++) {
       console.log("action", i + 1, "of", events.length);
       await events[i][1]();
-      await this.exportSnapshot("step " + (i + 1).toString());
     }
 
-    // export snapshot before settlement
-    await this.exportSnapshot("BEFORE SETTLEMENT");
-
+    // advance time just to make sure the pool reaches maturity
     await advanceTimeAndBlock(consts.ONE_DAY.mul(380), 4);
 
     // settle positions and traders
     await this.settlePositions();
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 12);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/apySims/iteration0/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 12 (apy sims)", test);
+it("apy simulation: iteration 0", test);

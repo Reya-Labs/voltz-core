@@ -83,15 +83,8 @@ export class ScenarioRunner {
   actors!: Actor[];
   positions: [string, number, number][] = [];
 
-  // file to output logs during e2e scenario
-  outputFile!: string;
-
-  constructor(params: e2eParametersGeneral, outputFile: string) {
+  constructor(params: e2eParametersGeneral) {
     this.params = params;
-    this.outputFile = outputFile;
-
-    const fs = require("fs");
-    fs.writeFileSync(this.outputFile, "");
   }
 
   getRateInRay(rate: number): string {

@@ -17,28 +17,6 @@ import {
   XI_UPPER,
 } from "../../shared/utilities";
 
-export interface e2eParameters {
-  duration: BigNumber;
-  lookBackWindowAPY: BigNumber;
-
-  numActors: number;
-
-  marginCalculatorParams: any;
-
-  startingPrice: JSBI;
-  tickSpacing: number;
-
-  feeProtocol: number;
-  fee: BigNumber;
-
-  positions: [number, number, number][]; // list of [index of actor, lower tick, upper tick]
-
-  skipped: boolean;
-  isWETH?: boolean;
-
-  noMintTokens?: boolean;
-}
-
 export interface e2eParametersGeneral {
   duration: BigNumber;
   lookBackWindowAPY: BigNumber;
@@ -55,7 +33,6 @@ export interface e2eParametersGeneral {
 
   positions: [number, number, number][]; // list of [index of actor, lower tick, upper tick]
 
-  skipped: boolean;
   isWETH?: boolean;
 
   noMintTokens?: boolean;

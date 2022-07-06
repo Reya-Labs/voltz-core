@@ -17,10 +17,10 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { e2eParametersGeneral } from "../e2eSetup";
+import { ScenarioRunner } from "../newGeneral";
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 4,
   marginCalculatorParams: {
@@ -60,16 +60,14 @@ const e2eParams: e2eParameters = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: false,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
-
     {
       const mintOrBurnParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         tickLower: this.positions[0][1],
         tickUpper: this.positions[0][2],
         notional: toBn("6000"),
@@ -84,16 +82,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    // two days pass and set reserve normalised income
-    await this.advanceAndUpdateApy(consts.ONE_DAY.mul(2), 1, 1.0081); // advance 2 days
-
-    // Trader 0 engages in a swap that (almost) consumes all of the liquidity of Position 0
-    await this.exportSnapshot("BEFORE FIRST SWAP");
+    await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0081));
 
     {
       // Trader 0 buys 2,995 VT
       const swapParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         isFT: false,
         notional: toBn("2995"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -107,21 +102,9 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.exportSnapshot("AFTER FIRST SWAP");
-
-    await this.updateCurrentTick();
-
-    // one week passes
-    await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.01);
-
-    // add 5,000,000 liquidity to Position 1
-
-    // print the position margin requirement
-    // await this.getAPYboundsAndPositionMargin(this.positions[1]);
-
     {
       const mintOrBurnParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         tickLower: this.positions[1][1],
         tickUpper: this.positions[1][2],
         notional: toBn("30000"),
@@ -136,16 +119,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    // a week passes
-    await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125);
-
-    // Trader 1 engages in a swap
-    await this.exportSnapshot("BEFORE SECOND SWAP");
+    await advanceTimeAndBlock(consts.ONE_WEEK, 2);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0125));
 
     {
       // Trader 0 buys 2,995 VT
       const swapParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         isFT: false,
         notional: toBn("15000"),
         sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -159,15 +139,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.exportSnapshot("AFTER SECOND SWAP");
-
-    // Trader 0 engages in a reverse swap
-    await this.exportSnapshot("BEFORE THIRD (REVERSE) SWAP");
-
     {
       // Trader 0 buys 2,995 VT
       const swapParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         isFT: true,
         notional: toBn("10000"),
         sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
@@ -181,16 +156,12 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.exportSnapshot("AFTER THIRD (REVERSE) SWAP");
-
-    await this.updateCurrentTick();
-
-    // two weeks pass
-    await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(2), 2, 1.013); // advance two weeks
+    await advanceTimeAndBlock(consts.ONE_WEEK.mul(2), 2);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.013));
 
     {
       const mintOrBurnParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         tickLower: this.positions[0][1],
         tickUpper: this.positions[0][2],
         notional: toBn("2995.35"),
@@ -205,25 +176,19 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(8), 4, 1.0132); // advance eight weeks (4 days before maturity)
-
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
+    await advanceTimeAndBlock(consts.ONE_WEEK.mul(8), 4);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0132));
+    await advanceTimeAndBlock(this.params.duration, 2);
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 0);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario0/consoleViaPeriphery.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 0", test);
+it("Initial scenario using periphery", test);

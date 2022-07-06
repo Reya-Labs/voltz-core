@@ -14,10 +14,10 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { e2eParametersGeneral } from "../e2eSetup";
+import { ScenarioRunner } from "../newGeneral";
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 5,
   marginCalculatorParams: {
@@ -58,13 +58,12 @@ const e2eParams: e2eParameters = {
     [3, -TICK_SPACING, 0],
     [4, -TICK_SPACING, 0],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
-
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
     for (const p of this.positions) {
       await this.e2eSetup.updatePositionMarginViaAMM(
         p[0],
@@ -74,8 +73,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
-    await this.rateOracleTest.increaseObservationCardinalityNext(2000);
+    await this.rateOracle.increaseObservationCardinalityNext(1000);
+    await this.rateOracle.increaseObservationCardinalityNext(2000);
 
     // each LP deposits 1,010 liquidity 100 times
 
@@ -86,9 +85,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       }
     }
 
-    await this.advanceAndUpdateApy(consts.ONE_DAY.mul(25), 1, 1.0012);
-
-    await this.exportSnapshot("AFTER 100 MINT PHASES");
+    await advanceTimeAndBlock(consts.ONE_DAY.mul(25), 1);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0012));
 
     for (const p of this.positions) {
       await this.e2eSetup.updatePositionMarginViaAMM(
@@ -99,7 +97,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    const sqrtPriceLimit = await this.testTickMath.getSqrtRatioAtTick(
+    const sqrtPriceLimit = await this.tickMath.getSqrtRatioAtTick(
       -TICK_SPACING
     );
 
@@ -117,27 +115,20 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       }
     }
 
-    await this.advanceAndUpdateApy(consts.ONE_DAY.mul(25), 1, 1.0015);
+    await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0081));
 
-    await this.exportSnapshot("BEFORE SETTLEMENT");
-
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(40), 1);
+    await advanceTimeAndBlock(this.params.duration, 1);
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 1);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario1/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 1", test);
+it.skip("Series of mints and swaps", test);
