@@ -34,7 +34,8 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         require(address(_lidoOracle) != address(0), "lidoOracle must exist");
         stEth = _stEth;
         lidoOracle = _lidoOracle;
-
+        refreshBeaconSpec();
+        
         _populateInitialObservations(_times, _results);
     }
 

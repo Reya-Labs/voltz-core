@@ -52,8 +52,8 @@ contract MockLidoOracle is ILidoOracle {
     }
 
     function getLastCompletedEpochId() external view returns (uint256) {
-        // TODO
-        return 0;
+        // We mock an epoch ID that corresponds to the current timestamp
+        return block.timestamp;
     }
 
     function getBeaconSpec()
@@ -66,7 +66,7 @@ contract MockLidoOracle is ILidoOracle {
             uint64 genesisTime
         )
     {
-        // TODO
-        return (0, 0, 0, 0);
+        // By returning 1 seconds per epoch and zero as the genesis, we can simply return the timestamp as the last completed epoch
+        return (1, 1, 1, 0);
     }
 }
