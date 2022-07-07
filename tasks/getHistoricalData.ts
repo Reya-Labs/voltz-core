@@ -192,11 +192,11 @@ task(
       aaveHeader = "," + headers.join(",");
     }
 
-    const headerRow = `block,timestamp,time${taskArgs.lido ? ",lido" : ""}${
+    const headerRow = `block,timestamp,time${
       taskArgs.voltzLido
-        ? ",lido_margin_engine_APY,lido_rate_oracle1_APY,lido_rate_oracle2_APY,lido_frame_epoch_id,lido_frame_start,lido_frame_end"
+        ? ",lido_margin_engine_APY,lido_rate_oracle1_APY,lido_rate_oracle2_APY,lido_frame_epoch_id,lido_frame_start,lido_frame_end,lido_completed_epoch,epochs_per_frame,slots_per_epoch,seconds_per_slot,genesis_time,time_of_last_completed_epoch"
         : ""
-    }${taskArgs.rocket ? ",rocket_rate" : ""}${
+    }${taskArgs.lido ? ",lido" : ""}${taskArgs.rocket ? ",rocket_rate" : ""}${
       taskArgs.voltzRocket
         ? ",rocket_margin_engine_APY,rocket_rate_oracle1_APY,rocket_rate_oracle2_APY"
         : ""
@@ -208,18 +208,6 @@ task(
       const block = await hre.ethers.provider.getBlock(b);
       const timestamp = block.timestamp;
       const timeString = new Date(timestamp * 1000).toISOString();
-
-      // Lido
-      if (taskArgs.lido) {
-        if (b >= lidoStEthMainnetStartBlock) {
-          const r = await stETH.getPooledEthByShares(toBn(1, 27), {
-            blockTag: b,
-          });
-          rowValues.push(r);
-        } else {
-          rowValues.push(null);
-        }
-      }
 
       // Voltz-Lido
       if (taskArgs.voltzLido) {
@@ -261,10 +249,49 @@ task(
             blockTag: b,
           });
           rowValues.push(frame);
+
+          const completedEpoch = await lidoOracle.getLastCompletedEpochId({
+            blockTag: b,
+          });
+          rowValues.push(completedEpoch);
+
+          const { epochsPerFrame, slotsPerEpoch, secondsPerSlot, genesisTime } =
+            await lidoOracle.getBeaconSpec({
+              blockTag: b,
+            });
+          rowValues.push(epochsPerFrame);
+          rowValues.push(slotsPerEpoch);
+          rowValues.push(secondsPerSlot);
+          rowValues.push(genesisTime);
+
+          const timeOfLastCompletedEpoch =
+            genesisTime.toNumber() +
+            completedEpoch.toNumber() *
+              slotsPerEpoch.toNumber() *
+              secondsPerSlot.toNumber();
+          rowValues.push(timeOfLastCompletedEpoch);
         } else {
           rowValues.push(null);
           rowValues.push(null);
           rowValues.push(null);
+          rowValues.push(null);
+          rowValues.push(null);
+          rowValues.push(null);
+          rowValues.push(null);
+          rowValues.push(null);
+          rowValues.push(null);
+          rowValues.push(null);
+        }
+      }
+
+      // Lido
+      if (taskArgs.lido) {
+        if (b >= lidoStEthMainnetStartBlock) {
+          const r = await stETH.getPooledEthByShares(toBn(1, 27), {
+            blockTag: b,
+          });
+          rowValues.push(r);
+        } else {
           rowValues.push(null);
         }
       }
