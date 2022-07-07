@@ -50,4 +50,22 @@ contract MockLidoOracle is ILidoOracle {
         uint256 lastUpdatedTimestamp = mockStEth.getlastUpdatedTimestamp();
         return (0, lastUpdatedTimestamp, lastUpdatedTimestamp + 86400);
     }
+
+    function getLastCompletedEpochId() external view returns (uint256) {
+        // TODO
+        return 0;
+    }
+
+    function getBeaconSpec()
+        external
+        view
+        returns (
+            uint64 epochsPerFrame,
+            uint64 slotsPerEpoch,
+            uint64 secondsPerSlot,
+            uint64 genesisTime
+    ) {
+        // TODO
+        return (0,0,0,0);
+    }
 }
