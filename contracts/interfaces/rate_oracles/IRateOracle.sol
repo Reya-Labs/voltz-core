@@ -110,4 +110,26 @@ interface IRateOracle is CustomErrors {
     /// @notice the difference between the new rate and the last rate should exceed the epsilon (in RAY) 
     /// in order to add new rate to the oracle buffer
     function rateValueUpdateEpsilon() external view returns(uint256 epsilon);
+
+    /// @notice returns the last change in rate and time
+    /// it gets the last two observations and returns the change in rate and time
+    /// it helps into computing the latest slope 
+    function getLastSlope()
+        external
+        view
+        returns (uint256 rateChange, uint256 timeChange);
+
+    /// @notice Get the current "rate" in Ray at the current timestamp.
+    /// This might be a direct reading if real-time readings are available, or it might be an extrapolation from recent known rates.
+    /// The source and expected values of "rate" may differ by rate oracle type. All that
+    /// matters is that we can divide one "rate" by another "rate" to get the factor of growth between the two timestamps.
+    /// For example if we have rates of { (t=0, rate=5), (t=100, rate=5.5) }, we can divide 5.5 by 5 to get a growth factor
+    /// of 1.1, suggesting that 10% growth in capital was experienced between timesamp 0 and timestamp 100.
+    /// @dev For convenience, the rate is normalised to Ray for storage, so that we can perform consistent math across all rates.
+    /// @dev This function should revert if a valid rate cannot be discerned
+    /// @return currentRate the rate in Ray (decimal scaled up by 10^27 for storage in a uint256)
+    function getCurrentRateInRay()
+        external
+        view
+        returns (uint256 currentRate);
 }

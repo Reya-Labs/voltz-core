@@ -38,17 +38,6 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         _populateInitialObservations(_times, _results);
     }
 
-    /// @inheritdoc BaseRateOracle
-    function getCurrentRateInRay()
-        public
-        view
-        override
-        returns (uint256 resultRay)
-    {
-        // TODO: derive from getLastUpdatedRate() and extraopolate from recent rates if necessary.
-        // This function can move into BaseRateOracle and there should be no need to override it for specific oracles.
-    }
-
     /// Refresh the beacon spec from Lido's oracle. Permissionless.
     function refreshBeaconSpec() public {
         (

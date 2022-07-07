@@ -35,18 +35,6 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
     }
 
     /// @inheritdoc BaseRateOracle
-    /// @dev To get a RocketPool value in Ray, we query the value (in ETH/WETH) of 1e27 RocketPool shares
-    function getCurrentRateInRay()
-        public
-        view
-        override
-        returns (uint256 resultRay)
-    {
-        // TODO: derive from getLastUpdatedRate() and extraopolate from recent rates if necessary.
-        // This function can move into BaseRateOracle and there should be no need to override it for specific oracles.
-    }
-
-    /// @inheritdoc BaseRateOracle
     function getLastUpdatedRate()
         public
         view

@@ -30,17 +30,6 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
     }
 
     /// @inheritdoc BaseRateOracle
-    /// @dev In the case of Aave, the rates are obtained by calling aaveLendingPool.getReserveNormalizedIncome(underlying). The returned rate is already in ray so no additional normalisation is required.
-    function getCurrentRateInRay()
-        public
-        view
-        override
-        returns (uint256 resultRay)
-    {
-        (, resultRay) = getLastUpdatedRate();
-    }
-
-    /// @inheritdoc BaseRateOracle
     function getLastUpdatedRate()
         public
         view

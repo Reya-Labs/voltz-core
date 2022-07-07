@@ -303,10 +303,9 @@ task(
             blockTag: b,
           });
 
-          const latestBlock =
-            await rocketNetworkBalancesEth.getLatestReportableBlock({
-              blockTag: b,
-            });
+          const latestBlock = await rocketNetworkBalancesEth.getBalancesBlock({
+            blockTag: b,
+          });
 
           const balancesBlock = await rocketNetworkBalancesEth.getBalancesBlock(
             {

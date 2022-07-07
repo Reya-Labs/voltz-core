@@ -149,17 +149,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
-    /// @notice Get the current "rate" in Ray at the current timestamp.
-    /// This might be a direct reading if real-time readings are available, or it might be an extrapolation from recent known rates.
-    /// The source and expected values of "rate" may differ by rate oracle type. All that
-    /// matters is that we can divide one "rate" by another "rate" to get the factor of growth between the two timestamps.
-    /// For example if we have rates of { (t=0, rate=5), (t=100, rate=5.5) }, we can divide 5.5 by 5 to get a growth factor
-    /// of 1.1, suggesting that 10% growth in capital was experienced between timesamp 0 and timestamp 100.
-    /// @dev For convenience, the rate is normalised to Ray for storage, so that we can perform consistent math across all rates.
-    /// @dev This function should revert if a valid rate cannot be discerned
-    /// @return the rate in Ray (decimal scaled up by 10^27 for storage in a uint256)
-    function getCurrentRateInRay() public view virtual returns (uint256);
-
     /// @notice Get the last updated rate in Ray with the accompanying truncated timestamp
     /// This data point must be a known data point from the source of the data, and not extrapolated or interpolated by us.
     /// The source and expected values of "rate" may differ by rate oracle type. All that
@@ -457,5 +446,50 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
         );
+    }
+
+    function getLastSlope()
+        public
+        view
+        override
+        returns (uint256 rateChange, uint256 timeChange)
+    {
+        uint16 last = oracleVars.rateIndex;
+        uint16 lastButOne = (oracleVars.rateIndex >= 1)
+            ? oracleVars.rateIndex - 1
+            : oracleVars.rateCardinality - 1;
+
+        // check if there are at least two points in the rate oracle
+        // otherwise, revert with "Not Enough Points"
+        require(
+            oracleVars.rateCardinality >= 2 &&
+            observations[lastButOne].initialized && 
+            observations[lastButOne].observedValue <= observations[last].observedValue,
+            "NEP"
+        );
+
+        rateChange = observations[last].observedValue - observations[lastButOne].observedValue;
+        timeChange = observations[last].blockTimestamp - observations[lastButOne].blockTimestamp;
+    }
+
+    /// @inheritdoc IRateOracle
+    function getCurrentRateInRay()
+        public
+        view
+        override
+        returns (uint256 currentRate)
+    {
+        (
+            uint32 lastUpdatedTimestamp,
+            uint256 lastUpdatedRate
+        ) = getLastUpdatedRate();
+
+        if (lastUpdatedTimestamp >= block.timestamp) {
+            return lastUpdatedRate;
+        }
+
+        (uint256 rateChange, uint256 timeChange) = getLastSlope();
+
+        currentRate = lastUpdatedRate + (block.timestamp - lastUpdatedTimestamp) * rateChange / timeChange;
     }
 }
