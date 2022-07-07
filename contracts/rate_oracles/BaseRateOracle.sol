@@ -463,13 +463,18 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         // otherwise, revert with "Not Enough Points"
         require(
             oracleVars.rateCardinality >= 2 &&
-            observations[lastButOne].initialized && 
-            observations[lastButOne].observedValue <= observations[last].observedValue,
+                observations[lastButOne].initialized &&
+                observations[lastButOne].observedValue <=
+                observations[last].observedValue,
             "NEP"
         );
 
-        rateChange = observations[last].observedValue - observations[lastButOne].observedValue;
-        timeChange = observations[last].blockTimestamp - observations[lastButOne].blockTimestamp;
+        rateChange =
+            observations[last].observedValue -
+            observations[lastButOne].observedValue;
+        timeChange =
+            observations[last].blockTimestamp -
+            observations[lastButOne].blockTimestamp;
     }
 
     /// @inheritdoc IRateOracle
@@ -490,6 +495,9 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
         (uint256 rateChange, uint256 timeChange) = getLastSlope();
 
-        currentRate = lastUpdatedRate + (block.timestamp - lastUpdatedTimestamp) * rateChange / timeChange;
+        currentRate =
+            lastUpdatedRate +
+            ((block.timestamp - lastUpdatedTimestamp) * rateChange) /
+            timeChange;
     }
 }
