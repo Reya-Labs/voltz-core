@@ -93,11 +93,11 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             results[i] = _results[i];
         }
 
-        (uint32 timestamp, uint256 rateInRay) = getLastUpdatedRate();
+        (uint32 lastUpdatedTimestamp, uint256 lastUpdatedRate) = getLastUpdatedRate();
 
         // `observations.initialize` will check that all times are correctly sorted so no need to check here
-        times[length] = timestamp;
-        results[length] = rateInRay;
+        times[length] = lastUpdatedTimestamp;
+        results[length] = lastUpdatedRate;
 
         (
             oracleVars.rateCardinality,
@@ -409,22 +409,22 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         OracleBuffer.Observation memory last = observations[index];
 
-        (uint32 timestamp, uint256 rateInRay) = getLastUpdatedRate();
+        (uint32 lastUpdatedTimestamp, uint256 lastUpdatedRate) = getLastUpdatedRate();
 
         // early return (to increase ttl of data in the observations buffer) if we've already written an observation recently
-        if (timestamp < last.blockTimestamp + minSecondsSinceLastUpdate)
+        if (lastUpdatedTimestamp < last.blockTimestamp + minSecondsSinceLastUpdate)
             return (index, cardinality);
 
         // early return if the rate hasn't changed significantly
-        if (rateInRay < rateValueUpdateEpsilon + last.observedValue)
+        if (lastUpdatedRate < rateValueUpdateEpsilon + last.observedValue)
             return (index, cardinality);
 
         emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
             address(this),
             index,
-            timestamp,
-            rateInRay,
+            lastUpdatedTimestamp,
+            lastUpdatedRate,
             cardinality,
             cardinalityNext
         );
@@ -432,8 +432,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         return
             observations.write(
                 index,
-                timestamp,
-                rateInRay,
+                lastUpdatedTimestamp,
+                lastUpdatedRate,
                 cardinality,
                 cardinalityNext
             );

@@ -1,5 +1,5 @@
 import { MockWETH, TestRateOracle } from "../../../typechain";
-import { deployments, ethers, waffle } from "hardhat";
+import { deployments, ethers } from "hardhat";
 import { toBn } from "../../helpers/toBn";
 import { consts } from "../../helpers/constants";
 import { MockRocketEth } from "../../../typechain/MockRocketEth";
@@ -8,8 +8,6 @@ import { MockRocketNetworkBalances } from "../../../typechain/MockRocketNetworkB
 let rocketEth: MockRocketEth;
 let rocketNetworkBalances: MockRocketNetworkBalances;
 let weth: MockWETH;
-
-const { provider } = waffle;
 
 export const ConfigForGenericTests = {
   configName: "RocketPool",
@@ -20,6 +18,10 @@ export const ConfigForGenericTests = {
 
     // store rocketEth for use when setting rates
     rocketEth = (await ethers.getContract("MockRocketEth")) as MockRocketEth;
+    await rocketEth.setRethMultiplierInRay(
+      toBn(1, consts.NORMALIZED_RATE_DECIMALS)
+    );
+
     weth = (await ethers.getContract("MockWETH")) as MockWETH;
     rocketNetworkBalances = (await ethers.getContract(
       "MockRocketNetworkBalances"
@@ -34,13 +36,15 @@ export const ConfigForGenericTests = {
       rocketNetworkBalances.address,
       weth.address
     )) as TestRateOracle;
+
+    await testRateOracle.setMinSecondsSinceLastUpdate(64800);
+    await testRateOracle.setRateValueUpdateEpsilon(1);
+
     return { testRateOracle, rocketEth: rocketEth };
   },
   setRateAsDecimal: async (rate: number) => {
     // To set the rate for Aave, we call setReserveNormalizedIncome on the lending pool
     // The decimal value is scaled up by 10^27
-    const blockNumber = await provider.getBlockNumber();
-    console.log("block number of update:", blockNumber.toString());
     await rocketEth.setRethMultiplierInRay(
       toBn(rate, consts.NORMALIZED_RATE_DECIMALS)
     );

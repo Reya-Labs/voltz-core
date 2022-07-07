@@ -7,7 +7,7 @@ import "contracts/interfaces/lido/IStETH.sol";
  * @dev StETH mock - only for testing purposes.
  */
 contract MockStEth is IStETH {
-    uint256 private sharesMultiplier = 1e27;
+    uint256 private sharesMultiplier = 0;
     uint256 private lastUpdatedTimestamp;
 
     function getPooledEthByShares(uint256 _sharesAmount)
