@@ -64,8 +64,9 @@ contract MockLidoOracle is ILidoOracle {
             uint64 slotsPerEpoch,
             uint64 secondsPerSlot,
             uint64 genesisTime
-    ) {
+        )
+    {
         // TODO
-        return (0,0,0,0);
+        return (0, 0, 0, 0);
     }
 }

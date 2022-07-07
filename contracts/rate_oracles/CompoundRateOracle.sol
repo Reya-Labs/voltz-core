@@ -62,22 +62,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
         override
         returns (uint256 resultRay)
     {
-        uint256 exchangeRateStored = ctoken.exchangeRateStored();
-        if (exchangeRateStored == 0) {
-            revert CustomErrors.CTokenExchangeRateReturnedZero();
-        }
-
-        // cToken exchangeRateStored() returns the current exchange rate as an unsigned integer, scaled by 1 * 10^(10 + Underlying Token Decimals)
-        // source: https://compound.finance/docs/ctokens#exchange-rate and https://compound.finance/docs#protocol-math
-        // We want the same number scaled by 10^27 (ray)
-        // So: if Underlying Token Decimals == 17, no scaling is required
-        //     if Underlying Token Decimals > 17, we scale down by a factor of 10^difference
-        //     if Underlying Token Decimals < 17, we scale up by a factor of 10^difference
-        if (decimals >= DECIMALS_SCALING_THRESHOLD) {
-            resultRay = exchangeRateStored / scaleDownFactor;
-        } else {
-            resultRay = exchangeRateStored * scaleUpFactor;
-        }
+        (, resultRay) = getLastUpdatedRate();
 
         return resultRay;
     }

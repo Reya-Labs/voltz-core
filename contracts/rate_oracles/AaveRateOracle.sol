@@ -37,11 +37,7 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         override
         returns (uint256 resultRay)
     {
-        resultRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
-        if (resultRay == 0) {
-            revert CustomErrors.AavePoolGetReserveNormalizedIncomeReturnedZero();
-        }
-        return resultRay;
+        (, resultRay) = getLastUpdatedRate();
     }
 
     /// @inheritdoc BaseRateOracle

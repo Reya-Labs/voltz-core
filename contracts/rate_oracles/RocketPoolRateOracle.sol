@@ -42,15 +42,8 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
         override
         returns (uint256 resultRay)
     {
-        // We are taking advantage of the fact that RocketPool's implementation does not care about us passing in an amount
-        // of RETH that it higher than the amount of RETH in existence.
-        // The calculation that RocketPool does here would risk phantom overflow if RocketPool had > 10^50 ETH WEI staked
-        // But that amount of ETH will never exist, so this is safe
-        resultRay = rocketEth.getEthValue(WadRayMath.RAY);
-        if (resultRay == 0) {
-            revert CustomErrors.RocketPoolGetEthValueReturnedZero();
-        }
-        return resultRay;
+        // TODO: derive from getLastUpdatedRate() and extraopolate from recent rates if necessary.
+        // This function can move into BaseRateOracle and there should be no need to override it for specific oracles.
     }
 
     /// @inheritdoc BaseRateOracle

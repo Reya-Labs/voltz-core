@@ -12,7 +12,11 @@ import "../core_libraries/Time.sol";
 
 contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
     IStETH public override stEth;
+
+    // Lido info
     ILidoOracle public override lidoOracle;
+    uint64 genesisTime; // From Beacon chain spec; changes rarely. `refreshBeaconSpec()` to update.
+    uint64 secondsPerEpoch; // From Beacon chain spec; changes rarely. `refreshBeaconSpec()` to update.
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 3; // id of Lido is 3
 
@@ -41,35 +45,20 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         override
         returns (uint256 resultRay)
     {
-        // We are taking advantage of the fact that Lido's implementation does not care about us passing in a
-        // number of shares that is higher than the number of shared in existence.
-        // The calculation that Lido does here would risk phantom overflow if Lido had > 10^50 ETH WEI staked
-        // But that amount of ETH will never exist, so this is safe
-        uint256 lastUpdatedRate = stEth.getPooledEthByShares(WadRayMath.RAY);
-        if (lastUpdatedRate == 0) {
-            revert CustomErrors.LidoGetPooledEthBySharesReturnedZero();
-        }
+        // TODO: derive from getLastUpdatedRate() and extraopolate from recent rates if necessary.
+        // This function can move into BaseRateOracle and there should be no need to override it for specific oracles.
+    }
 
+    /// Refresh the beacon spec from Lido's oracle. Permissionless.
+    function refreshBeaconSpec() public {
         (
-            uint256 postTotalPooledEther,
-            uint256 preTotalPooledEther,
-            uint256 timeElapsed
-        ) = lidoOracle.getLastCompletedReportDelta();
-        (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
-
-        // time since last update in ray
-        // solhint-disable-next-line not-rely-on-time
-        uint256 timeSinceLastUpdate = ((block.timestamp - frameStartTime) *
-            WadRayMath.RAY) / timeElapsed;
-
-        // compute the rate in ray
-        resultRay =
-            ((postTotalPooledEther - preTotalPooledEther) *
-                timeSinceLastUpdate) /
-            preTotalPooledEther +
-            lastUpdatedRate;
-
-        return resultRay;
+            ,
+            uint64 slotsPerEpoch,
+            uint64 secondsPerSlot,
+            uint64 _genesisTime
+        ) = lidoOracle.getBeaconSpec();
+        genesisTime = _genesisTime;
+        secondsPerEpoch = slotsPerEpoch * secondsPerSlot;
     }
 
     /// @inheritdoc BaseRateOracle
@@ -79,14 +68,21 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         override
         returns (uint32 timestamp, uint256 resultRay)
     {
+        // We are taking advantage of the fact that Lido's implementation does not care about us passing in a
+        // number of shares that is higher than the number of shared in existence.
+        // The calculation that Lido does here would risk phantom overflow if Lido had > 10^50 ETH WEI staked
+        // But that amount of ETH will never exist, so this is safe
         uint256 lastUpdatedRate = stEth.getPooledEthByShares(WadRayMath.RAY);
         if (lastUpdatedRate == 0) {
             revert CustomErrors.LidoGetPooledEthBySharesReturnedZero();
         }
 
-        (, uint256 frameStartTime, ) = lidoOracle.getCurrentFrame();
+        uint256 epoch = lidoOracle.getLastCompletedEpochId();
 
-        // TODO: need to change this
-        return (Time.timestampAsUint32(frameStartTime), lastUpdatedRate);
+        uint32 lastCompletedTime = Time.timestampAsUint32(
+            genesisTime + (epoch * secondsPerEpoch)
+        );
+
+        return (lastCompletedTime, lastUpdatedRate);
     }
 }
