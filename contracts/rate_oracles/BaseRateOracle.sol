@@ -93,7 +93,10 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             results[i] = _results[i];
         }
 
-        (uint32 lastUpdatedTimestamp, uint256 lastUpdatedRate) = getLastUpdatedRate();
+        (
+            uint32 lastUpdatedTimestamp,
+            uint256 lastUpdatedRate
+        ) = getLastUpdatedRate();
 
         // `observations.initialize` will check that all times are correctly sorted so no need to check here
         times[length] = lastUpdatedTimestamp;
@@ -409,11 +412,16 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         OracleBuffer.Observation memory last = observations[index];
 
-        (uint32 lastUpdatedTimestamp, uint256 lastUpdatedRate) = getLastUpdatedRate();
+        (
+            uint32 lastUpdatedTimestamp,
+            uint256 lastUpdatedRate
+        ) = getLastUpdatedRate();
 
         // early return (to increase ttl of data in the observations buffer) if we've already written an observation recently
-        if (lastUpdatedTimestamp < last.blockTimestamp + minSecondsSinceLastUpdate)
-            return (index, cardinality);
+        if (
+            lastUpdatedTimestamp <
+            last.blockTimestamp + minSecondsSinceLastUpdate
+        ) return (index, cardinality);
 
         // early return if the rate hasn't changed significantly
         if (lastUpdatedRate < rateValueUpdateEpsilon + last.observedValue)
