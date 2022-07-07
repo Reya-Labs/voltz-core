@@ -13,7 +13,7 @@ import "../utils/WadRayMath.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 ///  This contract is abstract. To make the contract deployable override the
-/// `getCurrentRateInRay` and `getLastUpdatedRate`` functions and the UNDERLYING_YIELD_BEARING_PROTOCOL_ID constant.
+/// `getCurrentRateInRay` and `getLastUpdatedRate` functions and the `UNDERLYING_YIELD_BEARING_PROTOCOL_ID` constant.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
 abstract contract BaseRateOracle is IRateOracle, Ownable {
     uint256 public constant ONE_IN_WAD = 1e18;
@@ -94,6 +94,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
 
         (uint32 timestamp, uint256 rateInRay) = getLastUpdatedRate();
+
+        // `observations.initialize` will check that all times are correctly sorted so no need to check here
         times[length] = timestamp;
         results[length] = rateInRay;
 
@@ -147,18 +149,32 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
-    /// @notice Get the current "rate" in Ray.
-    /// The source, expected values, and semantics of "rate" may differ by rate oracle type. All that
+    /// @notice Get the current "rate" in Ray at the current timestamp.
+    /// This might be a direct reading if real-time readings are available, or it might be an extrapolation from recent known rates.
+    /// The source and expected values of "rate" may differ by rate oracle type. All that
     /// matters is that we can divide one "rate" by another "rate" to get the factor of growth between the two timestamps.
     /// For example if we have rates of { (t=0, rate=5), (t=100, rate=5.5) }, we can divide 5.5 by 5 to get a growth factor
     /// of 1.1, suggesting that 10% growth in capital was experienced between timesamp 0 and timestamp 100.
-    /// @dev FOr convenience, the rate is normalised to Ray for storage, so that we can perform consistent math across all rates.
+    /// @dev For convenience, the rate is normalised to Ray for storage, so that we can perform consistent math across all rates.
     /// @dev This function should revert if a valid rate cannot be discerned
     /// @return the rate in Ray (decimal scaled up by 10^27 for storage in a uint256)
     function getCurrentRateInRay() public view virtual returns (uint256);
 
     /// @notice Get the last updated rate in Ray with the accompanying truncated timestamp
-    function getLastUpdatedRate() public view virtual returns (uint32, uint256);
+    /// This data point must be a known data point from the source of the data, and not extrapolated or interpolated by us.
+    /// The source and expected values of "rate" may differ by rate oracle type. All that
+    /// matters is that we can divide one "rate" by another "rate" to get the factor of growth between the two timestamps.
+    /// For example if we have rates of { (t=0, rate=5), (t=100, rate=5.5) }, we can divide 5.5 by 5 to get a growth factor
+    /// of 1.1, suggesting that 10% growth in capital was experienced between timesamp 0 and timestamp 100.
+    /// @dev FOr convenience, the rate is normalised to Ray for storage, so that we can perform consistent math across all rates.
+    /// @dev This function should revert if a valid rate cannot be discerned
+    /// @return timestamp the timestamp corresponding to the known rate (could be the current time, or a time in the past)
+    /// @return rate the rate in Ray (decimal scaled up by 10^27 for storage in a uint256)
+    function getLastUpdatedRate()
+        public
+        view
+        virtual
+        returns (uint32 timestamp, uint256 rate);
 
     /// @inheritdoc IRateOracle
     function getRateFromTo(uint256 _from, uint256 _to)
