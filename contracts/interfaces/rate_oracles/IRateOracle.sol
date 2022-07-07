@@ -15,7 +15,6 @@ interface IRateOracle is CustomErrors {
 
     // events
     event MinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate);
-    event RateValueUpdateEpsilonUpdate(uint256 _rateValueUpdateEpsilon);
     event OracleBufferUpdate(
         uint256 blockTimestampScaled,
         address source,
@@ -88,10 +87,6 @@ interface IRateOracle is CustomErrors {
     /// @dev Can only be set by the Factory Owner
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate) external;
 
-    /// @notice Sets rateValueUpdateEpsilon: The minimum delta between new rate and last rate
-    /// @dev Can only be set by the Factory Owner
-    function setRateValueUpdateEpsilon(uint256 _rateValueUpdateEpsilon) external;
-
     /// @notice Increase the maximum number of rates observations that this RateOracle will store
     /// @dev This method is no-op if the RateOracle already has an observationCardinalityNext greater than or equal to
     /// the input observationCardinalityNext.
@@ -107,17 +102,13 @@ interface IRateOracle is CustomErrors {
     /// @return yieldBearingProtocolID unique id of the underlying yield bearing protocol
     function UNDERLYING_YIELD_BEARING_PROTOCOL_ID() external view returns(uint8 yieldBearingProtocolID);
 
-    /// @notice the difference between the new rate and the last rate should exceed the epsilon (in RAY) 
-    /// in order to add new rate to the oracle buffer
-    function rateValueUpdateEpsilon() external view returns(uint256 epsilon);
-
     /// @notice returns the last change in rate and time
     /// it gets the last two observations and returns the change in rate and time
     /// it helps into computing the latest slope 
     function getLastSlope()
         external
         view
-        returns (uint256 rateChange, uint256 timeChange);
+        returns (uint256 rateChange, uint32 timeChange);
 
     /// @notice Get the current "rate" in Ray at the current timestamp.
     /// This might be a direct reading if real-time readings are available, or it might be an extrapolation from recent known rates.
@@ -132,4 +123,10 @@ interface IRateOracle is CustomErrors {
         external
         view
         returns (uint256 currentRate);
+
+    /// @notice returns the last change in block number and timestamp 
+    function getBlockSlope()
+        external
+        view
+        returns (uint256 blockChange, uint32 timeChange);
 }

@@ -31,8 +31,10 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint16 rateCardinalityNext;
     }
 
-    /// @inheritdoc IRateOracle
-    uint256 public override rateValueUpdateEpsilon;
+    struct BlockInfo {
+        uint32 timestamp;
+        uint256 number;
+    }
 
     /// @inheritdoc IRateOracle
     IERC20Minimal public immutable override underlying;
@@ -44,6 +46,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
     /// @notice the observations tracked over time by this oracle
     OracleBuffer.Observation[65535] public observations;
+
+    BlockInfo public lastUpdatedBlock;
 
     /// @inheritdoc IRateOracle
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate)
@@ -58,21 +62,10 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
-    /// @inheritdoc IRateOracle
-    function setRateValueUpdateEpsilon(uint256 _rateValueUpdateEpsilon)
-        external
-        override
-        onlyOwner
-    {
-        if (rateValueUpdateEpsilon != _rateValueUpdateEpsilon) {
-            rateValueUpdateEpsilon = _rateValueUpdateEpsilon;
-
-            emit RateValueUpdateEpsilonUpdate(_rateValueUpdateEpsilon);
-        }
-    }
-
     constructor(IERC20Minimal _underlying) {
         underlying = _underlying;
+        lastUpdatedBlock.number = block.number;
+        lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
     }
 
     /// @dev this must be called at the *end* of the constructor, after the contract member variables have been set, because it needs to read rates.
@@ -423,10 +416,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             last.blockTimestamp + minSecondsSinceLastUpdate
         ) return (index, cardinality);
 
-        // early return if the rate hasn't changed significantly
-        if (lastUpdatedRate < rateValueUpdateEpsilon + last.observedValue)
-            return (index, cardinality);
-
         emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
             address(this),
@@ -436,6 +425,9 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             cardinality,
             cardinalityNext
         );
+
+        lastUpdatedBlock.number = block.number;
+        lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
 
         return
             observations.write(
@@ -460,7 +452,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         public
         view
         override
-        returns (uint256 rateChange, uint256 timeChange)
+        returns (uint256 rateChange, uint32 timeChange)
     {
         uint16 last = oracleVars.rateIndex;
         uint16 lastButOne = (oracleVars.rateIndex >= 1)
@@ -497,15 +489,29 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             uint256 lastUpdatedRate
         ) = getLastUpdatedRate();
 
-        if (lastUpdatedTimestamp >= block.timestamp) {
+        if (lastUpdatedTimestamp >= Time.blockTimestampTruncated()) {
             return lastUpdatedRate;
         }
 
-        (uint256 rateChange, uint256 timeChange) = getLastSlope();
+        (uint256 rateChange, uint32 timeChange) = getLastSlope();
 
         currentRate =
             lastUpdatedRate +
-            ((block.timestamp - lastUpdatedTimestamp) * rateChange) /
+            ((Time.blockTimestampTruncated() - lastUpdatedTimestamp) * rateChange) /
             timeChange;
+    }
+
+    /// @inheritdoc IRateOracle
+    function getBlockSlope()
+        public
+        view
+        override
+        returns (uint256 blockChange, uint32 timeChange) 
+    {
+        if (lastUpdatedBlock.number >= block.number) {
+            return (10, 135);
+        }
+
+        return (block.number - lastUpdatedBlock.number, Time.blockTimestampTruncated() - lastUpdatedBlock.timestamp);
     }
 }

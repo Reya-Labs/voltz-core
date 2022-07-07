@@ -46,6 +46,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const mockRocketEth = await deploy("MockRocketEth", {
     from: deployer,
     log: doLogging,
+    args: [true],
   });
 
   await deploy("MockRocketNetworkBalances", {

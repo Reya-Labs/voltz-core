@@ -46,11 +46,11 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
             revert CustomErrors.RocketPoolGetEthValueReturnedZero();
         }
 
-        // TODO: need to change this due to the approximation of block
         uint256 lastUpdatedBlock = rocketNetworkBalances.getBalancesBlock();
+        (uint256 blockChange, uint32 timeChange) = getBlockSlope();
+
         uint256 lastUpdatedTimestamp = block.timestamp -
-            (block.number - lastUpdatedBlock) *
-            15;
+            (block.number - lastUpdatedBlock) * timeChange / blockChange;
 
         return (Time.timestampAsUint32(lastUpdatedTimestamp), resultRay);
     }

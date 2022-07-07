@@ -37,9 +37,6 @@ export const ConfigForGenericTests = {
       weth.address
     )) as TestRateOracle;
 
-    await testRateOracle.setMinSecondsSinceLastUpdate(64800);
-    await testRateOracle.setRateValueUpdateEpsilon(1);
-
     return { testRateOracle, rocketEth: rocketEth };
   },
   setRateAsDecimal: async (rate: number) => {
