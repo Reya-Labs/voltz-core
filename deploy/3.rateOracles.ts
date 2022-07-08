@@ -34,10 +34,10 @@ const deployAndConfigureRateOracleInstance = async (
 
   if (!rateOracleContract) {
     // There is no rate oracle already deployed with this rateOracleIdentifier. Deploy one now.
-    console.log("rateOracleIdentifier", rateOracleIdentifier);
-    console.log("instance.contractName:", instance.contractName);
-    console.log("deployer:", deployer);
-    console.log("args:", instance.args);
+    // console.log("rateOracleIdentifier", rateOracleIdentifier);
+    // console.log("instance.contractName:", instance.contractName);
+    // console.log("deployer:", deployer);
+    // console.log("args:", instance.args);
     await deploy(rateOracleIdentifier, {
       contract: instance.contractName,
       from: deployer,
@@ -75,8 +75,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const existingAaveLendingPoolAddress = aaveConfig?.aaveLendingPool;
   const aaveTokens = aaveConfig?.aaveTokens;
 
-  console.log("aaveTokens", aaveTokens);
-  console.log("existingAaveLendingPoolAddress", existingAaveLendingPoolAddress);
+  // console.log("aaveTokens", aaveTokens);
+  // console.log("existingAaveLendingPoolAddress", existingAaveLendingPoolAddress);
   if (existingAaveLendingPoolAddress && aaveTokens) {
     const aaveLendingPool = await ethers.getContractAt(
       "IAaveV2LendingPool",
@@ -213,8 +213,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // RocketPool Rate Oracle
   const rocketPoolConfig = deployConfig.rocketPoolConfig;
   const rocketEthAddress = rocketPoolConfig?.rocketPoolRocketToken;
+  const rocketNetworkBalancesAddress = rocketPoolConfig?.rocketNetworkBalances;
 
-  if (rocketEthAddress) {
+  if (rocketEthAddress && rocketNetworkBalancesAddress) {
     const { trustedTimestamps, trustedObservationValuesInRay } =
       convertTrustedRateOracleDataPoints(
         rocketPoolConfig.defaults.trustedDataPoints
@@ -230,6 +231,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // For RocketPool, the first constructor arg is the rocketEth (RETH) address
     const args = [
       rocketEthAddress,
+      rocketNetworkBalancesAddress,
       wethAddress,
       trustedTimestamps,
       trustedObservationValuesInRay,

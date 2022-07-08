@@ -1,3 +1,4 @@
+import * as dotenv from "dotenv";
 import type {
   ContractsConfig,
   ContractsConfigMap,
@@ -9,6 +10,8 @@ import type {
 import { toBn } from "../test/helpers/toBn";
 import { BaseRateOracle } from "../typechain";
 import { BigNumberish } from "ethers";
+
+dotenv.config();
 
 const MAX_BUFFER_GROWTH_PER_TRANSACTION = 100;
 const BUFFER_SIZE_SAFETY_FACTOR = 1.2; // The buffer must last for 1.2x as long as the longest expected IRS
@@ -105,30 +108,20 @@ const kovanTusdDataPoints: RateOracleDataPoint[] = [
 ];
 
 const mainnetStEthDataPoints: RateOracleDataPoint[] = [
-  // [1654603223, "1074107057218833282983247582"],
-  // [1654689623, "1074224739278887190525724305"],
-  // [1654776023, "1074343227559078157387295600"],
-  // [1654862423, "1074461441965947673156514950"],
-  // [1654948823, "1074579547277770633179477005"],
-  // [1655035223, "1074697726413162893057906899"],
-  // [1655121623, "1074815253005896144158097617"],
-  // [1655208023, "1074932721311129347085273203"],
-  // [1655294423, "1075050717667875386693668635"],
-  // [1655380823, "1075167764286668509116196355"],
-  // [1655467223, "1075285097535351188536724995"],
-  // [1655553623, "1075402348080286520084149090"],
-  // [1655640023, "1075518323108559521472390546"],
-  // [1655726423, "1075635871399553395975439325"],
-  [1655812823, "1075753005957224757634508350"],
-  [1655899223, "1075870157728924987622204368"],
-  [1655985623, "1075986987249309892706409445"],
-  [1656072023, "1076104367462616827049814244"],
-  [1656158423, "1076221273888978950003372815"],
-  [1656244823, "1076338244388204416534613903"],
-  [1656331223, "1076454877601569321869671702"],
-  [1656417623, "1076571805980165022361453919"],
-  [1656504023, "1076688660297006942565885179"],
-  // [1656590423, "1076805850648432598627797695"],
+  [1655812823, "1075753005957224757634513923"],
+  [1655985623, "1075986987249309892706408684"],
+  [1656072023, "1076104367462616827049814900"],
+  [1656158423, "1076221273888978950003375138"],
+  [1656244823, "1076338244388204416534621729"],
+  [1656331223, "1076454877601569321869686361"],
+  [1656504023, "1076688660297006942565886418"],
+  [1656590423, "1076805850648432598627800084"],
+  [1656676823, "1076922239357196746188609097"],
+  [1656763223, "1077039569267086687687242833"],
+  [1656849623, "1077155719316616284685220370"],
+  [1656936023, "1077272225887644039895130283"],
+  [1657022423, "1077389108821174620494508582"],
+  [1657108823, "1077505539378612583110512975"],
 ];
 
 const mainnetRocketEthDataPoints: RateOracleDataPoint[] = [
@@ -347,6 +340,7 @@ const mainnetConfig: ContractsConfig = {
   rocketPoolConfig: {
     // RocketPool deployment info at ???
     rocketPoolRocketToken: "0xae78736cd615f374d3085123a210448e74fc6393",
+    rocketNetworkBalances: "0x138313f102ce9a0662f826fca977e3ab4d6e5539",
     defaults: {
       rateOracleBufferSize: 500,
       trustedDataPoints: mainnetRocketEthDataPoints,
@@ -382,7 +376,11 @@ const config: ContractsConfigMap = {
   mainnet: mainnetConfig,
   // hardhat: kovanConfig, // uncomment if testing against a kovan fork
   // hardhat: { ...mainnetConfig, skipFactoryDeploy: false, }, // uncomment if deploying a new system against a mainnet fork
-  hardhat: localhostConfig,
+  hardhat: !!process.env.FORK_MAINNET
+    ? { ...mainnetConfig, skipFactoryDeploy: false }
+    : !!process.env.FORK_KOVAN
+    ? kovanConfig
+    : localhostConfig,
 };
 
 export const getConfig = (_networkName: string): ContractsConfig => {

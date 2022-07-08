@@ -13,6 +13,7 @@ import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
+import { HardhatNetworkUserConfig } from "hardhat/types";
 // import "@primitivefi/hardhat-dodoc"; bring back on demand
 
 dotenv.config();
@@ -87,6 +88,28 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
+let hardhatNetworkConfig: HardhatNetworkUserConfig = {
+  allowUnlimitedContractSize: true,
+};
+
+if (!!process.env.FORK_MAINNET) {
+  hardhatNetworkConfig = {
+    allowUnlimitedContractSize: true,
+    forking: {
+      url: `${process.env.MAINNET_URL}`,
+      blockNumber: 15101806,
+    },
+  };
+} else if (!!process.env.FORK_KOVAN) {
+  hardhatNetworkConfig = {
+    allowUnlimitedContractSize: true,
+    forking: {
+      url: `${process.env.KOVAN_URL}`,
+      blockNumber: 31458273,
+    },
+  };
+}
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.9",
@@ -103,15 +126,7 @@ const config: HardhatUserConfig = {
       live: false,
     },
     hardhat: {
-      // forking: {
-      //   url: `${process.env.KOVAN_URL}`,
-      //   blockNumber: 31458273,
-      // },
-      // forking: {
-      //   url: `${process.env.MAINNET_URL}`,
-      //   blockNumber: 14774005,
-      // },
-      allowUnlimitedContractSize: true,
+      ...hardhatNetworkConfig,
     },
     mainnet: {
       url: `${process.env.MAINNET_URL}`,
@@ -121,13 +136,6 @@ const config: HardhatUserConfig = {
     },
     // ropsten: {
     //   url: `${process.env.ROPSTEN_URL}`,
-    // },
-    // rinkeby: {
-    //   url: `${process.env.RINKEBY_URL}`,
-    //   accounts: [`${process.env.RINKEBY_PRIVATE_KEY}`],
-    // },
-    // goerli: {
-    //   url: `${process.env.GOERLI_URL}`,
     // },
     kovan: {
       url: `${process.env.KOVAN_URL}`,

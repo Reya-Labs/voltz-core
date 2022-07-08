@@ -103,6 +103,7 @@
     "deploy:rinkeby": "hardhat deploy --network rinkeby --tags Factory,RateOracles,Periphery,FCMs --export deployments/rinkebyDeployment.json",
     "deployCommunity:kovan": "hardhat deploy --network kovan --tags CommunityDeployer --export deployments/kovanCommunityVote.json",
     "deploy:localhost": "npx hardhat node --tags Factory,Mocks,MockRateOracles,RateOracles,Periphery,FCMs --export deployments/localhostDeployment.json --hostname 0.0.0.0",
+    "deploy:mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory,RateOracles,Periphery,FCMs --export deployments/localhostDeployment.json --hostname 0.0.0.0",
     "createTestIrs:localhost": "npx hardhat createIrsInstance --network localhost --rate-oracle 'MockTokenRateOracle' --tick-spacing 3000",
     "generateEndToEndActivity:localhost": "npx hardhat test --network localhost test/end_to_end/general_setup/scenario0/scenario0.ts"
   },
