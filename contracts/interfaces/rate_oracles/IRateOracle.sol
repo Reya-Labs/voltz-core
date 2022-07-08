@@ -105,7 +105,7 @@ interface IRateOracle is CustomErrors {
     /// @notice returns the last change in rate and time
     /// it gets the last two observations and returns the change in rate and time
     /// it helps into computing the latest slope 
-    function getLastSlope()
+    function getRateSlope()
         external
         view
         returns (uint256 rateChange, uint32 timeChange);

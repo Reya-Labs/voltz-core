@@ -7,6 +7,7 @@ import "../interfaces/rocketPool/IRocketEth.sol";
 import "../interfaces/rocketPool/IRocketNetworkBalances.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 import "../utils/WadRayMath.sol";
+import "hardhat/console.sol";
 
 contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
     IRocketEth public override rocketEth;
@@ -48,6 +49,8 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
 
         uint256 lastUpdatedBlock = rocketNetworkBalances.getBalancesBlock();
         (uint256 blockChange, uint32 timeChange) = getBlockSlope();
+
+        console.log("block.number in getting last updated rate", block.number);
 
         uint256 lastUpdatedTimestamp = block.timestamp -
             ((block.number - lastUpdatedBlock) * timeChange) /

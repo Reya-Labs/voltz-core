@@ -10,6 +10,7 @@ import "../interfaces/IFactory.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../core_libraries/Time.sol";
 import "../utils/WadRayMath.sol";
+import "hardhat/console.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 ///  This contract is abstract. To make the contract deployable override the
@@ -448,7 +449,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         );
     }
 
-    function getLastSlope()
+    function getRateSlope()
         public
         view
         override
@@ -458,6 +459,11 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint16 lastButOne = (oracleVars.rateIndex >= 1)
             ? oracleVars.rateIndex - 1
             : oracleVars.rateCardinality - 1;
+
+        console.log("oracleVars.rateCardinality", oracleVars.rateCardinality);
+        console.log("observations[lastButOne].initialized", observations[lastButOne].initialized);
+        console.log("observations[lastButOne].observedValue", observations[lastButOne].observedValue);
+        console.log("observations[last].observedValue", observations[last].observedValue);
 
         // check if there are at least two points in the rate oracle
         // otherwise, revert with "Not Enough Points"
@@ -493,7 +499,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             return lastUpdatedRate;
         }
 
-        (uint256 rateChange, uint32 timeChange) = getLastSlope();
+        (uint256 rateChange, uint32 timeChange) = getRateSlope();
 
         currentRate =
             lastUpdatedRate +

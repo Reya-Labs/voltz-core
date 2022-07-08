@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity =0.8.9;
 
+import "hardhat/console.sol";
+
 /**
  * @dev RocketPool RETH mock - only for testing purposes.
  */
@@ -9,7 +11,7 @@ contract MockRocketEth {
     uint256 private _lastUpdatedBlock;
     bool private _instantUpdates;
 
-    constructor () public {
+    constructor() public {
         _instantUpdates = true;
     }
 
@@ -32,5 +34,7 @@ contract MockRocketEth {
     function setRethMultiplierInRay(uint256 rethMultiplier) public {
         _rethMultiplier = rethMultiplier;
         _lastUpdatedBlock = block.number;
+        console.log("   block number in setting new rate:", block.number);
+        console.log("block timestamp in setting new rate:", block.timestamp);
     }
 }
