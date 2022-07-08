@@ -54,6 +54,9 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
         (uint256 blockChange, uint32 timeChange) = getBlockSlope();
 
         console.log("block.number in getting last updated rate", block.number);
+        console.log("block.timestamp in getting last updated rate", block.timestamp);
+        console.log("blockChange", blockChange);
+        console.log("timeChange", timeChange);
 
         uint256 lastUpdatedTimestamp = block.timestamp -
             ((block.number - lastUpdatedBlockNumber) * timeChange) /

@@ -481,20 +481,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             ? oracleVars.rateIndex - 1
             : oracleVars.rateCardinality - 1;
 
-        console.log("oracleVars.rateCardinality", oracleVars.rateCardinality);
-        console.log(
-            "observations[lastButOne].initialized",
-            observations[lastButOne].initialized
-        );
-        console.log(
-            "observations[lastButOne].observedValue",
-            observations[lastButOne].observedValue
-        );
-        console.log(
-            "observations[last].observedValue",
-            observations[last].observedValue
-        );
-
         // check if there are at least two points in the rate oracle
         // otherwise, revert with "Not Enough Points"
         require(

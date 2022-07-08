@@ -34,7 +34,5 @@ contract MockRocketEth {
     function setRethMultiplierInRay(uint256 rethMultiplier) public {
         _rethMultiplier = rethMultiplier;
         _lastUpdatedBlock = block.number;
-        console.log("   block number in setting new rate:", block.number);
-        console.log("block timestamp in setting new rate:", block.timestamp);
     }
 }
