@@ -204,6 +204,16 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
+    /// @inheritdoc IRateOracle
+    function getRateFrom(uint256 _from)
+        public
+        view
+        override(IRateOracle)
+        returns (uint256)
+    {
+        return getRateFromTo(_from, block.timestamp);
+    }
+
     function observeSingle(
         uint32 currentTime,
         uint32 queriedTime,
@@ -324,6 +334,17 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
         apyFromToWad = computeApyFromRate(rateFromToWad, timeInYearsWad);
     }
+
+    /// @inheritdoc IRateOracle
+    function getApyFrom(uint256 from)
+        public
+        view
+        override
+        returns (uint256 apyFromToWad)
+    {
+        return getApyFromTo(from, block.timestamp);
+    }
+
 
     /// @inheritdoc IRateOracle
     function variableFactor(
@@ -448,6 +469,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         );
     }
 
+    /// @inheritdoc IRateOracle
     function getLastRateSlope()
         public
         view
