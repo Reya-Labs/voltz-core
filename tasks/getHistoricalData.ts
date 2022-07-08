@@ -22,9 +22,11 @@ const rocketMarginEngineAddress = "0xB1125ba5878cF3A843bE686c6c2486306f03E301";
 const voltzLidoStartBlock = 14977662;
 const voltzRocketStartBlock = 14977668;
 // const lidoMarginEngineStartBlock = 15058080; // For first Lido Margin Engine
-const rocketRateOracle1Address = "0xC6E151da56403Bf2eDF68eE586cF78eE5781D45F";
+// const rocketRateOracle1Address = "0xC6E151da56403Bf2eDF68eE586cF78eE5781D45F";
+const rocketRateOracle1Address = "0xe38b6847E611e942E6c80eD89aE867F522402e80"; // mainnet_fork
 const rocketRateOracle2Address = "0x1dEa21b51CfDd4c62cB67812D454aBE860Be24A2";
-const lidoRateOracle1Address = "0x464c7Dc02a400C2eF5a27B45552877A8D7116361";
+// const lidoRateOracle1Address = "0x464c7Dc02a400C2eF5a27B45552877A8D7116361";
+const lidoRateOracle1Address = "0xd3FFD73C53F139cEBB80b6A524bE280955b3f4db"; // mainnet_fork
 const lidoRateOracle2Address = "0x208eA737deA529bafb3cD77d722c8ec4A4a637c9";
 const lidoOracleAddress = "0x442af784a788a5bd6f42a01ebe9f287a871243fb";
 const cTokenAddresses = {
@@ -196,7 +198,11 @@ task(
       taskArgs.voltzLido
         ? ",lido_margin_engine_APY,lido_rate_oracle1_APY,lido_rate_oracle2_APY,lido_frame_epoch_id,lido_frame_start,lido_frame_end,lido_completed_epoch,epochs_per_frame,slots_per_epoch,seconds_per_slot,genesis_time,time_of_last_completed_epoch"
         : ""
-    }${taskArgs.lido ? ",lido" : ""}${taskArgs.rocket ? ",rocket_rate" : ""}${
+    }${taskArgs.lido ? ",lido" : ""}${
+      taskArgs.rocket
+        ? ",rocket_balances_block,rocket_balances_timestamp,rocket_rate"
+        : ""
+    }${
       taskArgs.voltzRocket
         ? ",rocket_margin_engine_APY,rocket_rate_oracle1_APY,rocket_rate_oracle2_APY"
         : ""
@@ -299,24 +305,24 @@ task(
       // Rocket
       if (taskArgs.rocket) {
         if (b >= rocketEthnMainnetStartBlock) {
+          const balancesBlockNumber =
+            await rocketNetworkBalancesEth.getBalancesBlock({
+              blockTag: b,
+            });
+          rowValues.push(balancesBlockNumber);
+
+          const balancesBlock = await hre.ethers.provider.getBlock(
+            balancesBlockNumber.toNumber()
+          );
+          rowValues.push(BigNumber.from(balancesBlock.timestamp));
+
           const r = await rocketEth.getEthValue(toBn(1, 27), {
             blockTag: b,
           });
-
-          const latestBlock = await rocketNetworkBalancesEth.getBalancesBlock({
-            blockTag: b,
-          });
-
-          const balancesBlock = await rocketNetworkBalancesEth.getBalancesBlock(
-            {
-              blockTag: b,
-            }
-          );
-
-          console.log("latestBlock:", latestBlock.toString());
-          console.log("balancesBlock:", balancesBlock.toString());
           rowValues.push(r);
         } else {
+          rowValues.push(null);
+          rowValues.push(null);
           rowValues.push(null);
         }
       }

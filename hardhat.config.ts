@@ -97,7 +97,7 @@ if (!!process.env.FORK_MAINNET) {
     allowUnlimitedContractSize: true,
     forking: {
       url: `${process.env.MAINNET_URL}`,
-      blockNumber: 15101806,
+      blockNumber: 15102422,
     },
   };
 } else if (!!process.env.FORK_KOVAN) {
@@ -105,7 +105,6 @@ if (!!process.env.FORK_MAINNET) {
     allowUnlimitedContractSize: true,
     forking: {
       url: `${process.env.KOVAN_URL}`,
-      blockNumber: 31458273,
     },
   };
 }
