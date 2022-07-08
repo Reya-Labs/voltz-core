@@ -11,7 +11,7 @@ contract MockRocketEth {
     uint256 private _lastUpdatedBlock;
     bool private _instantUpdates;
 
-    constructor () public {
+    constructor() public {
         _instantUpdates = true;
     }
 

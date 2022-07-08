@@ -346,7 +346,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         return getApyFromTo(from, block.timestamp);
     }
 
-
     /// @inheritdoc IRateOracle
     function variableFactor(
         uint256 termStartTimestampInWeiSeconds,
@@ -483,9 +482,18 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             : oracleVars.rateCardinality - 1;
 
         console.log("oracleVars.rateCardinality", oracleVars.rateCardinality);
-        console.log("observations[lastButOne].initialized", observations[lastButOne].initialized);
-        console.log("observations[lastButOne].observedValue", observations[lastButOne].observedValue);
-        console.log("observations[last].observedValue", observations[last].observedValue);
+        console.log(
+            "observations[lastButOne].initialized",
+            observations[lastButOne].initialized
+        );
+        console.log(
+            "observations[lastButOne].observedValue",
+            observations[lastButOne].observedValue
+        );
+        console.log(
+            "observations[last].observedValue",
+            observations[last].observedValue
+        );
 
         // check if there are at least two points in the rate oracle
         // otherwise, revert with "Not Enough Points"
@@ -539,7 +547,10 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         returns (uint256 blockChange, uint32 timeChange)
     {
-        if (lastUpdatedBlock.number == 0 || lastUpdatedBlock.number >= block.number) {
+        if (
+            lastUpdatedBlock.number == 0 ||
+            lastUpdatedBlock.number >= block.number
+        ) {
             // We don't have useful data so assume 13.5 seconds per block
             // This may be inaccurate for networks other than ethereum's PoW mainnet, but any error should be short-lived
             return (10, 135);
