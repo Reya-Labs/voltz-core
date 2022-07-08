@@ -448,7 +448,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         );
     }
 
-    function getLastSlope()
+    function getLastRateSlope()
         public
         view
         override
@@ -493,7 +493,9 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             return lastUpdatedRate;
         }
 
-        (uint256 rateChange, uint32 timeChange) = getLastSlope();
+        // We can't get the current rate from the underlying platform, perhaps because it only pushes
+        // rates to chain periodically. So we extrapolate the likely current rate from recent rates.
+        (uint256 rateChange, uint32 timeChange) = getLastRateSlope();
 
         currentRate =
             lastUpdatedRate +
@@ -509,7 +511,9 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         returns (uint256 blockChange, uint32 timeChange)
     {
-        if (lastUpdatedBlock.number >= block.number) {
+        if (lastUpdatedBlock.number == 0 || lastUpdatedBlock.number >= block.number) {
+            // We don't have useful data so assume 13.5 seconds per block
+            // This may be inaccurate for networks other than ethereum's PoW mainnet, but any error should be short-lived
             return (10, 135);
         }
 

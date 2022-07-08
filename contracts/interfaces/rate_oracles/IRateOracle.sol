@@ -103,9 +103,9 @@ interface IRateOracle is CustomErrors {
     function UNDERLYING_YIELD_BEARING_PROTOCOL_ID() external view returns(uint8 yieldBearingProtocolID);
 
     /// @notice returns the last change in rate and time
-    /// it gets the last two observations and returns the change in rate and time
-    /// it helps into computing the latest slope 
-    function getLastSlope()
+    /// Gets the last two observations and returns the change in rate and time.
+    /// This can help us to extrapolate an estiamte of the current rate from recent known rates. 
+    function getLastRateSlope()
         external
         view
         returns (uint256 rateChange, uint32 timeChange);
@@ -125,6 +125,7 @@ interface IRateOracle is CustomErrors {
         returns (uint256 currentRate);
 
     /// @notice returns the last change in block number and timestamp 
+    /// Some implementations may use this data to estimate timestamps for recent rate readings, if we only know the block number
     function getBlockSlope()
         external
         view
