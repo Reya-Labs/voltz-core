@@ -59,8 +59,16 @@ interface IRateOracle is CustomErrors {
     /// @dev If the current block timestamp is beyond the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp, termEndTimestamp). No caching takes place.
     /// @dev If the current block timestamp is before the maturity of the AMM, then the variableFactor is getRateFromTo(termStartTimestamp,Time.blockTimestampScaled());
     function variableFactorNoCache(uint256 termStartTimestamp, uint256 termEndTimestamp) external view returns(uint256 result);
-
     
+    /// @notice Calculates the observed interest returned by the underlying in a given period
+    /// @dev Reverts if we have no data point for `_from`
+    /// @param _from The timestamp of the start of the period, in seconds
+    /// @return The "floating rate" expressed in Wad, e.g. 4% is encoded as 0.04*10**18 = 4*10**16
+    function getRateFrom(uint256 _from)
+        external
+        view
+        returns (uint256);
+
     /// @notice Calculates the observed interest returned by the underlying in a given period
     /// @dev Reverts if we have no data point for either timestamp
     /// @param _from The timestamp of the start of the period, in seconds
@@ -71,11 +79,20 @@ interface IRateOracle is CustomErrors {
         view
         returns (uint256);
 
+    /// @notice Calculates the observed APY returned by the rate oracle between the given timestamp and the current time
+    /// @param from The timestamp of the start of the period, in seconds
+    /// @dev Reverts if we have no data point for `from`
+    /// @return apyFromTo The "floating rate" expressed in Wad, e.g. 4% is encoded as 0.04*10**18 = 4*10**16
+    function getApyFrom(uint256 from)
+        external
+        view
+        returns (uint256 apyFromTo);
+
     /// @notice Calculates the observed APY returned by the rate oracle in a given period
     /// @param from The timestamp of the start of the period, in seconds
     /// @param to The timestamp of the end of the period, in seconds
     /// @dev Reverts if we have no data point for either timestamp
-    //  how is the returned rate encoded? Floating rate?
+    /// @return apyFromTo The "floating rate" expressed in Wad, e.g. 4% is encoded as 0.04*10**18 = 4*10**16
     function getApyFromTo(uint256 from, uint256 to)
         external
         view
@@ -103,9 +120,9 @@ interface IRateOracle is CustomErrors {
     function UNDERLYING_YIELD_BEARING_PROTOCOL_ID() external view returns(uint8 yieldBearingProtocolID);
 
     /// @notice returns the last change in rate and time
-    /// it gets the last two observations and returns the change in rate and time
-    /// it helps into computing the latest slope 
-    function getRateSlope()
+    /// Gets the last two observations and returns the change in rate and time.
+    /// This can help us to extrapolate an estiamte of the current rate from recent known rates. 
+    function getLastRateSlope()
         external
         view
         returns (uint256 rateChange, uint32 timeChange);
@@ -125,6 +142,7 @@ interface IRateOracle is CustomErrors {
         returns (uint256 currentRate);
 
     /// @notice returns the last change in block number and timestamp 
+    /// Some implementations may use this data to estimate timestamps for recent rate readings, if we only know the block number
     function getBlockSlope()
         external
         view

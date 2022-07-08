@@ -205,6 +205,16 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
+    /// @inheritdoc IRateOracle
+    function getRateFrom(uint256 _from)
+        public
+        view
+        override(IRateOracle)
+        returns (uint256)
+    {
+        return getRateFromTo(_from, block.timestamp);
+    }
+
     function observeSingle(
         uint32 currentTime,
         uint32 queriedTime,
@@ -325,6 +335,17 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
         apyFromToWad = computeApyFromRate(rateFromToWad, timeInYearsWad);
     }
+
+    /// @inheritdoc IRateOracle
+    function getApyFrom(uint256 from)
+        public
+        view
+        override
+        returns (uint256 apyFromToWad)
+    {
+        return getApyFromTo(from, block.timestamp);
+    }
+
 
     /// @inheritdoc IRateOracle
     function variableFactor(
@@ -449,7 +470,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         );
     }
 
-    function getRateSlope()
+    /// @inheritdoc IRateOracle
+    function getLastRateSlope()
         public
         view
         override
@@ -499,7 +521,9 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             return lastUpdatedRate;
         }
 
-        (uint256 rateChange, uint32 timeChange) = getRateSlope();
+        // We can't get the current rate from the underlying platform, perhaps because it only pushes
+        // rates to chain periodically. So we extrapolate the likely current rate from recent rates.
+        (uint256 rateChange, uint32 timeChange) = getLastRateSlope();
 
         currentRate =
             lastUpdatedRate +
@@ -515,7 +539,9 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         returns (uint256 blockChange, uint32 timeChange)
     {
-        if (lastUpdatedBlock.number >= block.number) {
+        if (lastUpdatedBlock.number == 0 || lastUpdatedBlock.number >= block.number) {
+            // We don't have useful data so assume 13.5 seconds per block
+            // This may be inaccurate for networks other than ethereum's PoW mainnet, but any error should be short-lived
             return (10, 135);
         }
 
