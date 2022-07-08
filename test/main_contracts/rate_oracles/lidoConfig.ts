@@ -7,7 +7,7 @@ import { MockStEth } from "../../../typechain/MockStEth";
 let stEth: MockStEth;
 let lidoOracle: MockLidoOracle;
 let weth: MockWETH;
-let startingExchangeRate = 1;
+const startingExchangeRate = 1;
 
 export const ConfigForGenericTests = {
   configName: "Lido",

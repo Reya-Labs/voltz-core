@@ -18,6 +18,7 @@ export const ConfigForGenericTests = {
 
     // store rocketEth for use when setting rates
     rocketEth = (await ethers.getContract("MockRocketEth")) as MockRocketEth;
+    await rocketEth.setInstantUpdates(true);
     await rocketEth.setRethMultiplierInRay(
       toBn(1, consts.NORMALIZED_RATE_DECIMALS)
     );

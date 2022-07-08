@@ -31,9 +31,9 @@ let testRateOracle: TestRateOracle;
 
 // Modify this list to test new rate oracles
 const CONFIGURATIONS_UNDER_TEST = [
-  // CompoundConfig,
-  // AaveConfig,
-  // LidoConfig,
+  CompoundConfig,
+  AaveConfig,
+  LidoConfig,
   RocketPoolConfig,
 ];
 

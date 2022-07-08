@@ -497,7 +497,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
         currentRate =
             lastUpdatedRate +
-            ((Time.blockTimestampTruncated() - lastUpdatedTimestamp) * rateChange) /
+            ((Time.blockTimestampTruncated() - lastUpdatedTimestamp) *
+                rateChange) /
             timeChange;
     }
 
@@ -506,12 +507,15 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         public
         view
         override
-        returns (uint256 blockChange, uint32 timeChange) 
+        returns (uint256 blockChange, uint32 timeChange)
     {
         if (lastUpdatedBlock.number >= block.number) {
             return (10, 135);
         }
 
-        return (block.number - lastUpdatedBlock.number, Time.blockTimestampTruncated() - lastUpdatedBlock.timestamp);
+        return (
+            block.number - lastUpdatedBlock.number,
+            Time.blockTimestampTruncated() - lastUpdatedBlock.timestamp
+        );
     }
 }

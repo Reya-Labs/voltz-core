@@ -9,7 +9,11 @@ contract MockRocketEth {
     uint256 private _lastUpdatedBlock;
     bool private _instantUpdates;
 
-    constructor (bool instantUpdates) {
+    constructor () public {
+        _instantUpdates = true;
+    }
+
+    function setInstantUpdates(bool instantUpdates) public {
         _instantUpdates = instantUpdates;
     }
 
@@ -20,8 +24,7 @@ contract MockRocketEth {
     function getLastUpdatedBlock() public view returns (uint256) {
         if (_instantUpdates) {
             return block.number;
-        }
-        else {
+        } else {
             return _lastUpdatedBlock;
         }
     }

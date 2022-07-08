@@ -50,7 +50,8 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
         (uint256 blockChange, uint32 timeChange) = getBlockSlope();
 
         uint256 lastUpdatedTimestamp = block.timestamp -
-            (block.number - lastUpdatedBlock) * timeChange / blockChange;
+            ((block.number - lastUpdatedBlock) * timeChange) /
+            blockChange;
 
         return (Time.timestampAsUint32(lastUpdatedTimestamp), resultRay);
     }

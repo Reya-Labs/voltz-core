@@ -8,7 +8,7 @@ import { deployments, ethers } from "hardhat";
 
 let cToken: MockCToken;
 let rateDecimals: number;
-let startingExchangeRate = 0.02;
+const startingExchangeRate = 0.02;
 
 export const ConfigForGenericTests = {
   configName: "Compound",

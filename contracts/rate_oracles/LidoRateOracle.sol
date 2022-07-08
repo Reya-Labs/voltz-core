@@ -35,7 +35,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         stEth = _stEth;
         lidoOracle = _lidoOracle;
         refreshBeaconSpec();
-        
+
         _populateInitialObservations(_times, _results);
     }
 
