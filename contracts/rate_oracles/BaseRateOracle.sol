@@ -37,6 +37,11 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint256 number;
     }
 
+    struct BlockSlopeInfo {
+        uint32 timeChange;
+        uint256 blockChange;
+    }
+
     /// @inheritdoc IRateOracle
     IERC20Minimal public immutable override underlying;
 
@@ -49,6 +54,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     OracleBuffer.Observation[65535] public observations;
 
     BlockInfo public lastUpdatedBlock;
+    BlockSlopeInfo public currentBlockSlope;
 
     /// @inheritdoc IRateOracle
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate)
@@ -65,8 +71,12 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
     constructor(IERC20Minimal _underlying) {
         underlying = _underlying;
+
         lastUpdatedBlock.number = block.number;
         lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
+
+        currentBlockSlope.timeChange = 135;
+        currentBlockSlope.blockChange = 10;
     }
 
     /// @dev this must be called at the *end* of the constructor, after the contract member variables have been set, because it needs to read rates.
@@ -447,8 +457,13 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             cardinalityNext
         );
 
-        lastUpdatedBlock.number = block.number;
-        lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
+        if (lastUpdatedBlock.timestamp + 86400 <= Time.blockTimestampTruncated()) {
+            currentBlockSlope.blockChange = block.number - lastUpdatedBlock.number;
+            currentBlockSlope.timeChange = Time.blockTimestampTruncated() - lastUpdatedBlock.timestamp;
+
+            lastUpdatedBlock.number = block.number;
+            lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
+        }
 
         return
             observations.write(
@@ -533,18 +548,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         returns (uint256 blockChange, uint32 timeChange)
     {
-        if (
-            lastUpdatedBlock.number == 0 ||
-            lastUpdatedBlock.number >= block.number
-        ) {
-            // We don't have useful data so assume 13.5 seconds per block
-            // This may be inaccurate for networks other than ethereum's PoW mainnet, but any error should be short-lived
-            return (10, 135);
-        }
-
-        return (
-            block.number - lastUpdatedBlock.number,
-            Time.blockTimestampTruncated() - lastUpdatedBlock.timestamp
-        );
+        blockChange = currentBlockSlope.blockChange;
+        timeChange = currentBlockSlope.timeChange;
     }
 }

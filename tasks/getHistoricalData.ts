@@ -146,8 +146,6 @@ task("getHistoricalData", "Retrieves the historical rates")
     let asset = "";
     let decimals = 0;
 
-    const header = "block,timestamp,rate";
-
     // compound
     if (taskArgs.compound) {
       asset = `c${taskArgs.token}`;
@@ -224,12 +222,14 @@ task("getHistoricalData", "Retrieves the historical rates")
     const fs = require("fs");
     const file = `historicalData/${asset}.csv`;
 
+    const header = "block,timestamp,rate";
+
     fs.appendFileSync(file, header + "\n");
     console.log(header);
 
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
       const block = await hre.ethers.provider.getBlock(b);
-      let fetch = FETCH_STATUS.FAILURE;
+      let fetch: FETCH_STATUS = FETCH_STATUS.FAILURE;
 
       // Lido
       if (taskArgs.lido) {

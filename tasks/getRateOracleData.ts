@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
-import { IMarginEngine } from "../typechain";
+import { BaseRateOracle } from "../typechain";
 
 // eslint-disable-next-line no-unused-vars
 enum FETCH_STATUS {
@@ -12,24 +12,11 @@ enum FETCH_STATUS {
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
-const deploymentBlocks = {
-  "0x21F9151d6e06f834751b614C2Ff40Fc28811B235": 15058080,
-};
-
-const getDeploymentBlock = (address: string): number => {
-  if (!Object.keys(deploymentBlocks).includes(address)) {
-    throw new Error(
-      `Unrecognized error. Check the deployment block of ${address}!`
-    );
-  }
-  return deploymentBlocks[address as keyof typeof deploymentBlocks];
-};
-
 task(
-  "getHistoricalApy",
+  "getRateOracleData",
   "Predicts the IRS addresses used by a not-yet-created IRS instance"
 )
-  .addOptionalParam(
+  .addParam(
     "fromBlock",
     "Get data from this past block number (up to some larger block number defined by `toBlock`)",
     undefined,
@@ -41,6 +28,12 @@ task(
     blocksPerDay,
     types.int
   )
+  .addParam(
+    "lookbackWindow",
+    "The lookback window to use, in seconds, when querying data from a RateOracle",
+    60 * 60 * 24 * 28, // 28 days
+    types.int
+  )
   .addOptionalParam(
     "toBlock",
     "Get data up to this block (defaults to latest block)",
@@ -48,30 +41,21 @@ task(
     types.int
   )
   .addParam(
-    "marginEngineAddress",
-    "Queried Margin Engine Address",
+    "rateOracleAddress",
+    "Queried Rate Oracle",
     "0x0000000000000000000000000000000000000000",
     types.string
   )
   .setAction(async (taskArgs, hre) => {
-    const marginEngine = (await hre.ethers.getContractAt(
-      "MarginEngine",
-      taskArgs.marginEngineAddress
-    )) as IMarginEngine;
-
-    const deploymentBlockNumber = getDeploymentBlock(marginEngine.address);
-    if (!deploymentBlockNumber) {
-      throw new Error("Couldn't fetch deployment block number");
-    }
+    const rateOracle = (await hre.ethers.getContractAt(
+      "BaseRateOracle",
+      taskArgs.rateOracleAddress
+    )) as BaseRateOracle;
 
     const currentBlock = await hre.ethers.provider.getBlock("latest");
     const currentBlockNumber = currentBlock.number;
-    let fromBlock = deploymentBlockNumber;
     let toBlock = currentBlockNumber;
-
-    if (taskArgs.fromBlock) {
-      fromBlock = Math.max(deploymentBlockNumber, taskArgs.fromBlock);
-    }
+    const fromBlock = taskArgs.fromBlock;
 
     if (taskArgs.toBlock) {
       toBlock = Math.min(currentBlockNumber, taskArgs.toBlock);
@@ -81,46 +65,47 @@ task(
       console.error(`Invalid block range: ${fromBlock}-${toBlock}`);
     }
 
-    const deploymentBlock = await hre.ethers.provider.getBlock(
-      deploymentBlockNumber
-    );
-
-    console.log(
-      `This margin engine (${marginEngine.address}) was deployed at ${new Date(
-        deploymentBlock.timestamp * 1000
-      ).toISOString()}.\n`
-    );
-
     const blocks: number[] = [];
     const timestamps: number[] = [];
     const apys: number[] = [];
 
     const fs = require("fs");
-    const file = `historicalData/historicalApy/${marginEngine.address}.csv`;
+    const file = `historicalData/rateOracleData/${rateOracle.address}.csv`;
 
     const header = "block,timestamp,apy";
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
 
+    // advance time by 1 day for Rocket to pick the right block time average
+
+    // if (hre.network.name === 'localhost') {
+    //     for (let i = 0; i < blocksPerDay; i++) {
+    //     await hre.network.provider.send("evm_mine", []);
+    //     }
+    // }
+
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
       const block = await hre.ethers.provider.getBlock(b);
       let fetch: FETCH_STATUS = FETCH_STATUS.FAILURE;
 
-      if (b >= deploymentBlockNumber) {
-        try {
-          const historicalApy = await marginEngine.getHistoricalApyReadOnly({
-            blockTag: b,
-          });
-          blocks.push(b);
-          timestamps.push(block.timestamp);
-          apys.push(
-            historicalApy.div(BigNumber.from(10).pow(9)).toNumber() / 1e9
-          );
-          fetch = FETCH_STATUS.SUCCESS;
-        } catch (error) {
-          // console.log("error:", error);
-        }
+      try {
+        console.log(
+          `getting apy from ${block.timestamp - taskArgs.lookbackWindow} to ${
+            block.timestamp
+          }`
+        );
+        const apy = await rateOracle.getApyFromTo(
+          block.timestamp - taskArgs.lookbackWindow,
+          block.timestamp
+        );
+        blocks.push(b);
+        timestamps.push(block.timestamp);
+        apys.push(apy.div(BigNumber.from(10).pow(9)).toNumber() / 1e9);
+
+        fetch = FETCH_STATUS.SUCCESS;
+      } catch (error) {
+        // console.log("error:", error);
       }
 
       switch (fetch) {

@@ -10,9 +10,15 @@ contract MockRocketEth {
     uint256 private _rethMultiplier = 0;
     uint256 private _lastUpdatedBlock;
     bool private _instantUpdates;
+    bool private _lastUpdatedBlockManipulation;
 
     constructor() public {
         _instantUpdates = true;
+        _lastUpdatedBlockManipulation = false;
+    }
+
+    function setLastUpdatedBlockManipulation(bool lastUpdatedBlockManipulation) public {
+        _lastUpdatedBlockManipulation = lastUpdatedBlockManipulation;
     }
 
     function setInstantUpdates(bool instantUpdates) public {
@@ -31,8 +37,15 @@ contract MockRocketEth {
         }
     }
 
+    function setLastUpdatedBlock(uint256 lastUpdatedBlock) public {
+        require(_lastUpdatedBlockManipulation, "Enable last updated block manipulation");
+        _lastUpdatedBlock = lastUpdatedBlock;
+    }
+
     function setRethMultiplierInRay(uint256 rethMultiplier) public {
         _rethMultiplier = rethMultiplier;
-        _lastUpdatedBlock = block.number;
+        if (!_lastUpdatedBlockManipulation) {
+            _lastUpdatedBlock = block.number;
+        }
     }
 }
