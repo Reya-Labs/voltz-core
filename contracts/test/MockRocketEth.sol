@@ -17,7 +17,9 @@ contract MockRocketEth {
         _lastUpdatedBlockManipulation = false;
     }
 
-    function setLastUpdatedBlockManipulation(bool lastUpdatedBlockManipulation) public {
+    function setLastUpdatedBlockManipulation(bool lastUpdatedBlockManipulation)
+        public
+    {
         _lastUpdatedBlockManipulation = lastUpdatedBlockManipulation;
     }
 
@@ -38,7 +40,10 @@ contract MockRocketEth {
     }
 
     function setLastUpdatedBlock(uint256 lastUpdatedBlock) public {
-        require(_lastUpdatedBlockManipulation, "Enable last updated block manipulation");
+        require(
+            _lastUpdatedBlockManipulation,
+            "Enable last updated block manipulation"
+        );
         _lastUpdatedBlock = lastUpdatedBlock;
     }
 

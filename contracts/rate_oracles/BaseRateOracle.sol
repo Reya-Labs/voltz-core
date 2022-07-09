@@ -457,9 +457,15 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             cardinalityNext
         );
 
-        if (lastUpdatedBlock.timestamp + 86400 <= Time.blockTimestampTruncated()) {
-            currentBlockSlope.blockChange = block.number - lastUpdatedBlock.number;
-            currentBlockSlope.timeChange = Time.blockTimestampTruncated() - lastUpdatedBlock.timestamp;
+        if (
+            lastUpdatedBlock.timestamp + 86400 <= Time.blockTimestampTruncated()
+        ) {
+            currentBlockSlope.blockChange =
+                block.number -
+                lastUpdatedBlock.number;
+            currentBlockSlope.timeChange =
+                Time.blockTimestampTruncated() -
+                lastUpdatedBlock.timestamp;
 
             lastUpdatedBlock.number = block.number;
             lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
