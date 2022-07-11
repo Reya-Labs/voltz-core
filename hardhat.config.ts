@@ -13,6 +13,7 @@ import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
+import "hardhat-storage-layout";
 import { HardhatNetworkUserConfig } from "hardhat/types";
 // import "@primitivefi/hardhat-dodoc"; bring back on demand
 
@@ -20,6 +21,14 @@ dotenv.config();
 
 let someTasksNotImported = false;
 
+task(
+  "printStorageLayout",
+  "Prints the storage layout of all contracts"
+).setAction(async (_, hre) => {
+  console.log("getting storage layout (this can take some time)...");
+  await hre.storageLayout.export();
+  console.log("got storage layout");
+});
 interface TypeScriptError {
   diagnosticText: string;
   diagnosticCodes: number[];
@@ -99,6 +108,7 @@ let hardhatNetworkConfig: HardhatNetworkUserConfig = {
 if (!!process.env.FORK_MAINNET) {
   hardhatNetworkConfig = {
     allowUnlimitedContractSize: true,
+    saveDeployments: true,
     forking: {
       url: `${process.env.MAINNET_URL}`,
       blockNumber: 15134482,
@@ -107,6 +117,7 @@ if (!!process.env.FORK_MAINNET) {
 } else if (!!process.env.FORK_KOVAN) {
   hardhatNetworkConfig = {
     allowUnlimitedContractSize: true,
+    saveDeployments: true,
     forking: {
       url: `${process.env.KOVAN_URL}`,
     },
@@ -121,6 +132,11 @@ const config: HardhatUserConfig = {
       optimizer: {
         enabled: true,
         runs: 10, // As high as is possible without blowing contract size limits
+      },
+      outputSelection: {
+        "*": {
+          "*": ["storageLayout"],
+        },
       },
     },
   },
