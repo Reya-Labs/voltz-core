@@ -75,8 +75,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         lastUpdatedBlock.number = block.number;
         lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
 
-        currentBlockSlope.timeChange = 135;
-        currentBlockSlope.blockChange = 10;
+        currentBlockSlope.timeChange = 1338;
+        currentBlockSlope.blockChange = 100;
     }
 
     /// @dev this must be called at the *end* of the constructor, after the contract member variables have been set, because it needs to read rates.
@@ -548,16 +548,9 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         returns (uint256 blockChange, uint32 timeChange)
     {
-        if (lastUpdatedBlock.number >= block.number) {
-            return (
+        return (
                 currentBlockSlope.blockChange,
                 currentBlockSlope.timeChange
             );
-        }
-
-        return (
-            block.number - lastUpdatedBlock.number,
-            Time.blockTimestampTruncated() - lastUpdatedBlock.timestamp
-        );
     }
 }
