@@ -178,7 +178,7 @@ it.skip("rocket pool rate oracle simulation:", async () => {
 
   for (
     let b = 15056640 - shiftBlockNumber;
-    b <= 15102460 - shiftBlockNumber;
+    b <= 15120470 - shiftBlockNumber;
     b += 175
   ) {
     const block = await provider.getBlock(b);
