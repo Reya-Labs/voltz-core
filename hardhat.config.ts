@@ -183,6 +183,9 @@ const config: HardhatUserConfig = {
   namedAccounts: {
     deployer: {
       default: 0, // here this will by default take the first account as deployer
+    },
+    multisig: {
+      default: 0, // here this will by default take the first account as deployer
       1: "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
     },
     alice: {

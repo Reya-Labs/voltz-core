@@ -59,21 +59,68 @@ async function getImplementationAddress(
   return ethers.utils.getAddress(hre.ethers.utils.hexStripZeros(implHex));
 }
 
+async function impersonateAccount(
+  hre: HardhatRuntimeEnvironment,
+  acctAddress: string
+) {
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [acctAddress],
+  });
+  // It might be a multisig contract, in which case we also need to pretend it has money for gas
+  await hre.ethers.provider.send("hardhat_setBalance", [
+    acctAddress,
+    "0x10000000000000000000",
+  ]);
+}
+
 async function getSigner(hre: HardhatRuntimeEnvironment, acctAddress: string) {
   if (hre.network.name === "hardhat" || hre.network.name === "localhost") {
     // We can impersonate the account
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [acctAddress],
-    });
-    // It might be a multisig contract, in which case we also need to pretend it has money for gas
-    await hre.ethers.provider.send("hardhat_setBalance", [
-      acctAddress,
-      "0x10000000000000000000",
-    ]);
+    await impersonateAccount(hre, acctAddress);
   }
   return await hre.ethers.getSigner(acctAddress);
 }
+
+task(
+  "deployUpdatedVAMM",
+  "Deploys a new instance of the MasterVAMM (the logic contract used by VAMM instances)"
+).setAction(async (taskArgs, hre) => {
+  const currentMasterVamm = (await hre.ethers.getContract("VAMM")).address;
+  // Path of JSON artifacts for deployed (not compiled) contracts, relative to this tasks directory
+  const deployedArtifactsDir = path.join(
+    __dirname,
+    "..",
+    "deployments",
+    hre.network.name
+  );
+
+  // Take a backup of the most recently deployed VAMM.json file before we overwrite it
+  const deployedVammArtifact = path.join(deployedArtifactsDir, "VAMM.json");
+  // const archiveDir = path.join(deployedArtifactsDir, "history");
+  // await fs.mkdirSync(archiveDir);
+  const renameTo = path.join(
+    deployedArtifactsDir,
+    `VAMM.${currentMasterVamm}.json`
+  );
+  fs.copyFileSync(deployedVammArtifact, renameTo);
+
+  const { deployer, multisig } = await hre.getNamedAccounts();
+  // Impersonation work with the multisig account, but it should. See https://github.com/wighawag/hardhat-deploy/issues/152
+  // await getSigner(hre, multisig);
+  const deployResult = await hre.deployments.deploy("VAMM", {
+    from: deployer,
+    log: true,
+    skipIfAlreadyDeployed: false,
+  });
+  if (deployResult.address) {
+    console.log(
+      `contract VAMM deployed at ${deployResult.address} using ${deployResult.receipt?.gasUsed} gas`
+    );
+  } else {
+    console.log("ERROR: Not deployed!?", deployResult);
+  }
+});
 
 task(
   "upgradeVAMM",
@@ -91,22 +138,22 @@ task(
     const initImplAddress = await getImplementationAddress(hre, proxyAddress);
     const proxyOwner = await vammProxy.owner();
 
-    const { deployer } = await hre.getNamedAccounts();
+    const { deployer: multisig } = await hre.getNamedAccounts();
     console.log(
-      `Upgrading to ${latestVammLogicAddress} from account ${deployer}`
+      `Upgrading to ${latestVammLogicAddress} from account ${multisig}`
     );
     if (initImplAddress === latestVammLogicAddress) {
       console.log(
         `The VAMM at ${proxyAddress} is using the latest logic (${latestVammLogicAddress}). No newer logic deployed!`
       );
       console.log;
-    } else if (deployer !== proxyOwner) {
+    } else if (multisig !== proxyOwner) {
       console.log(
-        `Account ${deployer} is not authorised to upgrade the proxy at ${proxyAddress}`
+        `Account ${multisig} is not authorised to upgrade the proxy at ${proxyAddress}`
       );
     } else {
       await vammProxy
-        .connect(await getSigner(hre, deployer))
+        .connect(await getSigner(hre, multisig))
         .upgradeTo(latestVammLogicAddress);
       const newImplAddress = await getImplementationAddress(hre, proxyAddress);
       console.log(
