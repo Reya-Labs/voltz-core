@@ -90,6 +90,7 @@ loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
 loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
 loadModuleIfContractsAreBuilt("./tasks/playground");
+loadModuleIfContractsAreBuilt("./tasks/upgrades");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -109,9 +110,10 @@ if (!!process.env.FORK_MAINNET) {
   hardhatNetworkConfig = {
     allowUnlimitedContractSize: true,
     saveDeployments: true,
+    chainId: 1,
     forking: {
       url: `${process.env.MAINNET_URL}`,
-      blockNumber: 15134482,
+      // blockNumber: 15134482,
     },
   };
 } else if (!!process.env.FORK_KOVAN) {
@@ -181,6 +183,7 @@ const config: HardhatUserConfig = {
   namedAccounts: {
     deployer: {
       default: 0, // here this will by default take the first account as deployer
+      1: "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
     },
     alice: {
       default: 1,
