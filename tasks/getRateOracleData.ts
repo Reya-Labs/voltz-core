@@ -127,7 +127,11 @@ task(
           blockTag: b,
         });
 
-        console.log("rate slope", rateSlope.rateChange.toString(), rateSlope.timeChange);
+        console.log(
+          "rate slope",
+          rateSlope.rateChange.toString(),
+          rateSlope.timeChange
+        );
 
         const lastUpdatedRate = await rateOracle.getLastUpdatedRate({
           blockTag: b,

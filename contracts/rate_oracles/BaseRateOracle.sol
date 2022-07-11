@@ -548,9 +548,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         returns (uint256 blockChange, uint32 timeChange)
     {
-        return (
-                currentBlockSlope.blockChange,
-                currentBlockSlope.timeChange
-            );
+        return (currentBlockSlope.blockChange, currentBlockSlope.timeChange);
     }
 }
