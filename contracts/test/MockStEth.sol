@@ -17,9 +17,9 @@ contract MockStEth is IStETH {
         _lastUpdatedTimestampManipulation = false;
     }
 
-    function setLastUpdatedTimestampManipulation(bool lastUpdatedTimestampManipulation)
-        public
-    {
+    function setLastUpdatedTimestampManipulation(
+        bool lastUpdatedTimestampManipulation
+    ) public {
         _lastUpdatedTimestampManipulation = lastUpdatedTimestampManipulation;
     }
 
