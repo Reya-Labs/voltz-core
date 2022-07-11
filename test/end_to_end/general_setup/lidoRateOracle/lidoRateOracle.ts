@@ -51,7 +51,7 @@ const getBlockAtTimestamp = async (timestamp: number) => {
   return result;
 };
 
-it("lido rate oracle simulation:", async () => {
+it.skip("lido rate oracle simulation:", async () => {
   const startingBlock = 14980000;
   const startingTimestamp = 1655480913;
 

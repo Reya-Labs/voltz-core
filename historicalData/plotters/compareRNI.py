@@ -29,13 +29,11 @@ def getDatasets():
 
 
 def plotRnis(rnis):
-    rocket_rni = pd.read_csv("historicalData/rateOracleRates/{0}.csv".format(RATE_ORACLE_ADDRESS))
-    rocket_rni = getPreparedRNIData(rocket_rni)
+    comparison_rni = pd.read_csv("historicalData/rateOracleRates/{0}.csv".format(RATE_ORACLE_ADDRESS))
+    comparison_rni = getPreparedRNIData(comparison_rni)
 
-    print(rocket_rni)
-
-    # plt.xlim([rocket_rni["timestamp"][0] - 86400, rocket_rni["timestamp"][len(rocket_rni["timestamp"]) - 1] + 86400])
-    plt.plot(rocket_rni['timestamp'], rocket_rni['rate'], 'ro')
+    # plt.xlim([comparison_rni["timestamp"][0] - 86400, comparison_rni["timestamp"][len(comparison_rni["timestamp"]) - 1] + 86400])
+    plt.plot(comparison_rni['timestamp'], comparison_rni['rate'], 'ro')
     plt.plot(rnis['timestamp'], rnis['rate'], 'g+')
     plt.show()
 

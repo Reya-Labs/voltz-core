@@ -20,7 +20,7 @@ const writeCurrentMoment = async () => {
   );
 };
 
-it("lido rate oracle simulation:", async () => {
+it.skip("rocket pool rate oracle simulation:", async () => {
   const startingBlock = 14980000;
   const startingTimestamp = 1655480913;
 
