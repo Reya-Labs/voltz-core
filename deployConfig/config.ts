@@ -90,23 +90,6 @@ const localhostRateOracleConfigDefaults = {
   rateOracleBufferSize: 1000,
 };
 
-const kovanTusdDataPoints: RateOracleDataPoint[] = [
-  [1651328512, "1169761008875861964432213844"],
-  [1651408548, "1170853556378555583878384899"],
-  [1651492104, "1171884376787612229181889519"],
-  [1651514792, "1172194135974953748529199145"],
-  [1651539896, "1172681121951755878562952857"],
-  [1651561616, "1173102619673147126782274434"],
-  [1651583344, "1173524630967783524934607721"],
-  [1651605548, "1173961890093758141214435884"],
-  [1651627440, "1174396161770605384118680563"],
-  [1651649072, "1174825308553883610858650890"],
-  [1651671204, "1175264710270468345612748451"],
-  [1651695080, "1175738736810554064345300115"],
-  [1651719332, "1176220228335523022742931331"],
-  [1651740940, "117664985657398114295162823"],
-];
-
 const mainnetStEthDataPoints: RateOracleDataPoint[] = [
   [1656590423, "1076805850648432598627799331"],
   [1656676823, "1076922239357196746188602894"],
@@ -131,6 +114,14 @@ const mainnetRocketEthDataPoints: RateOracleDataPoint[] = [
   [1657294050, "1030270326311081920642213869"],
   [1657371441, "1030363035676219783347593823"],
   [1657446756, "1030451682866003654130160522"],
+];
+
+const goerliStEthDataPoints: RateOracleDataPoint[] = [
+  [1656275040, "1009005858244768527585507145"],
+];
+
+const goerliRocketEthDataPoints: RateOracleDataPoint[] = [
+  [1657435372, "1026780389412413279149346221"],
 ];
 
 const rinkebyConfig = {
@@ -181,7 +172,7 @@ const goerliConfig = {
     lidoOracle: "0x24d8451BC07e7aF4Ba94F69aCDD9ad3c6579D9FB",
     defaults: {
       rateOracleBufferSize: 300,
-      trustedDataPoints: [[1656275040, "1009005858244768527585507145"]],
+      trustedDataPoints: goerliStEthDataPoints,
       rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // Lido rates only get updated once a day
     },
   },
@@ -190,7 +181,7 @@ const goerliConfig = {
     rocketNetworkBalances: "0x28cea7b0f3916c1dba667d3d58ec4836ad843c49",
     defaults: {
       rateOracleBufferSize: 300,
-      trustedDataPoints: [[1657435372, "1026780389412413279149346221"]],
+      trustedDataPoints: goerliRocketEthDataPoints,
       rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60,
     },
   },
@@ -224,7 +215,7 @@ const kovanConfig = {
         address: "0x016750ac630f711882812f24dba6c95b9d35856d",
         rateOracleBufferSize: 200,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
-        trustedDataPoints: kovanTusdDataPoints,
+        trustedDataPoints: [],
       },
       {
         name: "WETH",
