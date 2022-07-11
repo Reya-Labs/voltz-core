@@ -449,7 +449,7 @@ describe(`RocketPool Rate Oracle`, () => {
       expect(rateIndex).to.eq(0);
     });
 
-    it.only("oracle buffer wraps up but slope still works", async () => {
+    it("oracle buffer wraps up but slope still works", async () => {
       await testRocketPoolRateOracle.setMinSecondsSinceLastUpdate(64800);
       await testRocketPoolRateOracle.increaseObservationCardinalityNext(3);
       await advanceTimeAndBlock(BigNumber.from(86400 - 5760), 5760);
