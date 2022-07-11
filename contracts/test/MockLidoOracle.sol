@@ -52,8 +52,12 @@ contract MockLidoOracle is ILidoOracle {
     }
 
     function getLastCompletedEpochId() external view returns (uint256) {
-        // We mock an epoch ID that corresponds to the current timestamp
-        return block.timestamp;
+        bool instantUpdates = mockStEth.getInstantUpdates();
+        if (instantUpdates) {
+            return block.timestamp;
+        } else {
+            return mockStEth.getlastUpdatedTimestamp();
+        }
     }
 
     function getBeaconSpec()

@@ -457,19 +457,11 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             cardinalityNext
         );
 
-        if (
-            lastUpdatedBlock.timestamp + 86400 <= Time.blockTimestampTruncated()
-        ) {
-            currentBlockSlope.blockChange =
-                block.number -
-                lastUpdatedBlock.number;
-            currentBlockSlope.timeChange =
-                Time.blockTimestampTruncated() -
-                lastUpdatedBlock.timestamp;
-
-            lastUpdatedBlock.number = block.number;
-            lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
-        }
+        currentBlockSlope.blockChange = block.number - lastUpdatedBlock.number;
+        currentBlockSlope.timeChange = Time.blockTimestampTruncated() - lastUpdatedBlock.timestamp;
+        
+        lastUpdatedBlock.number = block.number;
+        lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
 
         return
             observations.write(
@@ -554,7 +546,16 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         override
         returns (uint256 blockChange, uint32 timeChange)
     {
-        blockChange = currentBlockSlope.blockChange;
-        timeChange = currentBlockSlope.timeChange;
+        if (lastUpdatedBlock.number >= block.number) {
+            return (
+                currentBlockSlope.blockChange,
+                currentBlockSlope.timeChange
+            );
+        }
+
+        return (
+            block.number - lastUpdatedBlock.number,
+            Time.blockTimestampTruncated() - lastUpdatedBlock.timestamp
+        );
     }
 }

@@ -9,6 +9,7 @@ const { provider } = waffle;
 let shiftBlockNumber: number;
 let shiftTimestamp: number;
 
+// eslint-disable-next-line no-unused-vars
 const writeCurrentMoment = async () => {
   const blockNumber = await provider.getBlockNumber();
   const block = await provider.getBlock(blockNumber);
@@ -27,13 +28,6 @@ it("lido rate oracle simulation:", async () => {
   shiftTimestamp =
     startingTimestamp -
     (await provider.getBlock(await provider.getBlockNumber())).timestamp;
-
-  console.log("startingTimestamp", startingTimestamp);
-  console.log(
-    "genesis timestamp:",
-    (await provider.getBlock(await provider.getBlockNumber())).timestamp
-  );
-  console.log("shiftTimestamp", shiftTimestamp);
 
   const trustedDataPoints: RateOracleDataPoint[] = [
     [1655679498, "1028327594600088450724742946"],
@@ -63,15 +57,6 @@ it("lido rate oracle simulation:", async () => {
     const deploymentBlockNumber = 15052947 - shiftBlockNumber;
     const deploymentBlockTimestamp = 1656629381 - shiftTimestamp;
 
-    console.log(deploymentBlockNumber, deploymentBlockTimestamp);
-
-    console.log(
-      "avg block time in advance:",
-      (deploymentBlockTimestamp -
-        currentTimestamp -
-        (deploymentBlockNumber - currentBlockNumber)) /
-        (deploymentBlockNumber - currentBlockNumber)
-    );
     await advanceTimeAndBlock(
       BigNumber.from(
         deploymentBlockTimestamp -
@@ -81,8 +66,6 @@ it("lido rate oracle simulation:", async () => {
       deploymentBlockNumber - currentBlockNumber
     );
   }
-
-  await writeCurrentMoment();
 
   const mockRocketEthFactory = await ethers.getContractFactory("MockRocketEth");
   const mockRocketEth = (await mockRocketEthFactory.deploy()) as MockRocketEth;
@@ -114,8 +97,6 @@ it("lido rate oracle simulation:", async () => {
   await rateOracle.setMinSecondsSinceLastUpdate(18 * 60 * 60);
   await rateOracle.increaseObservationCardinalityNext(100);
 
-  console.log(rateOracle.address);
-
   {
     const currentBlockNumber = await provider.getBlockNumber();
     const currentBlock = await provider.getBlock(currentBlockNumber);
@@ -123,14 +104,6 @@ it("lido rate oracle simulation:", async () => {
 
     const nextBlockNumber = 15056640 - shiftBlockNumber;
     const nextTimestamp = 1656678850 - shiftTimestamp;
-
-    console.log(
-      "avg block time in advance:",
-      (nextTimestamp -
-        currentTimestamp -
-        (nextBlockNumber - currentBlockNumber)) /
-        (nextBlockNumber - currentBlockNumber)
-    );
 
     await advanceTimeAndBlock(
       BigNumber.from(
@@ -169,11 +142,6 @@ it("lido rate oracle simulation:", async () => {
       (await provider.getBlockNumber()) >= nextRates[next][0]
     ) {
       await mockRocketEth.setRethMultiplierInRay(nextRates[next][1]);
-      console.log(
-        "write at:",
-        await provider.getBlockNumber(),
-        nextRates[next][0]
-      );
       await mockRocketEth.setLastUpdatedBlock(nextRates[next][0]);
       next += 1;
     }
@@ -181,25 +149,15 @@ it("lido rate oracle simulation:", async () => {
     await rateOracle.writeOracleEntry();
   }
 
-  const [rateIndex, rateCardinality] = await rateOracle.oracleVars();
+  const rateIndex = (await rateOracle.oracleVars()).rateIndex;
 
   const fs = require("fs");
-  const file_rni = `historicalData/${rateOracle.address}.csv`;
+  const file_rni = `historicalData/rateOracleRates/${rateOracle.address}.csv`;
 
   fs.appendFileSync(file_rni, "timestamp,rate\n");
 
-  console.log("current index/cardinality:", rateIndex, "/", rateCardinality);
   for (let i = 0; i <= rateIndex; i++) {
-    const [rateTimestamp, rateValue, initialized] =
-      await rateOracle.observations(i);
-    console.log(
-      "t:",
-      (rateTimestamp + shiftTimestamp).toString(),
-      "rate:",
-      rateValue.toString(),
-      "init:",
-      initialized.toString()
-    );
+    const [rateTimestamp, rateValue] = await rateOracle.observations(i);
 
     fs.appendFileSync(
       file_rni,
@@ -211,53 +169,44 @@ it("lido rate oracle simulation:", async () => {
   const timestamps: number[] = [];
   const apys: number[] = [];
 
-  const file = `historicalData/rateOracleData/${rateOracle.address}.csv`;
+  const file = `historicalData/rateOracleApy/${rateOracle.address}.csv`;
 
   const header = "block,timestamp,apy";
 
   fs.appendFileSync(file, header + "\n");
   console.log(header);
 
-  const currentBlockNumber = await provider.getBlockNumber();
-  const currentBlock = await provider.getBlock(currentBlockNumber);
-
-  const firstBlock = await provider.getBlock(0);
-
-  console.log(
-    "avg time block:",
-    currentBlock.timestamp,
-    firstBlock.timestamp,
-    currentBlockNumber,
-    (currentBlock.timestamp - firstBlock.timestamp) / currentBlockNumber
-  );
-
   for (
-    let b = 15008891 - shiftBlockNumber;
+    let b = 15056640 - shiftBlockNumber;
     b <= 15102460 - shiftBlockNumber;
-    b += 1750
+    b += 175
   ) {
     const block = await provider.getBlock(b);
 
-    console.log(
-      `getting apy from ${block.timestamp - 86400} to ${block.timestamp}`
-    );
-    const apy = await rateOracle.getApyFromTo(
-      block.timestamp - 86400,
-      block.timestamp
-    );
-    blocks.push(b + shiftBlockNumber);
-    timestamps.push(block.timestamp + shiftTimestamp);
-    apys.push(apy.div(BigNumber.from(10).pow(9)).toNumber() / 1e9);
+    try {
+      const apy = await rateOracle.getApyFromTo(
+        block.timestamp - 86400,
+        block.timestamp,
+        {
+          blockTag: b,
+        }
+      );
+      blocks.push(b + shiftBlockNumber);
+      timestamps.push(block.timestamp + shiftTimestamp);
+      apys.push(apy.div(BigNumber.from(10).pow(9)).toNumber() / 1e9);
 
-    const lastBlock = blocks[blocks.length - 1];
-    const lastTimestamp = timestamps[timestamps.length - 1];
-    const lastApy = apys[apys.length - 1];
+      const lastBlock = blocks[blocks.length - 1];
+      const lastTimestamp = timestamps[timestamps.length - 1];
+      const lastApy = apys[apys.length - 1];
 
-    fs.appendFileSync(file, `${lastBlock},${lastTimestamp},${lastApy}\n`);
-    console.log(
-      `${lastBlock},${lastTimestamp},${new Date(
-        lastTimestamp * 1000
-      ).toISOString()},${lastApy}`
-    );
+      fs.appendFileSync(file, `${lastBlock},${lastTimestamp},${lastApy}\n`);
+      console.log(
+        `${lastBlock},${lastTimestamp},${new Date(
+          lastTimestamp * 1000
+        ).toISOString()},${lastApy}`
+      );
+    } catch (e) {
+      console.log("Couldn't fetch");
+    }
   }
 });

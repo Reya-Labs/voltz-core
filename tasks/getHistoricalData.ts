@@ -72,12 +72,6 @@ task("getHistoricalData", "Retrieves the historical rates")
     blocksPerDay,
     types.int
   )
-  .addParam(
-    "lookbackWindow",
-    "The lookback window to use, in seconds, when querying data from a RateOracle",
-    60 * 60 * 24 * 28, // 28 days
-    types.int
-  )
   .addOptionalParam(
     "toBlock",
     "Get data up to this block (defaults to latest block)",
@@ -98,10 +92,6 @@ task("getHistoricalData", "Retrieves the historical rates")
     types.string
   )
   .setAction(async (taskArgs, hre) => {
-    if (hre.network.name !== "mainnet") {
-      console.error("Only mainnet supported");
-    }
-
     // calculate from and to blocks
     const currentBlock = await hre.ethers.provider.getBlock("latest");
 
@@ -220,7 +210,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     const rates: BigNumber[] = [];
 
     const fs = require("fs");
-    const file = `historicalData/${asset}.csv`;
+    const file = `historicalData/rates/${asset}.csv`;
 
     const header = "block,timestamp,rate";
 
@@ -237,11 +227,30 @@ task("getHistoricalData", "Retrieves the historical rates")
           const r = await stETH.getPooledEthByShares(toBn(1, 27), {
             blockTag: b,
           });
-          // TODO: need to change this
-          blocks.push(b);
-          timestamps.push(block.timestamp);
-          rates.push(r);
-          fetch = FETCH_STATUS.SUCCESS;
+
+          const epoch = await lidoOracle.getLastCompletedEpochId({
+            blockTag: b,
+          });
+
+          const beaconSpec = await lidoOracle.getBeaconSpec({
+            blockTag: b,
+          });
+
+          const lastCompletedTime = beaconSpec.genesisTime.add(
+            epoch.mul(beaconSpec.slotsPerEpoch).mul(beaconSpec.secondsPerSlot)
+          );
+
+          if (
+            timestamps.length === 0 ||
+            timestamps[timestamps.length - 1] < lastCompletedTime.toNumber()
+          ) {
+            blocks.push(b);
+            timestamps.push(lastCompletedTime.toNumber());
+            rates.push(r);
+            fetch = FETCH_STATUS.SUCCESS;
+          } else {
+            fetch = FETCH_STATUS.ALREADY_FETCHED;
+          }
         }
       }
 
@@ -265,7 +274,7 @@ task("getHistoricalData", "Retrieves the historical rates")
             blocks.length === 0 ||
             blocks[blocks.length - 1] < balancesBlockNumber.toNumber()
           ) {
-            blocks.push(balancesBlockNumber.toNumber());
+            blocks.push(b);
             timestamps.push(balancesBlock.timestamp);
             rates.push(r);
             fetch = FETCH_STATUS.SUCCESS;

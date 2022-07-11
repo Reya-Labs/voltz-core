@@ -70,7 +70,7 @@ task(
     const apys: number[] = [];
 
     const fs = require("fs");
-    const file = `historicalData/rateOracleData/${rateOracle.address}.csv`;
+    const file = `historicalData/rateOracleApy/${rateOracle.address}.csv`;
 
     const header = "block,timestamp,apy";
 
@@ -90,14 +90,12 @@ task(
       let fetch: FETCH_STATUS = FETCH_STATUS.FAILURE;
 
       try {
-        console.log(
-          `getting apy from ${block.timestamp - taskArgs.lookbackWindow} to ${
-            block.timestamp
-          }`
-        );
         const apy = await rateOracle.getApyFromTo(
           block.timestamp - taskArgs.lookbackWindow,
-          block.timestamp
+          block.timestamp,
+          {
+            blockTag: b,
+          }
         );
         blocks.push(b);
         timestamps.push(block.timestamp);
