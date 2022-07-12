@@ -114,7 +114,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "yarn check && hh size-contracts"
+      "pre-push": "yarn run check && npx hardhat size-contracts"
     }
   }
 }
