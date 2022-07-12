@@ -75,7 +75,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         lastUpdatedBlock.number = block.number;
         lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
 
-        currentBlockSlope.timeChange = 1338;
+        currentBlockSlope.timeChange = 1510;
         currentBlockSlope.blockChange = 100;
     }
 

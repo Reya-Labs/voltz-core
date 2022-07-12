@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
-import { BaseRateOracle, IRocketNetworkBalances } from "../typechain";
+import { BaseRateOracle } from "../typechain";
 
 // eslint-disable-next-line no-unused-vars
 enum FETCH_STATUS {
@@ -65,15 +65,6 @@ task(
       console.error(`Invalid block range: ${fromBlock}-${toBlock}`);
     }
 
-    const RocketNetworkBalancesEthMainnet =
-      "0x138313f102ce9a0662f826fca977e3ab4d6e5539";
-
-    // rocket
-    const rocketNetworkBalancesEth = (await hre.ethers.getContractAt(
-      "IRocketNetworkBalances",
-      RocketNetworkBalancesEthMainnet
-    )) as IRocketNetworkBalances;
-
     const blocks: number[] = [];
     const timestamps: number[] = [];
     const apys: number[] = [];
@@ -114,48 +105,6 @@ task(
           }
         );
 
-        const blockSlope = await rateOracle.getBlockSlope({
-          blockTag: b,
-        });
-
-        console.log(
-          "block slope",
-          blockSlope.timeChange / blockSlope.blockChange.toNumber()
-        );
-
-        const rateSlope = await rateOracle.getLastRateSlope({
-          blockTag: b,
-        });
-
-        console.log(
-          "rate slope",
-          rateSlope.rateChange.toString(),
-          rateSlope.timeChange
-        );
-
-        const lastUpdatedRate = await rateOracle.getLastUpdatedRate({
-          blockTag: b,
-        });
-
-        console.log(
-          "last rate:",
-          lastUpdatedRate.rate.toString(),
-          lastUpdatedRate.timestamp.toString()
-        );
-
-        const balancesBlock = await rocketNetworkBalancesEth.getBalancesBlock({
-          blockTag: b,
-        });
-        console.log("balancesBlock:", balancesBlock.toString());
-
-        console.log(
-          "actual timestamp:",
-          (
-            await hre.ethers.provider.getBlock(
-              await hre.ethers.provider.getBlockNumber()
-            )
-          ).timestamp
-        );
         blocks.push(b);
         timestamps.push(block.timestamp);
         apys.push(apy.div(BigNumber.from(10).pow(9)).toNumber() / 1e9);
