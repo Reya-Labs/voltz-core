@@ -17,10 +17,9 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParametersGeneral } from "../e2eSetup";
-import { ScenarioRunner } from "../newGeneral";
+import { ScenarioRunner, e2eParameters } from "../general";
 
-const e2eParams: e2eParametersGeneral = {
+const e2eParams: e2eParameters = {
   duration: consts.ONE_YEAR,
   numActors: 6,
   marginCalculatorParams: {

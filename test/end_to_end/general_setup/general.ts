@@ -3,7 +3,6 @@ import { BigNumber, utils, Wallet } from "ethers";
 import { formatRay } from "../../shared/utilities";
 import {
   AaveFCM,
-  // AaveFCM,
   Actor,
   CompoundFCM,
   E2ESetup,
@@ -29,12 +28,35 @@ import {
   VAMM,
 } from "../../../typechain";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
-import { e2eParametersGeneral } from "./e2eSetup";
 import { extractErrorMessage } from "../../utils/extractErrorMessage";
 import { consts } from "../../helpers/constants";
 import { toBn } from "evm-bn";
+import JSBI from "jsbi";
 
 const { provider } = waffle;
+
+export interface e2eParameters {
+  duration: BigNumber;
+  lookBackWindowAPY: BigNumber;
+
+  numActors: number;
+
+  marginCalculatorParams: any;
+
+  startingPrice: JSBI;
+  tickSpacing: number;
+
+  feeProtocol: number;
+  fee: BigNumber;
+
+  positions: [number, number, number][]; // list of [index of actor, lower tick, upper tick]
+
+  isWETH?: boolean;
+
+  noMintTokens?: boolean;
+
+  rateOracle: number;
+}
 
 export type InfoPostSwap = {
   marginRequirement: number;
@@ -47,7 +69,7 @@ const MAX_AMOUNT = BigNumber.from(10).pow(27);
 
 export class ScenarioRunner {
   // scenario parameters
-  params: e2eParametersGeneral;
+  params: e2eParameters;
 
   // wallets
   owner!: Wallet;
@@ -86,7 +108,7 @@ export class ScenarioRunner {
   actors!: Actor[];
   positions: [string, number, number][] = [];
 
-  constructor(params: e2eParametersGeneral) {
+  constructor(params: e2eParameters) {
     this.params = params;
   }
 

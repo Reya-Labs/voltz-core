@@ -15,13 +15,12 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParametersGeneral } from "../e2eSetup";
-import { ScenarioRunner } from "../newGeneral";
+import { ScenarioRunner, e2eParameters } from "../general";
 import { IRateOracle } from "../../../../typechain";
 
 const { provider } = waffle;
 
-const e2eParams: e2eParametersGeneral = {
+const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 4,
   marginCalculatorParams: {
