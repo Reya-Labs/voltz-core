@@ -66,6 +66,7 @@ export interface LidoConfig {
 }
 export interface RocketPoolConfig {
   rocketPoolRocketToken?: string;
+  rocketNetworkBalances?: string;
   defaults: RateOracleConfigDefaults;
 }
 export interface ContractsConfig {

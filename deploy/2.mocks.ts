@@ -32,19 +32,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: ["Voltz WETH", "VWETH"],
   });
 
+  const mockStEth = await deploy("MockStEth", {
+    from: deployer,
+    log: doLogging,
+  });
+
   await deploy("MockLidoOracle", {
     from: deployer,
     log: doLogging,
+    args: [mockStEth.address],
   });
 
-  await deploy("MockStEth", {
+  const mockRocketEth = await deploy("MockRocketEth", {
     from: deployer,
     log: doLogging,
   });
 
-  await deploy("MockRocketEth", {
+  await deploy("MockRocketNetworkBalances", {
     from: deployer,
     log: doLogging,
+    args: [mockRocketEth.address],
   });
 
   const mockAaveLendingPool = await ethers.getContract("MockAaveLendingPool");

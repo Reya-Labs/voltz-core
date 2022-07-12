@@ -48,11 +48,7 @@ describe(`Lido Rate Oracle`, () => {
         await mockStEth.setSharesMultiplierInRay(rate);
         await testLidoRateOracle.writeOracleEntry();
         const observedRate = await testLidoRateOracle.getLatestRateValue();
-        if (rate.lt(BigNumber.from(10).pow(27))) {
-          expect(observedRate).to.eq(BigNumber.from(10).pow(27));
-        } else {
-          expect(observedRate).to.eq(rate);
-        }
+        expect(observedRate).to.eq(rate);
       });
     }
 
@@ -83,7 +79,7 @@ describe(`Lido Rate Oracle`, () => {
       expect(observedRate).to.eq(rate_2);
 
       expect(await testLidoRateOracle.getCurrentRateInRay()).to.eq(
-        toBn((1.105).toString(), 27)
+        toBn((1.1).toString(), 27)
       );
 
       for (let i = 0; i < 5; i++) {

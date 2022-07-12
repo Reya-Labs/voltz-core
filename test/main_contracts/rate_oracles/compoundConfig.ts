@@ -8,10 +8,11 @@ import { deployments, ethers } from "hardhat";
 
 let cToken: MockCToken;
 let rateDecimals: number;
+const startingExchangeRate = 0.02;
 
 export const ConfigForGenericTests = {
   configName: "Compound",
-  startingExchangeRate: 0.02,
+  startingExchangeRate,
   oracleFixture: async () => {
     // Use hardhat-deploy to deploy factory and mocks
     await deployments.fixture(["Factory", "Mocks"]);
@@ -22,6 +23,7 @@ export const ConfigForGenericTests = {
     // Compound rates are expressed as integers by multiplying them by 10 ^ (18 + underlyingDecimals - cTokenDecimals)
     //  = 10 ^ (18 + underlyingDecimals - 8)
     rateDecimals = 18 + (await token.decimals()) - 8;
+    await cToken.setExchangeRate(toBn(startingExchangeRate, rateDecimals));
 
     const TestRateOracleFactory = await ethers.getContractFactory(
       "TestCompoundRateOracle"

@@ -44,7 +44,7 @@ contract Periphery is IPeriphery {
         _;
     }
 
-    constructor(IWETH weth_) public {
+    constructor(IWETH weth_) {
         _weth = weth_;
     }
 

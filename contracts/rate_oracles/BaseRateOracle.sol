@@ -10,10 +10,11 @@ import "../interfaces/IFactory.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../core_libraries/Time.sol";
 import "../utils/WadRayMath.sol";
+import "hardhat/console.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 ///  This contract is abstract. To make the contract deployable override the
-/// `getCurrentRateInRay` function and the UNDERLYING_YIELD_BEARING_PROTOCOL_ID constant.
+/// `getCurrentRateInRay` and `getLastUpdatedRate` functions and the `UNDERLYING_YIELD_BEARING_PROTOCOL_ID` constant.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
 abstract contract BaseRateOracle is IRateOracle, Ownable {
     uint256 public constant ONE_IN_WAD = 1e18;
@@ -31,6 +32,16 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint16 rateCardinalityNext;
     }
 
+    struct BlockInfo {
+        uint32 timestamp;
+        uint256 number;
+    }
+
+    struct BlockSlopeInfo {
+        uint32 timeChange;
+        uint256 blockChange;
+    }
+
     /// @inheritdoc IRateOracle
     IERC20Minimal public immutable override underlying;
 
@@ -41,6 +52,9 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
     /// @notice the observations tracked over time by this oracle
     OracleBuffer.Observation[65535] public observations;
+
+    BlockInfo public lastUpdatedBlock;
+    BlockSlopeInfo public currentBlockSlope;
 
     /// @inheritdoc IRateOracle
     function setMinSecondsSinceLastUpdate(uint256 _minSecondsSinceLastUpdate)
@@ -57,13 +71,19 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
     constructor(IERC20Minimal _underlying) {
         underlying = _underlying;
+
+        lastUpdatedBlock.number = block.number;
+        lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
+
+        currentBlockSlope.timeChange = 1500;
+        currentBlockSlope.blockChange = 100;
     }
 
     /// @dev this must be called at the *end* of the constructor, after the contract member variables have been set, because it needs to read rates.
     function _populateInitialObservations(
         uint32[] memory _times,
         uint256[] memory _results
-    ) internal virtual {
+    ) internal {
         // If we're using even half the max buffer size, something has gone wrong
         require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
         uint16 length = uint16(_times.length);
@@ -76,8 +96,16 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             times[i] = _times[i];
             results[i] = _results[i];
         }
-        times[length] = Time.blockTimestampTruncated();
-        results[length] = getCurrentRateInRay();
+
+        (
+            uint32 lastUpdatedTimestamp,
+            uint256 lastUpdatedRate
+        ) = getLastUpdatedRate();
+
+        // `observations.initialize` will check that all times are correctly sorted so no need to check here
+        times[length] = lastUpdatedTimestamp;
+        results[length] = lastUpdatedRate;
+
         (
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext,
@@ -128,15 +156,21 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
-    /// @notice Get the current "rate" in Ray.
-    /// The source, expected values, and semantics of "rate" may differ by rate oracle type. All that
+    /// @notice Get the last updated rate in Ray with the accompanying truncated timestamp
+    /// This data point must be a known data point from the source of the data, and not extrapolated or interpolated by us.
+    /// The source and expected values of "rate" may differ by rate oracle type. All that
     /// matters is that we can divide one "rate" by another "rate" to get the factor of growth between the two timestamps.
     /// For example if we have rates of { (t=0, rate=5), (t=100, rate=5.5) }, we can divide 5.5 by 5 to get a growth factor
     /// of 1.1, suggesting that 10% growth in capital was experienced between timesamp 0 and timestamp 100.
     /// @dev FOr convenience, the rate is normalised to Ray for storage, so that we can perform consistent math across all rates.
     /// @dev This function should revert if a valid rate cannot be discerned
-    /// @return the rate in Ray (decimal scaled up by 10^27 for storage in a uint256)
-    function getCurrentRateInRay() public view virtual returns (uint256);
+    /// @return timestamp the timestamp corresponding to the known rate (could be the current time, or a time in the past)
+    /// @return rate the rate in Ray (decimal scaled up by 10^27 for storage in a uint256)
+    function getLastUpdatedRate()
+        public
+        view
+        virtual
+        returns (uint32 timestamp, uint256 rate);
 
     /// @inheritdoc IRateOracle
     function getRateFromTo(uint256 _from, uint256 _to)
@@ -179,6 +213,16 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         } else {
             return 0;
         }
+    }
+
+    /// @inheritdoc IRateOracle
+    function getRateFrom(uint256 _from)
+        public
+        view
+        override(IRateOracle)
+        returns (uint256)
+    {
+        return getRateFromTo(_from, block.timestamp);
     }
 
     function observeSingle(
@@ -284,7 +328,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function getApyFromTo(uint256 from, uint256 to)
         public
         view
-        virtual
         override
         returns (uint256 apyFromToWad)
     {
@@ -304,10 +347,20 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     /// @inheritdoc IRateOracle
+    function getApyFrom(uint256 from)
+        public
+        view
+        override
+        returns (uint256 apyFromToWad)
+    {
+        return getApyFromTo(from, block.timestamp);
+    }
+
+    /// @inheritdoc IRateOracle
     function variableFactor(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public virtual override(IRateOracle) returns (uint256 resultWad) {
+    ) public override(IRateOracle) returns (uint256 resultWad) {
         bool cacheable;
 
         (resultWad, cacheable) = _variableFactor(
@@ -334,7 +387,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function variableFactorNoCache(
         uint256 termStartTimestampInWeiSeconds,
         uint256 termEndTimestampInWeiSeconds
-    ) public view virtual override(IRateOracle) returns (uint256 resultWad) {
+    ) public view override(IRateOracle) returns (uint256 resultWad) {
         (resultWad, ) = _variableFactor(
             termStartTimestampInWeiSeconds,
             termEndTimestampInWeiSeconds
@@ -370,7 +423,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
-    /// @notice Store the current rate (returned by getCurrentRateInRay) into our buffer, unless a rate was written less than minSecondsSinceLastUpdate ago
+    /// @notice Store the last updated rate (returned by getLastUpdatedRate) into our buffer, unless a rate was written less than minSecondsSinceLastUpdate ago
     /// @param index The index of the Observation that was most recently written to the observations buffer. (Note that at least one Observation is written at contract construction time, so this is always defined.)
     /// @param cardinality The number of populated elements in the observations buffer
     /// @param cardinalityNext The new length of the observations buffer, independent of population
@@ -380,35 +433,43 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         uint16 index,
         uint16 cardinality,
         uint16 cardinalityNext
-    )
-        internal
-        virtual
-        returns (uint16 indexUpdated, uint16 cardinalityUpdated)
-    {
+    ) internal returns (uint16 indexUpdated, uint16 cardinalityUpdated) {
         OracleBuffer.Observation memory last = observations[index];
-        uint32 blockTimestamp = Time.blockTimestampTruncated();
+
+        (
+            uint32 lastUpdatedTimestamp,
+            uint256 lastUpdatedRate
+        ) = getLastUpdatedRate();
 
         // early return (to increase ttl of data in the observations buffer) if we've already written an observation recently
-        if (blockTimestamp - minSecondsSinceLastUpdate < last.blockTimestamp)
-            return (index, cardinality);
-
-        uint256 resultRay = getCurrentRateInRay();
+        if (
+            lastUpdatedTimestamp <
+            last.blockTimestamp + minSecondsSinceLastUpdate
+        ) return (index, cardinality);
 
         emit OracleBufferUpdate(
             Time.blockTimestampScaled(),
             address(this),
             index,
-            blockTimestamp,
-            resultRay,
+            lastUpdatedTimestamp,
+            lastUpdatedRate,
             cardinality,
             cardinalityNext
         );
 
+        currentBlockSlope.blockChange = block.number - lastUpdatedBlock.number;
+        currentBlockSlope.timeChange =
+            Time.blockTimestampTruncated() -
+            lastUpdatedBlock.timestamp;
+
+        lastUpdatedBlock.number = block.number;
+        lastUpdatedBlock.timestamp = Time.blockTimestampTruncated();
+
         return
             observations.write(
                 index,
-                blockTimestamp,
-                resultRay,
+                lastUpdatedTimestamp,
+                lastUpdatedRate,
                 cardinality,
                 cardinalityNext
             );
@@ -421,5 +482,72 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
         );
+    }
+
+    /// @inheritdoc IRateOracle
+    function getLastRateSlope()
+        public
+        view
+        override
+        returns (uint256 rateChange, uint32 timeChange)
+    {
+        uint16 last = oracleVars.rateIndex;
+        uint16 lastButOne = (oracleVars.rateIndex >= 1)
+            ? oracleVars.rateIndex - 1
+            : oracleVars.rateCardinality - 1;
+
+        // check if there are at least two points in the rate oracle
+        // otherwise, revert with "Not Enough Points"
+        require(
+            oracleVars.rateCardinality >= 2 &&
+                observations[lastButOne].initialized &&
+                observations[lastButOne].observedValue <=
+                observations[last].observedValue,
+            "NEP"
+        );
+
+        rateChange =
+            observations[last].observedValue -
+            observations[lastButOne].observedValue;
+        timeChange =
+            observations[last].blockTimestamp -
+            observations[lastButOne].blockTimestamp;
+    }
+
+    /// @inheritdoc IRateOracle
+    function getCurrentRateInRay()
+        public
+        view
+        override
+        returns (uint256 currentRate)
+    {
+        (
+            uint32 lastUpdatedTimestamp,
+            uint256 lastUpdatedRate
+        ) = getLastUpdatedRate();
+
+        if (lastUpdatedTimestamp >= Time.blockTimestampTruncated()) {
+            return lastUpdatedRate;
+        }
+
+        // We can't get the current rate from the underlying platform, perhaps because it only pushes
+        // rates to chain periodically. So we extrapolate the likely current rate from recent rates.
+        (uint256 rateChange, uint32 timeChange) = getLastRateSlope();
+
+        currentRate =
+            lastUpdatedRate +
+            ((Time.blockTimestampTruncated() - lastUpdatedTimestamp) *
+                rateChange) /
+            timeChange;
+    }
+
+    /// @inheritdoc IRateOracle
+    function getBlockSlope()
+        public
+        view
+        override
+        returns (uint256 blockChange, uint32 timeChange)
+    {
+        return (currentBlockSlope.blockChange, currentBlockSlope.timeChange);
     }
 }

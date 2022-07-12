@@ -4,9 +4,6 @@ pragma solidity =0.8.9;
 
 interface ILidoOracle {
 
-    /**
-     * @notice Report beacon balance and its change during the last frame
-     */
     function getLastCompletedReportDelta()
         external
         view
@@ -16,10 +13,6 @@ interface ILidoOracle {
             uint256 timeElapsed
         );
 
-    /**
-     * @notice Return currently reportable epoch (the first epoch of the current frame) as well as
-     * its start and end times in seconds
-     */
     function getCurrentFrame()
         external
         view
@@ -27,5 +20,17 @@ interface ILidoOracle {
             uint256 frameEpochId,
             uint256 frameStartTime,
             uint256 frameEndTime
+        );
+
+    function getLastCompletedEpochId() external view returns (uint256);
+
+    function getBeaconSpec()
+        external
+        view
+        returns (
+            uint64 epochsPerFrame,
+            uint64 slotsPerEpoch,
+            uint64 secondsPerSlot,
+            uint64 genesisTime
         );
 }
