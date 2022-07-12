@@ -60,7 +60,6 @@ const e2eParams: e2eParametersGeneral = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: false,
   isWETH: true,
   noMintTokens: true,
   rateOracle: 1,
@@ -219,11 +218,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 }
 
 const test = async () => {
-  console.log("scenario weth");
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/weth/consoleViaPeriphery.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };

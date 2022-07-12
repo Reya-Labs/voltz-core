@@ -20,6 +20,7 @@ import {
   MarginEngine,
   MockAaveLendingPool,
   MockAToken,
+  MockCToken,
   MockStEth,
   MockWETH,
   Periphery,
@@ -55,6 +56,7 @@ export class ScenarioRunner {
   weth!: MockWETH;
   token!: ERC20Mock;
   aToken!: MockAToken;
+  cToken!: MockCToken;
   stETH!: IStETH;
   lidoOracle!: ILidoOracle;
 
@@ -173,6 +175,7 @@ export class ScenarioRunner {
       this.getRateInRay(1)
     );
 
+    // Lido Mocks
     const mockStEthFactory = await ethers.getContractFactory("MockStEth");
     this.stETH = (await mockStEthFactory.deploy()) as IStETH;
 
@@ -186,6 +189,15 @@ export class ScenarioRunner {
     this.lidoOracle = (await mockLidoOracleFactory.deploy(
       this.stETH.address
     )) as ILidoOracle;
+
+    // mock cToken
+    const mockCTokenFactory = await ethers.getContractFactory("MockCToken");
+    this.cToken = (await mockCTokenFactory.deploy(
+      this.token.address,
+      "Voltz cUSD",
+      "cVUSD"
+    )) as MockCToken;
+    await this.cToken.setExchangeRate(toBn("1"));
 
     switch (this.params.rateOracle) {
       case 1: {
@@ -203,7 +215,18 @@ export class ScenarioRunner {
       }
 
       case 2: {
-        // To be added
+        const rateOracleFactory = await ethers.getContractFactory(
+          "CompoundRateOracle"
+        );
+        this.rateOracle = (await rateOracleFactory.deploy(
+          this.cToken.address,
+          this.params.isWETH || false,
+          this.token.address,
+          18,
+          [],
+          []
+        )) as IRateOracle;
+
         break;
       }
 
@@ -403,6 +426,9 @@ export class ScenarioRunner {
 
     await this.aToken.mint(address, amount, rni);
     await this.aToken.approve(address, amount);
+
+    await this.cToken.mint(address, amount);
+    await this.cToken.approve(address, amount);
   }
 
   async configureE2E() {
@@ -412,6 +438,7 @@ export class ScenarioRunner {
     await this.e2eSetup.setRateOracleAddress(this.rateOracle.address);
     await this.e2eSetup.setPeripheryAddress(this.periphery.address);
     await this.e2eSetup.setAaveLendingPool(this.aaveLendingPool.address);
+    await this.e2eSetup.setCToken(this.cToken.address);
 
     if (this.fcm) {
       await this.e2eSetup.setFCMAddress(this.fcm.address);
@@ -445,6 +472,7 @@ export class ScenarioRunner {
       ]) {
         await this.token.approveInternal(actor.address, ad, MAX_AMOUNT);
         await this.aToken.approveInternal(actor.address, ad, MAX_AMOUNT);
+        await this.cToken.approveInternal(actor.address, ad, MAX_AMOUNT);
         await this.e2eSetup.setIntegrationApproval(actor.address, ad, true);
       }
 
@@ -455,6 +483,11 @@ export class ScenarioRunner {
           MAX_AMOUNT
         );
         await this.aToken.approveInternal(
+          actor.address,
+          this.fcm.address,
+          MAX_AMOUNT
+        );
+        await this.cToken.approveInternal(
           actor.address,
           this.fcm.address,
           MAX_AMOUNT

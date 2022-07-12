@@ -79,7 +79,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     // each LP deposits 1,010 liquidity 100 times
 
     for (let i = 0; i < 100; i++) {
-      console.log("mint phase: ", i);
       for (const p of this.positions) {
         await this.e2eSetup.mintViaAMM(p[0], p[1], p[2], toBn("1001"));
       }
@@ -102,7 +101,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     );
 
     for (let i = 0; i < 100; i++) {
-      console.log("swap phase: ", i);
       for (const p of this.positions) {
         await this.e2eSetup.swapViaAMM({
           recipient: p[0],
