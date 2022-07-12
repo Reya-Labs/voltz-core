@@ -11,6 +11,7 @@
     "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
   },
   "transactions": [
+    {{#proxyUpgrades}}
     {
       "to": "{{proxyAddress}}",
       "value": "0",
@@ -30,5 +31,6 @@
         "newImplementation": "{{newImplementation}}",
       }
     },
+    {{/proxyUpgrades}}
   ]
 }
