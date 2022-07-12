@@ -3,8 +3,10 @@ import { deployments, ethers } from "hardhat";
 import { toBn } from "../../helpers/toBn";
 import { consts } from "../../helpers/constants";
 import { MockRocketEth } from "../../../typechain/MockRocketEth";
+import { MockRocketNetworkBalances } from "../../../typechain/MockRocketNetworkBalances";
 
 let rocketEth: MockRocketEth;
+let rocketNetworkBalances: MockRocketNetworkBalances;
 let weth: MockWETH;
 
 export const ConfigForGenericTests = {
@@ -16,7 +18,15 @@ export const ConfigForGenericTests = {
 
     // store rocketEth for use when setting rates
     rocketEth = (await ethers.getContract("MockRocketEth")) as MockRocketEth;
+    await rocketEth.setInstantUpdates(true);
+    await rocketEth.setRethMultiplierInRay(
+      toBn(1, consts.NORMALIZED_RATE_DECIMALS)
+    );
+
     weth = (await ethers.getContract("MockWETH")) as MockWETH;
+    rocketNetworkBalances = (await ethers.getContract(
+      "MockRocketNetworkBalances"
+    )) as MockRocketNetworkBalances;
 
     const TestRateOracleFactory = await ethers.getContractFactory(
       "TestRocketPoolRateOracle"
@@ -24,8 +34,10 @@ export const ConfigForGenericTests = {
 
     const testRateOracle = (await TestRateOracleFactory.deploy(
       rocketEth.address,
+      rocketNetworkBalances.address,
       weth.address
     )) as TestRateOracle;
+
     return { testRateOracle, rocketEth: rocketEth };
   },
   setRateAsDecimal: async (rate: number) => {

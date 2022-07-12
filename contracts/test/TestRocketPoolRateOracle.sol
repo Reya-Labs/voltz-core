@@ -6,9 +6,14 @@ import "./TestRateOracle.sol";
 
 contract TestRocketPoolRateOracle is RocketPoolRateOracle, TestRateOracle {
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
-    constructor(IRocketEth _rocketEth, IWETH _weth)
+    constructor(
+        IRocketEth _rocketEth,
+        IRocketNetworkBalances _rocketNetworkBalances,
+        IWETH _weth
+    )
         RocketPoolRateOracle(
             _rocketEth,
+            _rocketNetworkBalances,
             _weth,
             new uint32[](0),
             new uint256[](0)

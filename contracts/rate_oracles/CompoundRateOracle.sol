@@ -55,12 +55,11 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
     }
 
     /// @inheritdoc BaseRateOracle
-    /// @dev In the case of Compound, the rates are obtained by calling ctoken.exchangeRateStored. This returned value is scaled differently for different assets, so it requires careful normalisation to ray.
-    function getCurrentRateInRay()
+    function getLastUpdatedRate()
         public
         view
         override
-        returns (uint256 resultRay)
+        returns (uint32 timestamp, uint256 resultRay)
     {
         uint256 exchangeRateStored = ctoken.exchangeRateStored();
         if (exchangeRateStored == 0) {
@@ -79,6 +78,6 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             resultRay = exchangeRateStored * scaleUpFactor;
         }
 
-        return resultRay;
+        return (Time.blockTimestampTruncated(), resultRay);
     }
 }
