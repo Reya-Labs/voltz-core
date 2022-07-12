@@ -32,5 +32,37 @@
       }
     },
     {{/proxyUpgrades}}
+    {{#rateOracleUpdates}}
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+              {
+                "internalType": "contract IRateOracle",
+                "name": "__rateOracle",
+                "type": "address"
+              }
+          ],
+        "name": "setRateOracle",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "__rateOracle": "{{rateOracleAddress}}",
+      }
+    },
+    {
+      "to": "{{vammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [],
+        "name": "refreshRateOracle",
+        "payable": false
+      },
+      "contractInputsValues": {}
+    },
+    {{/rateOracleUpdates}}
   ]
 }

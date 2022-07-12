@@ -1,15 +1,21 @@
 import { task, types } from "hardhat/config";
-import { VAMM } from "../typechain";
+import { MarginEngine, VAMM } from "../typechain";
 import { ethers } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
 import * as fs from "fs";
 import path from "path";
+import { getRateOracleByNameOrAddress } from "./helpers";
 
 const _ERC1967_IMPLEMENTATION_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 interface UpgradeTemplateData {
   proxyUpgrades: { proxyAddress: string; newImplementation: string }[];
+  rateOracleUpdates: {
+    marginEngineAddress: string;
+    vammAddress: string;
+    rateOracleAddress: string;
+  }[];
 }
 
 const proxiedContractTypes = [
@@ -33,7 +39,7 @@ async function writeUpgradeTransactionsToGnosisSafeTemplate(
   );
   const output = mustache.render(template, data);
 
-  console.log("Output:\n", output);
+  console.log("\n", output);
 }
 
 async function getImplementationAddress(
@@ -168,7 +174,10 @@ task(
     const latestVammLogicAddress = (await hre.ethers.getContract("VAMM"))
       .address;
     const { deployer, multisig } = await hre.getNamedAccounts();
-    const data: UpgradeTemplateData = { proxyUpgrades: [] };
+    const data: UpgradeTemplateData = {
+      rateOracleUpdates: [],
+      proxyUpgrades: [],
+    };
     const vamms = taskArgs.vamms.split(",");
 
     // Now loop through all the VAMMs we want to upgrade
@@ -210,6 +219,85 @@ task(
             );
           }
         }
+      }
+    }
+
+    if (taskArgs.multisig) {
+      writeUpgradeTransactionsToGnosisSafeTemplate(data);
+    }
+  });
+
+task(
+  "updateRateOracle",
+  "Change the RateOracle used by a given list of MarginEngines instances (i.e. proxies) and their corresponding VAMMs"
+)
+  .addParam(
+    "marginEngines",
+    "Comma-separated list of addresses of the MarginEngine proxies for which we wish to change the Rate Oracle (associated VAMMs will update too)",
+    undefined,
+    types.string
+  )
+  .addParam(
+    "rateOracle",
+    "The name or address of the new rate oracle that the MarginEngine (and its VAMM) should use",
+    undefined,
+    types.string
+  )
+  .addFlag(
+    "multisig",
+    "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const rateOracle = await getRateOracleByNameOrAddress(
+      hre,
+      taskArgs.rateOracle
+    );
+    const { deployer, multisig } = await hre.getNamedAccounts();
+    const rateOracleAddress = rateOracle.address;
+    const marginEngines = taskArgs.marginEngines.split(",");
+
+    const data: UpgradeTemplateData = {
+      rateOracleUpdates: [],
+      proxyUpgrades: [],
+    };
+    for (const marginEngineAddress of marginEngines) {
+      const marginEngine = (await hre.ethers.getContractAt(
+        "MarginEngine",
+        marginEngineAddress
+      )) as MarginEngine;
+      const vammAddress = await marginEngine.vamm();
+      const vamm = (await hre.ethers.getContractAt(
+        "VAMM",
+        vammAddress
+      )) as VAMM;
+      const proxyOwner = await marginEngine.owner();
+
+      // TODO: check that rate oracle has data older than min(IRS start timestamp, current time - lookback window)
+
+      if (taskArgs.multisig) {
+        // Using multisig template instead of sending any transactions
+        data.rateOracleUpdates.push({
+          marginEngineAddress,
+          vammAddress,
+          rateOracleAddress,
+        });
+      } else {
+        // Not using multisig template - actually send the transactions
+        if (multisig !== proxyOwner && deployer !== proxyOwner) {
+          console.log(
+            `Not authorised to update MarginEngine ${marginEngineAddress} (owned by ${proxyOwner})`
+          );
+        } else {
+          await marginEngine
+            .connect(await getSigner(hre, proxyOwner))
+            .setRateOracle(rateOracleAddress);
+          await vamm
+            .connect(await getSigner(hre, proxyOwner))
+            .refreshRateOracle();
+        }
+        console.log(
+          `MarginEngine (${marginEngineAddress}) and VAMM (${vammAddress}) updated to point at latest ${taskArgs.rateOracle} (${rateOracleAddress})`
+        );
       }
     }
 
