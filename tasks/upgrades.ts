@@ -23,20 +23,13 @@ import path from "path";
 
 const _ERC1967_IMPLEMENTATION_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
-interface MultisigTemplateData {
-  factoryAddress: string;
-  predictedMarginEngineAddress: string;
-  predictedVammAddress: string;
-  peripheryAddress: string;
-  underlyingTokenAddress: string;
-  rateOracleAddress: string;
-  termStartTimestampWad: BigNumberish;
-  termEndTimestampWad: BigNumberish;
-  tickSpacing: number;
+interface UpgradeTemplateData {
+  proxyAddress: string;
+  newImplementation: string;
 }
 
-async function writeIrsCreationTransactionsToGnosisSafeTemplate(
-  data: MultisigTemplateData
+async function writeUpgradeTransactionsToGnosisSafeTemplate(
+  data: UpgradeTemplateData
 ) {
   // Get external template with fetch
   const template = fs.readFileSync(
@@ -82,6 +75,7 @@ async function getSigner(hre: HardhatRuntimeEnvironment, acctAddress: string) {
   return await hre.ethers.getSigner(acctAddress);
 }
 
+// TODO: make this task a generic upgrade task, that can upgrade any or all of vamm, marginEngine, fcms and periphery
 task(
   "deployUpdatedVAMM",
   "Deploys a new instance of the MasterVAMM (the logic contract used by VAMM instances)"
@@ -122,11 +116,16 @@ task(
   }
 });
 
+// TODO: add marginEngine, aaveFcm, compoundFcm and periphery params/flags, and do all in one go
 task(
   "upgradeVAMM",
   "Upgrades an instance of a VAMM to the latest deployed VAMM code"
 )
   .addParam("vamm", "The address of the VAMM proxy")
+  .addFlag(
+    "multisig",
+    "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
+  )
   .setAction(async (taskArgs, hre) => {
     const vammProxy = (await hre.ethers.getContractAt(
       "VAMM",
@@ -147,18 +146,33 @@ task(
         `The VAMM at ${proxyAddress} is using the latest logic (${latestVammLogicAddress}). No newer logic deployed!`
       );
       console.log;
-    } else if (multisig !== proxyOwner) {
-      console.log(
-        `Account ${multisig} is not authorised to upgrade the proxy at ${proxyAddress}`
-      );
     } else {
-      await vammProxy
-        .connect(await getSigner(hre, multisig))
-        .upgradeTo(latestVammLogicAddress);
-      const newImplAddress = await getImplementationAddress(hre, proxyAddress);
-      console.log(
-        `VAMM at ${vammProxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
-      );
+      if (taskArgs.multisig) {
+        // Using multisig template instead of sending any transactions
+        const data = {
+          proxyAddress: vammProxy.address,
+          newImplementation: latestVammLogicAddress,
+        };
+        writeUpgradeTransactionsToGnosisSafeTemplate(data);
+      } else {
+        // Not using multisig template - actually send the transactions
+        if (multisig !== proxyOwner) {
+          console.log(
+            `Account ${multisig} is not authorised to upgrade the proxy at ${proxyAddress}`
+          );
+        } else {
+          await vammProxy
+            .connect(await getSigner(hre, multisig))
+            .upgradeTo(latestVammLogicAddress);
+          const newImplAddress = await getImplementationAddress(
+            hre,
+            proxyAddress
+          );
+          console.log(
+            `VAMM at ${vammProxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
+          );
+        }
+      }
     }
   });
 
