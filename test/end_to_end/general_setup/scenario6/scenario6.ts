@@ -1,4 +1,3 @@
-import { utils } from "ethers";
 import { toBn } from "evm-bn";
 import { random } from "mathjs";
 import { consts } from "../../../helpers/constants";
@@ -18,10 +17,10 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { e2eParametersGeneral } from "../e2eSetup";
+import { ScenarioRunner } from "../newGeneral";
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_YEAR,
   numActors: 6,
   marginCalculatorParams: {
@@ -76,14 +75,14 @@ const e2eParams: e2eParameters = {
     ], // 6% -- 10%
     [2, -TICK_SPACING, TICK_SPACING], // swapper
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
 
-    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
+    await this.rateOracle.increaseObservationCardinalityNext(1000);
 
     await this.e2eSetup.updatePositionMarginViaAMM(
       this.positions[0][0],
@@ -120,8 +119,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       toBn("10000000")
     );
 
-    await this.exportSnapshot("available amounts");
-
     let accumulatedReserveNormalizedIncome = 1.0001;
     for (let i = 0; i < 89; i++) {
       await this.e2eSetup.swapViaAMM({
@@ -133,38 +130,24 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       });
 
       accumulatedReserveNormalizedIncome += random(0.0003, 0.0006);
-      await this.advanceAndUpdateApy(
-        consts.ONE_DAY.mul(4),
-        4,
-        accumulatedReserveNormalizedIncome
-      );
-      await this.updateAPYbounds();
-      console.log(" historical apy:", utils.formatEther(this.historicalApyWad));
-      console.log(
-        "variable factor:",
-        utils.formatEther(this.variableFactorWad)
-      );
 
-      await this.exportSnapshot("AFTER step " + i.toString());
+      await advanceTimeAndBlock(consts.ONE_DAY.mul(4), 4);
+      await this.e2eSetup.setNewRate(
+        this.getRateInRay(accumulatedReserveNormalizedIncome)
+      );
     }
 
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(15), 10);
+    await advanceTimeAndBlock(this.params.duration, 10);
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 6);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario6/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 6", test);
+it("analysis of historical apy", test);

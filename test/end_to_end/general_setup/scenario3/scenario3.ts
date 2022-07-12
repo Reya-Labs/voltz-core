@@ -17,10 +17,10 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { e2eParametersGeneral } from "../e2eSetup";
+import { ScenarioRunner } from "../newGeneral";
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 4,
   marginCalculatorParams: {
@@ -60,12 +60,12 @@ const e2eParams: e2eParameters = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
 
     await this.e2eSetup.updatePositionMarginViaAMM(
       this.positions[0][0],
@@ -81,9 +81,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       toBn("1000000")
     );
 
-    await this.advanceAndUpdateApy(consts.ONE_DAY.mul(2), 1, 1.0081);
-
-    await this.exportSnapshot("BEFORE FIRST SWAP");
+    await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0081));
 
     await this.e2eSetup.updatePositionMarginViaAMM(
       this.positions[2][0],
@@ -91,9 +90,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[2][2],
       toBn("2000")
     );
-
-    await this.updateCurrentTick();
-    await this.getVT("below");
 
     await this.e2eSetup.swapViaAMM({
       recipient: this.positions[2][0],
@@ -104,10 +100,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       tickUpper: this.positions[2][2],
     });
 
-    await this.exportSnapshot("AFTER FIRST SWAP");
-
-    await this.updateCurrentTick();
-    await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.01);
+    await advanceTimeAndBlock(consts.ONE_WEEK, 2);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.01));
 
     await this.e2eSetup.updatePositionMarginViaAMM(
       this.positions[1][0],
@@ -123,9 +117,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       toBn("5000000")
     );
 
-    await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.0125);
-
-    await this.exportSnapshot("BEFORE SECOND SWAP");
+    await advanceTimeAndBlock(consts.ONE_WEEK, 2);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0125));
 
     await this.e2eSetup.updatePositionMarginViaAMM(
       this.positions[3][0],
@@ -133,10 +126,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[3][2],
       toBn("2000")
     );
-
-    await this.updateCurrentTick();
-
-    await this.getVT("below");
 
     await this.e2eSetup.swapViaAMM({
       recipient: this.positions[3][0],
@@ -147,10 +136,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       tickUpper: this.positions[3][2],
     });
 
-    await this.exportSnapshot("AFTER SECOND SWAP");
-
-    await this.exportSnapshot("BEFORE THIRD (REVERSE) SWAP");
-
     await this.e2eSetup.swapViaAMM({
       recipient: this.positions[2][0],
       amountSpecified: toBn("10000"),
@@ -160,11 +145,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       tickUpper: this.positions[2][2],
     });
 
-    await this.exportSnapshot("AFTER THIRD (REVERSE) SWAP");
-
-    await this.updateCurrentTick();
-    await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(2), 2, 1.013);
-
     await this.e2eSetup.burnViaAMM(
       this.positions[0][0],
       this.positions[0][1],
@@ -172,25 +152,20 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       toBn("1000000")
     );
 
-    await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(8), 4, 1.0132);
+    await advanceTimeAndBlock(consts.ONE_WEEK.mul(8), 4);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0132));
 
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2);
+    await advanceTimeAndBlock(this.params.duration, 2);
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 3);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario3/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 3", test);
+it("mix transactions via vAMM", test);

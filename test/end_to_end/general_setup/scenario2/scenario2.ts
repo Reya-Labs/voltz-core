@@ -17,10 +17,10 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { e2eParametersGeneral } from "../e2eSetup";
+import { ScenarioRunner } from "../newGeneral";
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 4,
   marginCalculatorParams: {
@@ -60,14 +60,14 @@ const e2eParams: e2eParameters = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 // TODO: put all margin requirements into a file (and ignore it in git)
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
 
     await this.e2eSetup.updatePositionMarginViaAMM(
       this.positions[0][0],
@@ -116,34 +116,21 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     });
 
     for (let i = 0; i < 89; i++) {
-      await this.exportSnapshot("DAY " + i.toString());
-
-      await this.advanceAndUpdateApy(
-        consts.ONE_DAY.mul(1),
-        1,
-        1.001 + i * 0.0001
-      );
+      await advanceTimeAndBlock(consts.ONE_DAY.mul(1), 1);
+      await this.e2eSetup.setNewRate(this.getRateInRay(1.001 + i * 0.0001));
     }
-
-    this.exportSnapshot("BEFORE SETTLEMENT");
 
     await advanceTimeAndBlock(consts.ONE_DAY.mul(40), 1);
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 2);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario2/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 2", test);
+it("90 days of simulating rate", test);

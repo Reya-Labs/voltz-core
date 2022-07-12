@@ -14,10 +14,10 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { e2eParametersGeneral } from "../e2eSetup";
+import { ScenarioRunner } from "../newGeneral";
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 6,
   marginCalculatorParams: {
@@ -61,14 +61,14 @@ const e2eParams: e2eParameters = {
     [4, -TICK_SPACING, TICK_SPACING],
     [5, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
 
-    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
+    await this.rateOracle.increaseObservationCardinalityNext(1000);
 
     const liquidityDeltaBn = toBn("100000");
 
@@ -104,7 +104,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.e2eSetup.initiateFullyCollateralisedFixedTakerSwap(
       this.positions[5][0],
       toBn(amount_fcm.toString()),
-      await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+      await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
     );
 
     const amount = -300;
@@ -113,37 +113,28 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       amountSpecified: toBn(amount.toString()),
       sqrtPriceLimitX96:
         amount > 0
-          ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
-          : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
+          ? await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+          : await this.tickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
       tickLower: this.positions[5][1],
       tickUpper: this.positions[5][2],
     });
 
     for (let i = 0; i < 88; i++) {
-      await this.advanceAndUpdateApy(
-        consts.ONE_DAY.mul(1),
-        1,
-        1.003 + i * 0.0025
-      );
+      await advanceTimeAndBlock(consts.ONE_DAY.mul(1), 1);
+      await this.e2eSetup.setNewRate(this.getRateInRay(1.003 + i * 0.0025));
     }
 
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(90), 2);
+    await advanceTimeAndBlock(this.params.duration, 2);
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 13);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario13/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 13", test);
+it("series of transactions", test);

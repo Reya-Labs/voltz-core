@@ -1,4 +1,3 @@
-import { utils } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
@@ -15,10 +14,10 @@ import {
   encodeSqrtRatioX96,
   TICK_SPACING,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { e2eParametersGeneral } from "../e2eSetup";
+import { ScenarioRunner } from "../newGeneral";
 
-const e2eParams: e2eParameters = {
+const e2eParams: e2eParametersGeneral = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 6,
   marginCalculatorParams: {
@@ -62,27 +61,22 @@ const e2eParams: e2eParameters = {
     [4, -TICK_SPACING, TICK_SPACING],
     [5, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
 
-    await this.marginEngineTest.setLookbackWindowInSeconds(consts.ONE_WEEK);
-    await this.marginEngineTest.setCacheMaxAgeInSeconds(consts.ONE_DAY);
+    await this.marginEngine.setLookbackWindowInSeconds(consts.ONE_WEEK);
+    await this.marginEngine.setCacheMaxAgeInSeconds(consts.ONE_DAY);
 
-    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
+    await this.rateOracle.increaseObservationCardinalityNext(1000);
 
     for (let i = 0; i < 15; i++) {
-      await this.advanceAndUpdateApy(consts.ONE_DAY, 2, 1 + (i + 1) / 3650);
+      await advanceTimeAndBlock(consts.ONE_DAY, 2);
+      await this.e2eSetup.setNewRate(this.getRateInRay(1 + (i + 1) / 3650));
     }
-
-    console.log(
-      utils.formatEther(
-        await this.marginEngineTest.callStatic.getHistoricalApy()
-      )
-    );
 
     const p = this.positions[0];
     const positionMarginRequirement = await this.getMintInfoViaAMM(
@@ -101,23 +95,17 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.e2eSetup.mintViaAMM(p[0], p[1], p[2], toBn("100000"));
 
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(90), 2); // advance 5 days to reach maturity
+    await advanceTimeAndBlock(this.params.duration, 2); // advance 5 days to reach maturity
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 14);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario14/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 14", test);
+it("position requirement after 15 days", test);
