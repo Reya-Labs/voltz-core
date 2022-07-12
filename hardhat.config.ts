@@ -79,6 +79,7 @@ loadModuleIfContractsAreBuilt("./tasks/decodeTransactionData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
 loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
+loadModuleIfContractsAreBuilt("./tasks/checkPositions");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -99,7 +100,7 @@ if (!!process.env.FORK_MAINNET) {
     allowUnlimitedContractSize: true,
     forking: {
       url: `${process.env.MAINNET_URL}`,
-      blockNumber: 15102422,
+      blockNumber: 15128000,
     },
   };
 } else if (!!process.env.FORK_KOVAN) {

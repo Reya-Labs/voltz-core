@@ -1,0 +1,1206 @@
+{
+  "data": {
+    "positions": [
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x0960da039bb8151cacfef620476e8baf34bd9565"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x14d15f15f1151d82e0aa5f2443b7da68f981424c"
+        },
+        "tickLower": "-12540",
+        "tickUpper": "-6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x20628b67ce5cddac1cb95198c0ff5271f39fc048"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x2cef036e948859eb7383386eb589ebd8480b6ff1"
+        },
+        "tickLower": "-13860",
+        "tickUpper": "-10980"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x2fa11ef008c4b585ccf0a76861794ac7ae5a3a67"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "-13800"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x2fa11ef008c4b585ccf0a76861794ac7ae5a3a67"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x32fd4c94cef1e67fee202dc166119c0528468bbc"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x35177fd26e750835034ac8037592d678ec406d2b"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "-6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x3d246dbcffb991b686cd06f85d09846f4bdcea99"
+        },
+        "tickLower": "-20820",
+        "tickUpper": "-6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x3d246dbcffb991b686cd06f85d09846f4bdcea99"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x5bb4f05ff5235554204e3cd9ba46c3d5af422a0f"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x6248723f0bb8bef1ad108b5e17eb98af8acf493f"
+        },
+        "tickLower": "-8940",
+        "tickUpper": "-8880"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x634ed8c2df8fbe613ee25debe1a460b4df2487d7"
+        },
+        "tickLower": "-13860",
+        "tickUpper": "-4080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x63fb86f437aee0dad657040563dbb6ba7ca23d70"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x7c16b8b311b0de0e4f15cff9bf423ea91d0b2ec5"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "-4080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x85d33380514aba3ae6cf1c58ad9717a2b1cf0272"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x8b060b57b8a1467c10d34c5d797d6447ebd0b97d"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "-6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x8cb71cec028ccb62a88a89364884d1df5c0c5273"
+        },
+        "tickLower": "-8760",
+        "tickUpper": "-6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x938a49e24fd7a26149dd537019078d8a8f919290"
+        },
+        "tickLower": "12060",
+        "tickUpper": "16080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0x9fed457758d8f47781d55f1a7d2645f417c18ea9"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0xa47f68826abe8d3a20ee1b1458f3156e6c7b5277"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0xa47f68826abe8d3a20ee1b1458f3156e6c7b5277"
+        },
+        "tickLower": "-9180",
+        "tickUpper": "-8760"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0xaec9bb8e36fddcbc644b3a77216327834ceb9e15"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0xc4fb550fa8f2a6e5178711e56d5b48dedf897e5e"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0xc875a15956b4a47c8e85791d9891577eec762bc2"
+        },
+        "tickLower": "-13860",
+        "tickUpper": "-5880"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0xcac59f91e4536bc0e79ab816a5cd54e89f10433c"
+        },
+        "tickLower": "-17940",
+        "tickUpper": "-12540"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0xdad07ddbb3837b8ea6ee4372a76254fd6fdbab23"
+        },
+        "tickLower": "-13860",
+        "tickUpper": "-6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0xdc8c1959c74ab2cb3819add153e62739d12be550"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "-9300"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x21f9151d6e06f834751b614c2ff40fc28811b235"
+          }
+        },
+        "owner": {
+          "id": "0xfd47bae98581b759aaf0ef477a42bfd363a15a19"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x00c2d8fe2eb0036ee57d911a8c70d621efa2407e"
+        },
+        "tickLower": "-5880",
+        "tickUpper": "-1800"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x014607f2d6477badd9d74bf2c5d6356e29a9b957"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x015566197d36a8272e5d6aededf075ae9eb041e2"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "-3360"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x02e4f367fc7cb77d9b6818440648fc4dd5d21891"
+        },
+        "tickLower": "-10980",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x03d15ec11110dda27df907e12e7ac996841d95e4"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x0544868b896316a53b01090a7c4505353b008c15"
+        },
+        "tickLower": "-29940",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x070330e027a3e4327ba69f0c8a1885df4b545837"
+        },
+        "tickLower": "-20160",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x0782098b8ce702cc42eba5ea46c6a3de5d080d44"
+        },
+        "tickLower": "-10980",
+        "tickUpper": "-6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x0782098b8ce702cc42eba5ea46c6a3de5d080d44"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x078ad5270b0240d8529f600f35a271fc6e2b2bd8"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x0960da039bb8151cacfef620476e8baf34bd9565"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x0bdb188095ffc53d6ae2592196fb2215735a6755"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "12060"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x0c10e4d29945c634c718f361845eaed5fdc2601c"
+        },
+        "tickLower": "-10980",
+        "tickUpper": "2220"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x0d0a3c6dc8a7352a69b2b31e9db99f05a4c779f1"
+        },
+        "tickLower": "-23040",
+        "tickUpper": "16140"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x10865b0acb89cce3850d217f22cd98946cf3605c"
+        },
+        "tickLower": "-4080",
+        "tickUpper": "-1800"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x110d6c4a3129f8118ac01f80c765ca900788056d"
+        },
+        "tickLower": "-10980",
+        "tickUpper": "16080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1220d8c528afa28165a1f065b3749e717db98a2e"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x127d60193f08626e168099fc2277e31f5a89b1a7"
+        },
+        "tickLower": "-23040",
+        "tickUpper": "-16080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x12b3509f54a224277a71e36f86d936051506d025"
+        },
+        "tickLower": "-10980",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x12b3509f54a224277a71e36f86d936051506d025"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1334fdd8ae0694168785aca024768f1d99b65ff9"
+        },
+        "tickLower": "-4680",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x13a875ea21c9f2f599f667a02ee90f4758f1c873"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x141711dd6fe5439d6445f402d00ae5f38e13b543"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x14d15f15f1151d82e0aa5f2443b7da68f981424c"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1538bee8f8352d0b1456293234a7f54a2358e540"
+        },
+        "tickLower": "-29940",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x156cfe9b43a1d63a7346ceb8350c2b6cbdb2d019"
+        },
+        "tickLower": "-13860",
+        "tickUpper": "1080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x16b9967fa64d4064dfef0883b678d1566cc56c40"
+        },
+        "tickLower": "-4080",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x175c2a83c001ab70c4e772591e0a0b26e573e397"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x18842d30863c114e4c6986db4e42fd910d68e034"
+        },
+        "tickLower": "-4680",
+        "tickUpper": "-4080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x19d50766c78a75f80bf2bd33b51e9baa26882a6f"
+        },
+        "tickLower": "-29940",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x19d50766c78a75f80bf2bd33b51e9baa26882a6f"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x19e3281e9854a29a7729a2634d8da4febd2ef4ea"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1aab5ad27515409cf96f8ee10c41e2fd8f0365dd"
+        },
+        "tickLower": "-45960",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1ab9112358b9dafd825e6240181a11365b63e62a"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1ab9112358b9dafd825e6240181a11365b63e62a"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1cf6437111a85cb37603650f278b80655a1c43e9"
+        },
+        "tickLower": "-4680",
+        "tickUpper": "2220"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1df4c04d9c4247bedf051e73730c46a03c3d3050"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1df4c04d9c4247bedf051e73730c46a03c3d3050"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x1f83009caac94d71fb3ebd92bbfcddf9a6105f43"
+        },
+        "tickLower": "-13860",
+        "tickUpper": "2220"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x2031cc88e566e08e7cbd0b8363d36a4141731503"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x23aae43059e2d11b0e3bee974d8ba733013b3e7f"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x25268869efc127aaf837486365733332abf06dbe"
+        },
+        "tickLower": "-29940",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x27ab8efb6d96abc80fd3511a342148c6237d44aa"
+        },
+        "tickLower": "-4680",
+        "tickUpper": "-4080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x284f3268d61e07337b6bb461e9994f678b543b10"
+        },
+        "tickLower": "-4080",
+        "tickUpper": "5820"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x285ab8b73531a59bcb01b7f2028a66aa377e697b"
+        },
+        "tickLower": "-10980",
+        "tickUpper": "-6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x285ab8b73531a59bcb01b7f2028a66aa377e697b"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x2a100d4fb6aa540e83ad91fe2ca4f67b4548be86"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x2ae4ae376e1485c55e42782226cc2d607c31e588"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x2bcbeb150d5ccf83692d30e5b450514c1e90ad05"
+        },
+        "tickLower": "-16080",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x2f566d89da82c73384706e98b11fee36c113494d"
+        },
+        "tickLower": "-9180",
+        "tickUpper": "2220"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x2fa11ef008c4b585ccf0a76861794ac7ae5a3a67"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x3136043b0a2278569fcac322b7accf1395281b8f"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "-4080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x31b48d410003ab480bd66398f6e0712c55e11587"
+        },
+        "tickLower": "-29940",
+        "tickUpper": "-16080"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x34a21ad452817eb12110eab57b84759d64c41161"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x375c4952dfe5d5f0eae142f73cf8138ad496a722"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x39143272e8927312f9152822f7fe16cfecadbe76"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x3a8b9b6d9286a42d3956a54dc60ec81c6865ce82"
+        },
+        "tickLower": "-4080",
+        "tickUpper": "-1800"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x3cfa7505b674a690f992ffe62f916d530354478e"
+        },
+        "tickLower": "-27060",
+        "tickUpper": "69060"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x3d246dbcffb991b686cd06f85d09846f4bdcea99"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x3d246dbcffb991b686cd06f85d09846f4bdcea99"
+        },
+        "tickLower": "-9180",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x3f2b31757f862ded7b98c6621b53b6656c199e6a"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x411d41fa6be15967020a016876891b254d7f8769"
+        },
+        "tickLower": "-6960",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x4131826eafdcb7dcd855fae9098ec693165f157d"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x4226f83b6761fe3259505a5edf31ae4657582d15"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x4290a1c07f657a12f9895fea896a762f79257a23"
+        },
+        "tickLower": "0",
+        "tickUpper": "23040"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x43b0506f6b000327153b055c7e630f67be4096b7"
+        },
+        "tickLower": "-34020",
+        "tickUpper": "6960"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x43b0506f6b000327153b055c7e630f67be4096b7"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x446b3829013f94ea309318e294d8ed7825950e09"
+        },
+        "tickLower": "-29940",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x451a2f23b2a18f11ace266c4fe3943aea0d92cac"
+        },
+        "tickLower": "-23040",
+        "tickUpper": "23040"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x451a2f23b2a18f11ace266c4fe3943aea0d92cac"
+        },
+        "tickLower": "-69060",
+        "tickUpper": "0"
+      },
+      {
+        "amm": {
+          "marginEngine": {
+            "id": "0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e"
+          }
+        },
+        "owner": {
+          "id": "0x46e70385b2154646c5530a5c3d2a77acbc6cdd13"
+        },
+        "tickLower": "-9180",
+        "tickUpper": "18960"
+      }
+    ]
+  }
+}
