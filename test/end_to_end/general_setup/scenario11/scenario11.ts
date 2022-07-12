@@ -231,4 +231,4 @@ const test = async () => {
   await scenario.run();
 };
 
-it.only("mixed swaps, mints, burns, fcm operations", test);
+it("mixed swaps, mints, burns, fcm operations", test);
