@@ -28,7 +28,6 @@ import {
   VAMM,
 } from "../../../typechain";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
-import { extractErrorMessage } from "../../utils/extractErrorMessage";
 import { consts } from "../../helpers/constants";
 import { toBn } from "evm-bn";
 import JSBI from "jsbi";
@@ -602,26 +601,18 @@ export class ScenarioRunner {
         tickAfter = parseInt(result[5]);
       },
       (error: any) => {
-        const message = extractErrorMessage(error);
-
-        if (!message) {
-          throw new Error("Cannot decode additional margin amount");
-        }
-
-        if (message.includes("MarginRequirementNotMet")) {
-          const args: string[] = message
-            .split("MarginRequirementNotMet")[1]
-            .split("(")[1]
-            .split(")")[0]
-            .replaceAll(" ", "")
-            .split(",");
-
-          marginRequirement = BigNumber.from(args[0]);
-          tickAfter = parseInt(args[1]);
-          fee = BigNumber.from(args[4]);
-          availableNotional = BigNumber.from(args[3]);
+        if (error.errorSignature.includes("MarginRequirementNotMet")) {
+          marginRequirement = BigNumber.from(
+            error.errorArgs.marginRequirement.toString()
+          );
+          tickAfter = parseInt(error.errorArgs.tick.toString());
+          fee = BigNumber.from(
+            error.errorArgs.cumulativeFeeIncurred.toString()
+          );
+          availableNotional = BigNumber.from(
+            error.errorArgs.variableTokenDelta.toString()
+          );
         } else {
-          console.log("message:", message);
           throw new Error("Additional margin amount cannot be established");
         }
       }
@@ -688,26 +679,18 @@ export class ScenarioRunner {
         tickAfter = parseInt(result[5]);
       },
       (error: any) => {
-        const message = extractErrorMessage(error);
-
-        if (!message) {
-          throw new Error("Cannot decode additional margin amount");
-        }
-
-        if (message.includes("MarginRequirementNotMet")) {
-          const args: string[] = message
-            .split("MarginRequirementNotMet")[1]
-            .split("(")[1]
-            .split(")")[0]
-            .replaceAll(" ", "")
-            .split(",");
-
-          marginRequirement = BigNumber.from(args[0]);
-          tickAfter = parseInt(args[1]);
-          fee = BigNumber.from(args[4]);
-          availableNotional = BigNumber.from(args[3]);
+        if (error.errorSignature.includes("MarginRequirementNotMet")) {
+          marginRequirement = BigNumber.from(
+            error.errorArgs.marginRequirement.toString()
+          );
+          tickAfter = parseInt(error.errorArgs.tick.toString());
+          fee = BigNumber.from(
+            error.errorArgs.cumulativeFeeIncurred.toString()
+          );
+          availableNotional = BigNumber.from(
+            error.errorArgs.variableTokenDelta.toString()
+          );
         } else {
-          console.log("message:", message);
           throw new Error("Additional margin amount cannot be established");
         }
       }
@@ -759,23 +742,11 @@ export class ScenarioRunner {
           marginRequirement = BigNumber.from(result);
         },
         (error) => {
-          const message = extractErrorMessage(error);
-
-          if (!message) {
-            throw new Error("Cannot decode additional margin amount");
-          }
-
-          if (message.includes("MarginLessThanMinimum")) {
-            const args: string[] = message
-              .split("MarginLessThanMinimum")[1]
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-
-            marginRequirement = BigNumber.from(args[0]);
+          if (error.errorSignature.includes("MarginLessThanMinimum")) {
+            marginRequirement = BigNumber.from(
+              error.errorArgs.marginRequirement.toString()
+            );
           } else {
-            console.log("message:", message);
             throw new Error("Additional margin amount cannot be established");
           }
         }
@@ -822,23 +793,11 @@ export class ScenarioRunner {
           marginRequirement = BigNumber.from(result);
         },
         (error) => {
-          const message = extractErrorMessage(error);
-
-          if (!message) {
-            throw new Error("Cannot decode additional margin amount");
-          }
-
-          if (message.includes("MarginLessThanMinimum")) {
-            const args: string[] = message
-              .split("MarginLessThanMinimum")[1]
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-
-            marginRequirement = BigNumber.from(args[0]);
+          if (error.errorSignature.includes("MarginLessThanMinimum")) {
+            marginRequirement = BigNumber.from(
+              error.errorArgs.marginRequirement.toString()
+            );
           } else {
-            console.log("message:", message);
             throw new Error("Additional margin amount cannot be established");
           }
         }
