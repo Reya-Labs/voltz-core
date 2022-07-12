@@ -16,8 +16,7 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { ScenarioRunner, e2eParameters } from "../general";
 
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(3),
@@ -63,33 +62,31 @@ const e2eParams: e2eParameters = {
     [4, -TICK_SPACING, TICK_SPACING],
     [5, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
+
+    if (!this.fcm) {
+      throw new Error("This end-to-end test involves fcm");
+    }
 
     const length_of_series = 10;
     const actions = [1, 2, 3, 4, 5];
 
-    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
-    await this.rateOracleTest.increaseObservationCardinalityNext(2000);
+    await this.rateOracle.increaseObservationCardinalityNext(1000);
+    await this.rateOracle.increaseObservationCardinalityNext(2000);
 
     for (let step = 0; step < length_of_series * 4; step++) {
-      // await advanceTimeAndBlock(consts.ONE_HOUR.mul(6), 1);
-      await this.advanceAndUpdateApy(
-        consts.ONE_HOUR.mul(6),
-        1,
-        1.0001 + step * 0.00001
+      await advanceTimeAndBlock(consts.ONE_HOUR.mul(6), 1);
+      await this.e2eSetup.setNewRate(
+        this.getRateInRay(1.0001 + step * 0.00001)
       );
 
       const action = step < 5 ? 1 : actions[randomInt(0, actions.length)];
-      await this.exportSnapshot(
-        "step: " + step.toString() + " / action: " + action.toString()
-      );
 
-      console.log(action);
       if (action === 1) {
         // position mint
         const p = this.positions[randomInt(0, 5)];
@@ -112,8 +109,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           );
         }
 
-        console.log(positionMarginRequirement);
-
         await this.e2eSetup.mintViaAMM(p[0], p[1], p[2], liquidityDeltaBn);
       }
 
@@ -122,7 +117,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const p = this.positions[randomInt(0, 5)];
         const current_liquidity =
           (
-            await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])
+            await this.marginEngine.callStatic.getPosition(p[0], p[1], p[2])
           )._liquidity
             .div(BigNumber.from(10).pow(12))
             .toNumber() /
@@ -142,7 +137,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const min_vt = -Math.floor(await this.getVT("below"));
         const max_vt = Math.floor(await this.getVT("above"));
         const amount = randomInt(min_vt, max_vt);
-        console.log("vt:", min_vt, "->", amount, "->", max_vt);
 
         const { marginRequirement: positionMarginRequirement } =
           await this.getInfoSwapViaAMM({
@@ -150,8 +144,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
             amountSpecified: toBn(amount.toString()),
             sqrtPriceLimitX96:
               amount > 0
-                ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
-                : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
+                ? await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+                : await this.tickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
 
             tickLower: p[1],
             tickUpper: p[2],
@@ -171,8 +165,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           amountSpecified: toBn(amount.toString()),
           sqrtPriceLimitX96:
             amount > 0
-              ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
-              : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
+              ? await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+              : await this.tickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
 
           tickLower: p[1],
           tickUpper: p[2],
@@ -185,14 +179,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
         const max_vt = Math.floor(await this.getVT("above"));
         const amount = randomInt(0, max_vt);
-        console.log("to fcm swap vt:", 0, "->", amount, "->", max_vt);
 
         if (amount === 0) continue;
 
         await this.e2eSetup.initiateFullyCollateralisedFixedTakerSwap(
           p[0],
           toBn(amount.toString()),
-          await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+          await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
         );
       }
 
@@ -200,9 +193,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         // trader fcm unwind
         const p = this.positions[randomInt(5, 8)];
 
-        const traderYBAInfo = this.fcmTest.getTraderWithYieldBearingAssets(
-          p[0]
-        );
+        const traderYBAInfo = this.fcm.getTraderWithYieldBearingAssets(p[0]);
 
         const min_vt = Math.floor(await this.getVT("below"));
         const amount = randomInt(
@@ -216,14 +207,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
             )
           )
         );
-        console.log("to fcm unwind vt:", 0, "->", amount, "->", min_vt);
 
         if (amount === 0) continue;
 
         await this.e2eSetup.unwindFullyCollateralisedFixedTakerSwap(
           p[0],
           toBn(amount.toString()),
-          await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING)
+          await this.tickMath.getSqrtRatioAtTick(-5 * TICK_SPACING)
         );
       }
     }
@@ -232,19 +222,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 11);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario11/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 11", test);
+it("mixed swaps, mints, burns, fcm operations", test);

@@ -16,8 +16,7 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { ScenarioRunner, e2eParameters } from "../general";
 
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(3),
@@ -63,26 +62,23 @@ const e2eParams: e2eParameters = {
     [4, -TICK_SPACING, TICK_SPACING],
     [5, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
-
     const length_of_series = 50;
     const actions = [1, 2, 3];
 
-    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
-    await this.rateOracleTest.increaseObservationCardinalityNext(2000);
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
+
+    await this.rateOracle.increaseObservationCardinalityNext(1000);
+    await this.rateOracle.increaseObservationCardinalityNext(2000);
 
     for (let step = 0; step < length_of_series * 4; step++) {
       await advanceTimeAndBlock(consts.ONE_HOUR.mul(6), 1);
 
       const action = step < 5 ? 1 : actions[randomInt(0, actions.length)];
-      await this.exportSnapshot(
-        "step: " + step.toString() + " / action: " + action.toString()
-      );
 
       if (action === 1) {
         // position mint
@@ -106,8 +102,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           );
         }
 
-        console.log(positionMarginRequirement);
-
         await this.e2eSetup.mintViaAMM(p[0], p[1], p[2], liquidityDeltaBn);
       }
 
@@ -116,7 +110,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const p = this.positions[randomInt(0, 5)];
         const current_liquidity =
           (
-            await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])
+            await this.marginEngine.callStatic.getPosition(p[0], p[1], p[2])
           )._liquidity
             .div(BigNumber.from(10).pow(12))
             .toNumber() /
@@ -136,7 +130,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         const min_vt = -Math.floor(await this.getVT("below"));
         const max_vt = Math.floor(await this.getVT("above"));
         const amount = randomInt(min_vt, max_vt);
-        console.log("vt:", min_vt, "->", amount, "->", max_vt);
 
         const { marginRequirement: positionMarginRequirement } =
           await this.getInfoSwapViaAMM({
@@ -144,8 +137,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
             amountSpecified: toBn(amount.toString()),
             sqrtPriceLimitX96:
               amount > 0
-                ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
-                : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
+                ? await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+                : await this.tickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
 
             tickLower: p[1],
             tickUpper: p[2],
@@ -165,8 +158,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           amountSpecified: toBn(amount.toString()),
           sqrtPriceLimitX96:
             amount > 0
-              ? await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
-              : await this.testTickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
+              ? await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+              : await this.tickMath.getSqrtRatioAtTick(-5 * TICK_SPACING),
 
           tickLower: p[1],
           tickUpper: p[2],
@@ -174,23 +167,17 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       }
     }
 
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(90 - length_of_series), 2); // advance 5 days to reach maturity
+    await advanceTimeAndBlock(this.params.duration, 2); // advance 5 days to reach maturity
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 4);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario4/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 4", test);
+it("random mints, burns, swaps", test);

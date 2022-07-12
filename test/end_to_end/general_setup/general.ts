@@ -1,40 +1,61 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
-import { TestVAMM } from "../../../typechain/TestVAMM";
+import { formatRay } from "../../shared/utilities";
 import {
-  E2ESetupFixture,
-  fixedAndVariableMathFixture,
-  sqrtPriceMathFixture,
-  tickMathFixture,
-  createMetaFixtureE2E,
-  marginCalculatorFixture,
-} from "../../shared/fixtures";
-import { formatRay, TICK_SPACING } from "../../shared/utilities";
-import {
+  AaveFCM,
   Actor,
+  CompoundFCM,
   E2ESetup,
   ERC20Mock,
   Factory,
   FixedAndVariableMathTest,
+  IFCM,
+  ILidoOracle,
+  IMarginEngine,
+  IRateOracle,
+  IStETH,
+  IVAMM,
+  MarginCalculatorTest,
   MarginEngine,
   MockAaveLendingPool,
   MockAToken,
+  MockCToken,
+  MockStEth,
   MockWETH,
   Periphery,
   SqrtPriceMathTest,
-  TestAaveFCM,
-  TestRateOracle,
   TickMathTest,
+  VAMM,
 } from "../../../typechain";
-import { MarginCalculatorTest } from "../../../typechain/MarginCalculatorTest";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
-import { e2eParameters } from "./e2eSetup";
-import { toBn } from "../../helpers/toBn";
 import { consts } from "../../helpers/constants";
-import { createFixtureLoader } from "ethereum-waffle";
-import { extractErrorMessage } from "../../utils/extractErrorMessage";
+import { toBn } from "evm-bn";
+import JSBI from "jsbi";
 
 const { provider } = waffle;
+
+export interface e2eParameters {
+  duration: BigNumber;
+  lookBackWindowAPY: BigNumber;
+
+  numActors: number;
+
+  marginCalculatorParams: any;
+
+  startingPrice: JSBI;
+  tickSpacing: number;
+
+  feeProtocol: number;
+  fee: BigNumber;
+
+  positions: [number, number, number][]; // list of [index of actor, lower tick, upper tick]
+
+  isWETH?: boolean;
+
+  noMintTokens?: boolean;
+
+  rateOracle: number;
+}
 
 export type InfoPostSwap = {
   marginRequirement: number;
@@ -43,496 +64,302 @@ export type InfoPostSwap = {
   slippage: number;
 };
 
-export class ScenarioRunner {
-  traderTickLower: number = -TICK_SPACING;
-  traderTickUpper: number = TICK_SPACING;
+const MAX_AMOUNT = BigNumber.from(10).pow(27);
 
+export class ScenarioRunner {
+  // scenario parameters
   params: e2eParameters;
 
+  // wallets
   owner!: Wallet;
-  factory!: Factory;
+
+  // tokens
+  weth!: MockWETH;
   token!: ERC20Mock;
   aToken!: MockAToken;
-  rateOracleTest!: TestRateOracle;
+  cToken!: MockCToken;
+  stETH!: IStETH;
+  lidoOracle!: ILidoOracle;
 
-  termStartTimestampBN!: BigNumber;
-  termEndTimestampBN!: BigNumber;
+  // long-term contracts
+  factory!: Factory;
+  rateOracle!: IRateOracle;
   periphery!: Periphery;
-
-  fcmTest!: TestAaveFCM;
-  vammTest!: TestVAMM;
-  marginEngineTest!: MarginEngine;
   aaveLendingPool!: MockAaveLendingPool;
 
-  testMarginCalculator!: MarginCalculatorTest;
-  marginCalculatorParams: any;
+  // irs-specific contracts
+  fcm?: IFCM;
+  vamm!: IVAMM;
+  marginEngine!: IMarginEngine;
 
-  testFixedAndVariableMath!: FixedAndVariableMathTest;
-  testTickMath!: TickMathTest;
-  testSqrtPriceMath!: SqrtPriceMathTest;
+  // library contracts
+  fixedAndVariableMath!: FixedAndVariableMathTest;
+  tickMath!: TickMathTest;
+  sqrtPriceMath!: SqrtPriceMathTest;
+  marginCalculator!: MarginCalculatorTest;
 
+  // irs-specific variables
+  termStartTimestamp!: BigNumber;
+  termEndTimestamp!: BigNumber;
+
+  // e2e setup
   e2eSetup!: E2ESetup;
   actors!: Actor[];
-
   positions: [string, number, number][] = [];
 
-  outputFile!: string;
-
-  loadFixture!: ReturnType<typeof createFixtureLoader>;
-
-  // global variables (to avoid recomputing them)
-  lowerApyBound: BigNumber = toBn("0");
-  historicalApyWad: BigNumber = toBn("0");
-  upperApyBound: BigNumber = toBn("0");
-
-  variableFactorWad: BigNumber = toBn("0");
-
-  currentTick: number = 0;
-
-  async mintAndApprove(address: string) {
-    // consider adding an extra argument to this function amount so that the amount minted and approved is not hardcoded for more granular tests
-    await this.token.mint(address, BigNumber.from(10).pow(27));
-    await this.token.approve(address, BigNumber.from(10).pow(27));
-
-    await this.token.mint(this.aToken.address, BigNumber.from(10).pow(27));
-    const rni = await this.aaveLendingPool.getReserveNormalizedIncome(
-      this.token.address
-    );
-
-    await this.aToken.mint(address, BigNumber.from(10).pow(27), rni);
-    await this.aToken.approve(address, BigNumber.from(10).pow(27));
+  constructor(params: e2eParameters) {
+    this.params = params;
   }
 
-  constructor(params_: e2eParameters, outputFile_: string) {
-    this.params = params_;
-    this.outputFile = outputFile_;
-
-    const fs = require("fs");
-    fs.writeFileSync(this.outputFile, "");
+  getRateInRay(rate: number): string {
+    return Math.floor(rate * 10000 + 0.5).toString() + "0".repeat(23);
   }
 
-  async exportSnapshot(title: string) {
-    const fs = require("fs");
-    fs.appendFileSync(
-      this.outputFile,
-      "----------------------------" + title + "----------------------------\n"
+  async deployLongTermContracts() {
+    // master margin engine
+    const masterMarginEngineFactory = await ethers.getContractFactory(
+      "MarginEngine"
     );
+    const masterMarginEngine =
+      (await masterMarginEngineFactory.deploy()) as MarginEngine;
 
-    const currentTimestamp: number = await getCurrentTimestamp(provider);
-    fs.appendFileSync(
-      this.outputFile,
-      "current timestamp: " + currentTimestamp.toString() + "\n"
-    );
-    fs.appendFileSync(
-      this.outputFile,
-      "  start timestamp: " +
-        utils.formatEther(this.termStartTimestampBN) +
-        "\n"
-    );
-    fs.appendFileSync(
-      this.outputFile,
-      "    end timestamp: " + utils.formatEther(this.termEndTimestampBN) + "\n"
-    );
-    fs.appendFileSync(this.outputFile, "\n");
+    // master vamm
+    const masterVAMMFactory = await ethers.getContractFactory("VAMM");
+    const masterVAMM = (await masterVAMMFactory.deploy()) as VAMM;
 
-    await this.updateCurrentTick();
-    fs.appendFileSync(
-      this.outputFile,
-      "current tick: " + this.currentTick.toString() + "\n"
-    );
+    // factory
+    const factoryFactory = await ethers.getContractFactory("Factory");
+    this.factory = (await factoryFactory.deploy(
+      masterMarginEngine.address,
+      masterVAMM.address
+    )) as Factory;
 
-    const sqrtPriceAtCurrentTick = await this.testTickMath.getSqrtRatioAtTick(
-      this.currentTick
-    );
-    fs.appendFileSync(
-      this.outputFile,
-      "sqrt price at current tick: " +
-        (
-          sqrtPriceAtCurrentTick.div(BigNumber.from(2).pow(64)).toNumber() /
-          2 ** 32
-        ).toString() +
-        "\n"
-    );
-    fs.appendFileSync(this.outputFile, "\n");
+    // master fcm
+    switch (this.params.rateOracle) {
+      case 1: {
+        const masterFCMFactory = await ethers.getContractFactory("AaveFCM");
+        const masterFCM = (await masterFCMFactory.deploy()) as AaveFCM;
 
-    const currentReseveNormalizedIncome =
-      await this.aaveLendingPool.getReserveNormalizedIncome(this.token.address);
-    fs.appendFileSync(
-      this.outputFile,
-      "current reserve normalised income: " +
-        formatRay(currentReseveNormalizedIncome).toString() +
-        "\n"
-    );
-    fs.appendFileSync(this.outputFile, "\n");
+        await this.factory.setMasterFCM(masterFCM.address, 1);
+        break;
+      }
 
-    const vtBelow = await this.getVT("below");
-    const vtAbove = await this.getVT("above");
+      case 2: {
+        const masterFCMFactory = await ethers.getContractFactory("CompoundFCM");
+        const masterFCM = (await masterFCMFactory.deploy()) as CompoundFCM;
 
-    fs.appendFileSync(
-      this.outputFile,
-      "amount of available variable tokens: " +
-        vtAbove.toString() +
-        " (" +
-        "\u2191" +
-        ")" +
-        " ; " +
-        vtBelow.toString() +
-        " (" +
-        "\u2193" +
-        ")" +
-        "\n"
-    );
-    fs.appendFileSync(this.outputFile, "\n");
+        await this.factory.setMasterFCM(masterFCM.address, 2);
+        break;
+      }
 
-    if (toBn(currentTimestamp.toString()) < this.termEndTimestampBN) {
-      await this.updateAPYbounds();
+      case 3: {
+        break;
+      }
 
-      fs.appendFileSync(
-        this.outputFile,
-        "lower apy bound: " +
-          utils.formatEther(this.lowerApyBound).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        " historical apy: " +
-          utils.formatEther(this.historicalApyWad).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "upper apy bound: " +
-          utils.formatEther(this.upperApyBound).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "variable factor: " +
-          utils.formatEther(this.variableFactorWad).toString() +
-          "\n"
-      );
-      fs.appendFileSync(this.outputFile, "\n");
+      case 4: {
+        break;
+      }
+
+      default: {
+        throw new Error("Unrecognized rate oracle");
+      }
+    }
+
+    // Wrapped ETH
+    const MockWETHFactory = await ethers.getContractFactory("MockWETH");
+    this.weth = (await MockWETHFactory.deploy(
+      "Wrapped ETH",
+      "WETH"
+    )) as MockWETH;
+
+    // underlying token
+    if (this.params.isWETH) {
+      this.token = this.weth as ERC20Mock;
     } else {
-      fs.appendFileSync(this.outputFile, "lower apy bound: 0.0" + "\n");
-      fs.appendFileSync(this.outputFile, " historical apy: 0.0" + "\n");
-      fs.appendFileSync(this.outputFile, "upper apy bound: 0.0" + "\n");
-      fs.appendFileSync(this.outputFile, "variable factor: 0.0" + "\n");
-      fs.appendFileSync(this.outputFile, "\n");
+      const MockERC20Factory = await ethers.getContractFactory("ERC20Mock");
+      this.token = (await MockERC20Factory.deploy(
+        "Voltz USD",
+        "VUSD"
+      )) as ERC20Mock;
     }
 
-    fs.appendFileSync(
-      this.outputFile,
-      "No of   Actors: " + this.params.numActors.toString() + "\n"
-    );
-    fs.appendFileSync(
-      this.outputFile,
-      "No of Positions: " + this.positions.length.toString() + "\n"
-    );
-
-    for (let i = 0; i < this.positions.length; i++) {
-      let positionInfo = await this.marginEngineTest.callStatic.getPosition(
-        this.positions[i][0],
-        this.positions[i][1],
-        this.positions[i][2]
-      );
-
-      fs.appendFileSync(this.outputFile, "POSITION " + i.toString() + "\n");
-      positionInfo = await this.marginEngineTest.callStatic.getPosition(
-        this.positions[i][0],
-        this.positions[i][1],
-        this.positions[i][2]
-      );
-
-      fs.appendFileSync(
-        this.outputFile,
-        "                       address   : " +
-          this.positions[i][0].toString() +
-          "\n"
-      );
-
-      fs.appendFileSync(
-        this.outputFile,
-        "                       lower tick: " +
-          this.positions[i][1].toString() +
-          "\n"
-      );
-
-      const sqrtPriceAtLowerTick = await this.testTickMath.getSqrtRatioAtTick(
-        this.positions[i][1]
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "         sqrt price at lower tick: " +
-          (
-            sqrtPriceAtLowerTick.div(BigNumber.from(2).pow(64)).toNumber() /
-            2 ** 32
-          ).toString() +
-          "\n"
-      );
-
-      fs.appendFileSync(
-        this.outputFile,
-        "                       upper tick: " +
-          this.positions[i][2].toString() +
-          "\n"
-      );
-
-      const sqrtPriceAtUpperTick = await this.testTickMath.getSqrtRatioAtTick(
-        this.positions[i][2]
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "         sqrt price at upper tick: " +
-          (
-            sqrtPriceAtUpperTick.div(BigNumber.from(2).pow(64)).toNumber() /
-            2 ** 32
-          ).toString() +
-          "\n"
-      );
-
-      fs.appendFileSync(
-        this.outputFile,
-        "                        liquidity: " +
-          utils.formatEther(positionInfo._liquidity).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "                           margin: " +
-          utils.formatEther(positionInfo.margin).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "   fixedTokenGrowthInsideLastX128: " +
-          (
-            positionInfo.fixedTokenGrowthInsideLastX128
-              .div(BigNumber.from(2).pow(128 - 32))
-              .toNumber() /
-            2 ** 32
-          ).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "variableTokenGrowthInsideLastX128: " +
-          (
-            positionInfo.variableTokenGrowthInsideLastX128
-              .div(BigNumber.from(2).pow(128 - 32))
-              .toNumber() /
-            2 ** 32
-          ).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "                fixedTokenBalance: " +
-          utils.formatEther(positionInfo.fixedTokenBalance).toString() +
-          "\n"
-      );
-      fs.appendFileSync(
-        this.outputFile,
-        "             variableTokenBalance: " +
-          utils.formatEther(positionInfo.variableTokenBalance).toString() +
-          "\n"
-      );
-
-      fs.appendFileSync(
-        this.outputFile,
-        "                        isSettled: " +
-          positionInfo.isSettled.toString() +
-          "\n"
-      );
-
-      const settlementCashflow =
-        await this.testFixedAndVariableMath.calculateSettlementCashflow(
-          positionInfo.fixedTokenBalance,
-          positionInfo.variableTokenBalance,
-          this.termStartTimestampBN,
-          this.termEndTimestampBN,
-          this.variableFactorWad
-        );
-      fs.appendFileSync(
-        this.outputFile,
-        "             settlement cashflow: " +
-          utils.formatEther(settlementCashflow).toString() +
-          "\n"
-      );
-      if (toBn(currentTimestamp.toString()) < this.termEndTimestampBN) {
-        const current_margin_requirement =
-          await this.marginEngineTest.callStatic.getPositionMarginRequirement(
-            this.positions[i][0],
-            this.positions[i][1],
-            this.positions[i][2],
-            false
-          );
-        fs.appendFileSync(
-          this.outputFile,
-          "              margin requirement: " +
-            utils.formatEther(current_margin_requirement).toString() +
-            "\n"
-        );
-
-        const liquidation_threshold =
-          await this.marginEngineTest.callStatic.getPositionMarginRequirement(
-            this.positions[i][0],
-            this.positions[i][1],
-            this.positions[i][2],
-            true
-          );
-        fs.appendFileSync(
-          this.outputFile,
-          "           liquidation threshold: " +
-            utils.formatEther(liquidation_threshold).toString() +
-            "\n"
-        );
-        fs.appendFileSync(this.outputFile, "\n");
-      } else {
-        fs.appendFileSync(
-          this.outputFile,
-          "              margin requirement: 0.0" + "\n"
-        );
-
-        fs.appendFileSync(
-          this.outputFile,
-          "           liquidation threshold: 0.0" + "\n"
-        );
-        fs.appendFileSync(this.outputFile, "\n");
-      }
-
-      {
-        fs.appendFileSync(this.outputFile, "TRADER YBA " + i.toString() + "\n");
-        const traderYBAInfo =
-          await this.fcmTest.getTraderWithYieldBearingAssets(
-            this.positions[i][0]
-          );
-
-        fs.appendFileSync(
-          this.outputFile,
-          "                       address   : " +
-            this.positions[i][0].toString() +
-            "\n"
-        );
-
-        fs.appendFileSync(
-          this.outputFile,
-          "                           margin: " +
-            utils
-              .formatEther(traderYBAInfo.marginInScaledYieldBearingTokens)
-              .toString() +
-            "\n"
-        );
-        fs.appendFileSync(
-          this.outputFile,
-          "                fixedTokenBalance: " +
-            utils.formatEther(traderYBAInfo.fixedTokenBalance).toString() +
-            "\n"
-        );
-        fs.appendFileSync(
-          this.outputFile,
-          "             variableTokenBalance: " +
-            utils.formatEther(traderYBAInfo.variableTokenBalance).toString() +
-            "\n"
-        );
-        fs.appendFileSync(
-          this.outputFile,
-          "                        isSettled: " +
-            traderYBAInfo.isSettled.toString() +
-            "\n"
-        );
-
-        const settlementCashflow =
-          await this.testFixedAndVariableMath.calculateSettlementCashflow(
-            traderYBAInfo.fixedTokenBalance,
-            traderYBAInfo.variableTokenBalance,
-            this.termStartTimestampBN,
-            this.termEndTimestampBN,
-            this.variableFactorWad
-          );
-        fs.appendFileSync(
-          this.outputFile,
-          "             settlement cashflow: " +
-            utils.formatEther(settlementCashflow).toString() +
-            "\n"
-        );
-        fs.appendFileSync(this.outputFile, "\n");
-      }
-    }
-    fs.appendFileSync(this.outputFile, "\n");
-  }
-
-  async getAlreadyDeployedContracts() {
-    this.factory = (await ethers.getContract("Factory")) as Factory;
-    this.token = (await ethers.getContract("ERC20Mock")) as ERC20Mock;
-    this.rateOracleTest = (await ethers.getContract(
-      "TestAaveRateOracle"
-    )) as TestRateOracle;
-    this.aaveLendingPool = (await ethers.getContract(
+    // mock aave lending pool
+    const MockAaveLendingPoolFactory = await ethers.getContractFactory(
       "MockAaveLendingPool"
-    )) as MockAaveLendingPool;
-  }
+    );
+    this.aaveLendingPool =
+      (await MockAaveLendingPoolFactory.deploy()) as MockAaveLendingPool;
 
-  async init(isProd: boolean = false) {
-    this.owner = provider.getWallets()[0];
+    // initialize aave lending pool
+    await this.aaveLendingPool.setReserveNormalizedIncome(
+      this.token.address,
+      this.getRateInRay(1)
+    );
 
-    if (!isProd) {
-      this.loadFixture = createFixtureLoader([this.owner]);
-      // manually do the prerequsite deployments for the scenario
-      ({
-        factory: this.factory,
-        mockAToken: this.aToken,
-        token: this.token,
-        rateOracleTest: this.rateOracleTest,
-        aaveLendingPool: this.aaveLendingPool,
-        termStartTimestampBN: this.termStartTimestampBN,
-        termEndTimestampBN: this.termEndTimestampBN,
-        testMarginCalculator: this.testMarginCalculator,
-      } = await this.loadFixture(await createMetaFixtureE2E(this.params)));
+    // Lido Mocks
+    const mockStEthFactory = await ethers.getContractFactory("MockStEth");
+    this.stETH = (await mockStEthFactory.deploy()) as IStETH;
 
-      console.log(`factory: ${this.factory.address}`);
-      console.log(`masterVAMM: ${await this.factory.masterVAMM()}`);
-      console.log(
-        `masterMarginEngine: ${await this.factory.masterMarginEngine()}`
-      );
-    } else {
-      await this.getAlreadyDeployedContracts();
-      const termStartTimestamp: number = await getCurrentTimestamp(provider);
-      const termEndTimestamp: number =
-        termStartTimestamp + this.params.duration.toNumber();
-      this.termStartTimestampBN = toBn(termStartTimestamp.toString());
-      this.termEndTimestampBN = toBn(termEndTimestamp.toString());
-      ({ testMarginCalculator: this.testMarginCalculator } =
-        await marginCalculatorFixture());
-      // partial repetition of createMetaFixtureE2E (needs to be more DRY)
-      await this.aaveLendingPool.setReserveNormalizedIncome(
-        this.token.address,
-        "1000000000000000000000000000" // 10^27
-      );
+    await (this.stETH as MockStEth).setSharesMultiplierInRay(
+      this.getRateInRay(1)
+    );
 
-      await this.rateOracleTest.increaseObservationCardinalityNext(100);
-      // write oracle entry
-      await this.rateOracleTest.writeOracleEntry();
-      // advance time after first write to the oracle
-      await advanceTimeAndBlock(consts.ONE_MONTH, 2); // advance by one month
+    const mockLidoOracleFactory = await ethers.getContractFactory(
+      "MockLidoOracle"
+    );
+    this.lidoOracle = (await mockLidoOracleFactory.deploy(
+      this.stETH.address
+    )) as ILidoOracle;
 
-      await this.aaveLendingPool.setReserveNormalizedIncome(
-        this.token.address,
-        "1008000000000000000000000000" // 10^27 * 1.008
-      );
+    // mock cToken
+    const mockCTokenFactory = await ethers.getContractFactory("MockCToken");
+    this.cToken = (await mockCTokenFactory.deploy(
+      this.token.address,
+      "Voltz cUSD",
+      "cVUSD"
+    )) as MockCToken;
+    await this.cToken.setExchangeRate(toBn("1"));
 
-      await this.rateOracleTest.writeOracleEntry();
+    switch (this.params.rateOracle) {
+      case 1: {
+        const rateOracleFactory = await ethers.getContractFactory(
+          "AaveRateOracle"
+        );
+        this.rateOracle = (await rateOracleFactory.deploy(
+          this.aaveLendingPool.address,
+          this.token.address,
+          [],
+          []
+        )) as IRateOracle;
+
+        break;
+      }
+
+      case 2: {
+        const rateOracleFactory = await ethers.getContractFactory(
+          "CompoundRateOracle"
+        );
+        this.rateOracle = (await rateOracleFactory.deploy(
+          this.cToken.address,
+          this.params.isWETH || false,
+          this.token.address,
+          18,
+          [],
+          []
+        )) as IRateOracle;
+
+        break;
+      }
+
+      case 3: {
+        // To be added
+        break;
+      }
+
+      case 4: {
+        // Lido Rate Oracle
+        const rateOracleFactory = await ethers.getContractFactory(
+          "LidoRateOracle"
+        );
+        this.rateOracle = (await rateOracleFactory.deploy(
+          this.stETH.address,
+          this.lidoOracle.address,
+          this.weth.address,
+          [],
+          []
+        )) as IRateOracle;
+        break;
+      }
+
+      default: {
+        throw new Error("Unrecognized rate oracle");
+      }
     }
 
-    // deploy an IRS instance
+    // mock aToken
+    const mockATokenFactory = await ethers.getContractFactory("MockAToken");
+    this.aToken = (await mockATokenFactory.deploy(
+      this.aaveLendingPool.address,
+      this.token.address,
+      "Voltz aUSD",
+      "aVUSD"
+    )) as MockAToken;
+
+    await this.aaveLendingPool.initReserve(
+      this.token.address,
+      this.aToken.address
+    );
+
+    // e2e setup
+    const E2ESetupFactory = await ethers.getContractFactory("E2ESetup");
+    this.e2eSetup = (await E2ESetupFactory.deploy()) as E2ESetup;
+
+    // initialize the rate oracle
+    /// increase the buffer size
+    await this.rateOracle.increaseObservationCardinalityNext(1000);
+    await this.rateOracle.increaseObservationCardinalityNext(2000);
+    await this.rateOracle.increaseObservationCardinalityNext(3000);
+
+    /// write first entry
+    await this.rateOracle.writeOracleEntry();
+
+    /// advance time by one year to always have rate look-back window away
+    await advanceTimeAndBlock(consts.ONE_YEAR, 4);
+
+    // get dates
+    const termStartTimestamp: number = await getCurrentTimestamp(provider);
+    const termEndTimestamp: number =
+      termStartTimestamp + this.params.duration.toNumber();
+
+    this.termStartTimestamp = toBn(termStartTimestamp.toString());
+    this.termEndTimestamp = toBn(termEndTimestamp.toString());
+
+    // periphery
+    const peripheryFactory = await ethers.getContractFactory("Periphery");
+    this.periphery = (await peripheryFactory.deploy(
+      this.weth.address
+    )) as Periphery;
+  }
+
+  async deployLibraryContracts() {
+    // FixedAndVariableMath library exposed as a contract
+    const fixedAndVariableMathFactory = await ethers.getContractFactory(
+      "FixedAndVariableMathTest"
+    );
+    this.fixedAndVariableMath =
+      (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMathTest;
+
+    // SqrtPriceMath library exposed as a contract
+    const SqrtPriceMathFactory = await ethers.getContractFactory(
+      "SqrtPriceMathTest"
+    );
+    this.sqrtPriceMath =
+      (await SqrtPriceMathFactory.deploy()) as SqrtPriceMathTest;
+
+    // TickMath library exposed as a contract
+    const TickMathFactory = await ethers.getContractFactory("TickMathTest");
+    this.tickMath = (await TickMathFactory.deploy()) as TickMathTest;
+
+    // MarginCalculator library exposed as a contract
+    const MarginCalculatorFactory = await ethers.getContractFactory(
+      "MarginCalculatorTest"
+    );
+    this.marginCalculator =
+      (await MarginCalculatorFactory.deploy()) as MarginCalculatorTest;
+  }
+
+  async deployIRSContracts() {
+    // deploy IRS instance
     const deployTrx = await this.factory.deployIrsInstance(
       this.token.address,
-      this.rateOracleTest.address,
-      this.termStartTimestampBN,
-      this.termEndTimestampBN,
+      this.rateOracle.address,
+      this.termStartTimestamp,
+      this.termEndTimestamp,
       this.params.tickSpacing,
       { gasLimit: 10000000 }
     );
 
+    // infer the IRS transaction event
     const receiptLogs = (await deployTrx.wait()).logs;
     const log = this.factory.interface.parseLog(
       receiptLogs[receiptLogs.length - 3]
@@ -543,150 +370,200 @@ export class ScenarioRunner {
       );
     }
 
+    // get IRS contracts
     const marginEngineAddress = log.args.marginEngine;
     const vammAddress = log.args.vamm;
     const fcmAddress = log.args.fcm;
 
     const marginEngineFactory = await ethers.getContractFactory("MarginEngine");
-
-    this.marginEngineTest = marginEngineFactory.attach(
+    this.marginEngine = marginEngineFactory.attach(
       marginEngineAddress
-    ) as MarginEngine;
+    ) as IMarginEngine;
 
-    const vammTestFactory = await ethers.getContractFactory("TestVAMM");
-    this.vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
+    const vammFactory = await ethers.getContractFactory("VAMM");
+    this.vamm = vammFactory.attach(vammAddress) as IVAMM;
 
-    const fcmTestFactory = await ethers.getContractFactory("TestAaveFCM");
-    this.fcmTest = fcmTestFactory.attach(fcmAddress) as TestAaveFCM;
+    switch (this.params.rateOracle) {
+      case 1: {
+        const fcmFactory = await ethers.getContractFactory("AaveFCM");
+        this.fcm = fcmFactory.attach(fcmAddress) as IFCM;
 
-    // deploy mock WETH
-    const wethFactory = await ethers.getContractFactory("MockWETH");
-    const weth = (await wethFactory.deploy("Wrapped ETH", "WETH")) as MockWETH;
+        break;
+      }
 
-    // deploy the periphery
-    const peripheryFactory = await ethers.getContractFactory("Periphery");
-    this.periphery = (await peripheryFactory.deploy(weth.address)) as Periphery;
+      case 2: {
+        const fcmFactory = await ethers.getContractFactory("CompoundFCM");
+        this.fcm = fcmFactory.attach(fcmAddress) as IFCM;
 
-    // deploy Fixed and Variable Math test
-    ({ testFixedAndVariableMath: this.testFixedAndVariableMath } =
-      await fixedAndVariableMathFixture());
+        break;
+      }
 
-    // deploy Tick Math Test
-    ({ testTickMath: this.testTickMath } = await tickMathFixture());
+      case 3: {
+        break;
+      }
 
-    // deploy Sqrt Price Math Test
-    ({ testSqrtPriceMath: this.testSqrtPriceMath } =
-      await sqrtPriceMathFixture());
+      case 4: {
+        break;
+      }
 
-    // deploy the setup for E2E testing
-    ({ e2eSetup: this.e2eSetup } = await E2ESetupFixture());
+      default: {
+        throw new Error("Unrecognized rate oracle");
+      }
+    }
+  }
 
-    // set the parameters of margin calculator
-    this.marginCalculatorParams = this.params.marginCalculatorParams;
-
+  async configureIRS() {
     // set margin engine parameters
-    await this.marginEngineTest.setVAMM(this.vammTest.address);
-    await this.marginEngineTest.setMarginCalculatorParameters(
-      this.marginCalculatorParams
+    await this.marginEngine.setVAMM(this.vamm.address);
+    await this.marginEngine.setMarginCalculatorParameters(
+      this.params.marginCalculatorParams
     );
-    await this.marginEngineTest.setLookbackWindowInSeconds(
+    await this.marginEngine.setLookbackWindowInSeconds(
       this.params.lookBackWindowAPY
     );
 
     // set VAMM parameters
-    await this.vammTest.initializeVAMM(this.params.startingPrice.toString());
-
-    if (this.params.feeProtocol !== 0) {
-      await this.vammTest.setFeeProtocol(this.params.feeProtocol);
+    try {
+      await this.vamm.setFeeProtocol(this.params.feeProtocol);
+    } catch (_) {
+      console.log("same protocol fee as before");
     }
 
-    if (this.params.fee.toString() !== "0") {
-      await this.vammTest.setFee(this.params.fee);
+    try {
+      await this.vamm.setFee(this.params.fee);
+    } catch (_) {
+      console.log("same fee percentage as before");
     }
+  }
 
-    // set e2e setup parameters
-    await this.e2eSetup.setMEAddress(this.marginEngineTest.address);
-    await this.e2eSetup.setVAMMAddress(this.vammTest.address);
-    await this.e2eSetup.setFCMAddress(this.fcmTest.address);
-    await this.e2eSetup.setRateOracleAddress(this.rateOracleTest.address);
+  async mintAndApprove(address: string, amount: BigNumber) {
+    await this.token.mint(address, amount);
+    await this.token.approve(address, amount);
+
+    await this.token.mint(this.aToken.address, amount);
+    const rni = await this.aaveLendingPool.getReserveNormalizedIncome(
+      this.token.address
+    );
+
+    await this.aToken.mint(address, amount, rni);
+    await this.aToken.approve(address, amount);
+
+    await this.cToken.mint(address, amount);
+    await this.cToken.approve(address, amount);
+  }
+
+  async configureE2E() {
+    /// set all contracts in E2E
+    await this.e2eSetup.setMEAddress(this.marginEngine.address);
+    await this.e2eSetup.setVAMMAddress(this.vamm.address);
+    await this.e2eSetup.setRateOracleAddress(this.rateOracle.address);
     await this.e2eSetup.setPeripheryAddress(this.periphery.address);
+    await this.e2eSetup.setAaveLendingPool(this.aaveLendingPool.address);
+    await this.e2eSetup.setCToken(this.cToken.address);
 
-    // mint and approve the addresses
-    await this.mintAndApprove(this.owner.address);
-    // await this.mintAndApprove(this.marginEngineTest.address);
-    // await this.mintAndApprove(this.e2eSetup.address);
+    if (this.fcm) {
+      await this.e2eSetup.setFCMAddress(this.fcm.address);
+    }
 
-    // create the actors
+    // eslint-disable-next-line no-empty
+    if (this.params.noMintTokens) {
+    } else {
+      await this.mintAndApprove(this.owner.address, MAX_AMOUNT);
+    }
+
+    /// spawn up the actors
     this.actors = [];
     for (let i = 0; i < this.params.numActors; i++) {
       const ActorFactory = await ethers.getContractFactory("Actor");
       const actor = (await ActorFactory.deploy()) as Actor;
+
+      /// push new actor
       this.actors.push(actor);
-      await this.mintAndApprove(actor.address);
+      // eslint-disable-next-line no-empty
+      if (this.params.noMintTokens) {
+      } else {
+        await this.mintAndApprove(actor.address, MAX_AMOUNT);
+      }
 
-      // ab: why do we need to do it via the approveInternal function call>
-      await this.token.approveInternal(
-        actor.address,
-        this.fcmTest.address,
-        BigNumber.from(10).pow(27)
-      );
-
-      await this.token.approveInternal(
-        actor.address,
+      /// set manually the approval of contracts to act on behalf of actors
+      for (const ad of [
         this.periphery.address,
-        BigNumber.from(10).pow(27)
-      );
+        this.vamm.address,
+        this.marginEngine.address,
+      ]) {
+        await this.token.approveInternal(actor.address, ad, MAX_AMOUNT);
+        await this.aToken.approveInternal(actor.address, ad, MAX_AMOUNT);
+        await this.cToken.approveInternal(actor.address, ad, MAX_AMOUNT);
+        await this.e2eSetup.setIntegrationApproval(actor.address, ad, true);
+      }
 
-      await this.aToken.approveInternal(
-        actor.address,
-        this.fcmTest.address,
-        BigNumber.from(10).pow(27)
-      );
-
-      await this.token.approveInternal(
-        actor.address,
-        this.e2eSetup.address,
-        BigNumber.from(10).pow(27)
-      );
-
-      await this.token.approveInternal(
-        actor.address,
-        this.marginEngineTest.address,
-        BigNumber.from(10).pow(27)
-      );
-
-      // set approval for the periphery to act on belalf of the actor
-      await actor.setIntegrationApproval(
-        this.marginEngineTest.address,
-        this.periphery.address,
-        true
-      );
-
-      await actor.setIntegrationApproval(
-        this.marginEngineTest.address,
-        this.e2eSetup.address,
-        true
-      );
+      if (this.fcm) {
+        await this.token.approveInternal(
+          actor.address,
+          this.fcm.address,
+          MAX_AMOUNT
+        );
+        await this.aToken.approveInternal(
+          actor.address,
+          this.fcm.address,
+          MAX_AMOUNT
+        );
+        await this.cToken.approveInternal(
+          actor.address,
+          this.fcm.address,
+          MAX_AMOUNT
+        );
+        await this.e2eSetup.setIntegrationApproval(
+          actor.address,
+          this.fcm.address,
+          true
+        );
+      }
     }
-
-    await this.token.approveInternal(
-      this.e2eSetup.address,
-      this.marginEngineTest.address,
-      BigNumber.from(10).pow(27)
-    );
-
-    await this.token.approveInternal(
-      this.e2eSetup.address,
-      this.fcmTest.address,
-      BigNumber.from(10).pow(27)
-    );
 
     this.positions = [];
     for (const p of this.params.positions) {
       this.positions.push([this.actors[p[0]].address, p[1], p[2]]);
     }
+  }
 
-    await this.updateCurrentTick();
+  async init() {
+    this.owner = provider.getWallets()[0];
+
+    // deploy long-term contracts
+    await this.deployLongTermContracts();
+
+    await this.deployLibraryContracts();
+
+    console.log(`factory: ${this.factory.address}`);
+    console.log(`periphery: ${this.periphery.address}`);
+    console.log(`E2E: ${this.e2eSetup.address}`);
+    console.log(`masterVAMM: ${await this.factory.masterVAMM()}`);
+    console.log(
+      `masterMarginEngine: ${await this.factory.masterMarginEngine()}`
+    );
+    console.log(
+      `masterFCM: ${await this.factory.masterFCMs(
+        await this.rateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()
+      )}`
+    );
+    console.log();
+
+    // deploy an IRS instance
+    await this.deployIRSContracts();
+    console.log(`VAMM: ${this.vamm.address}`);
+    console.log(`marginEngine: ${this.marginEngine.address}`);
+    console.log(`FCM: ${this.fcm ? this.fcm.address : "Undefined"}`);
+    console.log();
+
+    // configure the IRS instance
+    await this.configureIRS();
+
+    // configure the E2E setup
+    await this.configureE2E();
+
+    /// set starting rate
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.01));
   }
 
   // print the current normalized income
@@ -708,7 +585,7 @@ export class ScenarioRunner {
     tickUpper: number;
   }): Promise<InfoPostSwap> {
     const tickBefore = await this.periphery.getCurrentTick(
-      this.marginEngineTest.address
+      this.marginEngine.address
     );
 
     let tickAfter = 0;
@@ -724,7 +601,7 @@ export class ScenarioRunner {
         tickAfter = parseInt(result[5]);
       },
       (error: any) => {
-        if (error.message.includes("MarginRequirementNotMet")) {
+        if (error.errorSignature.includes("MarginRequirementNotMet")) {
           marginRequirement = BigNumber.from(
             error.errorArgs.marginRequirement.toString()
           );
@@ -742,7 +619,7 @@ export class ScenarioRunner {
     );
 
     const currentMargin = (
-      await this.marginEngineTest.callStatic.getPosition(
+      await this.marginEngine.callStatic.getPosition(
         swapParams.recipient,
         swapParams.tickLower,
         swapParams.tickUpper
@@ -786,7 +663,7 @@ export class ScenarioRunner {
     }
   ): Promise<InfoPostSwap> {
     const tickBefore = await this.periphery.getCurrentTick(
-      this.marginEngineTest.address
+      this.marginEngine.address
     );
 
     let tickAfter = 0;
@@ -802,33 +679,25 @@ export class ScenarioRunner {
         tickAfter = parseInt(result[5]);
       },
       (error: any) => {
-        const message = extractErrorMessage(error);
-
-        if (!message) {
-          throw new Error("Cannot decode additional margin amount");
-        }
-
-        if (message.includes("MarginRequirementNotMet")) {
-          const args: string[] = message
-            .split("MarginRequirementNotMet")[1]
-            .split("(")[1]
-            .split(")")[0]
-            .replaceAll(" ", "")
-            .split(",");
-
-          marginRequirement = BigNumber.from(args[0]);
-          tickAfter = parseInt(args[1]);
-          fee = BigNumber.from(args[4]);
-          availableNotional = BigNumber.from(args[3]);
+        if (error.errorSignature.includes("MarginRequirementNotMet")) {
+          marginRequirement = BigNumber.from(
+            error.errorArgs.marginRequirement.toString()
+          );
+          tickAfter = parseInt(error.errorArgs.tick.toString());
+          fee = BigNumber.from(
+            error.errorArgs.cumulativeFeeIncurred.toString()
+          );
+          availableNotional = BigNumber.from(
+            error.errorArgs.variableTokenDelta.toString()
+          );
         } else {
-          console.log(message);
           throw new Error("Additional margin amount cannot be established");
         }
       }
     );
 
     const currentMargin = (
-      await this.marginEngineTest.callStatic.getPosition(
+      await this.marginEngine.callStatic.getPosition(
         trader,
         swapParams.tickLower,
         swapParams.tickUpper
@@ -873,8 +742,10 @@ export class ScenarioRunner {
           marginRequirement = BigNumber.from(result);
         },
         (error) => {
-          if (error.message.includes("MarginLessThanMinimum")) {
-            marginRequirement = error.errorArgs.marginRequirement;
+          if (error.errorSignature.includes("MarginLessThanMinimum")) {
+            marginRequirement = BigNumber.from(
+              error.errorArgs.marginRequirement.toString()
+            );
           } else {
             throw new Error("Additional margin amount cannot be established");
           }
@@ -882,7 +753,7 @@ export class ScenarioRunner {
       );
 
     const currentMargin = (
-      await this.marginEngineTest.callStatic.getPosition(
+      await this.marginEngine.callStatic.getPosition(
         recipient,
         tickLower,
         tickUpper
@@ -922,21 +793,10 @@ export class ScenarioRunner {
           marginRequirement = BigNumber.from(result);
         },
         (error) => {
-          const message = extractErrorMessage(error);
-
-          if (!message) {
-            throw new Error("Cannot decode additional margin amount");
-          }
-
-          if (message.includes("MarginLessThanMinimum")) {
-            const args: string[] = message
-              .split("MarginLessThanMinimum")[1]
-              .split("(")[1]
-              .split(")")[0]
-              .replaceAll(" ", "")
-              .split(",");
-
-            marginRequirement = BigNumber.from(args[0]);
+          if (error.errorSignature.includes("MarginLessThanMinimum")) {
+            marginRequirement = BigNumber.from(
+              error.errorArgs.marginRequirement.toString()
+            );
           } else {
             throw new Error("Additional margin amount cannot be established");
           }
@@ -944,7 +804,7 @@ export class ScenarioRunner {
       );
 
     const currentMargin = (
-      await this.marginEngineTest.callStatic.getPosition(
+      await this.marginEngine.callStatic.getPosition(
         trader,
         mintParams.tickLower,
         mintParams.tickUpper
@@ -965,107 +825,6 @@ export class ScenarioRunner {
     return additionalMargin;
   }
 
-  async updateAPYbounds() {
-    const currentTimestamp: number = await getCurrentTimestamp(provider);
-    const currrentTimestampWad: BigNumber = toBn(currentTimestamp.toString());
-    this.historicalApyWad =
-      await this.marginEngineTest.getHistoricalApyReadOnly();
-
-    this.upperApyBound = await this.testMarginCalculator.computeApyBound(
-      this.termEndTimestampBN,
-      currrentTimestampWad,
-      this.historicalApyWad,
-      true,
-      this.marginCalculatorParams
-    );
-    this.lowerApyBound = await this.testMarginCalculator.computeApyBound(
-      this.termEndTimestampBN,
-      currrentTimestampWad,
-      this.historicalApyWad,
-      false,
-      this.marginCalculatorParams
-    );
-
-    this.variableFactorWad = await this.rateOracleTest.variableFactorNoCache(
-      this.termStartTimestampBN,
-      this.termEndTimestampBN
-    );
-  }
-
-  // reserveNormalizedIncome format: x.yyyy
-  async advanceAndUpdateApy(
-    time: BigNumber,
-    blockCount: number,
-    reserveNormalizedIncome: number
-  ) {
-    await advanceTimeAndBlock(time, blockCount);
-    console.log(
-      "rni:",
-      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
-        "0".repeat(23)
-    );
-    await this.aaveLendingPool.setReserveNormalizedIncome(
-      this.token.address,
-      Math.floor(reserveNormalizedIncome * 10000 + 0.5).toString() +
-        "0".repeat(23)
-    );
-
-    await this.rateOracleTest.writeOracleEntry();
-
-    await this.updateAPYbounds();
-  }
-
-  async getVT(towards: string) {
-    await this.updateCurrentTick();
-
-    let totalAmount0 = toBn("0");
-    let totalAmount1 = toBn("0");
-
-    for (const p of this.positions) {
-      let lowerTick = p[1];
-      let upperTick = p[2];
-
-      if (towards === "below") {
-        upperTick = Math.min(this.currentTick, p[2]);
-      } else if (towards === "above") {
-        lowerTick = Math.max(this.currentTick, p[1]);
-      } else {
-        console.error("direction should be either below or above");
-        return 0;
-      }
-
-      if (lowerTick >= upperTick) continue;
-
-      const liquidity = (
-        await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])
-      )._liquidity;
-      const ratioAtLowerTick = await this.testTickMath.getSqrtRatioAtTick(
-        lowerTick
-      );
-      const ratioAtUpperTick = await this.testTickMath.getSqrtRatioAtTick(
-        upperTick
-      );
-
-      const amount0 = await this.testSqrtPriceMath.getAmount0Delta(
-        ratioAtLowerTick,
-        ratioAtUpperTick,
-        liquidity,
-        true
-      );
-      const amount1 = await this.testSqrtPriceMath.getAmount1Delta(
-        ratioAtLowerTick,
-        ratioAtUpperTick,
-        liquidity,
-        true
-      );
-
-      totalAmount0 = totalAmount0.add(amount0);
-      totalAmount1 = totalAmount1.add(amount1);
-    }
-
-    return parseFloat(utils.formatEther(totalAmount1));
-  }
-
   async settlePositions() {
     for (const p of this.positions) {
       await this.e2eSetup.settlePositionViaAMM(p[0], p[1], p[2]);
@@ -1075,7 +834,7 @@ export class ScenarioRunner {
         p[1],
         p[2],
         (
-          await this.marginEngineTest.callStatic.getPosition(p[0], p[1], p[2])
+          await this.marginEngine.callStatic.getPosition(p[0], p[1], p[2])
         ).margin
           .mul(-1)
           .add(1)
@@ -1089,8 +848,57 @@ export class ScenarioRunner {
     }
   }
 
-  async updateCurrentTick() {
-    this.currentTick = (await this.vammTest.vammVars()).tick;
+  async getVT(towards: string) {
+    const currentTick = await this.periphery.getCurrentTick(
+      this.marginEngine.address
+    );
+
+    let totalAmount0 = toBn("0");
+    let totalAmount1 = toBn("0");
+
+    for (const p of this.positions) {
+      let lowerTick = p[1];
+      let upperTick = p[2];
+
+      if (towards === "below") {
+        upperTick = Math.min(currentTick, p[2]);
+      } else if (towards === "above") {
+        lowerTick = Math.max(currentTick, p[1]);
+      } else {
+        console.error("direction should be either below or above");
+        return 0;
+      }
+
+      if (lowerTick >= upperTick) continue;
+
+      const liquidity = (
+        await this.marginEngine.callStatic.getPosition(p[0], p[1], p[2])
+      )._liquidity;
+      const ratioAtLowerTick = await this.tickMath.getSqrtRatioAtTick(
+        lowerTick
+      );
+      const ratioAtUpperTick = await this.tickMath.getSqrtRatioAtTick(
+        upperTick
+      );
+
+      const amount0 = await this.sqrtPriceMath.getAmount0Delta(
+        ratioAtLowerTick,
+        ratioAtUpperTick,
+        liquidity,
+        true
+      );
+      const amount1 = await this.sqrtPriceMath.getAmount1Delta(
+        ratioAtLowerTick,
+        ratioAtUpperTick,
+        liquidity,
+        true
+      );
+
+      totalAmount0 = totalAmount0.add(amount0);
+      totalAmount1 = totalAmount1.add(amount1);
+    }
+
+    return parseFloat(utils.formatEther(totalAmount1));
   }
 
   async run() {}

@@ -17,10 +17,9 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParametersGeneral } from "../e2eSetup";
-import { ScenarioRunner } from "../newGeneral";
+import { ScenarioRunner, e2eParameters } from "../general";
 
-const e2eParams: e2eParametersGeneral = {
+const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 4,
   marginCalculatorParams: {
@@ -60,7 +59,6 @@ const e2eParams: e2eParametersGeneral = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: false,
   isWETH: true,
   noMintTokens: true,
   rateOracle: 1,
@@ -219,11 +217,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 }
 
 const test = async () => {
-  console.log("scenario weth");
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/weth/consoleViaPeriphery.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };

@@ -106,36 +106,17 @@ contract Periphery is IPeriphery {
         bool isLPBefore,
         bool isLPAfter
     ) internal {
-        console.log("isLPBefore", isLPBefore);
-        console.log("isLPAfter", isLPAfter);
-        console.log("newMargin", newMargin.toUint256());
         if (isLPAfter) {
             // added some liquidity, need to account for margin
-            console.log(
-                "margin before:",
-                _lastAccountedMargin[encodedPosition].toUint256()
-            );
             _lpMarginCumulatives[vamm] -= _lastAccountedMargin[encodedPosition];
-
             _lastAccountedMargin[encodedPosition] = newMargin;
-
-            console.log(
-                "margin after:",
-                _lastAccountedMargin[encodedPosition].toUint256()
-            );
             _lpMarginCumulatives[vamm] += _lastAccountedMargin[encodedPosition];
         } else {
             if (isLPBefore) {
                 _lpMarginCumulatives[vamm] -= _lastAccountedMargin[
                     encodedPosition
                 ];
-                console.log(
-                    "margin before:",
-                    _lastAccountedMargin[encodedPosition].toUint256()
-                );
-
                 _lastAccountedMargin[encodedPosition] = 0;
-                console.log("margin before: 0");
             }
         }
 

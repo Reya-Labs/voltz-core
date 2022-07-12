@@ -148,7 +148,6 @@ contract E2ESetup is CustomErrors {
     address public cToken;
 
     function setPeripheryAddress(address _peripheryAddress) public {
-        console.log("set _peripheryAddress", _peripheryAddress);
         peripheryAddress = _peripheryAddress;
     }
 

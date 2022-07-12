@@ -15,11 +15,11 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { ScenarioRunner, e2eParameters } from "../general";
 import { MarginEngineEmergency } from "../../../../typechain/MarginEngineEmergency";
 import { BigNumber } from "ethers";
 import { expect } from "../../../shared/expect";
+import { MarginEngine, TestMarginEngine } from "../../../../typechain";
 
 const { provider } = waffle;
 
@@ -67,48 +67,47 @@ const e2eParams: e2eParameters = {
     [4, -TICK_SPACING, TICK_SPACING],
     [5, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
     const otherWallet = provider.getWallets()[1];
 
     console.log("owner address:", this.owner.address);
     console.log("other address:", otherWallet.address);
 
-    await this.mintAndApprove(this.owner.address);
+    await this.mintAndApprove(this.owner.address, BigNumber.from(10).pow(27));
     await this.token.approve(
-      this.marginEngineTest.address,
+      this.marginEngine.address,
       BigNumber.from(10).pow(27)
     );
 
-    await this.mintAndApprove(otherWallet.address);
+    await this.mintAndApprove(otherWallet.address, BigNumber.from(10).pow(27));
     await this.token
       .connect(otherWallet)
-      .approve(this.marginEngineTest.address, BigNumber.from(10).pow(27));
+      .approve(this.marginEngine.address, BigNumber.from(10).pow(27));
 
     const initOwnerBalance = await this.token.balanceOf(this.owner.address);
     const initOtherBalance = await this.token.balanceOf(otherWallet.address);
-    const initMEBalance = await this.token.balanceOf(
-      this.marginEngineTest.address
-    );
+    const initMEBalance = await this.token.balanceOf(this.marginEngine.address);
 
-    await this.marginEngineTest.updatePositionMargin(
+    await this.marginEngine.updatePositionMargin(
       this.owner.address,
       -this.params.tickSpacing,
       this.params.tickSpacing,
       toBn("210")
     );
 
-    await this.vammTest.mint(
+    await this.vamm.mint(
       this.owner.address,
       -this.params.tickSpacing,
       this.params.tickSpacing,
       toBn("1000000")
     );
 
-    await this.marginEngineTest
+    await this.marginEngine
       .connect(otherWallet)
       .updatePositionMargin(
         otherWallet.address,
@@ -117,7 +116,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         toBn("1000")
       );
 
-    await this.vammTest.connect(otherWallet).swap({
+    await this.vamm.connect(otherWallet).swap({
       recipient: otherWallet.address,
       amountSpecified: toBn("-15000"),
       sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -133,39 +132,38 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       initOtherBalance.sub(toBn("1000"))
     );
 
-    expect(await this.token.balanceOf(this.marginEngineTest.address)).to.be.eq(
+    expect(await this.token.balanceOf(this.marginEngine.address)).to.be.eq(
       initMEBalance.add(toBn("1210"))
     );
 
     // old storage
     const liquidatorRewardBefore =
-      await this.marginEngineTest.liquidatorRewardWad();
+      await this.marginEngine.liquidatorRewardWad();
 
-    const underlyingTokenBefore = await this.marginEngineTest.underlyingToken();
+    const underlyingTokenBefore = await this.marginEngine.underlyingToken();
 
     const termStartTimestampBefore =
-      await this.marginEngineTest.termStartTimestampWad();
+      await this.marginEngine.termStartTimestampWad();
 
     const termEndTimestampBefore =
-      await this.marginEngineTest.termEndTimestampWad();
+      await this.marginEngine.termEndTimestampWad();
 
-    const fcmBefore = await this.marginEngineTest.fcm();
+    const fcmBefore = await this.marginEngine.fcm();
 
-    const vammBefore = await this.marginEngineTest.vamm();
+    const vammBefore = await this.marginEngine.vamm();
 
-    const rateOracleBefore = await this.marginEngineTest.rateOracle();
+    const rateOracleBefore = await this.marginEngine.rateOracle();
 
-    const factoryBefore = await this.marginEngineTest.factory();
+    const factoryBefore = await this.marginEngine.factory();
 
-    const secondsAgoBefore =
-      await this.marginEngineTest.lookbackWindowInSeconds();
+    const secondsAgoBefore = await this.marginEngine.lookbackWindowInSeconds();
 
-    const isAlphaBefore = await this.marginEngineTest.isAlpha();
+    const isAlphaBefore = await this.marginEngine.isAlpha();
 
-    const ownerBefore = await this.marginEngineTest.owner();
+    const ownerBefore = await (this.marginEngine as TestMarginEngine).owner();
 
     const cacheMaxAgeInSecondsBefore =
-      await this.marginEngineTest.cacheMaxAgeInSeconds();
+      await this.marginEngine.cacheMaxAgeInSeconds();
 
     // upgrade
 
@@ -176,15 +174,17 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       (await marginEngineEmergencyMasterFactory.deploy()) as MarginEngineEmergency;
 
     await expect(
-      this.marginEngineTest
+      (this.marginEngine as MarginEngine)
         .connect(otherWallet)
         .upgradeTo(marginEngineEmergencyMaster.address)
     ).to.be.revertedWith("Ownable: caller is not the owner");
 
-    await this.marginEngineTest.upgradeTo(marginEngineEmergencyMaster.address);
+    await (this.marginEngine as MarginEngine).upgradeTo(
+      marginEngineEmergencyMaster.address
+    );
 
     const marginEngineEmergency = marginEngineEmergencyMasterFactory.attach(
-      this.marginEngineTest.address
+      this.marginEngine.address
     ) as MarginEngineEmergency;
 
     // is owner preserved?
@@ -213,7 +213,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       initOtherBalance
     );
 
-    expect(await this.token.balanceOf(this.marginEngineTest.address)).to.be.eq(
+    expect(await this.token.balanceOf(this.marginEngine.address)).to.be.eq(
       initMEBalance
     );
 
@@ -261,11 +261,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 }
 
 const test = async () => {
-  console.log("upgradability");
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/upgradability/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };

@@ -14,9 +14,9 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { ScenarioRunner, e2eParameters } from "../general";
 import { expect } from "chai";
+import { VAMM } from "../../../../typechain";
 
 const { provider } = waffle;
 
@@ -64,36 +64,36 @@ const e2eParams: e2eParameters = {
     [4, -TICK_SPACING, TICK_SPACING],
     [5, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
+    await this.rateOracle.increaseObservationCardinalityNext(1000);
+    await this.rateOracle.increaseObservationCardinalityNext(2000);
 
-    await this.rateOracleTest.increaseObservationCardinalityNext(1000);
-    await this.rateOracleTest.increaseObservationCardinalityNext(2000);
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
 
     const otherWallet = provider.getWallets()[1];
     console.log("wallets:", this.owner.address, otherWallet.address);
 
     // wallet with no permission cannot pause the contracts
-    await expect(this.vammTest.connect(otherWallet).setPausability(true)).to.be
+    await expect(this.vamm.connect(otherWallet).setPausability(true)).to.be
       .reverted;
 
     // wallet with permission can pause/unpause the contracts
-    await this.vammTest.changePauser(otherWallet.address, true);
+    await (this.vamm as VAMM).changePauser(otherWallet.address, true);
 
-    expect(await this.vammTest.paused()).to.be.equal(false);
-    await this.vammTest.connect(otherWallet).setPausability(true);
-    expect(await this.vammTest.paused()).to.be.equal(true);
-    await this.vammTest.connect(otherWallet).setPausability(false);
-    expect(await this.vammTest.paused()).to.be.equal(false);
+    expect(await (this.vamm as VAMM).paused()).to.be.equal(false);
+    await this.vamm.connect(otherWallet).setPausability(true);
+    expect(await (this.vamm as VAMM).paused()).to.be.equal(true);
+    await this.vamm.connect(otherWallet).setPausability(false);
+    expect(await (this.vamm as VAMM).paused()).to.be.equal(false);
 
     // check the revoke/grant functionality
-    await this.vammTest.changePauser(otherWallet.address, false);
-    await expect(this.vammTest.setPausability(true)).to.be.reverted;
-    await this.vammTest.changePauser(otherWallet.address, true);
+    await (this.vamm as VAMM).changePauser(otherWallet.address, false);
+    await expect(this.vamm.setPausability(true)).to.be.reverted;
+    await (this.vamm as VAMM).changePauser(otherWallet.address, true);
 
     // check if operations work when contracts not paused
     const p = this.positions[0];
@@ -109,7 +109,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.e2eSetup.mintViaAMM(p[0], p[1], p[2], liquidityDeltaBn);
 
-    await this.vammTest.connect(otherWallet).setPausability(true);
+    await this.vamm.connect(otherWallet).setPausability(true);
 
     // it shouldn't work because VAMM is paused
     await expect(
@@ -121,19 +121,17 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     ).to.be.reverted;
 
     // pause the Margin Engine as well
-    await expect(
-      this.marginEngineTest.connect(otherWallet).setPausability(true)
-    ).to.be.reverted;
+    await expect(this.marginEngine.connect(otherWallet).setPausability(true)).to
+      .be.reverted;
 
     await expect(
       this.e2eSetup.updatePositionMarginViaAMM(p[0], p[1], p[2], toBn("10000"))
     ).to.be.revertedWith("Paused");
 
     // unpause both VAMM and Margin Engine
-    await this.vammTest.connect(otherWallet).setPausability(false);
-    await expect(
-      this.marginEngineTest.connect(otherWallet).setPausability(false)
-    ).to.be.reverted;
+    await this.vamm.connect(otherWallet).setPausability(false);
+    await expect(this.marginEngine.connect(otherWallet).setPausability(false))
+      .to.be.reverted;
 
     await this.e2eSetup.updatePositionMarginViaAMM(
       p[0],
@@ -148,41 +146,43 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.e2eSetup.initiateFullyCollateralisedFixedTakerSwap(
       p[0],
       toBn("100"),
-      await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+      await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
     );
 
     // pause the FCM
-    await this.vammTest.connect(otherWallet).setPausability(true);
-    await expect(this.fcmTest.connect(otherWallet).setPausability(true)).to.be
-      .reverted;
+    await this.vamm.connect(otherWallet).setPausability(true);
+
+    if (this.fcm) {
+      await expect(this.fcm.connect(otherWallet).setPausability(true)).to.be
+        .reverted;
+    }
 
     await expect(
       this.e2eSetup.initiateFullyCollateralisedFixedTakerSwap(
         p[0],
         toBn("100"),
-        await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+        await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
       )
     ).to.be.revertedWith("Paused");
 
     // unpause the FCM
-    await expect(this.fcmTest.connect(otherWallet).setPausability(false)).to.be
-      .reverted;
-    await this.vammTest.connect(otherWallet).setPausability(false);
+    if (this.fcm) {
+      await expect(this.fcm.connect(otherWallet).setPausability(false)).to.be
+        .reverted;
+    }
+    await this.vamm.connect(otherWallet).setPausability(false);
 
     await this.e2eSetup.initiateFullyCollateralisedFixedTakerSwap(
       p[0],
       toBn("100"),
-      await this.testTickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
+      await this.tickMath.getSqrtRatioAtTick(5 * TICK_SPACING)
     );
   }
 }
 
 const test = async () => {
   console.log("pausability");
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/pausability/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };

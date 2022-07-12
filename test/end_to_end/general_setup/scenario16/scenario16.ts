@@ -1,4 +1,4 @@
-import { BigNumber, utils } from "ethers";
+import { BigNumber } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
@@ -16,8 +16,7 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { ScenarioRunner, e2eParameters } from "../general";
 
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(3),
@@ -59,16 +58,14 @@ const e2eParams: e2eParameters = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: false,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.exportSnapshot("START");
-
     {
       const mintOrBurnParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         tickLower: this.positions[0][1],
         tickUpper: this.positions[0][2],
         notional: toBn("6000"),
@@ -83,22 +80,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    // two days pass and set reserve normalised income
-    await this.advanceAndUpdateApy(consts.ONE_DAY.mul(2), 1, 1.0081); // advance 2 days
-    console.log(
-      "historical apy:",
-      utils.formatEther(
-        await this.marginEngineTest.callStatic.getHistoricalApy()
-      )
-    );
-
-    // Trader 0 engages in a swap that (almost) consumes all of the liquidity of Position 0
-    await this.exportSnapshot("BEFORE FIRST SWAP");
+    await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.0081));
 
     {
       // Trader 0 buys 2,995 VT
       const swapParameters = {
-        marginEngine: this.marginEngineTest.address,
+        marginEngine: this.marginEngine.address,
         isFT: true,
         notional: toBn("2995"),
         // sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
@@ -113,81 +101,31 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    await this.exportSnapshot("AFTER FIRST SWAP");
-
-    await this.updateCurrentTick();
-
-    // one week passes
-    await this.advanceAndUpdateApy(consts.ONE_WEEK, 2, 1.01);
-    console.log(
-      "historical apy:",
-      utils.formatEther(
-        await this.marginEngineTest.callStatic.getHistoricalApy()
-      )
-    );
+    await advanceTimeAndBlock(consts.ONE_WEEK, 2);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.01));
 
     // add 5,000,000 liquidity to Position 1
 
-    // print the position margin requirement
-    // await this.getAPYboundsAndPositionMargin(this.positions[1]);
+    await advanceTimeAndBlock(consts.ONE_WEEK.mul(4), 4);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.04));
 
-    await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(4), 4, 1.04); // advance eight weeks (4 days before maturity)
-    console.log(
-      "historical apy:",
-      utils.formatEther(
-        await this.marginEngineTest.callStatic.getHistoricalApy()
-      )
-    );
+    await advanceTimeAndBlock(consts.ONE_WEEK.mul(4), 4);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.05));
 
-    await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(4), 4, 1.05); // advance eight weeks (4 days before maturity)
-    console.log(
-      "historical apy:",
-      utils.formatEther(
-        await this.marginEngineTest.callStatic.getHistoricalApy()
-      )
-    );
+    await advanceTimeAndBlock(consts.ONE_WEEK.mul(2), 4);
+    await this.e2eSetup.setNewRate(this.getRateInRay(1.06));
 
-    await this.advanceAndUpdateApy(consts.ONE_WEEK.mul(2), 4, 1.06); // advance eight weeks (4 days before maturity)
-    console.log(
-      "historical apy:",
-      utils.formatEther(
-        await this.marginEngineTest.callStatic.getHistoricalApy()
-      )
-    );
-
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(15), 2); // advance 5 days to reach maturity
-    console.log(
-      "historical apy:",
-      utils.formatEther(
-        await this.marginEngineTest.callStatic.getHistoricalApy()
-      )
-    );
+    await advanceTimeAndBlock(this.params.duration, 2); // advance 5 days to reach maturity
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
-
-    console.log(
-      "balance of minter: ",
-      utils.formatEther(await this.token.balanceOf(this.positions[0][0]))
-    );
-
-    console.log(
-      "balance of VT: ",
-      utils.formatEther(await this.token.balanceOf(this.positions[2][0]))
-    );
   }
 }
 
 const test = async () => {
-  console.log("scenario", 16);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario16/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it("scenario 16", test);
+it("checking historical apy", test);

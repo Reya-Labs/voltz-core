@@ -15,13 +15,12 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParametersGeneral } from "../e2eSetup";
-import { ScenarioRunner } from "../newGeneral";
+import { ScenarioRunner, e2eParameters } from "../general";
 import { IRateOracle } from "../../../../typechain";
 
 const { provider } = waffle;
 
-const e2eParams: e2eParametersGeneral = {
+const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(3),
   numActors: 4,
   marginCalculatorParams: {
@@ -61,7 +60,6 @@ const e2eParams: e2eParametersGeneral = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: false,
   isWETH: true,
   rateOracle: 4,
 };
@@ -108,10 +106,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
 const test = async () => {
   console.log("Rate Oracle Setting");
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/rateOracleSetting/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };

@@ -1,4 +1,4 @@
-import { BigNumber, utils } from "ethers";
+import { BigNumber } from "ethers";
 import { toBn } from "evm-bn";
 import { random } from "mathjs";
 import { consts } from "../../../helpers/constants";
@@ -18,8 +18,7 @@ import {
   XI_LOWER,
   XI_UPPER,
 } from "../../../shared/utilities";
-import { e2eParameters } from "../e2eSetup";
-import { ScenarioRunner } from "../general";
+import { ScenarioRunner, e2eParameters } from "../general";
 
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(3),
@@ -61,13 +60,13 @@ const e2eParams: e2eParameters = {
     [2, -TICK_SPACING, TICK_SPACING],
     [3, -TICK_SPACING, TICK_SPACING],
   ],
-  skipped: true,
+  rateOracle: 1,
 };
 
 class ScenarioRunnerInstance extends ScenarioRunner {
   override async run() {
-    await this.marginEngineTest.setLiquidatorReward(toBn("0.2"));
-    await this.exportSnapshot("START");
+    await this.vamm.initializeVAMM(this.params.startingPrice.toString());
+    await this.marginEngine.setLiquidatorReward(toBn("0.2"));
 
     // update the position margin with 210
     await this.e2eSetup.updatePositionMarginViaAMM(
@@ -85,9 +84,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       toBn("1000000")
     );
 
-    // Trader 0 engages in a swap that (almost) consumes all of the liquidity of Position 0
-    await this.exportSnapshot("BEFORE FIRST SWAP");
-
     // update the trader margin with 1,000
     await this.e2eSetup.updatePositionMarginViaAMM(
       this.positions[2][0],
@@ -95,11 +91,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       this.positions[2][2],
       toBn("10000")
     );
-
-    // print the maximum amount given the liquidity of Position 0
-    await this.updateCurrentTick();
-
-    await this.getVT("below");
 
     // Trader 0 buys 2,995 VT
     await this.e2eSetup.swapViaAMM({
@@ -129,16 +120,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     let accumulatedReserveNormalizedIncome = 1.0001;
     for (let i = 0; i < 89; i++) {
       accumulatedReserveNormalizedIncome += random(0.0004, 0.0008);
-      await this.advanceAndUpdateApy(
-        consts.ONE_DAY,
-        1,
-        accumulatedReserveNormalizedIncome
-      );
-      await this.updateAPYbounds();
-      console.log("historical apy:", utils.formatEther(this.historicalApyWad));
-      console.log(
-        "variable factor:",
-        utils.formatEther(this.variableFactorWad)
+
+      await advanceTimeAndBlock(consts.ONE_DAY, 1);
+      await this.e2eSetup.setNewRate(
+        this.getRateInRay(accumulatedReserveNormalizedIncome)
       );
 
       try {
@@ -150,11 +135,8 @@ class ScenarioRunnerInstance extends ScenarioRunner {
           this.positions[0][1],
           this.positions[0][2]
         );
-        console.log("is liquidatable");
 
         // it's partially liquidated, let's liquidate all in the second liquidation
-
-        await this.exportSnapshot("AFTER LIQUIDATION TRIAL");
 
         // add 5,000,000 liquidity to Position 1
         await this.e2eSetup.mintViaAMM(
@@ -174,23 +156,17 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       } catch (_) {}
     }
 
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(90), 2);
+    await advanceTimeAndBlock(this.params.duration, 2);
 
     // settle positions and traders
     await this.settlePositions();
-
-    await this.exportSnapshot("FINAL");
   }
 }
 
 const test = async () => {
-  console.log("scenario", 8);
-  const scenario = new ScenarioRunnerInstance(
-    e2eParams,
-    "test/end_to_end/general_setup/scenario8/console.txt"
-  );
+  const scenario = new ScenarioRunnerInstance(e2eParams);
   await scenario.init();
   await scenario.run();
 };
 
-it.skip("scenario 8", test);
+it("partial liquidations (in non-alpha state)", test);
