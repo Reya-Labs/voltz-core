@@ -159,11 +159,13 @@ For humans, some post-processing can be useful to make the output more readable.
 
 `npx hardhat listIrsInstances --network <networkName> | column -s, -t`
 
-#### Deploy a new implementation for our upgradable contracts (VAMM, MarginEngine, Periphery, AaveFCM, CompoundFCM)
+#### Upgrading contracts
 
-`npx hardhat deployUpdatedImplementations --network <network> --contract-names <comma-separated list of contract names>`
+See usage for upgrade tasks, e.g.:
 
-e.g. `npx hardhat deployUpdatedImplementations --network localhost --contract-names VAMM,Periphery`
+- `npx hardhat deployUpdatedImplementations --help`
+- `npx hardhat updateRateOracle --help`
+- `npx hardhat upgradeVAMM --help`
 
 ## Terms and Conditions
 
