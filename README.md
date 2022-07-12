@@ -113,6 +113,22 @@ To start a local blockchain (hardhat node) and deploy our contracts to it, run:
 
 `yarn deploy:localhost`
 
+#### Fork mainnet for testing
+
+To fork third party contracts (e.g. Aave, Compound, Lido, Rocket, ...) from mainnet to a local blockchain (hardhat node) for testing, run:
+
+`yarn deploy:mainnet_fork`
+
+This will deploy a new system of the latest Voltz contracts on top of those third party contracts. You can interact with this system using `--network localhost`.
+
+To instead test / simulate / expirment with the Voltz mainnet deployment on your local blockchain, you can subsequently run:
+
+`rm -rf deployments/localhost && cp -p -r deployments/mainnet deployments/localhost`
+
+You can now interact with a fork of the current mainnet system using `--network localhost`.
+
+To change the block production cadence of the local blockchain (sometimes useful to mirror timing on mainnet), see commented out lines in `deploy/0.factory.ts`
+
 #### Deploy to kovan
 
 To deploy our contracts to the kovan testnet, first check the configuration for kovan in [the deployment config](./deployConfig/config.ts), and once it is correct run:
