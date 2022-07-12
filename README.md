@@ -159,6 +159,12 @@ For humans, some post-processing can be useful to make the output more readable.
 
 `npx hardhat listIrsInstances --network <networkName> | column -s, -t`
 
+#### Deploy a new implementation for our upgradable contracts (VAMM, MarginEngine, Periphery, AaveFCM, CompoundFCM)
+
+`npx hardhat deployUpdatedImplementations --network <network> --contract-names <comma-separated list of contract names>`
+
+e.g. `npx hardhat deployUpdatedImplementations --network localhost --contract-names VAMM,Periphery`
+
 ## Terms and Conditions
 
 The Voltz Protocol, and any products or services associated therewith, is offered only to persons (aged 18 years or older) or entities who are not residents of, citizens of, are incorporated in, owned or controlled by a person or entity in, located in, or have a registered office or principal place of business in any “Restricted Territory.”
