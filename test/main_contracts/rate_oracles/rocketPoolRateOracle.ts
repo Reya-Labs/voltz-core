@@ -157,7 +157,7 @@ describe(`RocketPool Rate Oracle`, () => {
 
       expect(rateTimestamp).to.eq(
         (await provider.getBlock(writeBlocks[0])).timestamp -
-          Math.floor(13.5 * (writeBlocks[0] - updateBlocks[0]))
+          Math.floor(15 * (writeBlocks[0] - updateBlocks[0]))
       );
     });
 
@@ -188,14 +188,15 @@ describe(`RocketPool Rate Oracle`, () => {
 
       expect(rateValue).to.eq(toBn(1.0001, 27));
 
-      expect(rateTimestamp).to.eq(
+      expect(rateTimestamp).to.be.closeTo(
         (await provider.getBlock(writeBlocks[1])).timestamp -
           Math.floor(
             (((await provider.getBlock(updateBlocks[1])).timestamp -
               (await provider.getBlock(updateBlocks[0])).timestamp) *
               (writeBlocks[1] - updateBlocks[1])) /
               (updateBlocks[1] - updateBlocks[0])
-          )
+          ),
+        10
       );
     });
 
@@ -226,14 +227,15 @@ describe(`RocketPool Rate Oracle`, () => {
 
       expect(rateValue).to.eq(toBn(1.0001, 27));
 
-      expect(rateTimestamp).to.eq(
+      expect(rateTimestamp).to.be.closeTo(
         (await provider.getBlock(writeBlocks[1])).timestamp -
           Math.floor(
             (((await provider.getBlock(updateBlocks[1])).timestamp -
               (await provider.getBlock(updateBlocks[0])).timestamp) *
               (writeBlocks[1] - updateBlocks[1])) /
               (updateBlocks[1] - updateBlocks[0])
-          )
+          ),
+        10
       );
     });
 
@@ -283,14 +285,15 @@ describe(`RocketPool Rate Oracle`, () => {
 
       expect(rateValue).to.eq(toBn(1.0001, 27));
 
-      expect(rateTimestamp).to.eq(
+      expect(rateTimestamp).to.be.closeTo(
         (await provider.getBlock(writeBlocks[1])).timestamp -
           Math.floor(
             (((await provider.getBlock(updateBlocks[1])).timestamp -
               (await provider.getBlock(updateBlocks[0])).timestamp) *
               (writeBlocks[1] - updateBlocks[1])) /
               (updateBlocks[1] - updateBlocks[0])
-          )
+          ),
+        10
       );
     });
 
