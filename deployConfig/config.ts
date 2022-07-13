@@ -150,6 +150,7 @@ const mainnetRocketEthDataPoints: RateOracleDataPoint[] = [
 ];
 
 const goerliStEthDataPoints: RateOracleDataPoint[] = [
+  [1654485600, "1008924600350995571702479730"],
   [1656275040, "1009005858244768527585507145"],
 ];
 
