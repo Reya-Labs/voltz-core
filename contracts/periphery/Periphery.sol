@@ -176,10 +176,16 @@ contract Periphery is IPeriphery {
 
         // if WETH pools, accept deposit only in ETH
         if (address(underlyingToken) == address(_weth)) {
-            require(marginDelta <= 0, "Invalid: cannot deposit wETH to this pool");
+            require(
+                marginDelta <= 0,
+                "Invalid: cannot deposit wETH to this pool"
+            );
 
             if (marginDelta < 0) {
-                require(msg.value == 0, "Invalid: cannot deposit ETH while withdrawing wETH");
+                require(
+                    msg.value == 0,
+                    "Invalid: cannot deposit ETH while withdrawing wETH"
+                );
                 marginEngine.updatePositionMargin(
                     msg.sender,
                     tickLower,
