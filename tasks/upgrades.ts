@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
 import { MarginEngine, VAMM } from "../typechain";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
 import * as fs from "fs";
@@ -15,6 +15,7 @@ interface UpgradeTemplateData {
     marginEngineAddress: string;
     vammAddress: string;
     rateOracleAddress: string;
+    lookbackWindowInSeconds: BigNumber;
   }[];
 }
 
@@ -265,6 +266,8 @@ task(
         "MarginEngine",
         marginEngineAddress
       )) as MarginEngine;
+      const lookbackWindowInSeconds =
+        await marginEngine.lookbackWindowInSeconds();
       const vammAddress = await marginEngine.vamm();
       const vamm = (await hre.ethers.getContractAt(
         "VAMM",
@@ -280,6 +283,7 @@ task(
           marginEngineAddress,
           vammAddress,
           rateOracleAddress,
+          lookbackWindowInSeconds,
         });
       } else {
         // Not using multisig template - actually send the transactions
@@ -294,6 +298,10 @@ task(
           await vamm
             .connect(await getSigner(hre, proxyOwner))
             .refreshRateOracle();
+          await marginEngine.setLookbackWindowInSeconds(
+            lookbackWindowInSeconds
+          );
+          // TODO: set lookback window to existing value to force refresh
         }
         console.log(
           `MarginEngine (${marginEngineAddress}) and VAMM (${vammAddress}) updated to point at latest ${taskArgs.rateOracle} (${rateOracleAddress})`

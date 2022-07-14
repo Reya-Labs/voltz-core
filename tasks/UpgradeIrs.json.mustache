@@ -63,6 +63,25 @@
       },
       "contractInputsValues": {}
     },
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_secondsAgo",
+              "type": "uint256"
+            }
+          ],
+        "name": "setLookbackWindowInSeconds",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_secondsAgo": "{{lookbackWindowInSeconds}}",
+      }
+    },
     {{/rateOracleUpdates}}
   ]
 }
