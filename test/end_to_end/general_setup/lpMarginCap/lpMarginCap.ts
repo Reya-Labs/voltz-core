@@ -10,7 +10,6 @@ import {
   APY_UPPER_MULTIPLIER,
   BETA,
   encodeSqrtRatioX96,
-  MAX_SQRT_RATIO,
   MIN_DELTA_IM,
   MIN_DELTA_LM,
   MIN_SQRT_RATIO,
@@ -73,27 +72,31 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.factory.setPeriphery(this.periphery.address);
 
     if (!this.fcm) {
-      throw new Error("No FCM");
+      throw new Error("This end-to-end test involves fcm");
     }
 
     const otherWallet = provider.getWallets()[1];
 
+    // expect alpha setting to revert when non-owner wallets call them
     await expect(this.vamm.connect(otherWallet).setIsAlpha(true)).to.be
       .reverted;
 
     await expect(this.marginEngine.connect(otherWallet).setIsAlpha(true)).to.be
       .reverted;
 
+    // expect cap setting to revert when non-owner wallets call them
     await expect(
       this.periphery
         .connect(otherWallet)
         .setLPMarginCap(this.vamm.address, toBn("1000"))
     ).to.be.reverted;
 
+    // set alpha state to true and margin cap to 1,000
     await this.vamm.setIsAlpha(true);
     await this.marginEngine.setIsAlpha(true);
     await this.periphery.setLPMarginCap(this.vamm.address, toBn("1000"));
 
+    // deposit 210 margin as LP
     {
       const mintOrBurnParameters = {
         marginEngine: this.marginEngine.address,
@@ -111,16 +114,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
+    // check that LP margin is accounted
     expect(
       await this.periphery.lpMarginCumulatives(this.vamm.address)
     ).to.be.equal(toBn("210"));
 
-    // two days pass and set reserve normalised income
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(2), 1);
-    await this.e2eSetup.setNewRate(this.getRateInRay(1.0081));
-
+    // deposit 1,000 as Trader
     {
-      // Trader 0 buys 2,995 VT
       const swapParameters = {
         marginEngine: this.marginEngine.address,
         isFT: false,
@@ -136,15 +136,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
-    // one week passes
-    await advanceTimeAndBlock(consts.ONE_WEEK, 2);
-    await this.e2eSetup.setNewRate(this.getRateInRay(1.01));
-
-    // add 5,000,000 liquidity to Position 1
-
-    // print the position margin requirement
-    // await this.getAPYboundsAndPositionMargin(this.positions[1]);
-
     {
       const mintOrBurnParameters = {
         marginEngine: this.marginEngine.address,
@@ -155,7 +146,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         marginDelta: toBn("2500"),
       };
 
-      // add 1,000,000 liquidity to Position 0
+      // trying to deposit 2,500 margin as LP, expect to fail
       await expect(
         this.e2eSetup.mintOrBurnViaPeriphery(
           this.positions[1][0],
@@ -163,79 +154,23 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         )
       ).to.be.revertedWith("lp cap limit");
 
+      // increase LP margin cap to 3,000
       await this.periphery.setLPMarginCap(this.vamm.address, toBn("3000"));
 
+      // deposit 2,500 margin as LP
       await this.e2eSetup.mintOrBurnViaPeriphery(
         this.positions[1][0],
         mintOrBurnParameters
       );
 
+      // expect only 210 and 2,500 (as LP) to be accounted
       expect(
         await this.periphery.lpMarginCumulatives(this.vamm.address)
       ).to.be.equal(toBn("2710"));
     }
 
-    // a week passes
-    await advanceTimeAndBlock(consts.ONE_WEEK, 2);
-    await this.e2eSetup.setNewRate(this.getRateInRay(1.0125));
-
-    {
-      // Trader 0 buys 2,995 VT
-      const swapParameters = {
-        marginEngine: this.marginEngine.address,
-        isFT: false,
-        notional: toBn("15000"),
-        sqrtPriceLimitX96: BigNumber.from(MIN_SQRT_RATIO.add(1)),
-        tickLower: this.positions[3][1],
-        tickUpper: this.positions[3][2],
-        marginDelta: toBn("1000"),
-      };
-      await this.e2eSetup.swapViaPeriphery(
-        this.positions[3][0],
-        swapParameters
-      );
-    }
-
-    {
-      // Trader 0 buys 2,995 VT
-      const swapParameters = {
-        marginEngine: this.marginEngine.address,
-        isFT: true,
-        notional: toBn("10000"),
-        sqrtPriceLimitX96: BigNumber.from(MAX_SQRT_RATIO.sub(1)),
-        tickLower: this.positions[2][1],
-        tickUpper: this.positions[2][2],
-        marginDelta: toBn("0"),
-      };
-      await this.e2eSetup.swapViaPeriphery(
-        this.positions[2][0],
-        swapParameters
-      );
-    }
-
-    // two weeks pass
-    await advanceTimeAndBlock(consts.ONE_WEEK.mul(2), 2); // advance two weeks
-    await this.e2eSetup.setNewRate(this.getRateInRay(1.013));
-
-    {
-      const mintOrBurnParameters = {
-        marginEngine: this.marginEngine.address,
-        tickLower: this.positions[0][1],
-        tickUpper: this.positions[0][2],
-        notional: toBn("3000"),
-        isMint: false,
-        marginDelta: toBn("0"),
-      };
-
-      // add 1,000,000 liquidity to Position 0
-      await this.e2eSetup.mintOrBurnViaPeriphery(
-        this.positions[0][0],
-        mintOrBurnParameters
-      );
-    }
-
     // same results if this flag is true or false
-    const deployNewPeriphery = true;
+    const deployNewPeriphery = false;
     if (deployNewPeriphery) {
       /// deploy new periphery
       const peripheryFactory = await ethers.getContractFactory("Periphery");
@@ -287,6 +222,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       );
     }
 
+    // deposit 90 margin as LP
     {
       const mintOrBurnParameters = {
         marginEngine: this.marginEngine.address,
@@ -297,12 +233,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         marginDelta: toBn("90"),
       };
 
-      // add 1,000,000 liquidity to Position 0
       await this.e2eSetup.mintOrBurnViaPeriphery(
         this.positions[0][0],
         mintOrBurnParameters
       );
     }
+
+    // 2,800
 
     {
       const mintOrBurnParameters = {
@@ -314,7 +251,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         marginDelta: toBn("2500"),
       };
 
-      // add 1,000,000 liquidity to Position 0
+      // trying to deposit 2,500 margin as LP, expect to fail
       await expect(
         this.e2eSetup.mintOrBurnViaPeriphery(
           this.positions[1][0],
@@ -322,23 +259,24 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         )
       ).to.be.revertedWith("lp cap limit");
 
+      // transit pool to non-alpha state
       await this.vamm.setIsAlpha(false);
       await this.marginEngine.setIsAlpha(false);
 
+      // deposit 2,500 margin as LP
       await this.e2eSetup.mintOrBurnViaPeriphery(
         this.positions[1][0],
         mintOrBurnParameters
       );
 
+      // expect for the margin to not be accounted anymore
       expect(
         await this.periphery.lpMarginCumulatives(this.vamm.address)
       ).to.be.equal(toBn("2800"));
     }
 
-    await advanceTimeAndBlock(consts.ONE_WEEK.mul(8), 4); // advance eight weeks (4 days before maturity)
-    await this.e2eSetup.setNewRate(this.getRateInRay(1.0132));
-
-    await advanceTimeAndBlock(consts.ONE_DAY.mul(5), 2); // advance 5 days to reach maturity
+    // reach maturity
+    await advanceTimeAndBlock(this.params.duration, 1);
 
     // settle positions and traders
     await this.settlePositions();

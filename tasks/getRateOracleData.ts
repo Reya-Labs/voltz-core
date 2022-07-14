@@ -127,10 +127,6 @@ task(
             ).toISOString()},${lastApy}`
           );
 
-          if (lastApy < 0.02) {
-            return;
-          }
-
           break;
         }
         case FETCH_STATUS.FAILURE: {
