@@ -178,8 +178,7 @@ contract Periphery is IPeriphery {
         if (address(underlyingToken) == address(_weth)) {
             require(marginDelta <= 0, "INV");
 
-            if (marginDelta < 0) {
-                require(msg.value == 0, "INV");
+            if (marginDelta < 0) {require(msg.value == 0, "INV");
                 marginEngine.updatePositionMargin(
                     msg.sender,
                     tickLower,
@@ -213,14 +212,14 @@ contract Periphery is IPeriphery {
                     address(marginEngine),
                     marginDelta.toUint256()
                 );
-
-                marginEngine.updatePositionMargin(
-                    msg.sender,
-                    tickLower,
-                    tickUpper,
-                    marginDelta
-                );
             }
+
+            marginEngine.updatePositionMargin(
+                msg.sender,
+                tickLower,
+                tickUpper,
+                marginDelta
+            );
         }
 
         position = marginEngine.getPosition(msg.sender, tickLower, tickUpper);
