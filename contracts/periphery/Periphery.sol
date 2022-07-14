@@ -99,6 +99,12 @@ contract Periphery is IPeriphery {
         _lpMarginCumulatives[vamm] = lpMarginCumulative;
     }
 
+    function ethToWeth() public payable returns (uint256 wethAmount) {
+        _weth.deposit{value: msg.value}();
+
+        wethAmount = msg.value;
+    }
+
     function accountLPMarginCap(
         IVAMM vamm,
         bytes32 encodedPosition,
@@ -131,7 +137,7 @@ contract Periphery is IPeriphery {
         address owner,
         int24 tickLower,
         int24 tickUpper
-    ) external override {
+    ) public override {
         marginEngine.settlePosition(owner, tickLower, tickUpper);
 
         updatePositionMargin(marginEngine, tickLower, tickUpper, 0, true); // fully withdraw
@@ -174,11 +180,8 @@ contract Periphery is IPeriphery {
             marginDelta = -position.margin;
         }
 
-        // if WETH pools, accept deposit only in ETH
         if (address(underlyingToken) == address(_weth)) {
-            require(marginDelta <= 0, "INV");
-
-            if (marginDelta < 0) {require(msg.value == 0, "INV");
+            if (marginDelta < 0) {
                 marginEngine.updatePositionMargin(
                     msg.sender,
                     tickLower,
@@ -186,20 +189,30 @@ contract Periphery is IPeriphery {
                     marginDelta
                 );
             } else {
-                if (msg.value > 0) {
-                    uint256 ethPassed = msg.value;
-
-                    _weth.deposit{value: msg.value}();
-
-                    underlyingToken.approve(address(marginEngine), ethPassed);
-
-                    marginEngine.updatePositionMargin(
+                if (marginDelta > 0) {
+                    underlyingToken.safeTransferFrom(
                         msg.sender,
-                        tickLower,
-                        tickUpper,
-                        ethPassed.toInt256()
+                        address(this),
+                        marginDelta.toUint256()
                     );
                 }
+
+                if (msg.value > 0) {
+                    _weth.deposit{value: msg.value}();
+                    marginDelta += msg.value.toInt256();
+                }
+                
+                underlyingToken.approve(
+                    address(marginEngine),
+                    marginDelta.toUint256()
+                );
+
+                marginEngine.updatePositionMargin(
+                    msg.sender,
+                    tickLower,
+                    tickUpper,
+                    marginDelta
+                );
             }
         } else {
             if (marginDelta > 0) {
@@ -211,6 +224,20 @@ contract Periphery is IPeriphery {
                 underlyingToken.approve(
                     address(marginEngine),
                     marginDelta.toUint256()
+                );
+
+                marginEngine.updatePositionMargin(
+                    msg.sender,
+                    tickLower,
+                    tickUpper,
+                    marginDelta
+                );
+            } else {
+                marginEngine.updatePositionMargin(
+                    msg.sender,
+                    tickLower,
+                    tickUpper,
+                    marginDelta
                 );
             }
 
@@ -237,7 +264,7 @@ contract Periphery is IPeriphery {
 
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params)
-        external
+        public
         payable
         override
         returns (int256 positionMarginRequirement)
@@ -344,7 +371,7 @@ contract Periphery is IPeriphery {
     }
 
     function swap(SwapPeripheryParams memory params)
-        external
+        public
         payable
         override
         returns (
@@ -422,6 +449,60 @@ contract Periphery is IPeriphery {
             _marginRequirement
         ) = vamm.swap(swapParams);
         _tickAfter = vamm.vammVars().tick;
+    }
+
+    function rolloverWithMint(
+        IMarginEngine marginEngine,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        MintOrBurnParams memory paramsNewPosition
+    ) public payable returns (int256 newPositionMarginRequirement) {
+        require(paramsNewPosition.isMint, "only mint");
+
+        settlePositionAndWithdrawMargin(
+            marginEngine,
+            owner,
+            tickLower,
+            tickUpper
+        );
+
+        newPositionMarginRequirement = mintOrBurn(paramsNewPosition);
+    }
+
+    function rolloverWithSwap(
+        IMarginEngine marginEngine,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        SwapPeripheryParams memory params
+    )
+        public
+        payable
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement,
+            int24 _tickAfter
+        )
+    {
+        settlePositionAndWithdrawMargin(
+            marginEngine,
+            owner,
+            tickLower,
+            tickUpper
+        );
+
+        (
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced,
+            _marginRequirement,
+            _tickAfter
+        ) = swap(params);
     }
 
     function getCurrentTick(IMarginEngine marginEngine)
