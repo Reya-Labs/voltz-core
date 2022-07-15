@@ -99,12 +99,6 @@ contract Periphery is IPeriphery {
         _lpMarginCumulatives[vamm] = lpMarginCumulative;
     }
 
-    function ethToWeth() public payable returns (uint256 wethAmount) {
-        _weth.deposit{value: msg.value}();
-
-        wethAmount = msg.value;
-    }
-
     function accountLPMarginCap(
         IVAMM vamm,
         bytes32 encodedPosition,
@@ -201,7 +195,7 @@ contract Periphery is IPeriphery {
                     _weth.deposit{value: msg.value}();
                     marginDelta += msg.value.toInt256();
                 }
-                
+
                 underlyingToken.approve(
                     address(marginEngine),
                     marginDelta.toUint256()
@@ -225,22 +219,7 @@ contract Periphery is IPeriphery {
                     address(marginEngine),
                     marginDelta.toUint256()
                 );
-
-                marginEngine.updatePositionMargin(
-                    msg.sender,
-                    tickLower,
-                    tickUpper,
-                    marginDelta
-                );
-            } else {
-                marginEngine.updatePositionMargin(
-                    msg.sender,
-                    tickLower,
-                    tickUpper,
-                    marginDelta
-                );
             }
-
             marginEngine.updatePositionMargin(
                 msg.sender,
                 tickLower,
@@ -457,7 +436,7 @@ contract Periphery is IPeriphery {
         int24 tickLower,
         int24 tickUpper,
         MintOrBurnParams memory paramsNewPosition
-    ) public payable returns (int256 newPositionMarginRequirement) {
+    ) external payable override returns (int256 newPositionMarginRequirement) {
         require(paramsNewPosition.isMint, "only mint");
 
         settlePositionAndWithdrawMargin(
@@ -475,10 +454,11 @@ contract Periphery is IPeriphery {
         address owner,
         int24 tickLower,
         int24 tickUpper,
-        SwapPeripheryParams memory params
+        SwapPeripheryParams memory paramsNewPosition
     )
-        public
+        external
         payable
+        override
         returns (
             int256 _fixedTokenDelta,
             int256 _variableTokenDelta,
@@ -502,7 +482,7 @@ contract Periphery is IPeriphery {
             _fixedTokenDeltaUnbalanced,
             _marginRequirement,
             _tickAfter
-        ) = swap(params);
+        ) = swap(paramsNewPosition);
     }
 
     function getCurrentTick(IMarginEngine marginEngine)

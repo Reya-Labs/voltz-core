@@ -351,7 +351,7 @@ export class ScenarioRunner {
   async deployIRSContracts(
     termStartTimestamp: BigNumber,
     termEndTimestamp: BigNumber
-    ) : Promise<[IMarginEngine, IVAMM, IFCM?]>{
+  ): Promise<[IMarginEngine, IVAMM, IFCM?]> {
     // deploy IRS instance
     const deployTrx = await this.factory.deployIrsInstance(
       this.token.address,
@@ -418,11 +418,12 @@ export class ScenarioRunner {
     }
 
     return [marginEngine, vamm, fcm];
-
   }
 
-  async configureIRS(marginEngine: IMarginEngine, vamm: IVAMM)
-  :  Promise<[IMarginEngine, IVAMM]> {
+  async configureIRS(
+    marginEngine: IMarginEngine,
+    vamm: IVAMM
+  ): Promise<[IMarginEngine, IVAMM]> {
     // set margin engine parameters
     await marginEngine.setVAMM(vamm.address);
     await marginEngine.setMarginCalculatorParameters(
