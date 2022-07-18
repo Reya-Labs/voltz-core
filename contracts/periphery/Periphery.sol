@@ -178,7 +178,8 @@ contract Periphery is IPeriphery {
         if (address(underlyingToken) == address(_weth)) {
             require(marginDelta <= 0, "INV");
 
-            if (marginDelta < 0) {require(msg.value == 0, "INV");
+            if (marginDelta < 0) {
+                require(msg.value == 0, "INV");
                 marginEngine.updatePositionMargin(
                     msg.sender,
                     tickLower,

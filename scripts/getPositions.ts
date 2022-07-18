@@ -34,7 +34,8 @@ export async function getPositions(): Promise<Position[]> {
   const positions: Position[] = [];
   while (true) {
     const data = await graphQLClient.request(
-      gql`${getPositionsQueryString
+      gql`
+        ${getPositionsQueryString
           .replace("firstCount", firstCount.toString())
           .replace("skipCount", skipCount.toString())}
       `
@@ -42,18 +43,18 @@ export async function getPositions(): Promise<Position[]> {
 
     const positions_batch = JSON.parse(JSON.stringify(data, undefined, 2));
 
-    for (const position of positions_batch["positions"]) {
+    for (const position of positions_batch.positions) {
       positions.push({
-        marginEngine: position["amm"]["marginEngine"]["id"],
-        owner: position["owner"]["id"],
-        tickLower: Number(position["tickLower"]),
-        tickUpper: Number(position["tickUpper"]),
+        marginEngine: position.amm.marginEngine.id,
+        owner: position.owner.id,
+        tickLower: Number(position.tickLower),
+        tickUpper: Number(position.tickUpper),
       });
     }
 
     skipCount += firstCount;
 
-    if (positions_batch["positions"].length !== firstCount) {
+    if (positions_batch.positions.length !== firstCount) {
       break;
     }
   }

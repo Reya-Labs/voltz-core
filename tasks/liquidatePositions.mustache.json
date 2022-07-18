@@ -82,7 +82,7 @@
       "contractInputsValues": {
         "__isAlpha": "true"
       }
-    }
+    },
     {{/liquidationsPerPool}}
   ]
 }

@@ -1,5 +1,9 @@
 import { task } from "hardhat/config";
-import { FixedAndVariableMathTest, MarginEngine, BaseRateOracle } from "../typechain";
+import {
+  FixedAndVariableMathTest,
+  MarginEngine,
+  BaseRateOracle,
+} from "../typechain";
 import { ethers, utils } from "ethers";
 
 import { getPositions, Position } from "../scripts/getPositions";
@@ -26,7 +30,9 @@ task(
   }
 
   console.log("Positions estimated to become insolvent at maturity:");
-  console.log("(Owner, Lower Tick, Upper Tick, Current Margin, Estimated Cashflow Delta)");
+  console.log(
+    "(Owner, Lower Tick, Upper Tick, Current Margin, Estimated Cashflow Delta)"
+  );
   console.log("");
 
   let noneInsolvent = true;
@@ -63,16 +69,22 @@ task(
 
       const currentBlock = await hre.ethers.provider.getBlock("latest");
       // console.log(currentBlock.timestamp, Number(utils.formatEther(termStartTimestampWad)));
-      const timeElapsed = currentBlock.timestamp - Number(utils.formatEther(termStartTimestampWad));
+      const timeElapsed =
+        currentBlock.timestamp -
+        Number(utils.formatEther(termStartTimestampWad));
       const timeElapsedInYears = timeElapsed / SECONDS_PER_YEAR.toNumber();
       const estimatedAPY = new Decimal(utils.formatEther(currentVariableFactor))
         .add(1)
         .pow(1 / timeElapsedInYears)
         .sub(1);
 
-      const timeOfPool = Number(utils.formatEther(termEndTimestampWad.sub(termStartTimestampWad)));
+      const timeOfPool = Number(
+        utils.formatEther(termEndTimestampWad.sub(termStartTimestampWad))
+      );
       const timeOfPoolInYears = timeOfPool / SECONDS_PER_YEAR.toNumber();
-      const estimatedVariableFactor = toBn(Number(estimatedAPY.mul(timeOfPoolInYears)));
+      const estimatedVariableFactor = toBn(
+        Number(estimatedAPY.mul(timeOfPoolInYears))
+      );
 
       // (1 + var) ^ 1/timeinyears - 1
       // APY x timesinyear
