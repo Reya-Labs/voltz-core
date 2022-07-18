@@ -213,6 +213,7 @@ contract Periphery is IPeriphery {
                     marginDelta.toUint256()
                 );
             }
+            
             marginEngine.updatePositionMargin(
                 msg.sender,
                 tickLower,
