@@ -64,7 +64,7 @@ const e2eParams: e2eParameters = {
 };
 
 // -------------------------- Alpha pool tests --------------------------
-it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update margin with +1 eth", async () => {
+it("Mint tokens in an alpha eth pool and deposit 10 eth margin, then update margin with +1 eth", async () => {
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       // This could be written into the general.ts file.
@@ -89,13 +89,13 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("300"),
           isMint: true,
           marginDelta: toBn("0"),
         };
 
         const tempOverrides = {
-          value: ethers.utils.parseEther("210"),
+          value: ethers.utils.parseEther("10"),
         };
         await this.periphery.mintOrBurn(mintOrBurnParameters, tempOverrides);
       }
@@ -117,7 +117,7 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
       );
 
       // We expect the position margin to have gone from 210 to 211 after updating the margin
-      expect(position.margin).to.eq(toBn("211"));
+      expect(position.margin).to.eq(toBn("11"));
     }
   }
 
@@ -129,7 +129,7 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
   await test();
 });
 
-it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update margin with -1 eth", async () => {
+it("Mint tokens in an alpha eth pool and deposit 10 eth margin, then update margin with -1 eth", async () => {
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       await this.factory.setPeriphery(this.periphery.address);
@@ -146,13 +146,13 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("300"),
           isMint: true,
           marginDelta: toBn("0"),
         };
 
         const tempOverrides = {
-          value: ethers.utils.parseEther("210"),
+          value: ethers.utils.parseEther("10"),
         };
         await this.periphery.mintOrBurn(mintOrBurnParameters, tempOverrides);
       }
@@ -173,7 +173,7 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
       );
 
       // We expect the position margin to have gone from 210 to 209 after updating the margin
-      expect(position.margin).to.eq(toBn("209"));
+      expect(position.margin).to.eq(toBn("9"));
     }
   }
 
@@ -203,13 +203,13 @@ it("Mint in alpha pool, perform an FT swap and then settle the position and with
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("300"),
           isMint: true,
           marginDelta: toBn("0"),
         };
 
         const tempOverrides = {
-          value: ethers.utils.parseEther("210"),
+          value: ethers.utils.parseEther("10"),
         };
 
         const swapParameters = {
@@ -280,13 +280,13 @@ it("Mint in alpha pool, perform a VT swap and then settle the position and withd
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("300"),
           isMint: true,
           marginDelta: toBn("0"),
         };
 
         const tempOverrides = {
-          value: ethers.utils.parseEther("210"),
+          value: ethers.utils.parseEther("10"),
         };
 
         const swapParameters = {
@@ -412,7 +412,7 @@ it("Mint in alpha eth pool, perform FT swap, settle and withdraw entire margin",
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("4000"),
+          notional: toBn("400"),
           isMint: true,
           marginDelta: toBn("0"),
         };
@@ -420,16 +420,16 @@ it("Mint in alpha eth pool, perform FT swap, settle and withdraw entire margin",
         const swapParameters = {
           marginEngine: this.marginEngine.address,
           isFT: true,
-          notional: toBn("1000"),
+          notional: toBn("100"),
           sqrtPriceLimitX96:
             TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(),
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
           marginDelta: 0,
-          value: ethers.utils.parseEther("100"),
+          value: ethers.utils.parseEther("10"),
         };
 
-        const tempOverrides = { value: ethers.utils.parseEther("200") };
+        const tempOverrides = { value: ethers.utils.parseEther("20") };
 
         // add 30k liquidity to Position
         await this.periphery.mintOrBurn(mintOrBurnParameters, tempOverrides);
@@ -495,13 +495,13 @@ it("Mint tokens in non-alpha eth pool and deposit 210 eth margin, then update ma
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("300"),
           isMint: true,
           marginDelta: toBn("0"),
         };
 
         const tempOverrides = {
-          value: ethers.utils.parseEther("210"),
+          value: ethers.utils.parseEther("10"),
         };
         await this.periphery.mintOrBurn(mintOrBurnParameters, tempOverrides);
       }
@@ -523,7 +523,7 @@ it("Mint tokens in non-alpha eth pool and deposit 210 eth margin, then update ma
       );
 
       // We expect the position margin to have gone from 210 to 211 after updating the margin
-      expect(position.margin).to.eq(toBn("211"));
+      expect(position.margin).to.eq(toBn("11"));
     }
   }
 
@@ -551,13 +551,13 @@ it("Mint tokens in non-alpha eth pool and deposit 210 eth margin, then update ma
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("300"),
           isMint: true,
           marginDelta: toBn("0"),
         };
 
         const tempOverrides = {
-          value: ethers.utils.parseEther("210"),
+          value: ethers.utils.parseEther("10"),
         };
         await this.periphery.mintOrBurn(mintOrBurnParameters, tempOverrides);
       }
@@ -578,7 +578,7 @@ it("Mint tokens in non-alpha eth pool and deposit 210 eth margin, then update ma
       );
 
       // We expect the position margin to have gone from 210 to 209 after updating the margin
-      expect(position.margin).to.eq(toBn("209"));
+      expect(position.margin).to.eq(toBn("9"));
     }
   }
 
@@ -607,13 +607,13 @@ it("Mint in non-alpha pool, perform an FT swap and then settle the position and 
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("300"),
           isMint: true,
           marginDelta: toBn("0"),
         };
 
         const tempOverrides = {
-          value: ethers.utils.parseEther("210"),
+          value: ethers.utils.parseEther("10"),
         };
 
         const swapParameters = {
@@ -683,13 +683,13 @@ it("Mint in non-alpha pool, perform a VT swap and then settle the position and w
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("300"),
           isMint: true,
           marginDelta: toBn("0"),
         };
 
         const tempOverrides = {
-          value: ethers.utils.parseEther("210"),
+          value: ethers.utils.parseEther("10"),
         };
 
         const swapParameters = {
@@ -758,7 +758,7 @@ it("Mint and burn in non-alpha eth pool, and withdraw some margin", async () => 
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("3000"),
           isMint: true,
           marginDelta: toBn("0"),
         };
@@ -767,17 +767,17 @@ it("Mint and burn in non-alpha eth pool, and withdraw some margin", async () => 
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("14000"),
+          notional: toBn("1400"),
           isMint: false,
           marginDelta: toBn("0"),
         };
 
         const mintTempOverride = {
-          value: ethers.utils.parseEther("3141"),
+          value: ethers.utils.parseEther("20"),
         };
 
         const burnTempOverride = {
-          value: ethers.utils.parseEther("59"),
+          value: ethers.utils.parseEther("1"),
         };
 
         // Mint 30,000 liquidity to Position
@@ -790,7 +790,7 @@ it("Mint and burn in non-alpha eth pool, and withdraw some margin", async () => 
         this.marginEngine.address,
         LOWER_TICK,
         UPPER_TICK,
-        toBn("-200"),
+        toBn("-10"),
         false
       );
       const position = await this.marginEngine.callStatic.getPosition(
@@ -806,8 +806,8 @@ it("Mint and burn in non-alpha eth pool, and withdraw some margin", async () => 
         true
       );
 
-      expect(notionalAmount).to.eq(toBn("16000"));
-      expect(position.margin).to.eq(toBn("3000"));
+      expect(notionalAmount).to.eq(toBn("1600"));
+      expect(position.margin).to.eq(toBn("11"));
     }
   }
 
@@ -836,7 +836,7 @@ it("Mint in non-alpha eth pool, perform FT swap, settle and withdraw entire marg
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("4000"),
+          notional: toBn("400"),
           isMint: true,
           marginDelta: toBn("0"),
         };
@@ -844,16 +844,16 @@ it("Mint in non-alpha eth pool, perform FT swap, settle and withdraw entire marg
         const swapParameters = {
           marginEngine: this.marginEngine.address,
           isFT: true,
-          notional: toBn("1000"),
+          notional: toBn("100"),
           sqrtPriceLimitX96:
             TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(),
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
           marginDelta: 0,
-          value: ethers.utils.parseEther("100"),
+          value: ethers.utils.parseEther("10"),
         };
 
-        const tempOverrides = { value: ethers.utils.parseEther("200") };
+        const tempOverrides = { value: ethers.utils.parseEther("20") };
 
         // add 30k liquidity to Position
         await this.periphery.mintOrBurn(mintOrBurnParameters, tempOverrides);
