@@ -4,7 +4,7 @@ import {
   MarginEngine,
   BaseRateOracle,
 } from "../typechain";
-import { ethers, utils } from "ethers";
+import { ethers, utils, BigNumber } from "ethers";
 
 import { getPositions, Position } from "../scripts/getPositions";
 import { SECONDS_PER_YEAR } from "@aave/protocol-js";
@@ -35,6 +35,11 @@ task(
   );
   console.log("");
 
+  const currentBlock = await hre.ethers.provider.getBlock("latest");
+  const termCurrentTimestampWad = BigNumber.from(currentBlock.timestamp).mul(
+    BigNumber.from(10).pow(18)
+  );
+
   let noneInsolvent = true;
   for (const marginEngineAddress of marginEngineAddresses) {
     const marginEngine = (await hre.ethers.getContractAt(
@@ -60,15 +65,12 @@ task(
 
       const termStartTimestampWad = await marginEngine.termStartTimestampWad();
       const termEndTimestampWad = await marginEngine.termEndTimestampWad();
+
       const currentVariableFactor = await baseRateOracle.variableFactorNoCache(
         termStartTimestampWad,
-        termEndTimestampWad
+        termCurrentTimestampWad
       );
 
-      // console.log(utils.formatEther(currentVariableFactor));
-
-      const currentBlock = await hre.ethers.provider.getBlock("latest");
-      // console.log(currentBlock.timestamp, Number(utils.formatEther(termStartTimestampWad)));
       const timeElapsed =
         currentBlock.timestamp -
         Number(utils.formatEther(termStartTimestampWad));
@@ -85,9 +87,6 @@ task(
       const estimatedVariableFactor = toBn(
         Number(estimatedAPY.mul(timeOfPoolInYears))
       );
-
-      // (1 + var) ^ 1/timeinyears - 1
-      // APY x timesinyear
 
       const estimatedCashflow =
         await fixedAndVariableMath.calculateSettlementCashflow(
