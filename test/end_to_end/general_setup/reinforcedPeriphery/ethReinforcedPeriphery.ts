@@ -356,28 +356,16 @@ it("Mint in alpha eth pool, and withdraw margin", async () => {
           marginEngine: this.marginEngine.address,
           tickLower: LOWER_TICK,
           tickUpper: UPPER_TICK,
-          notional: toBn("30000"),
+          notional: toBn("300"),
           isMint: true,
           marginDelta: toBn("0"),
         };
 
-        const burnParameters = {
-          marginEngine: this.marginEngine.address,
-          tickLower: LOWER_TICK,
-          tickUpper: UPPER_TICK,
-          notional: toBn("14000"),
-          isMint: false,
-          marginDelta: toBn("0"),
-        };
-
         const tempOverrides = {
-          value: ethers.utils.parseEther("3141"),
+          value: ethers.utils.parseEther("10"),
         };
         // Mint 30,000 liquidity to Position
         await this.periphery.mintOrBurn(mintParameters, tempOverrides);
-
-        // Burn 14,000 liquidity from Position
-        await this.periphery.mintOrBurn(burnParameters, tempOverrides);
       }
 
       const position = await this.marginEngine.callStatic.getPosition(
@@ -393,7 +381,8 @@ it("Mint in alpha eth pool, and withdraw margin", async () => {
         true
       );
 
-      expect(notionalAmount).to.eq(toBn("16000"));
+      expect(notionalAmount).to.eq(toBn("300"));
+      expect(position.margin).to.eq(toBn("10"));
     }
   }
 
@@ -410,13 +399,9 @@ it("Mint in alpha eth pool, perform FT swap, settle and withdraw entire margin",
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       await this.factory.setPeriphery(this.periphery.address);
-
       await this.vamm.setIsAlpha(true);
-
       await this.marginEngine.setIsAlpha(true);
-
       await this.periphery.setLPMarginCap(this.vamm.address, toBn("1", 24));
-
       await this.token.approve(this.periphery.address, toBn("1", 27));
 
       const LOWER_TICK = -7200;
@@ -494,7 +479,7 @@ it("Mint in alpha eth pool, perform FT swap, settle and withdraw entire margin",
 });
 
 // -------------------------- Non-alpha pool tests --------------------------
-it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update margin with +1 eth", async () => {
+it("Mint tokens in non-alpha eth pool and deposit 210 eth margin, then update margin with +1 eth", async () => {
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       await this.factory.setPeriphery(this.periphery.address);
@@ -550,12 +535,12 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
   await test();
 });
 
-it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update margin with -1 eth", async () => {
+it("Mint tokens in non-alpha eth pool and deposit 210 eth margin, then update margin with -1 eth", async () => {
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       await this.factory.setPeriphery(this.periphery.address);
-      await this.vamm.setIsAlpha(true);
-      await this.marginEngine.setIsAlpha(true);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
       await this.token.approve(this.periphery.address, toBn("1", 27));
 
       const LOWER_TICK = -7200;
@@ -577,7 +562,7 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
         await this.periphery.mintOrBurn(mintOrBurnParameters, tempOverrides);
       }
 
-      // Now that we have deposited margin and minted tokens we want to update the margin by withdrawing 10 margin
+      // Now that we have deposited margin and minted tokens we want to update the margin by withdrawing 1 margin
       await this.periphery.updatePositionMargin(
         this.marginEngine.address,
         LOWER_TICK,
@@ -605,7 +590,7 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
   await test();
 });
 
-it("Mint in alpha pool, perform an FT swap and then settle the position and withdraw the margin", async () => {
+it("Mint in non-alpha pool, perform an FT swap and then settle the position and withdraw the margin", async () => {
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       await this.factory.setPeriphery(this.periphery.address);
@@ -682,12 +667,12 @@ it("Mint in alpha pool, perform an FT swap and then settle the position and with
   await test();
 });
 
-it("Mint in alpha pool, perform a VT swap and then settle the position and withdraw the margin", async () => {
+it("Mint in non-alpha pool, perform a VT swap and then settle the position and withdraw the margin", async () => {
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       await this.factory.setPeriphery(this.periphery.address);
-      await this.vamm.setIsAlpha(true);
-      await this.marginEngine.setIsAlpha(true);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
       await this.token.approve(this.periphery.address, toBn("1", 27));
 
       const LOWER_TICK = -7200;
@@ -757,7 +742,7 @@ it("Mint in alpha pool, perform a VT swap and then settle the position and withd
   await test();
 });
 
-it("Mint in alpha eth pool, and withdraw margin", async () => {
+it("Mint and burn in non-alpha eth pool, and withdraw some margin", async () => {
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       await this.factory.setPeriphery(this.periphery.address);
@@ -787,16 +772,27 @@ it("Mint in alpha eth pool, and withdraw margin", async () => {
           marginDelta: toBn("0"),
         };
 
-        const tempOverrides = {
+        const mintTempOverride = {
           value: ethers.utils.parseEther("3141"),
         };
+
+        const burnTempOverride = {
+          value: ethers.utils.parseEther("59"),
+        };
+
         // Mint 30,000 liquidity to Position
-        await this.periphery.mintOrBurn(mintParameters, tempOverrides);
+        await this.periphery.mintOrBurn(mintParameters, mintTempOverride);
 
         // Burn 14,000 liquidity from Position
-        await this.periphery.mintOrBurn(burnParameters, tempOverrides);
+        await this.periphery.mintOrBurn(burnParameters, burnTempOverride);
       }
-
+      await this.periphery.updatePositionMargin(
+        this.marginEngine.address,
+        LOWER_TICK,
+        UPPER_TICK,
+        toBn("-200"),
+        false
+      );
       const position = await this.marginEngine.callStatic.getPosition(
         this.owner.address,
         LOWER_TICK,
@@ -811,6 +807,7 @@ it("Mint in alpha eth pool, and withdraw margin", async () => {
       );
 
       expect(notionalAmount).to.eq(toBn("16000"));
+      expect(position.margin).to.eq(toBn("3000"));
     }
   }
 
@@ -823,7 +820,7 @@ it("Mint in alpha eth pool, and withdraw margin", async () => {
   await test();
 });
 
-it("Mint in alpha eth pool, perform FT swap, settle and withdraw entire margin", async () => {
+it("Mint in non-alpha eth pool, perform FT swap, settle and withdraw entire margin", async () => {
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       await this.factory.setPeriphery(this.periphery.address);
