@@ -374,6 +374,9 @@ const localhostConfig: ContractsConfig = {
     compoundTokens: [],
     defaults: localhostRateOracleConfigDefaults,
   },
+  lidoConfig: {
+    defaults: localhostRateOracleConfigDefaults,
+  },
 };
 
 const config: ContractsConfigMap = {

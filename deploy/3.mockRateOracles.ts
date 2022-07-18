@@ -25,6 +25,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const mockCToken = await ethers.getContractOrNull("MockCToken");
   const mockStEth = await ethers.getContractOrNull("MockStEth");
   const mockRocketEth = await ethers.getContractOrNull("MockRocketEth");
+  const mockWEth = await ethers.getContractOrNull("MockWETH");
+  const mockLidoOracle = await ethers.getContractOrNull("MockLidoOracle");
 
   if (config.aaveConfig && mockToken && mockAaveLendingPool) {
     console.log(
@@ -79,11 +81,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
   }
 
-  if (config.lidoConfig && mockStEth) {
+  if (config.lidoConfig && mockStEth && mockWEth && mockLidoOracle) {
+    console.log('DEPLOYING LIDO RATE ORACLE');
     await deploy("MockLidoRateOracle", {
-      contract: "LidoRateOracle",
+      contract: "MockLidoRateOracle",
       from: deployer,
-      args: [mockStEth.address, [], []],
+      args: [mockStEth.address, mockLidoOracle.address, mockWEth.address, [], []],
       log: doLogging,
     });
     mockRateOracles.push({
