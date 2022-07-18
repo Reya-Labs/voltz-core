@@ -172,7 +172,7 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
         UPPER_TICK
       );
 
-      // We expect the position margin to have gone from 210 to 211 after updating the margin
+      // We expect the position margin to have gone from 210 to 209 after updating the margin
       expect(position.margin).to.eq(toBn("209"));
     }
   }
@@ -592,7 +592,7 @@ it("Mint tokens in an alpha eth pool and deposit 210 eth margin, then update mar
         UPPER_TICK
       );
 
-      // We expect the position margin to have gone from 210 to 211 after updating the margin
+      // We expect the position margin to have gone from 210 to 209 after updating the margin
       expect(position.margin).to.eq(toBn("209"));
     }
   }

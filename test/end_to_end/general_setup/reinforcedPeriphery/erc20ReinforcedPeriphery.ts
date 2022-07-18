@@ -66,7 +66,7 @@ const e2eParams: e2eParameters = {
 };
 
 // -------------------------- Alpha pool tests --------------------------
-it.only("Check approvals work for periphery", async () => {
+it("Check approvals work for periphery", async () => {
   class ScenarioRunnerInstance extends ScenarioRunner {
     override async run() {
       await this.factory.setPeriphery(this.periphery.address);
@@ -857,90 +857,5 @@ it("Check you cannot mint more than the notional cap", async () => {
     await scenario.run();
   };
 
-  await test();
-});
-
-// This describe block does not work, yet --> WIP
-describe("mint, burn, swap in periphery", async () => {
-  class ScenarioRunnerInstance extends ScenarioRunner {
-    override async run() {
-      it("mint in periphery", async () => {
-        await this.factory.setPeriphery(this.periphery.address);
-        await this.vamm.setIsAlpha(true);
-        await this.marginEngine.setIsAlpha(true);
-        await this.periphery.setLPMarginCap(this.vamm.address, toBn("1", 19));
-        await this.token.approve(this.periphery.address, toBn("1", 27));
-
-        const LOWER_TICK = -7200;
-        const UPPER_TICK = 0;
-
-        {
-          const mintOrBurnParameters = {
-            marginEngine: this.marginEngine.address,
-            tickLower: LOWER_TICK,
-            tickUpper: UPPER_TICK,
-            notional: toBn("9"),
-            isMint: true,
-            marginDelta: toBn("10"),
-          };
-
-          await this.periphery.mintOrBurn(mintOrBurnParameters);
-        }
-        const position = await this.marginEngine.callStatic.getPosition(
-          this.owner.address,
-          LOWER_TICK,
-          UPPER_TICK
-        );
-
-        expect(position.margin).to.eq(toBn("10"));
-      });
-
-      it("burn in periphery", async () => {
-        await this.factory.setPeriphery(this.periphery.address);
-        await this.vamm.setIsAlpha(true);
-        await this.marginEngine.setIsAlpha(true);
-        await this.periphery.setLPMarginCap(this.vamm.address, toBn("1", 19));
-        await this.token.approve(this.periphery.address, toBn("1", 27));
-
-        const LOWER_TICK = -7200;
-        const UPPER_TICK = 0;
-
-        {
-          const mintParameters = {
-            marginEngine: this.marginEngine.address,
-            tickLower: LOWER_TICK,
-            tickUpper: UPPER_TICK,
-            notional: toBn("100"),
-            isMint: true,
-            marginDelta: toBn("10"),
-          };
-
-          const burnParameters = {
-            marginEngine: this.marginEngine.address,
-            tickLower: LOWER_TICK,
-            tickUpper: UPPER_TICK,
-            notional: toBn("10"),
-            isMint: true,
-            marginDelta: toBn("5"),
-          };
-
-          await this.periphery.mintOrBurn(mintParameters);
-          await this.periphery.mintOrBurn(burnParameters);
-        }
-        const position = await this.marginEngine.callStatic.getPosition(
-          this.owner.address,
-          LOWER_TICK,
-          UPPER_TICK
-        );
-
-        expect(position.margin).to.eq(toBn("90"));
-      });
-    }
-  }
-  const test = async () => {
-    const scenario = new ScenarioRunnerInstance(e2eParams);
-    await scenario.init();
-    await scenario.run();
-  };
   await test();
 });
