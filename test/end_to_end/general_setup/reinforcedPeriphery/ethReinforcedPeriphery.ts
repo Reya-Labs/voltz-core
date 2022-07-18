@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, waffle } from "hardhat";
+import { ethers } from "hardhat";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
 import {
@@ -16,12 +16,8 @@ import {
   XI_UPPER,
 } from "../../../shared/utilities";
 import { ScenarioRunner, e2eParameters } from "../general";
-import { IRateOracle } from "../../../../typechain";
-import { messagePrefix } from "@ethersproject/hash";
 import { TickMath } from "../../../shared/tickMath";
 import { advanceTimeAndBlock } from "../../../helpers/time";
-
-const { provider } = waffle;
 
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(3),

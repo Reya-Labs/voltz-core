@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, waffle } from "hardhat";
+import { waffle } from "hardhat";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
 import {
@@ -18,10 +18,6 @@ import {
 import { ScenarioRunner, e2eParameters } from "../general";
 import { TickMath } from "../../../shared/tickMath";
 import { advanceTimeAndBlock } from "../../../helpers/time";
-import { valueToBigNumber } from "@aave/protocol-js";
-import { BigNumber, Wallet } from "ethers";
-import { createFixtureLoader } from "ethereum-waffle";
-import { metaFixture } from "../../../shared/fixtures";
 
 const { provider } = waffle;
 
