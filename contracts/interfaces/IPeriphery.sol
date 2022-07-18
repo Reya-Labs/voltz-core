@@ -87,4 +87,30 @@ interface IPeriphery is CustomErrors {
         int24 tickLower,
         int24 tickUpper
     ) external;
+
+    function rolloverWithMint(
+        IMarginEngine marginEngine,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        MintOrBurnParams memory paramsNewPosition
+    ) external payable returns (int256 newPositionMarginRequirement);
+
+    function rolloverWithSwap(
+        IMarginEngine marginEngine,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        SwapPeripheryParams memory paramsNewPosition
+    )
+        external
+        payable
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement,
+            int24 _tickAfter
+        );
 }
