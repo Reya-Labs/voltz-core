@@ -8,6 +8,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await hre.getNamedAccounts();
     const doLogging = true;
 
+    // To have a hardhat node instance mine at intervals (rather than automine) throughout deployment, uncomment these lines
+    // await hre.ethers.provider.send("evm_setAutomine", [false]);
+    // await hre.ethers.provider.send("evm_setIntervalMining", [13500]);
+
     // Factory, and master contracts that get cloned for each IRS instance
     const masterMarginEngineDeploy = await deploy("MarginEngine", {
       from: deployer,

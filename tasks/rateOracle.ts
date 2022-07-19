@@ -60,4 +60,35 @@ task(
     console.log(csvOutput);
   });
 
+task(
+  "transferRateOracleOwnership",
+  "Transfers rate oracle ownership to the multisig address configured in hardhat.config.ts"
+)
+  .addParam(
+    "rateOracle",
+    "The address of a rate oracle, or the name of the rate oracle as defined in deployments/<network> (e.g. 'AaveRateOracle_USDT'"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const rateOracle = await getRateOracleByNameOrAddress(
+      hre,
+      taskArgs.rateOracle
+    );
+    const { deployer, multisig } = await hre.getNamedAccounts();
+
+    // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
+
+    const owner = await rateOracle.owner();
+
+    if (owner === multisig) {
+      console.log(`Already owned by ${multisig}. No need to transfer`);
+    } else if (owner === deployer) {
+      await rateOracle.transferOwnership(multisig);
+      console.log(`Ownership transferred from ${owner} to ${multisig}`);
+    } else {
+      console.log(
+        `Cannot transfer ownership of rate oracle ${rateOracle.address} using account ${deployer} because it is owned by ${owner}`
+      );
+    }
+  });
+
 module.exports = {};

@@ -23,7 +23,7 @@ const deployAndConfigureRateOracleInstance = async (
   instance: RateOracleInstanceInfo
 ) => {
   const { deploy } = hre.deployments;
-  const { deployer } = await hre.getNamedAccounts();
+  const { deployer, multisig } = await hre.getNamedAccounts();
   const doLogging = true;
 
   const rateOracleIdentifier =
@@ -58,11 +58,19 @@ const deployAndConfigureRateOracleInstance = async (
 
   // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
   await applyBufferConfig(
-    rateOracleContract as unknown as BaseRateOracle,
+    rateOracleContract,
     BigNumber.from(instance.rateOracleConfig.rateOracleBufferSize).toNumber(),
     instance.rateOracleConfig.rateOracleMinSecondsSinceLastUpdate,
     instance.maxIrsDurationInSeconds
   );
+
+  if (multisig !== deployer) {
+    // Transfer ownership
+    console.log(
+      `Transferred ownership of ${rateOracleIdentifier} at ${rateOracleContract.address} to ${multisig}`
+    );
+    await rateOracleContract.transferOwnership(multisig);
+  }
 };
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
