@@ -91,6 +91,8 @@ loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
 loadModuleIfContractsAreBuilt("./tasks/playground");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
+loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
+loadModuleIfContractsAreBuilt("./tasks/checkInsolvencyAtMaturity");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -182,6 +184,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: {
+      balance: (10 ** 24).toString(),
       default: 0, // here this will by default take the first account as deployer
     },
     multisig: {

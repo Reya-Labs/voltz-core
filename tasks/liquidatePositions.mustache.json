@@ -1,0 +1,88 @@
+{
+  "version": "1.0",
+  "chainId": "1",
+  "createdAt": 1654007302649,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.8.0",
+    "createdFromSafeAddress": "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "transactions": [
+    {{#liquidationsPerPool}}
+    {
+      "to": "{{vammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "bool",
+            "name": "__isAlpha",
+            "type": "bool"
+          }
+        ],
+        "name": "setIsAlpha",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "__isAlpha": "false"
+      }
+    },
+    {{#liquidatablePositions}}
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_owner",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "_tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "_tickUpper",
+            "type": "int24"
+          }
+        ],
+        "name": "liquidatePosition",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_owner": "{{owner}}",
+        "_tickLower": "{{tickLower}}",
+        "_tickUpper": "{{tickUpper}}"
+      }
+    },
+    {{/liquidatablePositions}}
+    {
+      "to": "{{vammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "bool",
+            "name": "__isAlpha",
+            "type": "bool"
+          }
+        ],
+        "name": "setIsAlpha",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "__isAlpha": "true"
+      }
+    },
+    {{/liquidationsPerPool}}
+  ]
+}

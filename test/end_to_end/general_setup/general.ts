@@ -348,13 +348,16 @@ export class ScenarioRunner {
       (await MarginCalculatorFactory.deploy()) as MarginCalculatorTest;
   }
 
-  async deployIRSContracts() {
+  async deployIRSContracts(
+    termStartTimestamp: BigNumber,
+    termEndTimestamp: BigNumber
+  ): Promise<[IMarginEngine, IVAMM, IFCM?]> {
     // deploy IRS instance
     const deployTrx = await this.factory.deployIrsInstance(
       this.token.address,
       this.rateOracle.address,
-      this.termStartTimestamp,
-      this.termEndTimestamp,
+      termStartTimestamp,
+      termEndTimestamp,
       this.params.tickSpacing,
       { gasLimit: 10000000 }
     );
@@ -376,24 +379,27 @@ export class ScenarioRunner {
     const fcmAddress = log.args.fcm;
 
     const marginEngineFactory = await ethers.getContractFactory("MarginEngine");
-    this.marginEngine = marginEngineFactory.attach(
+    const marginEngine = marginEngineFactory.attach(
       marginEngineAddress
     ) as IMarginEngine;
 
     const vammFactory = await ethers.getContractFactory("VAMM");
-    this.vamm = vammFactory.attach(vammAddress) as IVAMM;
 
+    const vamm = vammFactory.attach(vammAddress) as IVAMM;
+
+    let fcm;
     switch (this.params.rateOracle) {
       case 1: {
         const fcmFactory = await ethers.getContractFactory("AaveFCM");
-        this.fcm = fcmFactory.attach(fcmAddress) as IFCM;
+
+        fcm = fcmFactory.attach(fcmAddress) as IFCM;
 
         break;
       }
 
       case 2: {
         const fcmFactory = await ethers.getContractFactory("CompoundFCM");
-        this.fcm = fcmFactory.attach(fcmAddress) as IFCM;
+        fcm = fcmFactory.attach(fcmAddress) as IFCM;
 
         break;
       }
@@ -410,30 +416,37 @@ export class ScenarioRunner {
         throw new Error("Unrecognized rate oracle");
       }
     }
+
+    return [marginEngine, vamm, fcm];
   }
 
-  async configureIRS() {
+  async configureIRS(
+    marginEngine: IMarginEngine,
+    vamm: IVAMM
+  ): Promise<[IMarginEngine, IVAMM]> {
     // set margin engine parameters
-    await this.marginEngine.setVAMM(this.vamm.address);
-    await this.marginEngine.setMarginCalculatorParameters(
+    await marginEngine.setVAMM(vamm.address);
+    await marginEngine.setMarginCalculatorParameters(
       this.params.marginCalculatorParams
     );
-    await this.marginEngine.setLookbackWindowInSeconds(
+    await marginEngine.setLookbackWindowInSeconds(
       this.params.lookBackWindowAPY
     );
 
     // set VAMM parameters
     try {
-      await this.vamm.setFeeProtocol(this.params.feeProtocol);
+      await vamm.setFeeProtocol(this.params.feeProtocol);
     } catch (_) {
       console.log("same protocol fee as before");
     }
 
     try {
-      await this.vamm.setFee(this.params.fee);
+      await vamm.setFee(this.params.fee);
     } catch (_) {
       console.log("same fee percentage as before");
     }
+
+    return [marginEngine, vamm];
   }
 
   async mintAndApprove(address: string, amount: BigNumber) {
@@ -549,15 +562,25 @@ export class ScenarioRunner {
     );
     console.log();
 
+    await this.initIRSPool();
+  }
+
+  async initIRSPool() {
     // deploy an IRS instance
-    await this.deployIRSContracts();
+    [this.marginEngine, this.vamm, this.fcm] = await this.deployIRSContracts(
+      this.termStartTimestamp,
+      this.termEndTimestamp
+    );
     console.log(`VAMM: ${this.vamm.address}`);
     console.log(`marginEngine: ${this.marginEngine.address}`);
     console.log(`FCM: ${this.fcm ? this.fcm.address : "Undefined"}`);
     console.log();
 
     // configure the IRS instance
-    await this.configureIRS();
+    [this.marginEngine, this.vamm] = await this.configureIRS(
+      this.marginEngine,
+      this.vamm
+    );
 
     // configure the E2E setup
     await this.configureE2E();
