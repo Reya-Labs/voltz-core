@@ -1,0 +1,106 @@
+{
+    "version": "1.0",
+    "chainId": "1",
+    "createdAt": 1654007302649,
+    "meta": {
+      "name": "Transactions Batch",
+      "description": "",
+      "txBuilderVersion": "1.8.0",
+      "createdFromSafeAddress": "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
+      "createdFromOwnerAddress": "",
+      "checksum": "0x6e317afc197279541328cf252e50867cfa15d2ed7e7426244328bdf15b94cfe7"
+    },
+    "transactions": [
+      {
+        "to": "{{peripheryAddress}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+            "inputs": [
+                {
+                  "internalType": "contract IWETH",
+                  "name": "weth_",
+                  "type": "address"
+                }
+              ],
+          "name": "setWeth",
+          "payable": false
+        },
+        "contractInputsValues": {
+          "weth_": "{{weth}}"
+        }
+      },
+    {{#vammMigrations}}
+      {
+        "to": "{{peripheryAddress}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+            "inputs": [
+                {
+                    "internalType": "contract IVAMM",
+                    "name": "vamm",
+                    "type": "address"
+                },
+                {
+                    "internalType": "int256",
+                    "name": "lpMarginCumulative",
+                    "type": "int256"
+                }
+            ],
+          "name": "setLPMarginCumulative",
+          "payable": false
+        },
+        "contractInputsValues": {
+          "vamm": "{{vammAddress}}",
+          "lpMarginCumulative": "{{lpMarginCumulative}}"
+        }
+      },
+      {
+        "to": "{{peripheryAddress}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+            "inputs": [
+                {
+                  "internalType": "contract IVAMM",
+                  "name": "vamm",
+                  "type": "address"
+                },
+                {
+                  "internalType": "int256",
+                  "name": "lpMarginCapNew",
+                  "type": "int256"
+                }
+              ],
+          "name": "setLPMarginCap",
+          "payable": false
+        },
+        "contractInputsValues": {
+          "vamm": "{{vammAddress}}",
+          "lpMarginCapNew": "{{lpMarginCap}}"
+        }
+      },
+    {{/vammMigrations}}
+      {
+        "to": "{{factoryAddress}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+            "inputs": [
+                {
+                  "internalType": "contract IPeriphery",
+                  "name": "_periphery",
+                  "type": "address"
+                }
+              ],
+          "name": "setPeriphery",
+          "payable": false
+        },
+        "contractInputsValues": {
+          "_periphery": "{{peripheryAddress}}"
+        }
+      }
+    ]
+  }
+  

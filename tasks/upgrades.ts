@@ -22,7 +22,7 @@ interface UpgradeTemplateData {
 const proxiedContractTypes = [
   "VAMM",
   "MarginEngine",
-  // "Periphery",
+  "Periphery",
   "AaveFCM",
   "CompoundFCM",
 ];
@@ -306,6 +306,78 @@ task(
         console.log(
           `MarginEngine (${marginEngineAddress}) and VAMM (${vammAddress}) updated to point at latest ${taskArgs.rateOracle} (${rateOracleAddress})`
         );
+      }
+    }
+
+    if (taskArgs.multisig) {
+      writeUpgradeTransactionsToGnosisSafeTemplate(data);
+    }
+  });
+
+task(
+  "updatePeriphery",
+  "Change the RateOracle used by a given list of MarginEngines instances (i.e. proxies) and their corresponding VAMMs"
+)
+  .addParam(
+    "peripheryProxyAddress",
+    "The address of the periphery proxy",
+    undefined,
+    types.string
+  )
+  .addFlag(
+    "multisig",
+    "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
+  )
+  .setAction(async (taskArgs, hre) => {
+    // Some prep work before we loop through the VAMMs
+    const latestPeripheryLogicAddress = (
+      await hre.ethers.getContract("Periphery")
+    ).address;
+    const { deployer, multisig } = await hre.getNamedAccounts();
+    const data: UpgradeTemplateData = {
+      rateOracleUpdates: [],
+      proxyUpgrades: [],
+    };
+
+    const peripheryProxy = (await hre.ethers.getContractAt(
+      "Periphery",
+      taskArgs.peripheryProxyAddress
+    )) as VAMM;
+    const proxyAddress = peripheryProxy.address;
+    const initImplAddress = await getImplementationAddress(hre, proxyAddress);
+    const proxyOwner = await peripheryProxy.owner();
+
+    if (initImplAddress === latestPeripheryLogicAddress) {
+      console.log(
+        `The VAMM at ${proxyAddress} is using the latest logic (${latestPeripheryLogicAddress}). No newer logic deployed!`
+      );
+    } else {
+      // TODO: compare storage layouts and abort upgrade if not compatible
+
+      if (taskArgs.multisig) {
+        // Using multisig template instead of sending any transactions
+        data.proxyUpgrades.push({
+          proxyAddress: peripheryProxy.address,
+          newImplementation: latestPeripheryLogicAddress,
+        });
+      } else {
+        // Not using multisig template - actually send the transactions
+        if (multisig !== proxyOwner && deployer !== proxyOwner) {
+          console.log(
+            `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
+          );
+        } else {
+          await peripheryProxy
+            .connect(await getSigner(hre, proxyOwner))
+            .upgradeTo(latestPeripheryLogicAddress);
+          const newImplAddress = await getImplementationAddress(
+            hre,
+            proxyAddress
+          );
+          console.log(
+            `Periphery at ${peripheryProxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
+          );
+        }
       }
     }
 

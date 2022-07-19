@@ -135,7 +135,7 @@ contract PeripheryOld is IPeriphery {
         address owner,
         int24 tickLower,
         int24 tickUpper
-    ) external override {
+    ) public override {
         marginEngine.settlePosition(owner, tickLower, tickUpper);
 
         updatePositionMargin(marginEngine, tickLower, tickUpper, 0, true); // fully withdraw
@@ -242,7 +242,7 @@ contract PeripheryOld is IPeriphery {
 
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params)
-        external
+        public
         payable
         override
         returns (int256 positionMarginRequirement)
@@ -349,7 +349,7 @@ contract PeripheryOld is IPeriphery {
     }
 
     function swap(SwapPeripheryParams memory params)
-        external
+        public
         payable
         override
         returns (
@@ -427,6 +427,61 @@ contract PeripheryOld is IPeriphery {
             _marginRequirement
         ) = vamm.swap(swapParams);
         _tickAfter = vamm.vammVars().tick;
+    }
+
+    function rolloverWithMint(
+        IMarginEngine marginEngine,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        MintOrBurnParams memory paramsNewPosition
+    ) external payable override returns (int256 newPositionMarginRequirement) {
+        require(paramsNewPosition.isMint, "only mint");
+
+        settlePositionAndWithdrawMargin(
+            marginEngine,
+            owner,
+            tickLower,
+            tickUpper
+        );
+
+        newPositionMarginRequirement = mintOrBurn(paramsNewPosition);
+    }
+
+    function rolloverWithSwap(
+        IMarginEngine marginEngine,
+        address owner,
+        int24 tickLower,
+        int24 tickUpper,
+        SwapPeripheryParams memory paramsNewPosition
+    )
+        external
+        payable
+        override
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement,
+            int24 _tickAfter
+        )
+    {
+        settlePositionAndWithdrawMargin(
+            marginEngine,
+            owner,
+            tickLower,
+            tickUpper
+        );
+
+        (
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced,
+            _marginRequirement,
+            _tickAfter
+        ) = swap(paramsNewPosition);
     }
 
     function getCurrentTick(IMarginEngine marginEngine)
