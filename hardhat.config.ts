@@ -166,6 +166,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: {
+      balance: (10 ** 24).toString(),
       default: 0, // here this will by default take the first account as deployer
     },
     alice: {
