@@ -1,8 +1,8 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { Periphery } from "../typechain";
 import { ethers } from "hardhat";
 import { getConfig } from "../deployConfig/config";
+import { Factory } from "../typechain";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
@@ -27,36 +27,28 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     throw new Error("WETH not deployed");
   }
 
-  const peripheryImpl = await deploy("Periphery", {
+  // Mock PERIPHERY
+  const dummyPeriphery = await deploy("PeripheryOld", {
     from: deployer,
     log: doLogging,
+    args: [weth],
   });
 
-  const peripheryProxy = await deploy("VoltzERC1967Proxy", {
-    from: deployer,
-    log: doLogging,
-    args: [peripheryImpl.address, []],
+  const dummyPeripheryContract = await ethers.getContractAt(
+    "PeripheryOld",
+    dummyPeriphery.address
+  );
+
+  // set it in factory
+
+  const factory = (await ethers.getContract("Factory")) as Factory;
+  const trx = await factory.setPeriphery(dummyPeripheryContract.address, {
+    gasLimit: 10000000,
   });
-
-  console.log("Proxy address: ", peripheryProxy.address);
-  console.log("Impl address: ", peripheryImpl.address);
-
-  const peripheryProxyInstance = (await hre.ethers.getContractAt(
-    "Periphery",
-    peripheryProxy.address
-  )) as Periphery;
-
-  const tx_init = await peripheryProxyInstance.initialize();
-  await tx_init.wait();
-
-  const owner = await peripheryProxyInstance.owner();
-  console.log("Owner Proxy: ", owner);
-
-  const tx = await peripheryProxyInstance.setWeth(weth);
-  await tx.wait();
+  await trx.wait();
 
   return true; // Only execute once
 };
-func.tags = ["Periphery"];
-func.id = "Periphery";
+func.tags = ["DummyPeriphery"];
+func.id = "DummyPeriphery";
 export default func;

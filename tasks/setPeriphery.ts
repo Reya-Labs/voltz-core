@@ -1,22 +1,25 @@
 import { task } from "hardhat/config";
 import { Factory } from "../typechain";
 
-task("setPeriphery", "Sets the periphery").setAction(async (_, hre) => {
-  // todo: make settable or extend the deployment scripts to enable this
-  const factoryAddress = "0xAF47e8353729E5be6cA4f605dd176B7Fc80EDA08";
+task("setPeriphery", "Sets the periphery")
+  .addParam("factory", "The address of the Factory contract")
+  .addParam("peripheryProxy", "The address of the Periphery proxy contract")
+  .setAction(async (taskArgs, hre) => {
+    // todo: make settable or extend the deployment scripts to enable this
+    const factoryAddress = taskArgs.factory;
 
-  const peripheryAddress = "0x57E674032784932Ac981e177B9f9287f57d1Eda0";
+    const peripheryAddress = taskArgs.peripheryProxy; // proxy
 
-  const factory = (await hre.ethers.getContractAt(
-    "Factory",
-    factoryAddress
-  )) as Factory;
+    const factory = (await hre.ethers.getContractAt(
+      "Factory",
+      factoryAddress
+    )) as Factory;
 
-  // set the periphery in the factory
-  const trx = await factory.setPeriphery(peripheryAddress, {
-    gasLimit: 10000000,
+    // set the periphery in the factory
+    const trx = await factory.setPeriphery(peripheryAddress, {
+      gasLimit: 10000000,
+    });
+    await trx.wait();
   });
-  await trx.wait();
-});
 
 module.exports = {};

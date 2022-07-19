@@ -7,6 +7,7 @@ import {
   Factory,
   IMarginEngine,
   IVAMM,
+  Periphery,
 } from "../typechain";
 import { BigNumberish, ethers, utils } from "ethers";
 import {
@@ -59,11 +60,18 @@ async function configureIrs(
   hre: HardhatRuntimeEnvironment,
   marginEngine: IMarginEngine,
   vamm: IVAMM,
-  config: IrsConfigDefaults
+  config: IrsConfigDefaults,
+  lpMarginCap?: string,
+  periphery?: Periphery
 ) {
   // Set the config for our IRS instance
   // TODO: allow values to be overridden with task parameters, as required
   console.log(`Configuring IRS...`);
+
+  const isAlpha = lpMarginCap !== "0";
+  if (isAlpha) {
+    console.log("Alpha Pool");
+  }
 
   let trx = await marginEngine.setMarginCalculatorParameters(
     config.marginEngineCalculatorParameters,
@@ -103,6 +111,38 @@ async function configureIrs(
       gasLimit: 10000000,
     });
     await trx.wait();
+  }
+
+  // TODO: catch this for multisig too
+  if (isAlpha && lpMarginCap && periphery) {
+    const isAlphaVAMM = await vamm.isAlpha();
+    if (isAlpha !== isAlphaVAMM) {
+      trx = await vamm.setIsAlpha(isAlpha, {
+        gasLimit: 10000000,
+      });
+      await trx.wait();
+    } else {
+      console.log("IsAlpha is already set in VAMM");
+    }
+
+    const isAlphaME = await marginEngine.isAlpha();
+    if (isAlpha !== isAlphaME) {
+      trx = await marginEngine.setIsAlpha(isAlpha, {
+        gasLimit: 10000000,
+      });
+      await trx.wait();
+    } else {
+      console.log("IsAlpha is already set in Margin Engine");
+    }
+
+    // TODO: make lpMarginCap number and scale ~ decimals
+    const lpMarginCapCurrent = await periphery.lpMarginCaps(vamm.address);
+    if (lpMarginCapCurrent.toString() !== lpMarginCap) {
+      trx = await periphery.setLPMarginCap(vamm.address, lpMarginCap, {
+        gasLimit: 10000000,
+      });
+      await trx.wait();
+    }
   }
 
   console.log(`IRS configured.`);
@@ -148,6 +188,12 @@ task(
     "The tick spacing for the VAMM",
     60,
     types.int
+  )
+  .addOptionalParam(
+    "lpMarginCap",
+    "LP margin cap of the pool if in alpha state",
+    "0",
+    types.string
   )
   .setAction(async (taskArgs, hre) => {
     const rateOracle = await getRateOracleByNameOrAddress(
@@ -249,11 +295,19 @@ task(
           vammAddress
         )) as VAMM;
 
+        const peripheryAddress = await factory.periphery();
+        const periphery = (await hre.ethers.getContractAt(
+          "Periphery",
+          peripheryAddress
+        )) as Periphery;
+
         await configureIrs(
           hre,
           marginEngine,
           vamm,
-          getConfig(hre.network.name).irsConfig
+          getConfig(hre.network.name).irsConfig,
+          taskArgs.lpMarginCap,
+          periphery
         );
       }
     }
@@ -274,7 +328,8 @@ task(
       hre,
       marginEngine,
       vamm,
-      getConfig(hre.network.name).irsConfig
+      getConfig(hre.network.name).irsConfig,
+      "0"
     );
   });
 

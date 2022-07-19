@@ -34,6 +34,9 @@ interface IPeriphery is CustomErrors {
         uint256 marginDelta;
     }
 
+    /// @dev "constructor" for proxy instances
+    function initialize() external;
+
     // view functions
 
     function getCurrentTick(IMarginEngine marginEngine)
@@ -80,6 +83,8 @@ interface IPeriphery is CustomErrors {
 
     function setLPMarginCumulative(IVAMM vamm, int256 lpMarginCumulative)
         external;
+
+    function setWeth(IWETH weth_) external;
 
     function settlePositionAndWithdrawMargin(
         IMarginEngine marginEngine,

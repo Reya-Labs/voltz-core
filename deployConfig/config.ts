@@ -50,7 +50,7 @@ const kovanIrsConfigDefaults: IrsConfigDefaults = {
   marginEngineCalculatorParameters: marginCalculatorDefaults1,
   vammFeeProtocol: 10,
   vammFeeWad: toBn(0.009), // 0.9%, for 30 day pool
-  maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough
+  maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough,
 };
 const kovanRateOracleConfigDefaults: RateOracleConfigDefaults = {
   rateOracleBufferSize: 200, // For mock token oracle

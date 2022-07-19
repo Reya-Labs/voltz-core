@@ -12,26 +12,30 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
-import "../storage/PeripheryStorage.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "hardhat/console.sol";
 
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
-contract Periphery is
-    PeripheryStorage,
-    IPeriphery,
-    Initializable,
-    OwnableUpgradeable,
-    UUPSUpgradeable
-{
+contract PeripheryOld is IPeriphery {
     using SafeCast for uint256;
     using SafeCast for int256;
     uint256 internal constant Q96 = 2**96;
 
     using SafeTransferLib for IERC20Minimal;
+
+    /// @dev Wrapped ETH interface
+    IWETH public _weth;
+
+    /// @dev Voltz Protocol vamm => LP Margin Cap in Underlying Tokens
+    /// @dev LP margin cap of zero implies no margin cap
+    mapping(IVAMM => int256) public _lpMarginCaps;
+
+    /// @dev amount of margin (coming from the periphery) in terms of underlying tokens taken up by LPs in a given VAMM
+    mapping(IVAMM => int256) public _lpMarginCumulatives;
+
+    /// @dev alpha lp margin mapping
+    mapping(bytes32 => int256) internal _lastAccountedMargin;
 
     modifier vammOwnerOnly(IVAMM vamm) {
         require(address(vamm) != address(0), "vamm addr zero");
@@ -40,17 +44,13 @@ contract Periphery is
         _;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {}
-
-    function initialize() external override initializer {
-        __Ownable_init();
-        __UUPSUpgradeable_init();
+    constructor(IWETH weth_) {
+        _weth = weth_;
     }
 
-    // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.
-    // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786
-    function _authorizeUpgrade(address) internal override onlyOwner {}
+    function initialize() external override {}
+
+    function setWeth(IWETH weth_) external override {}
 
     /// @inheritdoc IPeriphery
     function lpMarginCaps(IVAMM vamm) external view override returns (int256) {
@@ -84,11 +84,6 @@ contract Periphery is
             FullMath
                 .mulDiv(notionalAmount, Q96, sqrtRatioBX96 - sqrtRatioAX96)
                 .toUint128();
-    }
-
-    function setWeth(IWETH weth_) external override onlyOwner {
-        require(address(weth_) != address(0), "weth addr zero");
-        _weth = weth_;
     }
 
     function setLPMarginCap(IVAMM vamm, int256 lpMarginCapNew)
@@ -140,7 +135,7 @@ contract Periphery is
         address owner,
         int24 tickLower,
         int24 tickUpper
-    ) public override {
+    ) external override {
         marginEngine.settlePosition(owner, tickLower, tickUpper);
 
         updatePositionMargin(marginEngine, tickLower, tickUpper, 0, true); // fully withdraw
@@ -183,8 +178,12 @@ contract Periphery is
             marginDelta = -position.margin;
         }
 
+        // if WETH pools, accept deposit only in ETH
         if (address(underlyingToken) == address(_weth)) {
+            require(marginDelta <= 0, "INV");
+
             if (marginDelta < 0) {
+                require(msg.value == 0, "INV");
                 marginEngine.updatePositionMargin(
                     msg.sender,
                     tickLower,
@@ -192,30 +191,20 @@ contract Periphery is
                     marginDelta
                 );
             } else {
-                if (marginDelta > 0) {
-                    underlyingToken.safeTransferFrom(
+                if (msg.value > 0) {
+                    uint256 ethPassed = msg.value;
+
+                    _weth.deposit{value: msg.value}();
+
+                    underlyingToken.approve(address(marginEngine), ethPassed);
+
+                    marginEngine.updatePositionMargin(
                         msg.sender,
-                        address(this),
-                        marginDelta.toUint256()
+                        tickLower,
+                        tickUpper,
+                        ethPassed.toInt256()
                     );
                 }
-
-                if (msg.value > 0) {
-                    _weth.deposit{value: msg.value}();
-                    marginDelta += msg.value.toInt256();
-                }
-
-                underlyingToken.approve(
-                    address(marginEngine),
-                    marginDelta.toUint256()
-                );
-
-                marginEngine.updatePositionMargin(
-                    msg.sender,
-                    tickLower,
-                    tickUpper,
-                    marginDelta
-                );
             }
         } else {
             if (marginDelta > 0) {
@@ -228,13 +217,14 @@ contract Periphery is
                     address(marginEngine),
                     marginDelta.toUint256()
                 );
+
+                marginEngine.updatePositionMargin(
+                    msg.sender,
+                    tickLower,
+                    tickUpper,
+                    marginDelta
+                );
             }
-            marginEngine.updatePositionMargin(
-                msg.sender,
-                tickLower,
-                tickUpper,
-                marginDelta
-            );
         }
 
         position = marginEngine.getPosition(msg.sender, tickLower, tickUpper);
@@ -252,7 +242,7 @@ contract Periphery is
 
     /// @notice Add liquidity to an initialized pool
     function mintOrBurn(MintOrBurnParams memory params)
-        public
+        external
         payable
         override
         returns (int256 positionMarginRequirement)
@@ -359,7 +349,7 @@ contract Periphery is
     }
 
     function swap(SwapPeripheryParams memory params)
-        public
+        external
         payable
         override
         returns (
@@ -437,61 +427,6 @@ contract Periphery is
             _marginRequirement
         ) = vamm.swap(swapParams);
         _tickAfter = vamm.vammVars().tick;
-    }
-
-    function rolloverWithMint(
-        IMarginEngine marginEngine,
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
-        MintOrBurnParams memory paramsNewPosition
-    ) external payable override returns (int256 newPositionMarginRequirement) {
-        require(paramsNewPosition.isMint, "only mint");
-
-        settlePositionAndWithdrawMargin(
-            marginEngine,
-            owner,
-            tickLower,
-            tickUpper
-        );
-
-        newPositionMarginRequirement = mintOrBurn(paramsNewPosition);
-    }
-
-    function rolloverWithSwap(
-        IMarginEngine marginEngine,
-        address owner,
-        int24 tickLower,
-        int24 tickUpper,
-        SwapPeripheryParams memory paramsNewPosition
-    )
-        external
-        payable
-        override
-        returns (
-            int256 _fixedTokenDelta,
-            int256 _variableTokenDelta,
-            uint256 _cumulativeFeeIncurred,
-            int256 _fixedTokenDeltaUnbalanced,
-            int256 _marginRequirement,
-            int24 _tickAfter
-        )
-    {
-        settlePositionAndWithdrawMargin(
-            marginEngine,
-            owner,
-            tickLower,
-            tickUpper
-        );
-
-        (
-            _fixedTokenDelta,
-            _variableTokenDelta,
-            _cumulativeFeeIncurred,
-            _fixedTokenDeltaUnbalanced,
-            _marginRequirement,
-            _tickAfter
-        ) = swap(paramsNewPosition);
     }
 
     function getCurrentTick(IMarginEngine marginEngine)
