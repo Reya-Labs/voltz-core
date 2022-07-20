@@ -8,6 +8,8 @@ import {
   IMarginEngine,
   IVAMM,
   Periphery,
+  IFactory,
+  IERC20Minimal,
 } from "../typechain";
 import { BigNumberish, ethers, utils } from "ethers";
 import {
@@ -45,6 +47,23 @@ async function writeIrsCreationTransactionsToGnosisSafeTemplate(
   console.log("Output:\n", output);
 }
 
+async function getLpMarginCap(
+  hre: HardhatRuntimeEnvironment,
+  underlyingToken: IERC20Minimal,
+  stableUnderlying: boolean
+) {
+  // defaults to eth value because it's lower
+  let lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap.eth;
+  if(stableUnderlying) {
+    lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap.stableCoin;
+  }
+
+  const decimals = await underlyingToken.decimals();
+  const lpMarginCap = toBn(lpMarginCapUnscaled,decimals)
+
+  return lpMarginCap;
+}
+
 async function getIrsInstanceEvents(
   hre: HardhatRuntimeEnvironment
 ): Promise<utils.LogDescription[]> {
@@ -61,17 +80,12 @@ async function configureIrs(
   marginEngine: IMarginEngine,
   vamm: IVAMM,
   config: IrsConfigDefaults,
-  lpMarginCap?: string,
-  periphery?: Periphery
+  factory?: IFactory,
+  lpMarginCap?: BigNumberish,
 ) {
   // Set the config for our IRS instance
   // TODO: allow values to be overridden with task parameters, as required
   console.log(`Configuring IRS...`);
-
-  const isAlpha = lpMarginCap !== "0";
-  if (isAlpha) {
-    console.log("Alpha Pool");
-  }
 
   let trx = await marginEngine.setMarginCalculatorParameters(
     config.marginEngineCalculatorParameters,
@@ -114,10 +128,10 @@ async function configureIrs(
   }
 
   // TODO: catch this for multisig too
-  if (isAlpha && lpMarginCap && periphery) {
+  if (lpMarginCap && factory) {
     const isAlphaVAMM = await vamm.isAlpha();
-    if (isAlpha !== isAlphaVAMM) {
-      trx = await vamm.setIsAlpha(isAlpha, {
+    if (true !== isAlphaVAMM) {
+      trx = await vamm.setIsAlpha(true, {
         gasLimit: 10000000,
       });
       await trx.wait();
@@ -126,8 +140,8 @@ async function configureIrs(
     }
 
     const isAlphaME = await marginEngine.isAlpha();
-    if (isAlpha !== isAlphaME) {
-      trx = await marginEngine.setIsAlpha(isAlpha, {
+    if (true !== isAlphaME) {
+      trx = await marginEngine.setIsAlpha(true, {
         gasLimit: 10000000,
       });
       await trx.wait();
@@ -135,9 +149,17 @@ async function configureIrs(
       console.log("IsAlpha is already set in Margin Engine");
     }
 
-    // TODO: make lpMarginCap number and scale ~ decimals
+    const peripheryAddress = await factory.periphery();
+    const periphery = (await hre.ethers.getContractAt(
+      "Periphery",
+      peripheryAddress
+    )) as Periphery;
+
+    console.log(periphery.address);
+    console.log(vamm.address);
+
     const lpMarginCapCurrent = await periphery.lpMarginCaps(vamm.address);
-    if (lpMarginCapCurrent.toString() !== lpMarginCap) {
+    if (lpMarginCapCurrent.toString() !== lpMarginCap.toString()) {
       trx = await periphery.setLPMarginCap(vamm.address, lpMarginCap, {
         gasLimit: 10000000,
       });
@@ -189,11 +211,13 @@ task(
     60,
     types.int
   )
-  .addOptionalParam(
-    "lpMarginCap",
-    "LP margin cap of the pool if in alpha state",
-    "0",
-    types.string
+  .addFlag(
+    "isAlpha",
+    "If set, pool is in alpha state and an LP margin cap is set in periphery"
+  )
+  .addFlag(
+    "stableUnderlying",
+    "If set, LP margin cap is the value for stable coin in config. Else, it defaults to value for stable coin pools"
   )
   .setAction(async (taskArgs, hre) => {
     const rateOracle = await getRateOracleByNameOrAddress(
@@ -201,10 +225,10 @@ task(
       taskArgs.rateOracle
     );
     const underlyingTokenAddress = await rateOracle.underlying();
-    const underlyingToken = await hre.ethers.getContractAt(
+    const underlyingToken = (await hre.ethers.getContractAt(
       "IERC20Minimal",
       underlyingTokenAddress
-    );
+    )) as IERC20Minimal;
     const factory = await hre.ethers.getContract("Factory");
 
     console.log(
@@ -295,19 +319,15 @@ task(
           vammAddress
         )) as VAMM;
 
-        const peripheryAddress = await factory.periphery();
-        const periphery = (await hre.ethers.getContractAt(
-          "Periphery",
-          peripheryAddress
-        )) as Periphery;
+        const lpMarginCap = await getLpMarginCap(hre, underlyingToken, taskArgs.stableUnderlying);
 
         await configureIrs(
           hre,
           marginEngine,
           vamm,
           getConfig(hre.network.name).irsConfig,
-          taskArgs.lpMarginCap,
-          periphery
+          (factory) as IFactory,
+          lpMarginCap
         );
       }
     }
@@ -328,8 +348,7 @@ task(
       hre,
       marginEngine,
       vamm,
-      getConfig(hre.network.name).irsConfig,
-      "0"
+      getConfig(hre.network.name).irsConfig
     );
   });
 

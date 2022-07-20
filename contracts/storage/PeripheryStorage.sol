@@ -28,5 +28,5 @@ contract PeripheryStorageV1 {
 contract PeripheryStorage is PeripheryStorageV1 {
     // Reserve some storage for use in future versions, without creating conflicts
     // with other inheritted contracts
-    uint256[50] private __gap; // to be
+    uint256[50] private __gap;
 }

@@ -34,6 +34,11 @@ export interface MarginCalculatorParameters {
   minMarginToIncentiviseLiquidators: BigNumberish;
 }
 
+export interface LpMarginCapDefaults {
+  eth: number;
+  stableCoin: number;
+}
+
 export interface IrsConfigDefaults {
   marginEngineLookbackWindowInSeconds: BigNumberish;
   marginEngineCacheMaxAgeInSeconds: BigNumberish;
@@ -42,6 +47,7 @@ export interface IrsConfigDefaults {
   vammFeeProtocol: BigNumberish;
   vammFeeWad: BigNumberish;
   maxIrsDurationInSeconds: number;
+  lpMarginCap: LpMarginCapDefaults;
 }
 export interface RateOracleConfigDefaults {
   rateOracleBufferSize: BigNumberish; // For mock token oracle or platforms with only a single token

@@ -51,6 +51,10 @@ const kovanIrsConfigDefaults: IrsConfigDefaults = {
   vammFeeProtocol: 10,
   vammFeeWad: toBn(0.009), // 0.9%, for 30 day pool
   maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough,
+  lpMarginCap: {
+    eth: 1300,
+    stableCoin: 1500000
+  } 
 };
 const kovanRateOracleConfigDefaults: RateOracleConfigDefaults = {
   rateOracleBufferSize: 200, // For mock token oracle
@@ -68,6 +72,10 @@ const mainnetIrsConfigDefaults: IrsConfigDefaults = {
   vammFeeProtocol: 10,
   vammFeeWad: toBn(0.009), // 0.9%, for 30 day pool
   maxIrsDurationInSeconds: 60 * 60 * 24 * 92, // 92 days. Do not increase without checking that rate oracle buffers are large enough
+  lpMarginCap: {
+    eth: 1300,
+    stableCoin: 1500000
+  } 
 };
 
 const mainnetRateOracleConfigDefaults: RateOracleConfigDefaults = {
