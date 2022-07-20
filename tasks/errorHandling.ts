@@ -196,127 +196,39 @@ export const extractErrorSignature = (message: string): string => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const getErrorSignature = (error: any, environment: string): string => {
-  switch (environment) {
-    case "LOCALHOST_SDK": {
-      try {
-        const message = error.message as string;
-        const errSig = extractErrorSignature(message);
-        return errSig;
-      } catch {
-        throw new Error("Unrecognized error type");
-      }
+export const getErrorSignature = (error: any): string => {
+  try {
+    const reason = error.error.data.toString();
+    if (reason.startsWith("0x08c379a0")) {
+      return "Error";
     }
-    case "LOCALHOST_UI": {
-      try {
-        const message = error.data.message as string;
-        const errSig = extractErrorSignature(message);
-        return errSig;
-      } catch {
-        throw new Error("Unrecognized error type");
-      }
-    }
-    case "KOVAN": {
-      try {
-        const reason = error.data.toString().replace("Reverted ", "") as string;
-        if (reason.startsWith("0x08c379a0")) {
-          return "Error";
-        }
-        const decodedError = iface.parseError(reason);
-        const errSig = decodedError.signature.split("(")[0];
-        return errSig;
-      } catch {
-        throw new Error("Unrecognized error type");
-      }
-    }
-    case "MAINNET": {
-      try {
-        console.log("raw error:", error);
-        const stringifiedError = error.toString();
-        console.log("stringified error:", stringifiedError);
-        const afterOriginalError = stringifiedError.split("originalError")[1];
-        const afterData = afterOriginalError.split("data")[1];
-        const beforeMessage = afterData.split("message")[0];
-        const reason = beforeMessage.substring(3, beforeMessage.length - 3);
-
-        if (reason.startsWith("0x08c379a0")) {
-          return "Error";
-        }
-        const decodedError = iface.parseError(reason);
-        const errSig = decodedError.signature.split("(")[0];
-        return errSig;
-      } catch {
-        throw new Error("Unrecognized error type");
-      }
-    }
-    default: {
-      throw new Error("Unrecognized network for decoding errors");
-    }
+    const decodedError = iface.parseError(reason);
+    const errSig = decodedError.signature.split("(")[0];
+    return errSig;
+  } catch {
+    throw new Error("Unrecognized error type");
   }
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const getReadableErrorMessage = (
-  error: any,
-  environment: string
-): string => {
-  const errSig = getErrorSignature(error, environment);
+export const getReadableErrorMessage = (error: any): string => {
+  const errSig = getErrorSignature(error);
   if (errSig === "Error") {
-    switch (environment) {
-      case "LOCALHOST_SDK": {
-        throw new Error(
-          "Cannot get errSig Error in LOCALHOST_SDK. Inspect raw error!"
-        );
-      }
-      case "LOCALHOST_UI": {
-        throw new Error(
-          "Cannot get errSign Error in LOCALHOST_UI. Inspect raw error!"
-        );
-      }
-      case "KOVAN": {
-        let reason = error.data.toString().replace("Reverted ", "") as string;
-        reason = `0x${reason.substring(10)}`;
-        try {
-          const rawErrorMessage = utils.defaultAbiCoder.decode(
-            ["string"],
-            reason
-          )[0];
+    let reason = error.error.data.toString();
+    reason = `0x${reason.substring(10)}`;
+    try {
+      const rawErrorMessage = utils.defaultAbiCoder.decode(
+        ["string"],
+        reason
+      )[0];
 
-          if (rawErrorMessage in errorMessageMapping) {
-            return errorMessageMapping[rawErrorMessage];
-          }
-
-          return `Unrecognized error (Raw error: ${rawErrorMessage})`;
-        } catch (_) {
-          return "Unrecognized error";
-        }
+      if (rawErrorMessage in errorMessageMapping) {
+        return errorMessageMapping[rawErrorMessage];
       }
-      case "MAINNET": {
-        const stringifiedError = error.toString();
-        const afterOriginalError = stringifiedError.split("originalError")[1];
-        const afterData = afterOriginalError.split("data")[1];
-        const beforeMessage = afterData.split("message")[0];
-        let reason = beforeMessage.substring(3, beforeMessage.length - 3);
-        reason = `0x${reason.substring(10)}`;
 
-        try {
-          const rawErrorMessage = utils.defaultAbiCoder.decode(
-            ["string"],
-            reason
-          )[0];
-
-          if (rawErrorMessage in errorMessageMapping) {
-            return errorMessageMapping[rawErrorMessage];
-          }
-
-          return `Unrecognized error (Raw error: ${rawErrorMessage})`;
-        } catch (_) {
-          return "Unrecognized error";
-        }
-      }
-      default: {
-        throw new Error("Unrecognized network for decoding errors");
-      }
+      return `Unrecognized error (Raw error: ${rawErrorMessage})`;
+    } catch (_) {
+      return "Unrecognized error";
     }
   }
   if (errSig in errorMessageMapping) {
@@ -330,80 +242,21 @@ export type RawInfoPostMint = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const decodeInfoPostMint = (
-  error: any,
-  environment: string
-): RawInfoPostMint => {
-  const errSig = getErrorSignature(error, environment);
+export const decodeInfoPostMint = (error: any): RawInfoPostMint => {
+  const errSig = getErrorSignature(error);
   if (errSig === "MarginLessThanMinimum") {
-    switch (environment) {
-      case "LOCALHOST_SDK": {
-        try {
-          const message = error.message as string;
-          const args: string[] = message
-            .split(errSig)[1]
-            .split("(")[1]
-            .split(")")[0]
-            .replaceAll(" ", "")
-            .split(",");
-
-          const result = { marginRequirement: BigNumber.from(args[0]) };
-          return result;
-        } catch {
-          throw new Error("Unrecognized error type");
-        }
-      }
-      case "LOCALHOST_UI": {
-        try {
-          const message = error.data.message as string;
-          const args: string[] = message
-            .split(errSig)[1]
-            .split("(")[1]
-            .split(")")[0]
-            .replaceAll(" ", "")
-            .split(",");
-
-          const result = { marginRequirement: BigNumber.from(args[0]) };
-          return result;
-        } catch {
-          throw new Error("Unrecognized error type");
-        }
-      }
-      case "KOVAN": {
-        try {
-          const reason = error.data.toString().replace("Reverted ", "");
-          const decodingResult = iface.decodeErrorResult(errSig, reason);
-          const result = {
-            marginRequirement: decodingResult.marginRequirement,
-          };
-          return result;
-        } catch {
-          throw new Error("Unrecognized error type");
-        }
-      }
-      case "MAINNET": {
-        try {
-          const stringifiedError = error.toString();
-          const afterOriginalError = stringifiedError.split("originalError")[1];
-          const afterData = afterOriginalError.split("data")[1];
-          const beforeMessage = afterData.split("message")[0];
-          const reason = beforeMessage.substring(3, beforeMessage.length - 3);
-
-          const decodingResult = iface.decodeErrorResult(errSig, reason);
-          const result = {
-            marginRequirement: decodingResult.marginRequirement,
-          };
-          return result;
-        } catch {
-          throw new Error("Unrecognized error type");
-        }
-      }
-      default: {
-        throw new Error("Unrecognized network for decoding errors");
-      }
+    try {
+      const reason = error.error.data.toString();
+      const decodingResult = iface.decodeErrorResult(errSig, reason);
+      const result = {
+        marginRequirement: decodingResult.marginRequirement,
+      };
+      return result;
+    } catch {
+      throw new Error("Unrecognized error type");
     }
   }
-  throw new Error(getReadableErrorMessage(error, environment));
+  throw new Error(getReadableErrorMessage(error));
 };
 
 export type RawInfoPostSwap = {
@@ -416,102 +269,24 @@ export type RawInfoPostSwap = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const decodeInfoPostSwap = (
-  error: any,
-  environment: string
-): RawInfoPostSwap => {
-  const errSig = getErrorSignature(error, environment);
+export const decodeInfoPostSwap = (error: any): RawInfoPostSwap => {
+  const errSig = getErrorSignature(error);
   if (errSig === "MarginRequirementNotMet") {
-    switch (environment) {
-      case "LOCALHOST_SDK": {
-        try {
-          const message = error.message as string;
-          const args: string[] = message
-            .split(errSig)[1]
-            .split("(")[1]
-            .split(")")[0]
-            .replaceAll(" ", "")
-            .split(",");
-
-          const result = {
-            marginRequirement: BigNumber.from(args[0]),
-            tick: parseInt(args[1], 10),
-            fee: BigNumber.from(args[4]),
-            availableNotional: BigNumber.from(args[3]),
-            fixedTokenDelta: BigNumber.from(args[2]),
-            fixedTokenDeltaUnbalanced: BigNumber.from(args[5]),
-          };
-          return result;
-        } catch {
-          throw new Error("Unrecognized error type");
-        }
-      }
-      case "LOCALHOST_UI": {
-        try {
-          const message = error.data.message as string;
-          const args: string[] = message
-            .split(errSig)[1]
-            .split("(")[1]
-            .split(")")[0]
-            .replaceAll(" ", "")
-            .split(",");
-
-          const result = {
-            marginRequirement: BigNumber.from(args[0]),
-            tick: parseInt(args[1], 10),
-            fee: BigNumber.from(args[4]),
-            availableNotional: BigNumber.from(args[3]),
-            fixedTokenDelta: BigNumber.from(args[2]),
-            fixedTokenDeltaUnbalanced: BigNumber.from(args[5]),
-          };
-          return result;
-        } catch {
-          throw new Error("Unrecognized error type");
-        }
-      }
-      case "KOVAN": {
-        try {
-          const reason = error.data.toString().replace("Reverted ", "");
-          const decodingResult = iface.decodeErrorResult(errSig, reason);
-          const result = {
-            marginRequirement: decodingResult.marginRequirement,
-            tick: decodingResult.tick,
-            fee: decodingResult.cumulativeFeeIncurred,
-            availableNotional: decodingResult.variableTokenDelta,
-            fixedTokenDelta: decodingResult.fixedTokenDelta,
-            fixedTokenDeltaUnbalanced: decodingResult.fixedTokenDeltaUnbalanced,
-          };
-          return result;
-        } catch {
-          throw new Error("Unrecognized error type");
-        }
-      }
-      case "MAINNET": {
-        try {
-          const stringifiedError = error.toString();
-          const afterOriginalError = stringifiedError.split("originalError")[1];
-          const afterData = afterOriginalError.split("data")[1];
-          const beforeMessage = afterData.split("message")[0];
-          const reason = beforeMessage.substring(3, beforeMessage.length - 3);
-
-          const decodingResult = iface.decodeErrorResult(errSig, reason);
-          const result = {
-            marginRequirement: decodingResult.marginRequirement,
-            tick: decodingResult.tick,
-            fee: decodingResult.cumulativeFeeIncurred,
-            availableNotional: decodingResult.variableTokenDelta,
-            fixedTokenDelta: decodingResult.fixedTokenDelta,
-            fixedTokenDeltaUnbalanced: decodingResult.fixedTokenDeltaUnbalanced,
-          };
-          return result;
-        } catch {
-          throw new Error("Unrecognized error type");
-        }
-      }
-      default: {
-        throw new Error("Unrecognized network for decoding errors");
-      }
+    try {
+      const reason = error.error.data.toString();
+      const decodingResult = iface.decodeErrorResult(errSig, reason);
+      const result = {
+        marginRequirement: decodingResult.marginRequirement,
+        tick: decodingResult.tick,
+        fee: decodingResult.cumulativeFeeIncurred,
+        availableNotional: decodingResult.variableTokenDelta,
+        fixedTokenDelta: decodingResult.fixedTokenDelta,
+        fixedTokenDeltaUnbalanced: decodingResult.fixedTokenDeltaUnbalanced,
+      };
+      return result;
+    } catch {
+      throw new Error("Unrecognized error type");
     }
   }
-  throw new Error(getReadableErrorMessage(error, environment));
+  throw new Error(getReadableErrorMessage(error));
 };
