@@ -41,6 +41,8 @@ def getDatasets():
     rnis = getPreparedRNIData(df_input, False)
     apys = [getDailyApy(rnis, lookback=lookback, frequency=APY_FREQUENCY)
             for lookback in LOOKBACK_WINDOWS]
+    apy_df = pd.DataFrame(apys)
+    apy_df.to_csv("historicalData/rates/{0}_APY.csv".format(ASSET), index=False)
 
     return rnis, apys
 

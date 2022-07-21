@@ -86,6 +86,12 @@ task("getHistoricalData", "Retrieves the historical rates")
   .addFlag("compound", "Get rates data from Compound")
   .addFlag("aave", "Get rates data from Aave")
   .addOptionalParam(
+    "rate",
+    "Choose borrow or lending rate to be queried",
+    undefined,
+    types.string
+  )
+  .addOptionalParam(
     "token",
     "Get rates for the underlying token",
     "ETH",
@@ -320,19 +326,35 @@ task("getHistoricalData", "Retrieves the historical rates")
 
         if (b >= aaveLendingPoolStartBlock) {
           try {
-            const r = await aavePool.getReserveNormalizedIncome(
-              aTokenUnderlyingAddresses[
-                asset as keyof typeof aTokenUnderlyingAddresses
-              ],
-              {
-                blockTag: b,
-              }
-            );
+            if (taskArgs.rate === "borrow") {
+              const r = await aavePool.getReserveNormalizedVariableDebt(
+                aTokenUnderlyingAddresses[
+                  asset as keyof typeof aTokenUnderlyingAddresses
+                ],
+                {
+                  blockTag: b,
+                }
+              );
 
-            blocks.push(b);
-            timestamps.push(block.timestamp);
-            rates.push(r);
-            fetch = FETCH_STATUS.SUCCESS;
+              blocks.push(b);
+              timestamps.push(block.timestamp);
+              rates.push(r);
+              fetch = FETCH_STATUS.SUCCESS;
+            } else {
+              const r = await aavePool.getReserveNormalizedIncome(
+                aTokenUnderlyingAddresses[
+                  asset as keyof typeof aTokenUnderlyingAddresses
+                ],
+                {
+                  blockTag: b,
+                }
+              );
+
+              blocks.push(b);
+              timestamps.push(block.timestamp);
+              rates.push(r);
+              fetch = FETCH_STATUS.SUCCESS;
+            }
           } catch (e) {
             // console.log("Could not get rate for aToken: ", asset);
           }
