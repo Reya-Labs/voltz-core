@@ -70,6 +70,10 @@ contract Periphery is
         return _lpMarginCumulatives[vamm];
     }
 
+    function weth() external view override returns (IWETH) {
+        return _weth;
+    }
+
     /// @notice Computes the amount of liquidity received for a given notional amount and price range
     /// @dev Calculates amount1 / (sqrt(upper) - sqrt(lower)).
     /// @param sqrtRatioAX96 A sqrt price representing the first tick boundary

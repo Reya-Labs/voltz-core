@@ -60,11 +60,12 @@ async function getLpMarginCap(
   )) as IERC20Minimal;
 
   // defaults to eth value because it's lower
-  let lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap
-    .eth;
+  let lpMarginCapUnscaled: number;
   if (stableUnderlying) {
     lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap
       .stableCoin;
+  } else {
+    lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap.eth;
   }
 
   const decimals = await underlyingToken.decimals();

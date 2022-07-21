@@ -52,6 +52,8 @@ interface IPeriphery is CustomErrors {
     /// @return Total amount of notional supplied by the LPs to a given VAMM via the periphery
     function lpMarginCumulatives(IVAMM vamm) external view returns (int256);
 
+    function weth() external view returns (IWETH);
+
     // non-view functions
 
     function mintOrBurn(MintOrBurnParams memory params)
