@@ -55,12 +55,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   const mockAaveLendingPool = await ethers.getContract("MockAaveLendingPool");
-  let trx = await mockAaveLendingPool.setReserveNormalizedIncome(
-    mockERC20Deploy.address,
-    BigNumber.from(10).pow(27),
-    { gasLimit: 10000000 }
-  );
-  await trx.wait();
+  {
+    const trx = await mockAaveLendingPool.setReserveNormalizedIncome(
+      mockERC20Deploy.address,
+      BigNumber.from(10).pow(27),
+      { gasLimit: 10000000 }
+    );
+    await trx.wait();
+  }
+  {
+    const trx = await mockAaveLendingPool.setReserveNormalizedVariableDebt(
+      mockERC20Deploy.address,
+      BigNumber.from(10).pow(27),
+      { gasLimit: 10000000 }
+    );
+    await trx.wait();
+  }
   // trx = await mockAaveLendingPool.setFactorPerSecondInRay(
   //   mockERC20Deploy.address,
   //   "1000000001000000000000000000", // 0.0000001% per second = ~3.2% APY
@@ -73,8 +83,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   //  = 0.02 * 10 ^ (18 + 18 - 8)
   //  = 0.02 * 10 ^ 28
   //  = 2 * 10^26
-  trx = await mockCToken.setExchangeRate(BigNumber.from(10).pow(26).mul(2));
-  await trx.wait();
+  {
+    const trx = await mockCToken.setExchangeRate(
+      BigNumber.from(10).pow(26).mul(2)
+    );
+    await trx.wait();
+  }
 
   // Mock PERIPHERY
 

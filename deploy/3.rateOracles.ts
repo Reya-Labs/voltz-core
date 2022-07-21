@@ -118,6 +118,40 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
   // End of Aave Rate Oracles
 
+  // Aave BORROW Rate Oracle
+  if (existingAaveLendingPoolAddress && aaveTokens) {
+    const aaveLendingPool = await ethers.getContractAt(
+      "IAaveV2LendingPool",
+      existingAaveLendingPoolAddress
+    );
+
+    for (const tokenDefinition of aaveTokens) {
+      const { trustedTimestamps, trustedObservationValuesInRay } =
+        convertTrustedRateOracleDataPoints(
+          tokenDefinition.trustedDataPoints ||
+            aaveConfig.defaults.trustedDataPoints
+        );
+
+      // For Aave, the first two constructor args are lending pool address and underlying token address
+      // For Aave, the address in the tokenDefinition is the address of the underlying token
+      const args = [
+        aaveLendingPool.address,
+        tokenDefinition.address,
+        trustedTimestamps,
+        trustedObservationValuesInRay,
+      ];
+
+      await deployAndConfigureRateOracleInstance(hre, {
+        args,
+        suffix: tokenDefinition.name,
+        contractName: "AaveBorrowRateOracle",
+        rateOracleConfig: aaveConfig.defaults,
+        maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+      });
+    }
+  }
+  // End of Aave Rate Oracles
+
   // Compound Rate Oracles
   // Configure these if we have a one or more cTokens configured
   const compoundConfig = deployConfig.compoundConfig;
