@@ -1,27 +1,26 @@
 import { ethers, waffle } from "hardhat";
-import { BigNumber, Wallet } from "ethers";
-import { MockAaveLendingPool } from "../../../typechain/MockAaveLendingPool";
+import { Wallet } from "ethers";
+// import { MockAaveLendingPool } from "../../../typechain/MockAaveLendingPool";
 import { expect } from "chai";
 import { TestAaveBorrowRateOracle } from "../../../typechain/TestAaveBorrowRateOracle";
-import { toBn } from "../../helpers/toBn";
+// import { toBn } from "../../helpers/toBn";
 import { ConfigForGenericTests as Config } from "./aaveBorrowConfig";
-import {
-  ERC20Mock,
-  TestRateOracle,
-  //   TestRateOracle__factory,
-} from "../../../typechain";
+import // ERC20Mock,
+// TestRateOracle,
+//   TestRateOracle__factory,
+"../../../typechain";
 // import { advanceTimeAndBlock } from "../../helpers/time";
 
-const { provider } = waffle;
+// const { provider } = waffle;
 
 describe("Aave Borrow Rate Oracle", () => {
   let wallet: Wallet, other: Wallet;
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>;
-  let mockAaveLendingPool: MockAaveLendingPool;
+  // let mockAaveLendingPool: MockAaveLendingPool;
   let testAaveBorrowRateOracle: TestAaveBorrowRateOracle;
-  let token: ERC20Mock;
-  let writeBlocks: number[];
-  let updateBlocks: number[];
+  // let token: ERC20Mock;
+  // let writeBlocks: number[];
+  // let updateBlocks: number[];
 
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
