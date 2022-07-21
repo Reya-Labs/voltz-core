@@ -101,8 +101,17 @@ describe("LiquidatorBot", async () => {
 
     // deploy the periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
+    const peripheryImpl = await peripheryFactory.deploy();
 
-    periphery = (await peripheryFactory.deploy(weth.address)) as Periphery;
+    const proxyFactory = await ethers.getContractFactory("VoltzERC1967Proxy");
+
+    const proxyInstance = await proxyFactory.deploy(peripheryImpl.address, []);
+
+    periphery = (await ethers.getContractAt(
+      "Periphery",
+      proxyInstance.address
+    )) as Periphery;
+    await periphery.initialize(weth.address);
 
     // set the periphery in the factory
     await expect(factory.setPeriphery(periphery.address))
