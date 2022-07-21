@@ -416,9 +416,11 @@ task(
             `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
           );
         } else {
-          await peripheryProxy
+          const tx = await peripheryProxy
             .connect(await getSigner(hre, proxyOwner))
             .upgradeTo(latestPeripheryLogicAddress);
+          await tx.wait();
+
           const newImplAddress = await getImplementationAddress(
             hre,
             proxyAddress
