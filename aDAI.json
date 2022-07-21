@@ -12,7 +12,7 @@
   },
   "transactions": [
     {
-      "to": "{{factoryAddress}}",
+      "to": "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -47,15 +47,15 @@
         "payable": false
       },
       "contractInputsValues": {
-        "_underlyingToken": "{{underlyingTokenAddress}}",
-        "_rateOracle": "{{rateOracleAddress}}",
-        "_termStartTimestampWad": "{{termStartTimestampWad}}",
-        "_termEndTimestampWad": "{{termEndTimestampWad}}",
-        "_tickSpacing": "{{tickSpacing}}"
+        "_underlyingToken": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "_rateOracle": "0x65F5139977C608C6C2640c088D7fD07fA17A0614",
+        "_termStartTimestampWad": "1659254400000000000000000000",
+        "_termEndTimestampWad": "1672473600000000000000000000",
+        "_tickSpacing": "60"
       }
     },
     {
-      "to": "{{predictedMarginEngineAddress}}",
+      "to": "0x9b613B37f4010b32d58c8e83B8B06FFcD0121F60",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -71,11 +71,11 @@
       },
       "contractInputsValues": {
         "_marginCalculatorParameters": "",
-        "_newCacheMaxAgeInSeconds": "{{cacheMaxAgeInSeconds}}"
+        "_newCacheMaxAgeInSeconds": "21600"
       }
     },
     {
-      "to": "{{predictedMarginEngineAddress}}",
+      "to": "0x9b613B37f4010b32d58c8e83B8B06FFcD0121F60",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -90,11 +90,11 @@
         "payable": false
       },
       "contractInputsValues": {
-        "_newSecondsAgo": "{{lookbackWindowInSeconds}}"
+        "_newSecondsAgo": "21600"
       }
     },
     {
-      "to": "{{predictedVammAddress}}",
+      "to": "0x77D7EdBEB6FEd996346c65535226519af7201128",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -109,11 +109,11 @@
         "payable": false
       },
       "contractInputsValues": {
-        "newFeeWad": "{{feeWad}}"
+        "newFeeWad": "3000000000000000"
       }
     },
     {
-      "to": "{{predictedVammAddress}}",
+      "to": "0x77D7EdBEB6FEd996346c65535226519af7201128",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -132,7 +132,7 @@
       }
     },
     {
-      "to": "{{predictedMarginEngineAddress}}",
+      "to": "0x9b613B37f4010b32d58c8e83B8B06FFcD0121F60",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -151,7 +151,7 @@
       }
     },
     {
-      "to": "{{predictedVammAddress}}",
+      "to": "0x77D7EdBEB6FEd996346c65535226519af7201128",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -176,7 +176,7 @@
       }
     },
     {
-      "to": "{{predictedVammAddress}}",
+      "to": "0x77D7EdBEB6FEd996346c65535226519af7201128",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -201,7 +201,7 @@
       }
     },
     {
-      "to": "{{predictedVammAddress}}",
+      "to": "0x77D7EdBEB6FEd996346c65535226519af7201128",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -226,7 +226,7 @@
       }
     },
     {
-      "to": "{{predictedVammAddress}}",
+      "to": "0x77D7EdBEB6FEd996346c65535226519af7201128",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -251,7 +251,7 @@
       }
     },
     {
-      "to": "{{peripheryAddress}}",
+      "to": "0x2657101a6Bb5538DD84b0B8c8E2Deac667b9c66c",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -271,12 +271,12 @@
         "payable": false
       },
       "contractInputsValues": {
-        "_vamm": "{{predictedVammAddress}}",
-        "_lpMarginCapNew": "{{lpMarginCap}}"
+        "_vamm": "0x77D7EdBEB6FEd996346c65535226519af7201128",
+        "_lpMarginCapNew": "1500000000000000000000000"
       }
     },
     {
-      "to": "{{predictedMarginEngineAddress}}",
+      "to": "0x9b613B37f4010b32d58c8e83B8B06FFcD0121F60",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -384,7 +384,7 @@
       },
       "contractInputsValues": {
         "_newSecondsAgo": "",
-        "_marginCalculatorParameters": "[\"{{marginCalculatorParams.apyUpperMultiplierWad}}\",\"{{marginCalculatorParams.apyLowerMultiplierWad}}\",\"{{marginCalculatorParams.sigmaSquaredWad}}\",\"{{marginCalculatorParams.alphaWad}}\",\"{{marginCalculatorParams.betaWad}}\",\"{{marginCalculatorParams.xiUpperWad}}\",\"{{marginCalculatorParams.xiLowerWad}}\",\"{{marginCalculatorParams.tMaxWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindLMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindLMWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindIMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindIMWad}}\",\"{{marginCalculatorParams.gammaWad}}\",\"{{marginCalculatorParams.minMarginToIncentiviseLiquidators}}\"]"
+        "_marginCalculatorParameters": "[\"2000000000000000000\",\"100000000000000000\",\"100000000000000\",\"200000000000000000\",\"200000000000000000\",\"39000000000000000000\",\"98000000000000000000\",\"31536000000000000000000000\",\"3000000000000000000\",\"3000000000000000000\",\"6000000000000000000\",\"6000000000000000000\",\"2000000000000000000\",\"2000000000000000000\",\"4000000000000000000\",\"10000000000000000000\",\"5000000000000000000\",\"10000000000000000000000\"]"
       }
     }
   ]
