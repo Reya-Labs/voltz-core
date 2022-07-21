@@ -7,7 +7,7 @@ import "../interfaces/IVAMM.sol";
 import "contracts/utils/CustomErrors.sol";
 import "contracts/interfaces/IWETH.sol";
 
-interface IPeriphery is CustomErrors {
+interface IPeripheryOld is CustomErrors {
     // events
 
     /// @dev emitted after new lp margin cap is set
@@ -33,9 +33,6 @@ interface IPeriphery is CustomErrors {
         int24 tickUpper;
         uint256 marginDelta;
     }
-
-    /// @dev "constructor" for proxy instances
-    function initialize(IWETH weth_) external;
 
     // view functions
 

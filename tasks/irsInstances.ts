@@ -8,13 +8,14 @@ import {
   IMarginEngine,
   IVAMM,
   Periphery,
-  IFactory,
   IERC20Minimal,
+  BaseRateOracle,
 } from "../typechain";
 import { BigNumberish, ethers, utils } from "ethers";
 import {
   getIRSByMarginEngineAddress,
   getRateOracleByNameOrAddress,
+  getIrsInstanceEvents,
 } from "./helpers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { IrsConfigDefaults } from "../deployConfig/types";
@@ -49,30 +50,27 @@ async function writeIrsCreationTransactionsToGnosisSafeTemplate(
 
 async function getLpMarginCap(
   hre: HardhatRuntimeEnvironment,
-  underlyingToken: IERC20Minimal,
+  rateOracle: BaseRateOracle,
   stableUnderlying: boolean
 ) {
+  const underlyingTokenAddress = await rateOracle.underlying();
+  const underlyingToken = (await hre.ethers.getContractAt(
+    "IERC20Minimal",
+    underlyingTokenAddress
+  )) as IERC20Minimal;
+
   // defaults to eth value because it's lower
-  let lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap.eth;
-  if(stableUnderlying) {
-    lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap.stableCoin;
+  let lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap
+    .eth;
+  if (stableUnderlying) {
+    lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap
+      .stableCoin;
   }
 
   const decimals = await underlyingToken.decimals();
-  const lpMarginCap = toBn(lpMarginCapUnscaled,decimals)
+  const lpMarginCap = toBn(lpMarginCapUnscaled, decimals);
 
   return lpMarginCap;
-}
-
-async function getIrsInstanceEvents(
-  hre: HardhatRuntimeEnvironment
-): Promise<utils.LogDescription[]> {
-  const factory = (await hre.ethers.getContract("Factory")) as Factory;
-  // console.log(`Listing IRS instances created by Factory ${factory.address}`);
-
-  const logs = await factory.queryFilter(factory.filters.IrsInstance());
-  const events = logs.map((l) => factory.interface.parseLog(l));
-  return events;
 }
 
 async function configureIrs(
@@ -80,8 +78,9 @@ async function configureIrs(
   marginEngine: IMarginEngine,
   vamm: IVAMM,
   config: IrsConfigDefaults,
-  factory?: IFactory,
-  lpMarginCap?: BigNumberish,
+  isAlpha?: boolean,
+  stableUnderlying?: boolean,
+  rateOracle?: BaseRateOracle
 ) {
   // Set the config for our IRS instance
   // TODO: allow values to be overridden with task parameters, as required
@@ -128,9 +127,9 @@ async function configureIrs(
   }
 
   // TODO: catch this for multisig too
-  if (lpMarginCap && factory) {
+  if (isAlpha && rateOracle !== undefined && stableUnderlying !== undefined) {
     const isAlphaVAMM = await vamm.isAlpha();
-    if (true !== isAlphaVAMM) {
+    if (!isAlphaVAMM) {
       trx = await vamm.setIsAlpha(true, {
         gasLimit: 10000000,
       });
@@ -140,7 +139,7 @@ async function configureIrs(
     }
 
     const isAlphaME = await marginEngine.isAlpha();
-    if (true !== isAlphaME) {
+    if (!isAlphaME) {
       trx = await marginEngine.setIsAlpha(true, {
         gasLimit: 10000000,
       });
@@ -149,22 +148,25 @@ async function configureIrs(
       console.log("IsAlpha is already set in Margin Engine");
     }
 
+    const factory = await hre.ethers.getContract("Factory");
     const peripheryAddress = await factory.periphery();
     const periphery = (await hre.ethers.getContractAt(
       "Periphery",
       peripheryAddress
     )) as Periphery;
 
-    console.log(periphery.address);
-    console.log(vamm.address);
+    const lpMarginCap = await getLpMarginCap(hre, rateOracle, stableUnderlying);
 
     const lpMarginCapCurrent = await periphery.lpMarginCaps(vamm.address);
     if (lpMarginCapCurrent.toString() !== lpMarginCap.toString()) {
+      console.log("Setting margin cap to: ", lpMarginCap.toString());
       trx = await periphery.setLPMarginCap(vamm.address, lpMarginCap, {
         gasLimit: 10000000,
       });
       await trx.wait();
     }
+    const newLpMarginCap = await periphery.lpMarginCaps(vamm.address);
+    console.log("Margin Cap was set at: ", newLpMarginCap.toString());
   }
 
   console.log(`IRS configured.`);
@@ -187,6 +189,7 @@ async function configureIrs(
   }
 }
 
+// TODO: adapt JSON to include IRS configuration
 task(
   "createIrsInstance",
   "Calls the Factory to deploy a new Interest Rate Swap instance"
@@ -217,7 +220,7 @@ task(
   )
   .addFlag(
     "stableUnderlying",
-    "If set, LP margin cap is the value for stable coin in config. Else, it defaults to value for stable coin pools"
+    "If set, LP margin cap gets the value for stable coin in config. Else, it defaults to value for eth pools"
   )
   .setAction(async (taskArgs, hre) => {
     const rateOracle = await getRateOracleByNameOrAddress(
@@ -319,15 +322,14 @@ task(
           vammAddress
         )) as VAMM;
 
-        const lpMarginCap = await getLpMarginCap(hre, underlyingToken, taskArgs.stableUnderlying);
-
         await configureIrs(
           hre,
           marginEngine,
           vamm,
           getConfig(hre.network.name).irsConfig,
-          (factory) as IFactory,
-          lpMarginCap
+          taskArgs.isAlpha,
+          taskArgs.stableUnderlying,
+          rateOracle
         );
       }
     }
@@ -338,18 +340,44 @@ task(
   "Resets the configuration of a Margin Engine and its VAMM to the configured defaults"
 )
   .addParam("marginEngine", "The address of the margin engine")
+  .addFlag(
+    "notAlpha",
+    "If set, the pool will not have margin caps on Periphery"
+  )
+  .addFlag(
+    "stableUnderlying",
+    "If set, the value of lp margin cap is set to the config for stable coins. Else, defaults to config for eth pools"
+  )
   .setAction(async (taskArgs, hre) => {
     const { marginEngine, vamm } = await getIRSByMarginEngineAddress(
       hre,
       taskArgs.marginEngine
     );
 
-    await configureIrs(
-      hre,
-      marginEngine,
-      vamm,
-      getConfig(hre.network.name).irsConfig
-    );
+    if (!taskArgs.notAlpha) {
+      await configureIrs(
+        hre,
+        marginEngine,
+        vamm,
+        getConfig(hre.network.name).irsConfig
+      );
+    } else {
+      const rateOracleAddress = await vamm.getRateOracle();
+      const rateOracle = (await hre.ethers.getContractAt(
+        "BaseRateOracle",
+        rateOracleAddress
+      )) as BaseRateOracle;
+
+      await configureIrs(
+        hre,
+        marginEngine,
+        vamm,
+        getConfig(hre.network.name).irsConfig,
+        true,
+        taskArgs.stableUnderlying,
+        rateOracle
+      );
+    }
   });
 
 task(

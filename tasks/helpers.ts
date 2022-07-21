@@ -1,6 +1,13 @@
 import { isAddress } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { BaseRateOracle, IFCM, IMarginEngine, IVAMM } from "../typechain";
+import {
+  BaseRateOracle,
+  Factory,
+  IFCM,
+  IMarginEngine,
+  IVAMM,
+} from "../typechain";
+import { utils } from "ethers";
 
 export async function getRateOracleByNameOrAddress(
   hre: HardhatRuntimeEnvironment,
@@ -39,4 +46,15 @@ export async function getIRSByMarginEngineAddress(
   const vamm = (await hre.ethers.getContractAt("IVAMM", vammAddress)) as IVAMM;
   const fcm = (await hre.ethers.getContractAt("IFCM", fcmAddress)) as IFCM;
   return { marginEngine, vamm, fcm };
+}
+
+export async function getIrsInstanceEvents(
+  hre: HardhatRuntimeEnvironment
+): Promise<utils.LogDescription[]> {
+  const factory = (await hre.ethers.getContract("Factory")) as Factory;
+  // console.log(`Listing IRS instances created by Factory ${factory.address}`);
+
+  const logs = await factory.queryFilter(factory.filters.IrsInstance());
+  const events = logs.map((l) => factory.interface.parseLog(l));
+  return events;
 }

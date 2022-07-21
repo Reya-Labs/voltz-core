@@ -5,17 +5,19 @@ import "@openzeppelin/hardhat-upgrades";
 import path from "path";
 import * as fs from "fs";
 import mustache from "mustache";
+import { getIrsInstanceEvents } from "./helpers";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface MigrateTemplateData {
-  vammMigrations: {
+  migration: {
+    vammMigrations: {
+      vammAddress: string;
+      lpMarginCumulative: BigNumber;
+      lpMarginCap: BigNumber;
+    }[];
+    factoryAddress: string;
     peripheryAddress: string;
-    vammAddress: string;
-    lpMarginCumulative: BigNumber;
-    lpMarginCap: BigNumber;
-  }[];
-  factoryAddress: string;
-  peripheryAddress: string;
-  weth: string;
+  };
 }
 
 async function writePeripheryMigrationTrxToGnosisSafeTemplate(
@@ -31,22 +33,19 @@ async function writePeripheryMigrationTrxToGnosisSafeTemplate(
   console.log("\n", output);
 }
 
-// npx hardhat --network localhost migratePeriphery --old-periphery-address 0xf5059a5D33d5853360D16C683c16e67980206f36 --periphery-proxy-address 0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf --factory-address 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0 --vamms 0xE451980132E65465d0a498c53f0b5227326Dd73F,0xB30dAf0240261Be564Cea33260F01213c47AAa0D
 task("migratePeriphery", "Set up upgradable periphery")
   .addParam("oldPeripheryAddress", "Old address")
-  .addParam("peripheryProxyAddress", "periphery Proxy address")
-  .addParam("factoryAddress", "Factory address")
-  .addParam("vamms", "List of VAMMS addresses")
   .addFlag(
     "multisig",
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
   .setAction(async (taskArgs, hre) => {
     const data: MigrateTemplateData = {
-      vammMigrations: [],
-      factoryAddress: "",
-      peripheryAddress: "",
-      weth: "",
+      migration: {
+        vammMigrations: [],
+        factoryAddress: "",
+        peripheryAddress: "",
+      },
     };
 
     const oldPeriphery = (await hre.ethers.getContractAt(
@@ -54,30 +53,21 @@ task("migratePeriphery", "Set up upgradable periphery")
       taskArgs.oldPeripheryAddress
     )) as Periphery;
 
-    const peripheryProxy = (await hre.ethers.getContractAt(
-      "Periphery",
-      taskArgs.peripheryProxyAddress
-    )) as Periphery;
-
-    // set WETH address
-
-    const weth = await oldPeriphery._weth();
-    if (!taskArgs.multisig) {
-      const tx_weth = await peripheryProxy.setWeth(weth);
-      await tx_weth.wait();
-    } else {
-      data.weth = weth;
-    }
+    const peripheryProxy = await hre.ethers.getContract("Periphery");
 
     // set VAMM margin cap values
 
-    const vamms = taskArgs.vamms;
-    const vammAddreses = vamms.split(",");
+    const vammAddreses = await listVammInstances(hre);
     for (const vammAddress of vammAddreses) {
+      console.log("Set margin vars for VAMM at address ", vammAddress);
       const lpMarginCumulative = await oldPeriphery.lpMarginCumulatives(
         vammAddress
       );
       const lpMarginCap = await oldPeriphery.lpMarginCaps(vammAddress);
+
+      if (lpMarginCumulative.eq(0) && lpMarginCap.eq(0)) {
+        continue;
+      }
 
       if (!taskArgs.multisig) {
         let tx = await peripheryProxy.setLPMarginCumulative(
@@ -96,8 +86,7 @@ task("migratePeriphery", "Set up upgradable periphery")
         console.log("Margin Cumulative: ", lpMarginCumulative2.toString());
         console.log("Margin Cap: ", lpMarginCap2.toString());
       } else {
-        data.vammMigrations.push({
-          peripheryAddress: peripheryProxy.address,
+        data.migration.vammMigrations.push({
           vammAddress: vammAddress,
           lpMarginCumulative: lpMarginCumulative,
           lpMarginCap: lpMarginCap,
@@ -107,11 +96,7 @@ task("migratePeriphery", "Set up upgradable periphery")
 
     // set the periphery in the Factory
 
-    const factoryAddress = taskArgs.factoryAddress;
-    const factory = (await hre.ethers.getContractAt(
-      "Factory",
-      factoryAddress
-    )) as Factory;
+    const factory = (await hre.ethers.getContract("Factory")) as Factory;
 
     if (!taskArgs.multisig) {
       const trx = await factory.setPeriphery(peripheryProxy.address, {
@@ -122,8 +107,8 @@ task("migratePeriphery", "Set up upgradable periphery")
       const peripheryAddressInFactory = await factory.periphery();
       console.log("Periphery address in factory: ", peripheryAddressInFactory);
     } else {
-      data.factoryAddress = factory.address;
-      data.peripheryAddress = peripheryProxy.address;
+      data.migration.factoryAddress = factory.address;
+      data.migration.peripheryAddress = peripheryProxy.address;
       writePeripheryMigrationTrxToGnosisSafeTemplate(data);
     }
   });
@@ -140,9 +125,7 @@ task(
       taskArgs.oldPeripheryAddress
     )) as PeripheryOld;
 
-    const vamms =
-      "0xE451980132E65465d0a498c53f0b5227326Dd73F,0xB30dAf0240261Be564Cea33260F01213c47AAa0D"; /// /
-    const vammAddreses = vamms.split(",");
+    const vammAddreses = await listVammInstances(hre);
     for (const vammAddress of vammAddreses) {
       let tx = await oldPeriphery.setLPMarginCumulative(vammAddress, 1000);
       await tx.wait();
@@ -160,5 +143,19 @@ task(
       console.log("Margin Cap: ", lpMarginCap2.toString());
     }
   });
+
+async function listVammInstances(hre: HardhatRuntimeEnvironment) {
+  const events = await getIrsInstanceEvents(hre);
+  let list = "";
+
+  for (const e of events) {
+    const a = e.args;
+    list += a.vamm;
+    list += ",";
+  }
+  list = list.slice(0, -1);
+
+  return list.split(",");
+}
 
 module.exports = {};

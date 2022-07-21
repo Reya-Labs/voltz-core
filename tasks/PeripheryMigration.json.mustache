@@ -11,28 +11,10 @@
       "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
     },
     "transactions": [
-      {
-        "to": "{{peripheryAddress}}",
-        "value": "0",
-        "data": null,
-        "contractMethod": {
-            "inputs": [
-                {
-                  "internalType": "contract IWETH",
-                  "name": "weth_",
-                  "type": "address"
-                }
-              ],
-          "name": "setWeth",
-          "payable": false
-        },
-        "contractInputsValues": {
-          "weth_": "{{weth}}"
-        }
-      },
+    {{#migration}}
     {{#vammMigrations}}
       {
-        "to": "{{peripheryAddress}}",
+        "to": "{{migration.peripheryAddress}}",
         "value": "0",
         "data": null,
         "contractMethod": {
@@ -57,7 +39,7 @@
         }
       },
       {
-        "to": "{{peripheryAddress}}",
+        "to": "{{migration.peripheryAddress}}",
         "value": "0",
         "data": null,
         "contractMethod": {
@@ -101,6 +83,7 @@
           "_periphery": "{{peripheryAddress}}"
         }
       }
+    {{/migration}}
     ]
   }
   

@@ -43,7 +43,10 @@ contract Periphery is
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function initialize() external override initializer {
+    function initialize(IWETH weth_) external override initializer {
+        require(address(weth_) != address(0), "weth addr zero");
+        _weth = weth_;
+
         __Ownable_init();
         __UUPSUpgradeable_init();
     }
@@ -84,11 +87,6 @@ contract Periphery is
             FullMath
                 .mulDiv(notionalAmount, Q96, sqrtRatioBX96 - sqrtRatioAX96)
                 .toUint128();
-    }
-
-    function setWeth(IWETH weth_) external override onlyOwner {
-        require(address(weth_) != address(0), "weth addr zero");
-        _weth = weth_;
     }
 
     function setLPMarginCap(IVAMM vamm, int256 lpMarginCapNew)

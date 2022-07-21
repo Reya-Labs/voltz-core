@@ -2,7 +2,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import { getConfig } from "../deployConfig/config";
-import { Factory } from "../typechain";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
@@ -27,28 +26,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     throw new Error("WETH not deployed");
   }
 
-  // Mock PERIPHERY
-  const dummyPeriphery = await deploy("PeripheryOld", {
+  const peripheryImpl = await deploy("Periphery_Implementation", {
     from: deployer,
     log: doLogging,
-    args: [weth],
   });
-
-  const dummyPeripheryContract = await ethers.getContractAt(
-    "PeripheryOld",
-    dummyPeriphery.address
-  );
-
-  // set it in factory
-
-  const factory = (await ethers.getContract("Factory")) as Factory;
-  const trx = await factory.setPeriphery(dummyPeripheryContract.address, {
-    gasLimit: 10000000,
-  });
-  await trx.wait();
+  console.log("Impl address: ", peripheryImpl.address);
 
   return true; // Only execute once
 };
-func.tags = ["DummyPeriphery"];
-func.id = "DummyPeriphery";
+func.tags = ["NewPeripheryImpl"];
+func.id = "NewPeripheryImpl";
 export default func;

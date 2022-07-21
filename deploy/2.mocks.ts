@@ -2,6 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
+import { Factory } from "../typechain";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
@@ -26,7 +27,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [mockERC20Deploy.address, "Voltz cDAI", "cVDAI"],
   });
 
-  await deploy("MockWETH", {
+  const weth = await deploy("MockWETH", {
     from: deployer,
     log: doLogging,
     args: ["Voltz WETH", "VWETH"],
@@ -74,6 +75,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   //  = 0.02 * 10 ^ 28
   //  = 2 * 10^26
   trx = await mockCToken.setExchangeRate(BigNumber.from(10).pow(26).mul(2));
+  await trx.wait();
+
+  // Mock PERIPHERY
+
+  const dummyPeriphery = await deploy("PeripheryOld", {
+    from: deployer,
+    log: doLogging,
+    args: [weth.address],
+  });
+
+  const dummyPeripheryContract = await ethers.getContractAt(
+    "PeripheryOld",
+    dummyPeriphery.address
+  );
+
+  // set periphery in factory
+  const factory = (await ethers.getContract("Factory")) as Factory;
+  trx = await factory.setPeriphery(dummyPeripheryContract.address, {
+    gasLimit: 10000000,
+  });
   await trx.wait();
 
   return true; // Only execute once

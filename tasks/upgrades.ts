@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { MarginEngine, VAMM } from "../typechain";
+import { MarginEngine, Periphery, VAMM } from "../typechain";
 import { BigNumber, ethers } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
@@ -314,6 +314,7 @@ task(
     }
   });
 
+// TODO: combine update tasks for VAMM, Margine Engine, Periphery and FCMs
 task(
   "updatePeriphery",
   "Change the RateOracle used by a given list of MarginEngines instances (i.e. proxies) and their corresponding VAMMs"
@@ -331,7 +332,7 @@ task(
   .setAction(async (taskArgs, hre) => {
     // Some prep work before we loop through the VAMMs
     const latestPeripheryLogicAddress = (
-      await hre.ethers.getContract("Periphery")
+      await hre.ethers.getContract("Periphery_Implemenatation")
     ).address;
     const { deployer, multisig } = await hre.getNamedAccounts();
     const data: UpgradeTemplateData = {
@@ -342,14 +343,15 @@ task(
     const peripheryProxy = (await hre.ethers.getContractAt(
       "Periphery",
       taskArgs.peripheryProxyAddress
-    )) as VAMM;
+    )) as Periphery;
+
     const proxyAddress = peripheryProxy.address;
     const initImplAddress = await getImplementationAddress(hre, proxyAddress);
     const proxyOwner = await peripheryProxy.owner();
 
     if (initImplAddress === latestPeripheryLogicAddress) {
       console.log(
-        `The VAMM at ${proxyAddress} is using the latest logic (${latestPeripheryLogicAddress}). No newer logic deployed!`
+        `The Periphery at ${proxyAddress} is using the latest logic (${latestPeripheryLogicAddress}). No newer logic deployed!`
       );
     } else {
       // TODO: compare storage layouts and abort upgrade if not compatible
