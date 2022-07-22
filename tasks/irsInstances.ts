@@ -35,6 +35,7 @@ interface MultisigTemplateData {
   tickSpacing: number;
   cacheMaxAgeInSeconds: number;
   lookbackWindowInSeconds: number;
+  liquidatorRewardWad: BigNumberish;
   feeWad: BigNumberish;
   lpMarginCap: BigNumberish;
   marginCalculatorParams: {
@@ -281,6 +282,7 @@ task(
         feeWad: poolConfig.feeWad,
         lpMarginCap: poolConfig.lpMarginCap,
         marginCalculatorParams: poolConfig.marginCalculatorParams,
+        liquidatorRewardWad: poolConfig.liquidatorRewardWad,
       };
       writeIrsCreationTransactionsToGnosisSafeTemplate(data);
     } else {

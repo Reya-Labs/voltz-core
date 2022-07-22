@@ -1,0 +1,127 @@
+{
+  "version": "1.0",
+  "chainId": "1",
+  "createdAt": 1654007302649,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.8.0",
+    "createdFromSafeAddress": "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x6e317afc197279541328cf252e50867cfa15d2ed7e7426244328bdf15b94cfe7"
+  },
+  "transactions": [
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "apyUpperMultiplierWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "apyLowerMultiplierWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "int256",
+                "name": "sigmaSquaredWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "alphaWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "betaWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "xiUpperWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "xiLowerWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "int256",
+                "name": "tMaxWad",
+                "type": "int256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "devMulLeftUnwindLMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "devMulRightUnwindLMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "devMulLeftUnwindIMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "devMulRightUnwindIMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fixedRateDeviationMinLeftUnwindLMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fixedRateDeviationMinRightUnwindLMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fixedRateDeviationMinLeftUnwindIMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fixedRateDeviationMinRightUnwindIMWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "gammaWad",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "minMarginToIncentiviseLiquidators",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IMarginEngine.MarginCalculatorParameters",
+            "name": "_marginCalculatorParameters",
+            "type": "tuple"
+          }
+        ],
+        "name": "setMarginCalculatorParameters",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_newSecondsAgo": "",
+        "_marginCalculatorParameters": "[\"{{marginCalculatorParams.apyUpperMultiplierWad}}\",\"{{marginCalculatorParams.apyLowerMultiplierWad}}\",\"{{marginCalculatorParams.sigmaSquaredWad}}\",\"{{marginCalculatorParams.alphaWad}}\",\"{{marginCalculatorParams.betaWad}}\",\"{{marginCalculatorParams.xiUpperWad}}\",\"{{marginCalculatorParams.xiLowerWad}}\",\"{{marginCalculatorParams.tMaxWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindLMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindLMWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindIMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindIMWad}}\",\"{{marginCalculatorParams.gammaWad}}\",\"{{marginCalculatorParams.minMarginToIncentiviseLiquidators}}\"]"
+      }
+    }
+  ]
+}

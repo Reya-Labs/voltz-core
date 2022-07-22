@@ -94,6 +94,25 @@
       }
     },
     {
+      "to": "{{predictedMarginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_newLiquidatorRewardWad",
+            "type": "uint256"
+          }
+        ],
+        "name": "setLiquidatorReward",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_newLiquidatorRewardWad": "{{liquidatorRewardWad}}"
+      }
+    },
+    {
       "to": "{{predictedVammAddress}}",
       "value": "0",
       "data": null,
