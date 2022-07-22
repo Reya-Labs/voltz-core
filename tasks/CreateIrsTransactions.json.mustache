@@ -71,7 +71,7 @@
       },
       "contractInputsValues": {
         "_marginCalculatorParameters": "",
-        "_newCacheMaxAgeInSeconds": "21600"
+        "_newCacheMaxAgeInSeconds": "{{cacheMaxAgeInSeconds}}"
       }
     },
     {
@@ -90,7 +90,7 @@
         "payable": false
       },
       "contractInputsValues": {
-        "_newSecondsAgo": "21600"
+        "_newSecondsAgo": "{{lookbackWindowInSeconds}}"
       }
     },
     {
@@ -109,11 +109,30 @@
         "payable": false
       },
       "contractInputsValues": {
-        "newFeeWad": "3000000000000000"
+        "newFeeWad": "{{feeWad}}"
       }
     },
     {
       "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "bool",
+            "name": "__isAlpha",
+            "type": "bool"
+          }
+        ],
+        "name": "setIsAlpha",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "__isAlpha": "true"
+      }
+    },
+    {
+      "to": "{{predictedMarginEngineAddress}}",
       "value": "0",
       "data": null,
       "contractMethod": {
@@ -253,7 +272,7 @@
       },
       "contractInputsValues": {
         "_vamm": "{{predictedVammAddress}}",
-        "_lpMarginCapNew": "1000000000000000000000"
+        "_lpMarginCapNew": "{{lpMarginCap}}"
       }
     },
     {
@@ -365,7 +384,7 @@
       },
       "contractInputsValues": {
         "_newSecondsAgo": "",
-        "_marginCalculatorParameters": "[\"1500000000000000000\",\"700000000000000000\",\"500000000000000000\",\"100000000000000000\",\"1000000000000000000\",\"2000000000000000000\",\"1500000000000000000\",\"31536000000000000000000000\",\"500000000000000000\",\"500000000000000000\",\"1500000000000000000\",\"1500000000000000000\",\"5000000000000000000\",\"5000000000000000000\",\"10000000000000000000\",\"10000000000000000000\",\"1000000000000000000\",0]"
+        "_marginCalculatorParameters": "[\"{{marginCalculatorParams.apyUpperMultiplierWad}}\",\"{{marginCalculatorParams.apyLowerMultiplierWad}}\",\"{{marginCalculatorParams.sigmaSquaredWad}}\",\"{{marginCalculatorParams.alphaWad}}\",\"{{marginCalculatorParams.betaWad}}\",\"{{marginCalculatorParams.xiUpperWad}}\",\"{{marginCalculatorParams.xiLowerWad}}\",\"{{marginCalculatorParams.tMaxWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindLMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindLMWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindIMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindIMWad}}\",\"{{marginCalculatorParams.gammaWad}}\",\"{{marginCalculatorParams.minMarginToIncentiviseLiquidators}}\"]"
       }
     }
   ]

@@ -9,7 +9,6 @@ import {
   IVAMM,
   Periphery,
   IERC20Minimal,
-  BaseRateOracle,
 } from "../typechain";
 import { BigNumberish, ethers, utils } from "ethers";
 import {
@@ -18,10 +17,11 @@ import {
   getIrsInstanceEvents,
 } from "./helpers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { IrsConfigDefaults } from "../deployConfig/types";
 import mustache from "mustache";
 import * as fs from "fs";
 import path from "path";
+import "@nomiclabs/hardhat-ethers";
+import { poolConfig, poolConfigs } from "../deployConfig/poolConfig";
 
 interface MultisigTemplateData {
   factoryAddress: string;
@@ -33,6 +33,30 @@ interface MultisigTemplateData {
   termStartTimestampWad: BigNumberish;
   termEndTimestampWad: BigNumberish;
   tickSpacing: number;
+  cacheMaxAgeInSeconds: number;
+  lookbackWindowInSeconds: number;
+  feeWad: BigNumberish;
+  lpMarginCap: BigNumberish;
+  marginCalculatorParams: {
+    apyUpperMultiplierWad: BigNumberish;
+    apyLowerMultiplierWad: BigNumberish;
+    sigmaSquaredWad: BigNumberish;
+    alphaWad: BigNumberish;
+    betaWad: BigNumberish;
+    xiUpperWad: BigNumberish;
+    xiLowerWad: BigNumberish;
+    tMaxWad: BigNumberish;
+    devMulLeftUnwindLMWad: BigNumberish;
+    devMulRightUnwindLMWad: BigNumberish;
+    devMulLeftUnwindIMWad: BigNumberish;
+    devMulRightUnwindIMWad: BigNumberish;
+    fixedRateDeviationMinLeftUnwindLMWad: BigNumberish;
+    fixedRateDeviationMinRightUnwindLMWad: BigNumberish;
+    fixedRateDeviationMinLeftUnwindIMWad: BigNumberish;
+    fixedRateDeviationMinRightUnwindIMWad: BigNumberish;
+    gammaWad: BigNumberish;
+    minMarginToIncentiviseLiquidators: BigNumberish;
+  };
 }
 
 async function writeIrsCreationTransactionsToGnosisSafeTemplate(
@@ -48,71 +72,41 @@ async function writeIrsCreationTransactionsToGnosisSafeTemplate(
   console.log("Output:\n", output);
 }
 
-async function getLpMarginCap(
-  hre: HardhatRuntimeEnvironment,
-  rateOracle: BaseRateOracle,
-  stableUnderlying: boolean
-) {
-  const underlyingTokenAddress = await rateOracle.underlying();
-  const underlyingToken = (await hre.ethers.getContractAt(
-    "IERC20Minimal",
-    underlyingTokenAddress
-  )) as IERC20Minimal;
-
-  // defaults to eth value because it's lower
-  let lpMarginCapUnscaled: number;
-  if (stableUnderlying) {
-    lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap
-      .stableCoin;
-  } else {
-    lpMarginCapUnscaled = getConfig(hre.network.name).irsConfig.lpMarginCap.eth;
-  }
-
-  const decimals = await underlyingToken.decimals();
-  const lpMarginCap = toBn(lpMarginCapUnscaled, decimals);
-
-  return lpMarginCap;
-}
-
 async function configureIrs(
   hre: HardhatRuntimeEnvironment,
   marginEngine: IMarginEngine,
   vamm: IVAMM,
-  config: IrsConfigDefaults,
-  isAlpha?: boolean,
-  stableUnderlying?: boolean,
-  rateOracle?: BaseRateOracle
+  poolConfig: poolConfig
 ) {
   // Set the config for our IRS instance
   // TODO: allow values to be overridden with task parameters, as required
   console.log(`Configuring IRS...`);
 
   let trx = await marginEngine.setMarginCalculatorParameters(
-    config.marginEngineCalculatorParameters,
+    poolConfig.marginCalculatorParams,
     { gasLimit: 10000000 }
   );
   await trx.wait();
   trx = await marginEngine.setCacheMaxAgeInSeconds(
-    config.marginEngineCacheMaxAgeInSeconds,
+    poolConfig.cacheMaxAgeInSeconds,
     { gasLimit: 10000000 }
   );
   await trx.wait();
   trx = await marginEngine.setLookbackWindowInSeconds(
-    config.marginEngineLookbackWindowInSeconds,
+    poolConfig.lookbackWindowInSeconds,
     { gasLimit: 10000000 }
   );
   await trx.wait();
-  trx = await marginEngine.setLiquidatorReward(
-    config.marginEngineLiquidatorRewardWad,
-    { gasLimit: 10000000 }
-  );
+  trx = await marginEngine.setLiquidatorReward(poolConfig.liquidatorRewardWad, {
+    gasLimit: 10000000,
+  });
   await trx.wait();
 
   const currentVammVars = await vamm.vammVars();
   const currentFeeProtocol = currentVammVars.feeProtocol;
   if (currentFeeProtocol === 0) {
     // Fee protocol can only be set if it has never been set
-    trx = await vamm.setFeeProtocol(config.vammFeeProtocol, {
+    trx = await vamm.setFeeProtocol(poolConfig.vammFeeProtocolWad, {
       gasLimit: 10000000,
     });
     await trx.wait();
@@ -121,14 +115,13 @@ async function configureIrs(
   const currentFeeWad = await vamm.feeWad();
   if (currentFeeWad.toString() === "0") {
     // Fee  can only be set if it has never been set
-    trx = await vamm.setFee(config.vammFeeWad, {
+    trx = await vamm.setFee(poolConfig.vammFeeProtocolWad, {
       gasLimit: 10000000,
     });
     await trx.wait();
   }
 
-  // TODO: catch this for multisig too
-  if (isAlpha && rateOracle !== undefined && stableUnderlying !== undefined) {
+  if (poolConfig.isAlpha) {
     const isAlphaVAMM = await vamm.isAlpha();
     if (!isAlphaVAMM) {
       trx = await vamm.setIsAlpha(true, {
@@ -136,7 +129,7 @@ async function configureIrs(
       });
       await trx.wait();
     } else {
-      console.log("IsAlpha is already set in VAMM");
+      console.log("VAMM is already in alpha state.");
     }
 
     const isAlphaME = await marginEngine.isAlpha();
@@ -146,7 +139,7 @@ async function configureIrs(
       });
       await trx.wait();
     } else {
-      console.log("IsAlpha is already set in Margin Engine");
+      console.log("Margin Engine is already in alpha state.");
     }
 
     const factory = await hre.ethers.getContract("Factory");
@@ -156,18 +149,22 @@ async function configureIrs(
       peripheryAddress
     )) as Periphery;
 
-    const lpMarginCap = await getLpMarginCap(hre, rateOracle, stableUnderlying);
+    const currentLpMarginCap = await periphery.lpMarginCaps(vamm.address);
+    if (currentLpMarginCap.toString() !== poolConfig.lpMarginCap) {
+      console.log(`Setting margin cap to: ${poolConfig.lpMarginCap}`);
 
-    const lpMarginCapCurrent = await periphery.lpMarginCaps(vamm.address);
-    if (lpMarginCapCurrent.toString() !== lpMarginCap.toString()) {
-      console.log("Setting margin cap to: ", lpMarginCap.toString());
-      trx = await periphery.setLPMarginCap(vamm.address, lpMarginCap, {
-        gasLimit: 10000000,
-      });
+      trx = await periphery.setLPMarginCap(
+        vamm.address,
+        poolConfig.lpMarginCap,
+        {
+          gasLimit: 10000000,
+        }
+      );
       await trx.wait();
     }
+
     const newLpMarginCap = await periphery.lpMarginCaps(vamm.address);
-    console.log("Margin Cap was set at: ", newLpMarginCap.toString());
+    console.log("Margin Cap is set to: ", newLpMarginCap.toString());
   }
 
   console.log(`IRS configured.`);
@@ -195,39 +192,31 @@ task(
   "createIrsInstance",
   "Calls the Factory to deploy a new Interest Rate Swap instance"
 )
-  .addParam(
-    "rateOracle",
-    "The name of the rate oracle as defined in deployments/<network> (e.g. 'AaveRateOracle_USDT'"
-  )
+  .addParam("pool", "The name of the pool (e.g. 'aDAI', 'stETH', etc.)")
   .addFlag(
     "multisig",
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
   .addOptionalParam(
-    "daysDuration",
-    "The number of days between the start and end time of the IRS contract",
-    30,
+    "termStartTimestamp",
+    "The UNIX timestamp of pool start",
+    undefined,
     types.int
   )
-  .addOptionalParam(
-    "tickSpacing",
-    "The tick spacing for the VAMM",
-    60,
-    types.int
-  )
-  .addFlag(
-    "isAlpha",
-    "If set, pool is in alpha state and an LP margin cap is set in periphery"
-  )
-  .addFlag(
-    "stableUnderlying",
-    "If set, LP margin cap gets the value for stable coin in config. Else, it defaults to value for eth pools"
-  )
+  .addParam("termEndTimestamp", "The UNIX timestamp of pool end")
   .setAction(async (taskArgs, hre) => {
+    let poolConfig: poolConfig;
+    if (taskArgs.pool in poolConfigs) {
+      poolConfig = poolConfigs[taskArgs.pool];
+    } else {
+      throw new Error(`No configuration for ${taskArgs.pool}.`);
+    }
+
     const rateOracle = await getRateOracleByNameOrAddress(
       hre,
-      taskArgs.rateOracle
+      poolConfig.rateOracle
     );
+
     const underlyingTokenAddress = await rateOracle.underlying();
     const underlyingToken = (await hre.ethers.getContractAt(
       "IERC20Minimal",
@@ -236,34 +225,33 @@ task(
     const factory = await hre.ethers.getContract("Factory");
 
     console.log(
-      `Deploying IRS for rate oracle ${taskArgs.rateOracle} with underlying ${underlyingTokenAddress}`
+      `Deploying IRS for rate oracle ${poolConfig.rateOracle} with underlying ${underlyingTokenAddress}`
     );
 
     const block = await hre.ethers.provider.getBlock("latest");
 
-    const currentTimestamp = block.timestamp;
-    const today = new Date(currentTimestamp * 1000);
-    const tomorrow = new Date(today); // today
-    tomorrow.setDate(today.getDate() + 1); // tomorrow
-    tomorrow.setUTCHours(0, 0, 0, 0); // midnight tomorrow
-    // ab: changed for the start timestamp to be today for testing purposes, todo: need to change back for actual deployments!
-    // const startTimestamp = tomorrow.getTime() / 1000;
-    const startTimestamp = today.getTime() / 1000;
-    const endDay = new Date(tomorrow);
+    let termStartTimestamp = block.timestamp;
+    const termEndTimestamp = taskArgs.termEndTimestamp;
 
-    const maxIrsDurationInDays =
-      getConfig(hre.network.name).irsConfig.maxIrsDurationInSeconds /
-      (60 * 60 * 24);
-
-    if (maxIrsDurationInDays < taskArgs.daysDuration) {
-      throw new Error(
-        `Rate Oracle buffer can cope with IRS instances of up to ${maxIrsDurationInDays} days duration ` +
-          `so the requested duration of ${taskArgs.daysDuration} is unsafe`
-      );
+    if (taskArgs.termStartTimestamp) {
+      termStartTimestamp = taskArgs.termStartTimestamp;
     }
 
-    endDay.setDate(tomorrow.getDate() + taskArgs.daysDuration);
-    const endTimestamp = endDay.getTime() / 1000; // N.B. May not be midnight if clocks have changed
+    if (termStartTimestamp + 86400 > termEndTimestamp) {
+      throw new Error("Unfunctional pool. Check start and end timestamps!");
+    }
+
+    const maxIrsDurationInSeconds = getConfig(hre.network.name).irsConfig
+      .maxIrsDurationInSeconds;
+
+    if (maxIrsDurationInSeconds < termEndTimestamp - termStartTimestamp) {
+      throw new Error(
+        `Rate Oracle buffer can cope with IRS instances of up to ${maxIrsDurationInSeconds} seconds duration ` +
+          `so the requested duration of ${
+            termEndTimestamp - termStartTimestamp
+          } is unsafe`
+      );
+    }
 
     console.log(
       `Creating test IRS for mock token/rate oracle: {${underlyingToken.address}, ${rateOracle.address}}`
@@ -272,31 +260,36 @@ task(
     if (taskArgs.multisig) {
       const nonce = await getFactoryNonce(hre, factory.address);
 
-      const data = {
+      const data: MultisigTemplateData = {
         factoryAddress: factory.address,
         underlyingTokenAddress: underlyingToken.address,
         rateOracleAddress: rateOracle.address,
-        termStartTimestampWad: toBn(startTimestamp),
-        termEndTimestampWad: toBn(endTimestamp),
-        tickSpacing: taskArgs.tickSpacing,
-        predictedMarginEngineAddress: await ethers.utils.getContractAddress({
+        termStartTimestampWad: toBn(termStartTimestamp),
+        termEndTimestampWad: toBn(termEndTimestamp),
+        tickSpacing: poolConfig.tickSpacing,
+        predictedMarginEngineAddress: ethers.utils.getContractAddress({
           from: factory.address,
           nonce: nonce,
         }),
-        predictedVammAddress: await ethers.utils.getContractAddress({
+        predictedVammAddress: ethers.utils.getContractAddress({
           from: factory.address,
           nonce: nonce + 1,
         }),
         peripheryAddress: await factory.periphery(),
+        cacheMaxAgeInSeconds: poolConfig.cacheMaxAgeInSeconds,
+        lookbackWindowInSeconds: poolConfig.lookbackWindowInSeconds,
+        feeWad: poolConfig.feeWad,
+        lpMarginCap: poolConfig.lpMarginCap,
+        marginCalculatorParams: poolConfig.marginCalculatorParams,
       };
       writeIrsCreationTransactionsToGnosisSafeTemplate(data);
     } else {
       const deployTrx = await factory.deployIrsInstance(
         underlyingToken.address,
         rateOracle.address,
-        toBn(startTimestamp), // converting to wad
-        toBn(endTimestamp), // converting to wad
-        taskArgs.tickSpacing,
+        toBn(termStartTimestamp), // converting to wad
+        toBn(termEndTimestamp), // converting to wad
+        poolConfig.tickSpacing,
         { gasLimit: 10000000 }
       );
       const receipt = await deployTrx.wait();
@@ -323,62 +316,31 @@ task(
           vammAddress
         )) as VAMM;
 
-        await configureIrs(
-          hre,
-          marginEngine,
-          vamm,
-          getConfig(hre.network.name).irsConfig,
-          taskArgs.isAlpha,
-          taskArgs.stableUnderlying,
-          rateOracle
-        );
+        await configureIrs(hre, marginEngine, vamm, poolConfig);
       }
     }
   });
 
 task(
   "resetIrsConfigToDefault",
-  "Resets the configuration of a Margin Engine and its VAMM to the configured defaults"
+  "Resets the configuration of a Margin Engine and its VAMM to the configured defaults from poolConfig"
 )
   .addParam("marginEngine", "The address of the margin engine")
-  .addFlag(
-    "notAlpha",
-    "If set, the pool will not have margin caps on Periphery"
-  )
-  .addFlag(
-    "stableUnderlying",
-    "If set, the value of lp margin cap is set to the config for stable coins. Else, defaults to config for eth pools"
-  )
+  .addParam("pool", "The name of the pool (e.g. 'aDAI', 'stETH', etc.)")
   .setAction(async (taskArgs, hre) => {
+    let poolConfig: poolConfig;
+    if (taskArgs.pool in poolConfigs) {
+      poolConfig = poolConfigs[taskArgs.pool];
+    } else {
+      throw new Error(`No configuration for ${taskArgs.pool}.`);
+    }
+
     const { marginEngine, vamm } = await getIRSByMarginEngineAddress(
       hre,
       taskArgs.marginEngine
     );
 
-    if (!taskArgs.notAlpha) {
-      await configureIrs(
-        hre,
-        marginEngine,
-        vamm,
-        getConfig(hre.network.name).irsConfig
-      );
-    } else {
-      const rateOracleAddress = await vamm.getRateOracle();
-      const rateOracle = (await hre.ethers.getContractAt(
-        "BaseRateOracle",
-        rateOracleAddress
-      )) as BaseRateOracle;
-
-      await configureIrs(
-        hre,
-        marginEngine,
-        vamm,
-        getConfig(hre.network.name).irsConfig,
-        true,
-        taskArgs.stableUnderlying,
-        rateOracle
-      );
-    }
+    await configureIrs(hre, marginEngine, vamm, poolConfig);
   });
 
 task(

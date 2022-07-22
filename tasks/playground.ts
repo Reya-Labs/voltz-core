@@ -4,6 +4,7 @@ import { BigNumber, ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import positionsJson from "../playground/positions-ALL.json";
+import { poolConfigs } from "../deployConfig/poolConfig";
 
 const vammImplementation = "0x7380Df8AbB0c44617C2a64Bf2D7D92caA852F03f";
 
@@ -98,6 +99,55 @@ task("rateOracleSwap", "Swap Rate Oracle").setAction(async (_, hre) => {
     );
   }
 });
+
+task("mcParametersSwap", "Change margin calculator parameters").setAction(
+  async (_, hre) => {
+    const addSigner = async (address: string): Promise<SignerWithAddress> => {
+      if (!(hre.network.name === "localhost")) {
+        throw new Error("Only localhost");
+      }
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+      });
+      await hre.network.provider.send("hardhat_setBalance", [
+        address,
+        "0x1000000000000000000",
+      ]);
+      return await hre.ethers.getSigner(address);
+    };
+
+    const removeSigner = async (address: string) => {
+      await hre.network.provider.request({
+        method: "hardhat_stopImpersonatingAccount",
+        params: [address],
+      });
+    };
+
+    const withSigner = async (
+      address: string,
+      f: (_: SignerWithAddress) => Promise<void>
+    ) => {
+      const signer = await addSigner(address);
+      await f(signer);
+      await removeSigner(address);
+    };
+
+    const marginEngineAddress = lidoMarginEngine;
+    const mcParams = poolConfigs.stETH;
+
+    const marginEngine = (await hre.ethers.getContractAt(
+      "MarginEngine",
+      marginEngineAddress
+    )) as MarginEngine;
+
+    await withSigner(await marginEngine.owner(), async (s) => {
+      await marginEngine
+        .connect(s)
+        .setMarginCalculatorParameters(mcParams.marginCalculatorParams);
+    });
+  }
+);
 
 task("checkSettlements", "Check settlements")
   .addParam(
