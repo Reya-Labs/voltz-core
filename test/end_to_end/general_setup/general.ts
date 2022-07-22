@@ -526,11 +526,11 @@ export class ScenarioRunner {
           this.fcm.address,
           MAX_AMOUNT
         );
-        await this.e2eSetup.setIntegrationApproval(
-          actor.address,
-          this.fcm.address,
-          true
-        );
+        // await this.e2eSetup.setIntegrationApproval(
+        //   actor.address,
+        //   this.fcm.address,
+        //   true
+        // );
       }
     }
 

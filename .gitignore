@@ -19,6 +19,10 @@ historicalData/historicalApy
 historicalData/rateOracleApy
 historicalData/rateOracleRates
 historicalData/rates
+historicalData/historicalTradeHistoricalData
 historicalData/plotters/__pycache__
+0x21f9151d6e06f834751b614c2ff40fc28811b235_2.csv
 0x21f9151d6e06f834751b614c2ff40fc28811b235.csv
+0xb1125ba5878cf3a843be686c6c2486306f03e301_2.csv
 0xb1125ba5878cf3a843be686c6c2486306f03e301.csv
+deployments/mainnetForkDeployment.json

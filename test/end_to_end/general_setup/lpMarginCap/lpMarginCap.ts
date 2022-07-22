@@ -207,11 +207,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
             ad,
             MAX_AMOUNT
           );
-          await this.e2eSetup.setIntegrationApproval(
-            this.actors[i].address,
-            ad,
-            true
-          );
+          if (ad !== this.fcm.address) {
+            await this.e2eSetup.setIntegrationApproval(
+              this.actors[i].address,
+              ad,
+              true
+            );
+          }
         }
       }
 
