@@ -6,7 +6,7 @@ import { getConfig } from "../deployConfig/config";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
-  const { deployer } = await hre.getNamedAccounts();
+  const { deployer, multisig } = await hre.getNamedAccounts();
 
   let weth: string | undefined;
   {
@@ -49,6 +49,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "Periphery",
     proxyAddress
   )) as Periphery;
+
+  if (multisig !== deployer) {
+    // Transfer ownership
+    console.log(
+      `Transferred ownership of Periphery Proxy at ${proxyAddress} to ${multisig}`
+    );
+    await peripheryProxyInstance.transferOwnership(multisig);
+  }
 
   const owner = await peripheryProxyInstance.owner();
   console.log("Owner Proxy: ", owner);

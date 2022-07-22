@@ -17,7 +17,7 @@ contract VAMMStorageV1 {
     uint128 internal _maxLiquidityPerTick;
     IFactory internal _factory;
 
-    // Any variables that would implicitly implement an IMarginEngine function if public, must instead
+    // Any variables that would implicitly implement an IVAMM function if public, must instead
     // be internal due to limitations in the solidity compiler (as of 0.8.12)
     uint256 internal _feeWad;
     // Mutex

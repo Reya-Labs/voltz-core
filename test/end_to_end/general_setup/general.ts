@@ -316,9 +316,17 @@ export class ScenarioRunner {
 
     // periphery
     const peripheryFactory = await ethers.getContractFactory("Periphery");
-    this.periphery = (await peripheryFactory.deploy(
-      this.weth.address
+    const peripheryImpl = await peripheryFactory.deploy();
+
+    const proxyFactory = await ethers.getContractFactory("VoltzERC1967Proxy");
+
+    const proxyInstance = await proxyFactory.deploy(peripheryImpl.address, []);
+
+    this.periphery = (await ethers.getContractAt(
+      "Periphery",
+      proxyInstance.address
     )) as Periphery;
+    await this.periphery.initialize(this.weth.address);
   }
 
   async deployLibraryContracts() {
@@ -526,11 +534,11 @@ export class ScenarioRunner {
           this.fcm.address,
           MAX_AMOUNT
         );
-        await this.e2eSetup.setIntegrationApproval(
-          actor.address,
-          this.fcm.address,
-          true
-        );
+        // await this.e2eSetup.setIntegrationApproval(
+        //   actor.address,
+        //   this.fcm.address,
+        //   true
+        // );
       }
     }
 

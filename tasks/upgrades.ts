@@ -51,6 +51,7 @@ async function getImplementationAddress(
     proxyAddress,
     _ERC1967_IMPLEMENTATION_SLOT
   );
+
   return ethers.utils.getAddress(hre.ethers.utils.hexStripZeros(implHex));
 }
 
@@ -107,8 +108,19 @@ task(
     }
 
     for (const contractName of contractNames) {
-      const currentImplAddress = (await hre.ethers.getContract(contractName))
-        .address;
+      let currentImplAddress: string;
+      let proxyAddress = "";
+
+      if (contractName === "Periphery") {
+        proxyAddress = (await hre.ethers.getContract(contractName)).address;
+        currentImplAddress = (
+          await hre.ethers.getContract(`${contractName}_Implementation`)
+        ).address;
+      } else {
+        currentImplAddress = (await hre.ethers.getContract(contractName))
+          .address;
+      }
+
       // Path of JSON artifacts for deployed (not compiled) contracts, relative to this tasks directory
       const deployedArtifactsDir = path.join(
         __dirname,
@@ -134,9 +146,26 @@ task(
       // Copy the file into the archive directory. If deployment fails it should also stay in the main folder.
       const renameTo = path.join(
         archiveDir,
-        `${contractName}.${currentImplAddress}.json`
+        `${contractName}.${proxyAddress}.json`
       );
       fs.copyFileSync(deployedArtifact, renameTo);
+      console.log("Copied Proxy in archive");
+
+      let deployedArtifactImpl: string;
+      if (contractName === "Periphery") {
+        deployedArtifactImpl = path.join(
+          deployedArtifactsDir,
+          `${contractName}_Implementation.json`
+        );
+        const renameToImpl = path.join(
+          archiveDir,
+          `${contractName}_Implementation.${currentImplAddress}.json`
+        );
+        fs.copyFileSync(deployedArtifactImpl, renameToImpl);
+        console.log("Copied Impl in archive");
+        fs.unlinkSync(deployedArtifactImpl); // delete implemenatation from old deployments dir
+        console.log("Deleted Proxy from deployments");
+      }
 
       // Impersonation does not work with the multisig account (it should; see https://github.com/wighawag/hardhat-deploy/issues/152) so we use deployer
       const { deployer } = await hre.getNamedAccounts();
@@ -151,6 +180,24 @@ task(
         );
       } else {
         console.log(`${contractName} has not changed - no need to redeploy.`);
+      }
+
+      if (contractName === "Periphery") {
+        // deployedArtifact -> change to Periphery_Implemenatation.sol
+        deployedArtifactImpl = path.join(
+          deployedArtifactsDir,
+          `${contractName}_Implementation.json`
+        );
+
+        // deployedArtifact should have changed to new impl
+        fs.renameSync(deployedArtifact, deployedArtifactImpl);
+        console.log(
+          "Renamed just deployed impl to Periphery_Implementation.json"
+        );
+
+        // move the proxy contract back
+        fs.copyFileSync(renameTo, deployedArtifact);
+        console.log("Moved proxy back to deplyment files");
       }
     }
   });
@@ -317,7 +364,7 @@ task(
 // TODO: combine update tasks for VAMM, Margine Engine, Periphery and FCMs
 task(
   "updatePeriphery",
-  "Change the RateOracle used by a given list of MarginEngines instances (i.e. proxies) and their corresponding VAMMs"
+  "Changes the Periphery Proxy to use to the newly deployed implemenatation logic"
 )
   .addParam(
     "peripheryProxyAddress",
@@ -332,7 +379,7 @@ task(
   .setAction(async (taskArgs, hre) => {
     // Some prep work before we loop through the VAMMs
     const latestPeripheryLogicAddress = (
-      await hre.ethers.getContract("Periphery_Implemenatation")
+      await hre.ethers.getContract("Periphery_Implementation")
     ).address;
     const { deployer, multisig } = await hre.getNamedAccounts();
     const data: UpgradeTemplateData = {
@@ -369,9 +416,11 @@ task(
             `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
           );
         } else {
-          await peripheryProxy
+          const tx = await peripheryProxy
             .connect(await getSigner(hre, proxyOwner))
             .upgradeTo(latestPeripheryLogicAddress);
+          await tx.wait();
+
           const newImplAddress = await getImplementationAddress(
             hre,
             proxyAddress

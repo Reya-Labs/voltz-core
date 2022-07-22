@@ -21,10 +21,11 @@ const lidoRateOracle = "0xA667502bF7f5dA45c7b6a70dA7f0595E6Cf342D8";
 const lidoMarginEngine = "0x21f9151d6e06f834751b614c2ff40fc28811b235";
 
 task("rateOracleSwap", "Swap Rate Oracle").setAction(async (_, hre) => {
+  if (!(hre.network.name === "localhost")) {
+    throw new Error("Only localhost");
+  }
+
   const addSigner = async (address: string): Promise<SignerWithAddress> => {
-    if (!(hre.network.name === "localhost")) {
-      throw new Error("Only localhost");
-    }
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
       params: [address],

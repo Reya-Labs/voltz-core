@@ -67,10 +67,10 @@ const mainnetIrsConfigDefaults: IrsConfigDefaults = {
   marginEngineLookbackWindowInSeconds: 60 * 60 * 24 * 25, // 25 days
   // marginEngineLookbackWindowInSeconds: 1209600, // 2 weeks
   marginEngineCacheMaxAgeInSeconds: 6 * 60 * 60, // 6 hours
-  marginEngineLiquidatorRewardWad: toBn(0.1),
+  marginEngineLiquidatorRewardWad: toBn(0.05), // 5%
   marginEngineCalculatorParameters: marginCalculatorDefaults1,
-  vammFeeProtocol: 10,
-  vammFeeWad: toBn(0.009), // 0.9%, for 30 day pool
+  vammFeeProtocol: 0,
+  vammFeeWad: toBn(0.003), // 0.3%, for 30 day pool
   maxIrsDurationInSeconds: 60 * 60 * 24 * 92, // 92 days. Do not increase without checking that rate oracle buffers are large enough
   lpMarginCap: {
     eth: 1300,

@@ -2,7 +2,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import { Factory } from "../typechain";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
@@ -27,7 +26,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [mockERC20Deploy.address, "Voltz cDAI", "cVDAI"],
   });
 
-  const weth = await deploy("MockWETH", {
+  await deploy("MockWETH", {
     from: deployer,
     log: doLogging,
     args: ["Voltz WETH", "VWETH"],
@@ -79,7 +78,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // Mock PERIPHERY
 
-  const dummyPeriphery = await deploy("PeripheryOld", {
+  /* const dummyPeriphery = await deploy("PeripheryOld", {
     from: deployer,
     log: doLogging,
     args: [weth.address],
@@ -95,7 +94,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   trx = await factory.setPeriphery(dummyPeripheryContract.address, {
     gasLimit: 10000000,
   });
-  await trx.wait();
+  await trx.wait(); */
 
   return true; // Only execute once
 };

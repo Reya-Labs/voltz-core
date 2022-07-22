@@ -90,6 +90,7 @@ loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
 loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
 loadModuleIfContractsAreBuilt("./tasks/playground");
+loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
 loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
 loadModuleIfContractsAreBuilt("./tasks/checkInsolvencyAtMaturity");

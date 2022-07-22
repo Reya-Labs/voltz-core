@@ -174,9 +174,9 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     if (deployNewPeriphery) {
       /// deploy new periphery
       const peripheryFactory = await ethers.getContractFactory("Periphery");
-      this.periphery = (await peripheryFactory.deploy(
-        this.weth.address
-      )) as Periphery;
+      const newPeriphery = (await peripheryFactory.deploy()) as Periphery;
+
+      await this.periphery.upgradeTo(newPeriphery.address);
 
       await this.factory.setPeriphery(this.periphery.address);
       await this.e2eSetup.setPeripheryAddress(this.periphery.address);
@@ -207,11 +207,13 @@ class ScenarioRunnerInstance extends ScenarioRunner {
             ad,
             MAX_AMOUNT
           );
-          await this.e2eSetup.setIntegrationApproval(
-            this.actors[i].address,
-            ad,
-            true
-          );
+          if (ad !== this.fcm.address) {
+            await this.e2eSetup.setIntegrationApproval(
+              this.actors[i].address,
+              ad,
+              true
+            );
+          }
         }
       }
 

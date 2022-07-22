@@ -134,10 +134,10 @@ task(
 
       console.log(vammAddress);
 
-      const lpMarginCumulative2 = await oldPeriphery._lpMarginCumulatives(
+      const lpMarginCumulative2 = await oldPeriphery.lpMarginCumulatives(
         vammAddress
       );
-      const lpMarginCap2 = await oldPeriphery._lpMarginCaps(vammAddress);
+      const lpMarginCap2 = await oldPeriphery.lpMarginCaps(vammAddress);
 
       console.log("Margin Cumulative: ", lpMarginCumulative2.toString());
       console.log("Margin Cap: ", lpMarginCap2.toString());
