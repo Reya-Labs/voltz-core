@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { MarginEngine, VAMM } from "../typechain";
+import { MarginEngine, Periphery, VAMM } from "../typechain";
 import { BigNumber, ethers } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
@@ -22,7 +22,7 @@ interface UpgradeTemplateData {
 const proxiedContractTypes = [
   "VAMM",
   "MarginEngine",
-  // "Periphery",
+  "Periphery",
   "AaveFCM",
   "CompoundFCM",
 ];
@@ -51,6 +51,7 @@ async function getImplementationAddress(
     proxyAddress,
     _ERC1967_IMPLEMENTATION_SLOT
   );
+
   return ethers.utils.getAddress(hre.ethers.utils.hexStripZeros(implHex));
 }
 
@@ -107,8 +108,19 @@ task(
     }
 
     for (const contractName of contractNames) {
-      const currentImplAddress = (await hre.ethers.getContract(contractName))
-        .address;
+      let currentImplAddress: string;
+      let proxyAddress = "";
+
+      if (contractName === "Periphery") {
+        proxyAddress = (await hre.ethers.getContract(contractName)).address;
+        currentImplAddress = (
+          await hre.ethers.getContract(`${contractName}_Implementation`)
+        ).address;
+      } else {
+        currentImplAddress = (await hre.ethers.getContract(contractName))
+          .address;
+      }
+
       // Path of JSON artifacts for deployed (not compiled) contracts, relative to this tasks directory
       const deployedArtifactsDir = path.join(
         __dirname,
@@ -134,9 +146,26 @@ task(
       // Copy the file into the archive directory. If deployment fails it should also stay in the main folder.
       const renameTo = path.join(
         archiveDir,
-        `${contractName}.${currentImplAddress}.json`
+        `${contractName}.${proxyAddress}.json`
       );
       fs.copyFileSync(deployedArtifact, renameTo);
+      console.log("Copied Proxy in archive");
+
+      let deployedArtifactImpl: string;
+      if (contractName === "Periphery") {
+        deployedArtifactImpl = path.join(
+          deployedArtifactsDir,
+          `${contractName}_Implementation.json`
+        );
+        const renameToImpl = path.join(
+          archiveDir,
+          `${contractName}_Implementation.${currentImplAddress}.json`
+        );
+        fs.copyFileSync(deployedArtifactImpl, renameToImpl);
+        console.log("Copied Impl in archive");
+        fs.unlinkSync(deployedArtifactImpl); // delete implemenatation from old deployments dir
+        console.log("Deleted Proxy from deployments");
+      }
 
       // Impersonation does not work with the multisig account (it should; see https://github.com/wighawag/hardhat-deploy/issues/152) so we use deployer
       const { deployer } = await hre.getNamedAccounts();
@@ -151,6 +180,24 @@ task(
         );
       } else {
         console.log(`${contractName} has not changed - no need to redeploy.`);
+      }
+
+      if (contractName === "Periphery") {
+        // deployedArtifact -> change to Periphery_Implemenatation.sol
+        deployedArtifactImpl = path.join(
+          deployedArtifactsDir,
+          `${contractName}_Implementation.json`
+        );
+
+        // deployedArtifact should have changed to new impl
+        fs.renameSync(deployedArtifact, deployedArtifactImpl);
+        console.log(
+          "Renamed just deployed impl to Periphery_Implementation.json"
+        );
+
+        // move the proxy contract back
+        fs.copyFileSync(renameTo, deployedArtifact);
+        console.log("Moved proxy back to deplyment files");
       }
     }
   });
@@ -306,6 +353,82 @@ task(
         console.log(
           `MarginEngine (${marginEngineAddress}) and VAMM (${vammAddress}) updated to point at latest ${taskArgs.rateOracle} (${rateOracleAddress})`
         );
+      }
+    }
+
+    if (taskArgs.multisig) {
+      writeUpgradeTransactionsToGnosisSafeTemplate(data);
+    }
+  });
+
+// TODO: combine update tasks for VAMM, Margine Engine, Periphery and FCMs
+task(
+  "updatePeriphery",
+  "Changes the Periphery Proxy to use to the newly deployed implemenatation logic"
+)
+  .addParam(
+    "peripheryProxyAddress",
+    "The address of the periphery proxy",
+    undefined,
+    types.string
+  )
+  .addFlag(
+    "multisig",
+    "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
+  )
+  .setAction(async (taskArgs, hre) => {
+    // Some prep work before we loop through the VAMMs
+    const latestPeripheryLogicAddress = (
+      await hre.ethers.getContract("Periphery_Implementation")
+    ).address;
+    const { deployer, multisig } = await hre.getNamedAccounts();
+    const data: UpgradeTemplateData = {
+      rateOracleUpdates: [],
+      proxyUpgrades: [],
+    };
+
+    const peripheryProxy = (await hre.ethers.getContractAt(
+      "Periphery",
+      taskArgs.peripheryProxyAddress
+    )) as Periphery;
+
+    const proxyAddress = peripheryProxy.address;
+    const initImplAddress = await getImplementationAddress(hre, proxyAddress);
+    const proxyOwner = await peripheryProxy.owner();
+
+    if (initImplAddress === latestPeripheryLogicAddress) {
+      console.log(
+        `The Periphery at ${proxyAddress} is using the latest logic (${latestPeripheryLogicAddress}). No newer logic deployed!`
+      );
+    } else {
+      // TODO: compare storage layouts and abort upgrade if not compatible
+
+      if (taskArgs.multisig) {
+        // Using multisig template instead of sending any transactions
+        data.proxyUpgrades.push({
+          proxyAddress: peripheryProxy.address,
+          newImplementation: latestPeripheryLogicAddress,
+        });
+      } else {
+        // Not using multisig template - actually send the transactions
+        if (multisig !== proxyOwner && deployer !== proxyOwner) {
+          console.log(
+            `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
+          );
+        } else {
+          const tx = await peripheryProxy
+            .connect(await getSigner(hre, proxyOwner))
+            .upgradeTo(latestPeripheryLogicAddress);
+          await tx.wait();
+
+          const newImplAddress = await getImplementationAddress(
+            hre,
+            proxyAddress
+          );
+          console.log(
+            `Periphery at ${peripheryProxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
+          );
+        }
       }
     }
 

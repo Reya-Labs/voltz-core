@@ -7,7 +7,7 @@ import "../interfaces/IVAMM.sol";
 import "contracts/utils/CustomErrors.sol";
 import "contracts/interfaces/IWETH.sol";
 
-interface IPeriphery is CustomErrors {
+interface IPeripheryOld is CustomErrors {
     // events
 
     /// @dev emitted after new lp margin cap is set
@@ -34,9 +34,6 @@ interface IPeriphery is CustomErrors {
         uint256 marginDelta;
     }
 
-    /// @dev "constructor" for proxy instances
-    function initialize(IWETH weth_) external;
-
     // view functions
 
     function getCurrentTick(IMarginEngine marginEngine)
@@ -51,8 +48,6 @@ interface IPeriphery is CustomErrors {
     /// @param vamm VAMM for which to get the lp notional cumulative in underlying tokens
     /// @return Total amount of notional supplied by the LPs to a given VAMM via the periphery
     function lpMarginCumulatives(IVAMM vamm) external view returns (int256);
-
-    function weth() external view returns (IWETH);
 
     // non-view functions
 

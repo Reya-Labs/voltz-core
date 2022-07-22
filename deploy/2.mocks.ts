@@ -76,6 +76,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   trx = await mockCToken.setExchangeRate(BigNumber.from(10).pow(26).mul(2));
   await trx.wait();
 
+  // Mock PERIPHERY
+
+  /* const dummyPeriphery = await deploy("PeripheryOld", {
+    from: deployer,
+    log: doLogging,
+    args: [weth.address],
+  });
+
+  const dummyPeripheryContract = await ethers.getContractAt(
+    "PeripheryOld",
+    dummyPeriphery.address
+  );
+
+  // set periphery in factory
+  const factory = (await ethers.getContract("Factory")) as Factory;
+  trx = await factory.setPeriphery(dummyPeripheryContract.address, {
+    gasLimit: 10000000,
+  });
+  await trx.wait(); */
+
   return true; // Only execute once
 };
 func.tags = ["Mocks"];

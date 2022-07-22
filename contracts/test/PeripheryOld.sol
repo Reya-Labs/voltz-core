@@ -1,37 +1,39 @@
-// SPDX-License-Identifier: Apache-2.0
-
 pragma solidity =0.8.9;
 
 pragma abicoder v2;
 
 import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
-import "../interfaces/IPeriphery.sol";
+import "./IPeripheryOld.sol";
 import "../utils/TickMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../core_libraries/SafeTransferLib.sol";
 import "../core_libraries/Tick.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
-import "../storage/PeripheryStorage.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "hardhat/console.sol";
 
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
-contract Periphery is
-    PeripheryStorage,
-    IPeriphery,
-    Initializable,
-    OwnableUpgradeable,
-    UUPSUpgradeable
-{
+contract PeripheryOld is IPeripheryOld {
     using SafeCast for uint256;
     using SafeCast for int256;
     uint256 internal constant Q96 = 2**96;
 
     using SafeTransferLib for IERC20Minimal;
+
+    /// @dev Wrapped ETH interface
+    IWETH public _weth;
+
+    /// @dev Voltz Protocol vamm => LP Margin Cap in Underlying Tokens
+    /// @dev LP margin cap of zero implies no margin cap
+    mapping(IVAMM => int256) public _lpMarginCaps;
+
+    /// @dev amount of margin (coming from the periphery) in terms of underlying tokens taken up by LPs in a given VAMM
+    mapping(IVAMM => int256) public _lpMarginCumulatives;
+
+    /// @dev alpha lp margin mapping
+    mapping(bytes32 => int256) internal _lastAccountedMargin;
 
     modifier vammOwnerOnly(IVAMM vamm) {
         require(address(vamm) != address(0), "vamm addr zero");
@@ -40,27 +42,16 @@ contract Periphery is
         _;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {}
-
-    function initialize(IWETH weth_) external override initializer {
-        require(address(weth_) != address(0), "weth addr zero");
+    constructor(IWETH weth_) {
         _weth = weth_;
-
-        __Ownable_init();
-        __UUPSUpgradeable_init();
     }
 
-    // To authorize the owner to upgrade the contract we implement _authorizeUpgrade with the onlyOwner modifier.
-    // ref: https://forum.openzeppelin.com/t/uups-proxies-tutorial-solidity-javascript/7786
-    function _authorizeUpgrade(address) internal override onlyOwner {}
-
-    /// @inheritdoc IPeriphery
+    /// @inheritdoc IPeripheryOld
     function lpMarginCaps(IVAMM vamm) external view override returns (int256) {
         return _lpMarginCaps[vamm];
     }
 
-    /// @inheritdoc IPeriphery
+    /// @inheritdoc IPeripheryOld
     function lpMarginCumulatives(IVAMM vamm)
         external
         view
@@ -68,10 +59,6 @@ contract Periphery is
         returns (int256)
     {
         return _lpMarginCumulatives[vamm];
-    }
-
-    function weth() external view override returns (IWETH) {
-        return _weth;
     }
 
     /// @notice Computes the amount of liquidity received for a given notional amount and price range
