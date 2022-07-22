@@ -13,6 +13,7 @@ import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
+import "hardhat-storage-layout";
 import { HardhatNetworkUserConfig } from "hardhat/types";
 // import "@primitivefi/hardhat-dodoc"; bring back on demand
 
@@ -20,6 +21,14 @@ dotenv.config();
 
 let someTasksNotImported = false;
 
+task(
+  "printStorageLayout",
+  "Prints the storage layout of all contracts"
+).setAction(async (_, hre) => {
+  console.log("getting storage layout (this can take some time)...");
+  await hre.storageLayout.export();
+  console.log("got storage layout");
+});
 interface TypeScriptError {
   diagnosticText: string;
   diagnosticCodes: number[];
@@ -82,6 +91,9 @@ loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
 loadModuleIfContractsAreBuilt("./tasks/playground");
 loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
+loadModuleIfContractsAreBuilt("./tasks/upgrades");
+loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
+loadModuleIfContractsAreBuilt("./tasks/checkInsolvencyAtMaturity");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -100,14 +112,17 @@ let hardhatNetworkConfig: HardhatNetworkUserConfig = {
 if (!!process.env.FORK_MAINNET) {
   hardhatNetworkConfig = {
     allowUnlimitedContractSize: true,
+    saveDeployments: true,
+    chainId: 1,
     forking: {
       url: `${process.env.MAINNET_URL}`,
-      blockNumber: 15134482,
+      // blockNumber: 15134482,
     },
   };
 } else if (!!process.env.FORK_KOVAN) {
   hardhatNetworkConfig = {
     allowUnlimitedContractSize: true,
+    saveDeployments: true,
     forking: {
       url: `${process.env.KOVAN_URL}`,
     },
@@ -122,6 +137,11 @@ const config: HardhatUserConfig = {
       optimizer: {
         enabled: true,
         runs: 10, // As high as is possible without blowing contract size limits
+      },
+      outputSelection: {
+        "*": {
+          "*": ["storageLayout"],
+        },
       },
     },
   },
@@ -165,7 +185,12 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: {
+      balance: (10 ** 24).toString(),
       default: 0, // here this will by default take the first account as deployer
+    },
+    multisig: {
+      default: 0, // here this will by default take the first account as deployer
+      1: "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
     },
     alice: {
       default: 1,

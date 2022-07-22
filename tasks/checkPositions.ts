@@ -1,8 +1,8 @@
 import { task, types } from "hardhat/config";
 import { MarginEngine } from "../typechain";
-import positionsJson from "../playground/positions-ALL.json";
 import { ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
+import { getPositions, Position } from "../scripts/getPositions";
 
 // rocket
 // eslint-disable-next-line no-unused-vars
@@ -38,9 +38,8 @@ task("checkPositionsHealth", "Check positions")
     fs.appendFileSync(file, header + "\n");
     console.log(header);
 
-    for (const key in positionsJson.positions) {
-      const position = positionsJson.positions[key];
-
+    const positions: Position[] = await getPositions();
+    for (const position of positions) {
       if (position.marginEngine === taskArgs.marginEngineAddress) {
         const positionRequirementSafety =
           await marginEngine.callStatic.getPositionMarginRequirement(

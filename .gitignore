@@ -7,6 +7,7 @@ docs
 .DS_Store
 contracts/.DS_Store
 deployments/localhostDeployment.json
+deployments/mainnetForkDeployment.json
 deployments/localhost/
 *.txt
 #Hardhat files
