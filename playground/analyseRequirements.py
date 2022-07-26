@@ -1,11 +1,20 @@
+import math
 import pandas as pd
 
-import matplotlib.pyplot as plt
+marginEngineAddress = "0x21F9151d6e06f834751b614C2Ff40Fc28811B235"
 
-marginEngineAddress = "0xb1125ba5878cf3a843be686c6c2486306f03e301"
+ds = pd.read_csv("{0}.csv".format(marginEngineAddress))
 
-before = pd.read_csv("{0}.csv".format(marginEngineAddress))
-after = pd.read_csv("{0}_2.csv".format(marginEngineAddress))
+print(len(ds))
+
+before = ds.iloc[:len(ds)//2]
+after = ds.iloc[len(ds)//2:]
+
+before.reset_index(inplace=True)
+after.reset_index(inplace=True)
+
+print(before)
+print(after)
 
 if not len(before) == len(after):
     raise "Unmatched lengths"
@@ -29,47 +38,41 @@ for i in range(n):
 
     if not before["position_margin"][i] == after["position_margin"][i]:
         raise "Unmatched position margins"
+    
+    if not before["position_liquidity"][i] == after["position_liquidity"][i]:
+        raise "Unmatched position liquidities"
 
     lt_before = before["position_requirement_liquidation"][i]
     lt_after = after["position_requirement_liquidation"][i]
-    lt_delta = lt_after - lt_before
-
-    if abs(lt_delta) > abs(max_lt_delta):
-            max_lt_delta = lt_delta
-
-    if lt_before > 0:
-        lt_rel_delta = lt_delta / lt_before
-
-        if abs(lt_rel_delta) > abs(max_lt_rel_delta):
-            max_lt_rel_delta = lt_rel_delta
-    else:
-        lt_rel_delta = 0
 
     st_before = before["position_requirement_safety"][i]
     st_after = after["position_requirement_safety"][i]
-    st_delta = st_after - st_before
-
-    if abs(st_delta) > abs(max_st_delta):
-            max_st_delta = st_delta
-
-    if st_before > 0:
-        st_rel_delta = st_delta / st_before * 100
-
-        if abs(st_rel_delta) > abs(max_st_rel_delta):
-            max_st_rel_delta = st_rel_delta
-    else:
-        st_rel_delta = 0
 
     status_before = before["status"][i]
     status_after = after["status"][i]
 
-    print("liquidation threshold: {:10.6f} -> {:10.6f} (relative difference: {:10.6f}%)".format(lt_before, lt_after, lt_rel_delta))
-    print("     safety threshold: {:10.6f} -> {:10.6f} (relative difference: {:10.6f}%)".format(st_before, st_after, st_rel_delta))
+    liquidity_notional = before["position_liquidity"][i] * (math.pow(1.0001, before["upper_tick"][i]/2) - math.pow(1.0001, before["lower_tick"][i]/2))
+
+    if liquidity_notional > 1e-6:
+        print("LP with {:.6f} Liquidity".format(liquidity_notional))
+    
+    if before["position_notional"][i] < 0:
+        print("FT with {:.6f} Notional".format(-before["position_notional"][i]))
+
+    if before["position_notional"][i] > 0:
+        print("VT with {:.6f} Notional".format(before["position_notional"][i]))
+    
+    if lt_before > 0:
+        rd = (lt_after - lt_before) / lt_before
+        print("liquidation threshold: {:.6f} -> {:.6f} (\u03B7: {:.2%})".format(lt_before, lt_after, rd))
+    else:
+        print("liquidation threshold: {:.6f} -> {:.6f}".format(lt_before, lt_after))
+
+    if st_before > 0:
+        rd = (st_after - st_before) / st_before
+        print("safety threshold: {:.6f} -> {:.6f} (\u03B7: {:.2%})".format(st_before, st_after, rd))
+    else:
+        print("safety threshold: {:.6f} -> {:.6f}".format(st_before, st_after))
     print("               status: {0} -> {1}".format(status_before, status_after))
 
     print()
-
-print("         MAXIMUM LIQUIDATION THRESHOLD DIFFERENCE: {:10.6f}".format(max_lt_delta))
-print("MAXIMUM LIQUIDATION THRESHOLD RELATIVE DIFFERENCE: {:10.6f}%".format(max_lt_rel_delta))
-print("              MAXIMUM SAFETY THRESHOLD DIFFERENCE: {:10.6f}".format(max_st_delta))
-print("     MAXIMUM SAFETY THRESHOLD RELATIVE DIFFERENCE: {:10.6f}%".format(max_st_rel_delta))

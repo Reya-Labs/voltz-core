@@ -33,7 +33,7 @@ task("checkPositionsHealth", "Check positions")
     const file = `${taskArgs.marginEngineAddress}.csv`;
 
     const header =
-      "owner,lower_tick,upper_tick,position_margin,position_margin,position_requirement_liquidation,position_requirement_safety,status";
+      "owner,lower_tick,upper_tick,position_margin,position_liquidity,position_notional,position_requirement_liquidation,position_requirement_safety,status";
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
@@ -75,6 +75,8 @@ task("checkPositionsHealth", "Check positions")
           position.tickLower,
           position.tickUpper,
           ethers.utils.formatEther(positionInfo.margin),
+          ethers.utils.formatEther(positionInfo._liquidity),
+          ethers.utils.formatEther(positionInfo.variableTokenBalance),
           ethers.utils.formatEther(positionRequirementLiquidation),
           ethers.utils.formatEther(positionRequirementSafety),
           status
@@ -85,6 +87,10 @@ task("checkPositionsHealth", "Check positions")
             position.tickUpper
           },${ethers.utils.formatEther(
             positionInfo.margin
+          )},${ethers.utils.formatEther(
+            positionInfo._liquidity
+          )},${ethers.utils.formatEther(
+            positionInfo.variableTokenBalance
           )},${ethers.utils.formatEther(
             positionRequirementLiquidation
           )},${ethers.utils.formatEther(positionRequirementSafety)},${status}\n`
