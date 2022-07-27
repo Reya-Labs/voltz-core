@@ -39,6 +39,20 @@ contract MockCToken is ICToken, ERC20 {
         return _rate;
     }
 
+    function getCash() public view override returns (uint256) {
+        IERC20Minimal token = IERC20Minimal(_underlyingAsset);
+        return token.balanceOf(address(this));
+    }
+
+    function borrowRatePerBlock() external view override returns (uint256) {
+        return
+            interestRateModel.getBorrowRate(
+                getCash(),
+                totalBorrows,
+                totalReserves
+            );
+    }
+
     function underlying() external view override returns (address) {
         return _underlyingAsset;
     }

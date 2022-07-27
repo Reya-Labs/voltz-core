@@ -36,7 +36,7 @@ const RocketNetworkBalancesEthMainnet =
 // compound
 const compoundMainnetStartBlock = 7710760; // cUSDC deployment
 const cTokenAddresses = {
-  cDAI: "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
+  cDAI: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643",
   cUSDC: "0x39aa39c021dfbae8fac545936693ac917d5e7563",
   cWBTC: "0xc11b1268c1a384e55c48c2391d8d480264a3a7f4",
   cWBTC2: "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
@@ -93,6 +93,12 @@ task("getHistoricalData", "Retrieves the historical rates")
     "token",
     "Get rates for the underlying token",
     "ETH",
+    types.string
+  )
+  .addOptionalParam(
+    "rate",
+    "Choose borrow or lending rate to be queried",
+    undefined,
     types.string
   )
   .setAction(async (taskArgs, hre) => {
@@ -297,19 +303,32 @@ task("getHistoricalData", "Retrieves the historical rates")
         if (b >= compoundMainnetStartBlock) {
           try {
             if (cToken && decimals) {
-              let r = await cToken.exchangeRateStored({
-                blockTag: b,
-              });
-              if (decimals > 17) {
-                r = r.div(BigNumber.from(10).pow(decimals - 17));
-              } else if (decimals < 17) {
-                r = r.mul(BigNumber.from(10).pow(17 - decimals));
-              }
+              if (taskArgs.rate === "borrow") {
+                let r = await cToken.borrowIndex({
+                  blockTag: b,
+                });
 
-              blocks.push(b);
-              timestamps.push(block.timestamp);
-              rates.push(r);
-              fetch = FETCH_STATUS.SUCCESS;
+                r = r.mul(BigNumber.from(10).pow(9));
+
+                blocks.push(b);
+                timestamps.push(block.timestamp);
+                rates.push(r);
+                fetch = FETCH_STATUS.SUCCESS;
+              } else {
+                let r = await cToken.exchangeRateStored({
+                  blockTag: b,
+                });
+                if (decimals > 17) {
+                  r = r.div(BigNumber.from(10).pow(decimals - 17));
+                } else if (decimals < 17) {
+                  r = r.mul(BigNumber.from(10).pow(17 - decimals));
+                }
+
+                blocks.push(b);
+                timestamps.push(block.timestamp);
+                rates.push(r);
+                fetch = FETCH_STATUS.SUCCESS;
+              }
             }
           } catch (e) {
             // console.log("Could not get rate for cToken: ", asset);
