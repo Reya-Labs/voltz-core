@@ -1,0 +1,1997 @@
+{
+  "version": "1.0",
+  "chainId": "1",
+  "createdAt": 1654007302649,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.8.0",
+    "createdFromSafeAddress": "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "transactions": [
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCumulative",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCumulative",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0xae16Bb8Fe13001b61DdB44e2cEae472D6af08755",
+        "lpMarginCumulative": "1499100767697"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCapNew",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0xae16Bb8Fe13001b61DdB44e2cEae472D6af08755",
+        "lpMarginCapNew": "1500000000000"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCumulative",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCumulative",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0xA1a75F6689949fF413Aa115D300f5e30F35Ba061",
+        "lpMarginCumulative": "1499948027943076619795098"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCapNew",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0xA1a75F6689949fF413Aa115D300f5e30F35Ba061",
+        "lpMarginCapNew": "1500000000000000000000000"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCumulative",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCumulative",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0xE4668BC57b1A73aaA832fb083b121D5b4602F475",
+        "lpMarginCumulative": "1499031091609432796222446"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCapNew",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0xE4668BC57b1A73aaA832fb083b121D5b4602F475",
+        "lpMarginCapNew": "1500000000000000000000000"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCumulative",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCumulative",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0x5842254e74510E000D25B5E601bCbC43B52946B4",
+        "lpMarginCumulative": "902730000000000000000"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCapNew",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0x5842254e74510E000D25B5E601bCbC43B52946B4",
+        "lpMarginCapNew": "1300000000000000000000"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCumulative",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCumulative",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0x90eAa5C92bA8E73DE962bcd6C146686761954259",
+        "lpMarginCumulative": "300000000000000000"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCapNew",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0x90eAa5C92bA8E73DE962bcd6C146686761954259",
+        "lpMarginCapNew": "1300000000000000000000"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCumulative",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCumulative",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0xc3Ab353493EC83D4de43c547aC1B12cf1dd0232d",
+        "lpMarginCumulative": "0"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCapNew",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0xc3Ab353493EC83D4de43c547aC1B12cf1dd0232d",
+        "lpMarginCapNew": "1300000000000000000000"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCumulative",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCumulative",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0x3806B99D0A0483E0D07501B31884c10e8E8b1215",
+        "lpMarginCumulative": "908780260915922393959"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "lpMarginCapNew",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "vamm": "0x3806B99D0A0483E0D07501B31884c10e8E8b1215",
+        "lpMarginCapNew": "1300000000000000000000"
+      }
+    },
+    {
+      "to": "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IPeriphery",
+            "name": "_periphery",
+            "type": "address"
+          }
+        ],
+        "name": "setPeriphery",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_periphery": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722"
+      }
+    },
+
+    {
+      "to": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "approve",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "spender": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+        "amount": "6000000000000000000"
+      }
+    },
+    {
+      "to": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "approve",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "spender": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+        "amount": "5000000"
+      }
+    },
+    {
+      "to": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "approve",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "spender": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+        "amount": "10000000000000000"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0\",\"-6960\",\"0\",\"1000000000000000000\",\"true\",\"1000000000000000000\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x9ea5Cfd876260eDadaB461f013c24092dDBD531d\",\"-6960\",\"0\",\"1000000\",\"true\",\"1000000\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e\",\"-6960\",\"0\",\"1000000000000000000\",\"true\",\"1000000000000000000\"]"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0\",\"-6960\",\"0\",\"1000000000000000000\",\"false\",\"0\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x9ea5Cfd876260eDadaB461f013c24092dDBD531d\",\"-6960\",\"0\",\"1000000\",\"false\",\"0\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e\",\"-6960\",\"0\",\"1000000000000000000\",\"false\",\"0\"]"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "1000000000000000000",
+        "fullyWithdraw": "false"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0x9ea5Cfd876260eDadaB461f013c24092dDBD531d",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "1000000",
+        "fullyWithdraw": "false"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "1000000000000000000",
+        "fullyWithdraw": "false"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "-1000000000000000000",
+        "fullyWithdraw": "false"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0x9ea5Cfd876260eDadaB461f013c24092dDBD531d",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "-1000000",
+        "fullyWithdraw": "false"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "-1000000000000000000",
+        "fullyWithdraw": "false"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0\",\"true\",\"10000000000000000\",\"2507794810551837817144115957700\",\"-6960\",\"0\",\"10000000000000000\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x9ea5Cfd876260eDadaB461f013c24092dDBD531d\",\"true\",\"1000000\",\"2507794810551837817144115957700\",\"-6960\",\"0\",\"1000000\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e\",\"true\",\"10000000000000000\",\"2507794810551837817144115957700\",\"-6960\",\"0\",\"10000000000000000\"]"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0\",\"false\",\"10000000000000000\",\"0\",\"-6960\",\"0\",\"10000000000000000\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x9ea5Cfd876260eDadaB461f013c24092dDBD531d\",\"false\",\"1000000\",\"0\",\"-6960\",\"0\",\"1000000\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e\",\"false\",\"10000000000000000\",\"0\",\"-6960\",\"0\",\"10000000000000000\"]"
+      }
+    },
+    {
+      "to": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "approve",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "spender": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+        "amount": "1000000000000000000"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "2000000000000000",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0xB1125ba5878cF3A843bE686c6c2486306f03E301\",\"-6960\",\"0\",\"2000000000000000\",\"true\",\"0\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "2000000000000000",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x21F9151d6e06f834751b614C2Ff40Fc28811B235\",\"-6960\",\"0\",\"2000000000000000\",\"true\",\"0\"]"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0xB1125ba5878cF3A843bE686c6c2486306f03E301\",\"-6960\",\"0\",\"1000000000000000\",\"false\",\"0\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "isMint",
+                "type": "bool"
+              },
+              {
+                "internalType": "int256",
+                "name": "marginDelta",
+                "type": "int256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "mintOrBurn",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x21F9151d6e06f834751b614C2Ff40Fc28811B235\",\"-6960\",\"0\",\"1000000000000000\",\"false\",\"0\"]"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0xB1125ba5878cF3A843bE686c6c2486306f03E301",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "-1600000000000000",
+        "fullyWithdraw": "false"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0x21F9151d6e06f834751b614C2Ff40Fc28811B235",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "-1600000000000000",
+        "fullyWithdraw": "false"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0xB1125ba5878cF3A843bE686c6c2486306f03E301",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "1000000000000000",
+        "fullyWithdraw": "false"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IMarginEngine",
+            "name": "marginEngine",
+            "type": "address"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int256",
+            "name": "marginDelta",
+            "type": "int256"
+          },
+          {
+            "internalType": "bool",
+            "name": "fullyWithdraw",
+            "type": "bool"
+          }
+        ],
+        "name": "updatePositionMargin",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "marginEngine": "0x21F9151d6e06f834751b614C2Ff40Fc28811B235",
+        "tickLower": "-6960",
+        "tickUpper": "0",
+        "marginDelta": "1000000000000000",
+        "fullyWithdraw": "false"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0xB1125ba5878cF3A843bE686c6c2486306f03E301\",\"true\",\"1000000000000000\",\"2507794810551837817144115957700\",\"-6960\",\"0\",\"100000000000000\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x21F9151d6e06f834751b614C2Ff40Fc28811B235\",\"true\",\"1000000000000000\",\"2507794810551837817144115957700\",\"-6960\",\"0\",\"100000000000000\"]"
+      }
+    },
+
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "800000000000000",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0xB1125ba5878cF3A843bE686c6c2486306f03E301\",\"false\",\"1000000000000000\",\"0\",\"-6960\",\"0\",\"50000000000000\"]"
+      }
+    },
+    {
+      "to": "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+      "value": "800000000000000",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "contract IMarginEngine",
+                "name": "marginEngine",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "isFT",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "notional",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint160",
+                "name": "sqrtPriceLimitX96",
+                "type": "uint160"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "uint256",
+                "name": "marginDelta",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IPeriphery.MintOrBurnParams",
+            "name": "params",
+            "type": "tuple"
+          }
+        ],
+        "name": "swap",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "params": "[\"0x21F9151d6e06f834751b614C2Ff40Fc28811B235\",\"false\",\"1000000000000000\",\"0\",\"-6960\",\"0\",\"50000000000000\"]"
+      }
+    }
+  ]
+}

@@ -220,6 +220,9 @@ const config: HardhatUserConfig = {
     strict: true,
     except: [":Test"],
   },
+  etherscan: {
+    apiKey: "",
+  },
 };
 
 export default config;

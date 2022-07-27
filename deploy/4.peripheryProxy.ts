@@ -33,12 +33,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       owner: deployer,
       proxyContract: "ERC1967Proxy",
       proxyArgs: ["{implementation}", "{data}"],
-      execute: {
+      /* execute: {
         init: {
           methodName: "initialize",
           args: [weth],
         },
-      },
+      }, */
     },
     log: true,
   });
@@ -50,12 +50,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     proxyAddress
   )) as Periphery;
 
+  // initialise
+
+  const tx_init = await peripheryProxyInstance.initialize(weth);
+  await tx_init.wait();
+
+  const owner_before = await peripheryProxyInstance.owner();
+  console.log("Owner Proxy before: ", owner_before);
+
+  const weth_after = await peripheryProxyInstance.weth();
+  console.log("WETH address: ", weth_after);
+
   if (multisig !== deployer) {
     // Transfer ownership
     console.log(
       `Transferred ownership of Periphery Proxy at ${proxyAddress} to ${multisig}`
     );
-    await peripheryProxyInstance.transferOwnership(multisig);
+    const tx_ow = await peripheryProxyInstance.transferOwnership(multisig);
+    await tx_ow.wait();
   }
 
   const owner = await peripheryProxyInstance.owner();
