@@ -36,9 +36,12 @@ contract AaveBorrowRateOracle is BaseRateOracle, IAaveRateOracle {
         override
         returns (uint32 timestamp, uint256 resultRay)
     {
-        resultRay = aaveLendingPool.getReserveNormalizedVariableDebt(underlying);
+        resultRay = aaveLendingPool.getReserveNormalizedVariableDebt(
+            underlying
+        );
         if (resultRay == 0) {
-            revert CustomErrors.AavePoolGetReserveNormalizedVariableDebtReturnedZero();
+            revert CustomErrors
+                .AavePoolGetReserveNormalizedVariableDebtReturnedZero();
         }
 
         return (Time.blockTimestampTruncated(), resultRay);

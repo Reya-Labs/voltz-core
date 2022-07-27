@@ -74,7 +74,9 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
         IERC20Minimal _underlyingAsset,
         uint256 _reserveNormalizedVariableDebt
     ) public {
-        reserveNormalizedVariableDebt[_underlyingAsset] = _reserveNormalizedVariableDebt;
+        reserveNormalizedVariableDebt[
+            _underlyingAsset
+        ] = _reserveNormalizedVariableDebt;
         startTime[_underlyingAsset] = block.timestamp;
     }
 

@@ -5,13 +5,14 @@ import { expect } from "chai";
 import { TestAaveBorrowRateOracle } from "../../../typechain/TestAaveBorrowRateOracle";
 // import { toBn } from "../../helpers/toBn";
 import { ConfigForGenericTests as Config } from "./aaveBorrowConfig";
-import { ERC20Mock } from
-// TestRateOracle,
-//   TestRateOracle__factory,
-"../../../typechain";
+import {
+  ERC20Mock,
+  // TestRateOracle,
+  //   TestRateOracle__factory,
+} from "../../../typechain";
 // import { advanceTimeAndBlock } from "../../helpers/time";
 
-const { provider } = waffle;
+// const { provider } = waffle;
 
 describe("Aave Borrow Rate Oracle", () => {
   let wallet: Wallet, other: Wallet;
@@ -29,7 +30,8 @@ describe("Aave Borrow Rate Oracle", () => {
 
   describe("Aave Borrow specific behaviour", () => {
     beforeEach("deploy and initialize test oracle", async () => {
-      const { testRateOracle, aaveLendingPool, underlyingToken } = await loadFixture(Config.oracleFixture);
+      const { testRateOracle, aaveLendingPool, underlyingToken } =
+        await loadFixture(Config.oracleFixture);
       mockAaveLendingPool = aaveLendingPool;
       token = underlyingToken;
       testAaveBorrowRateOracle =
@@ -54,8 +56,10 @@ describe("Aave Borrow Rate Oracle", () => {
         /* Rates set for Aave are already in Ray and should
         remain unchaged in the rate oracle buffer
         */
-        // await mockAaveLendingPool.setFactorPerSecondInRay(token.address, rate);
-        await mockAaveLendingPool.setReserveNormalizedVariableDebt(token.address, rate);
+        await mockAaveLendingPool.setReserveNormalizedVariableDebt(
+          token.address,
+          rate
+        );
         await testAaveBorrowRateOracle.writeOracleEntry();
         const observeRate = await testAaveBorrowRateOracle.getLatestRateValue();
 
