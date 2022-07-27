@@ -35,7 +35,7 @@ export const ConfigForGenericTests = {
       aaveLendingPool.address,
       underlyingToken.address
     )) as TestRateOracle;
-    return { testRateOracle };
+    return { testRateOracle, aaveLendingPool, underlyingToken };
   },
   setRateAsDecimal: async (rate: number) => {
     // To set the rate for Aave, we call setReserveNormalizedVariableDebt on the lending pool

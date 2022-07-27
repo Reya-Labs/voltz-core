@@ -85,11 +85,9 @@ task("getHistoricalData", "Retrieves the historical rates")
   )
   .addFlag("compound", "Get rates data from Compound")
   .addFlag("aave", "Get rates data from Aave")
-  .addOptionalParam(
-    "rate",
-    "Choose borrow or lending rate to be queried",
-    undefined,
-    types.string
+  .addFlag(
+    "borrow",
+    "Choose to query borrow rate, ommit to query lending rates"
   )
   .addOptionalParam(
     "token",
@@ -326,7 +324,7 @@ task("getHistoricalData", "Retrieves the historical rates")
 
         if (b >= aaveLendingPoolStartBlock) {
           try {
-            if (taskArgs.rate === "borrow") {
+            if (taskArgs.borrow) {
               const r = await aavePool.getReserveNormalizedVariableDebt(
                 aTokenUnderlyingAddresses[
                   asset as keyof typeof aTokenUnderlyingAddresses
