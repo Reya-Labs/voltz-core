@@ -226,7 +226,7 @@ task("getHistoricalData", "Retrieves the historical rates")
       let fetch: FETCH_STATUS = FETCH_STATUS.FAILURE;
 
       // Lido
-      if (taskArgs.lido) {
+      if (taskArgs.lido && !taskArgs.borrow) {
         if (b >= lidoStEthMainnetStartBlock) {
           const r = await stETH.getPooledEthByShares(toBn(1, 27), {
             blockTag: b,
@@ -256,10 +256,12 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
+      } else {
+        console.log("Cannot use borrow flag for Lido");
       }
 
       // Rocket
-      if (taskArgs.rocket) {
+      if (taskArgs.rocket && !taskArgs.borrow) {
         if (b >= rocketEthnMainnetStartBlock) {
           const balancesBlockNumber =
             await rocketNetworkBalancesEth.getBalancesBlock({
@@ -286,10 +288,12 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
+      } else {
+        console.log("Cannot use borrow flag for Rocket");
       }
 
       // Compound
-      if (taskArgs.compound) {
+      if (taskArgs.compound && !taskArgs.borrow) {
         if (b >= compoundMainnetStartBlock) {
           try {
             if (cToken && decimals) {
@@ -313,6 +317,8 @@ task("getHistoricalData", "Retrieves the historical rates")
         } else {
           // Before start block but we need a placeholder to keep things aligned
         }
+      } else {
+        console.log("Cannot use borrow flag for Compound");
       }
 
       // Aave
