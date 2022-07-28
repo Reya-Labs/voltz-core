@@ -5,7 +5,7 @@ import "./IMarginEngine.sol";
 import "./IFactory.sol";
 import "./IPositionStructs.sol";
 import "../core_libraries/Tick.sol";
-import "contracts/utils/CustomErrors.sol";
+import "../utils/CustomErrors.sol";
 
 interface IVAMM is IPositionStructs, CustomErrors {
     function setPausability(bool state) external;

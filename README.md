@@ -139,7 +139,7 @@ To verify the deployed contracts in etherscan, ensure that you have a valid `ETH
 
 `npx hardhat --network kovan etherscan-verify --solc-input`
 
-(At the time of writing the `--solc-input` flag is required due to some solidity issues. The result is somewhat unsatisfactory because all known contract code is displayed in etherscan for each contract, rather than just the relevant contracts. See [here](https://github.com/wighawag/hardhat-deploy/issues/263) for some discussion, but note that for us it seems to fail even with solc 0.8.9. See )
+(At the time of writing the `--solc-input` flag is required due to some solidity issues. The result is somewhat unsatisfactory because all known contract code is displayed in etherscan for each contract, rather than just the relevant contracts. See [here](https://github.com/wighawag/hardhat-deploy/issues/263) for some discussion, but note that for us it seems to fail even with solc 0.8.9.)
 
 #### Mint tokens for testing
 

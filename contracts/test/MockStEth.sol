@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity =0.8.9;
 
-import "contracts/interfaces/lido/IStETH.sol";
+import "../interfaces/lido/IStETH.sol";
 
 /**
  * @dev StETH mock - only for testing purposes.

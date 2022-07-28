@@ -8,7 +8,7 @@ import "./rate_oracles/IRateOracle.sol";
 import "./fcms/IFCM.sol";
 import "./IFactory.sol";
 import "./IERC20Minimal.sol";
-import "contracts/utils/CustomErrors.sol";
+import "../utils/CustomErrors.sol";
 
 interface IMarginEngine is IPositionStructs, CustomErrors {
     // structs

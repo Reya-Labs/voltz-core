@@ -2,17 +2,17 @@
 
 pragma solidity =0.8.9;
 
-import "contracts/test/TestMarginEngine.sol";
-import "contracts/test/TestVAMM.sol";
-import "contracts/test/TestAaveFCM.sol";
-import "contracts/utils/Printer.sol";
+import "./TestMarginEngine.sol";
+import "./TestVAMM.sol";
+import "./TestAaveFCM.sol";
+import "../utils/Printer.sol";
 import "../interfaces/aave/IAaveV2LendingPool.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IPeriphery.sol";
 import "../utils/WadRayMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "contracts/utils/CustomErrors.sol";
+import "../utils/CustomErrors.sol";
 
 contract Actor is CustomErrors {
     function mintOrBurnViaPeriphery(
