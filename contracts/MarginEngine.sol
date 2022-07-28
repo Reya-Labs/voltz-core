@@ -13,7 +13,7 @@ import "./storage/MarginEngineStorage.sol";
 import "./utils/SafeCastUni.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "contracts/utils/SqrtPriceMath.sol";
+import "./utils/SqrtPriceMath.sol";
 
 contract MarginEngine is
     MarginEngineStorage,
