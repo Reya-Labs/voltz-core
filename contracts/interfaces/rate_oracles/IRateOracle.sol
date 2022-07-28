@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import "contracts/utils/CustomErrors.sol";
-
 pragma solidity =0.8.9;
 
 import "../../utils/CustomErrors.sol";
