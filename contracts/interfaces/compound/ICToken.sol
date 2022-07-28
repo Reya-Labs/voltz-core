@@ -57,7 +57,6 @@ abstract contract ICToken is CTokenStorage {
   /*** User Interface ***/
 
   function getCash() virtual external view returns (uint);
-  function borrowRatePerBlock() virtual external view returns (uint);
 
       /**
      * @notice Underlying asset for this CToken

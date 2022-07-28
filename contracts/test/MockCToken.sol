@@ -6,6 +6,7 @@ import "../utils/Printer.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../interfaces/IERC20Minimal.sol";
 import "../core_libraries/SafeTransferLib.sol";
+import "../interfaces/compound/InterestRateModel.sol";
 
 contract MockCToken is ICToken, ERC20 {
     using WadRayMath for uint256;
@@ -44,13 +45,12 @@ contract MockCToken is ICToken, ERC20 {
         return token.balanceOf(address(this));
     }
 
-    function borrowRatePerBlock() external view override returns (uint256) {
-        return
-            interestRateModel.getBorrowRate(
-                getCash(),
-                totalBorrows,
-                totalReserves
-            );
+    function setBorrowIndex(uint256 value) external {
+        borrowIndex = value;
+    }
+
+    function setInterestRateModel(InterestRateModel model) external {
+        interestRateModel = model;
     }
 
     function underlying() external view override returns (address) {
