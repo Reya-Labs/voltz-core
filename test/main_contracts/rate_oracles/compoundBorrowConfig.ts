@@ -1,5 +1,4 @@
 import {
-  // MockAaveLendingPool,
   MockCToken,
   TestRateOracle,
   MockCInterestRateModel,
@@ -24,10 +23,10 @@ export const ConfigForGenericTests = {
       "MockCInterestRateModel"
     )) as MockCInterestRateModel;
 
-    // Set rate per block in IR model -> 1%
-    const blocksPerYear = 31536000 / 13;
-    const ratePerBlock = toBn(0.02, 18).div(toBn(blocksPerYear));
-    await mockCInterestRateModel.setBorrowRatePerBlock(ratePerBlock);
+    // Set rate per block in IR model -> 2% per year
+    // const blocksPerYear = toBn(31536000).div(toBn(13));
+    // const ratePerBlock = toBn(0.02, 18).div(blocksPerYear);
+    await mockCInterestRateModel.setBorrowRatePerBlock(0);
 
     // set interest rate model in ctoken
     await cToken.setInterestRateModel(mockCInterestRateModel.address);

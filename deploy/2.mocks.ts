@@ -91,7 +91,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   // set initial borrow index
-  trx = await mockCToken.setBorrowIndex(BigNumber.from(10).pow(18));
+  let trx = await mockCToken.setBorrowIndex(BigNumber.from(10).pow(18));
   await trx.wait();
 
   await deploy("MockCInterestRateModel", {
@@ -103,8 +103,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "MockCInterestRateModel"
   );
 
-  const blocksPerYear = 31536000 / 13;
-  const ratePerBlock = BigNumber.from(0.02).pow(18).div(blocksPerYear);
+  const secondsInYear = 31536000;
+  const secondsPerBlock = 13;
+  const ratePerBlock = BigNumber.from(10)
+    .pow(16)
+    .mul(0.02 * 100)
+    .div(secondsInYear)
+    .mul(secondsPerBlock);
   trx = await mockCompoundInterestRateModel.setBorrowRatePerBlock(ratePerBlock);
   await trx.wait();
 
