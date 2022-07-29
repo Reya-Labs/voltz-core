@@ -1,6 +1,7 @@
-hardhat.config.ts
-scripts
-test
-deploy
-deployConfig
-tasks
+# Ignore everything
+*
+# But descend into directories
+!*/
+
+!contracts/**
+!artifacts/contracts/**
