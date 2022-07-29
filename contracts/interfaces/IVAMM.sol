@@ -6,6 +6,7 @@ import "./IFactory.sol";
 import "./IPositionStructs.sol";
 import "../core_libraries/Tick.sol";
 import "../utils/CustomErrors.sol";
+import "./rate_oracles/IRateOracle.sol";
 
 interface IVAMM is IPositionStructs, CustomErrors {
     function setPausability(bool state) external;
