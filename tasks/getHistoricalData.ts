@@ -85,6 +85,10 @@ task("getHistoricalData", "Retrieves the historical rates")
   )
   .addFlag("compound", "Get rates data from Compound")
   .addFlag("aave", "Get rates data from Aave")
+  .addFlag(
+    "borrow",
+    "Choose to query borrow rate, ommit to query lending rates"
+  )
   .addOptionalParam(
     "token",
     "Get rates for the underlying token",
@@ -222,7 +226,7 @@ task("getHistoricalData", "Retrieves the historical rates")
       let fetch: FETCH_STATUS = FETCH_STATUS.FAILURE;
 
       // Lido
-      if (taskArgs.lido) {
+      if (taskArgs.lido && !taskArgs.borrow) {
         if (b >= lidoStEthMainnetStartBlock) {
           const r = await stETH.getPooledEthByShares(toBn(1, 27), {
             blockTag: b,
@@ -252,10 +256,12 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
+      } else {
+        console.log("Cannot use borrow flag for Lido");
       }
 
       // Rocket
-      if (taskArgs.rocket) {
+      if (taskArgs.rocket && !taskArgs.borrow) {
         if (b >= rocketEthnMainnetStartBlock) {
           const balancesBlockNumber =
             await rocketNetworkBalancesEth.getBalancesBlock({
@@ -282,10 +288,12 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
+      } else {
+        console.log("Cannot use borrow flag for Rocket");
       }
 
       // Compound
-      if (taskArgs.compound) {
+      if (taskArgs.compound && !taskArgs.borrow) {
         if (b >= compoundMainnetStartBlock) {
           try {
             if (cToken && decimals) {
@@ -309,6 +317,8 @@ task("getHistoricalData", "Retrieves the historical rates")
         } else {
           // Before start block but we need a placeholder to keep things aligned
         }
+      } else {
+        console.log("Cannot use borrow flag for Compound");
       }
 
       // Aave
@@ -320,19 +330,35 @@ task("getHistoricalData", "Retrieves the historical rates")
 
         if (b >= aaveLendingPoolStartBlock) {
           try {
-            const r = await aavePool.getReserveNormalizedIncome(
-              aTokenUnderlyingAddresses[
-                asset as keyof typeof aTokenUnderlyingAddresses
-              ],
-              {
-                blockTag: b,
-              }
-            );
+            if (taskArgs.borrow) {
+              const r = await aavePool.getReserveNormalizedVariableDebt(
+                aTokenUnderlyingAddresses[
+                  asset as keyof typeof aTokenUnderlyingAddresses
+                ],
+                {
+                  blockTag: b,
+                }
+              );
 
-            blocks.push(b);
-            timestamps.push(block.timestamp);
-            rates.push(r);
-            fetch = FETCH_STATUS.SUCCESS;
+              blocks.push(b);
+              timestamps.push(block.timestamp);
+              rates.push(r);
+              fetch = FETCH_STATUS.SUCCESS;
+            } else {
+              const r = await aavePool.getReserveNormalizedIncome(
+                aTokenUnderlyingAddresses[
+                  asset as keyof typeof aTokenUnderlyingAddresses
+                ],
+                {
+                  blockTag: b,
+                }
+              );
+
+              blocks.push(b);
+              timestamps.push(block.timestamp);
+              rates.push(r);
+              fetch = FETCH_STATUS.SUCCESS;
+            }
           } catch (e) {
             // console.log("Could not get rate for aToken: ", asset);
           }

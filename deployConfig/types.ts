@@ -59,7 +59,11 @@ export interface AaveConfig {
   aaveTokens: TokenConfig[];
   defaults: RateOracleConfigDefaults;
 }
-
+export interface AaveBorrowConfig {
+  aaveLendingPool?: string;
+  aaveTokens: TokenConfig[];
+  defaults: RateOracleConfigDefaults;
+}
 export interface CompoundConfig {
   compoundTokens: TokenConfig[];
   defaults: RateOracleConfigDefaults;
@@ -79,6 +83,7 @@ export interface ContractsConfig {
   weth?: string;
   irsConfig: IrsConfigDefaults;
   aaveConfig?: AaveConfig;
+  aaveBorrowConfig?: AaveBorrowConfig;
   compoundConfig?: CompoundConfig;
   lidoConfig?: LidoConfig;
   rocketPoolConfig?: RocketPoolConfig;

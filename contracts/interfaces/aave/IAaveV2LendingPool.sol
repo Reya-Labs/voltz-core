@@ -74,6 +74,8 @@ interface IAaveV2LendingPool {
 
     function getReserveNormalizedIncome(IERC20Minimal underlyingAsset) external view returns (uint256);
 
+    function getReserveNormalizedVariableDebt(IERC20Minimal underlyingAsset) external view returns (uint256);
+
     /**
     * @dev Withdraws an `amount` of underlying asset from the reserve, burning the equivalent aTokens owned
     * E.g. User has 100 aUSDC, calls withdraw() and receives 100 USDC, burning the 100 aUSDC

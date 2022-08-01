@@ -11,6 +11,7 @@ import "../utils/Printer.sol";
 /// - configure the rate to alter over time (`setFactorPerSecondInRay`) for more dynamic testing
 contract MockAaveLendingPool is IAaveV2LendingPool {
     mapping(IERC20Minimal => uint256) internal reserveNormalizedIncome;
+    mapping(IERC20Minimal => uint256) internal reserveNormalizedVariableDebt;
     mapping(IERC20Minimal => uint256) internal startTime;
     mapping(IERC20Minimal => uint256) internal factorPerSecondInRay; // E.g. 1000000001000000000000000000 for 0.0000001% per second = ~3.2% APY
 
@@ -39,11 +40,43 @@ contract MockAaveLendingPool is IAaveV2LendingPool {
         }
     }
 
+    function getReserveNormalizedVariableDebt(IERC20Minimal _underlyingAsset)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 factorPerSecond = factorPerSecondInRay[_underlyingAsset];
+        if (factorPerSecond > 0) {
+            uint256 secondsSinceNormalizedVariableDebtSet = block.timestamp -
+                startTime[_underlyingAsset];
+            return
+                PRBMathUD60x18.mul(
+                    reserveNormalizedVariableDebt[_underlyingAsset],
+                    PRBMathUD60x18.pow(
+                        factorPerSecond,
+                        secondsSinceNormalizedVariableDebtSet
+                    )
+                );
+        } else {
+            return reserveNormalizedVariableDebt[_underlyingAsset];
+        }
+    }
+
     function setReserveNormalizedIncome(
         IERC20Minimal _underlyingAsset,
         uint256 _reserveNormalizedIncome
     ) public {
         reserveNormalizedIncome[_underlyingAsset] = _reserveNormalizedIncome;
+        startTime[_underlyingAsset] = block.timestamp;
+    }
+
+    function setReserveNormalizedVariableDebt(
+        IERC20Minimal _underlyingAsset,
+        uint256 _reserveNormalizedVariableDebt
+    ) public {
+        reserveNormalizedVariableDebt[
+            _underlyingAsset
+        ] = _reserveNormalizedVariableDebt;
         startTime[_underlyingAsset] = block.timestamp;
     }
 

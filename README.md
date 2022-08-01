@@ -167,6 +167,12 @@ See usage for upgrade tasks, e.g.:
 - `npx hardhat updateRateOracle --help`
 - `npx hardhat upgradeVAMM --help`
 
+## Python package management
+When running the python scripts use the pipenv virtual environment and pip3 package manager. To do this you need to make sure that you have a clean installation of python3, pip3, and pipenv. You can python3 with brew which also installs pip3 with it. You can then install pipenv using `pip3 install pipenv`. 
+
+Next, open a terminal in the VS Code repo you want and run `pipenv shell`, creating a python virtual environment. You can then
+use `pipenv install [package name]` to install packages like `pandas`. This creates 2 files, a Pipfile and a Piplock file. These keep track of the packages and can be treated like the package.json and package.lock files for a node projecty.
+
 ## Terms and Conditions
 
 The Voltz Protocol, and any products or services associated therewith, is offered only to persons (aged 18 years or older) or entities who are not residents of, citizens of, are incorporated in, owned or controlled by a person or entity in, located in, or have a registered office or principal place of business in any “Restricted Territory.”
