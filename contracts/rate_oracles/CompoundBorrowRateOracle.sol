@@ -5,7 +5,6 @@ pragma solidity =0.8.9;
 import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
 import "../interfaces/compound/ICToken.sol";
 import "./BaseRateOracle.sol";
-import "../interfaces/compound/InterestRateModel.sol";
 
 contract CompoundBorrowRateOracle is BaseRateOracle, ICompoundRateOracle {
     /// @inheritdoc ICompoundRateOracle
@@ -14,7 +13,7 @@ contract CompoundBorrowRateOracle is BaseRateOracle, ICompoundRateOracle {
     /// @inheritdoc ICompoundRateOracle
     uint8 public immutable override decimals;
 
-    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 2; // id of compound is 2
+    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 6; // id of compound is 6
 
     constructor(
         ICToken _ctoken,
@@ -45,22 +44,15 @@ contract CompoundBorrowRateOracle is BaseRateOracle, ICompoundRateOracle {
     {
         uint256 borrowIndexPrior = ctoken.borrowIndex();
 
-        uint256 cashPrior = ctoken.getCash();
-        InterestRateModel model = ctoken.interestRateModel();
-        uint256 borrowRateMantissa = model.getBorrowRate(
-            cashPrior,
-            ctoken.totalBorrows(),
-            ctoken.totalReserves()
-        );
+        uint256 borrowRateMantissa = ctoken.borrowRatePerBlock();
         require(
-            borrowRateMantissa <= 0.0005e16,
+            borrowRateMantissa <= ctoken.borrowRateMaxMantissa(),
             "borrow rate is absurdly high"
         );
 
         uint256 blockDelta = block.number - ctoken.accrualBlockNumber();
         uint256 simpleInterestFactor = borrowRateMantissa * blockDelta;
 
-        uint256 expScale = 1e18;
         uint256 borrowIndex = (simpleInterestFactor * borrowIndexPrior) /
             1e18 +
             borrowIndexPrior;

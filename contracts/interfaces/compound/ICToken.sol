@@ -2,18 +2,11 @@
 
 pragma solidity =0.8.9;
 
-import "./InterestRateModel.sol";
-
 // Subset of https://github.com/compound-finance/compound-protocol/blob/master/contracts/CTokenInterfaces.sol
 contract CTokenStorage {
 
     // Maximum borrow rate that can ever be applied (.0005% / block)
     uint internal constant borrowRateMaxMantissa = 0.0005e16;
-
-    /**
-     * @notice Model which tells what the current interest rate should be
-     */
-    InterestRateModel public interestRateModel;
 
     /**
      * @notice Block number that interest was last accrued at
@@ -56,7 +49,7 @@ abstract contract ICToken is CTokenStorage {
 
   /*** User Interface ***/
 
-  function getCash() virtual external view returns (uint);
+  function borrowRatePerBlock() virtual external view returns (uint);
 
       /**
      * @notice Underlying asset for this CToken

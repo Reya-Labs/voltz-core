@@ -1,8 +1,4 @@
-import {
-  MockCToken,
-  TestRateOracle,
-  MockCInterestRateModel,
-} from "../../../typechain";
+import { MockCToken, TestRateOracle } from "../../../typechain";
 import { toBn } from "../../helpers/toBn";
 import { deployments, ethers } from "hardhat";
 
@@ -19,17 +15,11 @@ export const ConfigForGenericTests = {
 
     // store the cToken and interest rate model and some rate per block info for use when setting rates
     cToken = (await ethers.getContract("MockCToken")) as MockCToken;
-    const mockCInterestRateModel = (await ethers.getContract(
-      "MockCInterestRateModel"
-    )) as MockCInterestRateModel;
 
     // Set rate per block in IR model -> 2% per year
     // const blocksPerYear = toBn(31536000).div(toBn(13));
     // const ratePerBlock = toBn(0.02, 18).div(blocksPerYear);
-    await mockCInterestRateModel.setBorrowRatePerBlock(0);
-
-    // set interest rate model in ctoken
-    await cToken.setInterestRateModel(mockCInterestRateModel.address);
+    await cToken.setBorrowRatePerBlock(0);
 
     // set initial borrow index
     await cToken.setBorrowIndex(toBn(startingExchangeRate, 18));
@@ -47,7 +37,6 @@ export const ConfigForGenericTests = {
     return { testRateOracle };
   },
   setRateAsDecimal: async (rate: number) => {
-    // To set the rate for compound, we call setExchangeRate on the cToken
     await cToken.setBorrowIndex(toBn(rate, 18));
   },
 };

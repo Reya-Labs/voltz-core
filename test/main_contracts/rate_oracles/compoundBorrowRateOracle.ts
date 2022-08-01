@@ -2,18 +2,15 @@ import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { expect } from "chai";
 import { ConfigForGenericTests as Config } from "./compoundBorrowConfig";
-import {
-  MockCToken,
-  TestCompoundBorrowRateOracle,
-  MockCInterestRateModel,
-} from "../../../typechain";
+import { MockCToken, TestCompoundBorrowRateOracle } from "../../../typechain";
 
 const { provider } = waffle;
 
 describe("Compound Borrow Rate Oracle", () => {
   const blocksPerYear = BigNumber.from(31536000).div(13);
   const wad = BigNumber.from(10).pow(18);
-  const ratePerBlock = BigNumber.from(2).mul(wad).div(100).div(blocksPerYear);
+  const ratePerYearInWad = BigNumber.from(2).mul(wad).div(100); // 2%
+  const ratePerBlock = ratePerYearInWad.div(blocksPerYear);
 
   let wallet: Wallet, other: Wallet;
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>;
@@ -32,17 +29,13 @@ describe("Compound Borrow Rate Oracle", () => {
         testRateOracle as unknown as TestCompoundBorrowRateOracle;
       cToken = (await ethers.getContract("MockCToken")) as MockCToken;
 
-      const mockCInterestRateModel = (await ethers.getContract(
-        "MockCInterestRateModel"
-      )) as MockCInterestRateModel;
-
-      await mockCInterestRateModel.setBorrowRatePerBlock(ratePerBlock);
+      await cToken.setBorrowRatePerBlock(ratePerBlock);
     });
     it("Verify correct protocol ID for Compound Borrow rate oracle", async () => {
       const protocolID =
         await testCompoundBorrowRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
-      expect(protocolID).to.eq(2);
+      expect(protocolID).to.eq(6);
     });
 
     it(`Verify rate for Compound Borrow`, async () => {

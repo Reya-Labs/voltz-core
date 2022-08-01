@@ -94,28 +94,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   let trx = await mockCToken.setBorrowIndex(BigNumber.from(10).pow(18));
   await trx.wait();
 
-  await deploy("MockCInterestRateModel", {
-    from: deployer,
-    log: doLogging,
-  });
-
-  const mockCompoundInterestRateModel = await ethers.getContract(
-    "MockCInterestRateModel"
-  );
-
-  const secondsInYear = 31536000;
-  const secondsPerBlock = 13;
-  const ratePerBlock = BigNumber.from(10)
-    .pow(16)
-    .mul(0.02 * 100)
-    .div(secondsInYear)
-    .mul(secondsPerBlock);
-  trx = await mockCompoundInterestRateModel.setBorrowRatePerBlock(ratePerBlock);
-  await trx.wait();
-
-  trx = await mockCToken.setInterestRateModel(
-    mockCompoundInterestRateModel.address
-  );
+  const blocksPerYear = BigNumber.from(31536000).div(13);
+  const wad = BigNumber.from(10).pow(18);
+  const ratePerYearInWad = BigNumber.from(2).mul(wad).div(100); // 2%
+  const ratePerBlock = ratePerYearInWad.div(blocksPerYear);
+  trx = await mockCToken.setBorrowRatePerBlock(ratePerBlock);
   await trx.wait();
 
   // Mock PERIPHERY

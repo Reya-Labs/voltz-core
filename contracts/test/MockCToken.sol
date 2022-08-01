@@ -6,13 +6,15 @@ import "../utils/Printer.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../interfaces/IERC20Minimal.sol";
 import "../core_libraries/SafeTransferLib.sol";
-import "../interfaces/compound/InterestRateModel.sol";
 
 contract MockCToken is ICToken, ERC20 {
     using WadRayMath for uint256;
     address internal _underlyingAsset;
     uint256 internal _rate;
     uint256 internal _supplyRatePerBlock;
+    uint256 internal _borrowRatePerBlock;
+    uint256 internal _borrowIndex;
+    uint256 internal _accrualBlockNumber;
 
     using SafeTransferLib for IERC20Minimal;
 
@@ -38,19 +40,6 @@ contract MockCToken is ICToken, ERC20 {
 
     function exchangeRateStored() public view override returns (uint256) {
         return _rate;
-    }
-
-    function getCash() public view override returns (uint256) {
-        IERC20Minimal token = IERC20Minimal(_underlyingAsset);
-        return token.balanceOf(address(this));
-    }
-
-    function setBorrowIndex(uint256 value) external {
-        borrowIndex = value;
-    }
-
-    function setInterestRateModel(InterestRateModel model) external {
-        interestRateModel = model;
     }
 
     function underlying() external view override returns (address) {
@@ -104,5 +93,29 @@ contract MockCToken is ICToken, ERC20 {
 
     function supplyRatePerBlock() public view override returns (uint256) {
         return _supplyRatePerBlock;
+    }
+
+    function setBorrowIndex(uint256 borrowIndex) external {
+        _borrowIndex = borrowIndex;
+    }
+
+    function borrowIndex() public view override returns (uint256) {
+        return _borrowRatePerBlock;
+    }
+
+    function setAccrualBlockNumber(uint256 accrualBlockNumber) external {
+        _accrualBlockNumber = accrualBlockNumber;
+    }
+
+    function accrualBlockNumber() public view override returns (uint256) {
+        return _accrualBlockNumber;
+    }
+
+    function setBorrowRatePerBlock(uint256 borrowRatePerBlock) external {
+        _borrowRatePerBlock = borrowRatePerBlock;
+    }
+
+    function borrowRatePerBlock() public view override returns (uint256) {
+        return _borrowRatePerBlock;
     }
 }
