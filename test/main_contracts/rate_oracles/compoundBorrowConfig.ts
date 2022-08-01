@@ -16,13 +16,15 @@ export const ConfigForGenericTests = {
     // store the cToken and interest rate model and some rate per block info for use when setting rates
     cToken = (await ethers.getContract("MockCToken")) as MockCToken;
 
-    // Set rate per block in IR model -> 2% per year
-    // const blocksPerYear = toBn(31536000).div(toBn(13));
-    // const ratePerBlock = toBn(0.02, 18).div(blocksPerYear);
+    // Set inital rate per block to 0
     await cToken.setBorrowRatePerBlock(0);
 
     // set initial borrow index
     await cToken.setBorrowIndex(toBn(startingExchangeRate, 18));
+
+    // set last update block
+    const latestBlock = await ethers.provider.getBlock("latest");
+    await cToken.setAccrualBlockNumber(latestBlock.number);
 
     const testRateOracleFactory = await ethers.getContractFactory(
       "TestCompoundBorrowRateOracle"

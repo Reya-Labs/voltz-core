@@ -95,12 +95,6 @@ task("getHistoricalData", "Retrieves the historical rates")
     "ETH",
     types.string
   )
-  .addOptionalParam(
-    "rate",
-    "Choose borrow or lending rate to be queried",
-    undefined,
-    types.string
-  )
   .setAction(async (taskArgs, hre) => {
     // calculate from and to blocks
     const currentBlock = await hre.ethers.provider.getBlock("latest");
@@ -262,8 +256,6 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
-      } else {
-        console.log("Cannot use borrow flag for Lido");
       }
 
       // Rocket
@@ -294,21 +286,32 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
-      } else {
-        console.log("Cannot use borrow flag for Rocket");
       }
 
       // Compound
-      if (taskArgs.compound && !taskArgs.borrow) {
+      if (taskArgs.compound) {
         if (b >= compoundMainnetStartBlock) {
           try {
             if (cToken && decimals) {
-              if (taskArgs.rate === "borrow") {
-                let r = await cToken.borrowIndex({
+              if (taskArgs.borrow) {
+                const borrowRateMantissa = await cToken.borrowRatePerBlock({
                   blockTag: b,
                 });
-
-                r = r.mul(BigNumber.from(10).pow(9));
+                const accrualBlockNumber = await cToken.accrualBlockNumber({
+                  blockTag: b,
+                });
+                const blockDelta = BigNumber.from(b).sub(accrualBlockNumber);
+                const simpleInterestFactor = borrowRateMantissa.mul(
+                  BigNumber.from(blockDelta)
+                );
+                const borrowIndexPrior = await cToken.borrowIndex({
+                  blockTag: b,
+                });
+                const r = simpleInterestFactor
+                  .mul(borrowIndexPrior)
+                  .div(BigNumber.from(10).pow(18)) // all the above are in wad
+                  .add(borrowIndexPrior)
+                  .mul(BigNumber.from(10).pow(9)); // scale to ray
 
                 blocks.push(b);
                 timestamps.push(block.timestamp);

@@ -100,7 +100,7 @@ contract MockCToken is ICToken, ERC20 {
     }
 
     function borrowIndex() public view override returns (uint256) {
-        return _borrowRatePerBlock;
+        return _borrowIndex;
     }
 
     function setAccrualBlockNumber(uint256 accrualBlockNumber) external {
