@@ -214,9 +214,11 @@ task("getHistoricalData", "Retrieves the historical rates")
     const rates: BigNumber[] = [];
 
     const fs = require("fs");
-    const file = `historicalData/rates/${asset}.csv`;
+    const file = taskArgs.borrow
+      ? `historicalData/rates/f_borrow_${asset}.csv`
+      : `historicalData/rates/f_${asset}.csv`;
 
-    const header = "block,timestamp,rate";
+    const header = "date,liquidityIndex";
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
@@ -256,8 +258,6 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
-      } else {
-        console.log("Cannot use borrow flag for Lido");
       }
 
       // Rocket
@@ -288,8 +288,6 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
-      } else {
-        console.log("Cannot use borrow flag for Rocket");
       }
 
       // Compound
@@ -317,8 +315,6 @@ task("getHistoricalData", "Retrieves the historical rates")
         } else {
           // Before start block but we need a placeholder to keep things aligned
         }
-      } else {
-        console.log("Cannot use borrow flag for Compound");
       }
 
       // Aave
@@ -373,7 +369,7 @@ task("getHistoricalData", "Retrieves the historical rates")
 
           fs.appendFileSync(
             file,
-            `${lastBlock},${lastTimestamp},${lastRate}\n`
+            `${new Date(lastTimestamp * 1000).toISOString()},${lastRate}\n`
           );
           console.log(
             `${lastBlock},${lastTimestamp},${new Date(
