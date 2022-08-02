@@ -36,7 +36,7 @@ const RocketNetworkBalancesEthMainnet =
 // compound
 const compoundMainnetStartBlock = 7710760; // cUSDC deployment
 const cTokenAddresses = {
-  cDAI: "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
+  cDAI: "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643",
   cUSDC: "0x39aa39c021dfbae8fac545936693ac917d5e7563",
   cWBTC: "0xc11b1268c1a384e55c48c2391d8d480264a3a7f4",
   cWBTC2: "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
@@ -210,9 +210,9 @@ task("getHistoricalData", "Retrieves the historical rates")
     const rates: BigNumber[] = [];
 
     const fs = require("fs");
-    const file = `historicalData/rates/${asset}.csv`;
+    const file = `historicalData/rates/f_${asset}.csv`;
 
-    const header = "block,timestamp,rate";
+    const header = "date,liquidityIndex";
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
@@ -347,7 +347,7 @@ task("getHistoricalData", "Retrieves the historical rates")
 
           fs.appendFileSync(
             file,
-            `${lastBlock},${lastTimestamp},${lastRate}\n`
+            `${new Date(lastTimestamp * 1000).toISOString()},${lastRate}\n`
           );
           console.log(
             `${lastBlock},${lastTimestamp},${new Date(

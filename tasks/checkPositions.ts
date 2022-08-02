@@ -4,17 +4,17 @@ import { ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 
-// rocket
-// eslint-disable-next-line no-unused-vars
-const rocketPoolRateOracle = "0x41EcaAC9061F6BABf2D42068F8F8dAF3BA9644FF";
-// eslint-disable-next-line no-unused-vars
-const rocketMarginEngine = "0xb1125ba5878cf3a843be686c6c2486306f03e301";
+// // rocket
+// // eslint-disable-next-line no-unused-vars
+// const rocketPoolRateOracle = "0x41EcaAC9061F6BABf2D42068F8F8dAF3BA9644FF";
+// // eslint-disable-next-line no-unused-vars
+// const rocketMarginEngine = "0xb1125ba5878cf3a843be686c6c2486306f03e301";
 
-// lido
-// eslint-disable-next-line no-unused-vars
-const lidoRateOracle = "0xA667502bF7f5dA45c7b6a70dA7f0595E6Cf342D8";
-// eslint-disable-next-line no-unused-vars
-const lidoMarginEngine = "0x21f9151d6e06f834751b614c2ff40fc28811b235";
+// // lido
+// // eslint-disable-next-line no-unused-vars
+// const lidoRateOracle = "0xA667502bF7f5dA45c7b6a70dA7f0595E6Cf342D8";
+// // eslint-disable-next-line no-unused-vars
+// const lidoMarginEngine = "0x21f9151d6e06f834751b614c2ff40fc28811b235";
 
 task("checkPositionsHealth", "Check positions")
   .addParam(
@@ -38,7 +38,13 @@ task("checkPositionsHealth", "Check positions")
     fs.appendFileSync(file, header + "\n");
     console.log(header);
 
-    const positions: Position[] = await getPositions();
+    let positions: Position[] = await getPositions();
+    positions = positions.filter(
+      (p) =>
+        p.owner.toLowerCase() ===
+        "0x5bB4f05ff5235554204E3cd9bA46C3d5AF422a0F".toLowerCase()
+    );
+
     for (const position of positions) {
       if (position.marginEngine === taskArgs.marginEngineAddress) {
         const positionRequirementSafety =
@@ -71,6 +77,7 @@ task("checkPositionsHealth", "Check positions")
         }
 
         console.log(
+          taskArgs.marginEngineAddress,
           position.owner,
           position.tickLower,
           position.tickUpper,

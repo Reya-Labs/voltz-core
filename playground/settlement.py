@@ -155,42 +155,6 @@ def current_settlement(data):
     return calculate_cashflow(f_b, v_b, a, t_a, c, t_c)
 
 
-def next_settlement(data):
-    t_a = data["t_a"]
-    t_b = data["t_b"]
-    t_c = data["t_c"]
-    a = data["a"]
-    b = data["b"]
-    c = data["c"]
-    v = data["v"]
-    fr = data["fr"]
-
-    v_u = -v
-    f_u = v * fr
-
-    f_b = f_u - f_u * (t_b - t_a) / (t_c - t_a)
-    v_b = v_u - v_u * (1 - a / b)
-    gamma = - v_u * (1 - a / b)
-
-    return calculate_cashflow(f_b, v_b, a, t_a, c, t_c) + gamma
-
-
-def simplified_settlement(data):
-    t_b = data["t_b"]
-    t_c = data["t_c"]
-    b = data["b"]
-    c = data["c"]
-    v = data["v"]
-    fr = data["fr"]
-
-    v_u = -v
-    f_u = v * fr
-
-    f_b = f_u * (t_c - t_b) / ONE_YEAR_IN_SECONDS * 0.01 - v_u
-    v_b = v_u / b
-    
-    return f_b + v_b * c
-
 data = get_aUSDC_data()
 for data in data:
     t_a = data["t_a"]

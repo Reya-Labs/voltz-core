@@ -22,6 +22,7 @@ import * as fs from "fs";
 import path from "path";
 import "@nomiclabs/hardhat-ethers";
 import { poolConfig, poolConfigs } from "../deployConfig/poolConfig";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 interface MultisigTemplateData {
   factoryAddress: string;
@@ -77,37 +78,47 @@ async function configureIrs(
   hre: HardhatRuntimeEnvironment,
   marginEngine: IMarginEngine,
   vamm: IVAMM,
-  poolConfig: poolConfig
+  poolConfig: poolConfig,
+  s?: SignerWithAddress
 ) {
   // Set the config for our IRS instance
   // TODO: allow values to be overridden with task parameters, as required
   console.log(`Configuring IRS...`);
 
-  let trx = await marginEngine.setMarginCalculatorParameters(
-    poolConfig.marginCalculatorParams,
-    { gasLimit: 10000000 }
-  );
+  if (!s) {
+    throw new Error("no signer");
+  }
+
+  let trx = await marginEngine
+    .connect(s)
+    .setMarginCalculatorParameters(poolConfig.marginCalculatorParams, {
+      gasLimit: 10000000,
+    });
   await trx.wait();
-  trx = await marginEngine.setCacheMaxAgeInSeconds(
-    poolConfig.cacheMaxAgeInSeconds,
-    { gasLimit: 10000000 }
-  );
+  trx = await marginEngine
+    .connect(s)
+    .setCacheMaxAgeInSeconds(poolConfig.cacheMaxAgeInSeconds, {
+      gasLimit: 10000000,
+    });
   await trx.wait();
-  trx = await marginEngine.setLookbackWindowInSeconds(
-    poolConfig.lookbackWindowInSeconds,
-    { gasLimit: 10000000 }
-  );
+  trx = await marginEngine
+    .connect(s)
+    .setLookbackWindowInSeconds(poolConfig.lookbackWindowInSeconds, {
+      gasLimit: 10000000,
+    });
   await trx.wait();
-  trx = await marginEngine.setLiquidatorReward(poolConfig.liquidatorRewardWad, {
-    gasLimit: 10000000,
-  });
+  trx = await marginEngine
+    .connect(s)
+    .setLiquidatorReward(poolConfig.liquidatorRewardWad, {
+      gasLimit: 10000000,
+    });
   await trx.wait();
 
   const currentVammVars = await vamm.vammVars();
   const currentFeeProtocol = currentVammVars.feeProtocol;
   if (currentFeeProtocol === 0) {
     // Fee protocol can only be set if it has never been set
-    trx = await vamm.setFeeProtocol(poolConfig.vammFeeProtocolWad, {
+    trx = await vamm.connect(s).setFeeProtocol(poolConfig.vammFeeProtocolWad, {
       gasLimit: 10000000,
     });
     await trx.wait();
@@ -116,7 +127,7 @@ async function configureIrs(
   const currentFeeWad = await vamm.feeWad();
   if (currentFeeWad.toString() === "0") {
     // Fee  can only be set if it has never been set
-    trx = await vamm.setFee(poolConfig.vammFeeProtocolWad, {
+    trx = await vamm.connect(s).setFee(poolConfig.vammFeeProtocolWad, {
       gasLimit: 10000000,
     });
     await trx.wait();
@@ -125,7 +136,7 @@ async function configureIrs(
   if (poolConfig.isAlpha) {
     const isAlphaVAMM = await vamm.isAlpha();
     if (!isAlphaVAMM) {
-      trx = await vamm.setIsAlpha(true, {
+      trx = await vamm.connect(s).setIsAlpha(true, {
         gasLimit: 10000000,
       });
       await trx.wait();
@@ -135,7 +146,7 @@ async function configureIrs(
 
     const isAlphaME = await marginEngine.isAlpha();
     if (!isAlphaME) {
-      trx = await marginEngine.setIsAlpha(true, {
+      trx = await marginEngine.connect(s).setIsAlpha(true, {
         gasLimit: 10000000,
       });
       await trx.wait();
@@ -154,13 +165,11 @@ async function configureIrs(
     if (currentLpMarginCap.toString() !== poolConfig.lpMarginCap) {
       console.log(`Setting margin cap to: ${poolConfig.lpMarginCap}`);
 
-      trx = await periphery.setLPMarginCap(
-        vamm.address,
-        poolConfig.lpMarginCap,
-        {
+      trx = await periphery
+        .connect(s)
+        .setLPMarginCap(vamm.address, poolConfig.lpMarginCap, {
           gasLimit: 10000000,
-        }
-      );
+        });
       await trx.wait();
     }
 
@@ -206,6 +215,38 @@ task(
   )
   .addParam("termEndTimestamp", "The UNIX timestamp of pool end")
   .setAction(async (taskArgs, hre) => {
+    const addSigner = async (address: string): Promise<SignerWithAddress> => {
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+      });
+      await hre.network.provider.send("hardhat_setBalance", [
+        address,
+        "0x1000000000000000000",
+      ]);
+      return await hre.ethers.getSigner(address);
+    };
+
+    const removeSigner = async (address: string) => {
+      await hre.network.provider.request({
+        method: "hardhat_stopImpersonatingAccount",
+        params: [address],
+      });
+    };
+
+    const withSigner = async (
+      address: string,
+      f: (_: SignerWithAddress) => Promise<void>
+    ) => {
+      if (!(hre.network.name === "localhost")) {
+        throw new Error("Only localhost");
+      }
+
+      const signer = await addSigner(address);
+      await f(signer);
+      await removeSigner(address);
+    };
+
     let poolConfig: poolConfig;
     if (taskArgs.pool in poolConfigs) {
       poolConfig = poolConfigs[taskArgs.pool];
@@ -259,7 +300,7 @@ task(
     );
 
     if (taskArgs.multisig) {
-      const nonce = await getFactoryNonce(hre, factory.address);
+      const nonce = (await getFactoryNonce(hre, factory.address)) + 6;
 
       const data: MultisigTemplateData = {
         factoryAddress: factory.address,
@@ -286,40 +327,44 @@ task(
       };
       writeIrsCreationTransactionsToGnosisSafeTemplate(data);
     } else {
-      const deployTrx = await factory.deployIrsInstance(
-        underlyingToken.address,
-        rateOracle.address,
-        toBn(termStartTimestamp), // converting to wad
-        toBn(termEndTimestamp), // converting to wad
-        poolConfig.tickSpacing,
-        { gasLimit: 10000000 }
-      );
-      const receipt = await deployTrx.wait();
-      // console.log(receipt);
+      await withSigner(await factory.owner(), async (s) => {
+        const deployTrx = await factory.connect(s).deployIrsInstance(
+          underlyingToken.address,
+          rateOracle.address,
+          toBn(termStartTimestamp), // converting to wad
+          toBn(termEndTimestamp), // converting to wad
+          poolConfig.tickSpacing,
+          { gasLimit: 10000000 }
+        );
+        const receipt = await deployTrx.wait();
+        // console.log(receipt);
 
-      if (!receipt.status) {
-        console.error("IRS creation failed!");
-      } else {
-        const event = receipt.events.filter(
-          (e: { event: string }) => e.event === "IrsInstance"
-        )[0];
-        //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
-        console.log(`IRS created successfully. Event args were: ${event.args}`);
+        if (!receipt.status) {
+          console.error("IRS creation failed!");
+        } else {
+          const event = receipt.events.filter(
+            (e: { event: string }) => e.event === "IrsInstance"
+          )[0];
+          //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
+          console.log(
+            `IRS created successfully. Event args were: ${event.args}`
+          );
 
-        const marginEngineAddress = event.args[5];
-        const vammAddress = event.args[6];
+          const marginEngineAddress = event.args[5];
+          const vammAddress = event.args[6];
 
-        const marginEngine = (await hre.ethers.getContractAt(
-          "MarginEngine",
-          marginEngineAddress
-        )) as MarginEngine;
-        const vamm = (await hre.ethers.getContractAt(
-          "VAMM",
-          vammAddress
-        )) as VAMM;
+          const marginEngine = (await hre.ethers.getContractAt(
+            "MarginEngine",
+            marginEngineAddress
+          )) as MarginEngine;
+          const vamm = (await hre.ethers.getContractAt(
+            "VAMM",
+            vammAddress
+          )) as VAMM;
 
-        await configureIrs(hre, marginEngine, vamm, poolConfig);
-      }
+          await configureIrs(hre, marginEngine, vamm, poolConfig, s);
+        }
+      });
     }
   });
 

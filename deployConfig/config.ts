@@ -90,7 +90,7 @@ const localhostIrsConfigDefaults = {
   marginEngineCacheMaxAgeInSeconds: 60 * 60, // 1 hour
   rateOracleMinSecondsSinceLastUpdate: 60 * 60, // 1 hour
   rateOracleBufferSize: 1000,
-  maxIrsDurationInSeconds: 60 * 60 * 24 * 30, // 30 days. Do not increase without checking that rate oracle buffers are large enough
+  maxIrsDurationInSeconds: 60 * 60 * 24 * 90, // 30 days. Do not increase without checking that rate oracle buffers are large enough
 };
 const localhostRateOracleConfigDefaults = {
   ...kovanRateOracleConfigDefaults,
