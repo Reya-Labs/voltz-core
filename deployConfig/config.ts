@@ -171,6 +171,32 @@ const goerliRocketEthDataPoints: RateOracleDataPoint[] = [
   [1657435372, "1026780389412413279149346221"],
 ];
 
+const borrowAaveUSDCMainnetTrustedDatapoints: RateOracleDataPoint[] = [
+  [1658618955, "1109755147923344578270859036"],
+  [1658705395, "1109800811525858567378907794"],
+  [1658791844, "1109847380780342472867486463"],
+  [1658878278, "1109894818250135099335640168"],
+  [1658964143, "1109942844266595658870197351"],
+  [1659050336, "1109992073317241503323476791"],
+  [1659136611, "1110041901548415395110548722"],
+  [1659222426, "1110094318598328195275099717"],
+  [1659308455, "1110146531886525921197028893"],
+  [1659394598, "1110198650640220951402529044"],
+];
+
+const borrowAaveDAIMainnetTrustedDatapoints: RateOracleDataPoint[] = [
+  [1658618955, "1117966593199281135728219837"],
+  [1658705395, "1118018695182045164396692532"],
+  [1658791844, "1118071106638648460872409173"],
+  [1658878278, "1118124757765554251803617763"],
+  [1658964143, "1118178147638664683631209841"],
+  [1659050336, "1118231868303527545230359866"],
+  [1659136611, "1118286000420413818106075678"],
+  [1659222426, "1118339792850033479958022476"],
+  [1659308455, "1118393412519376952322372670"],
+  [1659394598, "1118446903846278865566379088"],
+];
+
 const rinkebyConfig = {
   irsConfig: kovanIrsConfigDefaults,
   compoundConfig: {
@@ -377,13 +403,15 @@ const mainnetConfig: ContractsConfig = {
         address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         rateOracleBufferSize: 500,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+        trustedDataPoints: borrowAaveUSDCMainnetTrustedDatapoints,
       },
-      {
-        name: "DAI",
-        address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-        rateOracleBufferSize: 500,
-        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
-      },
+      // {
+      //   name: "DAI",
+      //   address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      //   rateOracleBufferSize: 500,
+      //   minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      //   trustedDataPoints: borrowAaveDAIMainnetTrustedDatapoints,
+      // },
     ],
   },
   compoundConfig: {

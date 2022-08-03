@@ -64,12 +64,21 @@ const deployAndConfigureRateOracleInstance = async (
     instance.maxIrsDurationInSeconds
   );
 
-  if (multisig !== deployer) {
-    // Transfer ownership
+  const ownerOfRateOracle = await rateOracleContract.owner();
+
+  if (multisig.toLowerCase() !== ownerOfRateOracle.toLowerCase()) {
     console.log(
-      `Transferred ownership of ${rateOracleIdentifier} at ${rateOracleContract.address} to ${multisig}`
+      `Transferring ownership of ${rateOracleIdentifier} at ${rateOracleContract.address} to ${multisig}`
     );
-    await rateOracleContract.transferOwnership(multisig);
+    if (deployer.toLowerCase() === ownerOfRateOracle.toLowerCase()) {
+      await rateOracleContract.transferOwnership(multisig);
+    } else {
+      throw new Error(
+        `Owner of rate oracle(${ownerOfRateOracle}}) is not deployer(${deployer}).`
+      );
+    }
+  } else {
+    console.log("Onwer of rate oracle is already the multisig");
   }
 };
 
