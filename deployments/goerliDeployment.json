@@ -9066,7 +9066,7 @@
       ]
     },
     "Periphery_Implementation": {
-      "address": "0x5AE480fFe0582Ed7E59C34ec18abFE0F9f1fb4A9",
+      "address": "0xCBC0EbB5dDb1EC01f6014C68C675E754469387a0",
       "abi": [
         {
           "inputs": [],
@@ -9403,57 +9403,6 @@
           ],
           "name": "Upgraded",
           "type": "event"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "contract IVAMM",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "name": "_lpMarginCaps",
-          "outputs": [
-            {
-              "internalType": "int256",
-              "name": "",
-              "type": "int256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "contract IVAMM",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "name": "_lpMarginCumulatives",
-          "outputs": [
-            {
-              "internalType": "int256",
-              "name": "",
-              "type": "int256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "_weth",
-          "outputs": [
-            {
-              "internalType": "contract IWETH",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
         },
         {
           "inputs": [
@@ -10031,11 +9980,24 @@
           "outputs": [],
           "stateMutability": "payable",
           "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "weth",
+          "outputs": [
+            {
+              "internalType": "contract IWETH",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
         }
       ]
     },
     "Periphery_Proxy": {
-      "address": "0x02D56b66DC2A748d6fE7Fd48F3a80EEaB402b4bF",
+      "address": "0x12872b785dBC464F56086aFAB2b3ff7c27a5d007",
       "abi": [
         {
           "inputs": [
@@ -10109,7 +10071,7 @@
       ]
     },
     "Periphery": {
-      "address": "0x02D56b66DC2A748d6fE7Fd48F3a80EEaB402b4bF",
+      "address": "0x12872b785dBC464F56086aFAB2b3ff7c27a5d007",
       "abi": [
         {
           "anonymous": false,
@@ -10449,57 +10411,6 @@
           ],
           "name": "OwnershipTransferred",
           "type": "event"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "contract IVAMM",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "name": "_lpMarginCaps",
-          "outputs": [
-            {
-              "internalType": "int256",
-              "name": "",
-              "type": "int256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "contract IVAMM",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "name": "_lpMarginCumulatives",
-          "outputs": [
-            {
-              "internalType": "int256",
-              "name": "",
-              "type": "int256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "_weth",
-          "outputs": [
-            {
-              "internalType": "contract IWETH",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
         },
         {
           "inputs": [
@@ -11076,6 +10987,19 @@
           "name": "upgradeToAndCall",
           "outputs": [],
           "stateMutability": "payable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "weth",
+          "outputs": [
+            {
+              "internalType": "contract IWETH",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
           "type": "function"
         },
         {

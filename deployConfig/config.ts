@@ -111,6 +111,11 @@ const mainnetStEthDataPoints: RateOracleDataPoint[] = [
   [1657368023, "1077857005650125989376615298"],
 ];
 
+// Populate these fields just before you deploy to mainnet so you get the most recent data.
+// const mainnetAaveBorrowUSDCPoints: RateOracleDataPoint[] = [];
+
+// const mainnetAaveBorrowDaiPoints: RateOracleDataPoint[] = [];
+
 const mainnetRocketEthDataPoints: RateOracleDataPoint[] = [
   [1654153801, "1026502356712851858611688825"],
   // [1654234515, "1026599253986324262373044488"],
@@ -164,6 +169,32 @@ const goerliStEthDataPoints: RateOracleDataPoint[] = [
 
 const goerliRocketEthDataPoints: RateOracleDataPoint[] = [
   [1657435372, "1026780389412413279149346221"],
+];
+
+const borrowAaveUSDCMainnetTrustedDatapoints: RateOracleDataPoint[] = [
+  [1658618955, "1109755147923344578270859036"],
+  [1658705395, "1109800811525858567378907794"],
+  [1658791844, "1109847380780342472867486463"],
+  [1658878278, "1109894818250135099335640168"],
+  [1658964143, "1109942844266595658870197351"],
+  [1659050336, "1109992073317241503323476791"],
+  [1659136611, "1110041901548415395110548722"],
+  [1659222426, "1110094318598328195275099717"],
+  [1659308455, "1110146531886525921197028893"],
+  [1659394598, "1110198650640220951402529044"],
+];
+
+const borrowAaveDAIMainnetTrustedDatapoints: RateOracleDataPoint[] = [
+  [1658618955, "1117966593199281135728219837"],
+  [1658705395, "1118018695182045164396692532"],
+  [1658791844, "1118071106638648460872409173"],
+  [1658878278, "1118124757765554251803617763"],
+  [1658964143, "1118178147638664683631209841"],
+  [1659050336, "1118231868303527545230359866"],
+  [1659136611, "1118286000420413818106075678"],
+  [1659222426, "1118339792850033479958022476"],
+  [1659308455, "1118393412519376952322372670"],
+  [1659394598, "1118446903846278865566379088"],
 ];
 
 const rinkebyConfig = {
@@ -297,6 +328,35 @@ const kovanConfig = {
       // },
     ],
   },
+  aaveBorrowConfig: {
+    // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
+    aaveLendingPool: "0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe",
+    defaults: kovanRateOracleConfigDefaults,
+    // Kovan MockUSDT (USDC has no ABI and faucet not working, so USDT easier to mint)
+    // See tokens list at https://aave.github.io/aave-addresses/kovan.json
+    // Mint some here: https://kovan.etherscan.io/address/0x13512979ADE267AB5100878E2e0f485B568328a4#writeContract
+    aaveTokens: [
+      {
+        name: "USDC",
+        address: "0xe22da380ee6B445bb8273C81944ADEB6E8450422",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "TUSD",
+        address: "0x016750ac630f711882812f24dba6c95b9d35856d",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+        trustedDataPoints: [],
+      },
+      {
+        name: "WETH",
+        address: "0xd0a1e359811322d97991e03f863a0c30c2cf029c",
+        rateOracleBufferSize: 200,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+  },
   compoundConfig: {
     // See tokens list at https://compound.finance/docs#networks
     compoundTokens: [
@@ -331,6 +391,27 @@ const mainnetConfig: ContractsConfig = {
         rateOracleBufferSize: 500,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
       },
+    ],
+  },
+  aaveBorrowConfig: {
+    // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
+    aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
+    defaults: mainnetRateOracleConfigDefaults,
+    aaveTokens: [
+      {
+        name: "USDC",
+        address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        rateOracleBufferSize: 500,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+        trustedDataPoints: borrowAaveUSDCMainnetTrustedDatapoints,
+      },
+      // {
+      //   name: "DAI",
+      //   address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      //   rateOracleBufferSize: 500,
+      //   minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      //   trustedDataPoints: borrowAaveDAIMainnetTrustedDatapoints,
+      // },
     ],
   },
   compoundConfig: {
@@ -375,6 +456,10 @@ const mainnetConfig: ContractsConfig = {
 const localhostConfig: ContractsConfig = {
   irsConfig: localhostIrsConfigDefaults,
   aaveConfig: {
+    aaveTokens: [],
+    defaults: localhostRateOracleConfigDefaults,
+  },
+  aaveBorrowConfig: {
     aaveTokens: [],
     defaults: localhostRateOracleConfigDefaults,
   },

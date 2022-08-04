@@ -64,12 +64,21 @@ const deployAndConfigureRateOracleInstance = async (
     instance.maxIrsDurationInSeconds
   );
 
-  if (multisig !== deployer) {
-    // Transfer ownership
+  const ownerOfRateOracle = await rateOracleContract.owner();
+
+  if (multisig.toLowerCase() !== ownerOfRateOracle.toLowerCase()) {
     console.log(
-      `Transferred ownership of ${rateOracleIdentifier} at ${rateOracleContract.address} to ${multisig}`
+      `Transferring ownership of ${rateOracleIdentifier} at ${rateOracleContract.address} to ${multisig}`
     );
-    await rateOracleContract.transferOwnership(multisig);
+    if (deployer.toLowerCase() === ownerOfRateOracle.toLowerCase()) {
+      await rateOracleContract.transferOwnership(multisig);
+    } else {
+      throw new Error(
+        `Owner of rate oracle(${ownerOfRateOracle}}) is not deployer(${deployer}).`
+      );
+    }
+  } else {
+    console.log("Onwer of rate oracle is already the multisig");
   }
 };
 
@@ -77,46 +86,89 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const network = hre.network.name;
   const deployConfig = getConfig(network);
 
-  // Aave Rate Oracles
-  // Configure these if we have a lending pool and one or more tokens configured
-  const aaveConfig = deployConfig.aaveConfig;
-  const existingAaveLendingPoolAddress = aaveConfig?.aaveLendingPool;
-  const aaveTokens = aaveConfig?.aaveTokens;
+  {
+    // Aave Rate Oracles
+    // Configure these if we have a lending pool and one or more tokens configured
+    const aaveConfig = deployConfig.aaveConfig;
+    const existingAaveLendingPoolAddress = aaveConfig?.aaveLendingPool;
+    const aaveTokens = aaveConfig?.aaveTokens;
 
-  // console.log("aaveTokens", aaveTokens);
-  // console.log("existingAaveLendingPoolAddress", existingAaveLendingPoolAddress);
-  if (existingAaveLendingPoolAddress && aaveTokens) {
-    const aaveLendingPool = await ethers.getContractAt(
-      "IAaveV2LendingPool",
-      existingAaveLendingPoolAddress
-    );
+    // console.log("aaveTokens", aaveTokens);
+    // console.log("existingAaveLendingPoolAddress", existingAaveLendingPoolAddress);
+    if (existingAaveLendingPoolAddress && aaveTokens) {
+      const aaveLendingPool = await ethers.getContractAt(
+        "IAaveV2LendingPool",
+        existingAaveLendingPoolAddress
+      );
 
-    for (const tokenDefinition of aaveTokens) {
-      const { trustedTimestamps, trustedObservationValuesInRay } =
-        convertTrustedRateOracleDataPoints(
-          tokenDefinition.trustedDataPoints ||
-            aaveConfig.defaults.trustedDataPoints
-        );
+      for (const tokenDefinition of aaveTokens) {
+        const { trustedTimestamps, trustedObservationValuesInRay } =
+          convertTrustedRateOracleDataPoints(
+            tokenDefinition.trustedDataPoints ||
+              aaveConfig.defaults.trustedDataPoints
+          );
 
-      // For Aave, the first two constructor args are lending pool address and underlying token address
-      // For Aave, the address in the tokenDefinition is the address of the underlying token
-      const args = [
-        aaveLendingPool.address,
-        tokenDefinition.address,
-        trustedTimestamps,
-        trustedObservationValuesInRay,
-      ];
+        // For Aave, the first two constructor args are lending pool address and underlying token address
+        // For Aave, the address in the tokenDefinition is the address of the underlying token
+        const args = [
+          aaveLendingPool.address,
+          tokenDefinition.address,
+          trustedTimestamps,
+          trustedObservationValuesInRay,
+        ];
 
-      await deployAndConfigureRateOracleInstance(hre, {
-        args,
-        suffix: tokenDefinition.name,
-        contractName: "AaveRateOracle",
-        rateOracleConfig: aaveConfig.defaults,
-        maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
-      });
+        await deployAndConfigureRateOracleInstance(hre, {
+          args,
+          suffix: tokenDefinition.name,
+          contractName: "AaveRateOracle",
+          rateOracleConfig: aaveConfig.defaults,
+          maxIrsDurationInSeconds:
+            deployConfig.irsConfig.maxIrsDurationInSeconds,
+        });
+      }
     }
+    // End of Aave Rate Oracles
   }
-  // End of Aave Rate Oracles
+
+  {
+    // Aave BORROW Rate Oracle
+    const aaveBorrowConfig = deployConfig.aaveBorrowConfig;
+    const existingAaveLendingPoolAddress = aaveBorrowConfig?.aaveLendingPool;
+    const aaveTokens = aaveBorrowConfig?.aaveTokens;
+    if (existingAaveLendingPoolAddress && aaveTokens) {
+      const aaveLendingPool = await ethers.getContractAt(
+        "IAaveV2LendingPool",
+        existingAaveLendingPoolAddress
+      );
+
+      for (const tokenDefinition of aaveTokens) {
+        const { trustedTimestamps, trustedObservationValuesInRay } =
+          convertTrustedRateOracleDataPoints(
+            tokenDefinition.trustedDataPoints ||
+              aaveBorrowConfig.defaults.trustedDataPoints
+          );
+
+        // For Aave, the first two constructor args are lending pool address and underlying token address
+        // For Aave, the address in the tokenDefinition is the address of the underlying token
+        const args = [
+          aaveLendingPool.address,
+          tokenDefinition.address,
+          trustedTimestamps,
+          trustedObservationValuesInRay,
+        ];
+
+        await deployAndConfigureRateOracleInstance(hre, {
+          args,
+          suffix: tokenDefinition.name,
+          contractName: "AaveBorrowRateOracle",
+          rateOracleConfig: aaveBorrowConfig.defaults,
+          maxIrsDurationInSeconds:
+            deployConfig.irsConfig.maxIrsDurationInSeconds,
+        });
+      }
+    }
+    // End of Aave Borrow Rate Oracles
+  }
 
   // Compound Rate Oracles
   // Configure these if we have a one or more cTokens configured

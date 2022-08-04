@@ -26,3 +26,5 @@ historicalData/plotters/__pycache__
 0xb1125ba5878cf3a843be686c6c2486306f03e301_2.csv
 0xb1125ba5878cf3a843be686c6c2486306f03e301.csv
 deployments/mainnetForkDeployment.json
+Pipfile
+Pipfile.lock

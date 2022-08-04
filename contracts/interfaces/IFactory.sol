@@ -2,7 +2,7 @@
 
 pragma solidity =0.8.9;
 
-import "contracts/utils/CustomErrors.sol";
+import "../utils/CustomErrors.sol";
 import "./rate_oracles/IRateOracle.sol";
 import "./IMarginEngine.sol";
 import "./IVAMM.sol";

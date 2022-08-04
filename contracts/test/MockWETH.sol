@@ -2,8 +2,8 @@
 
 pragma solidity =0.8.9;
 
-import "contracts/interfaces/IWETH.sol";
-import "contracts/test/ERC20Mock.sol";
+import "../interfaces/IWETH.sol";
+import "./ERC20Mock.sol";
 
 contract MockWETH is ERC20Mock, IWETH {
     constructor(string memory name, string memory symbol)

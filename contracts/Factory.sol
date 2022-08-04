@@ -9,7 +9,7 @@ import "./interfaces/IVAMM.sol";
 import "./interfaces/fcms/IFCM.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import "contracts/utils/CustomErrors.sol";
+import "./utils/CustomErrors.sol";
 
 contract VoltzERC1967Proxy is ERC1967Proxy, CustomErrors {
   constructor(address _logic, bytes memory _data) payable ERC1967Proxy(_logic, _data) {}
