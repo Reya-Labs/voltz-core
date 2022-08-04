@@ -235,6 +235,72 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
   // End of Compound Rate Oracles
 
+  // Compound Borrow Rate Oracles
+  // Configure these if we have a one or more cTokens configured
+  const compoundBorrowConfig = deployConfig.compoundBorrowConfig;
+  const compoundBorrowTokens =
+    compoundBorrowConfig && compoundBorrowConfig.compoundTokens;
+
+  if (compoundBorrowTokens) {
+    for (const tokenDefinition of compoundBorrowTokens) {
+      const cToken = await ethers.getContractAt(
+        "ICToken",
+        tokenDefinition.address
+      );
+
+      console.log("cToken", cToken.address);
+
+      let underlyingAddress: string;
+      let underlyingDecimals: number;
+      let ethPool: boolean;
+
+      if (tokenDefinition.name === "cETH") {
+        if (deployConfig.weth) {
+          underlyingAddress = deployConfig.weth;
+          underlyingDecimals = 18;
+          ethPool = true;
+        } else {
+          throw new Error("WETH not found");
+        }
+      } else {
+        const underlying = (await ethers.getContractAt(
+          "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
+          await cToken.underlying()
+        )) as ERC20;
+
+        underlyingAddress = underlying.address;
+        underlyingDecimals = await underlying.decimals();
+        ethPool = false;
+      }
+
+      const { trustedTimestamps, trustedObservationValuesInRay } =
+        convertTrustedRateOracleDataPoints(
+          tokenDefinition.trustedDataPoints ||
+            compoundBorrowConfig.defaults.trustedDataPoints
+        );
+
+      // For Compound, the first three constructor args are the cToken address, underylying address and decimals of the underlying
+      // For Compound, the address in the tokenDefinition is the address of the underlying cToken
+      const args = [
+        cToken.address,
+        ethPool,
+        underlyingAddress,
+        underlyingDecimals,
+        trustedTimestamps,
+        trustedObservationValuesInRay,
+      ];
+
+      await deployAndConfigureRateOracleInstance(hre, {
+        args,
+        suffix: tokenDefinition.name,
+        contractName: "CompoundBorrowRateOracle",
+        rateOracleConfig: compoundBorrowConfig.defaults,
+        maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+      });
+    }
+  }
+  // End of Compound Borrow Rate Oracles
+
   // Lido Rate Oracle
   const lidoConfig = deployConfig.lidoConfig;
   const lidoStETHAddress = lidoConfig?.lidoStETH;

@@ -184,18 +184,18 @@ const borrowAaveUSDCMainnetTrustedDatapoints: RateOracleDataPoint[] = [
   [1659394598, "1110198650640220951402529044"],
 ];
 
-const borrowAaveDAIMainnetTrustedDatapoints: RateOracleDataPoint[] = [
-  [1658618955, "1117966593199281135728219837"],
-  [1658705395, "1118018695182045164396692532"],
-  [1658791844, "1118071106638648460872409173"],
-  [1658878278, "1118124757765554251803617763"],
-  [1658964143, "1118178147638664683631209841"],
-  [1659050336, "1118231868303527545230359866"],
-  [1659136611, "1118286000420413818106075678"],
-  [1659222426, "1118339792850033479958022476"],
-  [1659308455, "1118393412519376952322372670"],
-  [1659394598, "1118446903846278865566379088"],
-];
+// const borrowAaveDAIMainnetTrustedDatapoints: RateOracleDataPoint[] = [
+//   [1658618955, "1117966593199281135728219837"],
+//   [1658705395, "1118018695182045164396692532"],
+//   [1658791844, "1118071106638648460872409173"],
+//   [1658878278, "1118124757765554251803617763"],
+//   [1658964143, "1118178147638664683631209841"],
+//   [1659050336, "1118231868303527545230359866"],
+//   [1659136611, "1118286000420413818106075678"],
+//   [1659222426, "1118339792850033479958022476"],
+//   [1659308455, "1118393412519376952322372670"],
+//   [1659394598, "1118446903846278865566379088"],
+// ];
 
 const rinkebyConfig = {
   irsConfig: kovanIrsConfigDefaults,
@@ -217,6 +217,30 @@ const goerliConfig = {
   irsConfig: kovanIrsConfigDefaults,
   weth: "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
   compoundConfig: {
+    // See tokens list at https://compound.finance/docs#networks
+    compoundTokens: [
+      {
+        name: "cETH",
+        address: "0x20572e4c090f15667cf7378e16fad2ea0e2f3eff",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "cDAI",
+        address: "0x822397d9a55d0fefd20f5c4bcab33c5f65bd28eb",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "cUSDC",
+        address: "0xcec4a43ebb02f9b80916f1c718338169d6d5c1f0",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+    defaults: kovanRateOracleConfigDefaults,
+  },
+  compoundBorrowConfig: {
     // See tokens list at https://compound.finance/docs#networks
     compoundTokens: [
       {
@@ -425,6 +449,17 @@ const mainnetConfig: ContractsConfig = {
       },
     ],
   },
+  compoundBorrowConfig: {
+    defaults: mainnetRateOracleConfigDefaults,
+    compoundTokens: [
+      {
+        name: "cDAI",
+        address: "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643",
+        rateOracleBufferSize: 500,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+  },
   lidoConfig: {
     // Lido deployment info at https://github.com/lidofinance/lido-dao/tree/816bf1d0995ba5cfdfc264de4acda34a7fe93eba#mainnet
     lidoStETH: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
@@ -464,6 +499,10 @@ const localhostConfig: ContractsConfig = {
     defaults: localhostRateOracleConfigDefaults,
   },
   compoundConfig: {
+    compoundTokens: [],
+    defaults: localhostRateOracleConfigDefaults,
+  },
+  compoundBorrowConfig: {
     compoundTokens: [],
     defaults: localhostRateOracleConfigDefaults,
   },

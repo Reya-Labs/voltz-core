@@ -12,6 +12,9 @@ contract MockCToken is ICToken, ERC20 {
     address internal _underlyingAsset;
     uint256 internal _rate;
     uint256 internal _supplyRatePerBlock;
+    uint256 internal _borrowRatePerBlock;
+    uint256 internal _borrowIndex;
+    uint256 internal _accrualBlockNumber;
 
     using SafeTransferLib for IERC20Minimal;
 
@@ -90,5 +93,29 @@ contract MockCToken is ICToken, ERC20 {
 
     function supplyRatePerBlock() public view override returns (uint256) {
         return _supplyRatePerBlock;
+    }
+
+    function setBorrowIndex(uint256 borrowIndex) external {
+        _borrowIndex = borrowIndex;
+    }
+
+    function borrowIndex() public view override returns (uint256) {
+        return _borrowIndex;
+    }
+
+    function setAccrualBlockNumber(uint256 accrualBlockNumber) external {
+        _accrualBlockNumber = accrualBlockNumber;
+    }
+
+    function accrualBlockNumber() public view override returns (uint256) {
+        return _accrualBlockNumber;
+    }
+
+    function setBorrowRatePerBlock(uint256 borrowRatePerBlock) external {
+        _borrowRatePerBlock = borrowRatePerBlock;
+    }
+
+    function borrowRatePerBlock() public view override returns (uint256) {
+        return _borrowRatePerBlock;
     }
 }
