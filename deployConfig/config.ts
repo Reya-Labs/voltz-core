@@ -240,6 +240,30 @@ const goerliConfig = {
     ],
     defaults: kovanRateOracleConfigDefaults,
   },
+  compoundBorrowConfig: {
+    // See tokens list at https://compound.finance/docs#networks
+    compoundTokens: [
+      {
+        name: "cETH",
+        address: "0x20572e4c090f15667cf7378e16fad2ea0e2f3eff",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "cDAI",
+        address: "0x822397d9a55d0fefd20f5c4bcab33c5f65bd28eb",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+      {
+        name: "cUSDC",
+        address: "0xcec4a43ebb02f9b80916f1c718338169d6d5c1f0",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+    defaults: kovanRateOracleConfigDefaults,
+  },
   lidoConfig: {
     lidoStETH: "0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F",
     lidoOracle: "0x24d8451BC07e7aF4Ba94F69aCDD9ad3c6579D9FB",
@@ -425,6 +449,17 @@ const mainnetConfig: ContractsConfig = {
       },
     ],
   },
+  compoundBorrowConfig: {
+    defaults: mainnetRateOracleConfigDefaults,
+    compoundTokens: [
+      {
+        name: "cDAI",
+        address: "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643",
+        rateOracleBufferSize: 500,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+  },
   lidoConfig: {
     // Lido deployment info at https://github.com/lidofinance/lido-dao/tree/816bf1d0995ba5cfdfc264de4acda34a7fe93eba#mainnet
     lidoStETH: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
@@ -464,6 +499,10 @@ const localhostConfig: ContractsConfig = {
     defaults: localhostRateOracleConfigDefaults,
   },
   compoundConfig: {
+    compoundTokens: [],
+    defaults: localhostRateOracleConfigDefaults,
+  },
+  compoundBorrowConfig: {
     compoundTokens: [],
     defaults: localhostRateOracleConfigDefaults,
   },
