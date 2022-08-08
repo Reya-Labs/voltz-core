@@ -214,9 +214,11 @@ task("getHistoricalData", "Retrieves the historical rates")
     const rates: BigNumber[] = [];
 
     const fs = require("fs");
-    const file = `historicalData/rates/${asset}.csv`;
+    const file = taskArgs.borrow
+      ? `historicalData/rates/f_borrow_${asset}.csv`
+      : `historicalData/rates/f_${asset}.csv`;
 
-    const header = "block,timestamp,rate";
+    const header = "date,timestamp,liquidityIndex";
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
@@ -395,7 +397,9 @@ task("getHistoricalData", "Retrieves the historical rates")
 
           fs.appendFileSync(
             file,
-            `${lastBlock},${lastTimestamp},${lastRate}\n`
+            `${new Date(
+              lastTimestamp * 1000
+            ).toISOString()},${lastTimestamp},${lastRate}\n`
           );
           console.log(
             `${lastBlock},${lastTimestamp},${new Date(
