@@ -84,11 +84,15 @@ contract MarginEngine is
             marginCalculatorParameters.sigmaSquaredWad
         );
 
+        // int256 lambdaWad = (marginCalculatorParameters.betaWad << 2) // TODO: reinstate once test equivalence proved
+        //     .mul(timeFactorWad)
+        //     .mul(int256(historicalApyWad))
+        //     .div(marginCalculatorParameters.sigmaSquaredWad)
+        //     .div(ONE - timeFactorWad);
         int256 lambdaWad = (marginCalculatorParameters.betaWad << 2)
             .mul(timeFactorWad)
             .mul(int256(historicalApyWad))
-            .div(marginCalculatorParameters.sigmaSquaredWad)
-            .div(ONE - timeFactorWad);
+            .div(marginCalculatorParameters.sigmaSquaredWad.mul(ONE - timeFactorWad));
 
         int256 criticalValueWad = (((lambdaWad << 1) + kWad) << 1).sqrt().mul(
             (isUpper)

@@ -15,7 +15,6 @@ import {
   IRateOracle,
   IStETH,
   IVAMM,
-  MarginCalculatorTest,
   MarginEngine,
   MockAaveLendingPool,
   MockAToken,
@@ -96,7 +95,6 @@ export class ScenarioRunner {
   fixedAndVariableMath!: FixedAndVariableMathTest;
   tickMath!: TickMathTest;
   sqrtPriceMath!: SqrtPriceMathTest;
-  marginCalculator!: MarginCalculatorTest;
 
   // irs-specific variables
   termStartTimestamp!: BigNumber;
@@ -347,13 +345,6 @@ export class ScenarioRunner {
     // TickMath library exposed as a contract
     const TickMathFactory = await ethers.getContractFactory("TickMathTest");
     this.tickMath = (await TickMathFactory.deploy()) as TickMathTest;
-
-    // MarginCalculator library exposed as a contract
-    const MarginCalculatorFactory = await ethers.getContractFactory(
-      "MarginCalculatorTest"
-    );
-    this.marginCalculator =
-      (await MarginCalculatorFactory.deploy()) as MarginCalculatorTest;
   }
 
   async deployIRSContracts(

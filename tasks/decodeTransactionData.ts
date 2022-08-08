@@ -24,7 +24,7 @@ const marginCalculatorParamNames = [
 function printMarginCalculatorParams(td: ethers.utils.TransactionDescription) {
   const mcp = td.args[0];
   console.log(JSON.stringify(td.args, null, 2));
-  console.log(`MarginCalculator.setMarginCalculatorParameters(`);
+  console.log(`MarginEngine.setMarginCalculatorParameters(`);
 
   for (let i = 0; i < marginCalculatorParamNames.length; i++) {
     console.log(

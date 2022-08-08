@@ -13,6 +13,31 @@ contract TestMarginEngine is MarginEngine {
 
     uint256 public keepInMindMargin;
 
+    function testComputeTimeFactor() external view returns (int256 timeFactor) {
+        return computeTimeFactor();
+    }
+
+    function testComputeApyBound(uint256 historicalApyWad, bool isUpper)
+        external
+        view
+        returns (uint256 apyBoundWad)
+    {
+        return computeApyBound(historicalApyWad, isUpper);
+    }
+
+    function testWorstCaseVariableFactorAtMaturity(
+        bool isFT,
+        bool isLM,
+        uint256 historicalApyWad
+    ) external view returns (uint256 variableFactorWad) {
+        return worstCaseVariableFactorAtMaturity(isFT, isLM, historicalApyWad);
+    }
+
+    function setTermTimestamps(uint256 _startWad, uint256 _endWad) external {
+        _termStartTimestampWad = _startWad;
+        _termEndTimestampWad = _endWad;
+    }
+
     function updatePositionTokenBalancesAndAccountForFeesTest(
         address owner,
         int24 tickLower,
