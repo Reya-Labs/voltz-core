@@ -149,6 +149,38 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     },
   },
 
+  new_rETH: {
+    rateOracle: "RocketPoolRateOracle",
+    tickSpacing: 60,
+    cacheMaxAgeInSeconds: 21600,
+    lookbackWindowInSeconds: 864000,
+    feeWad: "3000000000000000",
+    liquidatorRewardWad: "50000000000000000",
+    vammFeeProtocolWad: "0",
+    isAlpha: true,
+    lpMarginCap: toBn(1_300, 18),
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: "1109227605790384260",
+      apyLowerMultiplierWad: "279917023603821600",
+      sigmaSquaredWad: "2528169099842",
+      alphaWad: "507927122024010",
+      betaWad: "29317571863063692",
+      xiUpperWad: "19000000000000000000",
+      xiLowerWad: "29000000000000000000",
+      tMaxWad: "31536000000000000000000000",
+      devMulLeftUnwindLMWad: "178551875767012161",
+      devMulRightUnwindLMWad: "178551875767012161",
+      devMulLeftUnwindIMWad: "187479469555362769",
+      devMulRightUnwindIMWad: "187479469555362769",
+      fixedRateDeviationMinLeftUnwindLMWad: "1537796252419066",
+      fixedRateDeviationMinRightUnwindLMWad: "1537796252419066",
+      fixedRateDeviationMinLeftUnwindIMWad: "7045450477194517",
+      fixedRateDeviationMinRightUnwindIMWad: "7045450477194517",
+      gammaWad: "349947520823911000",
+      minMarginToIncentiviseLiquidators: "0",
+    },
+  },
+
   rETH: {
     rateOracle: "RocketPoolRateOracle",
     tickSpacing: 60,
@@ -185,30 +217,62 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     rateOracle: "RocketPoolRateOracle",
     tickSpacing: 60,
     cacheMaxAgeInSeconds: 21600,
-    lookbackWindowInSeconds: 3110400,
+    lookbackWindowInSeconds: 3110400, // in seconds (convert from days to seconds)
     feeWad: "3000000000000000",
     liquidatorRewardWad: "50000000000000000",
     vammFeeProtocolWad: "0",
     isAlpha: true,
     lpMarginCap: toBn(1_300, 18),
     marginCalculatorParams: {
-      apyUpperMultiplierWad: "4272790909090909000",
-      apyLowerMultiplierWad: "842858558558558464",
+      apyUpperMultiplierWad: "4272790909090909000",   //tau_u
+      apyLowerMultiplierWad: "842858558558558464",    //tau_d
       sigmaSquaredWad: "918445178044",
       alphaWad: "961807512842816",
       betaWad: "27823751368703388",
       xiUpperWad: "39000000000000000000",
       xiLowerWad: "98000000000000000000",
       tMaxWad: "31536000000000000000000000",
-      devMulLeftUnwindLMWad: "290387387387387392",
-      devMulRightUnwindLMWad: "290387387387387392",
-      devMulLeftUnwindIMWad: "4914965765765766144",
-      devMulRightUnwindIMWad: "4914965765765766144",
-      fixedRateDeviationMinLeftUnwindLMWad: "49242424242424240",
-      fixedRateDeviationMinRightUnwindLMWad: "49242424242424240",
-      fixedRateDeviationMinLeftUnwindIMWad: "135676767676767680",
-      fixedRateDeviationMinRightUnwindIMWad: "135676767676767680",
-      gammaWad: "130228828828828832",
+      devMulLeftUnwindLMWad: "290387387387387392",    // dev_lm
+      devMulRightUnwindLMWad: "290387387387387392",   // dev_lm
+      devMulLeftUnwindIMWad: "4914965765765766144",   // dev_im
+      devMulRightUnwindIMWad: "4914965765765766144",  // dev_im
+      fixedRateDeviationMinLeftUnwindLMWad: "49242424242424240",  // r_init_lm
+      fixedRateDeviationMinRightUnwindLMWad: "49242424242424240", // r_init_lm
+      fixedRateDeviationMinLeftUnwindIMWad: "135676767676767680", // r_init_im
+      fixedRateDeviationMinRightUnwindIMWad: "135676767676767680", // r_init_im
+      gammaWad: "130228828828828832", // gama_unwind
+      minMarginToIncentiviseLiquidators: "0",
+    },
+  },
+
+  new_stETH: {
+    rateOracle: "LidoRateOracle",
+    tickSpacing: 60,
+    cacheMaxAgeInSeconds: 21600,
+    lookbackWindowInSeconds: 1037000,
+    feeWad: "3000000000000000",
+    liquidatorRewardWad: "50000000000000000",
+    vammFeeProtocolWad: "0",
+    isAlpha: true,
+    lpMarginCap: toBn(1_300, 18),
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: "1303107786000816000",
+      apyLowerMultiplierWad: "695102361198979300",
+      sigmaSquaredWad: "287882365187",
+      alphaWad: "76667205124232",
+      betaWad: "2696112367796010",
+      xiUpperWad: "22000000000000000000",
+      xiLowerWad: "31000000000000000000",
+      tMaxWad: "31536000000000000000000000",
+      devMulLeftUnwindLMWad: "766434343116844200",
+      devMulRightUnwindLMWad: "766434343116844200",
+      devMulLeftUnwindIMWad: "2103078317579301600",
+      devMulRightUnwindIMWad: "2103078317579301600",
+      fixedRateDeviationMinLeftUnwindLMWad: "4889700883343871",
+      fixedRateDeviationMinRightUnwindLMWad: "4889700883343871",
+      fixedRateDeviationMinLeftUnwindIMWad: "9198439752429548",
+      fixedRateDeviationMinRightUnwindIMWad: "9198439752429548",
+      gammaWad: "383571596591587140",
       minMarginToIncentiviseLiquidators: "0",
     },
   },
