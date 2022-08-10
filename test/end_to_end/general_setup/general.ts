@@ -547,19 +547,19 @@ export class ScenarioRunner {
 
     await this.deployLibraryContracts();
 
-    console.log(`factory: ${this.factory.address}`);
-    console.log(`periphery: ${this.periphery.address}`);
-    console.log(`E2E: ${this.e2eSetup.address}`);
-    console.log(`masterVAMM: ${await this.factory.masterVAMM()}`);
-    console.log(
-      `masterMarginEngine: ${await this.factory.masterMarginEngine()}`
-    );
-    console.log(
-      `masterFCM: ${await this.factory.masterFCMs(
-        await this.rateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()
-      )}`
-    );
-    console.log();
+    // console.log(`factory: ${this.factory.address}`);
+    // console.log(`periphery: ${this.periphery.address}`);
+    // console.log(`E2E: ${this.e2eSetup.address}`);
+    // console.log(`masterVAMM: ${await this.factory.masterVAMM()}`);
+    // console.log(
+    //   `masterMarginEngine: ${await this.factory.masterMarginEngine()}`
+    // );
+    // console.log(
+    //   `masterFCM: ${await this.factory.masterFCMs(
+    //     await this.rateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()
+    //   )}`
+    // );
+    // console.log();
 
     await this.initIRSPool();
   }
@@ -570,10 +570,10 @@ export class ScenarioRunner {
       this.termStartTimestamp,
       this.termEndTimestamp
     );
-    console.log(`VAMM: ${this.vamm.address}`);
-    console.log(`marginEngine: ${this.marginEngine.address}`);
-    console.log(`FCM: ${this.fcm ? this.fcm.address : "Undefined"}`);
-    console.log();
+    // console.log(`VAMM: ${this.vamm.address}`);
+    // console.log(`marginEngine: ${this.marginEngine.address}`);
+    // console.log(`FCM: ${this.fcm ? this.fcm.address : "Undefined"}`);
+    // console.log();
 
     // configure the IRS instance
     [this.marginEngine, this.vamm] = await this.configureIRS(
