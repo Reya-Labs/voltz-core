@@ -140,28 +140,7 @@ describe("Margin Calculations", () => {
 
       expect(
         await marginEngineTest.testComputeApyBound(historicalApy, isUpper)
-      ).to.eq("24278147968583284");
-    });
-
-    it("correctly computes the Upper APY Bound", async () => {
-      const nextBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await setTimeNextBlock(nextBlockTimestamp);
-
-      const termEndTimestampScaled = toBn(
-        (nextBlockTimestamp + ONE_WEEK_IN_SECONDS).toString() // add a week
-      );
-      await marginEngineTest.setTermTimestamps(0, termEndTimestampScaled);
-
-      // const currentTimestampScaled = toBn(nextBlockTimestamp.toString());
-
-      const historicalApy: BigNumber = toBn("0.02");
-      const isUpper: boolean = true;
-
-      // await marginEngineTest.testComputeApyBound(historicalApy, isUpper);
-
-      expect(
-        await marginEngineTest.testComputeApyBound(historicalApy, isUpper)
-      ).to.eq("24278147968583284");
+      ).to.eq("24278147968583231");
     });
 
     // passes
@@ -181,7 +160,7 @@ describe("Margin Calculations", () => {
 
       expect(
         await marginEngineTest.testComputeApyBound(historicalApy, isUpper)
-      ).to.eq("17456226370556757");
+      ).to.eq("17456226370556712");
     });
   });
 
@@ -215,7 +194,7 @@ describe("Margin Calculations", () => {
           historicalApy
         );
 
-      expect(realized).to.eq("4123691408399440");
+      expect(realized).to.eq("4123691408399430");
     });
 
     it("correctly calculates the worst case variable factor at maturity FT, IM", async () => {
@@ -230,7 +209,7 @@ describe("Margin Calculations", () => {
           historicalApy
         );
 
-      expect(realized).to.eq("6185537112599160");
+      expect(realized).to.eq("6185537112599145");
     });
 
     it("correctly calculates the worst case variable factor at maturity VT, LM", async () => {
@@ -245,7 +224,7 @@ describe("Margin Calculations", () => {
           historicalApy
         );
 
-      expect(realized).to.eq("3543058379114670");
+      expect(realized).to.eq("3543058379114661");
     });
 
     it("correctly calculates the worst case variable factor at maturity VT, IM", async () => {
@@ -260,7 +239,7 @@ describe("Margin Calculations", () => {
           historicalApy
         );
 
-      expect(realized).to.eq("2480140865380269");
+      expect(realized).to.eq("2480140865380263");
     });
   });
 
