@@ -24,6 +24,9 @@ jobs:
       - name: Compile contracts
         run: yarn compile
 
+      - name: Check contract sizes
+        run: npx hardhat size-contracts
+
       - name: Check formatting
         run: yarn lint
 
