@@ -48,7 +48,8 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
 
         // RocketPool can only give us a block number of the most recent update
         // We estimate a timestamp using recent blocks-per-second data
-        uint256 lastUpdatedBlockNumber = rocketNetworkBalances.getBalancesBlock();
+        uint256 lastUpdatedBlockNumber = rocketNetworkBalances
+            .getBalancesBlock();
         (uint256 blockChange, uint32 timeChange) = getBlockSlope();
 
         uint256 lastUpdatedTimestamp = block.timestamp -

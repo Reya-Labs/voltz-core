@@ -306,28 +306,28 @@ const goerliConfig = {
         rateOracleBufferSize: 300,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
         trustedDataPoints: borrowCompoundUSDCGoerliTrustedDatapoints,
-      }
+      },
     ],
     defaults: kovanRateOracleConfigDefaults,
   },
-  // lidoConfig: {
-  //   // lidoStETH: "0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F",
-  //   // lidoOracle: "0x24d8451BC07e7aF4Ba94F69aCDD9ad3c6579D9FB",
-  //   // defaults: {
-  //   //   rateOracleBufferSize: 300,
-  //   //   trustedDataPoints: goerliStEthDataPoints,
-  //   //   rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // Lido rates only get updated once a day
-  //   // },
-  // },
-  // rocketPoolConfig: {
-  //   // rocketPoolRocketToken: "0x178e141a0e3b34152f73ff610437a7bf9b83267a",
-  //   // rocketNetworkBalances: "0x28cea7b0f3916c1dba667d3d58ec4836ad843c49",
-  //   // defaults: {
-  //   //   rateOracleBufferSize: 300,
-  //   //   trustedDataPoints: goerliRocketEthDataPoints,
-  //   //   rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60,
-  //   // },
-  // },
+  lidoConfig: {
+    lidoStETH: "0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F",
+    lidoOracle: "0x24d8451BC07e7aF4Ba94F69aCDD9ad3c6579D9FB",
+    defaults: {
+      rateOracleBufferSize: 300,
+      trustedDataPoints: goerliStEthDataPoints,
+      rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // Lido rates only get updated once a day
+    },
+  },
+  rocketPoolConfig: {
+    rocketPoolRocketToken: "0x178e141a0e3b34152f73ff610437a7bf9b83267a",
+    rocketNetworkBalances: "0x28cea7b0f3916c1dba667d3d58ec4836ad843c49",
+    defaults: {
+      rateOracleBufferSize: 300,
+      trustedDataPoints: goerliRocketEthDataPoints,
+      rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60,
+    },
+  },
 };
 
 const kovanConfig = {
