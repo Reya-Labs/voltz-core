@@ -61,6 +61,17 @@ task(
   });
 
 task(
+  "queryCurrentBlockTimestamp",
+  "Outputs the timestamp of the latest mined block on the ethereum blockchain"
+).setAction(async (taskArgs, hre) => {
+  const currentBlockTimestamp = await (
+    await hre.ethers.provider.getBlock("latest")
+  ).timestamp;
+  console.log(currentBlockTimestamp);
+  return currentBlockTimestamp;
+});
+
+task(
   "transferRateOracleOwnership",
   "Transfers rate oracle ownership to the multisig address configured in hardhat.config.ts"
 )
