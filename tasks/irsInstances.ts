@@ -198,6 +198,10 @@ task(
     "multisig",
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
+  .addFlag(
+    "borrow",
+    "If set, configs are taken from a the borrow pool"
+  )
   .addOptionalParam(
     "termStartTimestamp",
     "The UNIX timestamp of pool start",
@@ -206,11 +210,12 @@ task(
   )
   .addParam("termEndTimestamp", "The UNIX timestamp of pool end")
   .setAction(async (taskArgs, hre) => {
+    const pool = taskArgs.borrow ? ("borrow_" + taskArgs.pool) : taskArgs.pool;
     let poolConfig: poolConfig;
-    if (taskArgs.pool in poolConfigs) {
-      poolConfig = poolConfigs[taskArgs.pool];
+    if (pool in poolConfigs) {
+      poolConfig = poolConfigs[pool];
     } else {
-      throw new Error(`No configuration for ${taskArgs.pool}.`);
+      throw new Error(`No configuration for ${pool}.`);
     }
 
     const rateOracle = await getRateOracleByNameOrAddress(
@@ -232,7 +237,7 @@ task(
     const block = await hre.ethers.provider.getBlock("latest");
 
     let termStartTimestamp = block.timestamp;
-    const termEndTimestamp = taskArgs.termEndTimestamp;
+    const termEndTimestamp = termStartTimestamp + 4*86400;
 
     if (taskArgs.termStartTimestamp) {
       termStartTimestamp = taskArgs.termStartTimestamp;
