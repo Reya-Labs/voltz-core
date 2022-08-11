@@ -7,7 +7,6 @@ import "../interfaces/rocketPool/IRocketEth.sol";
 import "../interfaces/rocketPool/IRocketNetworkBalances.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 import "../utils/WadRayMath.sol";
-import "hardhat/console.sol";
 
 contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
     IRocketEth public override rocketEth;
@@ -49,17 +48,8 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
 
         // RocketPool can only give us a block number of the most recent update
         // We estimate a timestamp using recent blocks-per-second data
-        uint256 lastUpdatedBlockNumber = rocketNetworkBalances
-            .getBalancesBlock();
+        uint256 lastUpdatedBlockNumber = rocketNetworkBalances.getBalancesBlock();
         (uint256 blockChange, uint32 timeChange) = getBlockSlope();
-
-        // console.log("block.number in getting last updated rate", block.number);
-        // console.log(
-        //     "block.timestamp in getting last updated rate",
-        //     block.timestamp
-        // );
-        // console.log("blockChange", blockChange);
-        // console.log("timeChange", timeChange);
 
         uint256 lastUpdatedTimestamp = block.timestamp -
             ((block.number - lastUpdatedBlockNumber) * timeChange) /

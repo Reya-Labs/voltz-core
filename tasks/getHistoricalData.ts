@@ -96,6 +96,20 @@ task("getHistoricalData", "Retrieves the historical rates")
     types.string
   )
   .setAction(async (taskArgs, hre) => {
+    let platformCount = 0;
+    taskArgs.aave && platformCount++;
+    taskArgs.compound && platformCount++;
+    taskArgs.rocket && platformCount++;
+    taskArgs.lido && platformCount++;
+
+    if (platformCount > 1) {
+      throw new Error(`Only one platform can be queried at a time`);
+    }
+
+    if (taskArgs.borrow && !taskArgs.aave && !taskArgs.compound) {
+      throw new Error(`Borrow rates are only supported for aave and compound`);
+    }
+
     // calculate from and to blocks
     const currentBlock = await hre.ethers.provider.getBlock("latest");
 
@@ -319,6 +333,23 @@ task("getHistoricalData", "Retrieves the historical rates")
                 timestamps.push(block.timestamp);
                 rates.push(r);
                 fetch = FETCH_STATUS.SUCCESS;
+
+                // Calculation of instantaneous APY per per https://compound.finance/docs#protocol-math
+                // const ethMantissa = 1e18;
+                // const compoundBlocksPerDay = 6570; // 13.15 seconds per block
+                // const compoundDaysPerYear = 365;
+                // const instantaneousBorrowApy =
+                //   (Math.pow(
+                //     (borrowRateMantissa.toNumber() / ethMantissa) *
+                //       compoundBlocksPerDay +
+                //       1,
+                //     compoundDaysPerYear
+                //   ) -
+                //     1) *
+                //   100;
+                // console.log(
+                //   `Instantaneous borrow APY is ${instantaneousBorrowApy}`
+                // );
               } else {
                 let r = await cToken.exchangeRateStored({
                   blockTag: b,
@@ -341,8 +372,6 @@ task("getHistoricalData", "Retrieves the historical rates")
         } else {
           // Before start block but we need a placeholder to keep things aligned
         }
-      } else {
-        console.log("Cannot use borrow flag for Compound");
       }
 
       // Aave
