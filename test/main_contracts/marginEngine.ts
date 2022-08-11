@@ -1,7 +1,7 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
 import { expect } from "../shared/expect";
-import { metaFixture, tickMathFixture } from "../shared/fixtures";
+import { metaFixture } from "../shared/fixtures";
 import { toBn } from "evm-bn";
 import {
   ERC20Mock,
@@ -51,18 +51,18 @@ describe("MarginEngine", () => {
     [wallet, other] = await (ethers as any).getSigners();
     loadFixture = createFixtureLoader([wallet, other]);
 
-    const { testTickMath } = await loadFixture(tickMathFixture);
+    // const { testTickMath } = await loadFixture(tickMathFixture);
 
-    const min_tick = -69100;
-    const max_tick = 69100;
+    // const min_tick = -69100;
+    // const max_tick = 69100;
 
-    const min_price = await testTickMath.getSqrtRatioAtTick(-69100);
-    const max_price = await testTickMath.getSqrtRatioAtTick(69100);
+    // const min_price = await testTickMath.getSqrtRatioAtTick(-69100);
+    // const max_price = await testTickMath.getSqrtRatioAtTick(69100);
 
-    console.log(" min_tick :", min_tick.toString());
-    console.log("min_price :", min_price.toString());
-    console.log(" max_tick :", max_tick.toString());
-    console.log("max_price :", max_price.toString());
+    // console.log(" min_tick :", min_tick.toString());
+    // console.log("min_price :", min_price.toString());
+    // console.log(" max_tick :", max_tick.toString());
+    // console.log("max_price :", max_price.toString());
   });
 
   beforeEach("deploy fixture", async () => {
