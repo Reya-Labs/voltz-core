@@ -53,6 +53,39 @@ export interface poolConfig {
 }
 
 export const poolConfigs: { [name: string]: poolConfig } = {
+
+  borrow_cUSDT: {
+    rateOracle: "CompoundBorrowRateOracle_cUSDT",
+    tickSpacing: 60,
+    cacheMaxAgeInSeconds: 21600,
+    lookbackWindowInSeconds: 864000,
+    feeWad: "3000000000000000",
+    liquidatorRewardWad: "50000000000000000",
+    vammFeeProtocolWad: "0",
+    isAlpha: true,
+    lpMarginCap: toBn(1_500_000, 6), // note USDT uses 6 decimals
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: "1569111833041750000",
+      apyLowerMultiplierWad: "428269285426040000",
+      sigmaSquaredWad: "1117470060981",
+      alphaWad: "152678828461170",
+      betaWad: "10548028440226400",
+      xiUpperWad: "35000000000000000000",
+      xiLowerWad: "29000000000000000000",
+      tMaxWad: "31536000000000000000000000",
+      devMulLeftUnwindLMWad: "111091322511942000",
+      devMulRightUnwindLMWad: "111091322511942000",
+      devMulLeftUnwindIMWad: "186450525979652000",
+      devMulRightUnwindIMWad: "186450525979652000",
+      fixedRateDeviationMinLeftUnwindLMWad: "60560652573964200",
+      fixedRateDeviationMinRightUnwindLMWad: "60560652573964200",
+      fixedRateDeviationMinLeftUnwindIMWad: "7412336413398469",
+      fixedRateDeviationMinRightUnwindIMWad: "7412336413398469",
+      gammaWad: "190376002522701000",
+      minMarginToIncentiviseLiquidators: "0",
+    },
+  },
+
   aUSDC: {
     rateOracle: "AaveRateOracle_USDC",
     tickSpacing: 60,
