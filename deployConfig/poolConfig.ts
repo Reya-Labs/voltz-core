@@ -53,7 +53,6 @@ export interface poolConfig {
 }
 
 export const poolConfigs: { [name: string]: poolConfig } = {
-
   borrow_aWETH: {
     rateOracle: "AaveBorrowRateOracle_WETH",
     tickSpacing: 60,
@@ -117,7 +116,6 @@ export const poolConfigs: { [name: string]: poolConfig } = {
       minMarginToIncentiviseLiquidators: "0",
     },
   },
-  
 
   borrow_cUSDT: {
     rateOracle: "CompoundBorrowRateOracle_cUSDT",
