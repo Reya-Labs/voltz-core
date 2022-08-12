@@ -122,6 +122,27 @@
         "_newSecondsAgo": "",
         "_marginCalculatorParameters": "[\"{{marginCalculatorParams.apyUpperMultiplierWad}}\",\"{{marginCalculatorParams.apyLowerMultiplierWad}}\",\"{{marginCalculatorParams.sigmaSquaredWad}}\",\"{{marginCalculatorParams.alphaWad}}\",\"{{marginCalculatorParams.betaWad}}\",\"{{marginCalculatorParams.xiUpperWad}}\",\"{{marginCalculatorParams.xiLowerWad}}\",\"{{marginCalculatorParams.tMaxWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindLMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindLMWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindIMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindIMWad}}\",\"{{marginCalculatorParams.gammaWad}}\",\"{{marginCalculatorParams.minMarginToIncentiviseLiquidators}}\"]"
       }
+    },
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_newLiquidatorRewardWad",
+            "type": "uint256"
+          }
+        ],
+        "name": "setLiquidatorReward",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      "contractInputsValues": {
+        "_newLiquidatorRewardWad": "{{liquidatorReward}}"
+      }
     }
   ]
 }

@@ -36,7 +36,7 @@ function getSwapQueryString(
     }
   }
 `;
-} 
+}
 
 export async function getSwaps(
   owner: string,
