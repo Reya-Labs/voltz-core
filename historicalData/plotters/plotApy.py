@@ -14,11 +14,13 @@ parser = ArgumentParser()
 def parseSettings():
     parser.add_argument("-asset", "--asset", type=str,
                         help="Asset for plotter (e.g. --asset rETH)", required=True)
+    parser.add_argument("-borrow", "--borrow", help="Is it a borrow market?", action='store_true')
 
     args = dict((k, v)
                 for k, v in vars(parser.parse_args()).items() if v is not None)
 
     ASSET = args["asset"]
+    IS_BORROW = args["borrow"]
 
     # lookback windows in seconds (five entries)
     LOOKBACK_WINDOWS = [1 * SECONDS_IN_HOUR, 6 * SECONDS_IN_HOUR,
@@ -32,11 +34,15 @@ def parseSettings():
     # apy limits for plots
     APY_LIMITS = [0, 0.1]
 
-    return ASSET, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS
+    return ASSET, IS_BORROW, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS
 
 
 def getDatasets():
-    df_input = pd.read_csv("historicalData/rates/{0}.csv".format(ASSET))
+    prefix = "f"
+    if (IS_BORROW): 
+        prefix += "_borrow"
+    file_name = "historicalData/rates/"+prefix+"_{0}.csv"
+    df_input = pd.read_csv(file_name.format(ASSET))
 
     rnis = getPreparedRNIData(df_input, False)
     apys = [getDailyApy(rnis, lookback=lookback, frequency=APY_FREQUENCY)
@@ -59,7 +65,7 @@ def plot(rnis, apys):
         [rnis["timestamp"][0], rnis["timestamp"][len(rnis["timestamp"]) - 1]])
     axs[0, 0].set_xticklabels([datetime.date.fromtimestamp(
         rnis["timestamp"][0]), datetime.date.fromtimestamp(rnis["timestamp"][len(rnis["timestamp"]) - 1])])
-    axs[0, 0].plot(rnis["timestamp"], rnis["rate"])
+    axs[0, 0].plot(rnis["timestamp"], rnis["liquidityIndex"])
 
     indices = [[0, 0, 1], [1, 0, 2], [2, 1, 0], [3, 1, 1], [4, 1, 2]]
 
@@ -87,6 +93,6 @@ def plot(rnis, apys):
     plt.show()
 
 
-ASSET, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS = parseSettings()
+ASSET, IS_BORROW, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS = parseSettings()
 rnis, apys = getDatasets()
 plot(rnis, apys)

@@ -69,6 +69,11 @@ export interface CompoundConfig {
   defaults: RateOracleConfigDefaults;
 }
 
+export interface CompoundBorrowConfig {
+  compoundTokens: TokenConfig[];
+  defaults: RateOracleConfigDefaults;
+}
+
 export interface LidoConfig {
   lidoStETH?: string;
   lidoOracle?: string;
@@ -85,6 +90,7 @@ export interface ContractsConfig {
   aaveConfig?: AaveConfig;
   aaveBorrowConfig?: AaveBorrowConfig;
   compoundConfig?: CompoundConfig;
+  compoundBorrowConfig?: CompoundBorrowConfig;
   lidoConfig?: LidoConfig;
   rocketPoolConfig?: RocketPoolConfig;
   skipFactoryDeploy?: boolean;

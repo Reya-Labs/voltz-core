@@ -71,7 +71,7 @@ const mainnetIrsConfigDefaults: IrsConfigDefaults = {
   marginEngineCalculatorParameters: marginCalculatorDefaults1,
   vammFeeProtocol: 0,
   vammFeeWad: toBn(0.003), // 0.3%, for 30 day pool
-  maxIrsDurationInSeconds: 60 * 60 * 24 * 92, // 92 days. Do not increase without checking that rate oracle buffers are large enough
+  maxIrsDurationInSeconds: 60 * 60 * 24 * 9 * 31, // 9 months. Do not increase without checking that rate oracle buffers are large enough
   lpMarginCap: {
     eth: 1300,
     stableCoin: 1500000,
@@ -80,7 +80,7 @@ const mainnetIrsConfigDefaults: IrsConfigDefaults = {
 
 const mainnetRateOracleConfigDefaults: RateOracleConfigDefaults = {
   rateOracleBufferSize: 500, // Used for Mocks, and for platforms with no token config
-  rateOracleMinSecondsSinceLastUpdate: 6 * 60 * 60, // Used for Mocks, and for platforms with no token config
+  rateOracleMinSecondsSinceLastUpdate: 18 * 60 * 60, // Used for Mocks, and for platforms with no token config
   trustedDataPoints: [],
 };
 
@@ -183,18 +183,88 @@ const borrowAaveUSDCMainnetTrustedDatapoints: RateOracleDataPoint[] = [
   [1659308455, "1110146531886525921197028893"],
   [1659394598, "1110198650640220951402529044"],
 ];
+const borrowAaveETHMainnetTrustedDatapoints: RateOracleDataPoint[] = [
+  [1659293973, "1017417175429003949143107039"],
+  [1659382348, "1017471802986665011065209143"],
+  [1659470806, "1017525640360579629633466462"],
+  [1659559993, "1017578765384909374975329286"],
+  [1659648753, "1017631928407994312079157903"],
+  [1659736491, "1017683931915409922815303280"],
+  [1659824625, "1017736749717512736590360219"],
+  [1659912836, "1017789758590383638303157512"],
+  [1660001499, "1017848260571161228686360933"],
+  [1660090543, "1017916178049588760305116077"],
+  [1660179947, "1017988178468620837605923661"],
+];
+const borrowCompoundUSDTMainnetTrustedDatapoints: RateOracleDataPoint[] = [
+  [1659293973, "1156590158125246633000000000"],
+  [1659382348, "1156693385846164973000000000"],
+  [1659470806, "1156793370044702816000000000"],
+  [1659559993, "1156892192141848963000000000"],
+  [1659648753, "1156989357004268035000000000"],
+  [1659736491, "1157084706324075158000000000"],
+  [1659824625, "1157180280453827599000000000"],
+  [1659912836, "1157276004386729727000000000"],
+  [1660001499, "1157371708996419260000000000"],
+  [1660090543, "1157466770574331849000000000"],
+  [1660179947, "1157559434764917645000000000"],
+];
 
-const borrowAaveDAIMainnetTrustedDatapoints: RateOracleDataPoint[] = [
-  [1658618955, "1117966593199281135728219837"],
-  [1658705395, "1118018695182045164396692532"],
-  [1658791844, "1118071106638648460872409173"],
-  [1658878278, "1118124757765554251803617763"],
-  [1658964143, "1118178147638664683631209841"],
-  [1659050336, "1118231868303527545230359866"],
-  [1659136611, "1118286000420413818106075678"],
-  [1659222426, "1118339792850033479958022476"],
-  [1659308455, "1118393412519376952322372670"],
-  [1659394598, "1118446903846278865566379088"],
+// const borrowAaveDAIMainnetTrustedDatapoints: RateOracleDataPoint[] = [
+//   [1658618955, "1117966593199281135728219837"],
+//   [1658705395, "1118018695182045164396692532"],
+//   [1658791844, "1118071106638648460872409173"],
+//   [1658878278, "1118124757765554251803617763"],
+//   [1658964143, "1118178147638664683631209841"],
+//   [1659050336, "1118231868303527545230359866"],
+//   [1659136611, "1118286000420413818106075678"],
+//   [1659222426, "1118339792850033479958022476"],
+//   [1659308455, "1118393412519376952322372670"],
+//   [1659394598, "1118446903846278865566379088"],
+// ];
+
+const borrowCompoundUSDCGoerliTrustedDatapoints: RateOracleDataPoint[] = [
+  [1659765253, "1269921134739720773000000000"],
+  [1659789526, "1269955888580957705000000000"],
+  [1659813805, "1269990642422194638000000000"],
+  [1659837864, "1270025396263431571000000000"],
+  [1659861985, "1270060150104668503000000000"],
+  [1659886086, "1270094903945905436000000000"],
+  [1659910328, "1270129664080740928000000000"],
+  [1659934382, "1270164430543297192000000000"],
+  [1659958577, "1270199197100368091000000000"],
+  [1659982682, "1270233963657438989000000000"],
+  [1660006757, "1270268730520167235000000000"],
+  [1660030860, "1270303503776577255000000000"],
+  [1660055553, "1270338278820843895000000000"],
+  [1660079654, "1270373056106306936000000000"],
+  [1660103713, "1270407834303441132000000000"],
+  [1660127807, "1270442613744516329000000000"],
+  [1660151931, "1270477395500834264000000000"],
+  [1660176014, "1270512177257152198000000000"],
+  [1660202544, "1270546959013470133000000000"],
+];
+
+const borrowCompoundETHGoerliTrustedDatapoints: RateOracleDataPoint[] = [
+  [1659765253, "1253897329329515817000000000"],
+  [1659789526, "1254088142387034956000000000"],
+  [1659813805, "1254278983506442512000000000"],
+  [1659837864, "1254469854281890318000000000"],
+  [1659861985, "1254660725057338124000000000"],
+  [1659886086, "1254851634574894171000000000"],
+  [1659910328, "1255042629993880014000000000"],
+  [1659934382, "1255233640587973149000000000"],
+  [1659958577, "1255424651182066283000000000"],
+  [1659982682, "1255615661776159418000000000"],
+  [1660006757, "1255806685577574728000000000"],
+  [1660030860, "1255997824242670783000000000"],
+  [1660055553, "1256188999147124341000000000"],
+  [1660079654, "1256380203793494404000000000"],
+  [1660103713, "1256571437944201722000000000"],
+  [1660127807, "1256762685574084677000000000"],
+  [1660151931, "1256953933203967632000000000"],
+  [1660176014, "1257145216034963865000000000"],
+  [1660202544, "1257336542441742429000000000"],
 ];
 
 const rinkebyConfig = {
@@ -236,6 +306,32 @@ const goerliConfig = {
         address: "0xcec4a43ebb02f9b80916f1c718338169d6d5c1f0",
         rateOracleBufferSize: 300,
         minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      },
+    ],
+    defaults: kovanRateOracleConfigDefaults,
+  },
+  compoundBorrowConfig: {
+    // See tokens list at https://compound.finance/docs#networks
+    compoundTokens: [
+      {
+        name: "cETH",
+        address: "0x20572e4c090f15667cf7378e16fad2ea0e2f3eff",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+        trustedDataPoints: borrowCompoundETHGoerliTrustedDatapoints,
+      },
+      // {
+      //   name: "cDAI",
+      //   address: "0x822397d9a55d0fefd20f5c4bcab33c5f65bd28eb",
+      //   rateOracleBufferSize: 300,
+      //   minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+      // },
+      {
+        name: "cUSDC",
+        address: "0xcec4a43ebb02f9b80916f1c718338169d6d5c1f0",
+        rateOracleBufferSize: 300,
+        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+        trustedDataPoints: borrowCompoundUSDCGoerliTrustedDatapoints,
       },
     ],
     defaults: kovanRateOracleConfigDefaults,
@@ -383,13 +479,13 @@ const mainnetConfig: ContractsConfig = {
         name: "USDC",
         address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         rateOracleBufferSize: 500,
-        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+        minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
       },
       {
         name: "DAI",
         address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         rateOracleBufferSize: 500,
-        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+        minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
       },
     ],
   },
@@ -402,8 +498,15 @@ const mainnetConfig: ContractsConfig = {
         name: "USDC",
         address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         rateOracleBufferSize: 500,
-        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+        minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
         trustedDataPoints: borrowAaveUSDCMainnetTrustedDatapoints,
+      },
+      {
+        name: "WETH",
+        address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        rateOracleBufferSize: 500,
+        minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
+        trustedDataPoints: borrowAaveETHMainnetTrustedDatapoints,
       },
       // {
       //   name: "DAI",
@@ -421,8 +524,26 @@ const mainnetConfig: ContractsConfig = {
         name: "cDAI",
         address: "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643",
         rateOracleBufferSize: 500,
-        minSecondsSinceLastUpdate: 6 * 60 * 60, // 6 hours
+        minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
       },
+    ],
+  },
+  compoundBorrowConfig: {
+    defaults: mainnetRateOracleConfigDefaults,
+    compoundTokens: [
+      {
+        name: "cUSDT",
+        address: "0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9",
+        rateOracleBufferSize: 500,
+        minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
+        trustedDataPoints: borrowCompoundUSDTMainnetTrustedDatapoints,
+      },
+      // {
+      //   name: "cETH",
+      //   address: "0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5",
+      //   rateOracleBufferSize: 500,
+      //   minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
+      // },
     ],
   },
   lidoConfig: {
@@ -464,6 +585,10 @@ const localhostConfig: ContractsConfig = {
     defaults: localhostRateOracleConfigDefaults,
   },
   compoundConfig: {
+    compoundTokens: [],
+    defaults: localhostRateOracleConfigDefaults,
+  },
+  compoundBorrowConfig: {
     compoundTokens: [],
     defaults: localhostRateOracleConfigDefaults,
   },
@@ -533,7 +658,8 @@ export const applyBufferConfig = async (
   r: BaseRateOracle,
   minBufferSize: number,
   minSecondsSinceLastUpdate: number,
-  maxIrsDurationInSeconds: number
+  maxIrsDurationInSeconds: number,
+  dryRunOnly = false
 ) => {
   const secondsWorthOfBuffer = minBufferSize * minSecondsSinceLastUpdate;
   if (
@@ -549,27 +675,34 @@ export const applyBufferConfig = async (
   let currentSize = (await r.oracleVars())[2];
   // console.log(`currentSize of ${r.address} is ${currentSize}`);
 
-  const bufferWasTooSmall = currentSize < minBufferSize;
+  let bufferWasTooSmall = currentSize < minBufferSize;
   if (bufferWasTooSmall) {
-    process.stdout.write(
-      `Increasing size of ${r.address}'s buffer to ${minBufferSize}.`
-    );
-  }
+    if (dryRunOnly) {
+      console.log(
+        `ATTENTION: you should manually call increaseObservationCardinalityNext(${minBufferSize}) on the rate oracle at ${r.address}.`
+      );
+      bufferWasTooSmall = false;
+    } else {
+      process.stdout.write(
+        `Increasing size of ${r.address}'s buffer to ${minBufferSize}.`
+      );
 
-  while (currentSize < minBufferSize) {
-    // Growing the buffer can use a lot of gas so we may split buffer growth into multiple trx
-    const newSize = Math.min(
-      currentSize + MAX_BUFFER_GROWTH_PER_TRANSACTION,
-      minBufferSize
-    );
-    const trx = await r.increaseObservationCardinalityNext(newSize);
-    await trx.wait();
-    process.stdout.write(`.`);
-    currentSize = (await r.oracleVars())[2];
-  }
+      while (currentSize < minBufferSize) {
+        // Growing the buffer can use a lot of gas so we may split buffer growth into multiple trx
+        const newSize = Math.min(
+          currentSize + MAX_BUFFER_GROWTH_PER_TRANSACTION,
+          minBufferSize
+        );
 
-  if (bufferWasTooSmall) {
-    console.log(" Done.");
+        const trx = await r.increaseObservationCardinalityNext(newSize);
+        await trx.wait();
+
+        process.stdout.write(`.`);
+        currentSize = (await r.oracleVars())[2];
+      }
+
+      console.log(" Done.");
+    }
   }
 
   const currentSecondsSinceLastUpdate = (
@@ -578,10 +711,19 @@ export const applyBufferConfig = async (
   // console.log( `current minSecondsSinceLastUpdate of ${r.address} is ${currentVal}` );
 
   if (currentSecondsSinceLastUpdate !== minSecondsSinceLastUpdate) {
-    const trx = await r.setMinSecondsSinceLastUpdate(minSecondsSinceLastUpdate);
-    await trx.wait();
-    console.log(
-      `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSecondsSinceLastUpdate}`
-    );
+    if (dryRunOnly) {
+      console.log(
+        `ATTENTION: you should manually call setMinSecondsSinceLastUpdate(${minSecondsSinceLastUpdate}) on the rate oracle at ${r.address}.`
+      );
+      bufferWasTooSmall = false;
+    } else {
+      const trx = await r.setMinSecondsSinceLastUpdate(
+        minSecondsSinceLastUpdate
+      );
+      await trx.wait();
+      console.log(
+        `Updated minSecondsSinceLastUpdate of ${r.address} to ${minSecondsSinceLastUpdate}`
+      );
+    }
   }
 };

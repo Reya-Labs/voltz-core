@@ -56,29 +56,39 @@ const deployAndConfigureRateOracleInstance = async (
     )) as BaseRateOracle;
   }
 
-  // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
-  await applyBufferConfig(
-    rateOracleContract,
-    BigNumber.from(instance.rateOracleConfig.rateOracleBufferSize).toNumber(),
-    instance.rateOracleConfig.rateOracleMinSecondsSinceLastUpdate,
-    instance.maxIrsDurationInSeconds
-  );
-
   const ownerOfRateOracle = await rateOracleContract.owner();
+
+  if (deployer.toLowerCase() === ownerOfRateOracle.toLowerCase()) {
+    // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
+    await applyBufferConfig(
+      rateOracleContract,
+      BigNumber.from(instance.rateOracleConfig.rateOracleBufferSize).toNumber(),
+      instance.rateOracleConfig.rateOracleMinSecondsSinceLastUpdate,
+      instance.maxIrsDurationInSeconds
+    );
+  } else {
+    // We do not have permissions to update rate oracle config, so we do a dry run to report out-of-date state
+    await applyBufferConfig(
+      rateOracleContract,
+      BigNumber.from(instance.rateOracleConfig.rateOracleBufferSize).toNumber(),
+      instance.rateOracleConfig.rateOracleMinSecondsSinceLastUpdate,
+      instance.maxIrsDurationInSeconds,
+      true
+    );
+  }
 
   if (multisig.toLowerCase() !== ownerOfRateOracle.toLowerCase()) {
     console.log(
       `Transferring ownership of ${rateOracleIdentifier} at ${rateOracleContract.address} to ${multisig}`
     );
     if (deployer.toLowerCase() === ownerOfRateOracle.toLowerCase()) {
-      await rateOracleContract.transferOwnership(multisig);
+      const trx = await rateOracleContract.transferOwnership(multisig);
+      await trx.wait();
     } else {
       throw new Error(
         `Owner of rate oracle(${ownerOfRateOracle}}) is not deployer(${deployer}).`
       );
     }
-  } else {
-    console.log("Onwer of rate oracle is already the multisig");
   }
 };
 
@@ -182,7 +192,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         tokenDefinition.address
       );
 
-      console.log("cToken", cToken.address);
+      // console.log("cToken", cToken.address);
 
       let underlyingAddress: string;
       let underlyingDecimals: number;
@@ -234,6 +244,72 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
   }
   // End of Compound Rate Oracles
+
+  // Compound Borrow Rate Oracles
+  // Configure these if we have a one or more cTokens configured
+  const compoundBorrowConfig = deployConfig.compoundBorrowConfig;
+  const compoundBorrowTokens =
+    compoundBorrowConfig && compoundBorrowConfig.compoundTokens;
+
+  if (compoundBorrowTokens) {
+    for (const tokenDefinition of compoundBorrowTokens) {
+      const cToken = await ethers.getContractAt(
+        "ICToken",
+        tokenDefinition.address
+      );
+
+      // console.log("cToken", cToken.address);
+
+      let underlyingAddress: string;
+      let underlyingDecimals: number;
+      let ethPool: boolean;
+
+      if (tokenDefinition.name === "cETH") {
+        if (deployConfig.weth) {
+          underlyingAddress = deployConfig.weth;
+          underlyingDecimals = 18;
+          ethPool = true;
+        } else {
+          throw new Error("WETH not found");
+        }
+      } else {
+        const underlying = (await ethers.getContractAt(
+          "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
+          await cToken.underlying()
+        )) as ERC20;
+
+        underlyingAddress = underlying.address;
+        underlyingDecimals = await underlying.decimals();
+        ethPool = false;
+      }
+
+      const { trustedTimestamps, trustedObservationValuesInRay } =
+        convertTrustedRateOracleDataPoints(
+          tokenDefinition.trustedDataPoints ||
+            compoundBorrowConfig.defaults.trustedDataPoints
+        );
+
+      // For Compound, the first three constructor args are the cToken address, underylying address and decimals of the underlying
+      // For Compound, the address in the tokenDefinition is the address of the underlying cToken
+      const args = [
+        cToken.address,
+        ethPool,
+        underlyingAddress,
+        underlyingDecimals,
+        trustedTimestamps,
+        trustedObservationValuesInRay,
+      ];
+
+      await deployAndConfigureRateOracleInstance(hre, {
+        args,
+        suffix: tokenDefinition.name,
+        contractName: "CompoundBorrowRateOracle",
+        rateOracleConfig: compoundBorrowConfig.defaults,
+        maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+      });
+    }
+  }
+  // End of Compound Borrow Rate Oracles
 
   // Lido Rate Oracle
   const lidoConfig = deployConfig.lidoConfig;
@@ -307,7 +383,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
   // End of Rocket Pool Rate Oracle
 
-  return false; // This script is safely re-runnable and will reconfigure existing rate oracles if required
+  return false; // This script is safely re-runnable and will try to reconfigure existing rate oracles if required
 };
 func.tags = ["RateOracles"];
 func.id = "RateOracles";

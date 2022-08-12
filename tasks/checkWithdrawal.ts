@@ -93,7 +93,7 @@ task("checkWithdrawal", "Checks withdrawal of user").setAction(
             false
           )
           .then(async (result) => {
-            // console.log(result);
+            console.log(result);
 
             const positionInfo_after =
               await marginEngine.callStatic.getPosition(

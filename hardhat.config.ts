@@ -119,7 +119,7 @@ if (!!process.env.FORK_MAINNET) {
     chainId: 1,
     forking: {
       url: `${process.env.MAINNET_URL}`,
-      blockNumber: 15299000,
+      blockNumber: 15313000,
     },
   };
 } else if (!!process.env.FORK_KOVAN) {

@@ -16,11 +16,11 @@ def getPreparedRNIData(df_input, e_format=False):
 
     # ``liquidity index`` is de-scaled (by 10**27)
     floating_rni = []
-    for rni in df["rate"]:
+    for rni in df["liquidityIndex"]:
         float_rni = rni if e_format else rni[:-27] + "." + rni[-27:]
         floating_rni.append(float(float_rni))
 
-    df["rate"] = np.array(floating_rni)
+    df["liquidityIndex"] = np.array(floating_rni)
 
     # return the prepared dataframe
     return df
@@ -35,10 +35,10 @@ def getRateAt(df_rni, at):
 
     if closest + 1 < len(df_rni["timestamp"]):
         t_a = df_rni["timestamp"][closest]
-        v_a = df_rni["rate"][closest]
+        v_a = df_rni["liquidityIndex"][closest]
 
         t_b = df_rni["timestamp"][closest+1]
-        v_b = df_rni["rate"][closest+1]
+        v_b = df_rni["liquidityIndex"][closest+1]
 
         if not t_a <= at <= t_b or not v_a <= v_b:
             raise Exception("Incorrect interpolation")

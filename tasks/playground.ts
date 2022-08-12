@@ -133,8 +133,8 @@ task("mcParametersSwap", "Change margin calculator parameters").setAction(
       await removeSigner(address);
     };
 
-    const marginEngineAddress = rocketMarginEngine;
-    const mcParams = poolConfigs.new_rETH;
+    const marginEngineAddress = lidoMarginEngine;
+    const mcParams = poolConfigs.new_stETH;
 
     const marginEngine = (await hre.ethers.getContractAt(
       "MarginEngine",

@@ -10,11 +10,10 @@ import "../interfaces/IFactory.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../core_libraries/Time.sol";
 import "../utils/WadRayMath.sol";
-import "hardhat/console.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
 ///  This contract is abstract. To make the contract deployable override the
-/// `getCurrentRateInRay` and `getLastUpdatedRate` functions and the `UNDERLYING_YIELD_BEARING_PROTOCOL_ID` constant.
+/// `getLastUpdatedRate` function and the `UNDERLYING_YIELD_BEARING_PROTOCOL_ID` constant.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
 abstract contract BaseRateOracle is IRateOracle, Ownable {
     uint256 public constant ONE_IN_WAD = 1e18;

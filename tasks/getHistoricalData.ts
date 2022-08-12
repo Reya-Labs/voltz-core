@@ -36,7 +36,7 @@ const RocketNetworkBalancesEthMainnet =
 // compound
 const compoundMainnetStartBlock = 7710760; // cUSDC deployment
 const cTokenAddresses = {
-  cDAI: "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
+  cDAI: "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643",
   cUSDC: "0x39aa39c021dfbae8fac545936693ac917d5e7563",
   cWBTC: "0xc11b1268c1a384e55c48c2391d8d480264a3a7f4",
   cWBTC2: "0xccf4429db6322d5c611ee964527d42e5d685dd6a",
@@ -96,6 +96,20 @@ task("getHistoricalData", "Retrieves the historical rates")
     types.string
   )
   .setAction(async (taskArgs, hre) => {
+    let platformCount = 0;
+    taskArgs.aave && platformCount++;
+    taskArgs.compound && platformCount++;
+    taskArgs.rocket && platformCount++;
+    taskArgs.lido && platformCount++;
+
+    if (platformCount > 1) {
+      throw new Error(`Only one platform can be queried at a time`);
+    }
+
+    if (taskArgs.borrow && !taskArgs.aave && !taskArgs.compound) {
+      throw new Error(`Borrow rates are only supported for aave and compound`);
+    }
+
     // calculate from and to blocks
     const currentBlock = await hre.ethers.provider.getBlock("latest");
 
@@ -214,9 +228,11 @@ task("getHistoricalData", "Retrieves the historical rates")
     const rates: BigNumber[] = [];
 
     const fs = require("fs");
-    const file = `historicalData/rates/${asset}.csv`;
+    const file = taskArgs.borrow
+      ? `historicalData/rates/f_borrow_${asset}.csv`
+      : `historicalData/rates/f_${asset}.csv`;
 
-    const header = "block,timestamp,rate";
+    const header = "date,timestamp,liquidityIndex";
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
@@ -256,8 +272,6 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
-      } else {
-        console.log("Cannot use borrow flag for Lido");
       }
 
       // Rocket
@@ -288,28 +302,69 @@ task("getHistoricalData", "Retrieves the historical rates")
             fetch = FETCH_STATUS.ALREADY_FETCHED;
           }
         }
-      } else {
-        console.log("Cannot use borrow flag for Rocket");
       }
 
       // Compound
-      if (taskArgs.compound && !taskArgs.borrow) {
+      if (taskArgs.compound) {
         if (b >= compoundMainnetStartBlock) {
           try {
             if (cToken && decimals) {
-              let r = await cToken.exchangeRateStored({
-                blockTag: b,
-              });
-              if (decimals > 17) {
-                r = r.div(BigNumber.from(10).pow(decimals - 17));
-              } else if (decimals < 17) {
-                r = r.mul(BigNumber.from(10).pow(17 - decimals));
-              }
+              if (taskArgs.borrow) {
+                const borrowRateMantissa = await cToken.borrowRatePerBlock({
+                  blockTag: b,
+                });
+                const accrualBlockNumber = await cToken.accrualBlockNumber({
+                  blockTag: b,
+                });
+                const blockDelta = BigNumber.from(b).sub(accrualBlockNumber);
+                const simpleInterestFactor = borrowRateMantissa.mul(
+                  BigNumber.from(blockDelta)
+                );
+                const borrowIndexPrior = await cToken.borrowIndex({
+                  blockTag: b,
+                });
+                const r = simpleInterestFactor
+                  .mul(borrowIndexPrior)
+                  .div(BigNumber.from(10).pow(18)) // all the above are in wad
+                  .add(borrowIndexPrior)
+                  .mul(BigNumber.from(10).pow(9)); // scale to ray
 
-              blocks.push(b);
-              timestamps.push(block.timestamp);
-              rates.push(r);
-              fetch = FETCH_STATUS.SUCCESS;
+                blocks.push(b);
+                timestamps.push(block.timestamp);
+                rates.push(r);
+                fetch = FETCH_STATUS.SUCCESS;
+
+                // Calculation of instantaneous APY per per https://compound.finance/docs#protocol-math
+                // const ethMantissa = 1e18;
+                // const compoundBlocksPerDay = 6570; // 13.15 seconds per block
+                // const compoundDaysPerYear = 365;
+                // const instantaneousBorrowApy =
+                //   (Math.pow(
+                //     (borrowRateMantissa.toNumber() / ethMantissa) *
+                //       compoundBlocksPerDay +
+                //       1,
+                //     compoundDaysPerYear
+                //   ) -
+                //     1) *
+                //   100;
+                // console.log(
+                //   `Instantaneous borrow APY is ${instantaneousBorrowApy}`
+                // );
+              } else {
+                let r = await cToken.exchangeRateStored({
+                  blockTag: b,
+                });
+                if (decimals > 17) {
+                  r = r.div(BigNumber.from(10).pow(decimals - 17));
+                } else if (decimals < 17) {
+                  r = r.mul(BigNumber.from(10).pow(17 - decimals));
+                }
+
+                blocks.push(b);
+                timestamps.push(block.timestamp);
+                rates.push(r);
+                fetch = FETCH_STATUS.SUCCESS;
+              }
             }
           } catch (e) {
             // console.log("Could not get rate for cToken: ", asset);
@@ -317,8 +372,6 @@ task("getHistoricalData", "Retrieves the historical rates")
         } else {
           // Before start block but we need a placeholder to keep things aligned
         }
-      } else {
-        console.log("Cannot use borrow flag for Compound");
       }
 
       // Aave
@@ -373,7 +426,9 @@ task("getHistoricalData", "Retrieves the historical rates")
 
           fs.appendFileSync(
             file,
-            `${lastBlock},${lastTimestamp},${lastRate}\n`
+            `${new Date(
+              lastTimestamp * 1000
+            ).toISOString()},${lastTimestamp},${lastRate}\n`
           );
           console.log(
             `${lastBlock},${lastTimestamp},${new Date(

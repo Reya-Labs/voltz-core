@@ -90,6 +90,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await trx.wait();
   }
 
+  // set initial borrow index
+  let trx = await mockCToken.setBorrowIndex(BigNumber.from(10).pow(18));
+  await trx.wait();
+
+  const blocksPerYear = BigNumber.from(31536000).div(13);
+  const wad = BigNumber.from(10).pow(18);
+  const ratePerYearInWad = BigNumber.from(2).mul(wad).div(100); // 2%
+  const ratePerBlock = ratePerYearInWad.div(blocksPerYear);
+  trx = await mockCToken.setBorrowRatePerBlock(ratePerBlock);
+  await trx.wait();
+
   // Mock PERIPHERY
 
   /* const dummyPeriphery = await deploy("PeripheryOld", {
