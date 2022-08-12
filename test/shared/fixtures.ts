@@ -23,7 +23,6 @@ import { consts } from "../helpers/constants";
 
 import { ethers, waffle } from "hardhat";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
-import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
 
 import { toBn } from "evm-bn";
 import { TICK_SPACING } from "./utilities";
@@ -129,17 +128,6 @@ export async function liquidatorBotTestFixture() {
     (await liquidatorBotTestFactory.deploy()) as TestLiquidatorBot;
 
   return { liquidatorBotTest };
-}
-
-export async function marginCalculatorFixture() {
-  const TestMarginCalculatorFactory = await ethers.getContractFactory(
-    "MarginCalculatorTest"
-  );
-
-  const testMarginCalculator =
-    (await TestMarginCalculatorFactory.deploy()) as MarginCalculatorTest;
-
-  return { testMarginCalculator };
 }
 
 export async function sqrtPriceMathFixture() {
@@ -428,7 +416,6 @@ interface MetaFixtureScenario1E2E {
   mockCToken: MockCToken;
   termStartTimestampBN: BigNumber;
   termEndTimestampBN: BigNumber;
-  testMarginCalculator: MarginCalculatorTest;
 }
 
 export const metaFixtureScenario1E2E =
@@ -456,8 +443,6 @@ export const metaFixtureScenario1E2E =
       cToken.address,
       token.address
     );
-
-    const { testMarginCalculator } = await marginCalculatorFixture();
 
     await rateOracleTest.increaseObservationCardinalityNext(100);
     // write oracle entry
@@ -489,6 +474,5 @@ export const metaFixtureScenario1E2E =
       compoundRateOracleTest,
       termStartTimestampBN,
       termEndTimestampBN,
-      testMarginCalculator,
     };
   };

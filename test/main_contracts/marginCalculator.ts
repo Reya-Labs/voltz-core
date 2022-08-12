@@ -1,11 +1,6 @@
 import { Wallet, BigNumber, utils } from "ethers";
 import { ethers, waffle } from "hardhat";
-import { toBn } from "evm-bn";
-import {
-  marginCalculatorFixture,
-  metaFixture,
-  tickMathFixture,
-} from "../shared/fixtures";
+import { metaFixture, tickMathFixture } from "../shared/fixtures";
 import {
   APY_UPPER_MULTIPLIER,
   APY_LOWER_MULTIPLIER,
@@ -22,26 +17,26 @@ import {
 } from "../shared/utilities";
 import { expect } from "../shared/expect";
 
-import { MarginCalculatorTest } from "../../typechain/MarginCalculatorTest";
-import { getCurrentTimestamp } from "../helpers/time";
+import { getCurrentTimestamp, setTimeNextBlock } from "../helpers/time";
 import {
   ERC20Mock,
   TestMarginEngine,
   TestVAMM,
   TickMathTest,
 } from "../../typechain";
+import { toBn } from "../helpers/toBn";
+const ONE_WEEK_IN_SECONDS = 604800;
 
 const createFixtureLoader = waffle.createFixtureLoader;
 const { provider } = waffle;
 
-describe("MarginCalculator", () => {
+describe("Margin Calculations", () => {
   // - Setup
 
   let wallet: Wallet, other: Wallet;
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
-  let testMarginCalculator: MarginCalculatorTest;
   let marginEngineTest: TestMarginEngine;
   let token: ERC20Mock;
 
@@ -55,7 +50,6 @@ describe("MarginCalculator", () => {
 
     loadFixture = createFixtureLoader([wallet, other]);
 
-    ({ testMarginCalculator } = await loadFixture(marginCalculatorFixture));
     ({ testTickMath } = await loadFixture(tickMathFixture));
   });
 
@@ -105,27 +99,25 @@ describe("MarginCalculator", () => {
 
   describe("#computeTimeFactor", async () => {
     it("reverts if currentTimestamp is larger than termEndTimestamp", async () => {
-      await expect(
-        testMarginCalculator.computeTimeFactor(
-          toBn("1"),
-          toBn("2"),
-          margin_engine_params
-        )
-      ).to.be.revertedWith("CT<ET");
+      // Would need to use a new MarginEngine, or change immutable config, to test this
+      const currentTimestamp = await getCurrentTimestamp(provider);
+      await marginEngineTest.setTermTimestamps(0, toBn(currentTimestamp - 1));
+
+      await expect(marginEngineTest.testComputeTimeFactor()).to.be.revertedWith(
+        "CT<ET"
+      );
     });
 
     it("correctly computes the time factor", async () => {
-      const currentTimestamp = await getCurrentTimestamp(provider);
+      const nextBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
+      await setTimeNextBlock(nextBlockTimestamp);
 
       const termEndTimestampScaled = toBn(
-        (currentTimestamp + 604800).toString() // add a week
+        (nextBlockTimestamp + ONE_WEEK_IN_SECONDS).toString() // add a week
       );
+      await marginEngineTest.setTermTimestamps(0, termEndTimestampScaled);
 
-      const realized = await testMarginCalculator.computeTimeFactor(
-        termEndTimestampScaled,
-        toBn(currentTimestamp.toString()),
-        margin_engine_params
-      );
+      const realized = await marginEngineTest.testComputeTimeFactor();
 
       expect(realized).to.be.eq("981004647228725753");
     });
@@ -134,185 +126,120 @@ describe("MarginCalculator", () => {
   describe("#computeApyBound", async () => {
     // passes
     it("correctly computes the Upper APY Bound", async () => {
-      const currentTimestamp = await getCurrentTimestamp(provider);
+      const nextBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
+      await setTimeNextBlock(nextBlockTimestamp);
 
       const termEndTimestampScaled = toBn(
-        (currentTimestamp + 604800).toString() // add a week
+        (nextBlockTimestamp + ONE_WEEK_IN_SECONDS).toString() // add a week
       );
+      await marginEngineTest.setTermTimestamps(0, termEndTimestampScaled);
 
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
-
+      // const currentTimestampScaled = toBn(nextBlockTimestamp.toString());
       const historicalApy: BigNumber = toBn("0.02");
       const isUpper: boolean = true;
 
       expect(
-        await testMarginCalculator.computeApyBound(
-          termEndTimestampScaled,
-          currentTimestampScaled,
-          historicalApy,
-          isUpper,
-          margin_engine_params
-        )
-      ).to.eq("24278147968583284");
-    });
-
-    it("correctly computes the Upper APY Bound", async () => {
-      const currentTimestamp = await getCurrentTimestamp(provider);
-
-      const termEndTimestampScaled = toBn(
-        (currentTimestamp + 604800).toString() // add a week
-      );
-
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
-
-      const historicalApy: BigNumber = toBn("0.02");
-      const isUpper: boolean = true;
-
-      await testMarginCalculator.computeApyBound(
-        termEndTimestampScaled,
-        currentTimestampScaled,
-        historicalApy,
-        isUpper,
-        margin_engine_params
-      );
+        await marginEngineTest.testComputeApyBound(historicalApy, isUpper)
+      ).to.eq("24278147968583231");
     });
 
     // passes
     it("correctly computes the Lower APY Bound", async () => {
-      const currentTimestamp = await getCurrentTimestamp(provider);
+      const nextBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
+      await setTimeNextBlock(nextBlockTimestamp);
 
       const termEndTimestampScaled = toBn(
-        (currentTimestamp + 604800).toString() // add a week
+        (nextBlockTimestamp + ONE_WEEK_IN_SECONDS).toString() // add a week
       );
+      await marginEngineTest.setTermTimestamps(0, termEndTimestampScaled);
 
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
+      // const currentTimestampScaled = toBn(nextBlockTimestamp.toString());
 
       const historicalApy: BigNumber = toBn("0.02");
       const isUpper: boolean = false;
 
       expect(
-        await testMarginCalculator.computeApyBound(
-          termEndTimestampScaled,
-          currentTimestampScaled,
-          historicalApy,
-          isUpper,
-          margin_engine_params
-        )
-      ).to.eq("17456226370556757");
+        await marginEngineTest.testComputeApyBound(historicalApy, isUpper)
+      ).to.eq("17456226370556712");
     });
   });
 
   describe("#worstCaseVariableFactorAtMaturity", async () => {
-    it("correctly calculates the worst case variable factor at maturity FT, LM", async () => {
-      const currentTimestamp = await getCurrentTimestamp(provider);
+    beforeEach("set timestamps", async () => {
+      const nextBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
+      await setTimeNextBlock(nextBlockTimestamp);
 
-      const termEndTimestampScaled = toBn(
-        (currentTimestamp + 604800).toString() // add a week
+      // Test an IRS with two week duration
+      const termStartTimestampScaled = toBn(
+        nextBlockTimestamp - ONE_WEEK_IN_SECONDS // one week ago
       );
+      const termEndTimestampScaled = toBn(
+        nextBlockTimestamp + ONE_WEEK_IN_SECONDS // one week from now
+      );
+      await marginEngineTest.setTermTimestamps(
+        termStartTimestampScaled,
+        termEndTimestampScaled
+      );
+    });
 
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
-
-      const timeInSecondsFromStartToMaturityBN = toBn("1209600"); // two weeks
+    it("correctly calculates the worst case variable factor at maturity FT, LM", async () => {
       const isFT = true;
       const isLM = true;
       const historicalApy = toBn("0.1");
 
       const realized =
-        await testMarginCalculator.worstCaseVariableFactorAtMaturity(
-          timeInSecondsFromStartToMaturityBN,
-          termEndTimestampScaled,
-          currentTimestampScaled,
+        await marginEngineTest.testWorstCaseVariableFactorAtMaturity(
           isFT,
           isLM,
-          historicalApy,
-          margin_engine_params
+          historicalApy
         );
 
-      expect(realized).to.eq("4123691408399440");
+      expect(realized).to.eq("4123691408399430");
     });
 
     it("correctly calculates the worst case variable factor at maturity FT, IM", async () => {
-      const currentTimestamp = await getCurrentTimestamp(provider);
-
-      const termEndTimestampScaled = toBn(
-        (currentTimestamp + 604800).toString() // add a week
-      );
-
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
-
-      const timeInSecondsFromStartToMaturityBN = toBn("1209600"); // two weeks
       const isFT = true;
       const isLM = false;
       const historicalApy = toBn("0.1");
 
       const realized =
-        await testMarginCalculator.worstCaseVariableFactorAtMaturity(
-          timeInSecondsFromStartToMaturityBN,
-          termEndTimestampScaled,
-          currentTimestampScaled,
+        await marginEngineTest.testWorstCaseVariableFactorAtMaturity(
           isFT,
           isLM,
-          historicalApy,
-          margin_engine_params
+          historicalApy
         );
 
-      expect(realized).to.eq("6185537112599160");
+      expect(realized).to.eq("6185537112599145");
     });
 
     it("correctly calculates the worst case variable factor at maturity VT, LM", async () => {
-      const currentTimestamp = await getCurrentTimestamp(provider);
-
-      const termEndTimestampScaled = toBn(
-        (currentTimestamp + 604800).toString() // add a week
-      );
-
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
-
-      const timeInSecondsFromStartToMaturityBN = toBn("1209600"); // two weeks
       const isFT = false;
       const isLM = true;
       const historicalApy = toBn("0.1");
 
       const realized =
-        await testMarginCalculator.worstCaseVariableFactorAtMaturity(
-          timeInSecondsFromStartToMaturityBN,
-          termEndTimestampScaled,
-          currentTimestampScaled,
+        await marginEngineTest.testWorstCaseVariableFactorAtMaturity(
           isFT,
           isLM,
-          historicalApy,
-          margin_engine_params
+          historicalApy
         );
 
-      expect(realized).to.eq("3543058379114670");
+      expect(realized).to.eq("3543058379114661");
     });
 
     it("correctly calculates the worst case variable factor at maturity VT, IM", async () => {
-      const currentTimestamp = await getCurrentTimestamp(provider);
-
-      const termEndTimestampScaled = toBn(
-        (currentTimestamp + 604800).toString() // add a week
-      );
-
-      const currentTimestampScaled = toBn(currentTimestamp.toString());
-
-      const timeInSecondsFromStartToMaturityBN = toBn("1209600"); // two weeks
       const isFT = false;
       const isLM = false;
       const historicalApy = toBn("0.1");
 
       const realized =
-        await testMarginCalculator.worstCaseVariableFactorAtMaturity(
-          timeInSecondsFromStartToMaturityBN,
-          termEndTimestampScaled,
-          currentTimestampScaled,
+        await marginEngineTest.testWorstCaseVariableFactorAtMaturity(
           isFT,
           isLM,
-          historicalApy,
-          margin_engine_params
+          historicalApy
         );
 
-      expect(realized).to.eq("2480140865380269");
+      expect(realized).to.eq("2480140865380263");
     });
   });
 

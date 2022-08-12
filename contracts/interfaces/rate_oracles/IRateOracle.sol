@@ -7,7 +7,7 @@ import "../IERC20Minimal.sol";
 
 /// @dev The RateOracle is used for two purposes on the Voltz Protocol
 /// @dev Settlement: in order to be able to settle IRS positions after the termEndTimestamp of a given AMM
-/// @dev Margin Engine Computations: getApyFromTo is used by the MarginCalculator and MarginEngine
+/// @dev Margin Engine Computations: getApyFromTo is used by the MarginEngine
 /// @dev It is necessary to produce margin requirements for Trader and Liquidity Providers
 interface IRateOracle is CustomErrors {
 
