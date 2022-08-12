@@ -55,7 +55,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log(
       `Transferred ownership of Periphery Proxy at ${proxyAddress} to ${multisig}`
     );
-    await peripheryProxyInstance.transferOwnership(multisig);
+    const trx = await peripheryProxyInstance.transferOwnership(multisig);
+    await trx.wait();
   }
 
   const owner = await peripheryProxyInstance.owner();
