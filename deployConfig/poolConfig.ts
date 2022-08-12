@@ -54,6 +54,37 @@ export interface poolConfig {
 
 export const poolConfigs: { [name: string]: poolConfig } = {
 
+  borrow_aWETH: {
+    rateOracle: "AaveBorrowRateOracle_WETH",
+    tickSpacing: 60,
+    cacheMaxAgeInSeconds: 21600,
+    lookbackWindowInSeconds: 1210000,
+    feeWad: "3000000000000000",
+    liquidatorRewardWad: "50000000000000000",
+    vammFeeProtocolWad: "0",
+    isAlpha: true,
+    lpMarginCap: toBn(1_300, 18),
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: "1397400738057530000",
+      apyLowerMultiplierWad: "485064375381923000",
+      sigmaSquaredWad: "1445495381827",
+      alphaWad: "659795048123794",
+      betaWad: "45272788682406600",
+      xiUpperWad: "23000000000000000000",
+      xiLowerWad: "19000000000000000000",
+      tMaxWad: "31536000000000000000000000",
+      devMulLeftUnwindLMWad: "278872177003061000",
+      devMulRightUnwindLMWad: "278872177003061000",
+      devMulLeftUnwindIMWad: "983989299469369000",
+      devMulRightUnwindIMWad: "983989299469369000",
+      fixedRateDeviationMinLeftUnwindLMWad: "1002441070187430",
+      fixedRateDeviationMinRightUnwindLMWad: "1002441070187430",
+      fixedRateDeviationMinLeftUnwindIMWad: "2043747716339091",
+      fixedRateDeviationMinRightUnwindIMWad: "2043747716339091",
+      gammaWad: "7044480334384290000",
+      minMarginToIncentiviseLiquidators: "0",
+    },
+  },
 
   borrow_aUSDC: {
     rateOracle: "AaveBorrowRateOracle_USDC",
