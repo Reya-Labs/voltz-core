@@ -100,7 +100,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             uint32 lastUpdatedTimestamp,
             uint256 lastUpdatedRate
         ) = getLastUpdatedRate();
-        
+
         // `observations.initialize` will check that all times are correctly sorted so no need to check here
         times[length] = lastUpdatedTimestamp;
         results[length] = lastUpdatedRate;
