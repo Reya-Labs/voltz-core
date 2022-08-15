@@ -1,5 +1,11 @@
 import { task, types } from "hardhat/config";
-import { MarginEngine, Periphery, VAMM } from "../typechain";
+import {
+  MarginEngine,
+  OwnableUpgradeable,
+  Periphery,
+  UUPSUpgradeable,
+  VAMM,
+} from "../typechain";
 import { BigNumber, ethers } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
@@ -204,12 +210,18 @@ task(
 
 // TODO: add marginEngine, aaveFcm, compoundFcm and periphery params/flags, and do all in one go
 task(
-  "upgradeVAMM",
-  "Upgrades VAMM instances (i.e. proxies) to use the latest deployed VAMM implementation logic"
+  "upgradeProxy",
+  "Upgrades proxy instances (e.g. VAMMs, MarginEngines) to use the latest deployed implementation logic"
 )
   .addParam(
-    "vamms",
-    "Comma-separated list of addresses of the VAMM proxies that we wish to upgrade",
+    "contractType",
+    `The contract types for which we wish to upgrade the implementation. Choose from ${proxiedContractTypesAsString}.`,
+    undefined,
+    types.string
+  )
+  .addParam(
+    "proxyAddresses",
+    "Comma-separated list of addresses of the proxies that we wish to upgrade",
     undefined,
     types.string
   )
@@ -218,26 +230,39 @@ task(
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
   .setAction(async (taskArgs, hre) => {
-    // Some prep work before we loop through the VAMMs
-    const latestVammLogicAddress = (await hre.ethers.getContract("VAMM"))
-      .address;
+    // Some prep work before we loop through the proxies
+
+    if (!proxiedContractTypes.includes(taskArgs.contractType)) {
+      throw Error(`Unsupported contract type: ${taskArgs.contractType}`);
+    }
+
+    const latestImplLogicAddress = (
+      await hre.ethers.getContract(taskArgs.contractType)
+    ).address;
     const { deployer, multisig } = await hre.getNamedAccounts();
     const data: UpgradeTemplateData = {
       rateOracleUpdates: [],
       proxyUpgrades: [],
     };
-    const vamms = taskArgs.vamms.split(",");
+    const proxyAddresses = taskArgs.proxyAddresses.split(",");
 
-    // Now loop through all the VAMMs we want to upgrade
-    for (const vamm of vamms) {
-      const vammProxy = (await hre.ethers.getContractAt("VAMM", vamm)) as VAMM;
-      const proxyAddress = vammProxy.address;
+    // Now loop through all the proxies we want to upgrade
+    for (const currentProxyAddress of proxyAddresses) {
+      const proxy = (await hre.ethers.getContractAt(
+        taskArgs.contractType,
+        currentProxyAddress
+      )) as UUPSUpgradeable;
+      const proxyAddress = proxy.address;
       const initImplAddress = await getImplementationAddress(hre, proxyAddress);
-      const proxyOwner = await vammProxy.owner();
 
-      if (initImplAddress === latestVammLogicAddress) {
+      // TODO: check that the proxy is of the specified type and that we are not, e.g., upgrading a VAMM to be a MarginEngine!
+
+      const ownableProxy = proxy as unknown as OwnableUpgradeable;
+      const proxyOwner = await ownableProxy.owner();
+
+      if (initImplAddress === latestImplLogicAddress) {
         console.log(
-          `The VAMM at ${proxyAddress} is using the latest logic (${latestVammLogicAddress}). No newer logic deployed!`
+          `The ${taskArgs.contractType} at ${proxyAddress} is using the latest logic (${latestImplLogicAddress}). No newer logic deployed!`
         );
       } else {
         // TODO: compare storage layouts and abort upgrade if not compatible
@@ -245,8 +270,8 @@ task(
         if (taskArgs.multisig) {
           // Using multisig template instead of sending any transactions
           data.proxyUpgrades.push({
-            proxyAddress: vammProxy.address,
-            newImplementation: latestVammLogicAddress,
+            proxyAddress: proxy.address,
+            newImplementation: latestImplLogicAddress,
           });
         } else {
           // Not using multisig template - actually send the transactions
@@ -255,15 +280,15 @@ task(
               `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
             );
           } else {
-            await vammProxy
+            await proxy
               .connect(await getSigner(hre, proxyOwner))
-              .upgradeTo(latestVammLogicAddress);
+              .upgradeTo(latestImplLogicAddress);
             const newImplAddress = await getImplementationAddress(
               hre,
               proxyAddress
             );
             console.log(
-              `VAMM at ${vammProxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
+              `${taskArgs.contractType} at ${proxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
             );
           }
         }
