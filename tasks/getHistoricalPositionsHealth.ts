@@ -5,14 +5,11 @@ import "@nomiclabs/hardhat-ethers";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
-const position = {
-  marginEngineAddress: "0x21f9151d6e06f834751b614c2ff40fc28811b235",
-  owner: "0x5bb4f05ff5235554204e3cd9ba46c3d5af422a0f",
-  tickLower: "-17880",
-  tickUpper: "-11640",
-};
-
 task("getHistoricalPositionsHealth", "Check positions")
+  .addParam("marginEngineAddress", "Margin Engine Address")
+  .addParam("owner", "Address of the owner of the position")
+  .addParam("tickLower", "Lower tick of a position")
+  .addParam("tickUpper", "Upper tick of a position")
   .addParam(
     "fromBlock",
     "Get data from this past block number (up to some larger block number defined by `toBlock`)",
@@ -28,7 +25,7 @@ task("getHistoricalPositionsHealth", "Check positions")
   .setAction(async (taskArgs, hre) => {
     const marginEngine = (await hre.ethers.getContractAt(
       "MarginEngine",
-      position.marginEngineAddress
+      taskArgs.marginEngineAddress
     )) as MarginEngine;
 
     const vamm = (await hre.ethers.getContractAt(
@@ -46,7 +43,7 @@ task("getHistoricalPositionsHealth", "Check positions")
     }
 
     const fs = require("fs");
-    const file = `${position.marginEngineAddress}.csv`;
+    const file = `${taskArgs.marginEngineAddress}.csv`;
 
     const header =
       "timestamp,block,tick,position_margin,position_liquidity,variable_token_balance,position_requirement_liquidation,position_requirement_safety,status";
@@ -59,9 +56,9 @@ task("getHistoricalPositionsHealth", "Check positions")
 
       const positionRequirementSafety =
         await marginEngine.callStatic.getPositionMarginRequirement(
-          position.owner,
-          position.tickLower,
-          position.tickUpper,
+          taskArgs.owner,
+          taskArgs.tickLower,
+          taskArgs.tickUpper,
           false,
           {
             blockTag: b,
@@ -70,9 +67,9 @@ task("getHistoricalPositionsHealth", "Check positions")
 
       const positionRequirementLiquidation =
         await marginEngine.callStatic.getPositionMarginRequirement(
-          position.owner,
-          position.tickLower,
-          position.tickUpper,
+          taskArgs.owner,
+          taskArgs.tickLower,
+          taskArgs.tickUpper,
           true,
           {
             blockTag: b,
@@ -80,9 +77,9 @@ task("getHistoricalPositionsHealth", "Check positions")
         );
 
       const positionInfo = await marginEngine.callStatic.getPosition(
-        position.owner,
-        position.tickLower,
-        position.tickUpper,
+        taskArgs.owner,
+        taskArgs.tickLower,
+        taskArgs.tickUpper,
         {
           blockTag: b,
         }
