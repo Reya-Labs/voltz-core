@@ -113,6 +113,7 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 
 let hardhatNetworkConfig: HardhatNetworkUserConfig = {
   allowUnlimitedContractSize: true,
+  initialDate: "01 Jan 2022 00:00:00 GMT",
 };
 
 if (!!process.env.FORK_MAINNET) {
@@ -122,7 +123,7 @@ if (!!process.env.FORK_MAINNET) {
     chainId: 1,
     forking: {
       url: `${process.env.MAINNET_URL}`,
-      // blockNumber: 15344000,
+      blockNumber: 15346489,
     },
   };
 } else if (!!process.env.FORK_KOVAN) {
