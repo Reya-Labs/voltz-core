@@ -271,7 +271,10 @@ export type RawInfoPostSwap = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const decodeInfoPostSwap = (error: any): RawInfoPostSwap => {
   const errSig = getErrorSignature(error);
-  if (errSig === "MarginRequirementNotMet") {
+  if (
+    errSig === "MarginRequirementNotMet" ||
+    error.errorName === "MarginRequirementNotMet"
+  ) {
     try {
       const reason = error.error.data.toString();
       const decodingResult = iface.decodeErrorResult(errSig, reason);
