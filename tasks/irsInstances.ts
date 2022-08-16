@@ -372,13 +372,15 @@ task(
       "MarginEngine",
       a.marginEngine
     );
+    // We get the latest marginEngine because it could have changed since IRS creation when the log was written
+    const rateOracle = await marginEngine.rateOracle();
     const secondsAgo = await marginEngine.lookbackWindowInSeconds();
     const historicalAPY = await marginEngine.getHistoricalApyReadOnly();
     const cacheMaxAgeInSeconds = await marginEngine.cacheMaxAgeInSeconds();
 
-    csvOutput += `\n${a.underlyingToken},${
-      a.rateOracle
-    },${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${
+    csvOutput += `\n${
+      a.underlyingToken
+    },${rateOracle},${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${
       a.tickSpacing
     },${a.marginEngine},${a.vamm},${a.fcm},${
       a.yieldBearingProtocolID
