@@ -3,19 +3,43 @@ import { task } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
 import { Factory, MarginEngine, Periphery, VAMM } from "../typechain";
 import { TickMath } from "../test/shared/tickMath";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+
+async function impersonateAccount(
+  hre: HardhatRuntimeEnvironment,
+  acctAddress: string
+) {
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [acctAddress],
+  });
+  // // It might be a multisig contract, in which case we also need to pretend it has money for gas
+  // await hre.ethers.provider.send("hardhat_setBalance", [
+  //   acctAddress,
+  //   "0x10000000000000000000",
+  // ]);
+}
+
+async function getSigner(hre: HardhatRuntimeEnvironment, acctAddress: string) {
+  if (hre.network.name === "hardhat" || hre.network.name === "localhost") {
+    // We can impersonate the account
+    await impersonateAccount(hre, acctAddress);
+  }
+  return await hre.ethers.getSigner(acctAddress);
+}
 
 task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
-  const [wallet] = await (hre.ethers as any).getSigners();
+  // const [wallet] = await (hre.ethers as any).getSigners();
 
   // TODO: make configurable
-  const marginEngineAddress = "0x75537828f2ce51be7289709686a69cbfdbb714f1";
+  const marginEngineAddress = "0x2d9571d65c14271a08877daf44f785a2e0d1a123";
 
   const factory = (await hre.ethers.getContract("Factory")) as Factory;
 
   const periphery = (await hre.ethers.getContract("Periphery")) as Periphery;
 
   // approve
-  await factory.connect(wallet).setApproval(periphery.address, true);
+  // await factory.connect(wallet).setApproval(periphery.address, true);
 
   // initialize vamm
   const marginEngine = (await hre.ethers.getContractAt(
@@ -32,12 +56,6 @@ task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
 
   console.log("vammVars.sqrtPriceX96", vammVars.sqrtPriceX96.toString());
 
-  if (vammVars.sqrtPriceX96.toString() === "0") {
-    await vamm
-      .connect(wallet)
-      .initializeVAMM(TickMath.getSqrtRatioAtTick(-1000).toString());
-  }
-
   vammVars = await vamm.vammVars();
 
   console.log("vammVars.sqrtPriceX96", vammVars.sqrtPriceX96.toString());
@@ -45,21 +63,22 @@ task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
   // mint liquidity
 
   console.log("marginEngineAddress", marginEngineAddress);
-  console.log("wallet address", wallet.address);
 
   console.log(
     "historical apy",
     utils.formatEther(await marginEngine.callStatic.getHistoricalApy())
   );
 
-  await periphery.connect(wallet).mintOrBurn({
-    marginEngine: marginEngineAddress,
-    tickLower: -7000,
-    tickUpper: 0,
-    notional: toBn("100000"),
-    isMint: true,
-    marginDelta: 0,
-  });
+  await periphery
+    .connect(await getSigner(hre, "0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1"))
+    .mintOrBurn({
+      marginEngine: marginEngineAddress,
+      tickLower: -16080,
+      tickUpper: 6960,
+      notional: "100000000",
+      isMint: true,
+      marginDelta: "1000000",
+    });
 });
 
 module.exports = {};
