@@ -32,7 +32,7 @@ task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
   // TODO: make configurable
   const marginEngineAddress = "0x2d9571d65c14271a08877daf44f785a2e0d1a123";
 
-  const factory = (await hre.ethers.getContract("Factory")) as Factory;
+  // const factory = (await hre.ethers.getContract("Factory")) as Factory;
 
   const periphery = (await hre.ethers.getContract("Periphery")) as Periphery;
 
