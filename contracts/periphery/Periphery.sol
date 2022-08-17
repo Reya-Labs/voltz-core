@@ -207,7 +207,7 @@ contract Periphery is
                     marginDelta += msg.value.toInt256();
                 }
 
-                underlyingToken.approve(
+                underlyingToken.safeIncreaseAllowance(
                     address(marginEngine),
                     marginDelta.toUint256()
                 );
@@ -226,7 +226,7 @@ contract Periphery is
                     address(this),
                     marginDelta.toUint256()
                 );
-                underlyingToken.approve(
+                underlyingToken.safeIncreaseAllowance(
                     address(marginEngine),
                     marginDelta.toUint256()
                 );
