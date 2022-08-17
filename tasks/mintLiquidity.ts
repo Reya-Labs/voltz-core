@@ -1,13 +1,6 @@
 import { BigNumber, utils } from "ethers";
 import { task } from "hardhat/config";
-import {
-  Factory,
-  IERC20,
-  IERC20Minimal,
-  MarginEngine,
-  Periphery,
-  VAMM,
-} from "../typechain";
+import { IERC20Minimal, MarginEngine, Periphery } from "../typechain";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 async function impersonateAccount(
