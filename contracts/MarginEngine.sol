@@ -14,6 +14,7 @@ import "./utils/SafeCastUni.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./utils/SqrtPriceMath.sol";
+import "hardhat/console.sol";
 
 contract MarginEngine is
     MarginEngineStorage,
@@ -473,12 +474,15 @@ contract MarginEngine is
     /// @dev if the marginEngineBalance is not sufficient to cover the marginDelta then we cover the remainingDelta by invoking the transferMarginToMarginEngineTrader function of the fcm which in case of Aave will calls the Aave withdraw function to settle with the MarginEngine in underlying tokens
     function _transferMargin(address _account, int256 _marginDelta) internal {
         if (_marginDelta > 0) {
+            console.log("marginDelta > 0");
+            console.log("initiating safeTransferFrom...");
             _underlyingToken.safeTransferFrom(
                 _account,
                 address(this),
                 uint256(_marginDelta)
             );
         } else {
+            console.log("marginDelta < 0");
             uint256 _marginEngineBalance = _underlyingToken.balanceOf(
                 address(this)
             );
@@ -536,8 +540,10 @@ contract MarginEngine is
     ) external override whenNotPaused nonZeroDelta(_marginDelta) {
         require(_owner != address(0), "O0");
 
+        console.log("checking ticks...");
         Tick.checkTicks(_tickLower, _tickUpper);
 
+        console.log("getting position...");
         Position.Info storage _position = positions.get(
             _owner,
             _tickLower,
@@ -546,10 +552,12 @@ contract MarginEngine is
 
         /// @dev if in alpha --> revert (unless call via periphery)
         if (_isAlpha) {
+            console.log("in alpha, checking for periphery...");
             IPeriphery _periphery = _factory.periphery();
             require(msg.sender == address(_periphery), "pphry only");
         }
 
+        console.log("updating position token balances...");
         _updatePositionTokenBalancesAndAccountForFees(
             _position,
             _tickLower,
@@ -558,6 +566,7 @@ contract MarginEngine is
         ); // isMint=false
 
         if (_marginDelta < 0) {
+            console.log("margin delta < 0");
             if (
                 _owner != msg.sender && !_factory.isApproved(_owner, msg.sender)
             ) {
@@ -570,12 +579,16 @@ contract MarginEngine is
 
             _transferMargin(_owner, _marginDelta);
         } else {
+            console.log("margin delta > 0, updating position delta...");
             _position.updateMarginViaDelta(_marginDelta);
 
+            console.log("transfering margin...");
             _transferMargin(msg.sender, _marginDelta);
         }
 
         _position.rewardPerAmount = 0;
+
+        console.log("done. emitting events...");
 
         emit PositionMarginUpdate(
             msg.sender,

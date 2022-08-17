@@ -1,5 +1,5 @@
 import { task, types } from "hardhat/config";
-import { MarginEngine, VAMM } from "../typechain";
+import { MarginEngine, Periphery, VAMM } from "../typechain";
 import { BigNumber, ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -99,6 +99,77 @@ task("rateOracleSwap", "Swap Rate Oracle").setAction(async (_, hre) => {
     );
   }
 });
+
+task("upgradeToDebug", "Upgrade contracts for logs").setAction(
+  async (_, hre) => {
+    if (!(hre.network.name === "localhost")) {
+      throw new Error("Only localhost");
+    }
+
+    const addSigner = async (address: string): Promise<SignerWithAddress> => {
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+      });
+      await hre.network.provider.send("hardhat_setBalance", [
+        address,
+        "0x1000000000000000000",
+      ]);
+      return await hre.ethers.getSigner(address);
+    };
+
+    const removeSigner = async (address: string) => {
+      await hre.network.provider.request({
+        method: "hardhat_stopImpersonatingAccount",
+        params: [address],
+      });
+    };
+
+    const withSigner = async (
+      address: string,
+      f: (_: SignerWithAddress) => Promise<void>
+    ) => {
+      const signer = await addSigner(address);
+      await f(signer);
+      await removeSigner(address);
+    };
+
+    const peripheryAddress = "0x07ceD903E6ad0278CC32bC83a3fC97112F763722";
+    const marginEngineAddress = "0x997e0f4bd76337a59ac0680ad220e819a85ffd14";
+    const vammImplementation = "0x987e855776C03A4682639eEb14e65b3089EE6310";
+    const marginEngineImplementation =
+      "0xCBBe2A5c3A22BE749D5DDF24e9534f98951983e2";
+    const peripheryImplementation =
+      "0x10e38eE9dd4C549b61400Fc19347D00eD3edAfC4";
+
+    const marginEngine = (await hre.ethers.getContractAt(
+      "MarginEngine",
+      marginEngineAddress
+    )) as MarginEngine;
+
+    const periphery = (await hre.ethers.getContractAt(
+      "Periphery",
+      peripheryAddress
+    )) as Periphery;
+
+    await withSigner(await marginEngine.owner(), async (s) => {
+      const vammAddress = await marginEngine.vamm();
+      const vamm = (await hre.ethers.getContractAt(
+        "VAMM",
+        vammAddress
+      )) as VAMM;
+
+      console.log("upgrading vamm...");
+      await vamm.connect(s).upgradeTo(vammImplementation);
+
+      console.log("upgrading me...");
+      await marginEngine.connect(s).upgradeTo(marginEngineImplementation);
+
+      console.log("upgrading periphery...");
+      await periphery.connect(s).upgradeTo(peripheryImplementation);
+    });
+  }
+);
 
 task("mcParametersSwap", "Change margin calculator parameters").setAction(
   async (_, hre) => {

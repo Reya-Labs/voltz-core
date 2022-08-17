@@ -155,6 +155,7 @@ contract Periphery is
         int256 marginDelta,
         bool fullyWithdraw
     ) public payable override {
+        console.log("upm: getting position...");
         Position.Info memory position = marginEngine.getPosition(
             msg.sender,
             tickLower,
@@ -186,6 +187,7 @@ contract Periphery is
         }
 
         if (address(underlyingToken) == address(_weth)) {
+            console.log("upm: weth");
             if (marginDelta < 0) {
                 marginEngine.updatePositionMargin(
                     msg.sender,
@@ -207,7 +209,7 @@ contract Periphery is
                     marginDelta += msg.value.toInt256();
                 }
 
-                underlyingToken.approve(
+                underlyingToken.safeIncreaseAllowance(
                     address(marginEngine),
                     marginDelta.toUint256()
                 );
@@ -220,17 +222,30 @@ contract Periphery is
                 );
             }
         } else {
+            console.log("upm: non-weth");
             if (marginDelta > 0) {
+                console.log("upm: transfering from msg.sender to periphery...");
+                console.log("sft: ", msg.sender, address(this), marginDelta.toUint256());
+
                 underlyingToken.safeTransferFrom(
                     msg.sender,
                     address(this),
                     marginDelta.toUint256()
                 );
-                underlyingToken.approve(
+
+                console.log("upm: approving margin engine");
+
+                uint256 allowance = underlyingToken.allowance(address(this), address(marginEngine));
+                console.log("allowace:", allowance);
+                console.log("approve: ", address(marginEngine), marginDelta.toUint256());
+                console.log("underlying token: ", address(underlyingToken));
+                underlyingToken.safeIncreaseAllowance(
                     address(marginEngine),
                     marginDelta.toUint256()
                 );
             }
+
+            console.log("upm: to margin engine");
             marginEngine.updatePositionMargin(
                 msg.sender,
                 tickLower,
@@ -242,6 +257,7 @@ contract Periphery is
         position = marginEngine.getPosition(msg.sender, tickLower, tickUpper);
 
         if (isAlpha && position._liquidity > 0) {
+            console.log("upm: accounting for LP margin cap");
             accountLPMarginCap(
                 vamm,
                 encodedPosition,
@@ -306,6 +322,7 @@ contract Periphery is
         }
 
         if (params.marginDelta != 0 || msg.value > 0) {
+            console.log("updating position margin...");
             updatePositionMargin(
                 params.marginEngine,
                 params.tickLower,
