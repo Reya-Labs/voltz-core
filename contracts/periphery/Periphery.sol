@@ -225,7 +225,12 @@ contract Periphery is
             console.log("upm: non-weth");
             if (marginDelta > 0) {
                 console.log("upm: transfering from msg.sender to periphery...");
-                console.log("sft: ", msg.sender, address(this), marginDelta.toUint256());
+                console.log(
+                    "sft: ",
+                    msg.sender,
+                    address(this),
+                    marginDelta.toUint256()
+                );
 
                 underlyingToken.safeTransferFrom(
                     msg.sender,
@@ -235,9 +240,16 @@ contract Periphery is
 
                 console.log("upm: approving margin engine");
 
-                uint256 allowance = underlyingToken.allowance(address(this), address(marginEngine));
+                uint256 allowance = underlyingToken.allowance(
+                    address(this),
+                    address(marginEngine)
+                );
                 console.log("allowace:", allowance);
-                console.log("approve: ", address(marginEngine), marginDelta.toUint256());
+                console.log(
+                    "approve: ",
+                    address(marginEngine),
+                    marginDelta.toUint256()
+                );
                 console.log("underlying token: ", address(underlyingToken));
                 underlyingToken.safeIncreaseAllowance(
                     address(marginEngine),

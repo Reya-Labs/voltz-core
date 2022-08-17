@@ -300,7 +300,7 @@ task(
     );
 
     if (taskArgs.multisig) {
-      const nonce = (await getFactoryNonce(hre, factory.address));
+      const nonce = await getFactoryNonce(hre, factory.address);
 
       const data: MultisigTemplateData = {
         factoryAddress: factory.address,
