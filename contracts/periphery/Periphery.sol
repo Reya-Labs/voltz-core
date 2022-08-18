@@ -212,12 +212,10 @@ contract Periphery is
                     address(marginEngine)
                 );
 
-                if (allowance < marginDelta.toUint256()) {
-                    underlyingToken.safeIncreaseAllowance(
-                        address(marginEngine),
-                        marginDelta.toUint256() - allowance
-                    );
-                }
+                underlyingToken.safeIncreaseAllowanceTo(
+                    address(marginEngine),
+                    marginDelta.toUint256()
+                );
 
                 marginEngine.updatePositionMargin(
                     msg.sender,
@@ -239,12 +237,10 @@ contract Periphery is
                     address(marginEngine)
                 );
 
-                if (allowance < marginDelta.toUint256()) {
-                    underlyingToken.safeIncreaseAllowance(
-                        address(marginEngine),
-                        marginDelta.toUint256() - allowance
-                    );
-                }
+                underlyingToken.safeIncreaseAllowanceTo(
+                    address(marginEngine),
+                    marginDelta.toUint256()
+                );
             }
             marginEngine.updatePositionMargin(
                 msg.sender,

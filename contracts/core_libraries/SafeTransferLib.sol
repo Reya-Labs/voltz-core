@@ -74,6 +74,24 @@ library SafeTransferLib {
         );
     }
 
+    function safeIncreaseAllowanceTo(
+        IERC20Minimal token,
+        address spender,
+        uint256 value
+    ) internal {
+        uint256 allowance = token.allowance(address(this), spender);
+        if (allowance < value) {
+            _callOptionalReturn(
+                token,
+                abi.encodeWithSelector(
+                    token.approve.selector,
+                    spender,
+                    value
+                )
+            );
+        }
+    }
+
     // function safeDecreaseAllowance(
     //     IERC20Minimal token,
     //     address spender,
