@@ -3,9 +3,6 @@ import { BaseRateOracle, IVAMM, MarginEngine } from "../typechain";
 import { BigNumber, ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { toBn } from "../test/helpers/toBn";
-import { MAX_SQRT_RATIO, MIN_SQRT_RATIO } from "../test/shared/utilities";
-import { decodeInfoPostSwap } from "./errorHandling";
-import { marginEngineMasterTestFixture } from "../test/shared/fixtures";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
@@ -80,7 +77,7 @@ task("getHistoricalPositionsHealth", "Check the history of a position")
     const file = `${taskArgs.marginEngineAddress}#${taskArgs.owner}#${taskArgs.tickLower}#${taskArgs.tickUpper}.csv`;
 
     const header =
-      "block,timestamp,time,tick,sqrtPriceX96,variable_factor,historical_apy,position_margin,position_liquidity,fixed_token_balance,variable_token_balance,position_requirement_liquidation,position_requirement_safety,status";
+      "block,timestamp,time,tick,sqrtPriceX96,price,variable_factor,historical_apy,position_margin,position_liquidity,fixed_token_balance,variable_token_balance,position_requirement_liquidation,position_requirement_safety,status";
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
@@ -150,10 +147,13 @@ task("getHistoricalPositionsHealth", "Check the history of a position")
       const vammVars = await vamm.vammVars({ blockTag: b });
       const tick = vammVars.tick;
       const sqrtPriceX96 = vammVars.sqrtPriceX96;
+      const priceX192 = sqrtPriceX96.mul(sqrtPriceX96);
+      const priceWad = priceX192.mul(toBn(1)).div(BigNumber.from(2).pow(192));
 
       const timeString = new Date(block.timestamp * 1000).toISOString();
 
       const wadValues = [
+        priceWad,
         variableFactor,
         historicalApy,
         positionInfo.margin,
