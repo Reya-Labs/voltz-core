@@ -207,7 +207,10 @@ contract Periphery is
                     marginDelta += msg.value.toInt256();
                 }
 
-                uint256 allowance = underlyingToken.allowance(address(this), address(marginEngine));
+                uint256 allowance = underlyingToken.allowance(
+                    address(this),
+                    address(marginEngine)
+                );
 
                 if (allowance < marginDelta.toUint256()) {
                     underlyingToken.safeIncreaseAllowance(
@@ -231,7 +234,10 @@ contract Periphery is
                     marginDelta.toUint256()
                 );
 
-                uint256 allowance = underlyingToken.allowance(address(this), address(marginEngine));
+                uint256 allowance = underlyingToken.allowance(
+                    address(this),
+                    address(marginEngine)
+                );
 
                 if (allowance < marginDelta.toUint256()) {
                     underlyingToken.safeIncreaseAllowance(
