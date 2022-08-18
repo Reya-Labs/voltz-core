@@ -96,6 +96,10 @@ loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
 loadModuleIfContractsAreBuilt("./tasks/checkInsolvencyAtMaturity");
 loadModuleIfContractsAreBuilt("./tasks/migratePeriphery");
 loadModuleIfContractsAreBuilt("./tasks/updateMCParams");
+loadModuleIfContractsAreBuilt("./tasks/checkPositionSettlement");
+loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
+loadModuleIfContractsAreBuilt("./tasks/setLiquidatorRewards");
+loadModuleIfContractsAreBuilt("./tasks/setPausability");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -118,7 +122,7 @@ if (!!process.env.FORK_MAINNET) {
     chainId: 1,
     forking: {
       url: `${process.env.MAINNET_URL}`,
-      // blockNumber: 15186427,
+      // blockNumber: 15344000,
     },
   };
 } else if (!!process.env.FORK_KOVAN) {

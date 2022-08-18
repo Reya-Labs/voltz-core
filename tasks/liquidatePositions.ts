@@ -24,7 +24,7 @@ async function writeLiquidationOfPositionsToGnosisSafeTemplate(
   // Get external template with fetch
   const fs = require("fs");
   const template = fs.readFileSync(
-    path.join(__dirname, "liquidatePositions.mustache.json"),
+    path.join(__dirname, "liquidatePositions.json.mustache"),
     "utf8"
   );
   const output = mustache.render(template, data);
@@ -56,11 +56,21 @@ task("liquidatePositions", "Liquidate liquidatable positions")
       marginEngineAddresses.add(position.marginEngine);
     }
 
+    const currentBlock = await hre.ethers.provider.getBlock("latest");
+
     for (const marginEngineAddress of marginEngineAddresses) {
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
         marginEngineAddress
       )) as MarginEngine;
+
+      const marginEngineEndTimestamp = Number(
+        ethers.utils.formatEther(await marginEngine.termEndTimestampWad())
+      );
+
+      if (marginEngineEndTimestamp <= currentBlock.timestamp) {
+        continue;
+      }
 
       const liquidationsOfPool: {
         marginEngineAddress: string;

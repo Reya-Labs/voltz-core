@@ -9,6 +9,7 @@ import { IMarginEngine } from "../typechain";
 
 interface MultisigTemplateData {
   marginEngineAddress: string;
+  liquidatorReward: BigNumberish;
   marginCalculatorParams: {
     apyUpperMultiplierWad: BigNumberish;
     apyLowerMultiplierWad: BigNumberish;
@@ -71,16 +72,27 @@ task("updateMCParams", "Updates the MC Parameters of a pool")
     if (taskArgs.multisig) {
       const data: MultisigTemplateData = {
         marginEngineAddress: marginEngine.address,
+        liquidatorReward: poolConfig.liquidatorRewardWad,
         marginCalculatorParams: poolConfig.marginCalculatorParams,
       };
 
       await writeUpdateMCParamsTransactionsToGnosisSafeTemplate(data);
     } else {
-      console.log("Setting margin calculator parameters...");
-      const tx = await marginEngine.setMarginCalculatorParameters(
-        poolConfig.marginCalculatorParams
-      );
-      await tx.wait();
+      {
+        console.log("Setting margin calculator parameters...");
+        const tx = await marginEngine.setMarginCalculatorParameters(
+          poolConfig.marginCalculatorParams
+        );
+        await tx.wait();
+      }
+
+      {
+        console.log("Setting liquidator reward...");
+        const tx = await marginEngine.setLiquidatorReward(
+          poolConfig.liquidatorRewardWad
+        );
+        await tx.wait();
+      }
 
       console.log("Done.");
     }
