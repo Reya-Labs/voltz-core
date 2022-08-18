@@ -40,6 +40,7 @@ contract MarginEngine is
     uint256 public constant ONE_UINT = 1e18;
     int256 public constant ONE = 1e18;
 
+    uint256 public constant MAX_FIXED_RATE_WAD = 15e18; // 15 in WAD = 15%. Highest rate used during counterfactual unwinds.
     uint256 public constant MAX_LOOKBACK_WINDOW_IN_SECONDS = 315360000; // ten years
     uint256 public constant MIN_LOOKBACK_WINDOW_IN_SECONDS = 3600; // one hour
     uint256 public constant MAX_CACHE_MAX_AGE_IN_SECONDS = 1209600; // two weeks
@@ -162,6 +163,11 @@ contract MarginEngine is
 
         uint256 fixedRateStartWad = sqrtRatioCurrWad.mul(sqrtRatioCurrWad);
 
+        // We artifically limit the current price to max 15% to avoid unnecessary liquidations
+        if (fixedRateStartWad > MAX_FIXED_RATE_WAD) {
+            fixedRateStartWad = MAX_FIXED_RATE_WAD;
+        }
+
         // calculate D (from the litepaper)
         uint256 upperDWad = fixedRateStartWad.mul(
             startingFixedRateMultiplierWad
@@ -191,7 +197,7 @@ contract MarginEngine is
             } else {
                 fixedRateCFWad = 0;
             }
-        } else {
+        } else {  
             fixedRateCFWad = fixedRateStartWad + dWad;
         }
         // calculate fixedTokenDeltaUnbalanced
