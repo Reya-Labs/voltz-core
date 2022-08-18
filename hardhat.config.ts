@@ -113,7 +113,6 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 
 let hardhatNetworkConfig: HardhatNetworkUserConfig = {
   allowUnlimitedContractSize: true,
-  initialDate: "01 Jan 2022 00:00:00 GMT",
 };
 
 if (!!process.env.FORK_MAINNET) {
