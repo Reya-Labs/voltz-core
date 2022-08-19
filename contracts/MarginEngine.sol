@@ -14,8 +14,6 @@ import "./utils/SafeCastUni.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./utils/SqrtPriceMath.sol";
-import "./utils/Printer.sol";
-import "hardhat/console.sol";
 
 contract MarginEngine is
     MarginEngineStorage,
@@ -1275,23 +1273,12 @@ contract MarginEngine is
                 ? _highPrice
                 : _lowPrice;
 
-            Printer.printBool("_isLM:", _isLM);
-            Printer.printUint256("_variableFactorWad:", _variableFactorWad);
-
-            Printer.printInt256("scenario1LPFixedTokenBalance:", _localVars.scenario1LPFixedTokenBalance);
-            Printer.printInt256("scenario1LPVariableTokenBalance:", _localVars.scenario1LPVariableTokenBalance);
-            Printer.printUint160("scenario1SqrtPriceX96:", _localVars.scenario1SqrtPriceX96);
-
             uint256 _scenario1MarginRequirement = _getMarginRequirement(
                 _localVars.scenario1LPFixedTokenBalance,
                 _localVars.scenario1LPVariableTokenBalance,
                 _isLM,
                 _localVars.scenario1SqrtPriceX96
             );
-
-            Printer.printInt256("scenario2LPFixedTokenBalance:", _localVars.scenario2LPFixedTokenBalance);
-            Printer.printInt256("scenario2LPVariableTokenBalance:", _localVars.scenario2LPVariableTokenBalance);
-            Printer.printUint160("scenario2SqrtPriceX96:", _localVars.scenario2SqrtPriceX96);
 
             uint256 _scenario2MarginRequirement = _getMarginRequirement(
                 _localVars.scenario2LPFixedTokenBalance,
@@ -1301,10 +1288,8 @@ contract MarginEngine is
             );
 
             if (_scenario1MarginRequirement > _scenario2MarginRequirement) {
-                console.log("scenario 1 kicks in");
                 return _scenario1MarginRequirement;
             } else {
-                console.log("scenario 2 kicks in");
                 return _scenario2MarginRequirement;
             }
         } else {
@@ -1360,7 +1345,6 @@ contract MarginEngine is
         );
 
         if (_margin < _minimumMarginRequirement) {
-            console.log("minimum margin requirement kicks in!");
             _margin = _minimumMarginRequirement;
         }
     }
@@ -1400,8 +1384,6 @@ contract MarginEngine is
                     _isLM,
                     getHistoricalApy()
                 );
-
-            Printer.printUint256("wcvf:", wcvf);
 
             _exp2Wad = PRBMathSD59x18.mul(
                 _variableTokenBalanceWad,

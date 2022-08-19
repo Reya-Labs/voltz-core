@@ -29,7 +29,7 @@ const e2eParams: e2eParameters = {
   rateOracle: 1,
 };
 
-const MODE: 0 | 1 | 2 = 1;
+const MODE: 0 | 1 | 2 = 2;
 
 // TODO: put all margin requirements into a file (and ignore it in git)
 

@@ -14,8 +14,6 @@ import "./utils/SafeCastUni.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./utils/SqrtPriceMath.sol";
-import "./utils/Printer.sol";
-import "hardhat/console.sol";
 
 contract MarginEngineLinear is
     MarginEngineStorage,
@@ -126,8 +124,6 @@ contract MarginEngineLinear is
         uint256 rateFromStart = _rateOracle.variableFactorNoCache(_termStartTimestampWad, Time.blockTimestampScaled()) + ONE_UINT;
         uint256 worstApy = computeApyBound(historicalApyWad, isFT);
 
-        Printer.printUint256("worst apy before multiplier:", worstApy);
-
         if (!isLM) {
             worstApy = worstApy.mul(
                 isFT
@@ -135,8 +131,6 @@ contract MarginEngineLinear is
                     : marginCalculatorParameters.apyLowerMultiplierWad
             );
         }
-
-        Printer.printUint256("worst apy after multiplier:", worstApy);
         
         variableFactorWad = rateFromStart.mul(
             worstApy.mul(FixedAndVariableMath.accrualFact(
@@ -1285,23 +1279,12 @@ contract MarginEngineLinear is
                 ? _highPrice
                 : _lowPrice;
 
-            Printer.printBool("_isLM:", _isLM);
-            Printer.printUint256("_variableFactorWad:", _variableFactorWad);
-
-            Printer.printInt256("scenario1LPFixedTokenBalance:", _localVars.scenario1LPFixedTokenBalance);
-            Printer.printInt256("scenario1LPVariableTokenBalance:", _localVars.scenario1LPVariableTokenBalance);
-            Printer.printUint160("scenario1SqrtPriceX96:", _localVars.scenario1SqrtPriceX96);
-
             uint256 _scenario1MarginRequirement = _getMarginRequirement(
                 _localVars.scenario1LPFixedTokenBalance,
                 _localVars.scenario1LPVariableTokenBalance,
                 _isLM,
                 _localVars.scenario1SqrtPriceX96
             );
-
-            Printer.printInt256("scenario2LPFixedTokenBalance:", _localVars.scenario2LPFixedTokenBalance);
-            Printer.printInt256("scenario2LPVariableTokenBalance:", _localVars.scenario2LPVariableTokenBalance);
-            Printer.printUint160("scenario2SqrtPriceX96:", _localVars.scenario2SqrtPriceX96);
 
             uint256 _scenario2MarginRequirement = _getMarginRequirement(
                 _localVars.scenario2LPFixedTokenBalance,
@@ -1311,10 +1294,8 @@ contract MarginEngineLinear is
             );
 
             if (_scenario1MarginRequirement > _scenario2MarginRequirement) {
-                console.log("scenario 1 kicks in");
                 return _scenario1MarginRequirement;
             } else {
-                console.log("scenario 2 kicks in");
                 return _scenario2MarginRequirement;
             }
         } else {
@@ -1370,7 +1351,6 @@ contract MarginEngineLinear is
         );
 
         if (_margin < _minimumMarginRequirement) {
-            console.log("minimum margin requirement kicks in!");
             _margin = _minimumMarginRequirement;
         }
     }
@@ -1411,8 +1391,6 @@ contract MarginEngineLinear is
                     getHistoricalApy()
                 );
 
-            Printer.printUint256("wcvf:", wcvf);
-
             _exp2Wad = PRBMathSD59x18.mul(
                 _variableTokenBalanceWad,
                 wcvf.toInt256()
@@ -1421,9 +1399,6 @@ contract MarginEngineLinear is
 
         // this is the worst case settlement cashflow expected by the position to cover
         int256 _maxCashflowDeltaToCoverPostMaturity = _exp1Wad + _exp2Wad;
-        Printer.printInt256("_exp1Wad", _exp1Wad);
-        Printer.printInt256("_exp2Wad", _exp2Wad);
-        Printer.printInt256("_maxCashflowDeltaToCoverPostMaturity", _maxCashflowDeltaToCoverPostMaturity);
 
         // hence if maxCashflowDeltaToCoverPostMaturity is negative then the margin needs to be sufficient to cover it
         // if maxCashflowDeltaToCoverPostMaturity is non-negative then it means according to this model the even in the worst case, the settlement cashflow is expected to be non-negative
