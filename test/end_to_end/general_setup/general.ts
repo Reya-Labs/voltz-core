@@ -713,6 +713,7 @@ export class ScenarioRunner {
             error.errorArgs.variableTokenDelta.toString()
           );
         } else {
+          console.log("error", error);
           throw new Error("Additional margin amount cannot be established");
         }
       }
@@ -820,6 +821,7 @@ export class ScenarioRunner {
               error.errorArgs.marginRequirement.toString()
             );
           } else {
+            console.log("raw error:", error);
             throw new Error("Additional margin amount cannot be established");
           }
         }

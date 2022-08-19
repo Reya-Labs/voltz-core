@@ -17,7 +17,7 @@ import "./utils/SqrtPriceMath.sol";
 import "./utils/Printer.sol";
 import "hardhat/console.sol";
 
-contract MarginEngine is
+contract MarginEngineExact is
     MarginEngineStorage,
     IMarginEngine,
     Initializable,
@@ -122,19 +122,30 @@ contract MarginEngine is
         bool isLM,
         uint256 historicalApyWad
     ) internal view returns (uint256 variableFactorWad) {
-        variableFactorWad = computeApyBound(historicalApyWad, isFT).mul(
-            FixedAndVariableMath.accrualFact(
-                _termEndTimestampWad - _termStartTimestampWad
-            )
-        );
+
+        uint256 rateFromStart = _rateOracle.variableFactorNoCache(_termStartTimestampWad, Time.blockTimestampScaled()) + ONE_UINT;
+        uint256 worstApy = computeApyBound(historicalApyWad, isFT);
+
+        Printer.printUint256("worst apy before multiplier:", worstApy);
 
         if (!isLM) {
-            variableFactorWad = variableFactorWad.mul(
+            worstApy = worstApy.mul(
                 isFT
                     ? marginCalculatorParameters.apyUpperMultiplierWad
                     : marginCalculatorParameters.apyLowerMultiplierWad
             );
         }
+
+        Printer.printUint256("worst apy after multiplier:", worstApy);
+
+        uint256 coefficient = PRBMathUD60x18.pow(
+                        worstApy + ONE_UINT,
+                        FixedAndVariableMath.accrualFact(
+                _termEndTimestampWad - Time.blockTimestampScaled()
+            )
+        );
+        
+        variableFactorWad = rateFromStart.mul(coefficient) - ONE_UINT;
     }
 
     /// @notice calculates the absolute fixed token delta unbalanced resulting from a simulated counterfactual unwind necessary to determine the minimum margin requirement of a trader
@@ -1411,6 +1422,9 @@ contract MarginEngine is
 
         // this is the worst case settlement cashflow expected by the position to cover
         int256 _maxCashflowDeltaToCoverPostMaturity = _exp1Wad + _exp2Wad;
+        Printer.printInt256("_exp1Wad", _exp1Wad);
+        Printer.printInt256("_exp2Wad", _exp2Wad);
+        Printer.printInt256("_maxCashflowDeltaToCoverPostMaturity", _maxCashflowDeltaToCoverPostMaturity);
 
         // hence if maxCashflowDeltaToCoverPostMaturity is negative then the margin needs to be sufficient to cover it
         // if maxCashflowDeltaToCoverPostMaturity is non-negative then it means according to this model the even in the worst case, the settlement cashflow is expected to be non-negative
