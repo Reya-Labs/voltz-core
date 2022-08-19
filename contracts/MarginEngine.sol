@@ -120,19 +120,22 @@ contract MarginEngine is
         bool isLM,
         uint256 historicalApyWad
     ) internal view returns (uint256 variableFactorWad) {
-        variableFactorWad = computeApyBound(historicalApyWad, isFT).mul(
-            FixedAndVariableMath.accrualFact(
-                _termEndTimestampWad - _termStartTimestampWad
-            )
-        );
+        uint256 rateFromStart = _rateOracle.variableFactorNoCache(_termStartTimestampWad, Time.blockTimestampScaled()) + ONE_UINT;
+        uint256 worstApy = computeApyBound(historicalApyWad, isFT);
 
         if (!isLM) {
-            variableFactorWad = variableFactorWad.mul(
+            worstApy = worstApy.mul(
                 isFT
                     ? marginCalculatorParameters.apyUpperMultiplierWad
                     : marginCalculatorParameters.apyLowerMultiplierWad
             );
         }
+        
+        variableFactorWad = rateFromStart.mul(
+            worstApy.mul(FixedAndVariableMath.accrualFact(
+                _termEndTimestampWad - Time.blockTimestampScaled()
+            )) + ONE_UINT
+        ) - ONE_UINT;
     }
 
     /// @notice calculates the absolute fixed token delta unbalanced resulting from a simulated counterfactual unwind necessary to determine the minimum margin requirement of a trader
