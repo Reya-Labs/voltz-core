@@ -153,7 +153,7 @@ task(
 
     if (
       currentBlockTimestamp > termStartTimestamp &&
-      currentBlockTimestamp - termStartTimestamp < 3600
+      currentBlockTimestamp - termStartTimestamp < timeDelta
     ) {
       console.log(
         "Current time is bigger than start time and delta is less than 1 hour"
@@ -169,7 +169,7 @@ task(
 
     if (
       currentBlockTimestamp > termEndTimestamp &&
-      currentBlockTimestamp - termEndTimestamp < 3600
+      currentBlockTimestamp - termEndTimestamp < timeDelta
     ) {
       console.log(
         "current time is bigger than end time and delta is less than 1 hour"
