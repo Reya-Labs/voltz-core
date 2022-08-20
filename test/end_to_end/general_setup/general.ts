@@ -30,6 +30,11 @@ import { advanceTimeAndBlock, getCurrentTimestamp } from "../../helpers/time";
 import { consts } from "../../helpers/constants";
 import { toBn } from "evm-bn";
 import JSBI from "jsbi";
+import {
+  decodeInfoPostMint,
+  decodeInfoPostSwap,
+  getErrorSignature,
+} from "../../../tasks/errorHandling";
 
 const { provider } = waffle;
 
@@ -623,17 +628,13 @@ export class ScenarioRunner {
         tickAfter = parseInt(result[5]);
       },
       (error: any) => {
-        if (error.errorSignature.includes("MarginRequirementNotMet")) {
-          marginRequirement = BigNumber.from(
-            error.errorArgs.marginRequirement.toString()
-          );
-          tickAfter = parseInt(error.errorArgs.tick.toString());
-          fee = BigNumber.from(
-            error.errorArgs.cumulativeFeeIncurred.toString()
-          );
-          availableNotional = BigNumber.from(
-            error.errorArgs.variableTokenDelta.toString()
-          );
+        const errSig = getErrorSignature(error);
+        if (errSig.includes("MarginRequirementNotMet")) {
+          const infoPostSwap = decodeInfoPostSwap(error);
+          marginRequirement = infoPostSwap.marginRequirement;
+          tickAfter = infoPostSwap.tick;
+          fee = infoPostSwap.fee;
+          availableNotional = infoPostSwap.availableNotional;
         } else {
           throw new Error("Additional margin amount cannot be established");
         }
@@ -701,17 +702,13 @@ export class ScenarioRunner {
         tickAfter = parseInt(result[5]);
       },
       (error: any) => {
-        if (error.errorSignature.includes("MarginRequirementNotMet")) {
-          marginRequirement = BigNumber.from(
-            error.errorArgs.marginRequirement.toString()
-          );
-          tickAfter = parseInt(error.errorArgs.tick.toString());
-          fee = BigNumber.from(
-            error.errorArgs.cumulativeFeeIncurred.toString()
-          );
-          availableNotional = BigNumber.from(
-            error.errorArgs.variableTokenDelta.toString()
-          );
+        const errSig = getErrorSignature(error);
+        if (errSig.includes("MarginRequirementNotMet")) {
+          const infoPostSwap = decodeInfoPostSwap(error);
+          marginRequirement = infoPostSwap.marginRequirement;
+          tickAfter = infoPostSwap.tick;
+          fee = infoPostSwap.fee;
+          availableNotional = infoPostSwap.availableNotional;
         } else {
           throw new Error("Additional margin amount cannot be established");
         }
@@ -764,10 +761,10 @@ export class ScenarioRunner {
           marginRequirement = BigNumber.from(result);
         },
         (error) => {
-          if (error.errorSignature.includes("MarginLessThanMinimum")) {
-            marginRequirement = BigNumber.from(
-              error.errorArgs.marginRequirement.toString()
-            );
+          const errSig = getErrorSignature(error);
+          if (errSig.includes("MarginLessThanMinimum")) {
+            const infoPostMint = decodeInfoPostMint(error);
+            marginRequirement = infoPostMint.marginRequirement;
           } else {
             throw new Error("Additional margin amount cannot be established");
           }
@@ -815,13 +812,10 @@ export class ScenarioRunner {
           marginRequirement = BigNumber.from(result);
         },
         (error) => {
-          console.log("error:", error);
-          console.log("error.errorSignature", error.errorSignature);
-
-          if (error.errorSignature.includes("MarginLessThanMinimum")) {
-            marginRequirement = BigNumber.from(
-              error.errorArgs.marginRequirement.toString()
-            );
+          const errSig = getErrorSignature(error);
+          if (errSig.includes("MarginLessThanMinimum")) {
+            const infoPostMint = decodeInfoPostMint(error);
+            marginRequirement = infoPostMint.marginRequirement;
           } else {
             throw new Error("Additional margin amount cannot be established");
           }
