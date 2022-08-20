@@ -14,6 +14,7 @@ import "./utils/SafeCastUni.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./utils/SqrtPriceMath.sol";
+import "hardhat/console.sol";
 
 contract MarginEngine is
     MarginEngineStorage,
@@ -120,6 +121,8 @@ contract MarginEngine is
         bool isLM,
         uint256 historicalApyWad
     ) internal view returns (uint256 variableFactorWad) {
+        console.log(_termStartTimestampWad);
+        console.log(Time.blockTimestampScaled());
         uint256 rateFromStart = _rateOracle.variableFactorNoCache(
             _termStartTimestampWad,
             Time.blockTimestampScaled()

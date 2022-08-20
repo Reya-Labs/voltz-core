@@ -292,13 +292,15 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   await compoundRateOracleTest.increaseObservationCardinalityNext(10);
   // write oracle entry
   await rateOracleTest.writeOracleEntry();
+  console.log("0:", (await provider.getBlock("latest")).timestamp);
   await compoundRateOracleTest.writeOracleEntry();
   // advance time after first write to the oracle
   await advanceTimeAndBlock(consts.ONE_DAY, 2); // advance by one day
   await rateOracleTest.writeOracleEntry();
   // await compoundRateOracleTest.writeOracleEntry();
 
-  const termStartTimestamp: number = await getCurrentTimestamp(provider);
+  console.log("1:", (await provider.getBlock("latest")).timestamp);
+  const termStartTimestamp: number = (await provider.getBlock("latest")).timestamp;
   const termEndTimestamp: number =
     termStartTimestamp + consts.ONE_WEEK.toNumber();
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
@@ -354,6 +356,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const fcmTestFactory = await ethers.getContractFactory("AaveFCM");
   const fcmTest = fcmTestFactory.attach(fcmAddress) as AaveFCM;
 
+  console.log("termStartTimestampBN", termStartTimestampBN.toString());
   const deployTrxCompound = await factory.deployIrsInstance(
     token.address,
     compoundRateOracleTest.address,

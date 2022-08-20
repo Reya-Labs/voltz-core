@@ -21,6 +21,7 @@ import { getCurrentTimestamp, setTimeNextBlock } from "../helpers/time";
 import {
   ERC20Mock,
   TestMarginEngine,
+  TestRateOracle,
   TestVAMM,
   TickMathTest,
 } from "../../typechain";
@@ -38,6 +39,7 @@ describe("Margin Calculations", () => {
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
   let marginEngineTest: TestMarginEngine;
+  let rateOracleTest: TestRateOracle;
   let token: ERC20Mock;
 
   let testTickMath: TickMathTest;
@@ -54,7 +56,9 @@ describe("Margin Calculations", () => {
   });
 
   beforeEach("deploy fixture", async () => {
-    ({ token, marginEngineTest, vammTest } = await loadFixture(metaFixture));
+    ({ token, marginEngineTest, vammTest, rateOracleTest } = await loadFixture(
+      metaFixture
+    ));
     // set vamm in the margin engine
     await marginEngineTest.setVAMM(vammTest.address);
 
@@ -157,27 +161,17 @@ describe("Margin Calculations", () => {
   });
 
   describe("#worstCaseVariableFactorAtMaturity", async () => {
-    beforeEach("set timestamps", async () => {
-      const nextBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await setTimeNextBlock(nextBlockTimestamp);
-
-      // Test an IRS with two week duration
-      const termStartTimestampScaled = toBn(
-        nextBlockTimestamp - ONE_WEEK_IN_SECONDS // one week ago
-      );
-      const termEndTimestampScaled = toBn(
-        nextBlockTimestamp + ONE_WEEK_IN_SECONDS // one week from now
-      );
-      await marginEngineTest.setTermTimestamps(
-        termStartTimestampScaled,
-        termEndTimestampScaled
-      );
-    });
-
     it("correctly calculates the worst case variable factor at maturity FT, LM", async () => {
       const isFT = true;
       const isLM = true;
       const historicalApy = toBn("0.1");
+
+      const rateIndex = (await rateOracleTest.oracleVars()).rateIndex;
+
+      for (let i = 0; i <= rateIndex; i++) {
+        const [rateTimestamp, rateValue] = await rateOracleTest.observations(i);
+        console.log("entry:", rateTimestamp.toString(), rateValue.toString());
+      }
 
       const realized =
         await marginEngineTest.testWorstCaseVariableFactorAtMaturity(
