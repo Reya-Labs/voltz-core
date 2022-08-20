@@ -249,8 +249,7 @@ contract TestMarginEngine is MarginEngine {
         keepInMindMargin = _getMarginRequirement(
             fixedTokenBalance,
             variableTokenBalance,
-            isLM,
-            sqrtPriceX96
+            isLM
         );
     }
 

@@ -32,23 +32,8 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
         int256 xiLowerWad;
         /// @dev Max term possible for a Voltz IRS AMM in seconds (18 decimals)
         int256 tMaxWad;
-        /// @dev multiplier of the starting fixed rate (refer to the litepaper) if simulating a counterfactual fixed taker unwind (moving to the left along the VAMM) for purposes of calculating liquidation margin requirement
-        uint256 devMulLeftUnwindLMWad;
-        /// @dev multiplier of the starting fixed rate (refer to the litepaper) if simulating a counterfactual variable taker unwind (moving to the right along the VAMM) for purposes of calculating liquidation margin requirement
-        uint256 devMulRightUnwindLMWad;
-        /// @dev same as devMulLeftUnwindLMWad but for purposes of calculating the initial margin requirement
-        uint256 devMulLeftUnwindIMWad;
-        /// @dev same as devMulRightUnwindLMWad but for purposes of calculating the initial margin requirement
-        uint256 devMulRightUnwindIMWad;
-        /// @dev r_min from the litepaper eq. 11 for a scenario where counterfactual is a simulated fixed taker unwind (left unwind along the VAMM), used for liquidation margin calculation
-        uint256 fixedRateDeviationMinLeftUnwindLMWad;
-        /// @dev r_min from the litepaper eq. 11 for a scenario where counterfactual is a simulated variable taker unwind (right unwind along the VAMM), used for liquidation margin calculation
-        uint256 fixedRateDeviationMinRightUnwindLMWad;
-        /// @dev same as fixedRateDeviationMinLeftUnwindLMWad but for Initial Margin Requirement
-        uint256 fixedRateDeviationMinLeftUnwindIMWad;
-        /// @dev same as fixedRateDeviationMinRightUnwindLMWad but for Initial Margin Requirement
-        uint256 fixedRateDeviationMinRightUnwindIMWad;
-        /// @dev gamma from eqn. 12 [append this logic to the litepaper] from the litepaper, gamma is an adjustable parameter necessary to calculate scaled deviations to the fixed rate in counterfactual unwinds for minimum margin requirement calculations
+        uint256 etaIMWad;
+        uint256 etaLMWad;
         uint256 gammaWad;
         /// @dev settable parameter that ensures that minimumMarginRequirement is always above or equal to the minMarginToIncentiviseLiquidators which ensures there is always sufficient incentive for liquidators to liquidate positions given the fact their income is a proportion of position margin
         uint256 minMarginToIncentiviseLiquidators;
