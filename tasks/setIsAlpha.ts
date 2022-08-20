@@ -1,5 +1,4 @@
 import "@nomiclabs/hardhat-ethers";
-import { BigNumberish } from "ethers";
 
 import { task } from "hardhat/config";
 import mustache from "mustache";
