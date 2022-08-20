@@ -815,6 +815,9 @@ export class ScenarioRunner {
           marginRequirement = BigNumber.from(result);
         },
         (error) => {
+          console.log("error:", error);
+          console.log("error.errorSignature", error.errorSignature);
+
           if (error.errorSignature.includes("MarginLessThanMinimum")) {
             marginRequirement = BigNumber.from(
               error.errorArgs.marginRequirement.toString()

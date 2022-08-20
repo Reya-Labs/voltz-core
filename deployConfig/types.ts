@@ -22,14 +22,8 @@ export interface MarginCalculatorParameters {
   xiUpperWad: BigNumberish;
   xiLowerWad: BigNumberish;
   tMaxWad: BigNumberish;
-  devMulLeftUnwindLMWad: BigNumberish;
-  devMulRightUnwindLMWad: BigNumberish;
-  devMulLeftUnwindIMWad: BigNumberish;
-  devMulRightUnwindIMWad: BigNumberish;
-  fixedRateDeviationMinLeftUnwindLMWad: BigNumberish;
-  fixedRateDeviationMinRightUnwindLMWad: BigNumberish;
-  fixedRateDeviationMinLeftUnwindIMWad: BigNumberish;
-  fixedRateDeviationMinRightUnwindIMWad: BigNumberish;
+  etaIMWad: BigNumberish;
+  etaLMWad: BigNumberish;
   gammaWad: BigNumberish;
   minMarginToIncentiviseLiquidators: BigNumberish;
 }

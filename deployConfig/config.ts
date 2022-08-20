@@ -29,14 +29,8 @@ const marginCalculatorDefaults1 = {
   xiUpperWad: toBn(2),
   xiLowerWad: toBn(1.5),
   tMaxWad: toBn(31536000), // one year
-  devMulLeftUnwindLMWad: toBn(0.5),
-  devMulRightUnwindLMWad: toBn(0.5),
-  devMulLeftUnwindIMWad: toBn(1.5),
-  devMulRightUnwindIMWad: toBn(1.5),
-  fixedRateDeviationMinLeftUnwindLMWad: toBn(5),
-  fixedRateDeviationMinRightUnwindLMWad: toBn(5),
-  fixedRateDeviationMinLeftUnwindIMWad: toBn(10),
-  fixedRateDeviationMinRightUnwindIMWad: toBn(10),
+  etaIMWad: toBn("0.002"),
+  etaLMWad: toBn("0.001"),
   gammaWad: toBn(1),
   minMarginToIncentiviseLiquidators: 0,
 };

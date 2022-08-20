@@ -155,16 +155,8 @@ describe("FCM Aave", () => {
       xiLowerWad: XI_LOWER,
       tMaxWad: T_MAX,
 
-      devMulLeftUnwindLMWad: toBn("0.5"),
-      devMulRightUnwindLMWad: toBn("0.5"),
-      devMulLeftUnwindIMWad: toBn("0.8"),
-      devMulRightUnwindIMWad: toBn("0.8"),
-
-      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
-      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
-
-      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
-      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
+      etaIMWad: toBn("0.002"),
+      etaLMWad: toBn("0.001"),
 
       gammaWad: toBn("1.0"),
       minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
