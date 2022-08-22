@@ -9,72 +9,74 @@ import {
   RelayerModel,
 } from "defender-relay-client/lib/relayer";
 
-const ABI = [
-  "function termStartTimestampWad() external view override returns (uint256)",
-  "function termEndTimestampWad() external view override returns (uint256)",
-  "function rateOracle() external view override returns(IRateOracle)",
-];
-
-const marginEngineAddresses = [
-  "0x654316a63e68f1c0823f0518570bc108de377831", // aDAI
-  "0x0bc09825ce9433b2cdf60891e1b50a300b069dd2", // aUSDC
-  "0xf2ccd85a3428d7a560802b2dd99130be62556d30", // cDAI
-  "0x21f9151d6e06f834751b614c2ff40fc28811b235", // stETH
-  "0xb1125ba5878cf3a843be686c6c2486306f03e301", // rETH
-];
-
-// settable parameter for max. allowable time delta before a new write should happen (1 hour for now)
-const timeDelta = 3600;
-
 async function main(
   signer: DefenderRelaySigner,
   provider: DefenderRelayProvider
 ) {
+  const ABI = [
+    "function termStartTimestampWad() external view override returns (uint256)",
+    "function termEndTimestampWad() external view override returns (uint256)",
+    "function rateOracle() external view override returns(address)",
+  ];
+
+  const rateOracleABI = [
+    // not sure about the settlemtRateCache abi below, ask CR
+    "function settlementRateCache(uint256 termStartTimestampInWeiSeconds, uint256 termEndTimestampInWeiSeconds) external view returns(uint256)",
+    "function minSecondsSinceLastUpdate() external view returns(uint256)",
+    "function oracleVars() external view returns(uint16 rateIndex, uint16 rateCardinality, uint16 rateCardinalityNext)",
+    "function observations(uint256 id) external view returns(uint32 blockTimestamp, uint216 observedValue, bool initialized)",
+    "function writeOracleEntry() external",
+    "function variableFactor(uint256 termStartTimestampInWeiSeconds, uint256 termEndTimestampInWeiSeconds) public returns(uint256 resultWad)",
+  ];
+
+  const marginEngineAddresses = [
+    "0x654316a63e68f1c0823f0518570bc108de377831", // aDAI
+    "0x0bc09825ce9433b2cdf60891e1b50a300b069dd2", // aUSDC
+    "0xf2ccd85a3428d7a560802b2dd99130be62556d30", // cDAI
+    "0x21f9151d6e06f834751b614c2ff40fc28811b235", // stETH
+    "0xb1125ba5878cf3a843be686c6c2486306f03e301", // rETH
+    "0x33bA6A0B16750206195c777879Edd8706204154B", // aUSDC borrow
+    "0x111A75E91625142E85193b67B10E53Acf82838cD", // cUSDT borrow
+    "0x9b76B4d09229c339B049053F171BFB22cbE50092", // aave ETH borrow
+  ];
+
+  // settable parameter for max. allowable time delta before a new write should happen (24 hours for now)
+  const timeDelta = 86400;
+
   for (let i = 0; i < marginEngineAddresses.length; i++) {
     console.log(
-      `Checking margin engine contract for ${marginEngineAddresses[i]}`
+      `Checking margin engine contract with address ${marginEngineAddresses[i]}`
     );
     const marginEngineContract = new ethers.Contract(
       marginEngineAddresses[i],
       ABI,
       signer
     );
-    const rateOracleAddress = await marginEngineContract.rateOracle();
 
-    // sanity check console logs
-    console.log(marginEngineAddresses[i]);
-    console.log(
-      "rate oracle derived from: ",
-      await marginEngineContract.rateOracle()
-    );
+    const rateOracleAddress = await marginEngineContract.rateOracle();
+    console.log("printing rate oracle address: ", rateOracleAddress);
 
     // get start time of margin engine i
-    const termStartTimestamp = await (
-      await marginEngineContract.termStartTimestampWad()
-    )
-      .div(BigInt(1e18))
-      .toNumber();
-    console.log("start timestamp: ", termStartTimestamp);
+    const termStartTimestamp =
+      await await marginEngineContract.termStartTimestampWad();
+    console.log(
+      "start timestamp: ",
+      termStartTimestamp.div(BigInt(1e18)).toNumber()
+    );
 
     // get end time of margin engine i
-    const termEndTimestamp = await (
-      await marginEngineContract.termEndTimestampWad()
-    )
-      .div(BigInt(1e18))
-      .toNumber();
-    console.log("end timestamp: ", termEndTimestamp);
+    const termEndTimestamp =
+      await await marginEngineContract.termEndTimestampWad();
+    console.log(
+      "end timestamp: ",
+      termEndTimestamp.div(BigInt(1e18)).toNumber()
+    );
 
     // get current block timestamp i.e. time now
     const currentBlockTimestamp = await (
       await provider.getBlock("latest")
     ).timestamp;
-
-    const rateOracleABI = [
-      // not sure about this ABI --> needs review
-      "function writeOracleEntry() external override(IRateOracle)",
-      "function variableFactor(uint256 termStartTimestampInWeiSeconds, uint256 termEndTimestampInWeiSeconds) public override(IRateOracle) returns(uint256 resultWad)",
-      // need to write the oracleVars abi here as well
-    ];
+    console.log("current block timestamp:", currentBlockTimestamp);
 
     const rateOracleContract = new ethers.Contract(
       rateOracleAddress,
@@ -84,61 +86,59 @@ async function main(
 
     const oracleVars = await rateOracleContract.oracleVars();
     // get the latest observation
+    console.log("oracle vars: ", oracleVars);
     const observation = await rateOracleContract.observations(
-      oracleVars.rateIndex.length - 1
+      oracleVars.rateIndex
     );
+    console.log("oracle observation: ", observation);
     // get the latest observation timestamp
-    const latestOracleQueryTime = `\n${observation.blockTimestamp}`;
+    const latestOracleQueryTime = observation.blockTimestamp;
+    console.log("oracle last query time: ", latestOracleQueryTime);
+
+    // get the min seconds since last rate update for this rate oracle
+    const minSecondsSinceLastUpdate =
+      await rateOracleContract.minSecondsSinceLastUpdate();
 
     if (
-      currentBlockTimestamp > termStartTimestamp &&
-      currentBlockTimestamp - termStartTimestamp < timeDelta
+      latestOracleQueryTime < termStartTimestamp &&
+      currentBlockTimestamp - latestOracleQueryTime > minSecondsSinceLastUpdate
     ) {
-      console.log(
-        "Current time is bigger than start time and delta is less than 1 hour"
-      );
-
-      if (latestOracleQueryTime >= termStartTimestamp) {
-        const writeEntry = await rateOracleContract.writeOracleEntry({
-          gasLimit: 10000000,
-        });
-        console.log("Successfully wrote to the oracle (start)");
-        return writeEntry;
-      }
+      const writeEntry = await rateOracleContract.writeOracleEntry({
+        gasLimit: 10000000,
+      });
+      console.log("Successfully wrote to the oracle (start)");
+      await writeEntry.wait();
+    } else if (latestOracleQueryTime > timeDelta) {
+      const writeEntry = await rateOracleContract.writeOracleEntry({
+        gasLimit: 10000000,
+      });
+      console.log("Successfully wrote to the oracle (start)");
+      await writeEntry.wait();
     } else {
-      console.log(
-        "Did not write to oracle --> start timestamp is bigger than last oracle entry"
-      );
+      console.log("Rate oracle is up-to-date. Nice!");
     }
 
-    if (
-      currentBlockTimestamp > termEndTimestamp &&
-      currentBlockTimestamp - termEndTimestamp < timeDelta
-    ) {
-      console.log(
-        "current time is bigger than end time and delta is less than 1 hour"
-      );
+    const settlementRateCache = await rateOracleContract.settlementRateCache(
+      termStartTimestamp,
+      termEndTimestamp
+    );
 
-      if (latestOracleQueryTime >= termEndTimestamp) {
-        const writeEntryTx = await rateOracleContract.writeOracleEntry({
-          gasLimit: 10000000,
-        });
-        console.log("Successfully wrote to the oracle (start)");
-        await writeEntryTx.wait();
-      }
-    } else {
-      console.log("Did not write to oracle");
-    }
-
-    // Check if the latest rate oracle write was done > x (settable parameter) seconds in the past, if yes then write
-    if (latestOracleQueryTime > timeDelta.toString()) {
-      const vfTx = rateOracleContract.variableFactor(
-        termStartTimestamp * 1e16,
-        termEndTimestamp * 1e16
+    if (currentBlockTimestamp > termEndTimestamp && settlementRateCache === 0) {
+      const vfTx = await rateOracleContract.variableFactor(
+        termStartTimestamp,
+        termEndTimestamp
       );
       await vfTx.wait();
+      console.log("Called Variable Factor");
+    } else if (currentBlockTimestamp - termEndTimestamp > timeDelta) {
+      const vfTx = await rateOracleContract.variableFactor(
+        termStartTimestamp,
+        termEndTimestamp
+      );
+      await vfTx.wait();
+      console.log("Called Variable Factor");
     } else {
-      console.log("Did not call variable factor");
+      console.log("Variable factor is up to date. Nice!");
     }
   } // for loop brace
 } // async function main ending brace
@@ -159,7 +159,7 @@ export async function handler(credentials: RelayerParams) {
 // Exported for running locally
 exports.main = main;
 
-// Sample typescript type definitions
+// Typescript type definitions
 type EnvInfo = {
   RELAY_API_KEY: string;
   RELAY_API_SECRET: string;
