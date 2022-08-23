@@ -29,7 +29,7 @@ contract TestMarginEngine is MarginEngine {
         bool isFT,
         bool isLM,
         uint256 historicalApyWad
-    ) external view returns (uint256 variableFactorWad) {
+    ) external returns (uint256 variableFactorWad) {
         return worstCaseVariableFactorAtMaturity(isFT, isLM, historicalApyWad);
     }
 

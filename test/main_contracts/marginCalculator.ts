@@ -188,7 +188,7 @@ describe("Margin Calculations", () => {
       const historicalApy = toBn("0.1");
 
       const realized =
-        await marginEngineTest.testWorstCaseVariableFactorAtMaturity(
+        await marginEngineTest.callStatic.testWorstCaseVariableFactorAtMaturity(
           isFT,
           isLM,
           historicalApy
@@ -203,7 +203,7 @@ describe("Margin Calculations", () => {
       const historicalApy = toBn("0.1");
 
       const realized =
-        await marginEngineTest.testWorstCaseVariableFactorAtMaturity(
+        await marginEngineTest.callStatic.testWorstCaseVariableFactorAtMaturity(
           isFT,
           isLM,
           historicalApy
@@ -218,7 +218,7 @@ describe("Margin Calculations", () => {
       const historicalApy = toBn("0.1");
 
       const realized =
-        await marginEngineTest.testWorstCaseVariableFactorAtMaturity(
+        await marginEngineTest.callStatic.testWorstCaseVariableFactorAtMaturity(
           isFT,
           isLM,
           historicalApy
@@ -233,7 +233,7 @@ describe("Margin Calculations", () => {
       const historicalApy = toBn("0.1");
 
       const realized =
-        await marginEngineTest.testWorstCaseVariableFactorAtMaturity(
+        await marginEngineTest.callStatic.testWorstCaseVariableFactorAtMaturity(
           isFT,
           isLM,
           historicalApy

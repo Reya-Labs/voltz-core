@@ -119,23 +119,30 @@ contract MarginEngine is
         bool isFT,
         bool isLM,
         uint256 historicalApyWad
-    ) internal view returns (uint256 variableFactorWad) {
-        uint256 rateFromStart = _rateOracle.variableFactorNoCache(_termStartTimestampWad, Time.blockTimestampScaled()) + ONE_UINT;
-        uint256 worstApy = computeApyBound(historicalApyWad, isFT);
+    ) internal returns (uint256 variableFactorWad) {
 
-        if (!isLM) {
-            worstApy = worstApy.mul(
-                isFT
-                    ? marginCalculatorParameters.apyUpperMultiplierWad
-                    : marginCalculatorParameters.apyLowerMultiplierWad
-            );
+        uint256 rateFromStart = _rateOracle.variableFactor(_termStartTimestampWad, _termEndTimestampWad) +  ONE_UINT;
+
+        if (_termEndTimestampWad <= Time.blockTimestampScaled()) {
+            // Variable factor is already known with certainty
+            variableFactorWad = rateFromStart - ONE_UINT;
+        } else {
+            uint256 worstApy = computeApyBound(historicalApyWad, isFT);
+
+            if (!isLM) {
+                worstApy = worstApy.mul(
+                    isFT
+                        ? marginCalculatorParameters.apyUpperMultiplierWad
+                        : marginCalculatorParameters.apyLowerMultiplierWad
+                );
+            }
+            
+            variableFactorWad = rateFromStart.mul(
+                worstApy.mul(FixedAndVariableMath.accrualFact(
+                    _termEndTimestampWad - Time.blockTimestampScaled()
+                )) + ONE_UINT
+            ) - ONE_UINT;
         }
-        
-        variableFactorWad = rateFromStart.mul(
-            worstApy.mul(FixedAndVariableMath.accrualFact(
-                _termEndTimestampWad - Time.blockTimestampScaled()
-            )) + ONE_UINT
-        ) - ONE_UINT;
     }
 
     /// @notice calculates the absolute fixed token delta unbalanced resulting from a simulated counterfactual unwind necessary to determine the minimum margin requirement of a trader
@@ -289,8 +296,8 @@ contract MarginEngine is
         _;
     }
 
-    /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
-    /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
+    /// @dev Modifier that ensures new LP positions cannot be liquidated after one day before the maturity
+    /// @dev the same logic in the VAMM ensures new swaps/positions cannot be created after one day before maturity
     modifier checkCurrentTimestampTermEndTimestampDelta() {
         if (Time.isCloseToMaturityOrBeyondMaturity(_termEndTimestampWad)) {
             revert CustomErrors.closeToOrBeyondMaturity();
