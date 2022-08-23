@@ -83,11 +83,7 @@ library SafeTransferLib {
         if (allowance < value) {
             _callOptionalReturn(
                 token,
-                abi.encodeWithSelector(
-                    token.approve.selector,
-                    spender,
-                    value
-                )
+                abi.encodeWithSelector(token.approve.selector, spender, value)
             );
         }
     }
