@@ -13,15 +13,14 @@ async function main(
   signer: DefenderRelaySigner,
   provider: DefenderRelayProvider
 ) {
-  const ABI = [
+  const marginEngineABI = [
     "function termStartTimestampWad() external view override returns (uint256)",
     "function termEndTimestampWad() external view override returns (uint256)",
     "function rateOracle() external view override returns(address)",
   ];
 
   const rateOracleABI = [
-    // not sure about the settlemtRateCache abi below, ask CR
-    "function settlementRateCache(uint256 termStartTimestampInWeiSeconds, uint256 termEndTimestampInWeiSeconds) external view returns(uint256)",
+    "function settlementRateCache(uint32 termStartTimestamp, uint32 termEndTimestamp) external view returns(uint256)",
     "function minSecondsSinceLastUpdate() external view returns(uint256)",
     "function oracleVars() external view returns(uint16 rateIndex, uint16 rateCardinality, uint16 rateCardinalityNext)",
     "function observations(uint256 id) external view returns(uint32 blockTimestamp, uint216 observedValue, bool initialized)",
@@ -29,16 +28,93 @@ async function main(
     "function variableFactor(uint256 termStartTimestampInWeiSeconds, uint256 termEndTimestampInWeiSeconds) public returns(uint256 resultWad)",
   ];
 
-  const marginEngineAddresses = [
-    "0x654316a63e68f1c0823f0518570bc108de377831", // aDAI
-    "0x0bc09825ce9433b2cdf60891e1b50a300b069dd2", // aUSDC
-    "0xf2ccd85a3428d7a560802b2dd99130be62556d30", // cDAI
-    "0x21f9151d6e06f834751b614c2ff40fc28811b235", // stETH
-    "0xb1125ba5878cf3a843be686c6c2486306f03e301", // rETH
-    "0x33bA6A0B16750206195c777879Edd8706204154B", // aUSDC borrow
-    "0x111A75E91625142E85193b67B10E53Acf82838cD", // cUSDT borrow
-    "0x9b76B4d09229c339B049053F171BFB22cbE50092", // aave ETH borrow
+  const factoryABI = [
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
+          internalType: "contract IERC20Minimal",
+          name: "underlyingToken",
+          type: "address",
+        },
+        {
+          indexed: true,
+          internalType: "contract IRateOracle",
+          name: "rateOracle",
+          type: "address",
+        },
+        {
+          indexed: false,
+          internalType: "uint256",
+          name: "termStartTimestampWad",
+          type: "uint256",
+        },
+        {
+          indexed: false,
+          internalType: "uint256",
+          name: "termEndTimestampWad",
+          type: "uint256",
+        },
+        {
+          indexed: false,
+          internalType: "int24",
+          name: "tickSpacing",
+          type: "int24",
+        },
+        {
+          indexed: false,
+          internalType: "contract IMarginEngine",
+          name: "marginEngine",
+          type: "address",
+        },
+        {
+          indexed: false,
+          internalType: "contract IVAMM",
+          name: "vamm",
+          type: "address",
+        },
+        {
+          indexed: false,
+          internalType: "contract IFCM",
+          name: "fcm",
+          type: "address",
+        },
+        {
+          indexed: false,
+          internalType: "uint8",
+          name: "yieldBearingProtocolID",
+          type: "uint8",
+        },
+        {
+          indexed: false,
+          internalType: "uint8",
+          name: "underlyingTokenDecimals",
+          type: "uint8",
+        },
+      ],
+      name: "IrsInstance",
+      type: "event",
+    },
   ];
+
+  const factoryContract = new ethers.Contract(
+    "0x6a7a5c3824508D03F0d2d24E0482Bea39E08CcAF",
+    factoryABI,
+    signer
+  );
+
+  const logs = await factoryContract.queryFilter(
+    factoryContract.filters.IrsInstance()
+  );
+  const marginEngineAddresses = logs.map(
+    (l) => factoryContract.interface.parseLog(l).args[5]
+  );
+  console.log(
+    "Printing Margin Engine Addresses and how many ",
+    marginEngineAddresses.length,
+    marginEngineAddresses
+  );
 
   // settable parameter for max. allowable time delta before a new write should happen (24 hours for now)
   const timeDelta = 86400;
@@ -49,7 +125,7 @@ async function main(
     );
     const marginEngineContract = new ethers.Contract(
       marginEngineAddresses[i],
-      ABI,
+      marginEngineABI,
       signer
     );
 
@@ -98,6 +174,16 @@ async function main(
     // get the min seconds since last rate update for this rate oracle
     const minSecondsSinceLastUpdate =
       await rateOracleContract.minSecondsSinceLastUpdate();
+    console.log(
+      "minSecondsSinceLastUpdate: ",
+      minSecondsSinceLastUpdate.toNumber()
+    );
+
+    const settlementRateCache = await rateOracleContract.settlementRateCache(
+      termStartTimestamp.div(BigInt(1e18)).toNumber(),
+      termEndTimestamp.div(BigInt(1e18)).toNumber()
+    );
+    console.log("settlement cache rate: ", settlementRateCache.toNumber());
 
     if (
       latestOracleQueryTime < termStartTimestamp &&
@@ -118,12 +204,10 @@ async function main(
       console.log("Rate oracle is up-to-date. Nice!");
     }
 
-    const settlementRateCache = await rateOracleContract.settlementRateCache(
-      termStartTimestamp,
-      termEndTimestamp
-    );
-
-    if (currentBlockTimestamp > termEndTimestamp && settlementRateCache === 0) {
+    if (
+      currentBlockTimestamp > termEndTimestamp &&
+      settlementRateCache.toNumber() === 0
+    ) {
       const vfTx = await rateOracleContract.variableFactor(
         termStartTimestamp,
         termEndTimestamp
@@ -147,7 +231,7 @@ async function main(
 export async function handler(credentials: RelayerParams) {
   const provider = new DefenderRelayProvider(credentials);
   const signer = new DefenderRelaySigner(credentials, provider, {
-    speed: "fast",
+    speed: "safeLow",
   });
   const relayer = new Relayer(credentials);
   const info: RelayerModel = await relayer.getRelayer();
