@@ -134,7 +134,7 @@ describe("Margin Requirements", () => {
     await scenario.run();
   };
 
-  it(
+  it.skip(
     "VT Liquidation Margin Requirement at start (worst APY = 0%, fixed rate = 1%)",
     test
   );
