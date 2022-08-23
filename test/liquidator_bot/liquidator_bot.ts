@@ -237,7 +237,7 @@ describe("LiquidatorBot", async () => {
 
     await aaveLendingPool.setReserveNormalizedIncome(
       token.address,
-      "1020000000000000000090000000"
+      "1030000000000000000090000000"
     );
 
     await rateOracleTest.writeOracleEntry();
