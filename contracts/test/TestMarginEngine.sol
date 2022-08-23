@@ -243,8 +243,7 @@ contract TestMarginEngine is MarginEngine {
     function getMarginRequirementTest(
         int256 fixedTokenBalance,
         int256 variableTokenBalance,
-        bool isLM,
-        uint160 sqrtPriceX96
+        bool isLM
     ) external {
         keepInMindMargin = _getMarginRequirement(
             fixedTokenBalance,
