@@ -60,8 +60,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
       mintOrBurnParameters
     );
 
-    console.log("initial requirement of LP position:", requirement);
-
     mintOrBurnParameters.marginDelta = toBn(requirement.toString());
 
     await this.e2eSetup.mintOrBurnViaPeriphery(p[0], mintOrBurnParameters);
@@ -95,7 +93,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     const p = this.positions[0];
 
     const startRate = await this.rateOracle.getCurrentRateInRay();
-    console.log("start rate:", startRate.toString());
 
     const fs = require("fs");
     const file = `test/end_to_end/general_setup/worstCaseApy/behaviour.csv`;
@@ -118,11 +115,7 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
       if (!openedLP) {
         // open LP position
-        console.log();
-        console.log();
         await this.openLPPosition();
-        console.log();
-        console.log();
         openedLP = true;
       }
 
