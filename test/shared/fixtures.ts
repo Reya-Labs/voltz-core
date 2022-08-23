@@ -300,7 +300,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   // await compoundRateOracleTest.writeOracleEntry();
 
   console.log("1:", (await provider.getBlock("latest")).timestamp);
-  const termStartTimestamp: number = (await provider.getBlock("latest")).timestamp;
+  const termStartTimestamp: number = (await provider.getBlock("latest"))
+    .timestamp;
   const termEndTimestamp: number =
     termStartTimestamp + consts.ONE_WEEK.toNumber();
   const termStartTimestampBN: BigNumber = toBn(termStartTimestamp.toString());
