@@ -189,15 +189,11 @@ async function main(
       latestOracleQueryTime < termStartTimestamp &&
       currentBlockTimestamp - latestOracleQueryTime > minSecondsSinceLastUpdate
     ) {
-      const writeEntry = await rateOracleContract.writeOracleEntry({
-        gasLimit: 10000000,
-      });
+      const writeEntry = await rateOracleContract.writeOracleEntry();
       console.log("Successfully wrote to the oracle (start)");
       await writeEntry.wait();
     } else if (latestOracleQueryTime > timeDelta) {
-      const writeEntry = await rateOracleContract.writeOracleEntry({
-        gasLimit: 10000000,
-      });
+      const writeEntry = await rateOracleContract.writeOracleEntry();
       console.log("Successfully wrote to the oracle (start)");
       await writeEntry.wait();
     } else {
