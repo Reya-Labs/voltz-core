@@ -100,6 +100,55 @@ task("rateOracleSwap", "Swap Rate Oracle").setAction(async (_, hre) => {
   }
 });
 
+task("marginEngineUpgrade", "Upgrade margin engine implementation").setAction(
+  async (_, hre) => {
+    if (!(hre.network.name === "localhost")) {
+      throw new Error("Only localhost");
+    }
+
+    const addSigner = async (address: string): Promise<SignerWithAddress> => {
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+      });
+      await hre.network.provider.send("hardhat_setBalance", [
+        address,
+        "0x1000000000000000000",
+      ]);
+      return await hre.ethers.getSigner(address);
+    };
+
+    const removeSigner = async (address: string) => {
+      await hre.network.provider.request({
+        method: "hardhat_stopImpersonatingAccount",
+        params: [address],
+      });
+    };
+
+    const withSigner = async (
+      address: string,
+      f: (_: SignerWithAddress) => Promise<void>
+    ) => {
+      const signer = await addSigner(address);
+      await f(signer);
+      await removeSigner(address);
+    };
+
+    const marginEngineImplementation = "to be filled";
+
+    for (const marginEngineAddress of []) {
+      const marginEngine = (await hre.ethers.getContractAt(
+        "MarginEngine",
+        marginEngineAddress
+      )) as MarginEngine;
+
+      await withSigner(await marginEngine.owner(), async (s) => {
+        await marginEngine.connect(s).upgradeTo(marginEngineImplementation);
+      });
+    }
+  }
+);
+
 task("mcParametersSwap", "Change margin calculator parameters").setAction(
   async (_, hre) => {
     const addSigner = async (address: string): Promise<SignerWithAddress> => {
@@ -204,8 +253,7 @@ task("checkSettlements", "Check settlements")
         );
         fs.appendFileSync(
           file,
-          `${position.owner},${position.tickLower},${
-            position.tickUpper
+          `${position.owner},${position.tickLower},${position.tickUpper
           },${ethers.utils.formatEther(positionInfo.margin)}\n`
         );
       }

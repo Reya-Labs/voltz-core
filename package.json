@@ -84,7 +84,7 @@
     "clean": "npx hardhat clean",
     "test:product": "npx hardhat test test/active_lp_management_strategy/*.ts; npx hardhat test test/community_deployer/*.ts; npx hardhat test test/liquidator_bot/*.ts",
     "test:core": "npx hardhat test test/core_libraries/*.ts; npx hardhat test test/main_contracts/**/*.ts; npx hardhat test test/periphery/*.ts; npx hardhat test test/shared/*.ts; npx hardhat test test/utils/*.ts",
-    "test:e2e": "for f in test/end_to_end/general_setup/*; do npx hardhat test $f/*.ts; done",
+    "test:e2e": "for f in test/end_to_end/general_setup/*/; do npx hardhat test $f*.ts; done",
     "test": "yarn test:product; yarn test:core; yarn test:e2e",
     "test:gas": "cross-env REPORT_GAS=true yarn test",
     "test:gasreport": "cross-env REPORT_GAS_TO_FILE=gasCosts.txt REPORT_GAS=true yarn test",

@@ -238,6 +238,11 @@ contract MarginEngine is
     }
 
     /// @inheritdoc IMarginEngine
+    function marginEngineParameters() external view override returns (MarginCalculatorParameters memory) {
+        return marginCalculatorParameters;
+    }
+
+    /// @inheritdoc IMarginEngine
     function termEndTimestampWad() external view override returns (uint256) {
         return _termEndTimestampWad;
     }

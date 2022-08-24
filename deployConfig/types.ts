@@ -24,6 +24,12 @@ export interface MarginCalculatorParameters {
   tMaxWad: BigNumberish;
   etaIMWad: BigNumberish;
   etaLMWad: BigNumberish;
+  gap1: BigNumberish;
+  gap2: BigNumberish;
+  gap3: BigNumberish;
+  gap4: BigNumberish;
+  gap5: BigNumberish;
+  gap6: BigNumberish;
   gammaWad: BigNumberish;
   minMarginToIncentiviseLiquidators: BigNumberish;
 }
