@@ -73,6 +73,24 @@ interface IPeriphery is CustomErrors {
             int24 _tickAfter
         );
 
+    /// @dev Ensures a fully collateralised VT swap given that a proper value of the variable factor is passed.
+    /// @param params Parameters to be passed to the swap function in the periphery.
+    /// @param variableFactorStartToPresentWad The variable factor between pool's start date and present (in wad).
+    function fullyCollateralisedVTSwap(
+        SwapPeripheryParams memory params,
+        uint256 variableFactorStartToPresentWad
+    )
+        external
+        payable
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement,
+            int24 _tickAfter
+        );
+
     function updatePositionMargin(
         IMarginEngine marginEngine,
         int24 tickLower,
