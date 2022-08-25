@@ -1,56 +1,67 @@
 {
   "aUSDC_v1": {
     "marginEngine": "0x9ea5Cfd876260eDadaB461f013c24092dDBD531d",
-    "decimals": 6
+    "decimals": 6,
+    "deploymentBlock": 14883716
   },
 
   "aDAI_v1": {
     "marginEngine": "0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e",
-    "decimals": 18
+    "decimals": 18,
+    "deploymentBlock": 14883728
   },
 
   "cDAI_v1": {
     "marginEngine": "0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0",
-    "decimals": 18
+    "decimals": 18,
+    "deploymentBlock": 14883745
   },
 
   "rETH_v1": {
     "marginEngine": "0xB1125ba5878cF3A843bE686c6c2486306f03E301",
-    "decimals": 18
+    "decimals": 18,
+    "deploymentBlock": 15055872
   },
 
   "stETH_v1": {
     "marginEngine": "0x21F9151d6e06f834751b614C2Ff40Fc28811B235",
-    "decimals": 18
+    "decimals": 18,
+    "deploymentBlock": 15058080
   },
 
   "aUSDC_v2": {
     "marginEngine": "0x0BC09825Ce9433B2cDF60891e1B50a300b069Dd2",
-    "decimals": 6
+    "decimals": 6,
+    "deploymentBlock": 15242692
   },
 
   "aDAI_v2": {
     "marginEngine": "0x654316A63E68f1c0823f0518570bc108de377831",
-    "decimals": 18
+    "decimals": 18,
+    "deploymentBlock": 15242692
   },
 
   "cDAI_v2": {
     "marginEngine": "0xf2ccd85a3428d7a560802b2dd99130be62556d30",
-    "decimals": 18
+    "decimals": 18,
+    "deploymentBlock": 15242692
   },
 
   "borrow_aUSDC_v1": {
     "marginEngine": "0x33bA6A0B16750206195c777879Edd8706204154B",
-    "decimals": 6
+    "decimals": 6,
+    "deploymentBlock": 15373135
   },
 
   "borrow_aETH_v1": {
     "marginEngine": "0x9b76B4d09229c339B049053F171BFB22cbE50092",
-    "decimals": 18
+    "decimals": 18,
+    "deploymentBlock": 15373135
   },
 
   "borrow_cUSDT_v1": {
     "marginEngine": "0x111A75E91625142E85193b67B10E53Acf82838cD",
-    "decimals": 6
+    "decimals": 6,
+    "deploymentBlock": 15373135
   }
 }
