@@ -40,8 +40,8 @@ const e2eParams: e2eParameters = {
     gap4: toBn("0"),
     gap5: toBn("0"),
     gap6: toBn("0"),
+    gap7: toBn("0"),
 
-    gammaWad: toBn("0.05"),
     minMarginToIncentiviseLiquidators: 0,
   },
   lookBackWindowAPY: consts.ONE_WEEK,

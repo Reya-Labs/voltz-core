@@ -30,7 +30,7 @@ export interface MarginCalculatorParameters {
   gap4: BigNumberish;
   gap5: BigNumberish;
   gap6: BigNumberish;
-  gammaWad: BigNumberish;
+  gap7: BigNumberish;
   minMarginToIncentiviseLiquidators: BigNumberish;
 }
 

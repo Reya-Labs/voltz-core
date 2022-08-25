@@ -28,3 +28,4 @@ historicalData/plotters/__pycache__
 deployments/mainnetForkDeployment.json
 Pipfile
 Pipfile.lock
+position-status/

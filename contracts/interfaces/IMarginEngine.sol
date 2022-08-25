@@ -48,8 +48,8 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
         uint256 gap5;
         /// @dev Gap
         uint256 gap6;
-        /// @dev gamma from eqn. 12 [append this logic to the litepaper] from the litepaper, gamma is an adjustable parameter necessary to calculate scaled deviations to the fixed rate in counterfactual unwinds for minimum margin requirement calculations
-        uint256 gammaWad;
+        /// @dev Gap
+        uint256 gap7;
         /// @dev settable parameter that ensures that minimumMarginRequirement is always above or equal to the minMarginToIncentiviseLiquidators which ensures there is always sufficient incentive for liquidators to liquidate positions given the fact their income is a proportion of position margin
         uint256 minMarginToIncentiviseLiquidators;
     }
@@ -148,7 +148,10 @@ interface IMarginEngine is IPositionStructs, CustomErrors {
     /// @return Term End Timestamp in Wad
     function termEndTimestampWad() external view returns (uint256);
 
-    function marginEngineParameters() external view returns (MarginCalculatorParameters memory);
+    function marginEngineParameters()
+        external
+        view
+        returns (MarginCalculatorParameters memory);
 
     /// @dev "constructor" for proxy instances
     function initialize(

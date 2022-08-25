@@ -5,6 +5,8 @@ import "@nomiclabs/hardhat-ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import positionsJson from "../playground/positions-ALL.json";
 import { poolConfigs } from "../deployConfig/poolConfig";
+import * as poolAddresses from "../pool-addresses/mainnet.json";
+import { toBn } from "evm-bn";
 
 const vammImplementation = "0x7380Df8AbB0c44617C2a64Bf2D7D92caA852F03f";
 
@@ -134,9 +136,21 @@ task("marginEngineUpgrade", "Upgrade margin engine implementation").setAction(
       await removeSigner(address);
     };
 
-    const marginEngineImplementation = "to be filled";
+    const marginEngineImplementation =
+      "0xb932C8342106776E73E39D695F3FFC3A9624eCE0";
 
-    for (const marginEngineAddress of []) {
+    const marginEngineAddresses = [
+      poolAddresses.aUSDC_v2.marginEngine,
+      poolAddresses.aDAI_v2.marginEngine,
+      poolAddresses.cDAI_v2.marginEngine,
+      poolAddresses.rETH_v1.marginEngine,
+      poolAddresses.stETH_v1.marginEngine,
+      poolAddresses.borrow_aUSDC_v1.marginEngine,
+      poolAddresses.borrow_aETH_v1.marginEngine,
+      poolAddresses.borrow_cUSDT_v1.marginEngine,
+    ];
+
+    for (const marginEngineAddress of marginEngineAddresses) {
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
         marginEngineAddress
@@ -144,6 +158,30 @@ task("marginEngineUpgrade", "Upgrade margin engine implementation").setAction(
 
       await withSigner(await marginEngine.owner(), async (s) => {
         await marginEngine.connect(s).upgradeTo(marginEngineImplementation);
+
+        const params = await marginEngine.marginEngineParameters();
+
+        await marginEngine.connect(s).setMarginCalculatorParameters({
+          apyLowerMultiplierWad: params.apyLowerMultiplierWad,
+          apyUpperMultiplierWad: params.apyUpperMultiplierWad,
+          sigmaSquaredWad: params.sigmaSquaredWad,
+          alphaWad: params.alphaWad,
+          betaWad: params.betaWad,
+          xiUpperWad: params.xiUpperWad,
+          xiLowerWad: params.xiLowerWad,
+          tMaxWad: params.tMaxWad,
+          etaIMWad: toBn("0.002"),
+          etaLMWad: toBn("0.001"),
+          gap1: toBn("0"),
+          gap2: toBn("0"),
+          gap3: toBn("0"),
+          gap4: toBn("0"),
+          gap5: toBn("0"),
+          gap6: toBn("0"),
+          gap7: toBn("0"),
+          minMarginToIncentiviseLiquidators:
+            params.minMarginToIncentiviseLiquidators,
+        });
       });
     }
   }
@@ -253,7 +291,8 @@ task("checkSettlements", "Check settlements")
         );
         fs.appendFileSync(
           file,
-          `${position.owner},${position.tickLower},${position.tickUpper
+          `${position.owner},${position.tickLower},${
+            position.tickUpper
           },${ethers.utils.formatEther(positionInfo.margin)}\n`
         );
       }

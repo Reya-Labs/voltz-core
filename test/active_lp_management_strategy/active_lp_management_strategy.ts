@@ -86,8 +86,8 @@ describe("Active LP Management Strategy", async () => {
       gap4: toBn("0"),
       gap5: toBn("0"),
       gap6: toBn("0"),
+      gap7: toBn("0"),
 
-      gammaWad: toBn("1.0"),
       minMarginToIncentiviseLiquidators: 0,
     };
 
