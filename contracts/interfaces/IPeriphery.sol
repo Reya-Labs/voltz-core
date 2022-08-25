@@ -75,10 +75,10 @@ interface IPeriphery is CustomErrors {
 
     /// @dev Ensures a fully collateralised VT swap given that a proper value of the variable factor is passed.
     /// @param params Parameters to be passed to the swap function in the periphery.
-    /// @param variableFactorStartToPresentWad The variable factor between pool's start date and present (in wad).
+    /// @param variableFactorFromStartToNowWad The variable factor between pool's start date and present (in wad).
     function fullyCollateralisedVTSwap(
         SwapPeripheryParams memory params,
-        uint256 variableFactorStartToPresentWad
+        uint256 variableFactorFromStartToNowWad
     )
         external
         payable

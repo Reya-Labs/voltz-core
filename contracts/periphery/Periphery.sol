@@ -454,7 +454,7 @@ contract Periphery is
 
     function fullyCollateralisedVTSwap(
         SwapPeripheryParams memory params,
-        uint256 variableFactorStartToPresentWad
+        uint256 variableFactorFromStartToNowWad
     )
         public
         payable
@@ -492,7 +492,7 @@ contract Periphery is
                         _variableTokenDelta,
                         marginEngine.termStartTimestampWad(),
                         marginEngine.termEndTimestampWad(),
-                        variableFactorStartToPresentWad
+                        variableFactorFromStartToNowWad
                     )
                 ).toUint256(),
             "VT swap not fc"
