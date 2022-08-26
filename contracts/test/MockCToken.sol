@@ -118,4 +118,8 @@ contract MockCToken is ICToken, ERC20 {
     function borrowRatePerBlock() public view override returns (uint256) {
         return _borrowRatePerBlock;
     }
+
+    function borrowBalanceCurrent(address account) external override returns (uint) {
+        return 0;
+    }
 }
