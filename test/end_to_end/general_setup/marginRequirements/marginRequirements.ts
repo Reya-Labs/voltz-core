@@ -15,12 +15,14 @@ import { advanceTimeAndBlock } from "../../../helpers/time";
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(2),
   numActors: 2,
-  marginCalculatorParams: poolConfigs.aDAI.marginCalculatorParams,
-  lookBackWindowAPY: BigNumber.from(poolConfigs.aDAI.lookbackWindowInSeconds),
+  marginCalculatorParams: poolConfigs.aDAI_v2.marginCalculatorParams,
+  lookBackWindowAPY: BigNumber.from(
+    poolConfigs.aDAI_v2.lookbackWindowInSeconds
+  ),
   startingPrice: encodeSqrtRatioX96(1, 1),
   feeProtocol: 0,
-  fee: BigNumber.from(poolConfigs.aDAI.feeWad),
-  tickSpacing: poolConfigs.aDAI.tickSpacing,
+  fee: BigNumber.from(poolConfigs.aDAI_v2.feeWad),
+  tickSpacing: poolConfigs.aDAI_v2.tickSpacing,
   positions: [
     [0, 0, 0],
     [1, -60, 60],

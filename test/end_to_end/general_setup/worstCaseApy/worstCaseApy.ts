@@ -30,12 +30,14 @@ const CHANGE = toBn("0.00002", 27); // 2.93% historical apy
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(2),
   numActors: 2,
-  marginCalculatorParams: poolConfigs.aDAI.marginCalculatorParams,
-  lookBackWindowAPY: BigNumber.from(poolConfigs.aDAI.lookbackWindowInSeconds),
+  marginCalculatorParams: poolConfigs.aDAI_v2.marginCalculatorParams,
+  lookBackWindowAPY: BigNumber.from(
+    poolConfigs.aDAI_v2.lookbackWindowInSeconds
+  ),
   startingPrice: STARTING_PRICE,
   feeProtocol: 0,
-  fee: BigNumber.from(poolConfigs.aDAI.feeWad),
-  tickSpacing: poolConfigs.aDAI.tickSpacing,
+  fee: BigNumber.from(poolConfigs.aDAI_v2.feeWad),
+  tickSpacing: poolConfigs.aDAI_v2.tickSpacing,
   positions: [
     [0, LP_LOWER_TICK, LP_UPPER_TICK], // range of LP
     [1, -60, 60],
