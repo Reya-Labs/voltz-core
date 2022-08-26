@@ -71,11 +71,26 @@ for pool in pools:
 
         liquidity_notional = float(before["position_liquidity"][i]) * (math.pow(1.0001, float(before["upper_tick"][i])/2) - math.pow(1.0001, float(before["lower_tick"][i])/2))
 
+        if after["position_liquidity"][i] > 0:
+            if after["position_notional"][i] > 0:
+                tag = "[LP,VT]"
+            elif after["position_notional"][i] < 0:
+                tag = "[LP,FT]"
+            else:
+                tag = "[LP]"
+        else:
+            if after["position_notional"][i] > 0:
+                tag = "[VT]"
+            elif after["position_notional"][i] < 0:
+                tag = "[FT]"
+            else:
+                tag = "[]"
+
         if lt_before < lt_after:
-            print(" Liq. margin req. increases: {:.3f} -> {:.3f} where margin = {:.3f}".format(lt_before, lt_after, before["position_margin"][i]))
+            print(" Liq. margin req. increases: {:.3f} -> {:.3f} where margin = {:.3f}".format(lt_before, lt_after, before["position_margin"][i]), tag, "(RISK)" if lt_after > float(after["position_margin"][i]) else "(OK)")
         
         if st_before < st_after:
-            print("Init. margin req. increases: {:.3f} -> {:.3f} where margin = {:.3f}".format(st_before, st_after, before["position_margin"][i]))
+            print("Init. margin req. increases: {:.3f} -> {:.3f} where margin = {:.3f}".format(st_before, st_after, before["position_margin"][i]), tag, "(RISK)" if st_after > float(after["position_margin"][i]) else "(OK)")
 
         if lt_before == 0:
             if lt_after == 0:

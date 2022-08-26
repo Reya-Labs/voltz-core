@@ -5,6 +5,32 @@ import "@nomiclabs/hardhat-ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
 import * as poolAddresses from "../pool-addresses/mainnet.json";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+
+async function getBlockAtTimestamp(
+  hre: HardhatRuntimeEnvironment,
+  timestamp: number
+) {
+  let lo = 0;
+  let hi = (await hre.ethers.provider.getBlock("latest")).number;
+  let answer = 0;
+
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    const midBlock = await hre.ethers.provider.getBlock(mid);
+
+    console.log(midBlock.timestamp, timestamp);
+
+    if (midBlock.timestamp >= timestamp) {
+      answer = midBlock.number;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+
+  return answer;
+}
 
 task("checkPositionsHealth", "Check positions")
   .addParam("exportFolder", "Folder to export")
@@ -175,7 +201,6 @@ task("getPositionInfo", "Get all information about some position")
         decimals: number;
         marginEngine: MarginEngine;
         name: string;
-        deploymentBlock: number;
       };
     } = {};
 
@@ -206,7 +231,6 @@ task("getPositionInfo", "Get all information about some position")
         decimals: tmp.decimals,
         marginEngine: marginEngine,
         name: p,
-        deploymentBlock: tmp.deploymentBlock,
       };
     }
 
@@ -405,9 +429,18 @@ task("getPositionInfo", "Get all information about some position")
 
       fs.writeFile(`${EXPORT_FOLDER}/progress.csv`, header, () => {});
 
-      for (let b = tmp.deploymentBlock; b <= currentBlockNumber; b += 6400) {
+      const startTimestamp = Number(
+        ethers.utils.formatUnits(
+          await tmp.marginEngine.termStartTimestampWad(),
+          18
+        )
+      );
+      const startBlock = await getBlockAtTimestamp(hre, startTimestamp);
+      console.log("start block:", startBlock);
+      for (let b = startBlock; b <= currentBlockNumber; b += 6400) {
         const block = await hre.ethers.provider.getBlock(b);
         console.log("block...", b.toString());
+        console.log("timestamp:", block.timestamp.toString());
 
         const positionRequirementSafety =
           await tmp.marginEngine.callStatic.getPositionMarginRequirement(

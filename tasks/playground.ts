@@ -6,7 +6,6 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import positionsJson from "../playground/positions-ALL.json";
 import { poolConfigs } from "../deployConfig/poolConfig";
 import * as poolAddresses from "../pool-addresses/mainnet.json";
-import { toBn } from "evm-bn";
 
 const vammImplementation = "0x7380Df8AbB0c44617C2a64Bf2D7D92caA852F03f";
 
@@ -139,49 +138,43 @@ task("marginEngineUpgrade", "Upgrade margin engine implementation").setAction(
     const marginEngineImplementation =
       "0xb932C8342106776E73E39D695F3FFC3A9624eCE0";
 
-    const marginEngineAddresses = [
-      poolAddresses.aUSDC_v2.marginEngine,
-      poolAddresses.aDAI_v2.marginEngine,
-      poolAddresses.cDAI_v2.marginEngine,
-      poolAddresses.rETH_v1.marginEngine,
-      poolAddresses.stETH_v1.marginEngine,
-      poolAddresses.borrow_aUSDC_v1.marginEngine,
-      poolAddresses.borrow_aETH_v1.marginEngine,
-      poolAddresses.borrow_cUSDT_v1.marginEngine,
+    const pools = [
+      "aUSDC_v2",
+      "aDAI_v2",
+      "cDAI_v2",
+      "rETH_v1",
+      "stETH_v1",
+      "borrow_aUSDC_v1",
+      "borrow_aETH_v1",
+      "borrow_cUSDT_v1",
     ];
 
-    for (const marginEngineAddress of marginEngineAddresses) {
+    for (const poolName of pools) {
+      console.log(poolName);
+      const tmp = poolAddresses[poolName as keyof typeof poolAddresses];
+      console.log("tmp:", tmp);
+
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
-        marginEngineAddress
+        tmp.marginEngine
       )) as MarginEngine;
 
       await withSigner(await marginEngine.owner(), async (s) => {
         await marginEngine.connect(s).upgradeTo(marginEngineImplementation);
 
-        const params = await marginEngine.marginEngineParameters();
+        const params =
+          poolConfigs[poolName as keyof typeof poolConfigs]
+            .marginCalculatorParams;
 
-        await marginEngine.connect(s).setMarginCalculatorParameters({
-          apyLowerMultiplierWad: params.apyLowerMultiplierWad,
-          apyUpperMultiplierWad: params.apyUpperMultiplierWad,
-          sigmaSquaredWad: params.sigmaSquaredWad,
-          alphaWad: params.alphaWad,
-          betaWad: params.betaWad,
-          xiUpperWad: params.xiUpperWad,
-          xiLowerWad: params.xiLowerWad,
-          tMaxWad: params.tMaxWad,
-          etaIMWad: toBn("0.002"),
-          etaLMWad: toBn("0.001"),
-          gap1: toBn("0"),
-          gap2: toBn("0"),
-          gap3: toBn("0"),
-          gap4: toBn("0"),
-          gap5: toBn("0"),
-          gap6: toBn("0"),
-          gap7: toBn("0"),
-          minMarginToIncentiviseLiquidators:
-            params.minMarginToIncentiviseLiquidators,
-        });
+        const lookBackWindow =
+          poolConfigs[poolName as keyof typeof poolConfigs]
+            .lookbackWindowInSeconds;
+
+        await marginEngine
+          .connect(s)
+          .setLookbackWindowInSeconds(lookBackWindow);
+
+        await marginEngine.connect(s).setMarginCalculatorParameters(params);
       });
     }
   }

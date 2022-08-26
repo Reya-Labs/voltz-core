@@ -256,7 +256,7 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     isAlpha: false,
     lpMarginCap: "0",
     marginCalculatorParams: {
-      apyUpperMultiplierWad: "1209458156891049728",
+      apyUpperMultiplierWad: "1451349788269259776",
       apyLowerMultiplierWad: "69532312685658976",
       sigmaSquaredWad: "7674001989406",
       alphaWad: "884125694186116",
