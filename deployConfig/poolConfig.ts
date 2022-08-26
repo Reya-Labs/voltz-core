@@ -66,7 +66,7 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     marginCalculatorParams: {
       apyUpperMultiplierWad: "2020995081059354112",
       apyLowerMultiplierWad: "130795812543698432",
-      sigmaSquaredWad: "2673818657602",
+      sigmaSquaredWad: "4753455391293",
       alphaWad: "326444791607040",
       betaWad: "36024629947560684",
       xiUpperWad: "19000000000000000000",
@@ -128,9 +128,9 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     isAlpha: false,
     lpMarginCap: "0", // note USDT uses 6 decimals
     marginCalculatorParams: {
-      apyUpperMultiplierWad: "1484907623061858560",
-      apyLowerMultiplierWad: "372897818515885056",
-      sigmaSquaredWad: "4845952297485",
+      apyUpperMultiplierWad: "1349916020965325824",
+      apyLowerMultiplierWad: "532711169308407232",
+      sigmaSquaredWad: "2725848167335",
       alphaWad: "166692599648233",
       betaWad: "6758584070518913",
       xiUpperWad: "25000000000000000000",
@@ -288,7 +288,7 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     isAlpha: false,
     lpMarginCap: "0",
     marginCalculatorParams: {
-      apyUpperMultiplierWad: "1431571307000607488",
+      apyUpperMultiplierWad: "1227061120286234880",
       apyLowerMultiplierWad: "741946561695063680",
       sigmaSquaredWad: "261925496417",
       alphaWad: "102986849448533",

@@ -11,6 +11,31 @@
     "checksum": "0x6e317afc197279541328cf252e50867cfa15d2ed7e7426244328bdf15b94cfe7"
   },
   "transactions": [
+    {{#pools}}
+
+    {{#upgradeMarginEngine}}
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newImplementation",
+              "type": "address"
+            }
+          ],
+        "name": "upgradeTo",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "newImplementation": "{{newImplementation}}"
+      }
+    },
+    {{/upgradeMarginEngine}}
+
+    {{#updateMarginCalculatorParams}}
     {
       "to": "{{marginEngineAddress}}",
       "value": "0",
@@ -120,9 +145,12 @@
       },
       "contractInputsValues": {
         "_newSecondsAgo": "",
-        "_marginCalculatorParameters": "[\"{{marginCalculatorParams.apyUpperMultiplierWad}}\",\"{{marginCalculatorParams.apyLowerMultiplierWad}}\",\"{{marginCalculatorParams.sigmaSquaredWad}}\",\"{{marginCalculatorParams.alphaWad}}\",\"{{marginCalculatorParams.betaWad}}\",\"{{marginCalculatorParams.xiUpperWad}}\",\"{{marginCalculatorParams.xiLowerWad}}\",\"{{marginCalculatorParams.tMaxWad}}\",\"{{marginCalculatorParams.etaIM}}\",\"{{marginCalculatorParams.etaLM}}\",\"{{marginCalculatorParams.gap1}}\",\"{{marginCalculatorParams.gap2}}\",\"{{marginCalculatorParams.gap3}}\",\"{{marginCalculatorParams.gap4}}\",\"{{marginCalculatorParams.gap5}}\",\"{{marginCalculatorParams.gap6}}\",\"{{marginCalculatorParams.gap7}}\",\"{{marginCalculatorParams.minMarginToIncentiviseLiquidators}}\"]"
+        "_marginCalculatorParameters": "[\"{{marginCalculatorParams.apyUpperMultiplierWad}}\",\"{{marginCalculatorParams.apyLowerMultiplierWad}}\",\"{{marginCalculatorParams.sigmaSquaredWad}}\",\"{{marginCalculatorParams.alphaWad}}\",\"{{marginCalculatorParams.betaWad}}\",\"{{marginCalculatorParams.xiUpperWad}}\",\"{{marginCalculatorParams.xiLowerWad}}\",\"{{marginCalculatorParams.tMaxWad}}\",\"{{marginCalculatorParams.etaIMWad}}\",\"{{marginCalculatorParams.etaLMWad}}\",\"{{marginCalculatorParams.gap1}}\",\"{{marginCalculatorParams.gap2}}\",\"{{marginCalculatorParams.gap3}}\",\"{{marginCalculatorParams.gap4}}\",\"{{marginCalculatorParams.gap5}}\",\"{{marginCalculatorParams.gap6}}\",\"{{marginCalculatorParams.gap7}}\",\"{{marginCalculatorParams.minMarginToIncentiviseLiquidators}}\"]"
       }
     },
+    {{/updateMarginCalculatorParams}}
+
+    {{#updateLiquidatorReward}}
     {
       "to": "{{marginEngineAddress}}",
       "value": "0",
@@ -143,6 +171,31 @@
       "contractInputsValues": {
         "_newLiquidatorRewardWad": "{{liquidatorReward}}"
       }
-    }
+    },
+    {{/updateLiquidatorReward}}
+
+    {{#updateLookbackWindow}}
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_newSecondsAgo",
+            "type": "uint256"
+          }
+        ],
+        "name": "setLookbackWindowInSeconds",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_newSecondsAgo": "{{lookbackWindowInSeconds}}"
+      }
+    },
+    {{/updateLookbackWindow}}
+
+    {{/pools}}
   ]
 }
