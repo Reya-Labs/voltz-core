@@ -101,8 +101,9 @@ task("rateOracleSwap", "Swap Rate Oracle").setAction(async (_, hre) => {
   }
 });
 
-task("marginEngineUpgrade", "Upgrade margin engine implementation").setAction(
-  async (_, hre) => {
+task("marginEngineUpgrade", "Upgrade margin engine implementation")
+  .addParam("pools")
+  .setAction(async (taskArgs, hre) => {
     if (!(hre.network.name === "localhost")) {
       throw new Error("Only localhost");
     }
@@ -138,16 +139,7 @@ task("marginEngineUpgrade", "Upgrade margin engine implementation").setAction(
     const marginEngineImplementation =
       "0xb932C8342106776E73E39D695F3FFC3A9624eCE0";
 
-    const pools = [
-      "aUSDC_v2",
-      "aDAI_v2",
-      "cDAI_v2",
-      "rETH_v1",
-      "stETH_v1",
-      "borrow_aUSDC_v1",
-      "borrow_aETH_v1",
-      "borrow_cUSDT_v1",
-    ];
+    const pools = taskArgs.pools.split(",");
 
     for (const poolName of pools) {
       console.log(poolName);
