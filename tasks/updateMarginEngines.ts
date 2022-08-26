@@ -71,7 +71,7 @@ task("updateMarginEngines", "Updates the MC Parameters of a pool")
   .addFlag("updateLiquidatorReward")
   .addFlag("updateMarginCalculatorParams")
   .addFlag("updateLookbackWindow")
-  .setAction(async (taskArgs, hre) => {
+  .setAction(async (taskArgs, _) => {
     const poolNames = taskArgs.pools.split(",");
 
     const updates: {
