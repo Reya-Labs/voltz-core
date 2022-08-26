@@ -262,7 +262,7 @@ export const poolConfigs: { [name: string]: poolConfig } = {
       alphaWad: "884125694186116",
       betaWad: "29639680817469288",
       xiUpperWad: "19000000000000000000",
-      xiLowerWad: "50",
+      xiLowerWad: "50000000000000000000",
       tMaxWad: "31536000000000000000000000",
       etaIMWad: "8339679487565499",
       etaLMWad: "2235643406201386",
