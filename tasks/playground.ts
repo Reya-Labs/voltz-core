@@ -169,8 +169,7 @@ task("marginEngineUpgrade", "Upgrade margin engine implementation")
         await marginEngine.connect(s).setMarginCalculatorParameters(params);
       });
     }
-  }
-);
+  });
 
 task("mcParametersSwap", "Change margin calculator parameters").setAction(
   async (_, hre) => {
