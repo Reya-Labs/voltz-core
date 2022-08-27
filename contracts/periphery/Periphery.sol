@@ -387,6 +387,11 @@ contract Periphery is
             int256 marginDelta
         )
     {
+        require(
+            !(params.marginDelta < 0 && msg.value > 0),
+            "Only add or only remove margin"
+        );
+
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         IVAMM vamm = params.marginEngine.vamm();
@@ -418,7 +423,7 @@ contract Periphery is
                 params.marginEngine,
                 params.tickLower,
                 params.tickUpper,
-                params.marginDelta.toInt256(),
+                params.marginDelta,
                 false // _fullyWithdraw
             );
         }
@@ -453,6 +458,17 @@ contract Periphery is
             _marginRequirement
         ) = vamm.swap(swapParams);
         _tickAfter = vamm.vammVars().tick;
+
+        // if margin delta is negative, reduce position margin
+        if (params.marginDelta < 0) {
+            marginDelta = updatePositionMargin(
+                params.marginEngine,
+                params.tickLower,
+                params.tickUpper,
+                params.marginDelta,
+                false // _fullyWithdraw
+            );
+        }
     }
 
     function fullyCollateralisedVTSwap(

@@ -31,7 +31,7 @@ interface IPeriphery is CustomErrors {
         uint160 sqrtPriceLimitX96;
         int24 tickLower;
         int24 tickUpper;
-        uint256 marginDelta;
+        int256 marginDelta;
     }
 
     /// @dev "constructor" for proxy instances

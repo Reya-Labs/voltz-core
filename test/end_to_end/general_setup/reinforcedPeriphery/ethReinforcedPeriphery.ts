@@ -901,3 +901,832 @@ it("Mint in non-alpha eth pool, perform FT swap, settle and withdraw entire marg
 
   await test();
 });
+
+// -------------------------- Remove notional during swap --------------------------
+
+it("Check you cannot swap with adding ETH margin and removing WETH margin", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+      const TICK_SPACING = UPPER_TICK - LOWER_TICK;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("500"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("2"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("200"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("0.1").mul(-1),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await expect(
+          this.periphery.swap(updateSwapParameters, {
+            value: ethers.utils.parseUnits("7", "ether"),
+          })
+        ).to.be.reverted;
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("2"));
+      expect(position.variableTokenBalance).to.eq(toBn("500"));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you cannot remove notional & margin from VT position without respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+      const TICK_SPACING = UPPER_TICK - LOWER_TICK;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("500"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("2"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("200"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("1.9").mul(-1),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await expect(this.periphery.swap(updateSwapParameters)).to.be.reverted;
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("2"));
+      expect(position.variableTokenBalance).to.eq(toBn("500"));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you cannot remove notional & margin from FT position without respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+      const TICK_SPACING = UPPER_TICK - LOWER_TICK;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("200"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("4.9").mul(-1),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("500"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("5"),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await expect(this.periphery.swap(updateSwapParameters)).to.be.reverted;
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("5"));
+      expect(position.variableTokenBalance).to.eq(toBn("500").mul(-1));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you can remove notional & margin from FT position while respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+      const TICK_SPACING = UPPER_TICK - LOWER_TICK;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("200"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("0.5").mul(-1),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("500"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("5"),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await this.periphery.swap(updateSwapParameters);
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("4.5"));
+      expect(position.variableTokenBalance).to.eq(toBn("300").mul(-1));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you can remove notional & margin from VT position while respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+      const TICK_SPACING = UPPER_TICK - LOWER_TICK;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("500"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("5"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("200"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("0.4").mul(-1),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await this.periphery.swap(updateSwapParameters);
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("4.6"));
+      expect(position.variableTokenBalance).to.eq(toBn("300"));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you can add notional & remove margin from VT position while respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("500"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("5"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("200"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("1").mul(-1),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await this.periphery.swap(updateSwapParameters);
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("4"));
+      expect(position.variableTokenBalance).to.eq(toBn("700"));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you can add notional & remove margin from FT position while respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+      const TICK_SPACING = UPPER_TICK - LOWER_TICK;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("500"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("7"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("200"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("0.5").mul(-1),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await this.periphery.swap(updateSwapParameters);
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("6.5"));
+      expect(position.variableTokenBalance).to.eq(toBn("700").mul(-1));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you cannot add notional & remove margin from VT position without respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("500"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("5"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("200"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("4").mul(-1),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await expect(this.periphery.swap(updateSwapParameters)).to.be.reverted;
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("5"));
+      expect(position.variableTokenBalance).to.eq(toBn("500"));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you cannot add notional & remove margin from FT position without respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+      const TICK_SPACING = UPPER_TICK - LOWER_TICK;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("500"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("7"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("200"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("4").mul(-1),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await expect(this.periphery.swap(updateSwapParameters)).to.be.reverted;
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("7"));
+      expect(position.variableTokenBalance).to.eq(toBn("500").mul(-1));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you can remove notional & add margin from FT position while respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+      const TICK_SPACING = UPPER_TICK - LOWER_TICK;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("200"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("0.5"),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("500"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("5"),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await this.periphery.swap(updateSwapParameters);
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("5.5"));
+      expect(position.variableTokenBalance).to.eq(toBn("300").mul(-1));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
+
+it("Check you can remove notional & add margin from VT position while respecting margin requirements", async () => {
+  class ScenarioRunnerInstance extends ScenarioRunner {
+    override async run() {
+      await this.factory.setPeriphery(this.periphery.address);
+      await this.vamm.setIsAlpha(false);
+      await this.marginEngine.setIsAlpha(false);
+      await this.token.approve(this.periphery.address, toBn("1", 27));
+
+      const LOWER_TICK_MINT = -7200;
+      const UPPER_TICK_MINT = 0;
+      const LOWER_TICK = -69060;
+      const UPPER_TICK = 0;
+      const TICK_SPACING = UPPER_TICK - LOWER_TICK;
+
+      {
+        const mintOrBurnParameters = {
+          marginEngine: this.marginEngine.address,
+          tickLower: LOWER_TICK_MINT,
+          tickUpper: UPPER_TICK_MINT,
+          notional: toBn("10000"),
+          isMint: true,
+          marginDelta: toBn("100"),
+        };
+
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: false,
+          notional: toBn("500"),
+          sqrtPriceLimitX96: TickMath.getSqrtRatioAtTick(LOWER_TICK).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("5"),
+        };
+
+        const updateSwapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: true,
+          notional: toBn("200"),
+          sqrtPriceLimitX96:
+            TickMath.getSqrtRatioAtTick(TICK_SPACING).toString(), // lowest price or highest fixed rate prepared to pay as a VT
+          tickLower: LOWER_TICK,
+          tickUpper: UPPER_TICK,
+          marginDelta: toBn("0.4"),
+        };
+        // enter valueToBigNumber, push fixed rate up --> push price down because ifxed rate=1/price --> push tick down
+
+        // add 3000 liquidity to Position
+        await this.periphery.mintOrBurn(mintOrBurnParameters);
+
+        // Perform a FT swap on ERC20 pool to create a position
+        await this.periphery.swap(swapParameters);
+
+        await this.periphery.swap(updateSwapParameters);
+      }
+
+      const position = await this.marginEngine.callStatic.getPosition(
+        this.owner.address,
+        LOWER_TICK,
+        UPPER_TICK
+      );
+
+      expect(position.margin).to.eq(toBn("5.4"));
+      expect(position.variableTokenBalance).to.eq(toBn("300"));
+    }
+  }
+
+  const test = async () => {
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  await test();
+});
