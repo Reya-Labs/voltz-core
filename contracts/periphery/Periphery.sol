@@ -6,6 +6,7 @@ pragma abicoder v2;
 
 import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
+import "../interfaces/IWETH.sol";
 import "../interfaces/IPeriphery.sol";
 import "../utils/TickMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -16,7 +17,6 @@ import "../storage/PeripheryStorage.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "hardhat/console.sol";
 
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
