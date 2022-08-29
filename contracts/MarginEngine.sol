@@ -120,92 +120,29 @@ contract MarginEngine is
         bool isLM,
         uint256 historicalApyWad
     ) internal view returns (uint256 variableFactorWad) {
-        variableFactorWad = computeApyBound(historicalApyWad, isFT).mul(
-            FixedAndVariableMath.accrualFact(
-                _termEndTimestampWad - _termStartTimestampWad
-            )
-        );
+        uint256 rateFromStart = _rateOracle.variableFactorNoCache(
+            _termStartTimestampWad,
+            Time.blockTimestampScaled()
+        ) + ONE_UINT;
+        uint256 worstApy = computeApyBound(historicalApyWad, isFT);
 
         if (!isLM) {
-            variableFactorWad = variableFactorWad.mul(
+            worstApy = worstApy.mul(
                 isFT
                     ? marginCalculatorParameters.apyUpperMultiplierWad
                     : marginCalculatorParameters.apyLowerMultiplierWad
             );
         }
-    }
 
-    /// @notice calculates the absolute fixed token delta unbalanced resulting from a simulated counterfactual unwind necessary to determine the minimum margin requirement of a trader
-    /// @dev simulation of a swap without the need to involve the swap function
-    /// @param variableTokenDeltaAbsolute absolute value of the variableTokenDelta for which the unwind is simulated
-    /// @param sqrtRatioCurrX96 sqrtRatio necessary to calculate the starting fixed rate which is used to calculate the counterfactual unwind fixed rate
-    /// @param startingFixedRateMultiplierWad the multiplier (lambda from the litepaper - minimum margin requirement equation) that is multiplied by the starting fixed rate to determine the deviation applied to the starting fixed rate (in Wad)
-    /// @param fixedRateDeviationMinWad The minimum value the variable D (from the litepaper) can take
-    /// @param isFTUnwind isFTUnwind == true => the counterfactual unwind is in the Fixed Taker direction (from left to right along the VAMM), the opposite is true if isFTUnwind == false
-    function getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
-        uint256 variableTokenDeltaAbsolute,
-        uint160 sqrtRatioCurrX96,
-        uint256 startingFixedRateMultiplierWad,
-        uint256 fixedRateDeviationMinWad,
-        bool isFTUnwind
-    ) internal view returns (uint256 fixedTokenDeltaUnbalanced) {
-        /// @dev fixedRateDeviationMinWad is in percentage points
-
-        // calculate fixedRateStart
-
-        uint256 sqrtRatioCurrWad = FullMath.mulDiv(
-            ONE_UINT,
-            FixedPoint96.Q96,
-            sqrtRatioCurrX96
-        );
-
-        /// @dev fixedRateStartWad is in percentage points
-
-        uint256 fixedRateStartWad = sqrtRatioCurrWad.mul(sqrtRatioCurrWad);
-
-        // We artifically limit the current price to max 15% to avoid unnecessary liquidations
-        if (fixedRateStartWad > MAX_FIXED_RATE_WAD) {
-            fixedRateStartWad = MAX_FIXED_RATE_WAD;
-        }
-
-        // calculate D (from the litepaper)
-        uint256 upperDWad = fixedRateStartWad.mul(
-            startingFixedRateMultiplierWad
-        );
-
-        // calculate d (from the litepaper)
-
-        uint256 dWad = (
-            (upperDWad < fixedRateDeviationMinWad)
-                ? fixedRateDeviationMinWad
-                : upperDWad
-        ).mul(
-                (ONE -
-                    (_termEndTimestampWad - Time.blockTimestampScaled())
-                        .div(uint256(marginCalculatorParameters.tMaxWad))
-                        .toInt256()
-                        .mul(-marginCalculatorParameters.gammaWad.toInt256())
-                        .exp()).toUint256()
-            );
-
-        // calculate counterfactual fixed rate
-
-        uint256 fixedRateCFWad;
-        if (isFTUnwind) {
-            if (fixedRateStartWad > dWad) {
-                fixedRateCFWad = fixedRateStartWad - dWad;
-            } else {
-                fixedRateCFWad = 0;
-            }
-        } else {  
-            fixedRateCFWad = fixedRateStartWad + dWad;
-        }
-        // calculate fixedTokenDeltaUnbalanced
-
-        fixedTokenDeltaUnbalanced = variableTokenDeltaAbsolute
-            .fromUint()
-            .mul(fixedRateCFWad)
-            .toUint();
+        variableFactorWad =
+            rateFromStart.mul(
+                worstApy.mul(
+                    FixedAndVariableMath.accrualFact(
+                        _termEndTimestampWad - Time.blockTimestampScaled()
+                    )
+                ) + ONE_UINT
+            ) -
+            ONE_UINT;
     }
 
     // https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable
@@ -216,10 +153,8 @@ contract MarginEngine is
         int24 inRangeTick;
         int256 scenario1LPVariableTokenBalance;
         int256 scenario1LPFixedTokenBalance;
-        uint160 scenario1SqrtPriceX96;
         int256 scenario2LPVariableTokenBalance;
         int256 scenario2LPFixedTokenBalance;
-        uint160 scenario2SqrtPriceX96;
     }
 
     function initialize(
@@ -300,6 +235,11 @@ contract MarginEngine is
     /// @inheritdoc IMarginEngine
     function termStartTimestampWad() external view override returns (uint256) {
         return _termStartTimestampWad;
+    }
+
+    /// @inheritdoc IMarginEngine
+    function marginEngineParameters() external view override returns (MarginCalculatorParameters memory) {
+        return marginCalculatorParameters;
     }
 
     /// @inheritdoc IMarginEngine
@@ -1194,7 +1134,6 @@ contract MarginEngine is
         Tick.checkTicks(_tickLower, _tickUpper);
 
         IVAMM.VAMMVars memory _vammVars = _vamm.vammVars();
-        uint160 _sqrtPriceX96 = _vammVars.sqrtPriceX96;
         int24 _tick = _vammVars.tick;
 
         uint256 _variableFactorWad = _rateOracle.variableFactor(
@@ -1256,34 +1195,16 @@ contract MarginEngine is
                 _position.fixedTokenBalance +
                 _extraFixedTokenBalance;
 
-            uint160 _lowPrice = TickMath.getSqrtRatioAtTick(_tickLower);
-            uint160 _highPrice = TickMath.getSqrtRatioAtTick(_tickUpper);
-            _lowPrice = _sqrtPriceX96 < _lowPrice ? _sqrtPriceX96 : _lowPrice;
-            _highPrice = _sqrtPriceX96 > _highPrice
-                ? _sqrtPriceX96
-                : _highPrice;
-
-            _localVars.scenario1SqrtPriceX96 = (_localVars
-                .scenario1LPVariableTokenBalance > 0)
-                ? _highPrice
-                : _lowPrice;
-
-            _localVars.scenario2SqrtPriceX96 = (_localVars
-                .scenario2LPVariableTokenBalance > 0)
-                ? _highPrice
-                : _lowPrice;
-
             uint256 _scenario1MarginRequirement = _getMarginRequirement(
                 _localVars.scenario1LPFixedTokenBalance,
                 _localVars.scenario1LPVariableTokenBalance,
-                _isLM,
-                _localVars.scenario1SqrtPriceX96
+                _isLM
             );
+
             uint256 _scenario2MarginRequirement = _getMarginRequirement(
                 _localVars.scenario2LPFixedTokenBalance,
                 _localVars.scenario2LPVariableTokenBalance,
-                _isLM,
-                _localVars.scenario2SqrtPriceX96
+                _isLM
             );
 
             if (_scenario1MarginRequirement > _scenario2MarginRequirement) {
@@ -1297,8 +1218,7 @@ contract MarginEngine is
                 _getMarginRequirement(
                     _position.fixedTokenBalance,
                     _position.variableTokenBalance,
-                    _isLM,
-                    _sqrtPriceX96
+                    _isLM
                 );
         }
     }
@@ -1327,8 +1247,7 @@ contract MarginEngine is
     function _getMarginRequirement(
         int256 _fixedTokenBalance,
         int256 _variableTokenBalance,
-        bool _isLM,
-        uint160 _sqrtPriceX96
+        bool _isLM
     ) internal returns (uint256 _margin) {
         _margin = __getMarginRequirement(
             _fixedTokenBalance,
@@ -1336,15 +1255,28 @@ contract MarginEngine is
             _isLM
         );
 
-        uint256 _minimumMarginRequirement = _getMinimumMarginRequirement(
-            _fixedTokenBalance,
-            _variableTokenBalance,
-            _isLM,
-            _sqrtPriceX96
-        );
+        uint256 absVariableTokenBalance = (_variableTokenBalance < 0)
+            ? (-_variableTokenBalance).toUint256()
+            : _variableTokenBalance.toUint256();
+
+        uint256 _minimumMarginRequirement = absVariableTokenBalance
+            .mul(
+                _isLM
+                    ? marginCalculatorParameters.etaLMWad
+                    : marginCalculatorParameters.etaIMWad
+            )
+            .mul(
+                FixedAndVariableMath.accrualFact(
+                    _termEndTimestampWad - Time.blockTimestampScaled()
+                )
+            );
 
         if (_margin < _minimumMarginRequirement) {
             _margin = _minimumMarginRequirement;
+        }
+
+        if (_margin < marginCalculatorParameters.minMarginToIncentiviseLiquidators) {
+            _margin = marginCalculatorParameters.minMarginToIncentiviseLiquidators;
         }
     }
 
@@ -1400,96 +1332,6 @@ contract MarginEngine is
             );
         } else {
             _margin = 0;
-        }
-    }
-
-    /// @notice Get Minimum Margin Requirement
-    // given the fixed and variable balances and a starting sqrtPriceX96
-    // we calculate the minimum marign requirement by simulating a counterfactual unwind at fixed rate that is a function of the current fixed rate (sqrtPriceX96) (details in the litepaper)
-    // if the variable token balance is 0 or if the variable token balance is >0 and the fixed token balace >0 then the minimum margin requirement is zero
-    function _getMinimumMarginRequirement(
-        int256 _fixedTokenBalance,
-        int256 _variableTokenBalance,
-        bool _isLM,
-        uint160 _sqrtPriceX96
-    ) internal returns (uint256 _margin) {
-        if (_variableTokenBalance == 0) {
-            // if the variable token balance is zero there is no need for a minimum liquidator incentive since a liquidtion is not expected
-            return 0;
-        }
-
-        int256 _fixedTokenDeltaUnbalanced;
-        uint256 _devMulWad;
-        uint256 _fixedRateDeviationMinWad;
-        uint256 _absoluteVariableTokenBalance;
-        bool _isVariableTokenBalancePositive;
-
-        if (_variableTokenBalance > 0) {
-            if (_fixedTokenBalance > 0) {
-                // if both are positive, no need to have a margin requirement
-                return 0;
-            }
-
-            if (_isLM) {
-                _devMulWad = marginCalculatorParameters.devMulLeftUnwindLMWad;
-                _fixedRateDeviationMinWad = marginCalculatorParameters
-                    .fixedRateDeviationMinLeftUnwindLMWad;
-            } else {
-                _devMulWad = marginCalculatorParameters.devMulLeftUnwindIMWad;
-                _fixedRateDeviationMinWad = marginCalculatorParameters
-                    .fixedRateDeviationMinLeftUnwindIMWad;
-            }
-
-            _absoluteVariableTokenBalance = uint256(_variableTokenBalance);
-            _isVariableTokenBalancePositive = true;
-        } else {
-            if (_isLM) {
-                _devMulWad = marginCalculatorParameters.devMulRightUnwindLMWad;
-                _fixedRateDeviationMinWad = marginCalculatorParameters
-                    .fixedRateDeviationMinRightUnwindLMWad;
-            } else {
-                _devMulWad = marginCalculatorParameters.devMulRightUnwindIMWad;
-                _fixedRateDeviationMinWad = marginCalculatorParameters
-                    .fixedRateDeviationMinRightUnwindIMWad;
-            }
-
-            _absoluteVariableTokenBalance = uint256(-_variableTokenBalance);
-        }
-
-        // simulate an adversarial unwind (cumulative position is a Variable Taker --> simulate FT unwind --> movement to the left along the VAMM)
-        // fixedTokenDelta unbalanced that results from the simulated unwind
-        _fixedTokenDeltaUnbalanced = getAbsoluteFixedTokenDeltaUnbalancedSimulatedUnwind(
-            uint256(_absoluteVariableTokenBalance),
-            _sqrtPriceX96,
-            _devMulWad,
-            _fixedRateDeviationMinWad,
-            _isVariableTokenBalancePositive
-        ).toInt256();
-
-        int256 _fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
-            _isVariableTokenBalancePositive
-                ? _fixedTokenDeltaUnbalanced
-                : -_fixedTokenDeltaUnbalanced,
-            -_variableTokenBalance,
-            _rateOracle.variableFactor(
-                _termStartTimestampWad,
-                _termEndTimestampWad
-            ),
-            _termStartTimestampWad,
-            _termEndTimestampWad
-        );
-
-        int256 _updatedFixedTokenBalance = _fixedTokenBalance +
-            _fixedTokenDelta;
-
-        _margin = __getMarginRequirement(_updatedFixedTokenBalance, 0, _isLM);
-
-        if (
-            _margin <
-            marginCalculatorParameters.minMarginToIncentiviseLiquidators
-        ) {
-            _margin = marginCalculatorParameters
-                .minMarginToIncentiviseLiquidators;
         }
     }
 

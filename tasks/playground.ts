@@ -5,6 +5,7 @@ import "@nomiclabs/hardhat-ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import positionsJson from "../playground/positions-ALL.json";
 import { poolConfigs } from "../deployConfig/poolConfig";
+import * as poolAddresses from "../pool-addresses/mainnet.json";
 
 const vammImplementation = "0x7380Df8AbB0c44617C2a64Bf2D7D92caA852F03f";
 
@@ -99,6 +100,76 @@ task("rateOracleSwap", "Swap Rate Oracle").setAction(async (_, hre) => {
     );
   }
 });
+
+task("marginEngineUpgrade", "Upgrade margin engine implementation")
+  .addParam("pools")
+  .setAction(async (taskArgs, hre) => {
+    if (!(hre.network.name === "localhost")) {
+      throw new Error("Only localhost");
+    }
+
+    const addSigner = async (address: string): Promise<SignerWithAddress> => {
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+      });
+      await hre.network.provider.send("hardhat_setBalance", [
+        address,
+        "0x1000000000000000000",
+      ]);
+      return await hre.ethers.getSigner(address);
+    };
+
+    const removeSigner = async (address: string) => {
+      await hre.network.provider.request({
+        method: "hardhat_stopImpersonatingAccount",
+        params: [address],
+      });
+    };
+
+    const withSigner = async (
+      address: string,
+      f: (_: SignerWithAddress) => Promise<void>
+    ) => {
+      const signer = await addSigner(address);
+      await f(signer);
+      await removeSigner(address);
+    };
+
+    const marginEngineImplementation =
+      "0xb932C8342106776E73E39D695F3FFC3A9624eCE0";
+
+    const pools = taskArgs.pools.split(",");
+
+    for (const poolName of pools) {
+      console.log(poolName);
+      const tmp = poolAddresses[poolName as keyof typeof poolAddresses];
+      console.log("tmp:", tmp);
+
+      const marginEngine = (await hre.ethers.getContractAt(
+        "MarginEngine",
+        tmp.marginEngine
+      )) as MarginEngine;
+
+      await withSigner(await marginEngine.owner(), async (s) => {
+        await marginEngine.connect(s).upgradeTo(marginEngineImplementation);
+
+        const params =
+          poolConfigs[poolName as keyof typeof poolConfigs]
+            .marginCalculatorParams;
+
+        const lookBackWindow =
+          poolConfigs[poolName as keyof typeof poolConfigs]
+            .lookbackWindowInSeconds;
+
+        await marginEngine
+          .connect(s)
+          .setLookbackWindowInSeconds(lookBackWindow);
+
+        await marginEngine.connect(s).setMarginCalculatorParameters(params);
+      });
+    }
+  });
 
 task("mcParametersSwap", "Change margin calculator parameters").setAction(
   async (_, hre) => {

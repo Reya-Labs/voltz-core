@@ -32,18 +32,16 @@ const e2eParams: e2eParameters = {
     xiLowerWad: XI_LOWER,
     tMaxWad: T_MAX,
 
-    devMulLeftUnwindLMWad: toBn("0.5"),
-    devMulRightUnwindLMWad: toBn("0.5"),
-    devMulLeftUnwindIMWad: toBn("0.8"),
-    devMulRightUnwindIMWad: toBn("0.8"),
+    etaIMWad: toBn("0.002"),
+    etaLMWad: toBn("0.001"),
+    gap1: toBn("0"),
+    gap2: toBn("0"),
+    gap3: toBn("0"),
+    gap4: toBn("0"),
+    gap5: toBn("0"),
+    gap6: toBn("0"),
+    gap7: toBn("0"),
 
-    fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
-    fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
-
-    fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
-    fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
-
-    gammaWad: toBn("0.05"),
     minMarginToIncentiviseLiquidators: 0,
   },
   lookBackWindowAPY: consts.ONE_WEEK,
