@@ -14,14 +14,14 @@ import { expect } from "../../../shared/expect";
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(2),
   numActors: 2,
-  marginCalculatorParams: poolConfigs.aDAI_v2.marginCalculatorParams,
+  marginCalculatorParams: poolConfigs.default.marginCalculatorParams,
   lookBackWindowAPY: BigNumber.from(
-    poolConfigs.aDAI_v2.lookbackWindowInSeconds
+    poolConfigs.default.lookbackWindowInSeconds
   ),
   startingPrice: encodeSqrtRatioX96(1, 1),
   feeProtocol: 0,
-  fee: BigNumber.from(poolConfigs.aDAI_v2.feeWad),
-  tickSpacing: poolConfigs.aDAI_v2.tickSpacing,
+  fee: BigNumber.from(poolConfigs.default.feeWad),
+  tickSpacing: poolConfigs.default.tickSpacing,
   positions: [
     [0, 0, 0],
     [1, -60, 60],
