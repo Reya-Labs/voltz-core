@@ -192,6 +192,7 @@ task("getPositionInfo", "Get all information about some position")
   .addOptionalParam("owners", "Filter by list of owners")
   .addOptionalParam("tickLowers", "Filter by tick lowers")
   .addOptionalParam("tickUppers", "Filter by tick uppers")
+  .addFlag("healthHistory", "Flag that gets health history")
   .setAction(async (taskArgs, hre) => {
     let positions: Position[] = await getPositions();
 
@@ -416,80 +417,80 @@ task("getPositionInfo", "Get all information about some position")
         );
       }
 
-      const currentBlock = await hre.ethers.provider.getBlock("latest");
-      const currentBlockNumber = currentBlock.number;
+      if (taskArgs.healthHistory) {
+        const currentBlock = await hre.ethers.provider.getBlock("latest");
+        const currentBlockNumber = currentBlock.number;
 
-      const vamm = (await hre.ethers.getContractAt(
-        "VAMM",
-        await tmp.marginEngine.vamm()
-      )) as VAMM;
+        const vamm = (await hre.ethers.getContractAt(
+          "VAMM",
+          await tmp.marginEngine.vamm()
+        )) as VAMM;
 
-      const header =
-        "timestamp,block,tick,position_margin,position_requirement_liquidation,position_requirement_safety\n";
+        const header =
+          "timestamp,block,tick,position_margin,position_requirement_liquidation,position_requirement_safety\n";
 
-      fs.writeFile(`${EXPORT_FOLDER}/progress.csv`, header, () => {});
+        fs.writeFile(`${EXPORT_FOLDER}/progress.csv`, header, () => {});
 
-      const startTimestamp = Number(
-        ethers.utils.formatUnits(
-          await tmp.marginEngine.termStartTimestampWad(),
-          18
-        )
-      );
-      const startBlock = await getBlockAtTimestamp(hre, startTimestamp);
-      console.log("start block:", startBlock);
-      for (let b = startBlock; b <= currentBlockNumber; b += 6400) {
-        const block = await hre.ethers.provider.getBlock(b);
-        console.log("block...", b.toString());
-        console.log("timestamp:", block.timestamp.toString());
+        const startTimestamp = Number(
+          ethers.utils.formatUnits(
+            await tmp.marginEngine.termStartTimestampWad(),
+            18
+          )
+        );
+        const startBlock = await getBlockAtTimestamp(hre, startTimestamp);
 
-        const positionRequirementSafety =
-          await tmp.marginEngine.callStatic.getPositionMarginRequirement(
+        for (let b = startBlock; b <= currentBlockNumber; b += 6400) {
+          const block = await hre.ethers.provider.getBlock(b);
+
+          const positionRequirementSafety =
+            await tmp.marginEngine.callStatic.getPositionMarginRequirement(
+              p.owner,
+              p.tickLower,
+              p.tickUpper,
+              false,
+              {
+                blockTag: b,
+              }
+            );
+
+          const positionRequirementLiquidation =
+            await tmp.marginEngine.callStatic.getPositionMarginRequirement(
+              p.owner,
+              p.tickLower,
+              p.tickUpper,
+              true,
+              {
+                blockTag: b,
+              }
+            );
+
+          const positionInfo = await tmp.marginEngine.callStatic.getPosition(
             p.owner,
             p.tickLower,
             p.tickUpper,
-            false,
             {
               blockTag: b,
             }
           );
 
-        const positionRequirementLiquidation =
-          await tmp.marginEngine.callStatic.getPositionMarginRequirement(
-            p.owner,
-            p.tickLower,
-            p.tickUpper,
-            true,
-            {
-              blockTag: b,
-            }
+          const tick = (await vamm.vammVars({ blockTag: b })).tick;
+
+          fs.appendFileSync(
+            `${EXPORT_FOLDER}/progress.csv`,
+            `${block.timestamp},${b},${
+              1.0001 ** -tick
+            }%,${ethers.utils.formatUnits(
+              positionInfo.margin,
+              tmp.decimals
+            )},${ethers.utils.formatUnits(
+              positionRequirementLiquidation,
+              tmp.decimals
+            )},${ethers.utils.formatUnits(
+              positionRequirementSafety,
+              tmp.decimals
+            )}\n`
           );
-
-        const positionInfo = await tmp.marginEngine.callStatic.getPosition(
-          p.owner,
-          p.tickLower,
-          p.tickUpper,
-          {
-            blockTag: b,
-          }
-        );
-
-        const tick = (await vamm.vammVars({ blockTag: b })).tick;
-
-        fs.appendFileSync(
-          `${EXPORT_FOLDER}/progress.csv`,
-          `${block.timestamp},${b},${
-            1.0001 ** -tick
-          }%,${ethers.utils.formatUnits(
-            positionInfo.margin,
-            tmp.decimals
-          )},${ethers.utils.formatUnits(
-            positionRequirementLiquidation,
-            tmp.decimals
-          )},${ethers.utils.formatUnits(
-            positionRequirementSafety,
-            tmp.decimals
-          )}\n`
-        );
+        }
       }
     }
   });
