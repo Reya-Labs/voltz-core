@@ -452,6 +452,53 @@ contract Periphery is
         _tickAfter = vamm.vammVars().tick;
     }
 
+    function fullyCollateralisedVTSwap(
+        SwapPeripheryParams memory params,
+        uint256 variableFactorFromStartToNowWad
+    )
+        public
+        payable
+        override
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _variableTokenDelta,
+            uint256 _cumulativeFeeIncurred,
+            int256 _fixedTokenDeltaUnbalanced,
+            int256 _marginRequirement,
+            int24 _tickAfter
+        )
+    {
+        require(params.isFT == false, "only fc VT swaps");
+
+        (
+            _fixedTokenDelta,
+            _variableTokenDelta,
+            _cumulativeFeeIncurred,
+            _fixedTokenDeltaUnbalanced,
+            _marginRequirement,
+            _tickAfter
+        ) = swap(params);
+
+        uint256 marginDeltaAfterFees = params.marginDelta -
+            _cumulativeFeeIncurred;
+
+        IMarginEngine marginEngine = params.marginEngine;
+
+        require(
+            marginDeltaAfterFees >=
+                (
+                    -FixedAndVariableMath.calculateSettlementCashflow(
+                        _fixedTokenDelta,
+                        _variableTokenDelta,
+                        marginEngine.termStartTimestampWad(),
+                        marginEngine.termEndTimestampWad(),
+                        variableFactorFromStartToNowWad
+                    )
+                ).toUint256(),
+            "VT swap not fc"
+        );
+    }
+
     function rolloverWithMint(
         IMarginEngine marginEngine,
         address owner,

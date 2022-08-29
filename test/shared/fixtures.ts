@@ -239,12 +239,14 @@ interface MetaFixture {
   vammCompound: TestVAMM;
   fcmTest: AaveFCM;
   fcmCompound: CompoundFCM;
+  testFixedAndVariableMath: FixedAndVariableMathTest;
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
   const { marginEngineMasterTest } = await marginEngineMasterTestFixture();
   const { vammMasterTest } = await vammMasterTestFixture();
   const { fcmMasterTest, fcmMasterCompound } = await fcmMasterTestFixture();
+  const { testFixedAndVariableMath } = await fixedAndVariableMathFixture();
   const { factory } = await factoryFixture(
     marginEngineMasterTest.address,
     vammMasterTest.address
@@ -406,6 +408,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     vammCompound,
     fcmTest,
     fcmCompound,
+    testFixedAndVariableMath,
   };
 };
 
