@@ -95,10 +95,8 @@ loadModuleIfContractsAreBuilt("./tasks/upgrades");
 loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
 loadModuleIfContractsAreBuilt("./tasks/checkInsolvencyAtMaturity");
 loadModuleIfContractsAreBuilt("./tasks/migratePeriphery");
-loadModuleIfContractsAreBuilt("./tasks/updateMCParams");
 loadModuleIfContractsAreBuilt("./tasks/checkPositionSettlement");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
-loadModuleIfContractsAreBuilt("./tasks/setLiquidatorRewards");
 loadModuleIfContractsAreBuilt("./tasks/setPausability");
 loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
 
