@@ -197,8 +197,20 @@ export const extractErrorSignature = (message: string): string => {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getErrorSignature = (error: any): string => {
+  let reason: string | null = null;
   try {
-    const reason = error.error.data.toString();
+    reason = error.error.data.toString();
+  } catch (_) {
+    try {
+      reason = error.data.toString();
+    } catch (_) {}
+  }
+
+  if (!reason) {
+    throw new Error("Couldn't extract error data");
+  }
+
+  try {
     if (reason.startsWith("0x08c379a0")) {
       return "Error";
     }
@@ -214,7 +226,18 @@ export const getErrorSignature = (error: any): string => {
 export const getReadableErrorMessage = (error: any): string => {
   const errSig = getErrorSignature(error);
   if (errSig === "Error") {
-    let reason = error.error.data.toString();
+    let reason: string | null = null;
+    try {
+      reason = error.error.data.toString();
+    } catch (_) {
+      try {
+        reason = error.data.toString();
+      } catch (_) {}
+    }
+
+    if (!reason) {
+      throw new Error("Couldn't extract error data");
+    }
     reason = `0x${reason.substring(10)}`;
     try {
       const rawErrorMessage = utils.defaultAbiCoder.decode(
@@ -245,8 +268,20 @@ export type RawInfoPostMint = {
 export const decodeInfoPostMint = (error: any): RawInfoPostMint => {
   const errSig = getErrorSignature(error);
   if (errSig === "MarginLessThanMinimum") {
+    let reason: string | null = null;
     try {
-      const reason = error.error.data.toString();
+      reason = error.error.data.toString();
+    } catch (_) {
+      try {
+        reason = error.data.toString();
+      } catch (_) {}
+    }
+
+    if (!reason) {
+      throw new Error("Couldn't extract error data");
+    }
+
+    try {
       const decodingResult = iface.decodeErrorResult(errSig, reason);
       const result = {
         marginRequirement: decodingResult.marginRequirement,
@@ -272,8 +307,20 @@ export type RawInfoPostSwap = {
 export const decodeInfoPostSwap = (error: any): RawInfoPostSwap => {
   const errSig = getErrorSignature(error);
   if (errSig === "MarginRequirementNotMet") {
+    let reason: string | null = null;
     try {
-      const reason = error.error.data.toString();
+      reason = error.error.data.toString();
+    } catch (_) {
+      try {
+        reason = error.data.toString();
+      } catch (_) {}
+    }
+
+    if (!reason) {
+      throw new Error("Couldn't extract error data");
+    }
+
+    try {
       const decodingResult = iface.decodeErrorResult(errSig, reason);
       const result = {
         marginRequirement: decodingResult.marginRequirement,
