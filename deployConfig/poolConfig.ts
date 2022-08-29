@@ -258,7 +258,7 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     marginCalculatorParams: {
       apyUpperMultiplierWad: "1330403972580154880",
       apyLowerMultiplierWad: "695323126856589696",
-      sigmaSquaredWad: "4126907736525",
+      sigmaSquaredWad: "4911361273220",
       alphaWad: "884125694186116",
       betaWad: "29639680817469288",
       xiUpperWad: "19000000000000000000",
