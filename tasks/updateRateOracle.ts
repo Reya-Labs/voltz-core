@@ -202,12 +202,17 @@ async function main(
     );
     console.log("settlement cache rate: ", settlementRateCache.toNumber());
 
-    if (
+    const termStartedSinceLastWrite =
       latestOracleQueryTimeSeconds < termStartTimestampWad.div(BigInt(1e18)) &&
-      currentBlockTimestampSeconds > termStartTimestampWad.div(BigInt(1e18)) &&
+      currentBlockTimestampSeconds >= termStartTimestampWad.div(BigInt(1e18)) &&
       currentBlockTimestampSeconds - latestOracleQueryTimeSeconds >
-        timeDeltaSeconds
-    ) {
+        minSecondsSinceLastUpdate;
+
+    const noRecentWrite =
+      currentBlockTimestampSeconds - latestOracleQueryTimeSeconds >
+      timeDeltaSeconds;
+
+    if (termStartedSinceLastWrite || noRecentWrite) {
       const writeEntry = await rateOracleContract.writeOracleEntry();
       console.log("Successfully wrote to the oracle (start)");
       await writeEntry.wait();
@@ -216,7 +221,7 @@ async function main(
     }
 
     if (
-      currentBlockTimestampSeconds > termStartTimestampWad.div(BigInt(1e18)) &&
+      currentBlockTimestampSeconds > termEndTimestampWad.div(BigInt(1e18)) &&
       settlementRateCache.toString() === "0"
     ) {
       const vfTx = await rateOracleContract.variableFactor(
