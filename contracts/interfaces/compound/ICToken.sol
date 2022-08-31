@@ -24,6 +24,8 @@ interface ICToken {
 
   function borrowRatePerBlock() external view returns (uint);
 
+  function borrowBalanceCurrent(address account) virtual external returns (uint);
+
   /**
     * @notice Underlying asset for this CToken
     */

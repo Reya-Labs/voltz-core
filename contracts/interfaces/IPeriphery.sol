@@ -31,7 +31,7 @@ interface IPeriphery is CustomErrors {
         uint160 sqrtPriceLimitX96;
         int24 tickLower;
         int24 tickUpper;
-        uint256 marginDelta;
+        int256 marginDelta;
     }
 
     /// @dev "constructor" for proxy instances
@@ -70,7 +70,8 @@ interface IPeriphery is CustomErrors {
             uint256 _cumulativeFeeIncurred,
             int256 _fixedTokenDeltaUnbalanced,
             int256 _marginRequirement,
-            int24 _tickAfter
+            int24 _tickAfter,
+            int256 marginDelta
         );
 
     /// @dev Ensures a fully collateralised VT swap given that a proper value of the variable factor is passed.
@@ -88,7 +89,8 @@ interface IPeriphery is CustomErrors {
             uint256 _cumulativeFeeIncurred,
             int256 _fixedTokenDeltaUnbalanced,
             int256 _marginRequirement,
-            int24 _tickAfter
+            int24 _tickAfter,
+            int256 marginDelta
         );
 
     function updatePositionMargin(
@@ -97,7 +99,7 @@ interface IPeriphery is CustomErrors {
         int24 tickUpper,
         int256 marginDelta,
         bool fullyWithdraw
-    ) external payable;
+    ) external payable returns (int256);
 
     function setLPMarginCap(IVAMM vamm, int256 lpMarginCapNew) external;
 
