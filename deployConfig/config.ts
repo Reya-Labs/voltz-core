@@ -654,14 +654,22 @@ export const convertTrustedRateOracleDataPoints = (
   return { trustedTimestamps, trustedObservationValuesInRay };
 };
 
+export interface RateOracleConfigForTemplate {
+  rateOracleAddress: string;
+  increaseRateOracleBufferSize?: { value: number };
+  setMinSecondsSinceLastUpdate?: { value: number };
+  last?: boolean; // Used to tell the mustache templating engine to stop adding commas once the last transaction is defined
+}
+
 export const applyBufferConfig = async (
   r: BaseRateOracle,
   minBufferSize: number,
   minSecondsSinceLastUpdate: number,
   maxIrsDurationInSeconds: number,
-  dryRunOnly = false
-) => {
+  ownedByMultisig = false
+): Promise<RateOracleConfigForTemplate[]> => {
   const secondsWorthOfBuffer = minBufferSize * minSecondsSinceLastUpdate;
+  const multisigConfig: RateOracleConfigForTemplate[] = [];
   if (
     secondsWorthOfBuffer <
     maxIrsDurationInSeconds * BUFFER_SIZE_SAFETY_FACTOR
@@ -675,13 +683,12 @@ export const applyBufferConfig = async (
   let currentSize = (await r.oracleVars())[2];
   // console.log(`currentSize of ${r.address} is ${currentSize}`);
 
-  let bufferWasTooSmall = currentSize < minBufferSize;
-  if (bufferWasTooSmall) {
-    if (dryRunOnly) {
-      console.log(
-        `ATTENTION: you should manually call increaseObservationCardinalityNext(${minBufferSize}) on the rate oracle at ${r.address}.`
-      );
-      bufferWasTooSmall = false;
+  if (currentSize < minBufferSize) {
+    if (ownedByMultisig) {
+      multisigConfig.push({
+        rateOracleAddress: r.address,
+        increaseRateOracleBufferSize: { value: minBufferSize },
+      });
     } else {
       process.stdout.write(
         `Increasing size of ${r.address}'s buffer to ${minBufferSize}.`
@@ -711,11 +718,14 @@ export const applyBufferConfig = async (
   // console.log( `current minSecondsSinceLastUpdate of ${r.address} is ${currentVal}` );
 
   if (currentSecondsSinceLastUpdate !== minSecondsSinceLastUpdate) {
-    if (dryRunOnly) {
+    if (ownedByMultisig) {
+      multisigConfig.push({
+        rateOracleAddress: r.address,
+        setMinSecondsSinceLastUpdate: { value: minSecondsSinceLastUpdate },
+      });
       console.log(
         `ATTENTION: you should manually call setMinSecondsSinceLastUpdate(${minSecondsSinceLastUpdate}) on the rate oracle at ${r.address}.`
       );
-      bufferWasTooSmall = false;
     } else {
       const trx = await r.setMinSecondsSinceLastUpdate(
         minSecondsSinceLastUpdate
@@ -726,4 +736,6 @@ export const applyBufferConfig = async (
       );
     }
   }
+
+  return multisigConfig;
 };
