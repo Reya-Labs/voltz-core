@@ -226,6 +226,11 @@ const config: HardhatUserConfig = {
     strict: true,
     except: [":Test"],
   },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
 };
 
 export default config;

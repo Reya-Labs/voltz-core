@@ -119,7 +119,9 @@ To fork third party contracts (e.g. Aave, Compound, Lido, Rocket, ...) from main
 
 `yarn deploy:mainnet_fork`
 
-This will deploy a new system of the latest Voltz contracts on top of those third party contracts. You can interact with this system using `--network localhost`.
+(If you want to fork mainnet at a specific block, e.g. before some event happened on chain, you can specify `blockNumber` in the `forking` section of `hardhat.config.ts`.)
+
+This command will deploy a new system of the latest Voltz contracts on top of those third party contracts. You can interact with this system using `--network localhost`.
 
 To instead test / simulate / expirment with the Voltz mainnet deployment on your local blockchain, you can subsequently run:
 
@@ -135,11 +137,26 @@ To deploy our contracts to the kovan testnet, first check the configuration for 
 
 `yarn deploy:kovan`
 
-To verify the deployed contracts in etherscan, ensure that you have a valid `ETHERSCAN_API_KEY` value defined in your `.env` file and then run:
+#### Deploy to mainnet
 
-`npx hardhat --network kovan etherscan-verify --solc-input`
+To deploy our contracts to the kovan testnet, first check the configuration for kovan in [the deployment config](./deployConfig/config.ts), and once it is correct run:
 
-(At the time of writing the `--solc-input` flag is required due to some solidity issues. The result is somewhat unsatisfactory because all known contract code is displayed in etherscan for each contract, rather than just the relevant contracts. See [here](https://github.com/wighawag/hardhat-deploy/issues/263) for some discussion, but note that for us it seems to fail even with solc 0.8.9.)
+`yarn deploy:kovan`
+
+#### Source code verification
+
+To verify the deployed contracts in etherscan, ensure that you have a valid `ETHERSCAN_API_KEY` value defined in your `.env` file, and ensure that your repo state matches the state at which the contracts in question were deployed, and then run:
+
+`npx hardhat --network <network> etherscan-verify`
+
+Sometimes this can fail, particularly if verification is not done at the same time as the contract deployment. (Seemingly innocuous changes to unrelated contracts can affect the compilation / bytecode verification.)
+
+If it does fail, there are two other approaches we can try:
+
+1. Add a --solc-input flag: `npx hardhat --network <network> etherscan-verify --solc-input`. This sends all known contract code to etherscan and makes it less clear for users, but it is more likely to work. However, we have also seen that sometimes the volume of data gets too large and causes a failure.
+2. Use the `verify` task instead of the `etherscan-verify` task. See usage for details.
+   - This takes a little more effort and you must specify the (space separated) constructor params after the contract address, e.g: `npx hardhat --network mainnet verify --contract contracts/Factory.sol:VoltzERC1967Proxy 0x682F3e5685Ff51C232cF842840BA27E717C1AE2E 0x7380df8abb0c44617c2a64bf2d7d92caa852f03f 0x`
+   - If the constructor params are complex, they can be imported from a file using the `--constructor-args` flag
 
 #### Mint tokens for testing
 
