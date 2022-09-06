@@ -1,5 +1,5 @@
 import { task } from "hardhat/config";
-import { MarginEngine, VAMM } from "../typechain";
+import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
 import { ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { getPositions, Position } from "../scripts/getPositions";
@@ -201,6 +201,7 @@ task("getPositionInfo", "Get all information about some position")
         index: number;
         decimals: number;
         marginEngine: MarginEngine;
+        rateOracle: BaseRateOracle;
         name: string;
       };
     } = {};
@@ -227,10 +228,18 @@ task("getPositionInfo", "Get all information about some position")
         tmp.marginEngine
       )) as MarginEngine;
 
+      const rateOracleAddress = await marginEngine.rateOracle();
+
+      const rateOracle = (await hre.ethers.getContractAt(
+        "BaseRateOracle",
+        rateOracleAddress
+      )) as BaseRateOracle;
+
       pools[tmp.marginEngine.toLowerCase()] = {
         index: i,
         decimals: tmp.decimals,
         marginEngine: marginEngine,
+        rateOracle: rateOracle,
         name: p,
       };
     }
@@ -309,7 +318,7 @@ task("getPositionInfo", "Get all information about some position")
       );
       fs.appendFileSync(
         `${EXPORT_FOLDER}/info.txt`,
-        `FIXED RATE RANGE: ${1.0001 ** -p.tickUpper}% -> ${
+        `FIXED RATE RANGE: ${(1.0001 ** -p.tickUpper).toFixed(4)}% -> ${
           1.0001 ** -p.tickLower
         }%\n`
       );
@@ -333,9 +342,11 @@ task("getPositionInfo", "Get all information about some position")
       for (const item of history.mints) {
         fs.appendFileSync(
           `${EXPORT_FOLDER}/info.txt`,
-          `${new Date(item.timestamp * 1000).toISOString()}: +${(
-            item.notional + 0.00005
-          ).toFixed(4)} (tx: etherscan.io/tx/${item.transaction})\n`
+          `${item.timestamp} (${new Date(
+            item.timestamp * 1000
+          ).toISOString()}): +${(item.notional + 0.00005).toFixed(
+            4
+          )} (tx: etherscan.io/tx/${item.transaction})\n`
         );
       }
 
@@ -347,9 +358,11 @@ task("getPositionInfo", "Get all information about some position")
       for (const item of history.burns) {
         fs.appendFileSync(
           `${EXPORT_FOLDER}/info.txt`,
-          `${new Date(item.timestamp * 1000).toISOString()}: -${(
-            item.notional + 0.00005
-          ).toFixed(4)} (tx: etherscan.io/tx/${item.transaction})\n`
+          `${item.timestamp} (${new Date(
+            item.timestamp * 1000
+          ).toISOString()}): -${(item.notional + 0.00005).toFixed(
+            4
+          )} (tx: etherscan.io/tx/${item.transaction})\n`
         );
       }
 
@@ -358,14 +371,26 @@ task("getPositionInfo", "Get all information about some position")
         `${EXPORT_FOLDER}/info.txt`,
         `${history.swaps.length} SWAPS: \n`
       );
-      for (const item of history.swaps) {
+      for (let it_swaps = 0; it_swaps < history.swaps.length; it_swaps += 1) {
+        const item = history.swaps[it_swaps];
         fs.appendFileSync(
           `${EXPORT_FOLDER}/info.txt`,
-          `${new Date(item.timestamp * 1000).toISOString()}: ${(
-            item.variableTokenDelta + 0.00005
-          ).toFixed(4)} @ ${
-            item.unbalancedFixedTokenDelta / item.variableTokenDelta
-          }% paying ${(item.fees + 0.00005).toFixed(
+          `${item.timestamp} (${new Date(
+            item.timestamp * 1000
+          ).toISOString()}): ${(item.variableTokenDelta + 0.00005).toFixed(
+            4
+          )} @ ${
+            item.variableTokenDelta !== 0
+              ? (
+                  -item.unbalancedFixedTokenDelta / item.variableTokenDelta
+                ).toFixed(4)
+              : "-"
+          }%`
+        );
+
+        fs.appendFileSync(
+          `${EXPORT_FOLDER}/info.txt`,
+          ` paying ${(item.fees + 0.00005).toFixed(
             4
           )} fees (tx: etherscan.io/tx/${item.transaction})\n`
         );
@@ -379,9 +404,9 @@ task("getPositionInfo", "Get all information about some position")
       for (const item of history.marginUpdates) {
         fs.appendFileSync(
           `${EXPORT_FOLDER}/info.txt`,
-          `${new Date(
+          `${item.timestamp} (${new Date(
             item.timestamp * 1000
-          ).toISOString()}: ${item.marginDelta.toFixed(
+          ).toISOString()}): ${item.marginDelta.toFixed(
             4
           )} (tx: etherscan.io/tx/${item.transaction})\n`
         );
@@ -395,9 +420,9 @@ task("getPositionInfo", "Get all information about some position")
       for (const item of history.liquidations) {
         fs.appendFileSync(
           `${EXPORT_FOLDER}/info.txt`,
-          `${new Date(
+          `${item.timestamp} (${new Date(
             item.timestamp * 1000
-          ).toISOString()}: ${item.reward.toFixed(4)} (tx: etherscan.io/tx/${
+          ).toISOString()}): ${item.reward.toFixed(4)} (tx: etherscan.io/tx/${
             item.transaction
           })\n`
         );
@@ -411,9 +436,11 @@ task("getPositionInfo", "Get all information about some position")
       for (const item of history.settlements) {
         fs.appendFileSync(
           `${EXPORT_FOLDER}/info.txt`,
-          `${new Date(item.timestamp * 1000).toISOString()}: ${(
-            item.settlementCashflow + 0.00005
-          ).toFixed(4)} (tx: etherscan.io/tx/${item.transaction})\n`
+          `${item.timestamp} (${new Date(
+            item.timestamp * 1000
+          ).toISOString()}): ${(item.settlementCashflow + 0.00005).toFixed(
+            4
+          )} (tx: etherscan.io/tx/${item.transaction})\n`
         );
       }
 

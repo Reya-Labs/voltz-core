@@ -194,10 +194,10 @@ export class PositionHistory {
         sender: s.sender,
         transaction: s.transaction.id,
         timestamp: Number(s.transaction.createdTimestamp),
-        fees: this.descale(BigNumber.from(s.fees)),
+        fees: this.descale(BigNumber.from(s.cumulativeFeeIncurred)),
         fixedTokenDelta: this.descale(BigNumber.from(s.fixedTokenDelta)),
         unbalancedFixedTokenDelta: this.descale(
-          BigNumber.from(s.unbalancedFixedTokenDelta)
+          BigNumber.from(s.fixedTokenDeltaUnbalanced)
         ),
         variableTokenDelta: this.descale(BigNumber.from(s.variableTokenDelta)),
       });
