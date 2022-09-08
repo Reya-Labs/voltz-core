@@ -214,6 +214,11 @@ task("getPositionInfo", "Get all information about some position")
 
     for (let i = 0; i < poolNames.length; i++) {
       const p = poolNames[i];
+
+      if (p === "default") {
+        continue;
+      }
+
       const tmp = poolAddresses[p as keyof typeof poolAddresses];
 
       if (!tmp) {
@@ -221,7 +226,7 @@ task("getPositionInfo", "Get all information about some position")
       }
 
       filter_pools.push(tmp.marginEngine.toLowerCase());
-      console.log(tmp.marginEngine.toLowerCase());
+      // console.log(tmp.marginEngine.toLowerCase());
 
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
