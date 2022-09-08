@@ -146,6 +146,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
               aaveConfig.defaults.trustedDataPoints
           );
 
+        const { timestamps, rates } = await hre.run("getHistoricalData", {
+          lookbackDays: 5,
+          aave: true,
+          token: tokenDefinition.name,
+        });
+        console.log(
+          `Got historical data: ${JSON.stringify(timestamps)}, ${JSON.stringify(
+            (rates as BigNumber[]).map((r) => r.toString())
+          )}`
+        );
+
         // For Aave, the first two constructor args are lending pool address and underlying token address
         // For Aave, the address in the tokenDefinition is the address of the underlying token
         const args = [

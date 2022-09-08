@@ -60,15 +60,21 @@ const aTokenUnderlyingAddresses = {
 const blocksPerDay = 6570; // 13.15 seconds per block
 
 task("getHistoricalData", "Retrieves the historical rates")
-  .addParam(
+  .addOptionalParam(
     "fromBlock",
-    "Get data from this past block number (up to some larger block number defined by `toBlock`)",
+    "Get data from this past block number (up to some larger block number defined by `toBlock`). Supersedes --lookback-days",
+    undefined,
+    types.int
+  )
+  .addOptionalParam(
+    "lookbackDays",
+    "Look back this many days from `--to-block`. Ignored if `--from-block` is specified",
     undefined,
     types.int
   )
   .addParam(
     "blockInterval",
-    "Script will fetch data every `blockInterval` blocks (between `fromBlock` and `toBlock`)",
+    "Script will fetch data every `--block-interval` blocks (between `--from-block` and `--to-block`)",
     blocksPerDay,
     types.int
   )
@@ -102,8 +108,14 @@ task("getHistoricalData", "Retrieves the historical rates")
     taskArgs.rocket && platformCount++;
     taskArgs.lido && platformCount++;
 
-    if (platformCount > 1) {
-      throw new Error(`Only one platform can be queried at a time`);
+    if (!taskArgs.fromBlock && !taskArgs.lookbackDays) {
+      throw new Error(
+        `One of --from-block and --lookback-days must be specified`
+      );
+    }
+
+    if (platformCount !== 1) {
+      throw new Error(`Exactly one platform must be queried at a time`);
     }
 
     if (taskArgs.borrow && !taskArgs.aave && !taskArgs.compound) {
@@ -114,7 +126,9 @@ task("getHistoricalData", "Retrieves the historical rates")
     const currentBlock = await hre.ethers.provider.getBlock("latest");
 
     let toBlock: number = currentBlock.number;
-    const fromBlock: number = taskArgs.fromBlock;
+    const fromBlock: number = !!taskArgs.fromBlock
+      ? taskArgs.fromBlock
+      : toBlock - taskArgs.lookbackDays * blocksPerDay;
 
     if (taskArgs.toBlock) {
       toBlock = Math.min(currentBlock.number, taskArgs.toBlock);
@@ -467,6 +481,8 @@ task("getHistoricalData", "Retrieves the historical rates")
         break;
       }
     }
+
+    return { timestamps, rates };
   });
 
 module.exports = {};
