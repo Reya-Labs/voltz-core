@@ -120,6 +120,7 @@ if (!!process.env.FORK_MAINNET) {
     allowUnlimitedContractSize: true,
     saveDeployments: true,
     chainId: 1,
+    live: false,
     forking: {
       url: `${process.env.MAINNET_URL}`,
       // blockNumber: 15402000,
@@ -129,6 +130,7 @@ if (!!process.env.FORK_MAINNET) {
   hardhatNetworkConfig = {
     allowUnlimitedContractSize: true,
     saveDeployments: true,
+    live: false,
     forking: {
       url: `${process.env.KOVAN_URL}`,
     },
