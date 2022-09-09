@@ -34,14 +34,21 @@ contract PositionTest {
     )
         public
         view
-        returns (int256 _fixedTokenBalance, int256 _unbalancedFixedTokenBalance, int256 _variableTokenBalance)
+        returns (
+            int256 _fixedTokenBalance,
+            int256 _unbalancedFixedTokenBalance,
+            int256 _variableTokenBalance
+        )
     {
-        (_fixedTokenBalance, _unbalancedFixedTokenBalance, _variableTokenBalance) = position
-            .calculateFixedAndVariableDelta(
-                fixedTokenGrowthInside,
-                unbalancedFixedTokenGrowthInside,
-                variableTokenGrowthInside
-            );
+        (
+            _fixedTokenBalance,
+            _unbalancedFixedTokenBalance,
+            _variableTokenBalance
+        ) = position.calculateFixedAndVariableDelta(
+            fixedTokenGrowthInside,
+            unbalancedFixedTokenGrowthInside,
+            variableTokenGrowthInside
+        );
     }
 
     function updateFixedAndVariableTokenGrowthInside(

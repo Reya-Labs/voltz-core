@@ -185,7 +185,10 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @dev This value can overflow the uint256
     function fixedTokenGrowthGlobalX128() external view returns (int256);
 
-    function unbalancedFixedTokenGrowthGlobalX128() external view returns (int256);
+    function unbalancedFixedTokenGrowthGlobalX128()
+        external
+        view
+        returns (int256);
 
     /// @notice The variable token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256

@@ -93,9 +93,15 @@ library Position {
         int256 unbalancedFixedTokenBalanceDelta,
         int256 variableTokenBalanceDelta
     ) internal {
-        if (fixedTokenBalanceDelta | unbalancedFixedTokenBalanceDelta | variableTokenBalanceDelta != 0) {
+        if (
+            fixedTokenBalanceDelta |
+                unbalancedFixedTokenBalanceDelta |
+                variableTokenBalanceDelta !=
+            0
+        ) {
             self.fixedTokenBalance += fixedTokenBalanceDelta;
-            self.unbalancedFixedTokenBalance += unbalancedFixedTokenBalanceDelta;
+            self
+                .unbalancedFixedTokenBalance += unbalancedFixedTokenBalanceDelta;
             self.variableTokenBalance += variableTokenBalanceDelta;
         }
     }
@@ -136,7 +142,11 @@ library Position {
     )
         internal
         pure
-        returns (int256 _fixedTokenDelta, int256 _unbalancedFixedTokenDelta, int256 _variableTokenDelta)
+        returns (
+            int256 _fixedTokenDelta,
+            int256 _unbalancedFixedTokenDelta,
+            int256 _variableTokenDelta
+        )
     {
         Info memory _self = self;
 
@@ -150,7 +160,7 @@ library Position {
         );
 
         int256 unbalancedFixedTokenGrowthInsideDeltaX128 = unbalancedFixedTokenGrowthInsideX128 -
-            _self.unbalancedFixedTokenGrowthInsideLastX128;
+                _self.unbalancedFixedTokenGrowthInsideLastX128;
 
         _unbalancedFixedTokenDelta = FullMath.mulDivSigned(
             unbalancedFixedTokenGrowthInsideDeltaX128,
@@ -180,7 +190,8 @@ library Position {
         int256 variableTokenGrowthInsideX128
     ) internal {
         self.fixedTokenGrowthInsideLastX128 = fixedTokenGrowthInsideX128;
-        self.unbalancedFixedTokenGrowthInsideLastX128 = unbalancedFixedTokenGrowthInsideX128;
+        self
+            .unbalancedFixedTokenGrowthInsideLastX128 = unbalancedFixedTokenGrowthInsideX128;
         self.variableTokenGrowthInsideLastX128 = variableTokenGrowthInsideX128;
     }
 

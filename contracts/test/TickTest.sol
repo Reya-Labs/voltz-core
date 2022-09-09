@@ -3,9 +3,12 @@
 pragma solidity =0.8.9;
 
 import "../core_libraries/Tick.sol";
+import "../utils/SafeCastUni.sol";
 
 contract TickTest {
     using Tick for mapping(int24 => Tick.Info);
+    using SafeCastUni for uint256;
+    using SafeCastUni for int256;
 
     mapping(int24 => Tick.Info) public ticks;
 
@@ -25,15 +28,17 @@ contract TickTest {
         int24 tickCurrent,
         uint256 feeGrowthGlobalX128
     ) external view returns (uint256 feeGrowthInsideX128) {
-        return
-            ticks.getFeeGrowthInside(
-                Tick.FeeGrowthInsideParams(
+        unchecked {
+            return
+                uint256(Tick.getGrowthInside(
                     tickLower,
                     tickUpper,
                     tickCurrent,
-                    feeGrowthGlobalX128
-                )
-            );
+                    feeGrowthGlobalX128.toInt256(),
+                    ticks[tickLower].feeGrowthOutsideX128.toInt256(),
+                    ticks[tickUpper].feeGrowthOutsideX128.toInt256()
+                ));   
+        }
     }
 
     // DONE
@@ -53,13 +58,13 @@ contract TickTest {
         int256 variableTokenGrowthGlobalX128
     ) public view returns (int256 variableTokenGrowthInsideX128) {
         return
-            ticks.getVariableTokenGrowthInside(
-                Tick.VariableTokenGrowthInsideParams({
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    tickCurrent: tickCurrent,
-                    variableTokenGrowthGlobalX128: variableTokenGrowthGlobalX128
-                })
+            Tick.getGrowthInside(
+                tickLower,
+                tickUpper,
+                tickCurrent,
+                variableTokenGrowthGlobalX128,
+                ticks[tickLower].variableTokenGrowthOutsideX128,
+                ticks[tickUpper].variableTokenGrowthOutsideX128
             );
     }
 
@@ -71,13 +76,13 @@ contract TickTest {
         int256 fixedTokenGrowthGlobalX128
     ) public view returns (int256 fixedTokenGrowthInsideX128) {
         return
-            ticks.getFixedTokenGrowthInside(
-                Tick.FixedTokenGrowthInsideParams({
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    tickCurrent: tickCurrent,
-                    fixedTokenGrowthGlobalX128: fixedTokenGrowthGlobalX128
-                })
+            Tick.getGrowthInside(
+                tickLower,
+                tickUpper,
+                tickCurrent,
+                fixedTokenGrowthGlobalX128,
+                ticks[tickLower].fixedTokenGrowthOutsideX128,
+                ticks[tickUpper].fixedTokenGrowthOutsideX128
             );
     }
 

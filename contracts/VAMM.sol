@@ -758,42 +758,43 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
 
     Tick.checkTicks(tickLower, tickUpper);
 
-    fixedTokenGrowthInsideX128 = _ticks.getFixedTokenGrowthInside(
-      Tick.FixedTokenGrowthInsideParams({
-        tickLower: tickLower,
-        tickUpper: tickUpper,
-        tickCurrent: _vammVars.tick,
-        fixedTokenGrowthGlobalX128: _fixedTokenGrowthGlobalX128
-      })
+    fixedTokenGrowthInsideX128 = Tick.getGrowthInside(
+      tickLower,
+      tickUpper,
+      _vammVars.tick,
+      _fixedTokenGrowthGlobalX128,
+      _ticks[tickLower].fixedTokenGrowthOutsideX128,
+      _ticks[tickUpper].fixedTokenGrowthOutsideX128
     );
 
-    unbalancedFixedTokenGrowthInsideX128 = _ticks.getUnbalancedFixedTokenGrowthInside(
-      Tick.UnbalancedFixedTokenGrowthInsideParams({
-        tickLower: tickLower,
-        tickUpper: tickUpper,
-        tickCurrent: _vammVars.tick,
-        unbalancedFixedTokenGrowthGlobalX128: _unbalancedFixedTokenGrowthGlobalX128
-      })
+    unbalancedFixedTokenGrowthInsideX128 = Tick.getGrowthInside(
+        tickLower,
+        tickUpper,
+        _vammVars.tick,
+        _unbalancedFixedTokenGrowthGlobalX128,
+        _ticks[tickLower].unbalancedFixedTokenGrowthOutsideX128,
+        _ticks[tickUpper].unbalancedFixedTokenGrowthOutsideX128
     );
 
-    variableTokenGrowthInsideX128 = _ticks.getVariableTokenGrowthInside(
-      Tick.VariableTokenGrowthInsideParams({
-        tickLower: tickLower,
-        tickUpper: tickUpper,
-        tickCurrent: _vammVars.tick,
-        variableTokenGrowthGlobalX128: _variableTokenGrowthGlobalX128
-      })
+    variableTokenGrowthInsideX128 = Tick.getGrowthInside(
+        tickLower,
+        tickUpper,
+        _vammVars.tick,
+        _variableTokenGrowthGlobalX128,
+        _ticks[tickLower].variableTokenGrowthOutsideX128,
+        _ticks[tickUpper].variableTokenGrowthOutsideX128
     );
 
-    feeGrowthInsideX128 = _ticks.getFeeGrowthInside(
-      Tick.FeeGrowthInsideParams({
-        tickLower: tickLower,
-        tickUpper: tickUpper,
-        tickCurrent: _vammVars.tick,
-        feeGrowthGlobalX128: _feeGrowthGlobalX128
-      })
-    );
-
+    unchecked {
+      feeGrowthInsideX128 = uint256(Tick.getGrowthInside( 
+        tickLower,
+        tickUpper,
+        _vammVars.tick,
+        _feeGrowthGlobalX128.toInt256(),
+        _ticks[tickLower].feeGrowthOutsideX128.toInt256(),
+        _ticks[tickUpper].feeGrowthOutsideX128.toInt256()
+      ));
+    }
   }
 
   function checksBeforeSwap(

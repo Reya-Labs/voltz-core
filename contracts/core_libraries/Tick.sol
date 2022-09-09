@@ -53,21 +53,14 @@ library Tick {
         require(tickUpper <= TickMath.MAX_TICK, "TUM");
     }
 
-    struct FeeGrowthInsideParams {
-        int24 tickLower;
-        int24 tickUpper;
-        int24 tickCurrent;
-        uint256 feeGrowthGlobalX128;
-    }
-
-    function _getGrowthInside(
+    function getGrowthInside(
         int24 _tickLower,
         int24 _tickUpper,
         int24 _tickCurrent,
         int256 _growthGlobalX128,
         int256 _lowerGrowthOutsideX128,
         int256 _upperGrowthOutsideX128
-    ) private pure returns (int256) {
+    ) internal pure returns (int256) {
         // calculate the growth below
         int256 _growthBelowX128;
 
@@ -93,101 +86,6 @@ library Tick {
             (_growthBelowX128 + _growthAboveX128);
 
         return _growthInsideX128;
-    }
-
-    function getFeeGrowthInside(
-        mapping(int24 => Tick.Info) storage self,
-        FeeGrowthInsideParams memory params
-    ) internal view returns (uint256 feeGrowthInsideX128) {
-        unchecked {
-            Info storage lower = self[params.tickLower];
-            Info storage upper = self[params.tickUpper];
-
-            feeGrowthInsideX128 = uint256(
-                _getGrowthInside(
-                    params.tickLower,
-                    params.tickUpper,
-                    params.tickCurrent,
-                    params.feeGrowthGlobalX128.toInt256(),
-                    lower.feeGrowthOutsideX128.toInt256(),
-                    upper.feeGrowthOutsideX128.toInt256()
-                )
-            );
-        }
-    }
-
-    struct VariableTokenGrowthInsideParams {
-        int24 tickLower;
-        int24 tickUpper;
-        int24 tickCurrent;
-        int256 variableTokenGrowthGlobalX128;
-    }
-
-    function getVariableTokenGrowthInside(
-        mapping(int24 => Tick.Info) storage self,
-        VariableTokenGrowthInsideParams memory params
-    ) internal view returns (int256 variableTokenGrowthInsideX128) {
-        Info storage lower = self[params.tickLower];
-        Info storage upper = self[params.tickUpper];
-
-        variableTokenGrowthInsideX128 = _getGrowthInside(
-            params.tickLower,
-            params.tickUpper,
-            params.tickCurrent,
-            params.variableTokenGrowthGlobalX128,
-            lower.variableTokenGrowthOutsideX128,
-            upper.variableTokenGrowthOutsideX128
-        );
-    }
-
-    struct FixedTokenGrowthInsideParams {
-        int24 tickLower;
-        int24 tickUpper;
-        int24 tickCurrent;
-        int256 fixedTokenGrowthGlobalX128;
-    }
-
-    function getFixedTokenGrowthInside(
-        mapping(int24 => Tick.Info) storage self,
-        FixedTokenGrowthInsideParams memory params
-    ) internal view returns (int256 fixedTokenGrowthInsideX128) {
-        Info storage lower = self[params.tickLower];
-        Info storage upper = self[params.tickUpper];
-
-        // do we need an unchecked block in here (given we are dealing with an int256)?
-        fixedTokenGrowthInsideX128 = _getGrowthInside(
-            params.tickLower,
-            params.tickUpper,
-            params.tickCurrent,
-            params.fixedTokenGrowthGlobalX128,
-            lower.fixedTokenGrowthOutsideX128,
-            upper.fixedTokenGrowthOutsideX128
-        );
-    }
-
-    struct UnbalancedFixedTokenGrowthInsideParams {
-        int24 tickLower;
-        int24 tickUpper;
-        int24 tickCurrent;
-        int256 unbalancedFixedTokenGrowthGlobalX128;
-    }
-
-    function getUnbalancedFixedTokenGrowthInside(
-        mapping(int24 => Tick.Info) storage self,
-        UnbalancedFixedTokenGrowthInsideParams memory params
-    ) internal view returns (int256 unbalancedFixedTokenGrowthInsideX128) {
-        Info storage lower = self[params.tickLower];
-        Info storage upper = self[params.tickUpper];
-
-        // do we need an unchecked block in here (given we are dealing with an int256)?
-        unbalancedFixedTokenGrowthInsideX128 = _getGrowthInside(
-            params.tickLower,
-            params.tickUpper,
-            params.tickCurrent,
-            params.unbalancedFixedTokenGrowthGlobalX128,
-            lower.unbalancedFixedTokenGrowthOutsideX128,
-            upper.unbalancedFixedTokenGrowthOutsideX128
-        );
     }
 
     /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
@@ -235,7 +133,8 @@ library Tick {
                 info.feeGrowthOutsideX128 = feeGrowthGlobalX128;
 
                 info.fixedTokenGrowthOutsideX128 = fixedTokenGrowthGlobalX128;
-                info.unbalancedFixedTokenGrowthOutsideX128 = unbalancedFixedTokenGrowthGlobalX128;
+                info
+                    .unbalancedFixedTokenGrowthOutsideX128 = unbalancedFixedTokenGrowthGlobalX128;
 
                 info
                     .variableTokenGrowthOutsideX128 = variableTokenGrowthGlobalX128;
