@@ -105,6 +105,8 @@ interface IVAMM is IPositionStructs, CustomErrors {
         int24 tick;
         /// @dev the global fixed token growth
         int256 fixedTokenGrowthGlobalX128;
+        /// @dev the global unbalanced fixed token growth
+        int256 unbalancedFixedTokenGrowthGlobalX128;
         /// @dev the global variable token growth
         int256 variableTokenGrowthGlobalX128;
         /// @dev the current liquidity in range
@@ -182,6 +184,8 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @notice The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function fixedTokenGrowthGlobalX128() external view returns (int256);
+
+    function unbalancedFixedTokenGrowthGlobalX128() external view returns (int256);
 
     /// @notice The variable token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
@@ -278,6 +282,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @param tickLower The lower tick of the position
     /// @param tickUpper The upper tick of the position
     /// @return fixedTokenGrowthInsideX128 Fixed Token Growth inside the given tick range
+    /// @return unbalancedFixedTokenGrowthInsideX128 Unbalanced Fixed Token Growth inside the given tick range
     /// @return variableTokenGrowthInsideX128 Variable Token Growth inside the given tick range
     /// @return feeGrowthInsideX128 Fee Growth Inside given tick range
     function computeGrowthInside(int24 tickLower, int24 tickUpper)
@@ -285,6 +290,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
         view
         returns (
             int256 fixedTokenGrowthInsideX128,
+            int256 unbalancedFixedTokenGrowthInsideX128,
             int256 variableTokenGrowthInsideX128,
             uint256 feeGrowthInsideX128
         );

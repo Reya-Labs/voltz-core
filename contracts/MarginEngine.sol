@@ -578,6 +578,7 @@ contract MarginEngine is
 
         _position.updateBalancesViaDeltas(
             -_position.fixedTokenBalance,
+            -_position.unbalancedFixedTokenBalance,
             -_position.variableTokenBalance
         );
         _position.updateMarginViaDelta(_settlementCashflow);
@@ -855,6 +856,7 @@ contract MarginEngine is
 
         _position.updateBalancesViaDeltas(
             _fixedTokenDelta,
+            _fixedTokenDeltaUnbalanced,
             _variableTokenDelta
         );
 
@@ -910,12 +912,14 @@ contract MarginEngine is
         if (_position._liquidity > 0) {
             (
                 int256 _fixedTokenGrowthInsideX128,
+                int256 _unbalancedFixedTokenGrowthInsideX128,
                 int256 _variableTokenGrowthInsideX128,
                 uint256 _feeGrowthInsideX128
             ) = _vamm.computeGrowthInside(_tickLower, _tickUpper);
-            (int256 _fixedTokenDelta, int256 _variableTokenDelta) = _position
+            (int256 _fixedTokenDelta, int256 _unbalancedFixedTokenDelta, int256 _variableTokenDelta) = _position
                 .calculateFixedAndVariableDelta(
                     _fixedTokenGrowthInsideX128,
+                    _unbalancedFixedTokenGrowthInsideX128,
                     _variableTokenGrowthInsideX128
                 );
             uint256 _feeDelta = _position.calculateFeeDelta(
@@ -924,10 +928,12 @@ contract MarginEngine is
 
             _position.updateBalancesViaDeltas(
                 _fixedTokenDelta - 1,
+                _unbalancedFixedTokenDelta - 1,
                 _variableTokenDelta - 1
             );
             _position.updateFixedAndVariableTokenGrowthInside(
                 _fixedTokenGrowthInsideX128,
+                _unbalancedFixedTokenGrowthInsideX128,
                 _variableTokenGrowthInsideX128
             );
             /// @dev collect fees
@@ -941,11 +947,13 @@ contract MarginEngine is
             if (_isMintBurn) {
                 (
                     int256 _fixedTokenGrowthInsideX128,
+                    int256 _unbalancedFixedTokenGrowthInsideX128,
                     int256 _variableTokenGrowthInsideX128,
                     uint256 _feeGrowthInsideX128
                 ) = _vamm.computeGrowthInside(_tickLower, _tickUpper);
                 _position.updateFixedAndVariableTokenGrowthInside(
                     _fixedTokenGrowthInsideX128,
+                    _unbalancedFixedTokenGrowthInsideX128,
                     _variableTokenGrowthInsideX128
                 );
                 _position.updateFeeGrowthInside(_feeGrowthInsideX128);
@@ -1022,6 +1030,7 @@ contract MarginEngine is
 
         if (_position.variableTokenBalance != 0) {
             int256 _fixedTokenDelta;
+            int256 _fixedTokenDeltaUnbalanced;
             uint256 _cumulativeFeeIncurred;
 
             /// @dev initiate a swap
@@ -1055,8 +1064,7 @@ contract MarginEngine is
                 _fixedTokenDelta,
                 _variableTokenDelta,
                 _cumulativeFeeIncurred,
-                ,
-
+                _fixedTokenDeltaUnbalanced,
             ) = _vamm.swap(_params);
 
             if (_cumulativeFeeIncurred > 0) {
@@ -1069,6 +1077,7 @@ contract MarginEngine is
             /// @dev passes the _fixedTokenBalance and _variableTokenBalance deltas
             _position.updateBalancesViaDeltas(
                 _fixedTokenDelta,
+                _fixedTokenDeltaUnbalanced,
                 _variableTokenDelta
             );
         }

@@ -159,6 +159,10 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
       return _fixedTokenGrowthGlobalX128;
   }
   /// @inheritdoc IVAMM
+  function unbalancedFixedTokenGrowthGlobalX128() external view override returns (int256) {
+      return _unbalancedFixedTokenGrowthGlobalX128;
+  }
+  /// @inheritdoc IVAMM
   function variableTokenGrowthGlobalX128() external view override returns (int256) {
       return _variableTokenGrowthGlobalX128;
   }
@@ -300,6 +304,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
       _vammVars.tick,
       params.liquidityDelta,
       _fixedTokenGrowthGlobalX128,
+      _unbalancedFixedTokenGrowthGlobalX128,
       _variableTokenGrowthGlobalX128,
       _feeGrowthGlobalX128,
       false,
@@ -312,6 +317,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
       _vammVars.tick,
       params.liquidityDelta,
       _fixedTokenGrowthGlobalX128,
+      _unbalancedFixedTokenGrowthGlobalX128,
       _variableTokenGrowthGlobalX128,
       _feeGrowthGlobalX128,
       true,
@@ -448,6 +454,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
       tick: vammVarsStart.tick,
       liquidity: cache.liquidityStart,
       fixedTokenGrowthGlobalX128: _fixedTokenGrowthGlobalX128,
+      unbalancedFixedTokenGrowthGlobalX128: _unbalancedFixedTokenGrowthGlobalX128,
       variableTokenGrowthGlobalX128: _variableTokenGrowthGlobalX128,
       feeGrowthGlobalX128: _feeGrowthGlobalX128,
       protocolFee: 0,
@@ -532,6 +539,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
           state.feeGrowthGlobalX128,
           state.variableTokenGrowthGlobalX128,
           state.fixedTokenGrowthGlobalX128,
+          state.unbalancedFixedTokenGrowthGlobalX128,
           step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
           state,
@@ -556,6 +564,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
           int128 liquidityNet = _ticks.cross(
             step.tickNext,
             state.fixedTokenGrowthGlobalX128,
+            state.unbalancedFixedTokenGrowthGlobalX128,
             state.variableTokenGrowthGlobalX128,
             state.feeGrowthGlobalX128
           );
@@ -645,6 +654,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
           state.feeGrowthGlobalX128,
           state.variableTokenGrowthGlobalX128,
           state.fixedTokenGrowthGlobalX128,
+          state.unbalancedFixedTokenGrowthGlobalX128,
           step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
           state,
@@ -669,6 +679,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
           int128 liquidityNet = _ticks.cross(
             step.tickNext,
             state.fixedTokenGrowthGlobalX128,
+            state.unbalancedFixedTokenGrowthGlobalX128,
             state.variableTokenGrowthGlobalX128,
             state.feeGrowthGlobalX128
           );
@@ -700,6 +711,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
     _feeGrowthGlobalX128 = state.feeGrowthGlobalX128;
     _variableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128;
     _fixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128;
+    _unbalancedFixedTokenGrowthGlobalX128 = state.unbalancedFixedTokenGrowthGlobalX128;
 
     cumulativeFeeIncurred = state.cumulativeFeeIncurred;
     fixedTokenDelta = state.fixedTokenDeltaCumulative;
@@ -741,7 +753,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
     external
     view
     override
-    returns (int256 fixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128)
+    returns (int256 fixedTokenGrowthInsideX128, int256 unbalancedFixedTokenGrowthInsideX128, int256 variableTokenGrowthInsideX128, uint256 feeGrowthInsideX128)
   {
 
     Tick.checkTicks(tickLower, tickUpper);
@@ -752,6 +764,15 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
         tickUpper: tickUpper,
         tickCurrent: _vammVars.tick,
         fixedTokenGrowthGlobalX128: _fixedTokenGrowthGlobalX128
+      })
+    );
+
+    unbalancedFixedTokenGrowthInsideX128 = _ticks.getUnbalancedFixedTokenGrowthInside(
+      Tick.UnbalancedFixedTokenGrowthInsideParams({
+        tickLower: tickLower,
+        tickUpper: tickUpper,
+        tickCurrent: _vammVars.tick,
+        unbalancedFixedTokenGrowthGlobalX128: _unbalancedFixedTokenGrowthGlobalX128
       })
     );
 
@@ -815,6 +836,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
             uint256 stateFeeGrowthGlobalX128,
             int256 stateVariableTokenGrowthGlobalX128,
             int256 stateFixedTokenGrowthGlobalX128,
+            int256 stateUnbalancedFixedTokenGrowthGlobalX128,
             int256 fixedTokenDelta// for LP
         )
     {
@@ -831,6 +853,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
 
         stateVariableTokenGrowthGlobalX128 = state.variableTokenGrowthGlobalX128 + FullMath.mulDivSigned(step.variableTokenDelta, FixedPoint128.Q128, state.liquidity);
 
+        stateUnbalancedFixedTokenGrowthGlobalX128 = state.unbalancedFixedTokenGrowthGlobalX128 + FullMath.mulDivSigned(step.fixedTokenDeltaUnbalanced, FixedPoint128.Q128, state.liquidity);
         stateFixedTokenGrowthGlobalX128 = state.fixedTokenGrowthGlobalX128 + FullMath.mulDivSigned(fixedTokenDelta, FixedPoint128.Q128, state.liquidity);
     }
 

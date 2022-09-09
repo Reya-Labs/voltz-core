@@ -87,6 +87,7 @@ contract TickTest {
         int24 tickCurrent,
         int128 liquidityDelta,
         int256 fixedTokenGrowthGlobalX128,
+        int256 unbalancedFixedTokenGrowthGlobalX128,
         int256 variableTokenGrowthGlobalX128,
         uint256 feeGrowthGlobalX128,
         bool upper,
@@ -98,6 +99,7 @@ contract TickTest {
                 tickCurrent,
                 liquidityDelta,
                 fixedTokenGrowthGlobalX128,
+                unbalancedFixedTokenGrowthGlobalX128,
                 variableTokenGrowthGlobalX128,
                 feeGrowthGlobalX128,
                 upper,
@@ -114,6 +116,7 @@ contract TickTest {
     function cross(
         int24 tick,
         int256 fixedTokenGrowthGlobalX128,
+        int256 unbalancedFixedTokenGrowthGlobalX128,
         int256 variableTokenGrowthGlobalX128,
         uint256 feeGrowthGlobalX128
     ) external returns (int128 liquidityNet) {
@@ -121,6 +124,7 @@ contract TickTest {
             ticks.cross(
                 tick,
                 fixedTokenGrowthGlobalX128,
+                unbalancedFixedTokenGrowthGlobalX128,
                 variableTokenGrowthGlobalX128,
                 feeGrowthGlobalX128
             );

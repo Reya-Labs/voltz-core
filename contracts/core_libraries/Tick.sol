@@ -27,6 +27,7 @@ library Tick {
         /// @dev true iff the tick is initialized, i.e. the value is exactly equivalent to the expression liquidityGross != 0
         /// @dev these 8 bits are set to prevent fresh sstores when crossing newly initialized ticks
         bool initialized;
+        int256 unbalancedFixedTokenGrowthOutsideX128;
     }
 
     /// @notice Derives max liquidity per tick from given tick spacing
@@ -164,12 +165,38 @@ library Tick {
         );
     }
 
+    struct UnbalancedFixedTokenGrowthInsideParams {
+        int24 tickLower;
+        int24 tickUpper;
+        int24 tickCurrent;
+        int256 unbalancedFixedTokenGrowthGlobalX128;
+    }
+
+    function getUnbalancedFixedTokenGrowthInside(
+        mapping(int24 => Tick.Info) storage self,
+        UnbalancedFixedTokenGrowthInsideParams memory params
+    ) internal view returns (int256 unbalancedFixedTokenGrowthInsideX128) {
+        Info storage lower = self[params.tickLower];
+        Info storage upper = self[params.tickUpper];
+
+        // do we need an unchecked block in here (given we are dealing with an int256)?
+        unbalancedFixedTokenGrowthInsideX128 = _getGrowthInside(
+            params.tickLower,
+            params.tickUpper,
+            params.tickCurrent,
+            params.unbalancedFixedTokenGrowthGlobalX128,
+            lower.unbalancedFixedTokenGrowthOutsideX128,
+            upper.unbalancedFixedTokenGrowthOutsideX128
+        );
+    }
+
     /// @notice Updates a tick and returns true if the tick was flipped from initialized to uninitialized, or vice versa
     /// @param self The mapping containing all tick information for initialized ticks
     /// @param tick The tick that will be updated
     /// @param tickCurrent The current tick
     /// @param liquidityDelta A new amount of liquidity to be added (subtracted) when tick is crossed from left to right (right to left)
     /// @param fixedTokenGrowthGlobalX128 The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
+    /// @param unbalancedFixedTokenGrowthGlobalX128 The unbalanced fixed token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @param variableTokenGrowthGlobalX128 The variable token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @param upper true for updating a position's upper tick, or false for updating a position's lower tick
     /// @param maxLiquidity The maximum liquidity allocation for a single tick
@@ -180,6 +207,7 @@ library Tick {
         int24 tickCurrent,
         int128 liquidityDelta,
         int256 fixedTokenGrowthGlobalX128,
+        int256 unbalancedFixedTokenGrowthGlobalX128,
         int256 variableTokenGrowthGlobalX128,
         uint256 feeGrowthGlobalX128,
         bool upper,
@@ -207,6 +235,7 @@ library Tick {
                 info.feeGrowthOutsideX128 = feeGrowthGlobalX128;
 
                 info.fixedTokenGrowthOutsideX128 = fixedTokenGrowthGlobalX128;
+                info.unbalancedFixedTokenGrowthOutsideX128 = unbalancedFixedTokenGrowthGlobalX128;
 
                 info
                     .variableTokenGrowthOutsideX128 = variableTokenGrowthGlobalX128;
@@ -239,6 +268,7 @@ library Tick {
     /// @param self The mapping containing all tick information for initialized ticks
     /// @param tick The destination tick of the transition
     /// @param fixedTokenGrowthGlobalX128 The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
+    /// @param unbalancedFixedTokenGrowthGlobalX128 The unbalanced fixed token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @param variableTokenGrowthGlobalX128 The variable token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @param feeGrowthGlobalX128 The fee growth collected per unit of liquidity for the entire life of the vamm
     /// @return liquidityNet The amount of liquidity added (subtracted) when tick is crossed from left to right (right to left)
@@ -246,6 +276,7 @@ library Tick {
         mapping(int24 => Tick.Info) storage self,
         int24 tick,
         int256 fixedTokenGrowthGlobalX128,
+        int256 unbalancedFixedTokenGrowthGlobalX128,
         int256 variableTokenGrowthGlobalX128,
         uint256 feeGrowthGlobalX128
     ) internal returns (int128 liquidityNet) {
@@ -258,6 +289,10 @@ library Tick {
         info.fixedTokenGrowthOutsideX128 =
             fixedTokenGrowthGlobalX128 -
             info.fixedTokenGrowthOutsideX128;
+
+        info.unbalancedFixedTokenGrowthOutsideX128 =
+            unbalancedFixedTokenGrowthGlobalX128 -
+            info.unbalancedFixedTokenGrowthOutsideX128;
 
         info.variableTokenGrowthOutsideX128 =
             variableTokenGrowthGlobalX128 -

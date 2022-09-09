@@ -178,8 +178,10 @@ contract TestMarginEngine is MarginEngine {
         uint128 _liquidity,
         int256 margin,
         int256 fixedTokenGrowthInsideLastX128,
+        int256 unbalancedFixedTokenGrowthInsideLastX128,
         int256 variableTokenGrowthInsideLastX128,
         int256 fixedTokenBalance,
+        int256 unbalancedFixedTokenBalance,
         int256 variableTokenBalance,
         uint256 feeGrowthInsideLastX128,
         bool isSettled
@@ -192,11 +194,13 @@ contract TestMarginEngine is MarginEngine {
             fixedTokenGrowthInsideLastX128: fixedTokenGrowthInsideLastX128,
             variableTokenGrowthInsideLastX128: variableTokenGrowthInsideLastX128,
             fixedTokenBalance: fixedTokenBalance,
+            unbalancedFixedTokenBalance: unbalancedFixedTokenBalance,
             variableTokenBalance: variableTokenBalance,
             feeGrowthInsideLastX128: feeGrowthInsideLastX128,
             isSettled: isSettled,
             rewardPerAmount: 0,
-            accumulatedFees: 0
+            accumulatedFees: 0,
+            unbalancedFixedTokenGrowthInsideLastX128: unbalancedFixedTokenGrowthInsideLastX128
         });
     }
 

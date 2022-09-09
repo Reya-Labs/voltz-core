@@ -45,6 +45,8 @@ library Position {
         uint256 rewardPerAmount;
         // amount of fees accumulated
         uint256 accumulatedFees;
+        int256 unbalancedFixedTokenBalance;
+        int256 unbalancedFixedTokenGrowthInsideLastX128;
     }
 
     /// @notice Returns the Info struct of a position, given an owner and position boundaries
@@ -83,14 +85,17 @@ library Position {
     /// @notice Updates the Info struct of a position by changing the fixed and variable token balances of the position
     /// @param self Position Info struct of the liquidity provider
     /// @param fixedTokenBalanceDelta Change in the number of fixed tokens in the position's fixed token balance
+    /// @param unbalancedFixedTokenBalanceDelta Change in the number of fixed tokens in the position's unbalanced fixed token balance
     /// @param variableTokenBalanceDelta Change in the number of variable tokens in the position's variable token balance
     function updateBalancesViaDeltas(
         Info storage self,
         int256 fixedTokenBalanceDelta,
+        int256 unbalancedFixedTokenBalanceDelta,
         int256 variableTokenBalanceDelta
     ) internal {
-        if (fixedTokenBalanceDelta | variableTokenBalanceDelta != 0) {
+        if (fixedTokenBalanceDelta | unbalancedFixedTokenBalanceDelta | variableTokenBalanceDelta != 0) {
             self.fixedTokenBalance += fixedTokenBalanceDelta;
+            self.unbalancedFixedTokenBalance += unbalancedFixedTokenBalanceDelta;
             self.variableTokenBalance += variableTokenBalanceDelta;
         }
     }
@@ -121,15 +126,17 @@ library Position {
     /// @param fixedTokenGrowthInsideX128 fixed token growth per unit of liquidity as of now (in wei)
     /// @param variableTokenGrowthInsideX128 variable token growth per unit of liquidity as of now (in wei)
     /// @return _fixedTokenDelta = (fixedTokenGrowthInside-fixedTokenGrowthInsideLast) * liquidity of a position
+    /// @return _unbalancedFixedTokenDelta = (unbalancedFixedTokenGrowthInside-unbalancedFixedTokenGrowthInsideLast) * liquidity of a position
     /// @return _variableTokenDelta = (variableTokenGrowthInside-variableTokenGrowthInsideLast) * liquidity of a position
     function calculateFixedAndVariableDelta(
         Info storage self,
         int256 fixedTokenGrowthInsideX128,
+        int256 unbalancedFixedTokenGrowthInsideX128,
         int256 variableTokenGrowthInsideX128
     )
         internal
         pure
-        returns (int256 _fixedTokenDelta, int256 _variableTokenDelta)
+        returns (int256 _fixedTokenDelta, int256 _unbalancedFixedTokenDelta, int256 _variableTokenDelta)
     {
         Info memory _self = self;
 
@@ -138,6 +145,15 @@ library Position {
 
         _fixedTokenDelta = FullMath.mulDivSigned(
             fixedTokenGrowthInsideDeltaX128,
+            _self._liquidity,
+            FixedPoint128.Q128
+        );
+
+        int256 unbalancedFixedTokenGrowthInsideDeltaX128 = unbalancedFixedTokenGrowthInsideX128 -
+            _self.unbalancedFixedTokenGrowthInsideLastX128;
+
+        _unbalancedFixedTokenDelta = FullMath.mulDivSigned(
+            unbalancedFixedTokenGrowthInsideDeltaX128,
             _self._liquidity,
             FixedPoint128.Q128
         );
@@ -155,13 +171,16 @@ library Position {
     /// @notice Updates fixedTokenGrowthInsideLast and variableTokenGrowthInsideLast to the current values
     /// @param self position info struct represeting a liquidity provider
     /// @param fixedTokenGrowthInsideX128 fixed token growth per unit of liquidity as of now
+    /// @param unbalancedFixedTokenGrowthInsideX128 unbalanced fixed token growth per unit of liquidity as of now
     /// @param variableTokenGrowthInsideX128 variable token growth per unit of liquidity as of now
     function updateFixedAndVariableTokenGrowthInside(
         Info storage self,
         int256 fixedTokenGrowthInsideX128,
+        int256 unbalancedFixedTokenGrowthInsideX128,
         int256 variableTokenGrowthInsideX128
     ) internal {
         self.fixedTokenGrowthInsideLastX128 = fixedTokenGrowthInsideX128;
+        self.unbalancedFixedTokenGrowthInsideLastX128 = unbalancedFixedTokenGrowthInsideX128;
         self.variableTokenGrowthInsideLastX128 = variableTokenGrowthInsideX128;
     }
 

@@ -35,10 +35,11 @@ contract VAMMStorageV1 {
 
     mapping(address => bool) internal pauser;
     bool public paused;
+    int256 internal _unbalancedFixedTokenGrowthGlobalX128;
 }
 
 contract VAMMStorage is VAMMStorageV1 {
     // Reserve some storage for use in future versions, without creating conflicts
     // with other inheritted contracts
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 }
