@@ -49,8 +49,8 @@ describe("Position", () => {
   describe("#updateBalances", () => {
     it("correctly updates the variable and fixed token balances of a position", async () => {
       const { positionTest } = await loadFixture(fixture);
-      await positionTest.updateBalances(toBn("1000"), toBn("-2000"));
-      await positionTest.updateBalances(toBn("2000"), toBn("-3000"));
+      await positionTest.updateBalances(toBn("1000"), toBn("0"), toBn("-2000"));
+      await positionTest.updateBalances(toBn("2000"), toBn("0"), toBn("-3000"));
       const positionBalancesUpdated = await positionTest.position();
       expect(positionBalancesUpdated.fixedTokenBalance).to.eq(toBn("3000"));
       expect(positionBalancesUpdated.variableTokenBalance).to.eq(toBn("-5000"));
@@ -63,6 +63,7 @@ describe("Position", () => {
       await positionTest.updateLiquidity(100);
       await positionTest.updateFixedAndVariableTokenGrowthInside(
         toBn("20"),
+        toBn("0"),
         toBn("-30")
       );
 
@@ -100,11 +101,12 @@ describe("Position", () => {
 
       const result = await positionTest.calculateFixedAndVariableDelta(
         Q128,
+        0,
         Q128Negative
       );
 
-      expect(result[0]).to.eq(10);
-      expect(result[1]).to.eq(-10);
+      expect(result._fixedTokenBalance).to.eq(10);
+      expect(result._variableTokenBalance).to.eq(-10);
     });
   });
 

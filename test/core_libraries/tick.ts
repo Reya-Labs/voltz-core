@@ -40,6 +40,7 @@ describe("Tick", () => {
         liquidityGross: 3,
         liquidityNet: 4,
         fixedTokenGrowthOutsideX128: toBn("100"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-100"),
         feeGrowthOutsideX128: toBn("10"),
         initialized: true,
@@ -48,6 +49,7 @@ describe("Tick", () => {
         liquidityGross: 6,
         liquidityNet: 8,
         fixedTokenGrowthOutsideX128: toBn("200"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-200"),
         feeGrowthOutsideX128: toBn("20"),
         initialized: true,
@@ -104,6 +106,7 @@ describe("Tick", () => {
         liquidityGross: 3,
         liquidityNet: 4,
         fixedTokenGrowthOutsideX128: toBn("100"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-100"),
         feeGrowthOutsideX128: toBn("10"),
         initialized: true,
@@ -112,6 +115,7 @@ describe("Tick", () => {
         liquidityGross: 6,
         liquidityNet: 8,
         fixedTokenGrowthOutsideX128: toBn("200"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-200"),
         feeGrowthOutsideX128: toBn("20"),
         initialized: true,
@@ -149,6 +153,7 @@ describe("Tick", () => {
         liquidityGross: 3,
         liquidityNet: 4,
         fixedTokenGrowthOutsideX128: toBn("100"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-100"),
         feeGrowthOutsideX128: toBn("10"),
         initialized: true,
@@ -157,6 +162,7 @@ describe("Tick", () => {
         liquidityGross: 6,
         liquidityNet: 8,
         fixedTokenGrowthOutsideX128: toBn("200"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-200"),
         feeGrowthOutsideX128: toBn("20"),
         initialized: true,
@@ -210,12 +216,19 @@ describe("Tick", () => {
         liquidityGross: 3,
         liquidityNet: 4,
         fixedTokenGrowthOutsideX128: toBn("100"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-100"),
         feeGrowthOutsideX128: toBn("10"),
         initialized: true,
       });
 
-      await tickTest.cross(2, toBn("1000"), toBn("-2000"), toBn("10"));
+      await tickTest.cross(
+        2,
+        toBn("1000"),
+        toBn("0"),
+        toBn("-2000"),
+        toBn("10")
+      );
 
       const {
         feeGrowthOutsideX128,
@@ -237,13 +250,26 @@ describe("Tick", () => {
         liquidityGross: 3,
         liquidityNet: 4,
         fixedTokenGrowthOutsideX128: toBn("100"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-100"),
         feeGrowthOutsideX128: toBn("10"),
         initialized: true,
       });
 
-      await tickTest.cross(2, toBn("1000"), toBn("-2000"), toBn("10"));
-      await tickTest.cross(2, toBn("1000"), toBn("-2000"), toBn("10"));
+      await tickTest.cross(
+        2,
+        toBn("1000"),
+        toBn("0"),
+        toBn("-2000"),
+        toBn("10")
+      );
+      await tickTest.cross(
+        2,
+        toBn("1000"),
+        toBn("0"),
+        toBn("-2000"),
+        toBn("10")
+      );
 
       const {
         feeGrowthOutsideX128,
@@ -267,6 +293,7 @@ describe("Tick", () => {
         liquidityGross: toBn("3"),
         liquidityNet: toBn("4"),
         fixedTokenGrowthOutsideX128: toBn("100"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-100"),
         feeGrowthOutsideX128: toBn("10"),
         initialized: true,
@@ -280,6 +307,7 @@ describe("Tick", () => {
           0,
           toBn("1"),
           toBn("1000"),
+          toBn("0"),
           toBn("-2000"),
           toBn("10"),
           false,
@@ -295,6 +323,7 @@ describe("Tick", () => {
           0,
           toBn("1"),
           toBn("1000"),
+          toBn("0"),
           toBn("-2000"),
           toBn("10"),
           false,
@@ -310,6 +339,7 @@ describe("Tick", () => {
           0,
           toBn("-3"),
           toBn("1000"),
+          toBn("0"),
           toBn("-2000"),
           toBn("10"),
           false,
@@ -325,6 +355,7 @@ describe("Tick", () => {
           0,
           toBn("8"),
           toBn("1000"),
+          toBn("0"),
           toBn("-2000"),
           toBn("10"),
           false,
@@ -339,6 +370,7 @@ describe("Tick", () => {
         0,
         toBn("3"),
         toBn("1000"),
+        toBn("0"),
         toBn("-2000"),
         toBn("10"),
         false,
@@ -367,6 +399,7 @@ describe("Tick", () => {
         0,
         toBn("3"),
         toBn("1000"),
+        toBn("0"),
         toBn("-2000"),
         toBn("10"),
         false,
@@ -395,6 +428,7 @@ describe("Tick", () => {
         2,
         toBn("3"),
         toBn("1000"),
+        toBn("0"),
         toBn("-2000"),
         toBn("20"),
         false,
@@ -423,6 +457,7 @@ describe("Tick", () => {
         2,
         toBn("3"),
         toBn("1000"),
+        toBn("0"),
         toBn("-2000"),
         toBn("20"),
         true,
@@ -453,6 +488,7 @@ describe("Tick", () => {
         liquidityGross: 3,
         liquidityNet: 4,
         fixedTokenGrowthOutsideX128: toBn("100"),
+        unbalancedFixedTokenGrowthOutsideX128: toBn("0"),
         variableTokenGrowthOutsideX128: toBn("-100"),
         feeGrowthOutsideX128: toBn("10"),
         initialized: true,
