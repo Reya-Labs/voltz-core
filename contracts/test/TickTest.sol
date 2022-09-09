@@ -30,14 +30,16 @@ contract TickTest {
     ) external view returns (uint256 feeGrowthInsideX128) {
         unchecked {
             return
-                uint256(Tick.getGrowthInside(
-                    tickLower,
-                    tickUpper,
-                    tickCurrent,
-                    feeGrowthGlobalX128.toInt256(),
-                    ticks[tickLower].feeGrowthOutsideX128.toInt256(),
-                    ticks[tickUpper].feeGrowthOutsideX128.toInt256()
-                ));   
+                uint256(
+                    Tick.getGrowthInside(
+                        tickLower,
+                        tickUpper,
+                        tickCurrent,
+                        feeGrowthGlobalX128.toInt256(),
+                        ticks[tickLower].feeGrowthOutsideX128.toInt256(),
+                        ticks[tickUpper].feeGrowthOutsideX128.toInt256()
+                    )
+                );
         }
     }
 
