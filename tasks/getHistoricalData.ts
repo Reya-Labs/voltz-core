@@ -126,7 +126,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     const currentBlock = await hre.ethers.provider.getBlock("latest");
 
     let toBlock: number = currentBlock.number;
-    const fromBlock: number = !!taskArgs.fromBlock
+    const fromBlock: number = taskArgs.fromBlock
       ? taskArgs.fromBlock
       : toBlock - taskArgs.lookbackDays * blocksPerDay;
 

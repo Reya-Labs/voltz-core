@@ -82,7 +82,6 @@ loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
 loadModuleIfContractsAreBuilt("./tasks/updateAPYFor15Days");
 loadModuleIfContractsAreBuilt("./tasks/rateOracle");
-loadModuleIfContractsAreBuilt("./tasks/setParameters");
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
 loadModuleIfContractsAreBuilt("./tasks/decodeTransactionData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");

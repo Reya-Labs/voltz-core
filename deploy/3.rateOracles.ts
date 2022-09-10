@@ -1,14 +1,13 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
+import { getConfig } from "../deployConfig/config";
 import {
   applyBufferConfig,
   convertTrustedRateOracleDataPoints,
-  getConfig,
   RateOracleConfigForTemplate,
-} from "../deployConfig/config";
+} from "../deployConfig/utils";
 import { BaseRateOracle, ERC20 } from "../typechain";
-import { RateOracleConfigDefaults } from "../deployConfig/types";
 import { BigNumber } from "ethers";
 import path from "path";
 import mustache from "mustache";
@@ -17,7 +16,8 @@ interface RateOracleInstanceInfo {
   contractName: string;
   args: any[];
   suffix: string | null;
-  rateOracleConfig: RateOracleConfigDefaults;
+  rateOracleBufferSize: number;
+  minSecondsSinceLastUpdate: number;
   maxIrsDurationInSeconds: number;
 }
 
@@ -89,16 +89,16 @@ const deployAndConfigureRateOracleInstance = async (
     // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
     await applyBufferConfig(
       rateOracleContract,
-      BigNumber.from(instance.rateOracleConfig.rateOracleBufferSize).toNumber(),
-      instance.rateOracleConfig.rateOracleMinSecondsSinceLastUpdate,
+      BigNumber.from(instance.rateOracleBufferSize).toNumber(),
+      instance.minSecondsSinceLastUpdate,
       instance.maxIrsDurationInSeconds
     );
   } else {
     // We do not have permissions to update rate oracle config, so we do a dry run to report out-of-date state
     const multisigChanges = await applyBufferConfig(
       rateOracleContract,
-      BigNumber.from(instance.rateOracleConfig.rateOracleBufferSize).toNumber(),
-      instance.rateOracleConfig.rateOracleMinSecondsSinceLastUpdate,
+      BigNumber.from(instance.rateOracleBufferSize).toNumber(),
+      instance.minSecondsSinceLastUpdate,
       instance.maxIrsDurationInSeconds,
       true
     );
@@ -142,20 +142,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       for (const tokenDefinition of aaveTokens) {
         const { trustedTimestamps, trustedObservationValuesInRay } =
           convertTrustedRateOracleDataPoints(
-            tokenDefinition.trustedDataPoints ||
-              aaveConfig.defaults.trustedDataPoints
+            tokenDefinition.trustedDataPoints || []
           );
 
-        const { timestamps, rates } = await hre.run("getHistoricalData", {
-          lookbackDays: 5,
-          aave: true,
-          token: tokenDefinition.name,
-        });
-        console.log(
-          `Got historical data: ${JSON.stringify(timestamps)}, ${JSON.stringify(
-            (rates as BigNumber[]).map((r) => r.toString())
-          )}`
-        );
+        // const { timestamps, rates } = await hre.run("getHistoricalData", {
+        //   lookbackDays: 5,
+        //   aave: true,
+        //   token: tokenDefinition.name,
+        // });
+        // console.log(
+        //   `Got historical data: ${JSON.stringify(timestamps)}, ${JSON.stringify(
+        //     (rates as BigNumber[]).map((r) => r.toString())
+        //   )}`
+        // );
 
         // For Aave, the first two constructor args are lending pool address and underlying token address
         // For Aave, the address in the tokenDefinition is the address of the underlying token
@@ -170,9 +169,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           args,
           suffix: tokenDefinition.name,
           contractName: "AaveRateOracle",
-          rateOracleConfig: aaveConfig.defaults,
-          maxIrsDurationInSeconds:
-            deployConfig.irsConfig.maxIrsDurationInSeconds,
+          rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
+          minSecondsSinceLastUpdate: tokenDefinition.minSecondsSinceLastUpdate,
+          maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
         });
       }
     }
@@ -193,8 +192,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       for (const tokenDefinition of aaveTokens) {
         const { trustedTimestamps, trustedObservationValuesInRay } =
           convertTrustedRateOracleDataPoints(
-            tokenDefinition.trustedDataPoints ||
-              aaveBorrowConfig.defaults.trustedDataPoints
+            tokenDefinition.trustedDataPoints || []
           );
 
         // For Aave, the first two constructor args are lending pool address and underlying token address
@@ -210,9 +208,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           args,
           suffix: tokenDefinition.name,
           contractName: "AaveBorrowRateOracle",
-          rateOracleConfig: aaveBorrowConfig.defaults,
-          maxIrsDurationInSeconds:
-            deployConfig.irsConfig.maxIrsDurationInSeconds,
+          rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
+          minSecondsSinceLastUpdate: tokenDefinition.minSecondsSinceLastUpdate,
+          maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
         });
       }
     }
@@ -258,8 +256,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       const { trustedTimestamps, trustedObservationValuesInRay } =
         convertTrustedRateOracleDataPoints(
-          tokenDefinition.trustedDataPoints ||
-            compoundConfig.defaults.trustedDataPoints
+          tokenDefinition.trustedDataPoints || []
         );
 
       // For Compound, the first three constructor args are the cToken address, underylying address and decimals of the underlying
@@ -277,8 +274,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args,
         suffix: tokenDefinition.name,
         contractName: "CompoundRateOracle",
-        rateOracleConfig: compoundConfig.defaults,
-        maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+        rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
+        minSecondsSinceLastUpdate: tokenDefinition.minSecondsSinceLastUpdate,
+        maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
       });
     }
   }
@@ -324,8 +322,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       const { trustedTimestamps, trustedObservationValuesInRay } =
         convertTrustedRateOracleDataPoints(
-          tokenDefinition.trustedDataPoints ||
-            compoundBorrowConfig.defaults.trustedDataPoints
+          tokenDefinition.trustedDataPoints || []
         );
 
       // For Compound, the first three constructor args are the cToken address, underylying address and decimals of the underlying
@@ -343,8 +340,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         args,
         suffix: tokenDefinition.name,
         contractName: "CompoundBorrowRateOracle",
-        rateOracleConfig: compoundBorrowConfig.defaults,
-        maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+        rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
+        minSecondsSinceLastUpdate: tokenDefinition.minSecondsSinceLastUpdate,
+        maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
       });
     }
   }
@@ -379,8 +377,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       args,
       suffix: null,
       contractName: "LidoRateOracle",
-      rateOracleConfig: lidoConfig.defaults,
-      maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+      rateOracleBufferSize: lidoConfig.defaults.rateOracleBufferSize,
+      minSecondsSinceLastUpdate: lidoConfig.defaults.minSecondsSinceLastUpdate,
+      maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
     });
   }
   // End of Lido Rate Oracle
@@ -416,8 +415,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       args,
       suffix: null,
       contractName: "RocketPoolRateOracle",
-      rateOracleConfig: rocketPoolConfig.defaults,
-      maxIrsDurationInSeconds: deployConfig.irsConfig.maxIrsDurationInSeconds,
+      rateOracleBufferSize: rocketPoolConfig.defaults.rateOracleBufferSize,
+      minSecondsSinceLastUpdate:
+        rocketPoolConfig.defaults.minSecondsSinceLastUpdate,
+      maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
     });
   }
   // End of Rocket Pool Rate Oracle
