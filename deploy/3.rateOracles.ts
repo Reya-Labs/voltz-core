@@ -5,10 +5,13 @@ import {
   applyBufferConfig,
   convertTrustedRateOracleDataPoints,
   getConfig,
+  RateOracleConfigForTemplate,
 } from "../deployConfig/config";
 import { BaseRateOracle, ERC20 } from "../typechain";
 import { RateOracleConfigDefaults } from "../deployConfig/types";
 import { BigNumber } from "ethers";
+import path from "path";
+import mustache from "mustache";
 
 interface RateOracleInstanceInfo {
   contractName: string;
@@ -17,6 +20,30 @@ interface RateOracleInstanceInfo {
   rateOracleConfig: RateOracleConfigDefaults;
   maxIrsDurationInSeconds: number;
 }
+
+interface RateOracleConfigTemplateData {
+  rateOracles: RateOracleConfigForTemplate[];
+}
+
+async function writeRateOracleConfigToGnosisSafeTemplate(
+  data: RateOracleConfigTemplateData
+) {
+  // Get external template with fetch
+  const fs = require("fs");
+  const template = fs.readFileSync(
+    path.join(__dirname, "..", "tasks", "rateOracleConfig.json.mustache"),
+    "utf8"
+  );
+  const output = mustache.render(template, data);
+
+  fs.mkdirSync(path.join(__dirname, "..", "tasks", "JSONs"));
+  fs.writeFileSync(
+    path.join(__dirname, "..", "tasks", "JSONs", "rateOracleConfig.json"),
+    output
+  );
+}
+
+let multisigConfig: RateOracleConfigForTemplate[] = [];
 
 const deployAndConfigureRateOracleInstance = async (
   hre: HardhatRuntimeEnvironment,
@@ -68,13 +95,14 @@ const deployAndConfigureRateOracleInstance = async (
     );
   } else {
     // We do not have permissions to update rate oracle config, so we do a dry run to report out-of-date state
-    await applyBufferConfig(
+    const multisigChanges = await applyBufferConfig(
       rateOracleContract,
       BigNumber.from(instance.rateOracleConfig.rateOracleBufferSize).toNumber(),
       instance.rateOracleConfig.rateOracleMinSecondsSinceLastUpdate,
       instance.maxIrsDurationInSeconds,
       true
     );
+    multisigConfig = multisigConfig.concat(multisigChanges);
   }
 
   if (multisig.toLowerCase() !== ownerOfRateOracle.toLowerCase()) {
@@ -382,6 +410,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
   }
   // End of Rocket Pool Rate Oracle
+  if (multisigConfig.length > 0) {
+    // Flag the last entry to tell the template to stop adding commas
+    multisigConfig[multisigConfig.length - 1].last = true;
+    await writeRateOracleConfigToGnosisSafeTemplate({
+      rateOracles: multisigConfig,
+    });
+  }
 
   return false; // This script is safely re-runnable and will try to reconfigure existing rate oracles if required
 };
