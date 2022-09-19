@@ -454,7 +454,8 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
       cumulativeFeeIncurred: 0,
       fixedTokenDeltaCumulative: 0, // for Trader (user invoking the swap)
       variableTokenDeltaCumulative: 0, // for Trader (user invoking the swap),
-      fixedTokenDeltaUnbalancedCumulative: 0 //  for Trader (user invoking the swap)
+      fixedTokenDeltaUnbalancedCumulative: 0, //  for Trader (user invoking the swap)
+      variableFactorWad: rateOracle.variableFactor(termStartTimestampWad, termEndTimestampWad)
     });
 
     /// @dev write an entry to the rate oracle (given no throttling)
@@ -535,11 +536,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
           step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
           state,
-          step,
-          rateOracle.variableFactor(
-          termStartTimestampWad,
-          termEndTimestampWad
-          )
+          step
         );
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
@@ -648,11 +645,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
           step.fixedTokenDelta // for LP
         ) = calculateUpdatedGlobalTrackerValues(
           state,
-          step,
-          rateOracle.variableFactor(
-          termStartTimestampWad,
-          termEndTimestampWad
-          )
+          step
         );
 
         state.fixedTokenDeltaCumulative -= step.fixedTokenDelta; // opposite sign from that of the LP's
@@ -806,8 +799,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
 
     function calculateUpdatedGlobalTrackerValues(
         SwapState memory state,
-        StepComputations memory step,
-        uint256 variableFactorWad
+        StepComputations memory step
     )
         internal
         view
@@ -824,7 +816,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
         fixedTokenDelta = FixedAndVariableMath.getFixedTokenBalance(
           step.fixedTokenDeltaUnbalanced,
           step.variableTokenDelta,
-          variableFactorWad,
+          state.variableFactorWad,
           termStartTimestampWad,
           termEndTimestampWad
         );
