@@ -24,7 +24,7 @@ task(
     (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMathTest;
 
   const marginEngineAddresses = new Set<string>();
-  const positions: Position[] = await getPositions();
+  const positions: Position[] = await getPositions(true);
   for (const position of positions) {
     marginEngineAddresses.add(position.marginEngine);
   }

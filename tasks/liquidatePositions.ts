@@ -7,14 +7,11 @@ import path from "path";
 import { getPositions, Position } from "../scripts/getPositions";
 
 interface liquidationTemplateData {
-  liquidationsPerPool: {
+  liquidatablePositions: {
     marginEngineAddress: string;
-    vammAddress: string;
-    liquidatablePositions: {
-      owner: string;
-      tickLower: number;
-      tickUpper: number;
-    }[];
+    owner: string;
+    tickLower: number;
+    tickUpper: number;
   }[];
 }
 
@@ -47,11 +44,11 @@ task("liquidatePositions", "Liquidate liquidatable positions")
     }
 
     const data: liquidationTemplateData = {
-      liquidationsPerPool: [],
+      liquidatablePositions: [],
     };
 
     const marginEngineAddresses = new Set<string>();
-    const positions: Position[] = await getPositions();
+    const positions: Position[] = await getPositions(true);
     for (const position of positions) {
       marginEngineAddresses.add(position.marginEngine);
     }
@@ -71,20 +68,6 @@ task("liquidatePositions", "Liquidate liquidatable positions")
       if (marginEngineEndTimestamp <= currentBlock.timestamp) {
         continue;
       }
-
-      const liquidationsOfPool: {
-        marginEngineAddress: string;
-        vammAddress: string;
-        liquidatablePositions: {
-          owner: string;
-          tickLower: number;
-          tickUpper: number;
-        }[];
-      } = {
-        marginEngineAddress: marginEngineAddress,
-        vammAddress: (await marginEngine.vamm()).toString(),
-        liquidatablePositions: [],
-      };
 
       for (const position of positions) {
         if (position.marginEngine !== marginEngineAddress) {
@@ -124,7 +107,8 @@ task("liquidatePositions", "Liquidate liquidatable positions")
           status === "DANGER" &&
           positionRequirementLiquidation.gt(BigInt(0))
         ) {
-          liquidationsOfPool.liquidatablePositions.push({
+          data.liquidatablePositions.push({
+            marginEngineAddress: marginEngineAddress,
             owner: position.owner,
             tickLower: position.tickLower,
             tickUpper: position.tickUpper,
@@ -141,10 +125,6 @@ task("liquidatePositions", "Liquidate liquidatable positions")
             marginEngineAddress
           );
         }
-      }
-
-      if (liquidationsOfPool.liquidatablePositions.length > 0) {
-        data.liquidationsPerPool.push(liquidationsOfPool);
       }
     }
 
