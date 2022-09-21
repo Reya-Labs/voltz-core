@@ -1,57 +1,4 @@
-import type { ContractsConfig, RateOracleDataPoint } from "./types";
-
-const goerliStEthDataPoints: RateOracleDataPoint[] = [
-  [1654485600, "1008924600350995571702479730"],
-  [1656275040, "1009005858244768527585507145"],
-];
-
-const goerliRocketEthDataPoints: RateOracleDataPoint[] = [
-  [1657435372, "1026780389412413279149346221"],
-];
-
-const borrowCompoundUSDCGoerliTrustedDatapoints: RateOracleDataPoint[] = [
-  [1659765253, "1269921134739720773000000000"],
-  [1659789526, "1269955888580957705000000000"],
-  [1659813805, "1269990642422194638000000000"],
-  [1659837864, "1270025396263431571000000000"],
-  [1659861985, "1270060150104668503000000000"],
-  [1659886086, "1270094903945905436000000000"],
-  [1659910328, "1270129664080740928000000000"],
-  [1659934382, "1270164430543297192000000000"],
-  [1659958577, "1270199197100368091000000000"],
-  [1659982682, "1270233963657438989000000000"],
-  [1660006757, "1270268730520167235000000000"],
-  [1660030860, "1270303503776577255000000000"],
-  [1660055553, "1270338278820843895000000000"],
-  [1660079654, "1270373056106306936000000000"],
-  [1660103713, "1270407834303441132000000000"],
-  [1660127807, "1270442613744516329000000000"],
-  [1660151931, "1270477395500834264000000000"],
-  [1660176014, "1270512177257152198000000000"],
-  [1660202544, "1270546959013470133000000000"],
-];
-
-const borrowCompoundETHGoerliTrustedDatapoints: RateOracleDataPoint[] = [
-  [1659765253, "1253897329329515817000000000"],
-  [1659789526, "1254088142387034956000000000"],
-  [1659813805, "1254278983506442512000000000"],
-  [1659837864, "1254469854281890318000000000"],
-  [1659861985, "1254660725057338124000000000"],
-  [1659886086, "1254851634574894171000000000"],
-  [1659910328, "1255042629993880014000000000"],
-  [1659934382, "1255233640587973149000000000"],
-  [1659958577, "1255424651182066283000000000"],
-  [1659982682, "1255615661776159418000000000"],
-  [1660006757, "1255806685577574728000000000"],
-  [1660030860, "1255997824242670783000000000"],
-  [1660055553, "1256188999147124341000000000"],
-  [1660079654, "1256380203793494404000000000"],
-  [1660103713, "1256571437944201722000000000"],
-  [1660127807, "1256762685574084677000000000"],
-  [1660151931, "1256953933203967632000000000"],
-  [1660176014, "1257145216034963865000000000"],
-  [1660202544, "1257336542441742429000000000"],
-];
+import type { ContractsConfig } from "./types";
 
 const TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS = {
   rateOracleBufferSize: 500,
@@ -66,40 +13,41 @@ export const goerliConfig: ContractsConfig = {
     compoundTokens: [
       {
         name: "cETH",
+        borrow: false,
         address: "0x20572e4c090f15667cf7378e16fad2ea0e2f3eff",
         ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
       },
       {
         name: "cDAI",
+        borrow: false,
         address: "0x822397d9a55d0fefd20f5c4bcab33c5f65bd28eb",
         ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
       },
       {
         name: "cUSDC",
+        borrow: false,
         address: "0xcec4a43ebb02f9b80916f1c718338169d6d5c1f0",
         ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
       },
-    ],
-  },
-  compoundBorrowConfig: {
-    // See tokens list at https://compound.finance/docs#networks
-    compoundTokens: [
       {
         name: "cETH",
+        borrow: true,
         address: "0x20572e4c090f15667cf7378e16fad2ea0e2f3eff",
         ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
-        trustedDataPoints: borrowCompoundETHGoerliTrustedDatapoints,
+        daysOfTrustedDataPoints: 10,
       },
       // {
       //   name: "cDAI",
+      //   borrow: true,
       //   address: "0x822397d9a55d0fefd20f5c4bcab33c5f65bd28eb",
       //   ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
       // },
       {
         name: "cUSDC",
+        borrow: true,
         address: "0xcec4a43ebb02f9b80916f1c718338169d6d5c1f0",
         ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
-        trustedDataPoints: borrowCompoundUSDCGoerliTrustedDatapoints,
+        daysOfTrustedDataPoints: 10,
       },
     ],
   },
@@ -108,7 +56,7 @@ export const goerliConfig: ContractsConfig = {
     lidoOracle: "0x24d8451BC07e7aF4Ba94F69aCDD9ad3c6579D9FB",
     defaults: {
       ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
-      trustedDataPoints: goerliStEthDataPoints,
+      daysOfTrustedDataPoints: 10,
     },
   },
   rocketPoolConfig: {
@@ -116,7 +64,7 @@ export const goerliConfig: ContractsConfig = {
     rocketNetworkBalances: "0x28cea7b0f3916c1dba667d3d58ec4836ad843c49",
     defaults: {
       ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
-      trustedDataPoints: goerliRocketEthDataPoints,
+      daysOfTrustedDataPoints: 10,
     },
   },
 };

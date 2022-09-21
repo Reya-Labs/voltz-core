@@ -5,13 +5,7 @@ export const localhostConfig: ContractsConfig = {
   aaveConfig: {
     aaveTokens: [],
   },
-  aaveBorrowConfig: {
-    aaveTokens: [],
-  },
   compoundConfig: {
-    compoundTokens: [],
-  },
-  compoundBorrowConfig: {
     compoundTokens: [],
   },
 };
