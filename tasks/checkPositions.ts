@@ -19,7 +19,7 @@ async function getBlockAtTimestamp(
     const mid = Math.floor((lo + hi) / 2);
     const midBlock = await hre.ethers.provider.getBlock(mid);
 
-    console.log(midBlock.timestamp, timestamp);
+    // console.log(midBlock.timestamp, timestamp);
 
     if (midBlock.timestamp >= timestamp) {
       answer = midBlock.number;
@@ -328,6 +328,42 @@ task("getPositionInfo", "Get all information about some position")
         }%\n`
       );
 
+      const positionRequirementSafety =
+        await tmp.marginEngine.callStatic.getPositionMarginRequirement(
+          p.owner,
+          p.tickLower,
+          p.tickUpper,
+          false
+        );
+
+      const positionRequirementLiquidation =
+        await tmp.marginEngine.callStatic.getPositionMarginRequirement(
+          p.owner,
+          p.tickLower,
+          p.tickUpper,
+          true
+        );
+
+      // const positionInfo = await tmp.marginEngine.callStatic.getPosition(
+      //   p.owner,
+      //   p.tickLower,
+      //   p.tickUpper
+      // );
+
+      fs.appendFileSync(
+        `${EXPORT_FOLDER}/info.txt`,
+        `MARGIN: ${ethers.utils.formatUnits(
+          0,
+          tmp.decimals
+        )}, LIQUIDATION: ${ethers.utils.formatUnits(
+          positionRequirementLiquidation,
+          tmp.decimals
+        )}, SAFETY: ${ethers.utils.formatUnits(
+          positionRequirementSafety,
+          tmp.decimals
+        )}\n`
+      );
+
       const history = new PositionHistory(
         `${p.marginEngine.toLowerCase()}#${p.owner.toLowerCase()}#${
           p.tickLower
@@ -471,8 +507,10 @@ task("getPositionInfo", "Get all information about some position")
         );
         const startBlock = await getBlockAtTimestamp(hre, startTimestamp);
 
-        for (let b = startBlock; b <= currentBlockNumber; b += 6400) {
+        for (let b = startBlock + 1; b <= currentBlockNumber; b += 6400) {
           const block = await hre.ethers.provider.getBlock(b);
+
+          console.log("block:", b);
 
           const positionRequirementSafety =
             await tmp.marginEngine.callStatic.getPositionMarginRequirement(
@@ -496,14 +534,14 @@ task("getPositionInfo", "Get all information about some position")
               }
             );
 
-          const positionInfo = await tmp.marginEngine.callStatic.getPosition(
-            p.owner,
-            p.tickLower,
-            p.tickUpper,
-            {
-              blockTag: b,
-            }
-          );
+          // const positionInfo = await tmp.marginEngine.callStatic.getPosition(
+          //   p.owner,
+          //   p.tickLower,
+          //   p.tickUpper,
+          //   {
+          //     blockTag: b,
+          //   }
+          // );
 
           const tick = (await vamm.vammVars({ blockTag: b })).tick;
 
@@ -512,7 +550,7 @@ task("getPositionInfo", "Get all information about some position")
             `${block.timestamp},${b},${
               1.0001 ** -tick
             }%,${ethers.utils.formatUnits(
-              positionInfo.margin,
+              0,
               tmp.decimals
             )},${ethers.utils.formatUnits(
               positionRequirementLiquidation,
