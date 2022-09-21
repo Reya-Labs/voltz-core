@@ -36,13 +36,6 @@ task("liquidatePositions", "Liquidate liquidatable positions")
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
   .setAction(async (taskArgs, hre) => {
-    if (!taskArgs.multisig) {
-      console.log(
-        "Currently no support for sending on chain transactions. --multisig flag must be turned on."
-      );
-      return;
-    }
-
     const data: liquidationTemplateData = {
       liquidatablePositions: [],
     };
@@ -130,6 +123,23 @@ task("liquidatePositions", "Liquidate liquidatable positions")
 
     if (taskArgs.multisig) {
       writeLiquidationOfPositionsToGnosisSafeTemplate(data);
+    } else {
+      for (const liquidatablePosition of data.liquidatablePositions) {
+        const marginEngine = (await hre.ethers.getContractAt(
+          "MarginEngine",
+          liquidatablePosition.marginEngineAddress
+        )) as MarginEngine;
+
+        const tx = await marginEngine.liquidatePosition(
+          liquidatablePosition.owner,
+          liquidatablePosition.tickLower,
+          liquidatablePosition.tickUpper,
+          {
+            gasLimit: 10000000,
+          }
+        );
+        await tx.wait();
+      }
     }
   });
 
