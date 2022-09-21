@@ -1,26 +1,7 @@
-import { BigNumberish } from "ethers";
-import type { RateOracleDataPoint } from "./types";
 import { BaseRateOracle } from "../typechain";
 
 const MAX_BUFFER_GROWTH_PER_TRANSACTION = 100;
 const BUFFER_SIZE_SAFETY_FACTOR = 1.2; // The buffer must last for 1.2x as long as the longest expected IRS
-
-interface TrustedDataPoints {
-  trustedTimestamps: number[];
-  trustedObservationValuesInRay: BigNumberish[];
-}
-
-export const convertTrustedRateOracleDataPoints = (
-  trustedDataPoints: RateOracleDataPoint[]
-): TrustedDataPoints => {
-  let trustedTimestamps: number[] = [];
-  let trustedObservationValuesInRay: BigNumberish[] = [];
-  if (trustedDataPoints?.length > 0) {
-    trustedTimestamps = trustedDataPoints.map((e) => e[0]);
-    trustedObservationValuesInRay = trustedDataPoints.map((e) => e[1]);
-  }
-  return { trustedTimestamps, trustedObservationValuesInRay };
-};
 
 export interface RateOracleConfigForTemplate {
   rateOracleAddress: string;

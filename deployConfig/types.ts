@@ -7,10 +7,8 @@ export interface TokenConfig {
   address: string;
   rateOracleBufferSize: number;
   minSecondsSinceLastUpdate: number;
-  // If migrating, get trusted data points from either:
-  // - an existing rate oracle, using hardhat's queryRateOracle task
-  // - the source of the data, using hardhat's getHistoricalData task
-  trustedDataPoints?: RateOracleDataPoint[];
+  daysOfTrustedDataPoints?: number;
+  borrow?: boolean;
 }
 export interface LpMarginCapDefaults {
   eth: number;
@@ -19,21 +17,13 @@ export interface LpMarginCapDefaults {
 export interface RateOracleConfigDefaults {
   rateOracleBufferSize: number; // For mock token oracle or platforms with only a single token
   minSecondsSinceLastUpdate: number; // For mock token oracle or platforms with only a single token
-  trustedDataPoints: RateOracleDataPoint[]; // For mock token oracle or platforms with only a single token
+  daysOfTrustedDataPoints?: number; // For mock token oracle or platforms with only a single token
 }
 export interface AaveConfig {
   aaveLendingPool?: string;
   aaveTokens: TokenConfig[];
 }
-export interface AaveBorrowConfig {
-  aaveLendingPool?: string;
-  aaveTokens: TokenConfig[];
-}
 export interface CompoundConfig {
-  compoundTokens: TokenConfig[];
-}
-
-export interface CompoundBorrowConfig {
   compoundTokens: TokenConfig[];
 }
 
@@ -50,9 +40,7 @@ export interface RocketPoolConfig {
 export interface ContractsConfig {
   weth?: string;
   aaveConfig?: AaveConfig;
-  aaveBorrowConfig?: AaveBorrowConfig;
   compoundConfig?: CompoundConfig;
-  compoundBorrowConfig?: CompoundBorrowConfig;
   lidoConfig?: LidoConfig;
   rocketPoolConfig?: RocketPoolConfig;
   skipFactoryDeploy?: boolean;
