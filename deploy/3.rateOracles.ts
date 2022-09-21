@@ -11,6 +11,7 @@ import { BaseRateOracle, ERC20 } from "../typechain";
 import { BigNumber } from "ethers";
 import path from "path";
 import mustache from "mustache";
+import { mainnetAaveDataGenerator } from "../historicalData/generators/aave";
 
 interface RateOracleInstanceInfo {
   contractName: string;
@@ -145,16 +146,57 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             tokenDefinition.trustedDataPoints || []
           );
 
-        // const { timestamps, rates } = await hre.run("getHistoricalData", {
-        //   lookbackDays: 5,
-        //   aave: true,
-        //   token: tokenDefinition.name,
-        // });
-        // console.log(
-        //   `Got historical data: ${JSON.stringify(timestamps)}, ${JSON.stringify(
-        //     (rates as BigNumber[]).map((r) => r.toString())
-        //   )}`
-        // );
+        const { timestamps, rates } = await hre.run("getHistoricalData", {
+          lookbackDays: 5,
+          aave: true,
+          token: tokenDefinition.name,
+        });
+        console.log(
+          `Got historical data 1: ${JSON.stringify(
+            timestamps
+          )}, ${JSON.stringify(
+            (rates as BigNumber[]).map((r) => r.toString())
+          )}`
+        );
+
+        const generator = await mainnetAaveDataGenerator(
+          hre,
+          tokenDefinition.address,
+          5
+        );
+
+        // console.log("yield1:", await generator.next());
+        // (async () => {
+        //   for await (const data of generator) {
+        //     console.log(
+        //       "new data 2:",
+        //       data.blockNumber,
+        //       data.timestamp,
+        //       data.rate
+        //     );
+        //   }
+        // })();
+        const timestamps2: number[] = [];
+        const rates2: BigNumber[] = [];
+        for await (let data of generator) {
+          // (4)
+          timestamps2.push(data.timestamp);
+          rates2.push(data.rate);
+          console.log(
+            "new data:",
+            data.blockNumber,
+            data.timestamp,
+            data.rate.toString()
+          );
+        }
+
+        console.log(
+          `Got historical data 2: ${JSON.stringify(
+            timestamps2
+          )}, ${JSON.stringify(
+            (rates2 as BigNumber[]).map((r) => r.toString())
+          )}`
+        );
 
         // For Aave, the first two constructor args are lending pool address and underlying token address
         // For Aave, the address in the tokenDefinition is the address of the underlying token
