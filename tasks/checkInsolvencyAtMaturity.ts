@@ -31,7 +31,7 @@ task(
 
   console.log("Positions estimated to become insolvent at maturity:");
   console.log(
-    "(Owner, Lower Tick, Upper Tick, Current Margin, Estimated Cashflow Delta)"
+    "(Owner, Lower Tick, Upper Tick, Current Margin, Estimated Cashflow Delta, Estimated Total Cashflow)"
   );
   console.log("");
 
@@ -104,7 +104,8 @@ task(
           position.tickLower,
           position.tickUpper,
           ethers.utils.formatEther(positionInfo.margin),
-          ethers.utils.formatEther(estimatedCashflow)
+          ethers.utils.formatEther(estimatedCashflow),
+          ethers.utils.formatEther(positionInfo.margin.add(estimatedCashflow))
         );
 
         noneInsolvent = false;
