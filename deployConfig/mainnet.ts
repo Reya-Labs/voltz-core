@@ -92,6 +92,12 @@ export const mainnetConfig: ContractsConfig = {
         address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
       },
+      {
+        name: "WETH",
+        address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
+        daysOfTrustedDataPoints: 20,
+      },
     ],
   },
   aaveBorrowConfig: {

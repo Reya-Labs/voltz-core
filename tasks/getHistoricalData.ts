@@ -1,7 +1,6 @@
-import { task, types } from "hardhat/config";
+import { subtask, task, types } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
 import {
-  IAaveV2LendingPool,
   ICToken,
   IERC20Minimal,
   ILidoOracle,
@@ -11,6 +10,7 @@ import {
 } from "../typechain";
 import { BigNumber } from "ethers";
 import "@nomiclabs/hardhat-ethers";
+import { mainnetAaveDataGenerator } from "../historicalData/generators/aave";
 
 // eslint-disable-next-line no-unused-vars
 enum FETCH_STATUS {
@@ -46,8 +46,6 @@ const cTokenAddresses = {
 };
 
 // aave
-const aaveLendingPoolAddress = "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9";
-const aaveLendingPoolStartBlock = 11367585;
 const aTokenUnderlyingAddresses = {
   aDAI: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
   aUSDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
@@ -57,7 +55,7 @@ const aTokenUnderlyingAddresses = {
   aWETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
 };
 
-const blocksPerDay = 6570; // 13.15 seconds per block
+const blocksPerDay = 5 * 60 * 24; // 12 seconds per block = 5 blocks per minute
 
 task("getHistoricalData", "Retrieves the historical rates")
   .addOptionalParam(
@@ -168,6 +166,22 @@ task("getHistoricalData", "Retrieves the historical rates")
     let asset = "";
     let decimals = 0;
 
+    // arrays for results
+    const blocks: number[] = [];
+    const timestamps: number[] = [];
+    const rates: BigNumber[] = [];
+
+    // populate output file
+    const fs = require("fs");
+    const file = taskArgs.borrow
+      ? `historicalData/rates/f_borrow_${asset}.csv`
+      : `historicalData/rates/f_${asset}.csv`;
+
+    const header = "date,timestamp,liquidityIndex";
+
+    fs.appendFileSync(file, header + "\n");
+    console.log(header);
+
     // compound
     if (taskArgs.compound) {
       asset = `c${taskArgs.token}`;
@@ -208,6 +222,32 @@ task("getHistoricalData", "Retrieves the historical rates")
         );
       }
 
+      const underlyingTokenAddress =
+        aTokenUnderlyingAddresses[
+          asset as keyof typeof aTokenUnderlyingAddresses
+        ];
+      const generator = await mainnetAaveDataGenerator(
+        hre,
+        underlyingTokenAddress,
+        undefined,
+        taskArgs.borrow,
+        { fromBlock, toBlock, blockInterval: taskArgs.blockInterval }
+      );
+      for await (let { blockNumber, timestamp, rate } of generator) {
+        blocks.push(blockNumber);
+        timestamps.push(timestamp);
+        rates.push(rate);
+        fs.appendFileSync(
+          file,
+          `${new Date(timestamp * 1000).toISOString()},${timestamp},${rate}\n`
+        );
+        console.log(
+          `${blockNumber},${timestamp},${new Date(
+            timestamp * 1000
+          ).toISOString()},${rate}`
+        );
+      }
+
       // no need to get decimals
     }
 
@@ -236,20 +276,6 @@ task("getHistoricalData", "Retrieves the historical rates")
 
       // no need to get decimals
     }
-
-    const blocks: number[] = [];
-    const timestamps: number[] = [];
-    const rates: BigNumber[] = [];
-
-    const fs = require("fs");
-    const file = taskArgs.borrow
-      ? `historicalData/rates/f_borrow_${asset}.csv`
-      : `historicalData/rates/f_${asset}.csv`;
-
-    const header = "date,timestamp,liquidityIndex";
-
-    fs.appendFileSync(file, header + "\n");
-    console.log(header);
 
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
       const block = await hre.ethers.provider.getBlock(b);
@@ -390,46 +416,7 @@ task("getHistoricalData", "Retrieves the historical rates")
 
       // Aave
       if (taskArgs.aave) {
-        const aavePool = (await hre.ethers.getContractAt(
-          "IAaveV2LendingPool",
-          aaveLendingPoolAddress
-        )) as IAaveV2LendingPool;
-
-        if (b >= aaveLendingPoolStartBlock) {
-          try {
-            if (taskArgs.borrow) {
-              const r = await aavePool.getReserveNormalizedVariableDebt(
-                aTokenUnderlyingAddresses[
-                  asset as keyof typeof aTokenUnderlyingAddresses
-                ],
-                {
-                  blockTag: b,
-                }
-              );
-
-              blocks.push(b);
-              timestamps.push(block.timestamp);
-              rates.push(r);
-              fetch = FETCH_STATUS.SUCCESS;
-            } else {
-              const r = await aavePool.getReserveNormalizedIncome(
-                aTokenUnderlyingAddresses[
-                  asset as keyof typeof aTokenUnderlyingAddresses
-                ],
-                {
-                  blockTag: b,
-                }
-              );
-
-              blocks.push(b);
-              timestamps.push(block.timestamp);
-              rates.push(r);
-              fetch = FETCH_STATUS.SUCCESS;
-            }
-          } catch (e) {
-            // console.log("Could not get rate for aToken: ", asset);
-          }
-        }
+        // fetch = FETCH_STATUS.SUCCESS;
       }
 
       switch (fetch) {
@@ -484,5 +471,26 @@ task("getHistoricalData", "Retrieves the historical rates")
 
     return { timestamps, rates };
   });
+
+// const getHistoricalData: ActionType<MinimumBuildArgs> = async function (
+//   { protocol, fromBlock, blockInterval, toBlock },
+//   { config, network, run }
+// ): Promise<Data> {
+//   return [];
+// };
+
+// subtask(TASK_GET_HISTORICAL_DATA_GET_DATA)
+//   .addParam("protocol", undefined, undefined, types.string)
+//   .addParam("fromBlock", undefined, undefined, types.int)
+//   .addParam("blockInterval", undefined, undefined, types.int)
+//   .addParam("toBlock", undefined, undefined, types.int)
+//   .setAction(getHistoricalData);
+
+// subtask(TASK_GET_HISTORICAL_DATA_PRINT_DATA)
+//   .addParam("address", undefined, undefined, types.string)
+//   .addParam("protocol", undefined, undefined, types.string)
+//   .addOptionalParam("contract", undefined, undefined, types.string)
+//   .addOptionalParam("libraries", undefined, {}, types.any)
+//   .setAction(getHistoricalData);
 
 module.exports = {};
