@@ -10,7 +10,10 @@ import {
 } from "../typechain";
 import { BigNumber } from "ethers";
 import "@nomiclabs/hardhat-ethers";
-import { mainnetAaveDataGenerator } from "../historicalData/generators/aave";
+import {
+  mainnetAaveDataGenerator,
+  Datum,
+} from "../historicalData/generators/aave";
 
 // eslint-disable-next-line no-unused-vars
 enum FETCH_STATUS {
@@ -171,16 +174,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     const timestamps: number[] = [];
     const rates: BigNumber[] = [];
 
-    // populate output file
-    const fs = require("fs");
-    const file = taskArgs.borrow
-      ? `historicalData/rates/f_borrow_${asset}.csv`
-      : `historicalData/rates/f_${asset}.csv`;
-
-    const header = "date,timestamp,liquidityIndex";
-
-    fs.appendFileSync(file, header + "\n");
-    console.log(header);
+    let generator: AsyncGenerator<Datum> | undefined = undefined;
 
     // compound
     if (taskArgs.compound) {
@@ -226,32 +220,13 @@ task("getHistoricalData", "Retrieves the historical rates")
         aTokenUnderlyingAddresses[
           asset as keyof typeof aTokenUnderlyingAddresses
         ];
-      const generator = await mainnetAaveDataGenerator(
+      generator = await mainnetAaveDataGenerator(
         hre,
         underlyingTokenAddress,
         undefined,
         taskArgs.borrow,
         { fromBlock, toBlock, blockInterval: taskArgs.blockInterval }
       );
-      for await (let { blockNumber, timestamp, rate, error } of generator) {
-        if (error) {
-          console.log(`Error retrieving data for block ${blockNumber}`);
-        } else {
-          blocks.push(blockNumber);
-          timestamps.push(timestamp);
-          rates.push(rate);
-          fs.appendFileSync(
-            file,
-            `${new Date(timestamp * 1000).toISOString()},${timestamp},${rate}\n`
-          );
-          console.log(
-            `${blockNumber},${timestamp},${new Date(
-              timestamp * 1000
-            ).toISOString()},${rate}`
-          );
-        }
-      }
-
       // no need to get decimals
     }
 
@@ -279,6 +254,41 @@ task("getHistoricalData", "Retrieves the historical rates")
       }
 
       // no need to get decimals
+    }
+
+    // populate output file
+    const fs = require("fs");
+    const file = taskArgs.borrow
+      ? `historicalData/rates/f_borrow_${asset}.csv`
+      : `historicalData/rates/f_${asset}.csv`;
+
+    const header = "date,timestamp,liquidityIndex";
+
+    fs.appendFileSync(file, header + "\n");
+    console.log(`block,${header}`);
+
+    if (!!generator) {
+      // use the generator
+      for await (let { blockNumber, timestamp, rate, error } of generator) {
+        if (error) {
+          console.log(`Error retrieving data for block ${blockNumber}`);
+        } else {
+          blocks.push(blockNumber);
+          timestamps.push(timestamp);
+          rates.push(rate);
+          fs.appendFileSync(
+            file,
+            `${new Date(timestamp * 1000).toISOString()},${timestamp},${rate}\n`
+          );
+          console.log(
+            `${blockNumber},${new Date(
+              timestamp * 1000
+            ).toISOString()},${timestamp},${rate}`
+          );
+        }
+      }
+    } else {
+      // Old approach - iterate in this file
     }
 
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {

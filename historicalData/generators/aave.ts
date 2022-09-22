@@ -2,19 +2,19 @@ import { BigNumber } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { IAaveV2LendingPool } from "../../typechain";
 
-interface Datum {
+export interface Datum {
   blockNumber: number;
   timestamp: number;
   rate: BigNumber;
   error: unknown;
 }
 
-interface BlockSpec {
+export interface BlockSpec {
   fromBlock: number; // positive value = absolute block number; negative = offset from toBlock
   blockInterval: number;
   toBlock: number; //
 }
-interface AaveDataSpec extends BlockSpec {
+export interface AaveDataSpec extends BlockSpec {
   hre: HardhatRuntimeEnvironment;
   lendingPool: IAaveV2LendingPool;
   underlyingAddress: string;
@@ -26,7 +26,6 @@ const blocksPerDay = 5 * 60 * 24; // 12 seconds per block = 5 blocks per minute
 // Generator function for Aave data
 async function* aaveDataGenerator(spec: AaveDataSpec): AsyncGenerator<Datum> {
   const { hre, underlyingAddress, lendingPool } = spec;
-  console.log("In generator", spec.fromBlock, spec.toBlock, spec.blockInterval);
   for (let b = spec.fromBlock; b <= spec.toBlock; b += spec.blockInterval) {
     try {
       const block = await hre.ethers.provider.getBlock(b);
