@@ -82,7 +82,6 @@ loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
 loadModuleIfContractsAreBuilt("./tasks/updateAPYFor15Days");
 loadModuleIfContractsAreBuilt("./tasks/rateOracle");
-loadModuleIfContractsAreBuilt("./tasks/setParameters");
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
 loadModuleIfContractsAreBuilt("./tasks/decodeTransactionData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
@@ -120,6 +119,7 @@ if (!!process.env.FORK_MAINNET) {
     allowUnlimitedContractSize: true,
     saveDeployments: true,
     chainId: 1,
+    live: false,
     forking: {
       url: `${process.env.MAINNET_URL}`,
       // blockNumber: 15402000,
@@ -129,6 +129,7 @@ if (!!process.env.FORK_MAINNET) {
   hardhatNetworkConfig = {
     allowUnlimitedContractSize: true,
     saveDeployments: true,
+    live: false,
     forking: {
       url: `${process.env.KOVAN_URL}`,
     },
@@ -225,6 +226,11 @@ const config: HardhatUserConfig = {
   contractSizer: {
     strict: true,
     except: [":Test"],
+  },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
 };
 
