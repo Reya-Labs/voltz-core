@@ -429,36 +429,34 @@ task("getHistoricalData", "Retrieves the historical rates")
       }
 
       // Aave
-      if (taskArgs.aave) {
-        // fetch = FETCH_STATUS.SUCCESS;
-      }
+      if (!taskArgs.aave) {
+        switch (fetch) {
+          case FETCH_STATUS.SUCCESS: {
+            const lastBlock = blocks[blocks.length - 1];
+            const lastTimestamp = timestamps[timestamps.length - 1];
+            const lastRate = rates[rates.length - 1];
 
-      switch (fetch) {
-        case FETCH_STATUS.SUCCESS: {
-          const lastBlock = blocks[blocks.length - 1];
-          const lastTimestamp = timestamps[timestamps.length - 1];
-          const lastRate = rates[rates.length - 1];
-
-          fs.appendFileSync(
-            file,
-            `${new Date(
-              lastTimestamp * 1000
-            ).toISOString()},${lastTimestamp},${lastRate}\n`
-          );
-          console.log(
-            `${lastBlock},${lastTimestamp},${new Date(
-              lastTimestamp * 1000
-            ).toISOString()},${lastRate}`
-          );
-          break;
-        }
-        case FETCH_STATUS.ALREADY_FETCHED: {
-          console.log("Already fetched.");
-          break;
-        }
-        case FETCH_STATUS.FAILURE: {
-          console.log(`Couldn't fetch at block ${b}`);
-          break;
+            fs.appendFileSync(
+              file,
+              `${new Date(
+                lastTimestamp * 1000
+              ).toISOString()},${lastTimestamp},${lastRate}\n`
+            );
+            console.log(
+              `${lastBlock},${lastTimestamp},${new Date(
+                lastTimestamp * 1000
+              ).toISOString()},${lastRate}`
+            );
+            break;
+          }
+          case FETCH_STATUS.ALREADY_FETCHED: {
+            console.log("Already fetched.");
+            break;
+          }
+          case FETCH_STATUS.FAILURE: {
+            console.log(`Couldn't fetch at block ${b}`);
+            break;
+          }
         }
       }
     }

@@ -7,11 +7,15 @@ import {
   convertTrustedRateOracleDataPoints,
   RateOracleConfigForTemplate,
 } from "../deployConfig/utils";
-import { BaseRateOracle, ERC20 } from "../typechain";
+import { BaseRateOracle, ERC20, IAaveV2LendingPool } from "../typechain";
 import { BigNumber, BigNumberish } from "ethers";
 import path from "path";
 import mustache from "mustache";
-import { mainnetAaveDataGenerator } from "../historicalData/generators/aave";
+import {
+  Datum,
+  mainnetAaveDataGenerator,
+} from "../historicalData/generators/aave";
+import { ContractsConfig, TokenConfig } from "../deployConfig/types";
 
 interface RateOracleInstanceInfo {
   contractName: string;
@@ -37,7 +41,10 @@ async function writeRateOracleConfigToGnosisSafeTemplate(
   );
   const output = mustache.render(template, data);
 
-  fs.mkdirSync(path.join(__dirname, "..", "tasks", "JSONs"));
+  const jsonDir = path.join(__dirname, "..", "tasks", "JSONs");
+  if (!fs.existsSync(jsonDir)) {
+    fs.mkdirSync(jsonDir);
+  }
   fs.writeFileSync(
     path.join(__dirname, "..", "tasks", "JSONs", "rateOracleConfig.json"),
     output
@@ -45,6 +52,54 @@ async function writeRateOracleConfigToGnosisSafeTemplate(
 }
 
 let multisigConfig: RateOracleConfigForTemplate[] = [];
+
+interface DeployAndConfigureWithGeneratorArgs {
+  hre: HardhatRuntimeEnvironment;
+  initialArgs: any[];
+  tokenDefinition: TokenConfig;
+  contractName: string;
+  trustedDataPointsGenerator: AsyncGenerator<Datum>;
+}
+
+const deployAndConfigureWithGenerator = async ({
+  hre,
+  initialArgs,
+  tokenDefinition,
+  contractName,
+  trustedDataPointsGenerator: generator,
+}: DeployAndConfigureWithGeneratorArgs) => {
+  // Get the trusted timestamps using the generator
+  const timestamps: number[] = [];
+  const rates: BigNumber[] = [];
+  for await (let data of generator) {
+    timestamps.push(data.timestamp);
+    rates.push(data.rate);
+  }
+
+  console.log(
+    `Got historical data (in function): ${JSON.stringify(
+      timestamps
+    )}, ${JSON.stringify((rates as BigNumber[]).map((r) => r.toString()))}`
+  );
+
+  // We skip the most recent timestamp & rate, since it should be from ~now and the contract will write this itself
+  const args = [...initialArgs, timestamps.slice(0, -1), rates.slice(0, -1)];
+  console.log(`Deployment args are ${args.map((a) => a.toString())}`);
+
+  // Get the maxIrsDuration (used to sanity check buffer size)
+  const network = hre.network.name;
+  const deployConfig = getConfig(network);
+  const maxIrsDurationInSeconds = deployConfig.maxIrsDurationInSeconds;
+
+  await deployAndConfigureRateOracleInstance(hre, {
+    args,
+    suffix: tokenDefinition.name,
+    contractName,
+    rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
+    minSecondsSinceLastUpdate: tokenDefinition.minSecondsSinceLastUpdate,
+    maxIrsDurationInSeconds,
+  });
+};
 
 const deployAndConfigureRateOracleInstance = async (
   hre: HardhatRuntimeEnvironment,
@@ -135,10 +190,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // console.log("aaveTokens", aaveTokens);
     // console.log("existingAaveLendingPoolAddress", existingAaveLendingPoolAddress);
     if (existingAaveLendingPoolAddress && aaveTokens) {
-      const aaveLendingPool = await ethers.getContractAt(
+      const aaveLendingPool = (await ethers.getContractAt(
         "IAaveV2LendingPool",
         existingAaveLendingPoolAddress
-      );
+      )) as IAaveV2LendingPool;
 
       for (const tokenDefinition of aaveTokens) {
         let args: (string | BigNumberish[])[] = [];
@@ -157,65 +212,83 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             trustedTimestamps,
             trustedObservationValuesInRay,
           ];
+          await deployAndConfigureRateOracleInstance(hre, {
+            args,
+            suffix: tokenDefinition.name,
+            contractName: "AaveRateOracle",
+            rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
+            minSecondsSinceLastUpdate:
+              tokenDefinition.minSecondsSinceLastUpdate,
+            maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
+          });
         } else if (tokenDefinition.daysOfTrustedDataPoints) {
-          const generator = await mainnetAaveDataGenerator(
+          const trustedDataPointsGenerator = await mainnetAaveDataGenerator(
             hre,
             tokenDefinition.address,
-            tokenDefinition.daysOfTrustedDataPoints
-          );
-          const timestamps: number[] = [];
-          const rates: BigNumber[] = [];
-          for await (let data of generator) {
-            // (4)
-            timestamps.push(data.timestamp);
-            rates.push(data.rate);
-          }
-
-          console.log(
-            `Got historical data (from genrtr): ${JSON.stringify(
-              timestamps
-            )}, ${JSON.stringify(
-              (rates as BigNumber[]).map((r) => r.toString())
-            )}`
+            tokenDefinition.daysOfTrustedDataPoints,
+            false,
+            { lendingPool: aaveLendingPool }
           );
 
-          const { timestamps: altTimestamps, rates: altRates } = await hre.run(
-            "getHistoricalData",
-            {
-              lookbackDays: tokenDefinition.daysOfTrustedDataPoints,
-              aave: true,
-              token: tokenDefinition.name,
-            }
-          );
-          console.log(
-            `Got historical data (cross-check): ${JSON.stringify(
-              altTimestamps
-            )}, ${JSON.stringify(
-              (altRates as BigNumber[]).map((r) => r.toString())
-            )}`
-          );
+          await deployAndConfigureWithGenerator({
+            hre,
+            initialArgs: [aaveLendingPool.address, tokenDefinition.address],
+            tokenDefinition,
+            contractName: "AaveRateOracle",
+            trustedDataPointsGenerator,
+          });
+          // const timestamps: number[] = [];
+          // const rates: BigNumber[] = [];
+          // for await (let data of trustedDataPointsGenerator) {
+          //   timestamps.push(data.timestamp);
+          //   rates.push(data.rate);
+          // }
+
+          // console.log(
+          //   `Got historical data (from genrtr): ${JSON.stringify(
+          //     timestamps
+          //   )}, ${JSON.stringify(
+          //     (rates as BigNumber[]).map((r) => r.toString())
+          //   )}`
+          // );
+
+          // const { timestamps: altTimestamps, rates: altRates } = await hre.run(
+          //   "getHistoricalData",
+          //   {
+          //     lookbackDays: tokenDefinition.daysOfTrustedDataPoints,
+          //     aave: true,
+          //     token: tokenDefinition.name,
+          //   }
+          // );
+          // console.log(
+          //   `Got historical data (cross-check): ${JSON.stringify(
+          //     altTimestamps
+          //   )}, ${JSON.stringify(
+          //     (altRates as BigNumber[]).map((r) => r.toString())
+          //   )}`
+          // );
 
           // For Aave, the first two constructor args are lending pool address and underlying token address
           // For Aave, the address in the tokenDefinition is the address of the underlying token
-          args = [
-            aaveLendingPool.address,
-            tokenDefinition.address,
-            timestamps.slice(0, -1), // We skip the last timestamp since it is ~now, and the smart contract does a write on construction
-            rates.slice(0, -1), // We skip the last rate since it is for ~now, and the smart contract does a write on construction
-          ];
+          // args = [
+          //   aaveLendingPool.address,
+          //   tokenDefinition.address,
+          //   timestamps.slice(0, -1), // We skip the last timestamp since it is ~now, and the smart contract does a write on construction
+          //   rates.slice(0, -1), // We skip the last rate since it is for ~now, and the smart contract does a write on construction
+          // ];
         } else {
           // Don't add any trusted data points
           args = [aaveLendingPool.address, tokenDefinition.address, [], []];
+          await deployAndConfigureRateOracleInstance(hre, {
+            args,
+            suffix: tokenDefinition.name,
+            contractName: "AaveRateOracle",
+            rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
+            minSecondsSinceLastUpdate:
+              tokenDefinition.minSecondsSinceLastUpdate,
+            maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
+          });
         }
-
-        await deployAndConfigureRateOracleInstance(hre, {
-          args,
-          suffix: tokenDefinition.name,
-          contractName: "AaveRateOracle",
-          rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
-          minSecondsSinceLastUpdate: tokenDefinition.minSecondsSinceLastUpdate,
-          maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
-        });
       }
     }
     // End of Aave Rate Oracles
