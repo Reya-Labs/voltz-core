@@ -82,6 +82,7 @@ export const mainnetConfig: ContractsConfig = {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
     aaveTokens: [
+      // Supply markets
       {
         name: "USDC",
         address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
@@ -98,26 +99,24 @@ export const mainnetConfig: ContractsConfig = {
         ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
         daysOfTrustedDataPoints: 20,
       },
-    ],
-  },
-  aaveBorrowConfig: {
-    // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
-    aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
-    aaveTokens: [
+      // Borrow markets
       {
         name: "USDC",
+        borrow: true,
         address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
         trustedDataPoints: borrowAaveUSDCMainnetTrustedDatapoints,
       },
       {
         name: "WETH",
+        borrow: true,
         address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
         ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
         trustedDataPoints: borrowAaveETHMainnetTrustedDatapoints,
       },
       // {
       //   name: "DAI",
+      //   borrow: true,
       //   address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
       //   ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
       //   trustedDataPoints: borrowAaveDAIMainnetTrustedDatapoints,

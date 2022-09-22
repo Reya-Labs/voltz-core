@@ -58,7 +58,7 @@ interface DeployAndConfigureWithGeneratorArgs {
   initialArgs: any[];
   tokenDefinition: TokenConfig;
   contractName: string;
-  trustedDataPointsGenerator: AsyncGenerator<Datum>;
+  trustedDataPointsGenerator: AsyncGenerator<Datum> | null;
 }
 
 const deployAndConfigureWithGenerator = async ({
@@ -69,21 +69,28 @@ const deployAndConfigureWithGenerator = async ({
   trustedDataPointsGenerator: generator,
 }: DeployAndConfigureWithGeneratorArgs) => {
   // Get the trusted timestamps using the generator
-  const timestamps: number[] = [];
-  const rates: BigNumber[] = [];
-  for await (const data of generator) {
-    timestamps.push(data.timestamp);
-    rates.push(data.rate);
+  let timestamps: number[] = [];
+  let rates: BigNumber[] = [];
+
+  // TODO: combine this function with deployAndConfigureRateOracleInstance, and then only utilise the generator if we are actually going to deploy
+  if (!!generator) {
+    for await (const data of generator) {
+      timestamps.push(data.timestamp);
+      rates.push(data.rate);
+    }
+
+    console.log(
+      `Got historical data (in function): ${JSON.stringify(
+        timestamps
+      )}, ${JSON.stringify((rates as BigNumber[]).map((r) => r.toString()))}`
+    );
+
+    // We skip the most recent timestamp & rate, since it should be from ~now and the contract will write this itself
+    timestamps = timestamps.slice(0, -1);
+    rates = rates.slice(0, -1);
   }
 
-  console.log(
-    `Got historical data (in function): ${JSON.stringify(
-      timestamps
-    )}, ${JSON.stringify((rates as BigNumber[]).map((r) => r.toString()))}`
-  );
-
-  // We skip the most recent timestamp & rate, since it should be from ~now and the contract will write this itself
-  const args = [...initialArgs, timestamps.slice(0, -1), rates.slice(0, -1)];
+  const args = [...initialArgs, timestamps, rates];
   console.log(`Deployment args are ${args.map((a) => a.toString())}`);
 
   // Get the maxIrsDuration (used to sanity check buffer size)
@@ -187,7 +194,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const existingAaveLendingPoolAddress = aaveConfig?.aaveLendingPool;
     const aaveTokens = aaveConfig?.aaveTokens;
 
-    // console.log("aaveTokens", aaveTokens);
+    // console.log("aaveTokens", JSON.stringify(aaveTokens, null, 2));
     // console.log("existingAaveLendingPoolAddress", existingAaveLendingPoolAddress);
     if (existingAaveLendingPoolAddress && aaveTokens) {
       const aaveLendingPool = (await ethers.getContractAt(
@@ -215,122 +222,40 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           await deployAndConfigureRateOracleInstance(hre, {
             args,
             suffix: tokenDefinition.name,
-            contractName: "AaveRateOracle",
+            contractName: tokenDefinition.borrow
+              ? "AaveBorrowRateOracle"
+              : "AaveRateOracle",
             rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
             minSecondsSinceLastUpdate:
               tokenDefinition.minSecondsSinceLastUpdate,
             maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
           });
-        } else if (tokenDefinition.daysOfTrustedDataPoints) {
-          const trustedDataPointsGenerator = await mainnetAaveDataGenerator(
-            hre,
-            tokenDefinition.address,
-            tokenDefinition.daysOfTrustedDataPoints,
-            false,
-            { lendingPool: aaveLendingPool }
-          );
+        } else {
+          let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
+
+          if (tokenDefinition.daysOfTrustedDataPoints) {
+            trustedDataPointsGenerator = await mainnetAaveDataGenerator(
+              hre,
+              tokenDefinition.address,
+              tokenDefinition.daysOfTrustedDataPoints,
+              false,
+              { lendingPool: aaveLendingPool }
+            );
+          }
 
           await deployAndConfigureWithGenerator({
             hre,
             initialArgs: [aaveLendingPool.address, tokenDefinition.address],
             tokenDefinition,
-            contractName: "AaveRateOracle",
+            contractName: tokenDefinition.borrow
+              ? "AaveBorrowRateOracle"
+              : "AaveRateOracle",
             trustedDataPointsGenerator,
-          });
-          // const timestamps: number[] = [];
-          // const rates: BigNumber[] = [];
-          // for await (let data of trustedDataPointsGenerator) {
-          //   timestamps.push(data.timestamp);
-          //   rates.push(data.rate);
-          // }
-
-          // console.log(
-          //   `Got historical data (from genrtr): ${JSON.stringify(
-          //     timestamps
-          //   )}, ${JSON.stringify(
-          //     (rates as BigNumber[]).map((r) => r.toString())
-          //   )}`
-          // );
-
-          // const { timestamps: altTimestamps, rates: altRates } = await hre.run(
-          //   "getHistoricalData",
-          //   {
-          //     lookbackDays: tokenDefinition.daysOfTrustedDataPoints,
-          //     aave: true,
-          //     token: tokenDefinition.name,
-          //   }
-          // );
-          // console.log(
-          //   `Got historical data (cross-check): ${JSON.stringify(
-          //     altTimestamps
-          //   )}, ${JSON.stringify(
-          //     (altRates as BigNumber[]).map((r) => r.toString())
-          //   )}`
-          // );
-
-          // For Aave, the first two constructor args are lending pool address and underlying token address
-          // For Aave, the address in the tokenDefinition is the address of the underlying token
-          // args = [
-          //   aaveLendingPool.address,
-          //   tokenDefinition.address,
-          //   timestamps.slice(0, -1), // We skip the last timestamp since it is ~now, and the smart contract does a write on construction
-          //   rates.slice(0, -1), // We skip the last rate since it is for ~now, and the smart contract does a write on construction
-          // ];
-        } else {
-          // Don't add any trusted data points
-          args = [aaveLendingPool.address, tokenDefinition.address, [], []];
-          await deployAndConfigureRateOracleInstance(hre, {
-            args,
-            suffix: tokenDefinition.name,
-            contractName: "AaveRateOracle",
-            rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
-            minSecondsSinceLastUpdate:
-              tokenDefinition.minSecondsSinceLastUpdate,
-            maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
           });
         }
       }
     }
     // End of Aave Rate Oracles
-  }
-
-  {
-    // Aave BORROW Rate Oracle
-    const aaveBorrowConfig = deployConfig.aaveBorrowConfig;
-    const existingAaveLendingPoolAddress = aaveBorrowConfig?.aaveLendingPool;
-    const aaveTokens = aaveBorrowConfig?.aaveTokens;
-    if (existingAaveLendingPoolAddress && aaveTokens) {
-      const aaveLendingPool = await ethers.getContractAt(
-        "IAaveV2LendingPool",
-        existingAaveLendingPoolAddress
-      );
-
-      for (const tokenDefinition of aaveTokens) {
-        const { trustedTimestamps, trustedObservationValuesInRay } =
-          convertTrustedRateOracleDataPoints(
-            tokenDefinition.trustedDataPoints || []
-          );
-
-        // For Aave, the first two constructor args are lending pool address and underlying token address
-        // For Aave, the address in the tokenDefinition is the address of the underlying token
-        const args = [
-          aaveLendingPool.address,
-          tokenDefinition.address,
-          trustedTimestamps,
-          trustedObservationValuesInRay,
-        ];
-
-        await deployAndConfigureRateOracleInstance(hre, {
-          args,
-          suffix: tokenDefinition.name,
-          contractName: "AaveBorrowRateOracle",
-          rateOracleBufferSize: tokenDefinition.rateOracleBufferSize,
-          minSecondsSinceLastUpdate: tokenDefinition.minSecondsSinceLastUpdate,
-          maxIrsDurationInSeconds: deployConfig.maxIrsDurationInSeconds,
-        });
-      }
-    }
-    // End of Aave Borrow Rate Oracles
   }
 
   // Compound Rate Oracles

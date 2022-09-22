@@ -35,9 +35,19 @@ export const getConfig = (_networkName: string): ContractsConfig => {
   }
 
   const _config = config[_networkName];
+  const compoundTokens = _config.compoundConfig?.compoundTokens;
+  const aaveTokens = _config.compoundConfig?.compoundTokens;
+
   if (
-    _config.compoundConfig?.compoundTokens &&
-    duplicateExists(_config.compoundConfig?.compoundTokens?.map((t) => t.name))
+    compoundTokens &&
+    // check for borrow token duplicates
+    (duplicateExists(
+      compoundTokens?.filter((t) => t.borrow).map((t) => t.name)
+    ) ||
+      // check for non-borrow token duplicates
+      duplicateExists(
+        compoundTokens?.filter((t) => !t.borrow).map((t) => t.name)
+      ))
   ) {
     throw Error(
       `Duplicate token names configured for Compound on network ${_networkName}`
@@ -45,8 +55,11 @@ export const getConfig = (_networkName: string): ContractsConfig => {
   }
 
   if (
-    _config.aaveConfig?.aaveTokens &&
-    duplicateExists(_config.aaveConfig?.aaveTokens?.map((t) => t.name))
+    aaveTokens &&
+    // check for borrow token duplicates
+    (duplicateExists(aaveTokens?.filter((t) => t.borrow).map((t) => t.name)) ||
+      // check for non-borrow token duplicates
+      duplicateExists(aaveTokens?.filter((t) => !t.borrow).map((t) => t.name)))
   ) {
     throw Error(
       `Duplicate token names configured for Aave on network ${_networkName}`

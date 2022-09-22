@@ -12,6 +12,7 @@ export interface TokenConfig {
   // - the source of the data, using hardhat's getHistoricalData task
   trustedDataPoints?: RateOracleDataPoint[];
   daysOfTrustedDataPoints?: number;
+  borrow?: boolean;
 }
 export interface LpMarginCapDefaults {
   eth: number;
