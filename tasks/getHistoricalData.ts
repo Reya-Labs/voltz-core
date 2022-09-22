@@ -119,6 +119,12 @@ task("getHistoricalData", "Retrieves the historical rates")
       throw new Error(`Exactly one platform must be queried at a time`);
     }
 
+    if (hre.network.name !== "mainnet") {
+      throw new Error(
+        `Invalid network. Only mainnet data extraction is currently supported`
+      );
+    }
+
     if (taskArgs.borrow && !taskArgs.aave && !taskArgs.compound) {
       throw new Error(`Borrow rates are only supported for aave and compound`);
     }
