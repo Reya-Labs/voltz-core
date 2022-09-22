@@ -6,6 +6,7 @@ interface Datum {
   blockNumber: number;
   timestamp: number;
   rate: BigNumber;
+  error: unknown;
 }
 
 interface BlockSpec {
@@ -27,24 +28,34 @@ async function* aaveDataGenerator(spec: AaveDataSpec): AsyncGenerator<Datum> {
   const { hre, underlyingAddress, lendingPool } = spec;
   console.log("In generator", spec.fromBlock, spec.toBlock, spec.blockInterval);
   for (let b = spec.fromBlock; b <= spec.toBlock; b += spec.blockInterval) {
-    const block = await hre.ethers.provider.getBlock(b);
-    let rate: BigNumber;
+    try {
+      const block = await hre.ethers.provider.getBlock(b);
+      let rate: BigNumber;
 
-    if (spec.borrow) {
-      rate = await lendingPool.getReserveNormalizedVariableDebt(
-        underlyingAddress,
-        { blockTag: b }
-      );
-    } else {
-      rate = await lendingPool.getReserveNormalizedIncome(underlyingAddress, {
-        blockTag: b,
-      });
+      if (spec.borrow) {
+        rate = await lendingPool.getReserveNormalizedVariableDebt(
+          underlyingAddress,
+          { blockTag: b }
+        );
+      } else {
+        rate = await lendingPool.getReserveNormalizedIncome(underlyingAddress, {
+          blockTag: b,
+        });
+      }
+      yield {
+        blockNumber: b,
+        timestamp: block.timestamp,
+        rate,
+        error: null,
+      };
+    } catch (e: unknown) {
+      yield {
+        blockNumber: b,
+        timestamp: 0,
+        rate: BigNumber.from(0),
+        error: e,
+      };
     }
-    yield {
-      blockNumber: b,
-      timestamp: block.timestamp,
-      rate,
-    };
   }
 }
 

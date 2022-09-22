@@ -233,19 +233,23 @@ task("getHistoricalData", "Retrieves the historical rates")
         taskArgs.borrow,
         { fromBlock, toBlock, blockInterval: taskArgs.blockInterval }
       );
-      for await (let { blockNumber, timestamp, rate } of generator) {
-        blocks.push(blockNumber);
-        timestamps.push(timestamp);
-        rates.push(rate);
-        fs.appendFileSync(
-          file,
-          `${new Date(timestamp * 1000).toISOString()},${timestamp},${rate}\n`
-        );
-        console.log(
-          `${blockNumber},${timestamp},${new Date(
-            timestamp * 1000
-          ).toISOString()},${rate}`
-        );
+      for await (let { blockNumber, timestamp, rate, error } of generator) {
+        if (error) {
+          console.log(`Error retrieving data for block ${blockNumber}`);
+        } else {
+          blocks.push(blockNumber);
+          timestamps.push(timestamp);
+          rates.push(rate);
+          fs.appendFileSync(
+            file,
+            `${new Date(timestamp * 1000).toISOString()},${timestamp},${rate}\n`
+          );
+          console.log(
+            `${blockNumber},${timestamp},${new Date(
+              timestamp * 1000
+            ).toISOString()},${rate}`
+          );
+        }
       }
 
       // no need to get decimals
