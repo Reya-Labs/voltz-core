@@ -1,4 +1,4 @@
-import { subtask, task, types } from "hardhat/config";
+import { task, types } from "hardhat/config";
 import { toBn } from "../test/helpers/toBn";
 import {
   ICToken,
@@ -174,7 +174,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     const timestamps: number[] = [];
     const rates: BigNumber[] = [];
 
-    let generator: AsyncGenerator<Datum> | undefined = undefined;
+    let generator: AsyncGenerator<Datum> | undefined;
 
     // compound
     if (taskArgs.compound) {
@@ -267,9 +267,9 @@ task("getHistoricalData", "Retrieves the historical rates")
     fs.appendFileSync(file, header + "\n");
     console.log(`block,${header}`);
 
-    if (!!generator) {
+    if (generator) {
       // use the generator
-      for await (let { blockNumber, timestamp, rate, error } of generator) {
+      for await (const { blockNumber, timestamp, rate, error } of generator) {
         if (error) {
           console.log(`Error retrieving data for block ${blockNumber}`);
         } else {

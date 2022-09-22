@@ -15,7 +15,7 @@ import {
   Datum,
   mainnetAaveDataGenerator,
 } from "../historicalData/generators/aave";
-import { ContractsConfig, TokenConfig } from "../deployConfig/types";
+import { TokenConfig } from "../deployConfig/types";
 
 interface RateOracleInstanceInfo {
   contractName: string;
@@ -71,7 +71,7 @@ const deployAndConfigureWithGenerator = async ({
   // Get the trusted timestamps using the generator
   const timestamps: number[] = [];
   const rates: BigNumber[] = [];
-  for await (let data of generator) {
+  for await (const data of generator) {
     timestamps.push(data.timestamp);
     rates.push(data.rate);
   }
