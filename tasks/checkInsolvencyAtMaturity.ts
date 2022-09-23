@@ -3,7 +3,7 @@ import {
   FixedAndVariableMathTest,
   MarginEngine,
   BaseRateOracle,
-  IERC20Minimal,
+  // IERC20Minimal,
 } from "../typechain";
 import { ethers, utils, BigNumber } from "ethers";
 
