@@ -274,8 +274,9 @@ task(
       throw new Error("Unfunctional pool. Check start and end timestamps!");
     }
 
-    const maxIrsDurationInSeconds = getConfig(hre.network.name).irsConfig
-      .maxIrsDurationInSeconds;
+    const maxIrsDurationInSeconds = getConfig(
+      hre.network.name
+    ).maxIrsDurationInSeconds;
 
     if (maxIrsDurationInSeconds < termEndTimestamp - termStartTimestamp) {
       throw new Error(

@@ -12,66 +12,29 @@ export interface TokenConfig {
   // - the source of the data, using hardhat's getHistoricalData task
   trustedDataPoints?: RateOracleDataPoint[];
 }
-
-export interface MarginCalculatorParameters {
-  apyUpperMultiplierWad: BigNumberish;
-  apyLowerMultiplierWad: BigNumberish;
-  sigmaSquaredWad: BigNumberish;
-  alphaWad: BigNumberish;
-  betaWad: BigNumberish;
-  xiUpperWad: BigNumberish;
-  xiLowerWad: BigNumberish;
-  tMaxWad: BigNumberish;
-  etaIMWad: BigNumberish;
-  etaLMWad: BigNumberish;
-  gap1: BigNumberish;
-  gap2: BigNumberish;
-  gap3: BigNumberish;
-  gap4: BigNumberish;
-  gap5: BigNumberish;
-  gap6: BigNumberish;
-  gap7: BigNumberish;
-  minMarginToIncentiviseLiquidators: BigNumberish;
-}
-
 export interface LpMarginCapDefaults {
   eth: number;
   stableCoin: number;
 }
-
-export interface IrsConfigDefaults {
-  marginEngineLookbackWindowInSeconds: BigNumberish;
-  marginEngineCacheMaxAgeInSeconds: BigNumberish;
-  marginEngineLiquidatorRewardWad: BigNumberish;
-  marginEngineCalculatorParameters: MarginCalculatorParameters;
-  vammFeeProtocol: BigNumberish;
-  vammFeeWad: BigNumberish;
-  maxIrsDurationInSeconds: number;
-  lpMarginCap: LpMarginCapDefaults;
-}
 export interface RateOracleConfigDefaults {
-  rateOracleBufferSize: BigNumberish; // For mock token oracle or platforms with only a single token
-  rateOracleMinSecondsSinceLastUpdate: number; // For mock token oracle or platforms with only a single token
+  rateOracleBufferSize: number; // For mock token oracle or platforms with only a single token
+  minSecondsSinceLastUpdate: number; // For mock token oracle or platforms with only a single token
   trustedDataPoints: RateOracleDataPoint[]; // For mock token oracle or platforms with only a single token
 }
 export interface AaveConfig {
   aaveLendingPool?: string;
   aaveTokens: TokenConfig[];
-  defaults: RateOracleConfigDefaults;
 }
 export interface AaveBorrowConfig {
   aaveLendingPool?: string;
   aaveTokens: TokenConfig[];
-  defaults: RateOracleConfigDefaults;
 }
 export interface CompoundConfig {
   compoundTokens: TokenConfig[];
-  defaults: RateOracleConfigDefaults;
 }
 
 export interface CompoundBorrowConfig {
   compoundTokens: TokenConfig[];
-  defaults: RateOracleConfigDefaults;
 }
 
 export interface LidoConfig {
@@ -86,7 +49,6 @@ export interface RocketPoolConfig {
 }
 export interface ContractsConfig {
   weth?: string;
-  irsConfig: IrsConfigDefaults;
   aaveConfig?: AaveConfig;
   aaveBorrowConfig?: AaveBorrowConfig;
   compoundConfig?: CompoundConfig;
@@ -95,6 +57,7 @@ export interface ContractsConfig {
   rocketPoolConfig?: RocketPoolConfig;
   skipFactoryDeploy?: boolean;
   factoryOwnedByMultisig?: boolean;
+  maxIrsDurationInSeconds: number;
 }
 export interface ContractsConfigMap {
   [key: string]: ContractsConfig;

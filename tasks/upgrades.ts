@@ -206,6 +206,16 @@ task(
         console.log("Moved proxy back to deplyment files");
       }
     }
+
+    if (hre.network.live) {
+      console.log(
+        "\nIf new contracts were deployed, please verify them now before making any other changes:"
+      );
+      console.log(
+        `\tnpx hardhat --network ${hre.network.name} etherscan-verify`
+      );
+      console.log("See readme for troubleshooting or additional details.");
+    }
   });
 
 // TODO: add marginEngine, aaveFcm, compoundFcm and periphery params/flags, and do all in one go

@@ -121,6 +121,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
         int256 variableTokenDeltaCumulative;
         /// @dev fixed token delta cumulative but without rebalancings applied
         int256 fixedTokenDeltaUnbalancedCumulative;
+        uint256 variableFactorWad;
     }
 
     struct StepComputations {

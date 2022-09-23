@@ -7,14 +7,11 @@ import path from "path";
 import { getPositions, Position } from "../scripts/getPositions";
 
 interface liquidationTemplateData {
-  liquidationsPerPool: {
+  liquidatablePositions: {
     marginEngineAddress: string;
-    vammAddress: string;
-    liquidatablePositions: {
-      owner: string;
-      tickLower: number;
-      tickUpper: number;
-    }[];
+    owner: string;
+    tickLower: number;
+    tickUpper: number;
   }[];
 }
 
@@ -39,19 +36,12 @@ task("liquidatePositions", "Liquidate liquidatable positions")
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
   .setAction(async (taskArgs, hre) => {
-    if (!taskArgs.multisig) {
-      console.log(
-        "Currently no support for sending on chain transactions. --multisig flag must be turned on."
-      );
-      return;
-    }
-
     const data: liquidationTemplateData = {
-      liquidationsPerPool: [],
+      liquidatablePositions: [],
     };
 
     const marginEngineAddresses = new Set<string>();
-    const positions: Position[] = await getPositions();
+    const positions: Position[] = await getPositions(true);
     for (const position of positions) {
       marginEngineAddresses.add(position.marginEngine);
     }
@@ -71,20 +61,6 @@ task("liquidatePositions", "Liquidate liquidatable positions")
       if (marginEngineEndTimestamp <= currentBlock.timestamp) {
         continue;
       }
-
-      const liquidationsOfPool: {
-        marginEngineAddress: string;
-        vammAddress: string;
-        liquidatablePositions: {
-          owner: string;
-          tickLower: number;
-          tickUpper: number;
-        }[];
-      } = {
-        marginEngineAddress: marginEngineAddress,
-        vammAddress: (await marginEngine.vamm()).toString(),
-        liquidatablePositions: [],
-      };
 
       for (const position of positions) {
         if (position.marginEngine !== marginEngineAddress) {
@@ -124,7 +100,8 @@ task("liquidatePositions", "Liquidate liquidatable positions")
           status === "DANGER" &&
           positionRequirementLiquidation.gt(BigInt(0))
         ) {
-          liquidationsOfPool.liquidatablePositions.push({
+          data.liquidatablePositions.push({
+            marginEngineAddress: marginEngineAddress,
             owner: position.owner,
             tickLower: position.tickLower,
             tickUpper: position.tickUpper,
@@ -142,14 +119,27 @@ task("liquidatePositions", "Liquidate liquidatable positions")
           );
         }
       }
-
-      if (liquidationsOfPool.liquidatablePositions.length > 0) {
-        data.liquidationsPerPool.push(liquidationsOfPool);
-      }
     }
 
     if (taskArgs.multisig) {
       writeLiquidationOfPositionsToGnosisSafeTemplate(data);
+    } else {
+      for (const liquidatablePosition of data.liquidatablePositions) {
+        const marginEngine = (await hre.ethers.getContractAt(
+          "MarginEngine",
+          liquidatablePosition.marginEngineAddress
+        )) as MarginEngine;
+
+        const tx = await marginEngine.liquidatePosition(
+          liquidatablePosition.owner,
+          liquidatablePosition.tickLower,
+          liquidatablePosition.tickUpper,
+          {
+            gasLimit: 10000000,
+          }
+        );
+        await tx.wait();
+      }
     }
   });
 

@@ -11,26 +11,6 @@
     "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
   },
   "transactions": [
-    {{#liquidationsPerPool}}
-    {
-      "to": "{{vammAddress}}",
-      "value": "0",
-      "data": null,
-      "contractMethod": {
-        "inputs": [
-          {
-            "internalType": "bool",
-            "name": "__isAlpha",
-            "type": "bool"
-          }
-        ],
-        "name": "setIsAlpha",
-        "payable": false
-      },
-      "contractInputsValues": {
-        "__isAlpha": "false"
-      }
-    },
     {{#liquidatablePositions}}
     {
       "to": "{{marginEngineAddress}}",
@@ -64,25 +44,5 @@
       }
     },
     {{/liquidatablePositions}}
-    {
-      "to": "{{vammAddress}}",
-      "value": "0",
-      "data": null,
-      "contractMethod": {
-        "inputs": [
-          {
-            "internalType": "bool",
-            "name": "__isAlpha",
-            "type": "bool"
-          }
-        ],
-        "name": "setIsAlpha",
-        "payable": false
-      },
-      "contractInputsValues": {
-        "__isAlpha": "true"
-      }
-    },
-    {{/liquidationsPerPool}}
   ]
 }
