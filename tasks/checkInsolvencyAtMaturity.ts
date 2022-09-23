@@ -78,10 +78,10 @@ task(
       const underlyingTokenName = getUnderlyingTokenName(
         underlyingTokenAddress
       );
-      const underlyingToken = (await hre.ethers.getContractAt(
-        "IERC20Minimal",
-        await marginEngine.underlyingToken()
-      )) as IERC20Minimal;
+      // const underlyingToken = (await hre.ethers.getContractAt(
+      //   "IERC20Minimal",
+      //   await marginEngine.underlyingToken()
+      // )) as IERC20Minimal;
 
       for (const position of positions) {
         if (position.marginEngine !== marginEngineAddress) {
