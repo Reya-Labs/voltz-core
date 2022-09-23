@@ -122,7 +122,7 @@ if (!!process.env.FORK_MAINNET) {
     live: false,
     forking: {
       url: `${process.env.MAINNET_URL}`,
-      // blockNumber: 15402000,
+      blockNumber: 15595062,
     },
   };
 } else if (!!process.env.FORK_KOVAN) {

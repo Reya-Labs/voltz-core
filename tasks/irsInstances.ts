@@ -264,7 +264,7 @@ task(
     const block = await hre.ethers.provider.getBlock("latest");
 
     let termStartTimestamp = block.timestamp;
-    const termEndTimestamp = termStartTimestamp + 86400 + 3600;
+    const termEndTimestamp = termStartTimestamp + 86400 + 3600; ////////////////////////
 
     if (taskArgs.termStartTimestamp) {
       termStartTimestamp = taskArgs.termStartTimestamp;
