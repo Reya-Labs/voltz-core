@@ -17,6 +17,12 @@ const _ERC1967_IMPLEMENTATION_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 interface UpgradeTemplateData {
   proxyUpgrades: { proxyAddress: string; newImplementation: string }[];
+  factoryUpdates?: {
+    factoryAddress: string;
+    newMasterMarginEngine?: string;
+    newMasterVAMM?: string;
+    // TODO: FCMs
+  };
   rateOracleUpdates: {
     marginEngineAddress: string;
     vammAddress: string;
@@ -40,13 +46,16 @@ async function writeUpgradeTransactionsToGnosisSafeTemplate(
   data: UpgradeTemplateData
 ) {
   // Get external template with fetch
-  const template = fs.readFileSync(
-    path.join(__dirname, "UpgradeIrs.json.mustache"),
-    "utf8"
-  );
-  const output = mustache.render(template, data);
-
-  console.log("\n", output);
+  try {
+    const template = fs.readFileSync(
+      path.join(__dirname, "UpgradeIrs.json.mustache"),
+      "utf8"
+    );
+    const output = mustache.render(template, data);
+    console.log("\n", output);
+  } catch (e) {
+    console.log("error:", e);
+  }
 }
 
 async function getImplementationAddress(
@@ -85,7 +94,6 @@ async function getSigner(hre: HardhatRuntimeEnvironment, acctAddress: string) {
 }
 
 // TODO: make this task a generic upgrade task, that can upgrade any or all of vamm, marginEngine, fcms and periphery
-// TODO: (optionally) update factory state to point at new instances
 task(
   "deployUpdatedImplementations",
   `Deploys a new instance of the logic contract used by instances of the following contracts ${proxiedContractTypesAsString}`
@@ -214,7 +222,7 @@ task(
 // TODO: add marginEngine, aaveFcm, compoundFcm and periphery params/flags, and do all in one go
 task(
   "upgradeProxy",
-  "Upgrades proxy instances (e.g. VAMMs, MarginEngines) to use the latest deployed implementation logic"
+  "Upgrades the factory's implementation address and/or proxy instances (e.g. VAMMs, MarginEngines) to use the latest deployed implementation logic"
 )
   .addParam(
     "contractType",
@@ -232,9 +240,12 @@ task(
     "multisig",
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
+  .addFlag(
+    "factory",
+    "If set, will also update the factory's pointer to the appropriate implementation"
+  )
   .setAction(async (taskArgs, hre) => {
     // Some prep work before we loop through the proxies
-
     if (!proxiedContractTypes.includes(taskArgs.contractType)) {
       throw Error(`Unsupported contract type: ${taskArgs.contractType}`);
     }
@@ -294,6 +305,43 @@ task(
               `${taskArgs.contractType} at ${proxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
             );
           }
+        }
+      }
+    }
+
+    if (taskArgs.factory) {
+      const factory = await hre.ethers.getContract("Factory");
+
+      if (taskArgs.multisig) {
+        data.factoryUpdates = {
+          factoryAddress: factory.address,
+        };
+
+        if (taskArgs.contractType === "MarginEngine") {
+          data.factoryUpdates.newMasterMarginEngine = latestImplLogicAddress;
+        } else if (taskArgs.contractType === "VAMM") {
+          data.factoryUpdates.newMasterVAMM = latestImplLogicAddress;
+        }
+      } else {
+        // Not using multisig template - actually send the transactions
+        const factoryOwner = await factory.owner();
+        if (multisig !== factoryOwner && deployer !== factoryOwner) {
+          console.log(
+            `Not authorised to upgrade the proxy at ${factory.address} (owned by ${factoryOwner})`
+          );
+        } else {
+          if (taskArgs.contractType === "MarginEngine") {
+            await factory
+              .connect(await getSigner(hre, factoryOwner))
+              .setMasterMarginEngine(latestImplLogicAddress);
+          } else if (taskArgs.contractType === "VAMM") {
+            await factory
+              .connect(await getSigner(hre, factoryOwner))
+              .setMasterVAMM(latestImplLogicAddress);
+          }
+          console.log(
+            `Factory at ${factory.address} now points to ${taskArgs.contractType} implementaion ${latestImplLogicAddress}`
+          );
         }
       }
     }

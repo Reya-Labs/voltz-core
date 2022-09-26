@@ -32,6 +32,50 @@
       }
     },
     {{/proxyUpgrades}}
+    {{#factoryUpdates}}
+    {{#newMasterMarginEngine}}
+    {
+      "to": "{{factoryAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "contract IMarginEngine",
+              "name": "_masterMarginEngine",
+              "type": "address"
+            }
+          ],
+        "name": "setMasterMarginEngine",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_masterMarginEngine": "{{.}}",
+      }
+    },
+    {{/newMasterMarginEngine}}
+    {{#newMasterVAMM}}
+    {
+      "to": "{{factoryAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "contract IVAMM",
+              "name": "_masterVAMM",
+              "type": "address"
+            }
+          ],
+        "name": "setMasterVAMM",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_masterVAMM": "{{.}}",
+      }
+    },
+    {{/newMasterVAMM}}
+    {{/factoryUpdates}}
     {{#rateOracleUpdates}}
     {
       "to": "{{marginEngineAddress}}",
