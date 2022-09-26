@@ -6,7 +6,7 @@ import {
   UUPSUpgradeable,
   VAMM,
 } from "../typechain";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber, Contract, ethers } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
 import * as fs from "fs";
@@ -219,7 +219,42 @@ task(
     }
   });
 
-// TODO: add marginEngine, aaveFcm, compoundFcm and periphery params/flags, and do all in one go
+async function assertProxyIsOfType(
+  hre: HardhatRuntimeEnvironment,
+  proxyContract: Contract,
+  contractType: string
+) {
+  if (contractType === "MarginEngine") {
+    try {
+      const marginEngine = proxyContract as MarginEngine;
+      // All MarginEngines implement marginEngineParameters
+      await marginEngine.marginEngineParameters();
+    } catch (e) {
+      console.error(e);
+      throw Error(
+        `Proxy at ${proxyContract.address} does not appear to be of type: ${contractType}`
+      );
+    }
+  } else if (contractType === "VAMM") {
+    try {
+      const vamm = proxyContract as VAMM;
+      // All VAMMs implement feeWad
+      await vamm.feeWad();
+    } catch (e) {
+      console.error(e);
+      throw Error(
+        `Proxy at ${proxyContract.address} does not appear to be of type: ${contractType}`
+      );
+    }
+  } else {
+    // TODO: add support for periphery, FCMs
+    throw Error(
+      `Could not assert that proxy at ${proxyContract.address} is of type: ${contractType}`
+    );
+  }
+}
+
+// TODO: add aaveFcm and compoundFcm params/flags, and do all in one go
 task(
   "upgradeProxy",
   "Upgrades the factory's implementation address and/or proxy instances (e.g. VAMMs, MarginEngines) to use the latest deployed implementation logic"
@@ -266,6 +301,7 @@ task(
         taskArgs.contractType,
         currentProxyAddress
       )) as UUPSUpgradeable;
+      await assertProxyIsOfType(hre, proxy, taskArgs.contractType);
       const proxyAddress = proxy.address;
       const initImplAddress = await getImplementationAddress(hre, proxyAddress);
 
