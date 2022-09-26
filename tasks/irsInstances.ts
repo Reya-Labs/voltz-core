@@ -60,6 +60,58 @@ interface MultisigTemplateData {
   };
 }
 
+let builtMapOfRateOracles = false;
+const mapOfRateOracleAddressesToNames = new Map<string, string>();
+
+// gets the verified contract type of a given address from etherscan
+async function getContractName(
+  hre: HardhatRuntimeEnvironment,
+  address: string
+) {
+  if (!builtMapOfRateOracles) {
+    for (const rateOracleType of [
+      "AaveRateOracle",
+      "AaveBorrowRateOracle",
+      "CompoundRateOracle",
+      "CompoundBorrowRateOracle",
+      "LidoRateOracle",
+      "RocketPoolRateOracle",
+    ]) {
+      for (const underlying of [
+        "",
+        "USDC",
+        "USDT",
+        "DAI",
+        "ETH",
+        "WETH",
+        "cDAI",
+        "cUSDT",
+      ]) {
+        const contractName = underlying
+          ? `${rateOracleType}_${underlying}`
+          : rateOracleType;
+        try {
+          const contractAddress = (await hre.ethers.getContract(contractName))
+            .address;
+          mapOfRateOracleAddressesToNames.set(
+            contractAddress.toLowerCase(),
+            contractName
+          );
+        } catch (e) {
+          // Ignore this combination; not all combinations are deployed
+        }
+      }
+    }
+    builtMapOfRateOracles = true;
+  }
+
+  if (mapOfRateOracleAddressesToNames.has(address.toLowerCase())) {
+    return mapOfRateOracleAddressesToNames.get(address.toLowerCase());
+  } else {
+    return "<unknown>";
+  }
+}
+
 async function writeIrsCreationTransactionsToGnosisSafeTemplate(
   data: MultisigTemplateData
 ) {
@@ -354,7 +406,7 @@ task(
 ).setAction(async (taskArgs, hre) => {
   const events = await getIrsInstanceEvents(hre);
 
-  let csvOutput = `underlyingToken,rateOracle,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,lookbackWindowInSeconds,cacheMaxAgeInSeconds,historicalAPY`;
+  let csvOutput = `underlyingToken,rateOracle,rateOracleType,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,lookbackWindowInSeconds,cacheMaxAgeInSeconds,historicalAPY`;
 
   for (const e of events) {
     const a = e.args;
@@ -377,9 +429,13 @@ task(
     const historicalAPY = await marginEngine.getHistoricalApyReadOnly();
     const cacheMaxAgeInSeconds = await marginEngine.cacheMaxAgeInSeconds();
 
-    csvOutput += `\n${a.underlyingToken},${
-      a.rateOracle
-    },${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${
+    // We get the latest rate oracle because it could have changed since the log was written
+    const rateOracleAddress = await marginEngine.rateOracle();
+    const rateOracleType = await getContractName(hre, rateOracleAddress);
+
+    csvOutput += `\n${
+      a.underlyingToken
+    },${rateOracleAddress},${rateOracleType},${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${
       a.tickSpacing
     },${a.marginEngine},${a.vamm},${a.fcm},${
       a.yieldBearingProtocolID
