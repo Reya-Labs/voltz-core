@@ -114,19 +114,6 @@ task(
     }
 
     for (const contractName of contractNames) {
-      let currentImplAddress: string;
-      let proxyAddress = "";
-
-      if (contractName === "Periphery") {
-        proxyAddress = (await hre.ethers.getContract(contractName)).address;
-        currentImplAddress = (
-          await hre.ethers.getContract(`${contractName}_Implementation`)
-        ).address;
-      } else {
-        currentImplAddress = (await hre.ethers.getContract(contractName))
-          .address;
-      }
-
       // Path of JSON artifacts for deployed (not compiled) contracts, relative to this tasks directory
       const deployedArtifactsDir = path.join(
         __dirname,
@@ -135,12 +122,34 @@ task(
         hre.network.name
       );
 
+      let implementationArtifactName;
+
+      if (contractName === "Periphery") {
+        // For the periphery, we have artifacts for both the Periphery logic implementation contract and for its single proxy
+        implementationArtifactName = "Periphery_Implementation";
+
+        // We take a backup of the proxy contract's artifact because it may get overwritten
+        // We will restore this at the end of the process
+        const currentProxyArtifact = path.join(
+          deployedArtifactsDir,
+          `${contractName}.json`
+        );
+        fs.copyFileSync(currentProxyArtifact, `${currentProxyArtifact}.backup`);
+      } else {
+        // For non-Periphery contracts, the (many) proxies are deployed from the factory and we only maintain artifacts for the implementation
+        implementationArtifactName = contractName;
+      }
+
+      const currentImplAddress = (
+        await hre.ethers.getContract(implementationArtifactName)
+      ).address;
+
       // TODO: compare storage layouts and warn/abort if not compatible
 
-      // Take a backup of the most recently deployed artifact file before we overwrite it
-      const deployedArtifact = path.join(
+      // Take a backup of the most recently deployed implementation artifact file before we overwrite it
+      const currentImplArtifactPath = path.join(
         deployedArtifactsDir,
-        `${contractName}.json`
+        `${implementationArtifactName}.json`
       );
 
       // We use an archive directory to store details of every previous implementation
@@ -150,28 +159,11 @@ task(
       }
 
       // Copy the file into the archive directory. If deployment fails it should also stay in the main folder.
-      const renameTo = path.join(
+      const archivedImplArtifactPath = path.join(
         archiveDir,
-        `${contractName}.${proxyAddress}.json`
+        `${implementationArtifactName}.${currentImplAddress}.json`
       );
-      fs.copyFileSync(deployedArtifact, renameTo);
-      console.log("Copied Proxy in archive");
-
-      let deployedArtifactImpl: string;
-      if (contractName === "Periphery") {
-        deployedArtifactImpl = path.join(
-          deployedArtifactsDir,
-          `${contractName}_Implementation.json`
-        );
-        const renameToImpl = path.join(
-          archiveDir,
-          `${contractName}_Implementation.${currentImplAddress}.json`
-        );
-        fs.copyFileSync(deployedArtifactImpl, renameToImpl);
-        console.log("Copied Impl in archive");
-        fs.unlinkSync(deployedArtifactImpl); // delete implemenatation from old deployments dir
-        console.log("Deleted Proxy from deployments");
-      }
+      fs.copyFileSync(currentImplArtifactPath, archivedImplArtifactPath);
 
       // Impersonation does not work with the multisig account (it should; see https://github.com/wighawag/hardhat-deploy/issues/152) so we use deployer
       const { deployer } = await hre.getNamedAccounts();
@@ -189,20 +181,21 @@ task(
       }
 
       if (contractName === "Periphery") {
-        // deployedArtifact -> change to Periphery_Implemenatation.sol
-        deployedArtifactImpl = path.join(
+        // Move the new implementation artifact from Periphery.json to Periphery_Implemenatation.json
+        const proxyArtifactPath = path.join(
           deployedArtifactsDir,
-          `${contractName}_Implementation.json`
+          `${contractName}.json`
         );
 
-        // deployedArtifact should have changed to new impl
-        fs.renameSync(deployedArtifact, deployedArtifactImpl);
+        fs.renameSync(proxyArtifactPath, currentImplArtifactPath);
         console.log(
           "Renamed just deployed impl to Periphery_Implementation.json"
         );
 
-        // move the proxy contract back
-        fs.copyFileSync(renameTo, deployedArtifact);
+        // Restore the backup we took of Periphery.sol, which is actually an artifact that points at the proxy address
+        fs.copyFileSync(`${proxyArtifactPath}.backup`, proxyArtifactPath);
+        fs.unlinkSync(`${proxyArtifactPath}.backup`);
+
         console.log("Moved proxy back to deplyment files");
       }
     }
