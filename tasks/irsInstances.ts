@@ -22,8 +22,10 @@ import * as fs from "fs";
 import path from "path";
 import "@nomiclabs/hardhat-ethers";
 import { poolConfig, poolConfigs } from "../deployConfig/poolConfig";
+import fetch from "node-fetch";
+import { hrtime } from "process";
 
-interface MultisigTemplateData {
+interface SingleIrsData {
   factoryAddress: string;
   predictedMarginEngineAddress: string;
   predictedVammAddress: string;
@@ -58,10 +60,35 @@ interface MultisigTemplateData {
     gap7: BigNumberish;
     minMarginToIncentiviseLiquidators: BigNumberish;
   };
+  last: boolean; // Used to stop adding commas in JSON template
+}
+
+interface MultisigTemplateData {
+  irsInstances: SingleIrsData[];
+}
+
+async function writeIrsCreationTransactionsToGnosisSafeTemplate(
+  data: MultisigTemplateData
+) {
+  // Get external template with fetch
+  const template = fs.readFileSync(
+    path.join(__dirname, "CreateIrsTransactions.json.mustache"),
+    "utf8"
+  );
+  const output = mustache.render(template, data);
+
+  const jsonDir = path.join(__dirname, "JSONs");
+  const outFile = path.join(jsonDir, "createIrsTransactions.json");
+  if (!fs.existsSync(jsonDir)) {
+    fs.mkdirSync(jsonDir);
+  }
+  fs.writeFileSync(outFile, output);
+
+  console.log("Output written to ", outFile.toString());
 }
 
 let builtMapOfRateOracles = false;
-const mapOfRateOracleAddressesToNames = new Map<string, string>();
+let mapOfRateOracleAddressesToNames = new Map<string, string>();
 
 // gets the verified contract type of a given address from etherscan
 async function getContractName(
@@ -87,7 +114,7 @@ async function getContractName(
         "cDAI",
         "cUSDT",
       ]) {
-        const contractName = underlying
+        const contractName = !!underlying
           ? `${rateOracleType}_${underlying}`
           : rateOracleType;
         try {
@@ -110,19 +137,6 @@ async function getContractName(
   } else {
     return "<unknown>";
   }
-}
-
-async function writeIrsCreationTransactionsToGnosisSafeTemplate(
-  data: MultisigTemplateData
-) {
-  // Get external template with fetch
-  const template = fs.readFileSync(
-    path.join(__dirname, "CreateIrsTransactions.json.mustache"),
-    "utf8"
-  );
-  const output = mustache.render(template, data);
-
-  console.log("Output:\n", output);
 }
 
 async function configureIrs(
@@ -245,7 +259,6 @@ task(
   "createIrsInstance",
   "Calls the Factory to deploy a new Interest Rate Swap instance"
 )
-  .addParam("pool", "The name of the pool (e.g. 'aDAI', 'stETH', etc.)")
   .addFlag(
     "multisig",
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
@@ -258,31 +271,16 @@ task(
     types.int
   )
   .addParam("termEndTimestamp", "The UNIX timestamp of pool end")
+  .addVariadicPositionalParam(
+    "pools",
+    "The name of a pool as configured in deployConfig/poolConfig.ts (e.g. 'borrow_aDAI_v2', 'stETH_v1', etc.)"
+  )
   .setAction(async (taskArgs, hre) => {
-    const pool = taskArgs.borrow ? "borrow_" + taskArgs.pool : taskArgs.pool;
-    let poolConfig: poolConfig;
-    if (pool in poolConfigs) {
-      poolConfig = poolConfigs[pool];
-    } else {
-      throw new Error(`No configuration for ${pool}.`);
-    }
+    // const pool = taskArgs.borrow ? "borrow_" + taskArgs.pool : taskArgs.pool;
+    const poolConfigList: poolConfig[] = [];
+    const multisigTemplateData: SingleIrsData[] = [];
 
-    const rateOracle = await getRateOracleByNameOrAddress(
-      hre,
-      poolConfig.rateOracle
-    );
-
-    const underlyingTokenAddress = await rateOracle.underlying();
-    const underlyingToken = (await hre.ethers.getContractAt(
-      "IERC20Minimal",
-      underlyingTokenAddress
-    )) as IERC20Minimal;
-    const factory = await hre.ethers.getContract("Factory");
-
-    console.log(
-      `Deploying IRS for rate oracle ${poolConfig.rateOracle} with underlying ${underlyingTokenAddress}`
-    );
-
+    // Validate inputs
     const block = await hre.ethers.provider.getBlock("latest");
 
     let termStartTimestamp = block.timestamp;
@@ -296,85 +294,131 @@ task(
       throw new Error("Unfunctional pool. Check start and end timestamps!");
     }
 
-    const maxIrsDurationInSeconds = getConfig(
-      hre.network.name
-    ).maxIrsDurationInSeconds;
-
-    if (maxIrsDurationInSeconds < termEndTimestamp - termStartTimestamp) {
-      throw new Error(
-        `Rate Oracle buffer can cope with IRS instances of up to ${maxIrsDurationInSeconds} seconds duration ` +
-          `so the requested duration of ${
-            termEndTimestamp - termStartTimestamp
-          } is unsafe`
-      );
+    // Validate all pool inputs before processing any
+    for (const pool of taskArgs.pools) {
+      if (pool in poolConfigs) {
+        poolConfigList.push(poolConfigs[pool]);
+      } else {
+        throw new Error(`No configuration for ${pool}.`);
+      }
     }
 
-    console.log(
-      `Creating test IRS for mock token/rate oracle: {${underlyingToken.address}, ${rateOracle.address}}`
-    );
+    const factory = await hre.ethers.getContract("Factory");
+    let nextFactoryNonce = await getFactoryNonce(hre, factory.address);
 
-    if (taskArgs.multisig) {
-      const nonce = await getFactoryNonce(hre, factory.address);
-
-      const data: MultisigTemplateData = {
-        factoryAddress: factory.address,
-        underlyingTokenAddress: underlyingToken.address,
-        rateOracleAddress: rateOracle.address,
-        termStartTimestampWad: toBn(termStartTimestamp),
-        termEndTimestampWad: toBn(termEndTimestamp),
-        tickSpacing: poolConfig.tickSpacing,
-        predictedMarginEngineAddress: ethers.utils.getContractAddress({
-          from: factory.address,
-          nonce: nonce,
-        }),
-        predictedVammAddress: ethers.utils.getContractAddress({
-          from: factory.address,
-          nonce: nonce + 1,
-        }),
-        peripheryAddress: await factory.periphery(),
-        cacheMaxAgeInSeconds: poolConfig.cacheMaxAgeInSeconds,
-        lookbackWindowInSeconds: poolConfig.lookbackWindowInSeconds,
-        feeWad: poolConfig.feeWad,
-        lpMarginCap: poolConfig.lpMarginCap,
-        marginCalculatorParams: poolConfig.marginCalculatorParams,
-        liquidatorRewardWad: poolConfig.liquidatorRewardWad,
-      };
-      writeIrsCreationTransactionsToGnosisSafeTemplate(data);
-    } else {
-      const deployTrx = await factory.deployIrsInstance(
-        underlyingToken.address,
-        rateOracle.address,
-        toBn(termStartTimestamp), // converting to wad
-        toBn(termEndTimestamp), // converting to wad
-        poolConfig.tickSpacing,
-        { gasLimit: 10000000 }
+    for (const poolConfig of poolConfigList) {
+      const rateOracle = await getRateOracleByNameOrAddress(
+        hre,
+        poolConfig.rateOracle
       );
-      const receipt = await deployTrx.wait();
-      // console.log(receipt);
 
-      if (!receipt.status) {
-        console.error("IRS creation failed!");
-      } else {
-        const event = receipt.events.filter(
-          (e: { event: string }) => e.event === "IrsInstance"
-        )[0];
-        //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
-        console.log(`IRS created successfully. Event args were: ${event.args}`);
+      const underlyingTokenAddress = await rateOracle.underlying();
+      const underlyingToken = (await hre.ethers.getContractAt(
+        "IERC20Minimal",
+        underlyingTokenAddress
+      )) as IERC20Minimal;
 
-        const marginEngineAddress = event.args[5];
-        const vammAddress = event.args[6];
+      console.log(
+        `Deploying IRS for rate oracle ${poolConfig.rateOracle} with underlying ${underlyingTokenAddress}`
+      );
 
-        const marginEngine = (await hre.ethers.getContractAt(
-          "MarginEngine",
-          marginEngineAddress
-        )) as MarginEngine;
-        const vamm = (await hre.ethers.getContractAt(
-          "VAMM",
-          vammAddress
-        )) as VAMM;
+      const maxIrsDurationInSeconds = getConfig(
+        hre.network.name
+      ).maxIrsDurationInSeconds;
 
-        await configureIrs(hre, marginEngine, vamm, poolConfig);
+      if (maxIrsDurationInSeconds < termEndTimestamp - termStartTimestamp) {
+        throw new Error(
+          `Rate Oracle buffer can cope with IRS instances of up to ${maxIrsDurationInSeconds} seconds duration ` +
+            `so the requested duration of ${
+              termEndTimestamp - termStartTimestamp
+            } is unsafe`
+        );
       }
+
+      console.log(
+        `Creating test IRS for mock token/rate oracle: {${underlyingToken.address}, ${rateOracle.address}}`
+      );
+
+      if (taskArgs.multisig) {
+        const data: SingleIrsData = {
+          factoryAddress: factory.address,
+          underlyingTokenAddress: underlyingToken.address,
+          rateOracleAddress: rateOracle.address,
+          termStartTimestampWad: toBn(termStartTimestamp),
+          termEndTimestampWad: toBn(termEndTimestamp),
+          tickSpacing: poolConfig.tickSpacing,
+          predictedMarginEngineAddress: ethers.utils.getContractAddress({
+            from: factory.address,
+            nonce: nextFactoryNonce++,
+          }),
+          predictedVammAddress: ethers.utils.getContractAddress({
+            from: factory.address,
+            nonce: nextFactoryNonce++,
+          }),
+          peripheryAddress: await factory.periphery(),
+          cacheMaxAgeInSeconds: poolConfig.cacheMaxAgeInSeconds,
+          lookbackWindowInSeconds: poolConfig.lookbackWindowInSeconds,
+          feeWad: poolConfig.feeWad,
+          lpMarginCap: poolConfig.lpMarginCap,
+          marginCalculatorParams: poolConfig.marginCalculatorParams,
+          liquidatorRewardWad: poolConfig.liquidatorRewardWad,
+          last: false,
+        };
+
+        const masterFcmAddress = await factory.masterFCMs(
+          await rateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID()
+        );
+        if (masterFcmAddress !== ethers.constants.AddressZero) {
+          // The factory will also create an FCM proxy, so increment the nonce for that
+          nextFactoryNonce++;
+        }
+
+        multisigTemplateData.push(data);
+      } else {
+        const deployTrx = await factory.deployIrsInstance(
+          underlyingToken.address,
+          rateOracle.address,
+          toBn(termStartTimestamp), // converting to wad
+          toBn(termEndTimestamp), // converting to wad
+          poolConfig.tickSpacing,
+          { gasLimit: 10000000 }
+        );
+        const receipt = await deployTrx.wait();
+        // console.log(receipt);
+
+        if (!receipt.status) {
+          console.error("IRS creation failed!");
+        } else {
+          const event = receipt.events.filter(
+            (e: { event: string }) => e.event === "IrsInstance"
+          )[0];
+          //   console.log(`event: ${JSON.stringify(event, null, 2)}`);
+          console.log(
+            `IRS created successfully. Event args were: ${event.args}`
+          );
+
+          const marginEngineAddress = event.args[5];
+          const vammAddress = event.args[6];
+
+          const marginEngine = (await hre.ethers.getContractAt(
+            "MarginEngine",
+            marginEngineAddress
+          )) as MarginEngine;
+          const vamm = (await hre.ethers.getContractAt(
+            "VAMM",
+            vammAddress
+          )) as VAMM;
+
+          await configureIrs(hre, marginEngine, vamm, poolConfig);
+        }
+      }
+    }
+
+    if (taskArgs.multisig && multisigTemplateData.length > 0) {
+      multisigTemplateData[multisigTemplateData.length - 1].last = true;
+      writeIrsCreationTransactionsToGnosisSafeTemplate({
+        irsInstances: multisigTemplateData,
+      });
     }
   });
 
@@ -400,66 +444,50 @@ task(
     await configureIrs(hre, marginEngine, vamm, poolConfig);
   });
 
-task("listIrsInstances", "Lists IRS instances deployed by the current factory")
-  .addFlag(
-    "onlyWhitelisted",
-    "If set, only returns VAMMs that match the whitelist in the REACT_APP_WHITELIST env var"
-  )
-  .setAction(async (taskArgs, hre) => {
-    const events = await getIrsInstanceEvents(hre);
+task(
+  "listIrsInstances",
+  "Lists IRS instances deployed by the current factory"
+).setAction(async (taskArgs, hre) => {
+  const events = await getIrsInstanceEvents(hre);
 
-    let csvOutput = `underlyingToken,rateOracle,rateOracleType,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,lookbackWindowInSeconds,cacheMaxAgeInSeconds,historicalAPY`;
+  let csvOutput = `underlyingToken,rateOracle,rateOracleType,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,lookbackWindowInSeconds,cacheMaxAgeInSeconds,historicalAPY`;
 
-    let filteredEvents = events;
-    if (
-      taskArgs.onlyWhitelisted &&
-      process.env.REACT_APP_WHITELIST &&
-      process.env.REACT_APP_WHITELIST !== `UNPROVIDED`
-    ) {
-      const whitelist = process.env.REACT_APP_WHITELIST.split(",").map((s) =>
-        s.trim().toLowerCase()
-      );
-      filteredEvents = events?.filter((e) =>
-        whitelist.includes(e.args.vamm.toLowerCase())
-      );
-    }
+  for (const e of events) {
+    const a = e.args;
+    const startTimestamp = a.termStartTimestampWad.div(toBn(1)).toNumber();
+    const endTimestamp = a.termEndTimestampWad.div(toBn(1)).toNumber();
+    // const startTimeString = new Date(startTimestamp * 1000)
+    //   .toISOString()
+    //   .substring(0, 10);
+    // const endTImeString = new Date(endTimestamp * 1000)
+    //   .toISOString()
+    //   .substring(0, 10);
+    const startTimeString = new Date(startTimestamp * 1000).toISOString();
+    const endTImeString = new Date(endTimestamp * 1000).toISOString();
 
-    for (const e of filteredEvents) {
-      const a = e.args;
-      const startTimestamp = a.termStartTimestampWad.div(toBn(1)).toNumber();
-      const endTimestamp = a.termEndTimestampWad.div(toBn(1)).toNumber();
-      // const startTimeString = new Date(startTimestamp * 1000)
-      //   .toISOString()
-      //   .substring(0, 10);
-      // const endTImeString = new Date(endTimestamp * 1000)
-      //   .toISOString()
-      //   .substring(0, 10);
-      const startTimeString = new Date(startTimestamp * 1000).toISOString();
-      const endTImeString = new Date(endTimestamp * 1000).toISOString();
+    const marginEngine = await hre.ethers.getContractAt(
+      "MarginEngine",
+      a.marginEngine
+    );
+    const secondsAgo = await marginEngine.lookbackWindowInSeconds();
+    const historicalAPY = await marginEngine.getHistoricalApyReadOnly();
+    const cacheMaxAgeInSeconds = await marginEngine.cacheMaxAgeInSeconds();
 
-      const marginEngine = await hre.ethers.getContractAt(
-        "MarginEngine",
-        a.marginEngine
-      );
-      const secondsAgo = await marginEngine.lookbackWindowInSeconds();
-      const historicalAPY = await marginEngine.getHistoricalApyReadOnly();
-      const cacheMaxAgeInSeconds = await marginEngine.cacheMaxAgeInSeconds();
+    // We get the latest rate oracle because it could have changed since the log was written
+    const rateOracleAddress = await marginEngine.rateOracle();
+    const rateOracleType = await getContractName(hre, rateOracleAddress);
 
-      // We get the latest rate oracle because it could have changed since the log was written
-      const rateOracleAddress = await marginEngine.rateOracle();
-      const rateOracleType = await getContractName(hre, rateOracleAddress);
+    csvOutput += `\n${
+      a.underlyingToken
+    },${rateOracleAddress},${rateOracleType},${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${
+      a.tickSpacing
+    },${a.marginEngine},${a.vamm},${a.fcm},${
+      a.yieldBearingProtocolID
+    },${secondsAgo.toString()},${cacheMaxAgeInSeconds.toString()},${historicalAPY.toString()}`;
+  }
 
-      csvOutput += `\n${
-        a.underlyingToken
-      },${rateOracleAddress},${rateOracleType},${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${
-        a.tickSpacing
-      },${a.marginEngine},${a.vamm},${a.fcm},${
-        a.yieldBearingProtocolID
-      },${secondsAgo.toString()},${cacheMaxAgeInSeconds.toString()},${historicalAPY.toString()}`;
-    }
-
-    console.log(csvOutput);
-  });
+  console.log(csvOutput);
+});
 
 async function getFactoryNonce(
   hre: HardhatRuntimeEnvironment,
@@ -524,14 +552,6 @@ task(
         nonce: nonce + 2,
       });
       console.log(`Next FCM (nonce=${nonce + 2}) will be at ${nextFCM}`);
-    }
-
-    for (let i = taskArgs.fcm ? nonce + 3 : nonce + 2; i < nonce + 20; i++) {
-      const address = ethers.utils.getContractAddress({
-        from: factoryAddress,
-        nonce: i,
-      });
-      console.log(`(${i})`.padStart(6) + ` ${address}`);
     }
   });
 
