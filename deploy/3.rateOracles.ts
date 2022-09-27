@@ -41,12 +41,15 @@ async function writeRateOracleConfigToGnosisSafeTemplate(
   const output = mustache.render(template, data);
 
   const jsonDir = path.join(__dirname, "..", "tasks", "JSONs");
+  const outFile = path.join(jsonDir, "rateOracleConfig.json");
   if (!fs.existsSync(jsonDir)) {
     fs.mkdirSync(jsonDir);
   }
-  fs.writeFileSync(
-    path.join(__dirname, "..", "tasks", "JSONs", "rateOracleConfig.json"),
-    output
+  fs.writeFileSync(path.join(outFile), output);
+
+  console.log(
+    "Rate Oracle reconfiguration transactions written to ",
+    outFile.toString()
   );
 }
 
