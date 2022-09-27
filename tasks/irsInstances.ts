@@ -22,8 +22,6 @@ import * as fs from "fs";
 import path from "path";
 import "@nomiclabs/hardhat-ethers";
 import { poolConfig, poolConfigs } from "../deployConfig/poolConfig";
-import fetch from "node-fetch";
-import { hrtime } from "process";
 
 interface SingleIrsData {
   factoryAddress: string;
@@ -88,7 +86,7 @@ async function writeIrsCreationTransactionsToGnosisSafeTemplate(
 }
 
 let builtMapOfRateOracles = false;
-let mapOfRateOracleAddressesToNames = new Map<string, string>();
+const mapOfRateOracleAddressesToNames = new Map<string, string>();
 
 // gets the verified contract type of a given address from etherscan
 async function getContractName(
@@ -114,7 +112,7 @@ async function getContractName(
         "cDAI",
         "cUSDT",
       ]) {
-        const contractName = !!underlying
+        const contractName = underlying
           ? `${rateOracleType}_${underlying}`
           : rateOracleType;
         try {
@@ -254,9 +252,8 @@ async function configureIrs(
   }
 }
 
-// TODO: adapt JSON to include IRS configuration
 task(
-  "createIrsInstance",
+  "createIrsInstances",
   "Calls the Factory to deploy a new Interest Rate Swap instance"
 )
   .addFlag(
