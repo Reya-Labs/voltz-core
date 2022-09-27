@@ -400,50 +400,66 @@ task(
     await configureIrs(hre, marginEngine, vamm, poolConfig);
   });
 
-task(
-  "listIrsInstances",
-  "Lists IRS instances deployed by the current factory"
-).setAction(async (taskArgs, hre) => {
-  const events = await getIrsInstanceEvents(hre);
+task("listIrsInstances", "Lists IRS instances deployed by the current factory")
+  .addFlag(
+    "onlyWhitelisted",
+    "If set, only returns VAMMs that match the whitelist in the REACT_APP_WHITELIST env var"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const events = await getIrsInstanceEvents(hre);
 
-  let csvOutput = `underlyingToken,rateOracle,rateOracleType,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,lookbackWindowInSeconds,cacheMaxAgeInSeconds,historicalAPY`;
+    let csvOutput = `underlyingToken,rateOracle,rateOracleType,termStartTimestamp,termEndTimestamp,termStartDate,termEndDate,tickSpacing,marginEngine,VAMM,FCM,yieldBearingProtocolID,lookbackWindowInSeconds,cacheMaxAgeInSeconds,historicalAPY`;
 
-  for (const e of events) {
-    const a = e.args;
-    const startTimestamp = a.termStartTimestampWad.div(toBn(1)).toNumber();
-    const endTimestamp = a.termEndTimestampWad.div(toBn(1)).toNumber();
-    // const startTimeString = new Date(startTimestamp * 1000)
-    //   .toISOString()
-    //   .substring(0, 10);
-    // const endTImeString = new Date(endTimestamp * 1000)
-    //   .toISOString()
-    //   .substring(0, 10);
-    const startTimeString = new Date(startTimestamp * 1000).toISOString();
-    const endTImeString = new Date(endTimestamp * 1000).toISOString();
+    let filteredEvents = events;
+    if (
+      taskArgs.onlyWhitelisted &&
+      process.env.REACT_APP_WHITELIST &&
+      process.env.REACT_APP_WHITELIST !== `UNPROVIDED`
+    ) {
+      const whitelist = process.env.REACT_APP_WHITELIST.split(",").map((s) =>
+        s.trim().toLowerCase()
+      );
+      filteredEvents = events?.filter((e) =>
+        whitelist.includes(e.args.vamm.toLowerCase())
+      );
+    }
 
-    const marginEngine = await hre.ethers.getContractAt(
-      "MarginEngine",
-      a.marginEngine
-    );
-    const secondsAgo = await marginEngine.lookbackWindowInSeconds();
-    const historicalAPY = await marginEngine.getHistoricalApyReadOnly();
-    const cacheMaxAgeInSeconds = await marginEngine.cacheMaxAgeInSeconds();
+    for (const e of filteredEvents) {
+      const a = e.args;
+      const startTimestamp = a.termStartTimestampWad.div(toBn(1)).toNumber();
+      const endTimestamp = a.termEndTimestampWad.div(toBn(1)).toNumber();
+      // const startTimeString = new Date(startTimestamp * 1000)
+      //   .toISOString()
+      //   .substring(0, 10);
+      // const endTImeString = new Date(endTimestamp * 1000)
+      //   .toISOString()
+      //   .substring(0, 10);
+      const startTimeString = new Date(startTimestamp * 1000).toISOString();
+      const endTImeString = new Date(endTimestamp * 1000).toISOString();
 
-    // We get the latest rate oracle because it could have changed since the log was written
-    const rateOracleAddress = await marginEngine.rateOracle();
-    const rateOracleType = await getContractName(hre, rateOracleAddress);
+      const marginEngine = await hre.ethers.getContractAt(
+        "MarginEngine",
+        a.marginEngine
+      );
+      const secondsAgo = await marginEngine.lookbackWindowInSeconds();
+      const historicalAPY = await marginEngine.getHistoricalApyReadOnly();
+      const cacheMaxAgeInSeconds = await marginEngine.cacheMaxAgeInSeconds();
 
-    csvOutput += `\n${
-      a.underlyingToken
-    },${rateOracleAddress},${rateOracleType},${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${
-      a.tickSpacing
-    },${a.marginEngine},${a.vamm},${a.fcm},${
-      a.yieldBearingProtocolID
-    },${secondsAgo.toString()},${cacheMaxAgeInSeconds.toString()},${historicalAPY.toString()}`;
-  }
+      // We get the latest rate oracle because it could have changed since the log was written
+      const rateOracleAddress = await marginEngine.rateOracle();
+      const rateOracleType = await getContractName(hre, rateOracleAddress);
 
-  console.log(csvOutput);
-});
+      csvOutput += `\n${
+        a.underlyingToken
+      },${rateOracleAddress},${rateOracleType},${startTimestamp},${endTimestamp},${startTimeString},${endTImeString},${
+        a.tickSpacing
+      },${a.marginEngine},${a.vamm},${a.fcm},${
+        a.yieldBearingProtocolID
+      },${secondsAgo.toString()},${cacheMaxAgeInSeconds.toString()},${historicalAPY.toString()}`;
+    }
+
+    console.log(csvOutput);
+  });
 
 async function getFactoryNonce(
   hre: HardhatRuntimeEnvironment,
@@ -508,6 +524,14 @@ task(
         nonce: nonce + 2,
       });
       console.log(`Next FCM (nonce=${nonce + 2}) will be at ${nextFCM}`);
+    }
+
+    for (let i = taskArgs.fcm ? nonce + 3 : nonce + 2; i < nonce + 20; i++) {
+      const address = ethers.utils.getContractAddress({
+        from: factoryAddress,
+        nonce: i,
+      });
+      console.log(`(${i})`.padStart(6) + ` ${address}`);
     }
   });
 
