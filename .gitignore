@@ -1,5 +1,5 @@
 node_modules
-.env
+.env*
 coverage
 coverage.json
 typechain
@@ -30,3 +30,5 @@ Pipfile
 Pipfile.lock
 position-status/data/
 tasks/JSONs/
+historicalData/images/
+__cr_notes
