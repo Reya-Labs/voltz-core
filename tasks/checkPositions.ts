@@ -1,6 +1,6 @@
 import { task } from "hardhat/config";
 import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
-import { ethers } from "ethers";
+import { BigNumber, BigNumberish, ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
@@ -328,21 +328,37 @@ task("getPositionInfo", "Get all information about some position")
         }%\n`
       );
 
-      const positionRequirementSafety =
-        await tmp.marginEngine.callStatic.getPositionMarginRequirement(
-          p.owner,
-          p.tickLower,
-          p.tickUpper,
-          false
-        );
+      const vamm = (await hre.ethers.getContractAt(
+        "VAMM",
+        await tmp.marginEngine.vamm()
+      )) as VAMM;
 
-      const positionRequirementLiquidation =
-        await tmp.marginEngine.callStatic.getPositionMarginRequirement(
-          p.owner,
-          p.tickLower,
-          p.tickUpper,
-          true
-        );
+      const tick = (await vamm.vammVars()).tick;
+
+      fs.appendFileSync(
+        `${EXPORT_FOLDER}/info.txt`,
+        `CURRENT FIXED RATE ${(1.0001 ** -tick).toFixed(2)}%\n`
+      );
+
+      let positionRequirementSafety: BigNumberish = BigNumber.from(0);
+      let positionRequirementLiquidation: BigNumberish = BigNumber.from(0);
+      try {
+        positionRequirementSafety =
+          await tmp.marginEngine.callStatic.getPositionMarginRequirement(
+            p.owner,
+            p.tickLower,
+            p.tickUpper,
+            false
+          );
+
+        positionRequirementLiquidation =
+          await tmp.marginEngine.callStatic.getPositionMarginRequirement(
+            p.owner,
+            p.tickLower,
+            p.tickUpper,
+            true
+          );
+      } catch (_) {}
 
       // const positionInfo = await tmp.marginEngine.callStatic.getPosition(
       //   p.owner,
@@ -488,11 +504,6 @@ task("getPositionInfo", "Get all information about some position")
       if (taskArgs.healthHistory) {
         const currentBlock = await hre.ethers.provider.getBlock("latest");
         const currentBlockNumber = currentBlock.number;
-
-        const vamm = (await hre.ethers.getContractAt(
-          "VAMM",
-          await tmp.marginEngine.vamm()
-        )) as VAMM;
 
         const header =
           "timestamp,block,tick,position_margin,position_requirement_liquidation,position_requirement_safety\n";
