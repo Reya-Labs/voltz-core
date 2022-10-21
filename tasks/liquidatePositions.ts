@@ -5,6 +5,7 @@ import mustache from "mustache";
 import path from "path";
 
 import { getPositions, Position } from "../scripts/getPositions";
+import * as poolAddresses from "../pool-addresses/mainnet.json";
 
 interface liquidationTemplateData {
   liquidatablePositions: {
@@ -26,7 +27,7 @@ async function writeLiquidationOfPositionsToGnosisSafeTemplate(
   );
   const output = mustache.render(template, data);
 
-  const file = `liquidatePositions.json`;
+  const file = `./tasks/JSONs/liquidatePositions.json`;
   fs.writeFileSync(file, output);
 }
 
@@ -35,16 +36,20 @@ task("liquidatePositions", "Liquidate liquidatable positions")
     "multisig",
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
+  .addParam("pools", "The name of the pool (e.g. 'aDAI_v2', 'stETH_v1', etc.)")
   .setAction(async (taskArgs, hre) => {
     const data: liquidationTemplateData = {
       liquidatablePositions: [],
     };
 
-    const marginEngineAddresses = new Set<string>();
+    const poolNames = taskArgs.pools.split(",");
+    const marginEngineAddresses = poolNames.map((poolName: string) => {
+      return poolAddresses[poolName as keyof typeof poolAddresses].marginEngine;
+    });
+
+    console.log("margin engine addresses:", marginEngineAddresses);
+
     const positions: Position[] = await getPositions(true);
-    for (const position of positions) {
-      marginEngineAddresses.add(position.marginEngine);
-    }
 
     const currentBlock = await hre.ethers.provider.getBlock("latest");
 
@@ -63,7 +68,10 @@ task("liquidatePositions", "Liquidate liquidatable positions")
       }
 
       for (const position of positions) {
-        if (position.marginEngine !== marginEngineAddress) {
+        if (
+          position.marginEngine.toLowerCase() !==
+          marginEngineAddress.toLowerCase()
+        ) {
           continue;
         }
 
