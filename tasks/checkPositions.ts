@@ -344,16 +344,16 @@ task("getPositionInfo", "Get all information about some position")
           true
         );
 
-      // const positionInfo = await tmp.marginEngine.callStatic.getPosition(
-      //   p.owner,
-      //   p.tickLower,
-      //   p.tickUpper
-      // );
+      const positionInfo = await tmp.marginEngine.callStatic.getPosition(
+        p.owner,
+        p.tickLower,
+        p.tickUpper
+      );
 
       fs.appendFileSync(
         `${EXPORT_FOLDER}/info.txt`,
         `MARGIN: ${ethers.utils.formatUnits(
-          0,
+          positionInfo.margin,
           tmp.decimals
         )}, LIQUIDATION: ${ethers.utils.formatUnits(
           positionRequirementLiquidation,
@@ -495,7 +495,7 @@ task("getPositionInfo", "Get all information about some position")
         )) as VAMM;
 
         const header =
-          "timestamp,block,tick,position_margin,position_requirement_liquidation,position_requirement_safety\n";
+          "timestamp,block,tick,position_margin,position_requirement_liquidation,position_requirement_safety,fixed_token_balance,variable_token_balance\n";
 
         fs.writeFile(`${EXPORT_FOLDER}/progress.csv`, header, () => {});
 
@@ -507,7 +507,7 @@ task("getPositionInfo", "Get all information about some position")
         );
         const startBlock = await getBlockAtTimestamp(hre, startTimestamp);
 
-        for (let b = startBlock + 1; b <= currentBlockNumber; b += 6400) {
+        for (let b = startBlock + 1; b <= currentBlockNumber; b += 3000) {
           const block = await hre.ethers.provider.getBlock(b);
 
           console.log("block:", b);
@@ -534,14 +534,14 @@ task("getPositionInfo", "Get all information about some position")
               }
             );
 
-          // const positionInfo = await tmp.marginEngine.callStatic.getPosition(
-          //   p.owner,
-          //   p.tickLower,
-          //   p.tickUpper,
-          //   {
-          //     blockTag: b,
-          //   }
-          // );
+          const positionInfo = await tmp.marginEngine.callStatic.getPosition(
+            p.owner,
+            p.tickLower,
+            p.tickUpper,
+            {
+              blockTag: b,
+            }
+          );
 
           const tick = (await vamm.vammVars({ blockTag: b })).tick;
 
@@ -550,13 +550,19 @@ task("getPositionInfo", "Get all information about some position")
             `${block.timestamp},${b},${
               1.0001 ** -tick
             }%,${ethers.utils.formatUnits(
-              0,
+              positionInfo.margin,
               tmp.decimals
             )},${ethers.utils.formatUnits(
               positionRequirementLiquidation,
               tmp.decimals
             )},${ethers.utils.formatUnits(
               positionRequirementSafety,
+              tmp.decimals
+            )},${ethers.utils.formatUnits(
+              positionInfo.fixedTokenBalance,
+              tmp.decimals
+            )},${ethers.utils.formatUnits(
+              positionInfo.variableTokenBalance,
               tmp.decimals
             )}\n`
           );

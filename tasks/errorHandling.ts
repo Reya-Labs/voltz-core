@@ -305,35 +305,63 @@ export type RawInfoPostSwap = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const decodeInfoPostSwap = (error: any): RawInfoPostSwap => {
-  const errSig = getErrorSignature(error);
-  if (errSig === "MarginRequirementNotMet") {
-    let reason: string | null = null;
-    try {
-      reason = error.error.data.toString();
-    } catch (_) {
+  try {
+    const errSig = getErrorSignature(error);
+    if (errSig === "MarginRequirementNotMet") {
+      let reason: string | null = null;
       try {
-        reason = error.data.toString();
-      } catch (_) {}
-    }
+        reason = error.error.data.toString();
+      } catch (_) {
+        try {
+          reason = error.data.toString();
+        } catch (_) {}
+      }
 
-    if (!reason) {
-      throw new Error("Couldn't extract error data");
-    }
+      if (!reason) {
+        throw new Error("Couldn't extract error data");
+      }
 
-    try {
-      const decodingResult = iface.decodeErrorResult(errSig, reason);
+      try {
+        const decodingResult = iface.decodeErrorResult(errSig, reason);
+        const result = {
+          marginRequirement: decodingResult.marginRequirement,
+          tick: decodingResult.tick,
+          fee: decodingResult.cumulativeFeeIncurred,
+          availableNotional: decodingResult.variableTokenDelta,
+          fixedTokenDelta: decodingResult.fixedTokenDelta,
+          fixedTokenDeltaUnbalanced: decodingResult.fixedTokenDeltaUnbalanced,
+        };
+        return result;
+      } catch {
+        throw new Error("Unrecognized error type");
+      }
+    }
+  } catch (error) {}
+
+  try {
+    if (error.errorSignature.includes("MarginRequirementNotMet")) {
       const result = {
-        marginRequirement: decodingResult.marginRequirement,
-        tick: decodingResult.tick,
-        fee: decodingResult.cumulativeFeeIncurred,
-        availableNotional: decodingResult.variableTokenDelta,
-        fixedTokenDelta: decodingResult.fixedTokenDelta,
-        fixedTokenDeltaUnbalanced: decodingResult.fixedTokenDeltaUnbalanced,
+        marginRequirement: BigNumber.from(
+          error.errorArgs.marginRequirement.toString()
+        ),
+        tick: parseInt(error.errorArgs.tick.toString()),
+        fee: BigNumber.from(error.errorArgs.cumulativeFeeIncurred),
+        availableNotional: BigNumber.from(
+          error.errorArgs.variableTokenDelta.toString()
+        ),
+        fixedTokenDelta: BigNumber.from(
+          error.errorArgs.fixedTokenDelta.toString()
+        ),
+        fixedTokenDeltaUnbalanced: BigNumber.from(
+          error.errorArgs.fixedTokenDeltaUnbalanced.toString()
+        ),
       };
       return result;
-    } catch {
-      throw new Error("Unrecognized error type");
+    } else {
+      // console.log(error);
+      throw new Error("Information post swap cannot be established");
     }
-  }
+  } catch (error) {}
+
   throw new Error(getReadableErrorMessage(error));
 };

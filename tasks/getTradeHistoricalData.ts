@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
-import { IMarginEngine, IPeriphery } from "../typechain";
+import { Factory, IMarginEngine, Periphery } from "../typechain";
 import "@nomiclabs/hardhat-ethers";
 import { toBn } from "../test/helpers/toBn";
 
@@ -9,14 +9,13 @@ import { decodeInfoPostSwap } from "./errorHandling";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
-// const peripheryAddress = "0x13E9053D9090ed6a1FAE3f59f9bD3C1FCa4c5726";
-const peripheryAddress = "0x2657101a6Bb5538DD84b0B8c8E2Deac667b9c66c";
+const factoryAddress = "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf";
 
 // deployment blocks of margin engine's
 const deploymentBlocks = {
   "0x0BC09825Ce9433B2cDF60891e1B50a300b069Dd2": 15242692, // aUSDC v2
   "0x21F9151d6e06f834751b614C2Ff40Fc28811B235": 15058080, // stETH
-  "0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0": 15242692, // cDAI v2
+  "0xF2CCD85A3428D7a560802B2DD99130bE62556D30": 15242692, // cDAI v2
   "0x654316A63E68f1c0823f0518570bc108de377831": 15242692, // aDAI v2
   "0xB1125ba5878cF3A843bE686c6c2486306f03E301": 15055872, // rETH
 };
@@ -61,7 +60,7 @@ const tickToFixedRate = (tick: number): number => {
   return 1.0001 ** -tick;
 };
 
-task("getTradeHistoricalData", "Get trader historical data")
+task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
   .addOptionalParam(
     "fromBlock",
     "Get data from this past block number (up to some larger block number defined by `toBlock`)",
@@ -87,10 +86,10 @@ task("getTradeHistoricalData", "Get trader historical data")
     types.string
   )
   .setAction(async (taskArgs, hre) => {
-    const periphery = (await hre.ethers.getContractAt(
-      "Periphery",
-      peripheryAddress
-    )) as IPeriphery;
+    const factory = (await hre.ethers.getContractAt(
+      "Factory",
+      factoryAddress
+    )) as Factory;
 
     const marginEngineAddress = taskArgs.marginEngineAddress;
 
@@ -149,6 +148,14 @@ task("getTradeHistoricalData", "Get trader historical data")
     console.log("current block", hre.ethers.provider.blockNumber);
 
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
+      const peripheryAddress = await factory.periphery({ blockTag: b });
+      console.log(peripheryAddress);
+
+      const periphery = (await hre.ethers.getContractAt(
+        "Periphery",
+        peripheryAddress
+      )) as Periphery;
+
       const block = await hre.ethers.provider.getBlock(b);
 
       if (b >= deploymentBlockNumber) {
