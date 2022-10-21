@@ -12,7 +12,6 @@ interface MultisigTemplateData {
   marginEngineAddress: string;
 
   upgradeMarginEngine: boolean;
-  newImplementation: string;
 
   updateLiquidatorReward: boolean;
   liquidatorReward: BigNumberish;
@@ -68,6 +67,7 @@ task("updateMarginEngines", "Updates the MC Parameters of a pool")
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
   .addFlag("upgradeMarginEngine")
+  .addFlag("setMasterMarginEngine")
   .addFlag("updateLiquidatorReward")
   .addFlag("updateMarginCalculatorParams")
   .addFlag("updateLookbackWindow")
@@ -76,8 +76,14 @@ task("updateMarginEngines", "Updates the MC Parameters of a pool")
 
     const updates: {
       pools: MultisigTemplateData[];
+      newImplementation: string;
+      setMasterMarginEngine: boolean;
+      factoryAddress: string;
     } = {
       pools: [],
+      newImplementation: "0x2457d958dbebacc9daa41b47592faca5845f8fc3",
+      setMasterMarginEngine: taskArgs.setMasterMarginEngine ? true : false,
+      factoryAddress: "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf",
     };
 
     for (const pool of poolNames) {
@@ -99,7 +105,6 @@ task("updateMarginEngines", "Updates the MC Parameters of a pool")
         marginEngineAddress: poolInfo.marginEngine,
 
         upgradeMarginEngine: taskArgs.upgradeMarginEngine ? true : false,
-        newImplementation: "0x2457D958DBEBaCc9daA41B47592faCA5845f8Fc3",
 
         updateLiquidatorReward: taskArgs.updateLiquidatorReward ? true : false,
         liquidatorReward: poolConfig.liquidatorRewardWad,

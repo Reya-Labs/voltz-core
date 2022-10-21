@@ -137,7 +137,7 @@ task("marginEngineUpgrade", "Upgrade margin engine implementation")
     };
 
     const marginEngineImplementation =
-      "0xb932C8342106776E73E39D695F3FFC3A9624eCE0";
+      "0x2457D958DBEBaCc9daA41B47592faCA5845f8Fc3";
 
     const pools = taskArgs.pools.split(",");
 
@@ -153,20 +153,6 @@ task("marginEngineUpgrade", "Upgrade margin engine implementation")
 
       await withSigner(await marginEngine.owner(), async (s) => {
         await marginEngine.connect(s).upgradeTo(marginEngineImplementation);
-
-        const params =
-          poolConfigs[poolName as keyof typeof poolConfigs]
-            .marginCalculatorParams;
-
-        const lookBackWindow =
-          poolConfigs[poolName as keyof typeof poolConfigs]
-            .lookbackWindowInSeconds;
-
-        await marginEngine
-          .connect(s)
-          .setLookbackWindowInSeconds(lookBackWindow);
-
-        await marginEngine.connect(s).setMarginCalculatorParameters(params);
       });
     }
   });
