@@ -6,6 +6,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import positionsJson from "../playground/positions-ALL.json";
 import { poolConfigs } from "../deployConfig/poolConfig";
 import * as poolAddresses from "../pool-addresses/mainnet.json";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 const vammImplementation = "0x7380Df8AbB0c44617C2a64Bf2D7D92caA852F03f";
 
@@ -205,6 +206,71 @@ task("mcParametersSwap", "Change margin calculator parameters").setAction(
     });
   }
 );
+
+task("quickUpgrade", "Upgrades contract").setAction(async (taskArgs, hre) => {
+  const _ERC1967_IMPLEMENTATION_SLOT =
+    "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+
+  async function getImplementationAddress(
+    hre: HardhatRuntimeEnvironment,
+    proxyAddress: string
+  ) {
+    const implHex = await hre.ethers.provider.getStorageAt(
+      proxyAddress,
+      _ERC1967_IMPLEMENTATION_SLOT
+    );
+
+    return ethers.utils.getAddress(hre.ethers.utils.hexStripZeros(implHex));
+  }
+
+  async function impersonateAccount(
+    hre: HardhatRuntimeEnvironment,
+    acctAddress: string
+  ) {
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [acctAddress],
+    });
+    // It might be a multisig contract, in which case we also need to pretend it has money for gas
+    await hre.ethers.provider.send("hardhat_setBalance", [
+      acctAddress,
+      "0x10000000000000000000",
+    ]);
+  }
+
+  async function getSigner(
+    hre: HardhatRuntimeEnvironment,
+    acctAddress: string
+  ) {
+    if (hre.network.name === "hardhat" || hre.network.name === "localhost") {
+      // We can impersonate the account
+      await impersonateAccount(hre, acctAddress);
+    }
+    return await hre.ethers.getSigner(acctAddress);
+  }
+
+  const { multisig } = await hre.getNamedAccounts();
+  const multisigSigner = await getSigner(hre, multisig);
+
+  const info = {
+    periphery: "0x07ceD903E6ad0278CC32bC83a3fC97112F763722",
+    newPeripheryImplementation: "0x74ef2B06A1D2035C33244A4a263FF00B84504865",
+  };
+
+  const periphery = (await hre.ethers.getContractAt(
+    "Periphery",
+    info.periphery
+  )) as Periphery;
+
+  await periphery
+    .connect(multisigSigner)
+    .upgradeTo(info.newPeripheryImplementation);
+
+  const newImplAddress = await getImplementationAddress(hre, info.periphery);
+  console.log(
+    `Periphery at ${info.periphery} has been upgraded from implementation ... to ${newImplAddress}`
+  );
+});
 
 task("checkSettlements", "Check settlements")
   .addParam(
