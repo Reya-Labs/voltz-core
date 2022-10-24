@@ -1,11 +1,12 @@
 import { task, types } from "hardhat/config";
-import { MarginEngine, Periphery, VAMM } from "../typechain";
+import { IERC20Minimal, MarginEngine, Periphery, VAMM } from "../typechain";
 import { BigNumber, ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import positionsJson from "../playground/positions-ALL.json";
 import { poolConfigs } from "../deployConfig/poolConfig";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import * as poolAddresses from "../pool-addresses/mainnet.json";
 
 const vammImplementation = "0x7380Df8AbB0c44617C2a64Bf2D7D92caA852F03f";
 
@@ -100,6 +101,62 @@ task("rateOracleSwap", "Swap Rate Oracle").setAction(async (_, hre) => {
     );
   }
 });
+
+task("marginEngineUpgrade", "Upgrade margin engine implementation")
+  .addParam("pools")
+  .setAction(async (taskArgs, hre) => {
+    if (!(hre.network.name === "localhost")) {
+      throw new Error("Only localhost");
+    }
+
+    const addSigner = async (address: string): Promise<SignerWithAddress> => {
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+      });
+      await hre.network.provider.send("hardhat_setBalance", [
+        address,
+        "0x1000000000000000000",
+      ]);
+      return await hre.ethers.getSigner(address);
+    };
+
+    const removeSigner = async (address: string) => {
+      await hre.network.provider.request({
+        method: "hardhat_stopImpersonatingAccount",
+        params: [address],
+      });
+    };
+
+    const withSigner = async (
+      address: string,
+      f: (_: SignerWithAddress) => Promise<void>
+    ) => {
+      const signer = await addSigner(address);
+      await f(signer);
+      await removeSigner(address);
+    };
+
+    const marginEngineImplementation =
+      "0x2457D958DBEBaCc9daA41B47592faCA5845f8Fc3";
+
+    const pools = taskArgs.pools.split(",");
+
+    for (const poolName of pools) {
+      console.log(poolName);
+      const tmp = poolAddresses[poolName as keyof typeof poolAddresses];
+      console.log("tmp:", tmp);
+
+      const marginEngine = (await hre.ethers.getContractAt(
+        "MarginEngine",
+        tmp.marginEngine
+      )) as MarginEngine;
+
+      await withSigner(await marginEngine.owner(), async (s) => {
+        await marginEngine.connect(s).upgradeTo(marginEngineImplementation);
+      });
+    }
+  });
 
 task("mcParametersSwap", "Change margin calculator parameters").setAction(
   async (_, hre) => {
@@ -277,5 +334,107 @@ task("checkSettlements", "Check settlements")
       }
     }
   });
+
+task("compareGasOfUnbalancedTracking").setAction(async (_, hre) => {
+  if (!(hre.network.name === "localhost")) {
+    throw new Error("Only localhost");
+  }
+
+  const addSigner = async (address: string): Promise<SignerWithAddress> => {
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+    await hre.network.provider.send("hardhat_setBalance", [
+      address,
+      "0x1000000000000000000",
+    ]);
+    return await hre.ethers.getSigner(address);
+  };
+
+  const removeSigner = async (address: string) => {
+    await hre.network.provider.request({
+      method: "hardhat_stopImpersonatingAccount",
+      params: [address],
+    });
+  };
+
+  const withSigner = async (
+    address: string,
+    f: (_: SignerWithAddress) => Promise<void>
+  ) => {
+    const signer = await addSigner(address);
+    await f(signer);
+    await removeSigner(address);
+  };
+
+  const marginEngineImplementation = (await hre.ethers.getContractOrNull(
+    "MarginEngine"
+  )) as MarginEngine;
+  const vammImplementation = (await hre.ethers.getContractOrNull(
+    "VAMM"
+  )) as VAMM;
+
+  if (!marginEngineImplementation || !vammImplementation) {
+    throw new Error("No implementations deployed!");
+  }
+
+  const pools = ["aUSDC_v2"];
+
+  for (const poolName of pools) {
+    console.log(poolName);
+    const tmp = poolAddresses[poolName as keyof typeof poolAddresses];
+    console.log("tmp:", tmp);
+
+    const marginEngine = (await hre.ethers.getContractAt(
+      "MarginEngine",
+      tmp.marginEngine
+    )) as MarginEngine;
+
+    const periphery = (await hre.ethers.getContractAt(
+      "Periphery",
+      "0x07ceD903E6ad0278CC32bC83a3fC97112F763722"
+    )) as Periphery;
+
+    const vammAddress = await marginEngine.vamm();
+
+    const vamm = (await hre.ethers.getContractAt("VAMM", vammAddress)) as VAMM;
+
+    await withSigner(await marginEngine.owner(), async (s) => {
+      await marginEngine
+        .connect(s)
+        .upgradeTo(marginEngineImplementation.address);
+      await vamm.connect(s).upgradeTo(vammImplementation.address);
+    });
+
+    const trader = "0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1";
+
+    await withSigner(
+      "0x0a59649758aa4d66e25f08dd01271e891fe52199",
+      async (s) => {
+        const usdc = (await hre.ethers.getContractAt(
+          "IERC20Minimal",
+          "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        )) as IERC20Minimal;
+
+        await usdc.connect(s).transfer(trader, "10000000000000");
+      }
+    );
+
+    await withSigner(trader, async (s) => {
+      const estimatedGas = await periphery.connect(s).estimateGas.swap({
+        marginEngine: tmp.marginEngine,
+        isFT: true,
+        notional: "30000000000000",
+        sqrtPriceLimitX96: "0",
+        tickLower: -60,
+        tickUpper: 60,
+        marginDelta: "10000000000000",
+      });
+
+      console.log("estimated gas:", estimatedGas.toString());
+    });
+  }
+});
 
 module.exports = {};

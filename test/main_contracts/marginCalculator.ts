@@ -1,4 +1,4 @@
-import { Wallet, BigNumber, utils } from "ethers";
+import { Wallet, BigNumber } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { metaFixture, tickMathFixture } from "../shared/fixtures";
 import {
@@ -12,7 +12,6 @@ import {
   XI_UPPER,
   XI_LOWER,
   T_MAX,
-  encodeSqrtRatioX96,
   encodePriceSqrt,
 } from "../shared/utilities";
 import { expect } from "../shared/expect";
@@ -79,18 +78,16 @@ describe("Margin Calculations", () => {
       xiLowerWad: XI_LOWER,
       tMaxWad: T_MAX,
 
-      devMulLeftUnwindLMWad: toBn("0.5"),
-      devMulRightUnwindLMWad: toBn("0.5"),
-      devMulLeftUnwindIMWad: toBn("0.8"),
-      devMulRightUnwindIMWad: toBn("0.8"),
+      etaIMWad: toBn("0.002"),
+      etaLMWad: toBn("0.001"),
+      gap1: toBn("0"),
+      gap2: toBn("0"),
+      gap3: toBn("0"),
+      gap4: toBn("0"),
+      gap5: toBn("0"),
+      gap6: toBn("0"),
+      gap7: toBn("0"),
 
-      fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
-      fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
-
-      fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
-      fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
-
-      gammaWad: toBn("1.0"),
       minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
     };
 
@@ -165,23 +162,6 @@ describe("Margin Calculations", () => {
   });
 
   describe("#worstCaseVariableFactorAtMaturity", async () => {
-    beforeEach("set timestamps", async () => {
-      const nextBlockTimestamp = (await getCurrentTimestamp(provider)) + 1;
-      await setTimeNextBlock(nextBlockTimestamp);
-
-      // Test an IRS with two week duration
-      const termStartTimestampScaled = toBn(
-        nextBlockTimestamp - ONE_WEEK_IN_SECONDS // one week ago
-      );
-      const termEndTimestampScaled = toBn(
-        nextBlockTimestamp + ONE_WEEK_IN_SECONDS // one week from now
-      );
-      await marginEngineTest.setTermTimestamps(
-        termStartTimestampScaled,
-        termEndTimestampScaled
-      );
-    });
-
     it("correctly calculates the worst case variable factor at maturity FT, LM", async () => {
       const isFT = true;
       const isLM = true;
@@ -194,7 +174,7 @@ describe("Margin Calculations", () => {
           historicalApy
         );
 
-      expect(realized).to.eq("4123691408399430");
+      expect(realized).to.eq("2061810633376985");
     });
 
     it("correctly calculates the worst case variable factor at maturity FT, IM", async () => {
@@ -209,7 +189,7 @@ describe("Margin Calculations", () => {
           historicalApy
         );
 
-      expect(realized).to.eq("6185537112599145");
+      expect(realized).to.eq("3092715950065478");
     });
 
     it("correctly calculates the worst case variable factor at maturity VT, LM", async () => {
@@ -224,7 +204,7 @@ describe("Margin Calculations", () => {
           historicalApy
         );
 
-      expect(realized).to.eq("3543058379114661");
+      expect(realized).to.eq("1771501259394113");
     });
 
     it("correctly calculates the worst case variable factor at maturity VT, IM", async () => {
@@ -239,515 +219,25 @@ describe("Margin Calculations", () => {
           historicalApy
         );
 
-      expect(realized).to.eq("2480140865380263");
-    });
-  });
-
-  describe("#getTraderMarginRequirement", async () => {
-    beforeEach("change parameters", async () => {
-      const new_margin_engine_params = {
-        apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
-        apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
-        minDeltaLMWad: MIN_DELTA_LM,
-        minDeltaIMWad: MIN_DELTA_IM,
-        sigmaSquaredWad: SIGMA_SQUARED,
-        alphaWad: ALPHA,
-        betaWad: BETA,
-        xiUpperWad: XI_UPPER,
-        xiLowerWad: XI_LOWER,
-        tMaxWad: T_MAX,
-
-        devMulLeftUnwindLMWad: toBn("0.5"),
-        devMulRightUnwindLMWad: toBn("0.5"),
-        devMulLeftUnwindIMWad: toBn("2.0"),
-        devMulRightUnwindIMWad: toBn("2.0"),
-
-        fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
-        fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
-
-        fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
-        fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
-
-        gammaWad: toBn("1.0"),
-        minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
-      };
-
-      await marginEngineTest.setMarginCalculatorParameters(
-        new_margin_engine_params
-      );
-    });
-
-    it("correctly calculates the margin requirement: FT, LM", async () => {
-      const fixedTokenBalance: BigNumber = toBn("1000");
-      const variableTokenBalance: BigNumber = toBn("-3000");
-      const isLM = true;
-      const sqrtPrice: BigNumber = BigNumber.from(
-        encodeSqrtRatioX96(1, 20).toString()
-      );
-
-      await marginEngineTest.getMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        isLM,
-        sqrtPrice
-      );
-      const realized = await marginEngineTest.getMargin();
-
-      expect(realized).to.be.near(toBn("8.52014794271"));
-    });
-
-    it("correctly calculates the margin requirement: FT, LM with <0", async () => {
-      const fixedTokenBalance: BigNumber = toBn("10");
-      const variableTokenBalance: BigNumber = toBn("-30000000");
-      const isLM = true;
-      const sqrtPrice: BigNumber = BigNumber.from(
-        encodeSqrtRatioX96(1, 20).toString()
-      );
-
-      await marginEngineTest.getMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        isLM,
-        sqrtPrice
-      );
-      const realized = await marginEngineTest.getMargin();
-
-      expect(realized).to.be.near(toBn("87119.2857285"));
-    });
-
-    it("correctly calculates the margin requirement: FT, LM with <0", async () => {
-      const fixedTokenBalance: BigNumber = toBn("1000");
-      const variableTokenBalance: BigNumber = toBn("-3000");
-      const isLM = false;
-      const sqrtPrice: BigNumber = BigNumber.from(
-        encodeSqrtRatioX96(1, 20).toString()
-      );
-
-      await marginEngineTest.getMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        isLM,
-        sqrtPrice
-      );
-      const realized = await marginEngineTest.getMargin();
-
-      expect(realized).to.be.near(toBn("8.76603697634"));
-    });
-
-    it("correctly calculates the margin requirement: VT, LM", async () => {
-      const fixedTokenBalance: BigNumber = toBn("-1000");
-      const variableTokenBalance: BigNumber = toBn("3000");
-      const isLM = true;
-      const sqrtPrice: BigNumber = BigNumber.from(
-        encodeSqrtRatioX96(20, 1).toString()
-      );
-
-      await marginEngineTest.getMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        isLM,
-        sqrtPrice
-      );
-      const realized = await marginEngineTest.getMargin();
-
-      expect(realized).to.be.near(toBn("0.171249348113833000"));
-    });
-
-    it("correctly calculates the margin requirement: FT, IM", async () => {
-      const fixedTokenBalance: BigNumber = toBn("1000");
-      const variableTokenBalance: BigNumber = toBn("-30000");
-      const isLM = false;
-      const sqrtPrice: BigNumber = BigNumber.from(
-        encodeSqrtRatioX96(20, 1).toString()
-      );
-
-      await marginEngineTest.getMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        isLM,
-        sqrtPrice
-      );
-      const realized = await marginEngineTest.getMargin();
-
-      expect(realized).to.be.near(toBn("0.927603785405792000"));
+      expect(realized).to.eq("1240050881575879");
     });
   });
 
   describe("#getPositionMarginRequirement", async () => {
-    let tickAt0001p: number;
     let tickAt1p: number;
-    let tickAt2p: number;
-    let tickAt4p: number;
-    let tickAt10p: number;
-    let tickAt15p: number;
-    let tickAt20p: number;
     let tickAt99p: number;
     let tickAt101p: number;
-    let tickAt1000p: number;
 
-    let priceAt0001p: BigNumber;
     let priceAt1p: BigNumber;
-    let priceAt2p: BigNumber;
-    let priceAt4p: BigNumber;
-    let priceAt10p: BigNumber;
-    let priceAt15p: BigNumber;
-    let priceAt20p: BigNumber;
-    let priceAt1000p: BigNumber;
 
     before("deploy calculator", async () => {
-      tickAt0001p = await testTickMath.getTickAtSqrtRatio(
-        encodePriceSqrt(1000, 1)
-      ); // 0.001%
       tickAt1p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 1)); // 1%
-      tickAt2p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 2)); // 2%
-      tickAt4p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 4)); // 4%
-      tickAt10p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 10)); // 10%
-      tickAt15p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 15)); // 15%
-      tickAt20p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 20)); // 20%
       tickAt99p = await testTickMath.getTickAtSqrtRatio(encodePriceSqrt(1, 99)); // 99%
       tickAt101p = await testTickMath.getTickAtSqrtRatio(
         encodePriceSqrt(1, 101)
       ); // 101%
-      tickAt1000p = await testTickMath.getTickAtSqrtRatio(
-        encodePriceSqrt(1, 1000)
-      ); // 1000%
 
-      priceAt0001p = await testTickMath.getSqrtRatioAtTick(tickAt0001p);
       priceAt1p = await testTickMath.getSqrtRatioAtTick(tickAt1p);
-      priceAt2p = await testTickMath.getSqrtRatioAtTick(tickAt2p);
-      priceAt4p = await testTickMath.getSqrtRatioAtTick(tickAt4p);
-      priceAt10p = await testTickMath.getSqrtRatioAtTick(tickAt10p);
-      priceAt15p = await testTickMath.getSqrtRatioAtTick(tickAt15p);
-      priceAt20p = await testTickMath.getSqrtRatioAtTick(tickAt20p);
-      priceAt1000p = await testTickMath.getSqrtRatioAtTick(tickAt1000p);
-    });
-
-    it("current tick < lower tick: margin requirement for upper tick | no minimum", async () => {
-      const tickLower = tickAt4p;
-      const tickUpper = tickAt2p;
-      const currentSqrtPrice = priceAt10p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("0");
-      const variableTokenBalance: BigNumber = toBn("0");
-      const liquidityBN: BigNumber = toBn("1000");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("0.110927831816756198"));
-    });
-
-    it("current tick < lower tick: margin requirement for lower tick | minimum", async () => {
-      const tickLower = tickAt4p;
-      const tickUpper = tickAt2p;
-      const currentSqrtPrice = priceAt10p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("585.80");
-      const variableTokenBalance: BigNumber = toBn("-207.10");
-      const liquidityBN: BigNumber = toBn("1000");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("0.288637791189893257"));
-    });
-
-    it("lower tick < current tick < upper tick: margin requirement for upper tick | no minimum", async () => {
-      const tickLower = tickAt10p;
-      const tickUpper = tickAt2p;
-      const currentSqrtPrice = priceAt4p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("-1162");
-      const variableTokenBalance: BigNumber = toBn("183");
-      const liquidityBN: BigNumber = toBn("1000");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("0.332524547647427475"));
-    });
-
-    it("lower tick < current tick < upper tick: margin requirement for lower tick | minimum", async () => {
-      const tickLower = tickAt10p;
-      const tickUpper = tickAt2p;
-      const currentSqrtPrice = priceAt4p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("0");
-      const variableTokenBalance: BigNumber = toBn("0");
-      const liquidityBN: BigNumber = toBn("1000");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("0.132907391350678334"));
-    });
-
-    it("upper tick < current tick: margin requirement for lower tick | minimum", async () => {
-      const tickLower = tickAt10p;
-      const tickUpper = tickAt4p;
-      const currentSqrtPrice = priceAt2p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("0");
-      const variableTokenBalance: BigNumber = toBn("0");
-      const liquidityBN: BigNumber = toBn("1000");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("0.132907391350678334"));
-    });
-
-    it("upper tick < current tick: margin requirement for lower tick | minimum | 10% starting fixed rate", async () => {
-      const tickLower = tickAt10p;
-      const tickUpper = tickAt4p;
-      const currentSqrtPrice = priceAt10p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("100");
-      const variableTokenBalance: BigNumber = toBn("-100000");
-      const liquidityBN: BigNumber = toBn("0");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("193.598556094"));
-    });
-
-    it("upper tick < current tick: margin requirement for lower tick | minimum | 15% starting fixed rate", async () => {
-      const tickLower = tickAt10p;
-      const tickUpper = tickAt4p;
-      const currentSqrtPrice = priceAt15p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("100");
-      const variableTokenBalance: BigNumber = toBn("-100000");
-      const liquidityBN: BigNumber = toBn("0");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("290.378447406"));
-    });
-
-    it("upper tick < current tick: margin requirement for lower tick | minimum | 20% starting fixed rate", async () => {
-      const tickLower = tickAt10p;
-      const tickUpper = tickAt4p;
-      const currentSqrtPrice = priceAt20p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("100");
-      const variableTokenBalance: BigNumber = toBn("-100000");
-      const liquidityBN: BigNumber = toBn("0");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("290.378447406"));
-    });
-
-    it("upper tick < current tick: margin requirement for lower tick | minimum | 10000% starting fixed rate", async () => {
-      const tickLower = tickAt10p;
-      const tickUpper = tickAt4p;
-      const currentSqrtPrice = priceAt1000p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("100");
-      const variableTokenBalance: BigNumber = toBn("-100000");
-      const liquidityBN: BigNumber = toBn("0");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("290.378447406"));
-    });
-
-    it("upper tick < current tick: margin requirement for upper tick | no minimum", async () => {
-      const tickLower = tickAt10p;
-      const tickUpper = tickAt4p;
-      const currentSqrtPrice = priceAt2p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("-1162");
-      const variableTokenBalance: BigNumber = toBn("183");
-      const liquidityBN: BigNumber = toBn("1000");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      expect(realized).to.be.near(toBn("0.221596899268525351"));
-    });
-
-    it("case 1 of mc and fcm pdf", async () => {
-      const fixedTokenBalance: BigNumber = toBn("-500000");
-      const variableTokenBalance: BigNumber = toBn("1000000");
-      const isLM = false;
-      const currentSqrtPrice = priceAt0001p;
-
-      await vammTest.initializeVAMM(priceAt0001p);
-
-      await marginEngineTest.getMarginRequirementTest(
-        fixedTokenBalance,
-        variableTokenBalance,
-        isLM,
-        currentSqrtPrice
-      );
-      const realized = await marginEngineTest.getMargin();
-
-      expect(realized).to.be.near(toBn("95.890410958904000000"));
-    });
-
-    it("case 2 of mc and fcm pdf", async () => {
-      const tickLower = tickAt101p;
-      const tickUpper = tickAt99p;
-      const currentSqrtPrice = priceAt1p;
-
-      await vammTest.initializeVAMM(currentSqrtPrice);
-
-      const fixedTokenBalance: BigNumber = toBn("0");
-      const variableTokenBalance: BigNumber = toBn("0");
-      const liquidityBN: BigNumber = toBn("1000000000");
-      const isLM = true;
-
-      await marginEngineTest.getCounterfactualMarginRequirementTest(
-        wallet.address,
-        tickLower,
-        tickUpper,
-        liquidityBN,
-        fixedTokenBalance,
-        variableTokenBalance,
-        toBn("0"),
-        isLM
-      );
-      const realized = await marginEngineTest.getMargin();
-      console.log("position margin requirement", utils.formatEther(realized));
-
-      // expect(realized).to.be.near(toBn("376.683468876737102989"));
-      expect(realized).to.be.near(toBn("0"));
     });
 
     it("correctly checks for the fact the position is liquidatable", async () => {
@@ -773,7 +263,7 @@ describe("Margin Calculations", () => {
 
       const realized = await marginEngineTest.getIsLiquidatable();
 
-      expect(realized).to.eq(false);
+      expect(realized).to.eq(true);
     });
 
     it("correctly checks for the fact the position is not liquidatable", async () => {

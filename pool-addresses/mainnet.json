@@ -1,0 +1,129 @@
+{
+  "aUSDC_v1": {
+    "marginEngine": "0x9ea5Cfd876260eDadaB461f013c24092dDBD531d",
+    "vamm": "0xae16Bb8Fe13001b61DdB44e2cEae472D6af08755",
+    "decimals": 6,
+    "deploymentBlock": 14883716,
+    "rateOracleID": 1
+  },
+
+  "aDAI_v1": {
+    "marginEngine": "0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e",
+    "vamm": "0xA1a75F6689949fF413Aa115D300f5e30F35Ba061",
+    "decimals": 18,
+    "deploymentBlock": 14883728,
+    "rateOracleID": 1
+  },
+
+  "cDAI_v1": {
+    "marginEngine": "0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0",
+    "vamm": "0xE4668BC57b1A73aaA832fb083b121D5b4602F475",
+    "decimals": 18,
+    "deploymentBlock": 14883745,
+    "rateOracleID": 2
+  },
+
+  "rETH_v1": {
+    "marginEngine": "0xB1125ba5878cF3A843bE686c6c2486306f03E301",
+    "vamm": "0x5842254e74510E000D25B5E601bCbC43B52946B4",
+    "decimals": 18,
+    "deploymentBlock": 15055872,
+    "rateOracleID": 4
+  },
+
+  "stETH_v1": {
+    "marginEngine": "0x21F9151d6e06f834751b614C2Ff40Fc28811B235",
+    "vamm": "0x3806B99D0A0483E0D07501B31884c10e8E8b1215",
+    "decimals": 18,
+    "deploymentBlock": 15058080,
+    "rateOracleID": 3
+  },
+
+  "aUSDC_v2": {
+    "marginEngine": "0x0BC09825Ce9433B2cDF60891e1B50a300b069Dd2",
+    "vamm": "0x538E4FFeE8AEd76EfE35565c322a7B0d8cDb4CFF",
+    "decimals": 6,
+    "deploymentBlock": 15242692,
+    "rateOracleID": 1
+  },
+
+  "aDAI_v2": {
+    "marginEngine": "0x654316A63E68f1c0823f0518570bc108de377831",
+    "vamm": "0xc75E6d901817B476a9f3B6B79831d2b61673F9f5",
+    "decimals": 18,
+    "deploymentBlock": 15242692,
+    "rateOracleID": 1
+  },
+
+  "cDAI_v2": {
+    "marginEngine": "0xf2ccd85a3428d7a560802b2dd99130be62556d30",
+    "vamm": "0xd09723a7F4C26f4723aa63bf4a4a4a5daD970a49",
+    "decimals": 18,
+    "deploymentBlock": 15242692,
+    "rateOracleID": 2
+  },
+
+  "borrow_aUSDC_v1": {
+    "marginEngine": "0x33bA6A0B16750206195c777879Edd8706204154B",
+    "vamm": "0x0f91a255B5bA8e59f3B97b1EDe91dEC88bcC17eb",
+    "decimals": 6,
+    "deploymentBlock": 15373135,
+    "rateOracleID": 5
+  },
+
+  "borrow_aETH_v1": {
+    "marginEngine": "0x9b76B4d09229c339B049053F171BFB22cbE50092",
+    "vamm": "0x682F3e5685Ff51C232cF842840BA27E717C1AE2E",
+    "decimals": 18,
+    "deploymentBlock": 15373135,
+    "rateOracleID": 5
+  },
+
+  "borrow_cUSDT_v1": {
+    "marginEngine": "0x111A75E91625142E85193b67B10E53Acf82838cD",
+    "vamm": "0xcd47347a8C4F40e6877425080d22F4c3115b60A5",
+    "decimals": 6,
+    "deploymentBlock": 15373135,
+    "rateOracleID": 6
+  },
+
+  "aDAI_v3": {
+    "marginEngine": "0x0F533F6b042593C00C9F4A2AD28106F524FCEb94",
+    "vamm": "0xaD6BbD2eb576A82FC4Ff0399A4Ef2F123BE7cFd2",
+    "decimals": 18,
+    "deploymentBlock": 15638356,
+    "rateOracleID": 1
+  },
+
+  "borrow_aETH_v2": {
+    "marginEngine": "0x3d2821E59F330105c1C3aaB8c289Bce15F688f8A",
+    "vamm": "0x27Ed5d356937213f97C9F9Cb7593D876e5d30F42",
+    "decimals": 18,
+    "deploymentBlock": 15638356,
+    "rateOracleID": 5
+  },
+
+  "aETH_v1": {
+    "marginEngine": "0x6F7ccb0cfD6130E75e88e4c72168fD8A6926c943",
+    "vamm": "0x5d82B85430d3737D8068248363b4d47395145387",
+    "decimals": 18,
+    "deploymentBlock": 15638356,
+    "rateOracleID": 1
+  },
+
+  "aUSDC_v3": {
+    "marginEngine": "0xB785E7e71F099adA43222E1690Ee0bf701f80396",
+    "vamm": "0x953E581DD817b0faa69eacAfB2C5709483F39aBa",
+    "decimals": 6,
+    "deploymentBlock": 15638356,
+    "rateOracleID": 1
+  },
+
+  "cDAI_v3": {
+    "marginEngine": "0x75cDBD0e66Fdf4E2C80334F72B39628105fbeB20",
+    "vamm": "0x1f0cB00AC15694c810A3326AbF27921eF42D6d6d",
+    "decimals": 18,
+    "deploymentBlock": 15638356,
+    "rateOracleID": 2
+  }
+}

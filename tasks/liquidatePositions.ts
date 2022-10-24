@@ -5,16 +5,14 @@ import mustache from "mustache";
 import path from "path";
 
 import { getPositions, Position } from "../scripts/getPositions";
+import * as poolAddresses from "../pool-addresses/mainnet.json";
 
 interface liquidationTemplateData {
-  liquidationsPerPool: {
+  liquidatablePositions: {
     marginEngineAddress: string;
-    vammAddress: string;
-    liquidatablePositions: {
-      owner: string;
-      tickLower: number;
-      tickUpper: number;
-    }[];
+    owner: string;
+    tickLower: number;
+    tickUpper: number;
   }[];
 }
 
@@ -29,7 +27,7 @@ async function writeLiquidationOfPositionsToGnosisSafeTemplate(
   );
   const output = mustache.render(template, data);
 
-  const file = `liquidatePositions.json`;
+  const file = `./tasks/JSONs/liquidatePositions.json`;
   fs.writeFileSync(file, output);
 }
 
@@ -38,23 +36,20 @@ task("liquidatePositions", "Liquidate liquidatable positions")
     "multisig",
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
+  .addParam("pools", "The name of the pool (e.g. 'aDAI_v2', 'stETH_v1', etc.)")
   .setAction(async (taskArgs, hre) => {
-    if (!taskArgs.multisig) {
-      console.log(
-        "Currently no support for sending on chain transactions. --multisig flag must be turned on."
-      );
-      return;
-    }
-
     const data: liquidationTemplateData = {
-      liquidationsPerPool: [],
+      liquidatablePositions: [],
     };
 
-    const marginEngineAddresses = new Set<string>();
-    const positions: Position[] = await getPositions();
-    for (const position of positions) {
-      marginEngineAddresses.add(position.marginEngine);
-    }
+    const poolNames = taskArgs.pools.split(",");
+    const marginEngineAddresses = poolNames.map((poolName: string) => {
+      return poolAddresses[poolName as keyof typeof poolAddresses].marginEngine;
+    });
+
+    console.log("margin engine addresses:", marginEngineAddresses);
+
+    const positions: Position[] = await getPositions(true);
 
     const currentBlock = await hre.ethers.provider.getBlock("latest");
 
@@ -72,22 +67,11 @@ task("liquidatePositions", "Liquidate liquidatable positions")
         continue;
       }
 
-      const liquidationsOfPool: {
-        marginEngineAddress: string;
-        vammAddress: string;
-        liquidatablePositions: {
-          owner: string;
-          tickLower: number;
-          tickUpper: number;
-        }[];
-      } = {
-        marginEngineAddress: marginEngineAddress,
-        vammAddress: (await marginEngine.vamm()).toString(),
-        liquidatablePositions: [],
-      };
-
       for (const position of positions) {
-        if (position.marginEngine !== marginEngineAddress) {
+        if (
+          position.marginEngine.toLowerCase() !==
+          marginEngineAddress.toLowerCase()
+        ) {
           continue;
         }
 
@@ -124,7 +108,8 @@ task("liquidatePositions", "Liquidate liquidatable positions")
           status === "DANGER" &&
           positionRequirementLiquidation.gt(BigInt(0))
         ) {
-          liquidationsOfPool.liquidatablePositions.push({
+          data.liquidatablePositions.push({
+            marginEngineAddress: marginEngineAddress,
             owner: position.owner,
             tickLower: position.tickLower,
             tickUpper: position.tickUpper,
@@ -142,14 +127,27 @@ task("liquidatePositions", "Liquidate liquidatable positions")
           );
         }
       }
-
-      if (liquidationsOfPool.liquidatablePositions.length > 0) {
-        data.liquidationsPerPool.push(liquidationsOfPool);
-      }
     }
 
     if (taskArgs.multisig) {
       writeLiquidationOfPositionsToGnosisSafeTemplate(data);
+    } else {
+      for (const liquidatablePosition of data.liquidatablePositions) {
+        const marginEngine = (await hre.ethers.getContractAt(
+          "MarginEngine",
+          liquidatablePosition.marginEngineAddress
+        )) as MarginEngine;
+
+        const tx = await marginEngine.liquidatePosition(
+          liquidatablePosition.owner,
+          liquidatablePosition.tickLower,
+          liquidatablePosition.tickUpper,
+          {
+            gasLimit: 10000000,
+          }
+        );
+        await tx.wait();
+      }
     }
   });
 

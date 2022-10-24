@@ -47,15 +47,15 @@ interface MultisigTemplateData {
     xiUpperWad: BigNumberish;
     xiLowerWad: BigNumberish;
     tMaxWad: BigNumberish;
-    devMulLeftUnwindLMWad: BigNumberish;
-    devMulRightUnwindLMWad: BigNumberish;
-    devMulLeftUnwindIMWad: BigNumberish;
-    devMulRightUnwindIMWad: BigNumberish;
-    fixedRateDeviationMinLeftUnwindLMWad: BigNumberish;
-    fixedRateDeviationMinRightUnwindLMWad: BigNumberish;
-    fixedRateDeviationMinLeftUnwindIMWad: BigNumberish;
-    fixedRateDeviationMinRightUnwindIMWad: BigNumberish;
-    gammaWad: BigNumberish;
+    etaIMWad: BigNumberish;
+    etaLMWad: BigNumberish;
+    gap1: BigNumberish;
+    gap2: BigNumberish;
+    gap3: BigNumberish;
+    gap4: BigNumberish;
+    gap5: BigNumberish;
+    gap6: BigNumberish;
+    gap7: BigNumberish;
     minMarginToIncentiviseLiquidators: BigNumberish;
   };
 }
@@ -244,8 +244,9 @@ task(
       throw new Error("Unfunctional pool. Check start and end timestamps!");
     }
 
-    const maxIrsDurationInSeconds = getConfig(hre.network.name).irsConfig
-      .maxIrsDurationInSeconds;
+    const maxIrsDurationInSeconds = getConfig(
+      hre.network.name
+    ).maxIrsDurationInSeconds;
 
     if (maxIrsDurationInSeconds < termEndTimestamp - termStartTimestamp) {
       throw new Error(

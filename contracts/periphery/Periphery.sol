@@ -6,6 +6,7 @@ pragma abicoder v2;
 
 import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
+import "../interfaces/IWETH.sol";
 import "../interfaces/IPeriphery.sol";
 import "../utils/TickMath.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -16,7 +17,6 @@ import "../storage/PeripheryStorage.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "hardhat/console.sol";
 
 /// @dev inside mint or burn check if the position already has margin deposited and add it to the cumulative balance
 
@@ -154,7 +154,7 @@ contract Periphery is
         int24 tickUpper,
         int256 marginDelta,
         bool fullyWithdraw
-    ) public payable override {
+    ) public payable override returns (int256) {
         Position.Info memory position = marginEngine.getPosition(
             msg.sender,
             tickLower,
@@ -261,6 +261,8 @@ contract Periphery is
                 true
             );
         }
+
+        return marginDelta;
     }
 
     /// @notice Add liquidity to an initialized pool
@@ -381,9 +383,15 @@ contract Periphery is
             uint256 _cumulativeFeeIncurred,
             int256 _fixedTokenDeltaUnbalanced,
             int256 _marginRequirement,
-            int24 _tickAfter
+            int24 _tickAfter,
+            int256 marginDelta
         )
     {
+        require(
+            !(params.marginDelta < 0 && msg.value > 0),
+            "Only add or only remove margin"
+        );
+
         Tick.checkTicks(params.tickLower, params.tickUpper);
 
         IVAMM vamm = params.marginEngine.vamm();
@@ -411,11 +419,11 @@ contract Periphery is
         // if margin delta is positive, top up position margin
 
         if (params.marginDelta > 0 || msg.value > 0) {
-            updatePositionMargin(
+            marginDelta = updatePositionMargin(
                 params.marginEngine,
                 params.tickLower,
                 params.tickUpper,
-                params.marginDelta.toInt256(),
+                params.marginDelta,
                 false // _fullyWithdraw
             );
         }
@@ -450,6 +458,17 @@ contract Periphery is
             _marginRequirement
         ) = vamm.swap(swapParams);
         _tickAfter = vamm.vammVars().tick;
+
+        // if margin delta is negative, reduce position margin
+        if (params.marginDelta < 0) {
+            marginDelta = updatePositionMargin(
+                params.marginEngine,
+                params.tickLower,
+                params.tickUpper,
+                params.marginDelta,
+                false // _fullyWithdraw
+            );
+        }
     }
 
     function fullyCollateralisedVTSwap(
@@ -465,7 +484,8 @@ contract Periphery is
             uint256 _cumulativeFeeIncurred,
             int256 _fixedTokenDeltaUnbalanced,
             int256 _marginRequirement,
-            int24 _tickAfter
+            int24 _tickAfter,
+            int256 marginDelta
         )
     {
         require(params.isFT == false, "only fc VT swaps");
@@ -476,25 +496,24 @@ contract Periphery is
             _cumulativeFeeIncurred,
             _fixedTokenDeltaUnbalanced,
             _marginRequirement,
-            _tickAfter
+            _tickAfter,
+            marginDelta
         ) = swap(params);
-
-        uint256 marginDeltaAfterFees = params.marginDelta -
-            _cumulativeFeeIncurred;
 
         IMarginEngine marginEngine = params.marginEngine;
 
         require(
-            marginDeltaAfterFees >=
-                (
-                    -FixedAndVariableMath.calculateSettlementCashflow(
-                        _fixedTokenDelta,
-                        _variableTokenDelta,
-                        marginEngine.termStartTimestampWad(),
-                        marginEngine.termEndTimestampWad(),
-                        variableFactorFromStartToNowWad
-                    )
-                ).toUint256(),
+            marginDelta >=
+                _cumulativeFeeIncurred.toInt256() +
+                    (
+                        -FixedAndVariableMath.calculateSettlementCashflow(
+                            _fixedTokenDelta,
+                            _variableTokenDelta,
+                            marginEngine.termStartTimestampWad(),
+                            marginEngine.termEndTimestampWad(),
+                            variableFactorFromStartToNowWad
+                        )
+                    ),
             "VT swap not fc"
         );
     }
@@ -550,7 +569,8 @@ contract Periphery is
             _cumulativeFeeIncurred,
             _fixedTokenDeltaUnbalanced,
             _marginRequirement,
-            _tickAfter
+            _tickAfter,
+
         ) = swap(paramsNewPosition);
     }
 

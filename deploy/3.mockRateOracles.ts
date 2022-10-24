@@ -1,10 +1,15 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { ethers } from "hardhat";
-import { getConfig, applyBufferConfig } from "../deployConfig/config";
+import { getConfig } from "../deployConfig/config";
+import { applyBufferConfig } from "../deployConfig/utils";
 import { BaseRateOracle } from "../typechain";
 import { BigNumber } from "ethers";
-import { RateOracleConfigDefaults } from "../deployConfig/types";
+
+const MOCK_RATE_ORACLE_CONFIG_DEFAULTS = {
+  minSecondsSinceLastUpdate: 60 * 60, // 1 hour
+  rateOracleBufferSize: 1000,
+};
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
@@ -14,7 +19,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const config = getConfig(network);
   const mockRateOracles: {
     oracle: BaseRateOracle;
-    config: RateOracleConfigDefaults;
+    rateOracleBufferSize: number; // For mock token oracle or platforms with only a single token
+    rateOracleMinSecondsSinceLastUpdate: number; // For mock token oracle or platforms with only a single token
   }[] = [];
 
   // Deploy rate oracle pointing at mocks, if mocks exist
@@ -40,7 +46,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       oracle: (await ethers.getContract(
         "MockAaveRateOracle"
       )) as BaseRateOracle,
-      config: config.aaveConfig?.defaults,
+      rateOracleBufferSize:
+        MOCK_RATE_ORACLE_CONFIG_DEFAULTS.rateOracleBufferSize,
+      rateOracleMinSecondsSinceLastUpdate:
+        MOCK_RATE_ORACLE_CONFIG_DEFAULTS.minSecondsSinceLastUpdate,
     });
   }
 
@@ -60,7 +69,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       oracle: (await ethers.getContract(
         "MockCompoundRateOracle"
       )) as BaseRateOracle,
-      config: config.compoundConfig?.defaults,
+      rateOracleBufferSize:
+        MOCK_RATE_ORACLE_CONFIG_DEFAULTS.rateOracleBufferSize,
+      rateOracleMinSecondsSinceLastUpdate:
+        MOCK_RATE_ORACLE_CONFIG_DEFAULTS.minSecondsSinceLastUpdate,
     });
   }
 
@@ -75,7 +87,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       oracle: (await ethers.getContract(
         "MockRocketPoolRateOracle"
       )) as BaseRateOracle,
-      config: config.rocketPoolConfig?.defaults,
+      rateOracleBufferSize:
+        config.rocketPoolConfig.defaults.rateOracleBufferSize,
+      rateOracleMinSecondsSinceLastUpdate:
+        config.rocketPoolConfig.defaults.minSecondsSinceLastUpdate,
     });
   }
 
@@ -90,23 +105,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       oracle: (await ethers.getContract(
         "MockLidoRateOracle"
       )) as BaseRateOracle,
-      config: config.lidoConfig.defaults,
+      rateOracleBufferSize: config.lidoConfig.defaults.rateOracleBufferSize,
+      rateOracleMinSecondsSinceLastUpdate:
+        config.lidoConfig.defaults.minSecondsSinceLastUpdate,
     });
   }
 
   for (const rateOracleInstance of mockRateOracles) {
     // Ensure the buffer is big enough. We must do this before writing any more rates or they may get overridden
-    const configDefaults = rateOracleInstance.config;
     await applyBufferConfig(
       rateOracleInstance.oracle as unknown as BaseRateOracle,
-      BigNumber.from(configDefaults.rateOracleBufferSize).toNumber(),
-      configDefaults.rateOracleMinSecondsSinceLastUpdate,
-      config.irsConfig.maxIrsDurationInSeconds
+      BigNumber.from(rateOracleInstance.rateOracleBufferSize).toNumber(),
+      rateOracleInstance.rateOracleMinSecondsSinceLastUpdate,
+      config.maxIrsDurationInSeconds
     );
 
-    // Fast forward time to ensure that the mock rate oracle has enough historical data
+    // Fast forward time to so that the mock rate oracle has some historical data
     await hre.network.provider.send("evm_increaseTime", [
-      config.irsConfig.marginEngineLookbackWindowInSeconds,
+      60 * 60 * 6, // 6 hours
     ]);
   }
 

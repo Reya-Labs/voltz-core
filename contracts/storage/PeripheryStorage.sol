@@ -6,6 +6,7 @@ import "../interfaces/IERC20Minimal.sol";
 import "../interfaces/fcms/IFCM.sol";
 import "../interfaces/IMarginEngine.sol";
 import "../interfaces/IVAMM.sol";
+import "../interfaces/IWETH.sol";
 
 contract PeripheryStorageV1 {
     // Any variables that would implicitly implement an IPeriphery function if public, must instead
