@@ -1,8 +1,10 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
-import { Factory, IMarginEngine, Periphery } from "../typechain";
+import { Factory, Periphery } from "../typechain";
 import "@nomiclabs/hardhat-ethers";
 import { toBn } from "../test/helpers/toBn";
+
+import * as poolAddresses from "../pool-addresses/mainnet.json";
 
 import { MAX_SQRT_RATIO, MIN_SQRT_RATIO } from "../test/shared/utilities";
 import { decodeInfoPostSwap } from "./errorHandling";
@@ -10,39 +12,6 @@ import { decodeInfoPostSwap } from "./errorHandling";
 const blocksPerDay = 6570; // 13.15 seconds per block
 
 const factoryAddress = "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf";
-
-// deployment blocks of margin engine's
-const deploymentBlocks = {
-  "0x0BC09825Ce9433B2cDF60891e1B50a300b069Dd2": 15242692, // aUSDC v2
-  "0x21F9151d6e06f834751b614C2Ff40Fc28811B235": 15058080, // stETH
-  "0xF2CCD85A3428D7a560802B2DD99130bE62556D30": 15242692, // cDAI v2
-  "0x654316A63E68f1c0823f0518570bc108de377831": 15242692, // aDAI v2
-  "0xB1125ba5878cF3A843bE686c6c2486306f03E301": 15055872, // rETH
-};
-
-const tokenDecimals = {
-  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6, // USDC
-  "0x6b175474e89094c44da98b954eedeac495271d0f": 18, // DAI
-  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": 18, // WETH
-};
-
-const getDeploymentBlock = (address: string): number => {
-  if (!Object.keys(deploymentBlocks).includes(address)) {
-    throw new Error(
-      `Unrecognized error. Check the deployment block of ${address}!`
-    );
-  }
-  return deploymentBlocks[address as keyof typeof deploymentBlocks];
-};
-
-const getTokenDecimals = (address: string): number => {
-  if (!Object.keys(tokenDecimals).includes(address.toLowerCase())) {
-    throw new Error(
-      `Unrecognized error. Check the token decimals of ${address.toLowerCase()}!`
-    );
-  }
-  return tokenDecimals[address.toLowerCase() as keyof typeof tokenDecimals];
-};
 
 const scale = (x: number, decimals: number): BigNumber => {
   return toBn(x, decimals);
@@ -79,31 +48,28 @@ task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
     undefined,
     types.int
   )
-  .addParam(
-    "marginEngineAddress",
-    "Queried Margin Engine Address",
-    "0x0000000000000000000000000000000000000000",
-    types.string
-  )
+  .addParam("pool", "Queried Pool", undefined, types.string)
   .setAction(async (taskArgs, hre) => {
     const factory = (await hre.ethers.getContractAt(
       "Factory",
       factoryAddress
     )) as Factory;
 
-    const marginEngineAddress = taskArgs.marginEngineAddress;
+    if (taskArgs.pool === undefined) {
+      return;
+    }
 
-    const marginEngine = (await hre.ethers.getContractAt(
-      "MarginEngine",
-      marginEngineAddress
-    )) as IMarginEngine;
+    const poolInfo = poolAddresses[taskArgs.pool as keyof typeof poolAddresses];
+    if (poolInfo === undefined) {
+      return;
+    }
 
-    const underlying = await marginEngine.underlyingToken();
-    const decimals = getTokenDecimals(underlying);
-    console.log("underlying token:", underlying);
+    const marginEngineAddress = poolInfo.marginEngine;
+
+    const decimals = poolInfo.decimals;
     console.log("decimals:", decimals);
 
-    const deploymentBlockNumber = getDeploymentBlock(marginEngineAddress);
+    const deploymentBlockNumber = poolInfo.deploymentBlock;
     if (!deploymentBlockNumber) {
       throw new Error("Couldn't fetch deployment block number");
     }

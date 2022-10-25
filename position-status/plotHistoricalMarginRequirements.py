@@ -34,38 +34,31 @@ ax.plot(dates, df["position_requirement_liquidation"], label = "Liquidation thre
 ax.plot(dates, df["position_requirement_safety"], label = "Safety threshold")
 
 
-# ax.axvline(x = dt.datetime.fromtimestamp(1661165520), color = 'c', label = 'LP Position initialised')
-# ax.axvline(x = dt.datetime.fromtimestamp(1663482587), color = 'r', label = 'LP Position liquidated')
+# ----------------------- EVENTS -----------------------
+# events = [
+#     (1661165520, None, 'LP Position initialised', None),
+#     (1663482587, None, 'LP Position liquidated', 'r'),
+#     (1662418800, 1662505199, 'Spike in borrow_aETH APY', 'y')
+# ]
 
-# ax.axvline(x = dt.datetime.fromtimestamp(1661165520), color = 'c', label = 'Trader Position initialised')
-# ax.axvline(x = dt.datetime.fromtimestamp(1663482587), color = 'r', label = 'Trader Position liquidated')
-# ax.axvline(x = dt.datetime.fromtimestamp(1662105355), color = 'pink', label = 'FT from now onwards')
-
-
-# ax.axvspan(
-#     dt.datetime.fromtimestamp(1662418800), 
-#     dt.datetime.fromtimestamp(1662505199), 
-#     alpha=0.2, 
-#     color='red',
-#     label='Spike in borrow_aETH APY'
-# )
-
-# ax.axvspan(
-#     dt.datetime.fromtimestamp(1662850800), 
-#     dt.datetime.fromtimestamp(1663282799), 
-#     alpha=0.2, 
-#     color='red',
-#     label='Spike in borrow_aETH APY'
-# )
-
-# ax.axvspan(
-#     dt.datetime.fromtimestamp(1661165520), 
-#     dt.datetime.fromtimestamp(1662190800), 
-#     alpha=0.2, 
-#     color='orange',
-#     label='LP Position active'
-# )
+# for event, color in zip(events, plt.cm.rainbow(np.linspace(0, 1, 100))):
+#     if event[1] is None:        # single point event   
+#         ax.axvline(
+#             x = dt.datetime.fromtimestamp(event[0]), 
+#             color = color if (event[3] is None) else event[3],
+#             label = event[1]
+#         )
+#     else:
+#         ax.axvspan(
+#             dt.datetime.fromtimestamp(event[0]), 
+#             dt.datetime.fromtimestamp(event[1]), 
+#             color = color if (event[3] is None) else event[3],
+#             label = event[2],
+#             alpha = 0.2, 
+#         )
 
 plt.legend()
-
-plt.savefig("position-status/data/{0}/requirements.png".format(ID), bbox_inches = 'tight')
+plt.savefig(
+    "position-status/data/{0}/requirements.png".format(ID), 
+    bbox_inches = 'tight'
+)

@@ -1,4 +1,4 @@
-import { task } from "hardhat/config";
+import { task, types } from "hardhat/config";
 import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
 import { ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
@@ -6,6 +6,8 @@ import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
 import * as poolAddresses from "../pool-addresses/mainnet.json";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+
+const blocksPerDay = 6570; // 13.15 seconds per block
 
 async function getBlockAtTimestamp(
   hre: HardhatRuntimeEnvironment,
@@ -193,6 +195,12 @@ task("getPositionInfo", "Get all information about some position")
   .addOptionalParam("tickLowers", "Filter by tick lowers")
   .addOptionalParam("tickUppers", "Filter by tick uppers")
   .addFlag("healthHistory", "Flag that gets health history")
+  .addParam(
+    "blockInterval",
+    "Script will fetch data every `blockInterval` blocks (between `fromBlock` and `toBlock`)",
+    blocksPerDay,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
     let positions: Position[] = await getPositions();
 
@@ -507,7 +515,11 @@ task("getPositionInfo", "Get all information about some position")
         );
         const startBlock = await getBlockAtTimestamp(hre, startTimestamp);
 
-        for (let b = startBlock + 1; b <= currentBlockNumber; b += 3000) {
+        for (
+          let b = startBlock + 1;
+          b <= currentBlockNumber;
+          b += taskArgs.blockInterval
+        ) {
           const block = await hre.ethers.provider.getBlock(b);
 
           console.log("block:", b);
