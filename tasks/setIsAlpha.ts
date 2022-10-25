@@ -6,6 +6,8 @@ import path from "path";
 import { getPositions, Position } from "../scripts/getPositions";
 import { MarginEngine } from "../typechain/MarginEngine";
 
+import * as poolAddresses from "../pool-addresses/mainnet.json";
+
 interface MultisigTemplateData {
   pools: {
     vammAddress: string;
@@ -41,16 +43,21 @@ task("setIsAlpha", "Set is alpha in margin engine and VAMM").setAction(
       pools: [],
     };
 
-    for (const marginEngineAddress of marginEngineAddresses) {
+    for (const poolName in poolAddresses) {
+      if (poolName === "default") {
+        continue;
+      }
+
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
-        marginEngineAddress
+        poolAddresses[poolName as keyof typeof poolAddresses].marginEngine
       )) as MarginEngine;
 
       const vammAddress = await marginEngine.vamm();
       const pool = {
         vammAddress: vammAddress,
-        marginEngineAddress: marginEngineAddress,
+        marginEngineAddress:
+          poolAddresses[poolName as keyof typeof poolAddresses].marginEngine,
         isAlpha: false,
       };
 
