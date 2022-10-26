@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
-import { BigNumber } from "ethers";
-import { Factory, Periphery } from "../typechain";
+import { BigNumber, ethers } from "ethers";
+import { BaseRateOracle, Factory, IMarginEngine, Periphery } from "../typechain";
 import "@nomiclabs/hardhat-ethers";
 import { toBn } from "../test/helpers/toBn";
 
@@ -50,6 +50,8 @@ task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
   )
   .addParam("pool", "Queried Pool", undefined, types.string)
   .setAction(async (taskArgs, hre) => {
+    const blocksPerHour = 300;
+
     const factory = (await hre.ethers.getContractAt(
       "Factory",
       factoryAddress
@@ -65,6 +67,10 @@ task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
     }
 
     const marginEngineAddress = poolInfo.marginEngine;
+    const marginEngine = (await hre.ethers.getContractAt(
+      "MarginEngine",
+      marginEngineAddress
+    )) as IMarginEngine;
 
     const decimals = poolInfo.decimals;
     console.log("decimals:", decimals);
@@ -105,7 +111,7 @@ task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
     const file = `historicalData/historicalTradeHistoricalData/${marginEngineAddress}.csv`;
 
     const header =
-      "block,timestamp,fixed_rate,available_ft,slippage_ft_10,slippage_ft_100,slippage_ft_1000,slippage_ft_10000,available_vt,slippage_vt_10,slippage_vt_100,slippage_vt_1000,slippage_vt_10000";
+      "block,timestamp,fixed_rate,variable_rate,variable_factor,available_ft,slippage_ft_10,slippage_ft_100,slippage_ft_1000,slippage_ft_10000,available_vt,slippage_vt_10,slippage_vt_100,slippage_vt_1000,slippage_vt_10000";
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
@@ -122,6 +128,11 @@ task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
         peripheryAddress
       )) as Periphery;
 
+      const baseRateOracle = (await hre.ethers.getContractAt(
+        "BaseRateOracle",
+        await marginEngine.rateOracle({ blockTag: b })
+      )) as BaseRateOracle;
+
       const block = await hre.ethers.provider.getBlock(b);
 
       if (b >= deploymentBlockNumber) {
@@ -129,6 +140,32 @@ task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
           const tick = await periphery.getCurrentTick(marginEngineAddress, {
             blockTag: b,
           });
+
+          const to = BigNumber.from(
+            (await hre.ethers.provider.getBlock(b)).timestamp
+          );
+          const from = BigNumber.from(
+            (await hre.ethers.provider.getBlock(b - 28 * blocksPerHour))
+              .timestamp
+          );
+
+          const variable_rate = await baseRateOracle.callStatic.getApyFromTo(
+            from,
+            to,
+            {
+              blockTag: b
+            }
+          );
+
+          const variable_factor =
+            await baseRateOracle.callStatic.variableFactorNoCache(
+              ethers.utils.parseEther(from.toString()),
+              ethers.utils.parseEther(to.toString()),
+              {
+                blockTag: b
+              }
+            );
+
 
           const ft_info: {
             availableNotional: BigNumber;
@@ -215,7 +252,9 @@ task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
 
           let response = `${b},${block.timestamp},${(
             tickToFixedRate(tick) / 100
-          ).toFixed(6)}`;
+          ).toFixed(6)},${ethers.utils.formatEther(
+            variable_rate
+          )},${ethers.utils.formatEther(variable_factor)}`;
 
           for (let i = 0; i < 5; i++) {
             if (i > 0) {
