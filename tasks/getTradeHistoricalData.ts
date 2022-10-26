@@ -1,49 +1,17 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
-import { IMarginEngine, IPeriphery } from "../typechain";
+import { Factory, Periphery } from "../typechain";
 import "@nomiclabs/hardhat-ethers";
 import { toBn } from "../test/helpers/toBn";
+
+import * as poolAddresses from "../pool-addresses/mainnet.json";
 
 import { MAX_SQRT_RATIO, MIN_SQRT_RATIO } from "../test/shared/utilities";
 import { decodeInfoPostSwap } from "./errorHandling";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
-// const peripheryAddress = "0x13E9053D9090ed6a1FAE3f59f9bD3C1FCa4c5726";
-const peripheryAddress = "0x2657101a6Bb5538DD84b0B8c8E2Deac667b9c66c";
-
-// deployment blocks of margin engine's
-const deploymentBlocks = {
-  "0x0BC09825Ce9433B2cDF60891e1B50a300b069Dd2": 15242692, // aUSDC v2
-  "0x21F9151d6e06f834751b614C2Ff40Fc28811B235": 15058080, // stETH
-  "0x641a6e03FA9511BDE6a07793B04Cb00Aba8305c0": 15242692, // cDAI v2
-  "0x654316A63E68f1c0823f0518570bc108de377831": 15242692, // aDAI v2
-  "0xB1125ba5878cF3A843bE686c6c2486306f03E301": 15055872, // rETH
-};
-
-const tokenDecimals = {
-  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6, // USDC
-  "0x6b175474e89094c44da98b954eedeac495271d0f": 18, // DAI
-  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": 18, // WETH
-};
-
-const getDeploymentBlock = (address: string): number => {
-  if (!Object.keys(deploymentBlocks).includes(address)) {
-    throw new Error(
-      `Unrecognized error. Check the deployment block of ${address}!`
-    );
-  }
-  return deploymentBlocks[address as keyof typeof deploymentBlocks];
-};
-
-const getTokenDecimals = (address: string): number => {
-  if (!Object.keys(tokenDecimals).includes(address.toLowerCase())) {
-    throw new Error(
-      `Unrecognized error. Check the token decimals of ${address.toLowerCase()}!`
-    );
-  }
-  return tokenDecimals[address.toLowerCase() as keyof typeof tokenDecimals];
-};
+const factoryAddress = "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf";
 
 const scale = (x: number, decimals: number): BigNumber => {
   return toBn(x, decimals);
@@ -61,7 +29,7 @@ const tickToFixedRate = (tick: number): number => {
   return 1.0001 ** -tick;
 };
 
-task("getTradeHistoricalData", "Get trader historical data")
+task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
   .addOptionalParam(
     "fromBlock",
     "Get data from this past block number (up to some larger block number defined by `toBlock`)",
@@ -80,31 +48,28 @@ task("getTradeHistoricalData", "Get trader historical data")
     undefined,
     types.int
   )
-  .addParam(
-    "marginEngineAddress",
-    "Queried Margin Engine Address",
-    "0x0000000000000000000000000000000000000000",
-    types.string
-  )
+  .addParam("pool", "Queried Pool", undefined, types.string)
   .setAction(async (taskArgs, hre) => {
-    const periphery = (await hre.ethers.getContractAt(
-      "Periphery",
-      peripheryAddress
-    )) as IPeriphery;
+    const factory = (await hre.ethers.getContractAt(
+      "Factory",
+      factoryAddress
+    )) as Factory;
 
-    const marginEngineAddress = taskArgs.marginEngineAddress;
+    if (taskArgs.pool === undefined) {
+      return;
+    }
 
-    const marginEngine = (await hre.ethers.getContractAt(
-      "MarginEngine",
-      marginEngineAddress
-    )) as IMarginEngine;
+    const poolInfo = poolAddresses[taskArgs.pool as keyof typeof poolAddresses];
+    if (poolInfo === undefined) {
+      return;
+    }
 
-    const underlying = await marginEngine.underlyingToken();
-    const decimals = getTokenDecimals(underlying);
-    console.log("underlying token:", underlying);
+    const marginEngineAddress = poolInfo.marginEngine;
+
+    const decimals = poolInfo.decimals;
     console.log("decimals:", decimals);
 
-    const deploymentBlockNumber = getDeploymentBlock(marginEngineAddress);
+    const deploymentBlockNumber = poolInfo.deploymentBlock;
     if (!deploymentBlockNumber) {
       throw new Error("Couldn't fetch deployment block number");
     }
@@ -149,6 +114,14 @@ task("getTradeHistoricalData", "Get trader historical data")
     console.log("current block", hre.ethers.provider.blockNumber);
 
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
+      const peripheryAddress = await factory.periphery({ blockTag: b });
+      console.log(peripheryAddress);
+
+      const periphery = (await hre.ethers.getContractAt(
+        "Periphery",
+        peripheryAddress
+      )) as Periphery;
+
       const block = await hre.ethers.provider.getBlock(b);
 
       if (b >= deploymentBlockNumber) {

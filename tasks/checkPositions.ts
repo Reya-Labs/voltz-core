@@ -1,4 +1,4 @@
-import { task } from "hardhat/config";
+import { task, types } from "hardhat/config";
 import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
 import { BigNumber, BigNumberish, ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
@@ -6,6 +6,8 @@ import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
 import * as poolAddresses from "../pool-addresses/mainnet.json";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+
+const blocksPerDay = 6570; // 13.15 seconds per block
 
 async function getBlockAtTimestamp(
   hre: HardhatRuntimeEnvironment,
@@ -193,6 +195,12 @@ task("getPositionInfo", "Get all information about some position")
   .addOptionalParam("tickLowers", "Filter by tick lowers")
   .addOptionalParam("tickUppers", "Filter by tick uppers")
   .addFlag("healthHistory", "Flag that gets health history")
+  .addParam(
+    "blockInterval",
+    "Script will fetch data every `blockInterval` blocks (between `fromBlock` and `toBlock`)",
+    blocksPerDay,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
     let positions: Position[] = await getPositions();
 
@@ -360,16 +368,16 @@ task("getPositionInfo", "Get all information about some position")
           );
       } catch (_) {}
 
-      // const positionInfo = await tmp.marginEngine.callStatic.getPosition(
-      //   p.owner,
-      //   p.tickLower,
-      //   p.tickUpper
-      // );
+      const positionInfo = await tmp.marginEngine.callStatic.getPosition(
+        p.owner,
+        p.tickLower,
+        p.tickUpper
+      );
 
       fs.appendFileSync(
         `${EXPORT_FOLDER}/info.txt`,
         `MARGIN: ${ethers.utils.formatUnits(
-          0,
+          positionInfo.margin,
           tmp.decimals
         )}, LIQUIDATION: ${ethers.utils.formatUnits(
           positionRequirementLiquidation,
@@ -506,7 +514,7 @@ task("getPositionInfo", "Get all information about some position")
         const currentBlockNumber = currentBlock.number;
 
         const header =
-          "timestamp,block,tick,position_margin,position_requirement_liquidation,position_requirement_safety\n";
+          "timestamp,block,tick,position_margin,position_requirement_liquidation,position_requirement_safety,fixed_token_balance,variable_token_balance\n";
 
         fs.writeFile(`${EXPORT_FOLDER}/progress.csv`, header, () => {});
 
@@ -518,7 +526,11 @@ task("getPositionInfo", "Get all information about some position")
         );
         const startBlock = await getBlockAtTimestamp(hre, startTimestamp);
 
-        for (let b = startBlock + 1; b <= currentBlockNumber; b += 6400) {
+        for (
+          let b = startBlock + 1;
+          b <= currentBlockNumber;
+          b += taskArgs.blockInterval
+        ) {
           const block = await hre.ethers.provider.getBlock(b);
 
           console.log("block:", b);
@@ -545,14 +557,14 @@ task("getPositionInfo", "Get all information about some position")
               }
             );
 
-          // const positionInfo = await tmp.marginEngine.callStatic.getPosition(
-          //   p.owner,
-          //   p.tickLower,
-          //   p.tickUpper,
-          //   {
-          //     blockTag: b,
-          //   }
-          // );
+          const positionInfo = await tmp.marginEngine.callStatic.getPosition(
+            p.owner,
+            p.tickLower,
+            p.tickUpper,
+            {
+              blockTag: b,
+            }
+          );
 
           const tick = (await vamm.vammVars({ blockTag: b })).tick;
 
@@ -561,13 +573,19 @@ task("getPositionInfo", "Get all information about some position")
             `${block.timestamp},${b},${
               1.0001 ** -tick
             }%,${ethers.utils.formatUnits(
-              0,
+              positionInfo.margin,
               tmp.decimals
             )},${ethers.utils.formatUnits(
               positionRequirementLiquidation,
               tmp.decimals
             )},${ethers.utils.formatUnits(
               positionRequirementSafety,
+              tmp.decimals
+            )},${ethers.utils.formatUnits(
+              positionInfo.fixedTokenBalance,
+              tmp.decimals
+            )},${ethers.utils.formatUnits(
+              positionInfo.variableTokenBalance,
               tmp.decimals
             )}\n`
           );
