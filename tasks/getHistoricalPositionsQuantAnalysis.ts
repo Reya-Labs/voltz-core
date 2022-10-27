@@ -17,7 +17,6 @@ task(
   "getHistoricalPositionsQUantAnalysis",
   "Extracting Voltz position data for downstream quant analysis"
 )
-  .addParam("marginEngineAddress", "Margin Engine Address")
   .addParam("owner", "Address of the owner of the position")
   .addParam("tickLower", "Lower tick of a position")
   .addParam("tickUpper", "Upper tick of a position")
@@ -40,6 +39,8 @@ task(
       return;
     }
 
+    const marginEngineAddress = poolInfo.marginEngine;
+    
     const deploymentBlockNumber = poolInfo.deploymentBlock;
     if (!deploymentBlockNumber) {
       console.error("Couldn't fetch deployment block number");
@@ -47,7 +48,7 @@ task(
 
     const marginEngine = (await hre.ethers.getContractAt(
       "MarginEngine",
-      taskArgs.marginEngineAddress
+      marginEngineAddress
     )) as MarginEngine;
 
     const factory = (await hre.ethers.getContractAt(
@@ -97,7 +98,7 @@ task(
       if (b >= deploymentBlockNumber) {
         try {
           const tick = await periphery.getCurrentTick(
-            taskArgs.marginEngineAddress,
+            marginEngineAddress,
             {
               blockTag: b,
             }
@@ -163,8 +164,12 @@ task(
           );
 
           console.log(
-            b,
             block.timestamp,
+            b,
+            tick,
+            variable_rate,
+            fixed_rate,
+            variable_factor,
             positionInfo.margin,
             positionInfo._liquidity,
             positionInfo.fixedTokenBalance,
