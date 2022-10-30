@@ -457,7 +457,7 @@ export const poolConfigs: { [name: string]: poolConfig } = {
       xiLowerWad: "74000000000000000000",
       tMaxWad: "31536000000000000000000000",
       etaIMWad: "3837509124374626",
-      etaLMWad: "1112766411756283",
+      etaLMWad: "667659847053769",
       gap1: toBn("0"),
       gap2: toBn("0"),
       gap3: toBn("0"),
