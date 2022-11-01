@@ -1,3 +1,4 @@
+
 import { task, types } from "hardhat/config";
 import { MarginEngine, BaseRateOracle, Factory, Periphery } from "../typechain";
 import { BigNumber, ethers } from "ethers";
@@ -14,12 +15,9 @@ const blocksPerHour = 300; // Use for historical APY extaction
 const factoryAddress = "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf"; // Address for calling the Factor contract
 
 task(
-  "getHistoricalPositionsQuantAnalysis",
-  "Extracting Voltz position data for downstream quant analysis"
+  "getAllRates",
+  "Extracting Voltz fixed and variable rates for different pools"
 )
-  .addParam("owner", "Address of the owner of the position")
-  .addParam("tickLower", "Lower tick of a position")
-  .addParam("tickUpper", "Upper tick of a position")
   .addOptionalParam(
     "fromBlock",
     "Get data from this past block number (up to some larger block number defined by `toBlock`)",
@@ -33,7 +31,6 @@ task(
     types.int
   )
   .addParam("pool", "Queried Pool", undefined, types.string)
-  .addParam("extra", "Extra descriptor for output csv", undefined, types.string)
   .setAction(async (taskArgs, hre) => {
     const poolInfo = poolAddresses[taskArgs.pool as keyof typeof poolAddresses];
     if (poolInfo === undefined) {
@@ -79,17 +76,15 @@ task(
     }
 
     const fs = require("fs");
-    const file = `${taskArgs.pool}_QuantData${taskArgs.extra}.csv`;
+    const file = `${taskArgs.pool}_RateData.csv`;
 
     const header =
-      "timestamp,block,tick,variable_rate,fixed_rate,variable_factor,position_margin,position_liquidity,fixed_token_balance,variable_token_balance,accumulated_fees,is_settled,position_requirement_liquidation,position_requirement_safety";
-
+      "timestamp,block,tick,variable_rate,fixed_rate"
     fs.appendFileSync(file, header + "\n");
     console.log(header);
 
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
       const peripheryAddress = await factory.periphery({ blockTag: b });
-      // console.log(peripheryAddress);
 
       const periphery = (await hre.ethers.getContractAt(
         "Periphery",
@@ -127,47 +122,7 @@ task(
               }
             )).div(BigNumber.from(10).pow(9)).toNumber() / 1e9;
 
-          const variable_factor =
-            (await baseRateOracle.callStatic.variableFactorNoCache(
-              ethers.utils.parseEther(from.toString()),
-              ethers.utils.parseEther(to.toString()),
-              {
-                blockTag: b,
-              }
-            )).div(BigNumber.from(10).pow(9)).toNumber() / 1e9;
-
           const fixed_rate = (tickToFixedRate(tick)/100).toFixed(6);
-
-          const positionRequirementSafety =
-            await marginEngine.callStatic.getPositionMarginRequirement(
-              taskArgs.owner,
-              taskArgs.tickLower,
-              taskArgs.tickUpper,
-              false,
-              {
-                blockTag: b,
-              }
-            );
-
-          const positionRequirementLiquidation =
-            await marginEngine.callStatic.getPositionMarginRequirement(
-              taskArgs.owner,
-              taskArgs.tickLower,
-              taskArgs.tickUpper,
-              true,
-              {
-                blockTag: b,
-              }
-            );
-
-          const positionInfo = await marginEngine.callStatic.getPosition(
-            taskArgs.owner,
-            taskArgs.tickLower,
-            taskArgs.tickUpper,
-            {
-              blockTag: b,
-            }
-          );
 
           console.log(
             block.timestamp,
@@ -175,22 +130,11 @@ task(
             tick,
             variable_rate,
             fixed_rate,
-            variable_factor,
-            positionInfo.margin,
-            positionInfo._liquidity,
-            positionInfo.fixedTokenBalance,
-            positionInfo.variableTokenBalance,
-            positionInfo.accumulatedFees,
-            positionInfo.isSettled,
-            positionRequirementLiquidation,
-            positionRequirementSafety
           );
 
           fs.appendFileSync(
             file,
-            `${block.timestamp},${b},${tick},${variable_rate},${fixed_rate},${variable_factor},${ethers.utils.formatEther(positionInfo.margin)},${ethers.utils.formatEther(positionInfo._liquidity)},${ethers.utils.formatEther(
-              positionInfo.fixedTokenBalance)},${ethers.utils.formatEther(positionInfo.variableTokenBalance)},${positionInfo.isSettled},${ethers.utils.formatEther(positionInfo.accumulatedFees)},${ethers.utils.formatEther(positionRequirementLiquidation)},${ethers.utils.formatEther(positionRequirementSafety)}\n`
-          );
+            `${block.timestamp},${b},${tick},${variable_rate},${fixed_rate}\n`);
         } catch (error) {
           console.log("Error: ", error);
         }

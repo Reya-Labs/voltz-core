@@ -96,6 +96,7 @@ loadModuleIfContractsAreBuilt("./tasks/checkInsolvencyAtMaturity");
 loadModuleIfContractsAreBuilt("./tasks/migratePeriphery");
 loadModuleIfContractsAreBuilt("./tasks/checkPositionSettlement");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
+loadModuleIfContractsAreBuilt("./tasks/getAllRates");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsQuantAnalysis");
 loadModuleIfContractsAreBuilt("./tasks/setPausability");
 loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
