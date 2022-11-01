@@ -14,7 +14,7 @@ const blocksPerHour = 300; // Use for historical APY extaction
 const factoryAddress = "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf"; // Address for calling the Factor contract
 
 task(
-  "getHistoricalPositionsQUantAnalysis",
+  "getHistoricalPositionsQuantAnalysis",
   "Extracting Voltz position data for downstream quant analysis"
 )
   .addParam("owner", "Address of the owner of the position")
@@ -33,6 +33,7 @@ task(
     types.int
   )
   .addParam("pool", "Queried Pool", undefined, types.string)
+  .addParam("extra", "Extra descriptor for output csv", undefined, types.string)
   .setAction(async (taskArgs, hre) => {
     const poolInfo = poolAddresses[taskArgs.pool as keyof typeof poolAddresses];
     if (poolInfo === undefined) {
@@ -40,7 +41,7 @@ task(
     }
 
     const marginEngineAddress = poolInfo.marginEngine;
-    
+
     const deploymentBlockNumber = poolInfo.deploymentBlock;
     if (!deploymentBlockNumber) {
       console.error("Couldn't fetch deployment block number");
@@ -56,10 +57,15 @@ task(
       factoryAddress
     )) as Factory;
 
+    // Need to run on mainnet 
+    if (hre.network.name !== "mainnet") {
+      throw new Error("Invalid network. Only mainnet data extraction is currently supported");
+    }
+
     const currentBlock = await hre.ethers.provider.getBlock("latest");
     const currentBlockNumber = currentBlock.number;
     let fromBlock = deploymentBlockNumber;
-    const toBlock = currentBlockNumber;
+    let toBlock = currentBlockNumber;
 
     // Reset to the user-provided block, if it is povided
     if (taskArgs.fromBlock) {
@@ -71,7 +77,7 @@ task(
     }
 
     const fs = require("fs");
-    const file = `${taskArgs.pool}_QuantData.csv`;
+    const file = `${taskArgs.pool}_QuantData${taskArgs.extra}.csv`;
 
     const header =
       "timestamp,block,tick,variable_rate,fixed_rate,variable_factor,position_margin,position_liquidity,fixed_token_balance,variable_token_balance,accumulated_fees,position_requirement_liquidation,position_requirement_safety";
@@ -81,7 +87,7 @@ task(
 
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
       const peripheryAddress = await factory.periphery({ blockTag: b });
-      console.log(peripheryAddress);
+      //console.log(peripheryAddress);
 
       const periphery = (await hre.ethers.getContractAt(
         "Periphery",
@@ -97,12 +103,9 @@ task(
 
       if (b >= deploymentBlockNumber) {
         try {
-          const tick = await periphery.getCurrentTick(
-            marginEngineAddress,
-            {
-              blockTag: b,
-            }
-          );
+          const tick = await periphery.getCurrentTick(marginEngineAddress, {
+            blockTag: b,
+          });
 
           const to = BigNumber.from(
             (await hre.ethers.provider.getBlock(b)).timestamp
