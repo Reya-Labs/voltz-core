@@ -1,7 +1,6 @@
-
 import { task, types } from "hardhat/config";
 import { MarginEngine, BaseRateOracle, Factory, Periphery } from "../typechain";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import * as poolAddresses from "../pool-addresses/mainnet.json";
 
@@ -78,8 +77,7 @@ task(
     const fs = require("fs");
     const file = `${taskArgs.pool}_RateData.csv`;
 
-    const header =
-      "timestamp,block,tick,variable_rate,fixed_rate"
+    const header = "timestamp,block,tick,variable_rate,fixed_rate";
     fs.appendFileSync(file, header + "\n");
     console.log(header);
 
@@ -113,28 +111,23 @@ task(
               .timestamp
           );
 
-          const variable_rate = 
-            (await baseRateOracle.callStatic.getApyFromTo(
-              from,
-              to,
-              {
+          const variable_rate =
+            (
+              await baseRateOracle.callStatic.getApyFromTo(from, to, {
                 blockTag: b,
-              }
-            )).div(BigNumber.from(10).pow(9)).toNumber() / 1e9;
+              })
+            )
+              .div(BigNumber.from(10).pow(9))
+              .toNumber() / 1e9;
 
-          const fixed_rate = (tickToFixedRate(tick)/100).toFixed(6);
+          const fixed_rate = (tickToFixedRate(tick) / 100).toFixed(6);
 
-          console.log(
-            block.timestamp,
-            b,
-            tick,
-            variable_rate,
-            fixed_rate,
-          );
+          console.log(block.timestamp, b, tick, variable_rate, fixed_rate);
 
           fs.appendFileSync(
             file,
-            `${block.timestamp},${b},${tick},${variable_rate},${fixed_rate}\n`);
+            `${block.timestamp},${b},${tick},${variable_rate},${fixed_rate}\n`
+          );
         } catch (error) {
           console.log("Error: ", error);
         }
