@@ -42,7 +42,8 @@ task(
       continue;
     }
 
-    const marginEngineAddress = poolAddresses[poolName as keyof typeof poolAddresses].marginEngine;
+    const marginEngineAddress =
+      poolAddresses[poolName as keyof typeof poolAddresses].marginEngine;
 
     const marginEngine = (await hre.ethers.getContractAt(
       "MarginEngine",
