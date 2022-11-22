@@ -376,6 +376,17 @@ task("getPositionInfo", "Get all information about some position")
 
       fs.appendFileSync(
         `${EXPORT_FOLDER}/info.txt`,
+        `FIXED TOKENS: ${ethers.utils.formatUnits(
+          positionInfo.fixedTokenBalance,
+          tmp.decimals
+        )}, VARIABLE TOKENS: ${ethers.utils.formatUnits(
+          positionInfo.variableTokenBalance,
+          tmp.decimals
+        )},\n`
+      );
+
+      fs.appendFileSync(
+        `${EXPORT_FOLDER}/info.txt`,
         `MARGIN: ${ethers.utils.formatUnits(
           positionInfo.margin,
           tmp.decimals
