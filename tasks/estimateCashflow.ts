@@ -12,10 +12,11 @@ import { getPositions, Position } from "../scripts/getPositions";
 const SECONDS_PER_YEAR = 31536000;
 
 task(
-  "checkInsolvencyAtMaturity",
+  "estimateCashflow",
   "Checks the insolvency status of positions at maturity by estimating the expected cashflow."
 )
   .addFlag("onlyFullyUnwound", "Considers only fully unwound positions")
+  .addFlag("onlyInsolvent", "Prints cashflows of insolvent positions only")
   .addOptionalParam("owners", "Filter by list of owners")
   .addOptionalParam("tickLowers", "Filter by tick lowers")
   .addOptionalParam("tickUppers", "Filter by tick uppers")
@@ -69,8 +70,6 @@ task(
     for (const position of positions) {
       marginEngineAddresses.add(position.marginEngine);
     }
-
-    console.log("Positions estimated to become insolvent at maturity:");
 
     const currentBlock = await hre.ethers.provider.getBlock("latest");
     const termCurrentTimestampWad = BigNumber.from(currentBlock.timestamp).mul(
@@ -162,7 +161,10 @@ task(
           status = "WARNING";
         }
 
-        if (positionInfo.margin.add(estimatedCashflow).lt(0)) {
+        if (
+          !taskArgs.onlyInsolvent ||
+          positionInfo.margin.add(estimatedCashflow).lt(0)
+        ) {
           if (noneInsolvent) {
             console.log(
               "(Margin Engine, Owner, Lower Tick, Upper Tick, Status, Fixed Token Balance, Variable Token Balance, Current Margin, Estimated Cashflow Delta, Estimated Total Cashflow)"

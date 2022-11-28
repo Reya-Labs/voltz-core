@@ -92,7 +92,7 @@ loadModuleIfContractsAreBuilt("./tasks/playground");
 loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
 loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
-loadModuleIfContractsAreBuilt("./tasks/checkInsolvencyAtMaturity");
+loadModuleIfContractsAreBuilt("./tasks/estimateCashflow");
 loadModuleIfContractsAreBuilt("./tasks/migratePeriphery");
 loadModuleIfContractsAreBuilt("./tasks/checkPositionSettlement");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
