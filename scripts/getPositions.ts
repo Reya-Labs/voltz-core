@@ -39,7 +39,6 @@ export async function getPositions(
   onlyActivePositions: boolean = false
 ): Promise<Position[]> {
   const endpoint = process.env.SUBGRAPH_URL || "";
-  console.log(endpoint);
   const graphQLClient = new GraphQLClient(endpoint);
 
   const firstCount = 1000;
