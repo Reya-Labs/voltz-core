@@ -1,6 +1,9 @@
 import { ethers } from "ethers";
 import { GraphQLClient, gql } from "graphql-request";
 
+import * as dotenv from "dotenv";
+dotenv.config();
+
 export interface Position {
   marginEngine: string;
   owner: string;
@@ -35,8 +38,7 @@ const getPositionsQueryString = `
 export async function getPositions(
   onlyActivePositions: boolean = false
 ): Promise<Position[]> {
-  const endpoint =
-    "https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1";
+  const endpoint = process.env.SUBGRAPH_URL || "";
   const graphQLClient = new GraphQLClient(endpoint);
 
   const firstCount = 1000;

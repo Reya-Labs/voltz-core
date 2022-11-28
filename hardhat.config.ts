@@ -92,7 +92,7 @@ loadModuleIfContractsAreBuilt("./tasks/playground");
 loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
 loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
-loadModuleIfContractsAreBuilt("./tasks/checkInsolvencyAtMaturity");
+loadModuleIfContractsAreBuilt("./tasks/estimateCashflow");
 loadModuleIfContractsAreBuilt("./tasks/migratePeriphery");
 loadModuleIfContractsAreBuilt("./tasks/checkPositionSettlement");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
@@ -122,7 +122,7 @@ if (!!process.env.FORK_MAINNET) {
     live: false,
     forking: {
       url: `${process.env.MAINNET_URL}`,
-      // blockNumber: 15402000,
+      // blockNumber: 15919000,
     },
   };
 } else if (!!process.env.FORK_KOVAN) {
