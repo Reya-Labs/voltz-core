@@ -100,8 +100,8 @@ task(
       const historicalAPY = await marginEngine.callStatic.getHistoricalApy();
 
       let estimatedVariableFactor = historicalAPY
-        .div(BigNumber.from(10).pow(18))
         .mul(termEndTimestampWad.sub(termCurrentTimestampWad))
+        .div(BigNumber.from(10).pow(18))
         .div(BigNumber.from(SECONDS_PER_YEAR.toString()));
 
       estimatedVariableFactor = estimatedVariableFactor.add(
