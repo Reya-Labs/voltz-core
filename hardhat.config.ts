@@ -99,6 +99,7 @@ loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
 loadModuleIfContractsAreBuilt("./tasks/setPausability");
 loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
 loadModuleIfContractsAreBuilt("./tasks/compareGasCost");
+loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
