@@ -9,6 +9,7 @@ export interface Position {
   owner: string;
   tickLower: number;
   tickUpper: number;
+  liquidity: string;
 }
 
 const getPositionsQueryString = `
@@ -31,6 +32,7 @@ const getPositionsQueryString = `
     }
     tickLower
     tickUpper
+    liquidity
   }
 }
 `;
@@ -66,6 +68,7 @@ export async function getPositions(
           owner: position.owner.id,
           tickLower: Number(position.tickLower),
           tickUpper: Number(position.tickUpper),
+          liquidity: position.liquidity,
         });
       }
     }
