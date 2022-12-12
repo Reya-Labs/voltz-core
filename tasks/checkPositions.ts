@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
 import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
-import { BigNumber, BigNumberish, ethers } from "ethers";
+import { BigNumber, BigNumberish, ethers, utils } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
@@ -602,6 +602,204 @@ task("getPositionInfo", "Get all information about some position")
           );
         }
       }
+    }
+  });
+
+task("checkMaturityPnL", "Check positions' P&L at maturity")
+  .addFlag("traders", "Considers only traders")
+  .addFlag("lps", "Considers only LPs")
+  .addOptionalParam(
+    "pools",
+    "Filter by list of pool names as they appear in pool-addresses/mainnet.json"
+  )
+  .addOptionalParam("owners", "Filter by list of owners")
+  .addOptionalParam("tickLowers", "Filter by tick lowers")
+  .addOptionalParam("tickUppers", "Filter by tick uppers")
+  .setAction(async (taskArgs, hre) => {
+    const currentTimestamp = (await hre.ethers.provider.getBlock("latest"))
+      .timestamp;
+
+    let positions: Position[] = await getPositions();
+
+    const pools: {
+      [name: string]: {
+        index: number;
+        decimals: number;
+        marginEngine: MarginEngine;
+        name: string;
+        termEndTimestamp: number;
+        file: string;
+      };
+    } = {};
+
+    const poolNames: string[] = taskArgs.pools
+      ? taskArgs.pools.split(",")
+      : Object.keys(poolAddresses);
+
+    const filter_pools: string[] = [];
+
+    for (let i = 0; i < poolNames.length; i++) {
+      const p = poolNames[i];
+
+      if (p === "default") {
+        continue;
+      }
+
+      const tmp = poolAddresses[p as keyof typeof poolAddresses];
+
+      if (!tmp) {
+        throw new Error(`Pool ${p} doesnt's exist.`);
+      }
+
+      filter_pools.push(tmp.marginEngine.toLowerCase());
+      // console.log(tmp.marginEngine.toLowerCase());
+
+      const marginEngine = (await hre.ethers.getContractAt(
+        "MarginEngine",
+        tmp.marginEngine
+      )) as MarginEngine;
+
+      const termEndTimestampWad = await marginEngine.termEndTimestampWad();
+
+      pools[tmp.marginEngine.toLowerCase()] = {
+        index: i,
+        decimals: tmp.decimals,
+        marginEngine: marginEngine,
+        name: p,
+        termEndTimestamp: Number(ethers.utils.formatEther(termEndTimestampWad)),
+        file: `position-status/data/maturity-pnl/${p}.csv`,
+      };
+    }
+
+    positions = positions.filter((p) =>
+      filter_pools.includes(p.marginEngine.toLowerCase())
+    );
+
+    positions = positions.filter((p) => p.isSettled);
+
+    if (taskArgs.traders) {
+      positions = positions.filter((p) => p.positionType !== 3);
+    }
+
+    if (taskArgs.lps) {
+      positions = positions.filter((p) => p.positionType === 3);
+    }
+
+    if (taskArgs.owners) {
+      const filter_owners = taskArgs.owners
+        .split(",")
+        .map((p: string) => p.toLowerCase());
+
+      positions = positions.filter((p) =>
+        filter_owners.includes(p.owner.toLowerCase())
+      );
+    }
+
+    if (taskArgs.tickLowers) {
+      const filter_tickLowers = taskArgs.tickLowers.split(",");
+
+      positions = positions.filter((p) =>
+        filter_tickLowers.includes(p.tickLower.toString())
+      );
+    }
+
+    if (taskArgs.tickUppers) {
+      const filter_tickUppers = taskArgs.tickUppers.split(",");
+
+      positions = positions.filter((p) =>
+        filter_tickUppers.includes(p.tickUpper.toString())
+      );
+    }
+
+    positions.sort((a, b) => {
+      const i_a =
+        pools[a.marginEngine.toLowerCase() as keyof typeof pools].index;
+      const i_b =
+        pools[b.marginEngine.toLowerCase() as keyof typeof pools].index;
+
+      if (i_a === i_b) {
+        if (a.owner.toLowerCase() === b.owner.toLowerCase()) {
+          if (a.tickLower === b.tickLower) {
+            return a.tickUpper - b.tickUpper;
+          } else {
+            return a.tickLower - b.tickLower;
+          }
+        } else {
+          return a.owner.toLowerCase() < b.owner.toLowerCase() ? -1 : 1;
+        }
+      } else {
+        return i_a < i_b ? -1 : 1;
+      }
+    });
+
+    console.log("positions:", positions);
+    console.log("number of positions found:", positions.length);
+
+    const fs = require("fs");
+
+    const EXPORT_FOLDER = `position-status/data/maturity-pnl`;
+
+    if (!fs.existsSync(EXPORT_FOLDER)) {
+      fs.mkdirSync(EXPORT_FOLDER, { recursive: true });
+    }
+
+    const header =
+      "pool,margin_engine,owner,tick_lower,tick_upper,margin_in,settlement_cashflow,lp_fees,pnl\n";
+    fs.writeFile(`${EXPORT_FOLDER}/all-pools.csv`, header, () => {});
+    for (let i = 0; i < poolNames.length; i++) {
+      const p = poolNames[i];
+      if (p === "default") {
+        continue;
+      }
+
+      const tmp = poolAddresses[p as keyof typeof poolAddresses];
+      const pool = pools[tmp.marginEngine.toLowerCase() as keyof typeof pools];
+      if (currentTimestamp <= pool.termEndTimestamp) {
+        continue;
+      }
+
+      fs.writeFile(`${EXPORT_FOLDER}/${p}.csv`, header, () => {});
+    }
+
+    for (const p of positions) {
+      const tmp = pools[p.marginEngine.toLowerCase() as keyof typeof pools];
+
+      const history = new PositionHistory(
+        `${p.marginEngine.toLowerCase()}#${p.owner.toLowerCase()}#${
+          p.tickLower
+        }#${p.tickUpper}`,
+        p.tickLower,
+        p.tickUpper,
+        tmp.decimals
+      );
+
+      await history.getInfo();
+
+      let pnl = 0;
+      let margin_in = 0;
+      for (const item of history.marginUpdates) {
+        pnl -= item.marginDelta;
+        if (item.marginDelta > 0) {
+          margin_in += item.marginDelta;
+        }
+      }
+
+      if (history.settlements.length !== 1) {
+        console.log(
+          `Error: more than 1 settlements for position ${p.owner}, ${p.tickLower}, ${p.tickUpper}`
+        );
+
+        return;
+      }
+
+      const settlement_cashflow = history.settlements[0].settlementCashflow;
+
+      const lp_fees = pnl - settlement_cashflow;
+
+      const csv_row = `${tmp.name},${p.marginEngine},${p.owner},${p.tickLower},${p.tickUpper},${margin_in},${settlement_cashflow},${lp_fees},${pnl}\n`;
+
+      fs.appendFileSync(`${EXPORT_FOLDER}/all-pools.csv`, csv_row);
+      fs.appendFileSync(tmp.file, csv_row);
     }
   });
 
