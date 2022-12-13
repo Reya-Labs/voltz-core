@@ -10,6 +10,8 @@ export interface Position {
   tickLower: number;
   tickUpper: number;
   liquidity: string;
+  positionType: number; // 1 - FT, 2 - VT, 3 - LP
+  isSettled: boolean;
 }
 
 const getPositionsQueryString = `
@@ -33,6 +35,8 @@ const getPositionsQueryString = `
     tickLower
     tickUpper
     liquidity
+    positionType
+    isSettled
   }
 }
 `;
@@ -69,6 +73,8 @@ export async function getPositions(
           tickLower: Number(position.tickLower),
           tickUpper: Number(position.tickUpper),
           liquidity: position.liquidity,
+          positionType: Number(position.positionType),
+          isSettled: position.isSettled,
         });
       }
     }
