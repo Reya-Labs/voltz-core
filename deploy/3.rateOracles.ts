@@ -120,7 +120,6 @@ const deployAndConfigureWithGenerator = async ({
       from: deployer,
       args: args,
       log: doLogging,
-      gasLimit: 20000000,
     });
     console.log(`Deployed ${rateOracleIdentifier}})`);
 

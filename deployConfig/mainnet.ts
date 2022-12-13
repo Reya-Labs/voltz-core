@@ -41,7 +41,7 @@ export const mainnetConfig: ContractsConfig = {
         borrow: true,
         address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
-        daysOfTrustedDataPoints: 20,
+        daysOfTrustedDataPoints: DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS,
       },
       {
         name: "WETH",
@@ -49,6 +49,13 @@ export const mainnetConfig: ContractsConfig = {
         address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
         ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
         daysOfTrustedDataPoints: DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS,
+      },
+      {
+        name: "USDT",
+        borrow: true,
+        address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+        ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
+        daysOfTrustedDataPoints: 5,
       },
       // {
       //   name: "DAI",
