@@ -67,7 +67,10 @@ async function getImplementationAddress(
     _ERC1967_IMPLEMENTATION_SLOT
   );
 
-  return ethers.utils.getAddress(hre.ethers.utils.hexStripZeros(implHex));
+  // We strip out zeros from the 32 byte storage slot, but we must pad it back to 20 bytes in case the address starts with one or more zeros
+  return ethers.utils.getAddress(
+    hre.ethers.utils.hexZeroPad(hre.ethers.utils.hexStripZeros(implHex), 20)
+  );
 }
 
 async function impersonateAccount(
@@ -204,7 +207,7 @@ task(
         fs.copyFileSync(`${proxyArtifactPath}.backup`, proxyArtifactPath);
         fs.unlinkSync(`${proxyArtifactPath}.backup`);
 
-        console.log("Moved proxy back to deplyment files");
+        console.log("Moved proxy back to deployment files");
       }
     }
 
@@ -514,6 +517,7 @@ task(
       );
     } else {
       // TODO: compare storage layouts and abort upgrade if not compatible
+      console.log("Updating implementation used by periphery proxy");
 
       if (taskArgs.multisig) {
         // Using multisig template instead of sending any transactions
@@ -528,6 +532,7 @@ task(
             `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
           );
         } else {
+          console.log("Upgrading to ", latestPeripheryLogicAddress);
           const tx = await peripheryProxy
             .connect(await getSigner(hre, proxyOwner))
             .upgradeTo(latestPeripheryLogicAddress);
