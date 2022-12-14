@@ -106,7 +106,8 @@ task("liquidatePositions", "Liquidate liquidatable positions")
 
         if (
           status === "DANGER" &&
-          positionRequirementLiquidation.gt(BigInt(0))
+          positionRequirementLiquidation.gt(BigInt(0)) &&
+          positionInfo.variableTokenBalance.abs().gt(BigInt(0))
         ) {
           data.liquidatablePositions.push({
             marginEngineAddress: marginEngineAddress,

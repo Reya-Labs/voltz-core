@@ -37,6 +37,7 @@ interface SingleIrsData {
   lookbackWindowInSeconds: number;
   liquidatorRewardWad: BigNumberish;
   feeWad: BigNumberish;
+  isAlpha: boolean;
   lpMarginCap: BigNumberish;
   marginCalculatorParams: {
     apyUpperMultiplierWad: BigNumberish;
@@ -356,6 +357,7 @@ task(
           cacheMaxAgeInSeconds: poolConfig.cacheMaxAgeInSeconds,
           lookbackWindowInSeconds: poolConfig.lookbackWindowInSeconds,
           feeWad: poolConfig.feeWad,
+          isAlpha: poolConfig.isAlpha,
           lpMarginCap: poolConfig.lpMarginCap,
           marginCalculatorParams: poolConfig.marginCalculatorParams,
           liquidatorRewardWad: poolConfig.liquidatorRewardWad,

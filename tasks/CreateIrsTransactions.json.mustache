@@ -55,83 +55,7 @@
         "_tickSpacing": "{{tickSpacing}}"
       }
     },
-    {
-      "to": "{{predictedMarginEngineAddress}}",
-      "value": "0",
-      "data": null,
-      "contractMethod": {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_newCacheMaxAgeInSeconds",
-            "type": "uint256"
-          }
-        ],
-        "name": "setCacheMaxAgeInSeconds",
-        "payable": false
-      },
-      "contractInputsValues": {
-        "_marginCalculatorParameters": "",
-        "_newCacheMaxAgeInSeconds": "{{cacheMaxAgeInSeconds}}"
-      }
-    },
-    {
-      "to": "{{predictedMarginEngineAddress}}",
-      "value": "0",
-      "data": null,
-      "contractMethod": {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_newSecondsAgo",
-            "type": "uint256"
-          }
-        ],
-        "name": "setLookbackWindowInSeconds",
-        "payable": false
-      },
-      "contractInputsValues": {
-        "_newSecondsAgo": "{{lookbackWindowInSeconds}}"
-      }
-    },
-    {
-      "to": "{{predictedMarginEngineAddress}}",
-      "value": "0",
-      "data": null,
-      "contractMethod": {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_newLiquidatorRewardWad",
-            "type": "uint256"
-          }
-        ],
-        "name": "setLiquidatorReward",
-        "payable": false
-      },
-      "contractInputsValues": {
-        "_newLiquidatorRewardWad": "{{liquidatorRewardWad}}"
-      }
-    },
-    {
-      "to": "{{predictedVammAddress}}",
-      "value": "0",
-      "data": null,
-      "contractMethod": {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "newFeeWad",
-            "type": "uint256"
-          }
-        ],
-        "name": "setFee",
-        "payable": false
-      },
-      "contractInputsValues": {
-        "newFeeWad": "{{feeWad}}"
-      }
-    },
+    {{#isAlpha}}
     {
       "to": "{{predictedVammAddress}}",
       "value": "0",
@@ -170,6 +94,32 @@
         "__isAlpha": "true"
       }
     },
+    {
+      "to": "{{peripheryAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "contract IVAMM",
+            "name": "_vamm",
+            "type": "address"
+          },
+          {
+            "internalType": "int256",
+            "name": "_lpMarginCapNew",
+            "type": "int256"
+          }
+        ],
+        "name": "setLPMarginCap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_vamm": "{{predictedVammAddress}}",
+        "_lpMarginCapNew": "{{lpMarginCap}}"
+      }
+    },
+    {{/isAlpha}}
     {
       "to": "{{predictedVammAddress}}",
       "value": "0",
@@ -271,28 +221,80 @@
       }
     },
     {
-      "to": "{{peripheryAddress}}",
+      "to": "{{predictedMarginEngineAddress}}",
       "value": "0",
       "data": null,
       "contractMethod": {
         "inputs": [
           {
-            "internalType": "contract IVAMM",
-            "name": "_vamm",
-            "type": "address"
-          },
-          {
-            "internalType": "int256",
-            "name": "_lpMarginCapNew",
-            "type": "int256"
+            "internalType": "uint256",
+            "name": "_newCacheMaxAgeInSeconds",
+            "type": "uint256"
           }
         ],
-        "name": "setLPMarginCap",
+        "name": "setCacheMaxAgeInSeconds",
         "payable": false
       },
       "contractInputsValues": {
-        "_vamm": "{{predictedVammAddress}}",
-        "_lpMarginCapNew": "{{lpMarginCap}}"
+        "_marginCalculatorParameters": "",
+        "_newCacheMaxAgeInSeconds": "{{cacheMaxAgeInSeconds}}"
+      }
+    },
+    {
+      "to": "{{predictedMarginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_newLiquidatorRewardWad",
+            "type": "uint256"
+          }
+        ],
+        "name": "setLiquidatorReward",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_newLiquidatorRewardWad": "{{liquidatorRewardWad}}"
+      }
+    },
+    {
+      "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "newFeeWad",
+            "type": "uint256"
+          }
+        ],
+        "name": "setFee",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "newFeeWad": "{{feeWad}}"
+      }
+    },
+    {
+      "to": "{{predictedMarginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_newSecondsAgo",
+            "type": "uint256"
+          }
+        ],
+        "name": "setLookbackWindowInSeconds",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_newSecondsAgo": "{{lookbackWindowInSeconds}}"
       }
     },
     {
