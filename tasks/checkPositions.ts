@@ -1,6 +1,6 @@
 import { task, types } from "hardhat/config";
 import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
-import { BigNumber, BigNumberish, ethers, utils } from "ethers";
+import { BigNumber, BigNumberish, ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
