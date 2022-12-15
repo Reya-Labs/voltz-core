@@ -97,8 +97,14 @@ const deployAndConfigureWithGenerator = async ({
 
     if (generator) {
       for await (const data of generator) {
-        timestamps.push(data.timestamp);
-        rates.push(data.rate);
+        if (data.timestamp === timestamps[timestamps.length - 1]) {
+          console.log(
+            `Ignoring duplicate data point {${data.timestamp}, ${data.rate}}`
+          );
+        } else {
+          timestamps.push(data.timestamp);
+          rates.push(data.rate);
+        }
       }
 
       // console.log(
