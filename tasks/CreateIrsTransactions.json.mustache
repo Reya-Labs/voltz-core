@@ -236,7 +236,6 @@
         "payable": false
       },
       "contractInputsValues": {
-        "_marginCalculatorParameters": "",
         "_newCacheMaxAgeInSeconds": "{{cacheMaxAgeInSeconds}}"
       }
     },
@@ -347,47 +346,47 @@
               },
               {
                 "internalType": "uint256",
-                "name": "devMulLeftUnwindLMWad",
+                "name": "etaIM",
                 "type": "uint256"
               },
               {
                 "internalType": "uint256",
-                "name": "devMulRightUnwindLMWad",
+                "name": "etaLM",
                 "type": "uint256"
               },
               {
                 "internalType": "uint256",
-                "name": "devMulLeftUnwindIMWad",
+                "name": "gap1",
                 "type": "uint256"
               },
               {
                 "internalType": "uint256",
-                "name": "devMulRightUnwindIMWad",
+                "name": "gap2",
                 "type": "uint256"
               },
               {
                 "internalType": "uint256",
-                "name": "fixedRateDeviationMinLeftUnwindLMWad",
+                "name": "gap3",
                 "type": "uint256"
               },
               {
                 "internalType": "uint256",
-                "name": "fixedRateDeviationMinRightUnwindLMWad",
+                "name": "gap4",
                 "type": "uint256"
               },
               {
                 "internalType": "uint256",
-                "name": "fixedRateDeviationMinLeftUnwindIMWad",
+                "name": "gap5",
                 "type": "uint256"
               },
               {
                 "internalType": "uint256",
-                "name": "fixedRateDeviationMinRightUnwindIMWad",
+                "name": "gap6",
                 "type": "uint256"
               },
               {
                 "internalType": "uint256",
-                "name": "gammaWad",
+                "name": "gap7",
                 "type": "uint256"
               },
               {
@@ -405,8 +404,7 @@
         "payable": false
       },
       "contractInputsValues": {
-        "_newSecondsAgo": "",
-        "_marginCalculatorParameters": "[\"{{marginCalculatorParams.apyUpperMultiplierWad}}\",\"{{marginCalculatorParams.apyLowerMultiplierWad}}\",\"{{marginCalculatorParams.sigmaSquaredWad}}\",\"{{marginCalculatorParams.alphaWad}}\",\"{{marginCalculatorParams.betaWad}}\",\"{{marginCalculatorParams.xiUpperWad}}\",\"{{marginCalculatorParams.xiLowerWad}}\",\"{{marginCalculatorParams.tMaxWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindLMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindLMWad}}\",\"{{marginCalculatorParams.devMulLeftUnwindIMWad}}\",\"{{marginCalculatorParams.devMulRightUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindLMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinLeftUnwindIMWad}}\",\"{{marginCalculatorParams.fixedRateDeviationMinRightUnwindIMWad}}\",\"{{marginCalculatorParams.gammaWad}}\",\"{{marginCalculatorParams.minMarginToIncentiviseLiquidators}}\"]"
+        "_marginCalculatorParameters": "[\"{{marginCalculatorParams.apyUpperMultiplierWad}}\",\"{{marginCalculatorParams.apyLowerMultiplierWad}}\",\"{{marginCalculatorParams.sigmaSquaredWad}}\",\"{{marginCalculatorParams.alphaWad}}\",\"{{marginCalculatorParams.betaWad}}\",\"{{marginCalculatorParams.xiUpperWad}}\",\"{{marginCalculatorParams.xiLowerWad}}\",\"{{marginCalculatorParams.tMaxWad}}\",\"{{marginCalculatorParams.etaIMWad}}\",\"{{marginCalculatorParams.etaLMWad}}\",\"{{marginCalculatorParams.gap1}}\",\"{{marginCalculatorParams.gap2}}\",\"{{marginCalculatorParams.gap3}}\",\"{{marginCalculatorParams.gap4}}\",\"{{marginCalculatorParams.gap5}}\",\"{{marginCalculatorParams.gap6}}\",\"{{marginCalculatorParams.gap7}}\",\"{{marginCalculatorParams.minMarginToIncentiviseLiquidators}}\"]"
       }
     }{{^last}},{{/last}}
     {{/irsInstances}}
