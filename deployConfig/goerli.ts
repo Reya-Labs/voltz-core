@@ -36,12 +36,12 @@ export const goerliConfig: ContractsConfig = {
         ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
         daysOfTrustedDataPoints: 10,
       },
-      // {
-      //   name: "cDAI",
-      //   borrow: true,
-      //   address: "0x822397d9a55d0fefd20f5c4bcab33c5f65bd28eb",
-      //   ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
-      // },
+      {
+        name: "cUSDT",
+        borrow: true,
+        address: "0x5A74332C881Ea4844CcbD8458e0B6a9B04ddb716",
+        ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
+      },
       {
         name: "cUSDC",
         borrow: true,
