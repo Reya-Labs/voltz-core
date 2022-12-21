@@ -661,6 +661,38 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     },
   },
 
+  Goerli_borrow_cUSDT: {
+    rateOracle: "CompoundBorrowRateOracle_cUSDT",
+    tickSpacing: 60,
+    cacheMaxAgeInSeconds: 21600,
+    lookbackWindowInSeconds: 1 * 24 * 60 * 60,
+    feeWad: "1000000000000000",
+    liquidatorRewardWad: "50000000000000000",
+    vammFeeProtocolWad: "0",
+    isAlpha: false,
+    lpMarginCap: "0", // note USDT uses 6 decimals
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: "1349916020965325824",
+      apyLowerMultiplierWad: "532711169308407232",
+      sigmaSquaredWad: "2725848167335",
+      alphaWad: "166692599648233",
+      betaWad: "6758584070518913",
+      xiUpperWad: "25000000000000000000",
+      xiLowerWad: "70000000000000000000",
+      tMaxWad: "31536000000000000000000000",
+      etaIMWad: "3736643999597247",
+      etaLMWad: "522548241306638",
+      gap1: toBn("0"),
+      gap2: toBn("0"),
+      gap3: toBn("0"),
+      gap4: toBn("0"),
+      gap5: toBn("0"),
+      gap6: toBn("0"),
+      gap7: toBn("0"),
+      minMarginToIncentiviseLiquidators: "0",
+    },
+  },
+
   default: {
     rateOracle: "MockRateOracle",
     tickSpacing: 60,
