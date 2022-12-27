@@ -49,7 +49,9 @@ task("liquidatePositions", "Liquidate liquidatable positions")
 
     console.log("margin engine addresses:", marginEngineAddresses);
 
-    const positions: Position[] = await getPositions(true);
+    const positions: Position[] = await getPositions(
+      Math.floor(Date.now() / 1000)
+    );
 
     const currentBlock = await hre.ethers.provider.getBlock("latest");
 

@@ -39,7 +39,9 @@ task(
         (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMathTest;
     }
 
-    let positions: Position[] = await getPositions(true);
+    let positions: Position[] = await getPositions(
+      Math.floor(Date.now() / 1000)
+    );
     if (taskArgs.owners) {
       const filter_owners = taskArgs.owners
         .split(",")

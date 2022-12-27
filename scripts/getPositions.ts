@@ -1,4 +1,3 @@
-import { ethers } from "ethers";
 import { GraphQLClient, gql } from "graphql-request";
 
 import * as dotenv from "dotenv";
@@ -14,9 +13,30 @@ export interface Position {
   isSettled: boolean;
 }
 
-const getPositionsQueryString = `
+const WAD_ZEROS = "000000000000000000";
+
+const getPositionsQueryString = (
+  lastID: string,
+  activeAtTimestamp?: number
+): string => `
 {
-  positions(first: firstCount, skip: skipCount, orderBy: createdTimestamp) {
+  positions(
+    first: 1000, orderBy: id, orderDirection: asc, 
+    where: {
+      id_gt: "${lastID}"
+      amm_: {
+        termStartTimestamp_lte: "${
+          activeAtTimestamp
+            ? `${activeAtTimestamp}${WAD_ZEROS}`
+            : `10000000000000000000000000000`
+        }"
+        termEndTimestamp_gte: "${
+          activeAtTimestamp ? `${activeAtTimestamp}${WAD_ZEROS}` : 0
+        }"
+      }
+    }
+  ) {
+    id
     amm {
       marginEngine {
         id
@@ -42,48 +62,38 @@ const getPositionsQueryString = `
 `;
 
 export async function getPositions(
-  onlyActivePositions: boolean = false
+  activeAtTimestamp?: number
 ): Promise<Position[]> {
   const endpoint = process.env.SUBGRAPH_URL || "";
   const graphQLClient = new GraphQLClient(endpoint);
 
-  const firstCount = 1000;
-  let skipCount = 0;
+  let lastID = "";
   const positions: Position[] = [];
   while (true) {
     const data = await graphQLClient.request(
       gql`
-        ${getPositionsQueryString
-          .replace("firstCount", firstCount.toString())
-          .replace("skipCount", skipCount.toString())}
+        ${getPositionsQueryString(lastID, activeAtTimestamp)}
       `
     );
 
     const positions_batch = JSON.parse(JSON.stringify(data, undefined, 2));
 
-    const currentTimestamp = Math.floor(Date.now() / 1000);
     for (const position of positions_batch.positions) {
-      const termEndTimestamp = Number(
-        ethers.utils.formatEther(position.amm.termEndTimestamp)
-      );
-      if (!onlyActivePositions || termEndTimestamp > currentTimestamp) {
-        positions.push({
-          marginEngine: position.amm.marginEngine.id,
-          owner: position.owner.id,
-          tickLower: Number(position.tickLower),
-          tickUpper: Number(position.tickUpper),
-          liquidity: position.liquidity,
-          positionType: Number(position.positionType),
-          isSettled: position.isSettled,
-        });
-      }
+      positions.push({
+        marginEngine: position.amm.marginEngine.id,
+        owner: position.owner.id,
+        tickLower: Number(position.tickLower),
+        tickUpper: Number(position.tickUpper),
+        liquidity: position.liquidity,
+        positionType: Number(position.positionType),
+        isSettled: position.isSettled,
+      });
     }
 
-    skipCount += firstCount;
-
-    if (positions_batch.positions.length !== firstCount) {
+    if (positions_batch.positions.length !== 1000) {
       break;
     }
+    lastID = positions_batch.positions.at(-1).id;
   }
 
   return positions;
