@@ -12,7 +12,9 @@ task("getLiquidityDistribution", "Retrieves the liquidity distribution")
     "Comma-separated pool names as in pool-addresses/mainnet.json"
   )
   .setAction(async (taskArgs, _) => {
-    const positions: Position[] = await getPositions(true);
+    const positions: Position[] = await getPositions(
+      Math.floor(Date.now() / 1000)
+    );
 
     const poolNames: string[] = taskArgs.pools.split(",");
 
