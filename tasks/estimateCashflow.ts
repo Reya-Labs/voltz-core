@@ -8,6 +8,7 @@ import {
 import { ethers, BigNumber } from "ethers";
 
 import { getPositions, Position } from "../scripts/getPositions";
+import * as poolAddresses from "../pool-addresses/mainnet.json";
 
 const SECONDS_PER_YEAR = 31536000;
 
@@ -20,6 +21,10 @@ task(
   .addOptionalParam("owners", "Filter by list of owners")
   .addOptionalParam("tickLowers", "Filter by tick lowers")
   .addOptionalParam("tickUppers", "Filter by tick uppers")
+  .addOptionalParam(
+    "pools",
+    "The name of the pool (e.g. 'aDAI_v2', 'stETH_v1', etc.)"
+  )
   .setAction(async (taskArgs, hre) => {
     let fixedAndVariableMath;
     if (hre.network.name === "mainnet") {
@@ -38,6 +43,13 @@ task(
       fixedAndVariableMath =
         (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMathTest;
     }
+
+    const poolNames = taskArgs.pools?.split(",") || [];
+    const whitelistMarginEngines = poolNames.map((poolName: string) => {
+      return poolAddresses[
+        poolName as keyof typeof poolAddresses
+      ].marginEngine.toLowerCase();
+    });
 
     let positions: Position[] = await getPositions(
       Math.floor(Date.now() / 1000)
@@ -70,7 +82,12 @@ task(
 
     const marginEngineAddresses = new Set<string>();
     for (const position of positions) {
-      marginEngineAddresses.add(position.marginEngine);
+      if (
+        whitelistMarginEngines.includes(position.marginEngine.toLowerCase()) ||
+        whitelistMarginEngines.length === 0
+      ) {
+        marginEngineAddresses.add(position.marginEngine);
+      }
     }
 
     const currentBlock = await hre.ethers.provider.getBlock("latest");
@@ -99,6 +116,16 @@ task(
       const termStartTimestampWad = await marginEngine.termStartTimestampWad();
       const termEndTimestampWad = await marginEngine.termEndTimestampWad();
 
+      const marginEngineEndTimestamp = Number(
+        ethers.utils.formatEther(await marginEngine.termEndTimestampWad())
+      );
+
+      if (marginEngineEndTimestamp <= currentBlock.timestamp) {
+        continue;
+      }
+
+      console.log("New pool:", marginEngineAddress);
+
       const historicalAPY = await marginEngine.callStatic.getHistoricalApy();
 
       let estimatedVariableFactor = historicalAPY
@@ -113,9 +140,15 @@ task(
         )
       );
 
-      for (const position of positions) {
-        if (position.marginEngine !== marginEngineAddress) {
-          continue;
+      const positionsOfThisPool = positions.filter(
+        (pos) =>
+          pos.marginEngine.toLowerCase() === marginEngineAddress.toLowerCase()
+      );
+
+      for (let index = 0; index < positionsOfThisPool.length; index++) {
+        const position = positionsOfThisPool[index];
+        if (index % 20 === 0) {
+          console.log(`${index}/${positionsOfThisPool.length}`);
         }
 
         const positionInfo = await marginEngine.callStatic.getPosition(
@@ -140,29 +173,6 @@ task(
             estimatedVariableFactor
           );
 
-        const positionRequirementSafety =
-          await marginEngine.callStatic.getPositionMarginRequirement(
-            position.owner,
-            position.tickLower,
-            position.tickUpper,
-            false
-          );
-
-        const positionRequirementLiquidation =
-          await marginEngine.callStatic.getPositionMarginRequirement(
-            position.owner,
-            position.tickLower,
-            position.tickUpper,
-            true
-          );
-
-        let status = "HEALTHY";
-        if (positionInfo.margin.lte(positionRequirementLiquidation)) {
-          status = "DANGER";
-        } else if (positionInfo.margin.lte(positionRequirementSafety)) {
-          status = "WARNING";
-        }
-
         if (
           !taskArgs.onlyInsolvent ||
           positionInfo.margin.add(estimatedCashflow).lt(0)
@@ -178,7 +188,6 @@ task(
             position.owner,
             position.tickLower,
             position.tickUpper,
-            status,
             ethers.utils.formatUnits(positionInfo.fixedTokenBalance, decimals),
             ethers.utils.formatUnits(
               positionInfo.variableTokenBalance,

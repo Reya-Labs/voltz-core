@@ -69,21 +69,16 @@ task("liquidatePositions", "Liquidate liquidatable positions")
         continue;
       }
 
-      for (const position of positions) {
-        if (
-          position.marginEngine.toLowerCase() !==
-          marginEngineAddress.toLowerCase()
-        ) {
-          continue;
-        }
+      const positionsOfThisPool = positions.filter(
+        (pos) =>
+          pos.marginEngine.toLowerCase() === marginEngineAddress.toLowerCase()
+      );
 
-        const positionRequirementSafety =
-          await marginEngine.callStatic.getPositionMarginRequirement(
-            position.owner,
-            position.tickLower,
-            position.tickUpper,
-            false
-          );
+      for (let index = 0; index < positionsOfThisPool.length; index++) {
+        const position = positionsOfThisPool[index];
+        if (index % 20 === 0) {
+          console.log(`${index}/${positionsOfThisPool.length}`);
+        }
 
         const positionRequirementLiquidation =
           await marginEngine.callStatic.getPositionMarginRequirement(
@@ -93,23 +88,17 @@ task("liquidatePositions", "Liquidate liquidatable positions")
             true
           );
 
+        if (positionRequirementLiquidation.eq(BigInt(0))) {
+          continue;
+        }
+
         const positionInfo = await marginEngine.callStatic.getPosition(
           position.owner,
           position.tickLower,
           position.tickUpper
         );
 
-        let status = "HEALTHY";
         if (positionInfo.margin.lte(positionRequirementLiquidation)) {
-          status = "DANGER";
-        } else if (positionInfo.margin.lte(positionRequirementSafety)) {
-          status = "WARNING";
-        }
-
-        if (
-          status === "DANGER" &&
-          positionRequirementLiquidation.gt(BigInt(0))
-        ) {
           data.liquidatablePositions.push({
             marginEngineAddress: marginEngineAddress,
             owner: position.owner,
@@ -123,8 +112,6 @@ task("liquidatePositions", "Liquidate liquidatable positions")
             position.tickUpper,
             ethers.utils.formatEther(positionInfo.margin),
             ethers.utils.formatEther(positionRequirementLiquidation),
-            ethers.utils.formatEther(positionRequirementSafety),
-            status,
             marginEngineAddress
           );
         }
