@@ -24,6 +24,7 @@ const getPositionsQueryString = (
     first: 1000, orderBy: id, orderDirection: asc, 
     where: {
       id_gt: "${lastID}"
+      createdTimestamp_lte: "${activeAtTimestamp}"
       amm_: {
         termStartTimestamp_lte: "${
           activeAtTimestamp
