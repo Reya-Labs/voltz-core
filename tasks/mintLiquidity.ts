@@ -1,65 +1,129 @@
-import { utils } from "ethers";
 import { task } from "hardhat/config";
-import { toBn } from "../test/helpers/toBn";
-import { Factory, MarginEngine, Periphery, VAMM } from "../typechain";
-import { TickMath } from "../test/shared/tickMath";
+import { IERC20Minimal, MarginEngine, Periphery } from "../typechain";
+import * as poolAddresses from "../pool-addresses/mainnet.json";
+import path from "path";
+import mustache from "mustache";
 
+type MintOrBurnParams = {
+  pool: string;
+  tickLower: number;
+  tickUpper: number;
+  notional: number;
+  isMint: boolean;
+  marginDelta: number;
+};
+
+type MultisigTemplate = {
+  periphery: string;
+  mints: {
+    marginEngine: string;
+    token: string;
+    tickLower: number;
+    tickUpper: number;
+    notional: string;
+    isMint: boolean;
+    marginDelta: string;
+    last: boolean;
+  }[];
+};
+
+async function writeToMultisigTemplate(data: MultisigTemplate) {
+  const fs = require("fs");
+  const template = fs.readFileSync(
+    path.join(__dirname, "templates/mints.json.mustache"),
+    "utf8"
+  );
+  const output = mustache.render(template, data);
+
+  const file = `./tasks/JSONs/mints.json`;
+  fs.writeFileSync(file, output);
+}
+
+const mints: MintOrBurnParams[] = [
+  {
+    pool: "aDAI_v4",
+    tickLower: -9180,
+    tickUpper: 6960,
+    notional: 2379037,
+    isMint: true,
+    marginDelta: 31720,
+  },
+  {
+    pool: "borrow_aUSDT_v1",
+    tickLower: -15060,
+    tickUpper: -6960,
+    notional: 2980665,
+    isMint: true,
+    marginDelta: 39742,
+  },
+  {
+    pool: "cDAI_v4",
+    tickLower: -9180,
+    tickUpper: 6960,
+    notional: 2993763,
+    isMint: true,
+    marginDelta: 39917,
+  },
+  {
+    pool: "rETH_v2",
+    tickLower: -19440,
+    tickUpper: -10980,
+    notional: 3845,
+    isMint: true,
+    marginDelta: 76.9,
+  },
+  {
+    pool: "stETH_v2",
+    tickLower: -19440,
+    tickUpper: -10980,
+    notional: 1688,
+    isMint: true,
+    marginDelta: 33.8,
+  },
+];
+
+// TODO: to be added: tx execution and simulation
 task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
-  const [wallet] = await (hre.ethers as any).getSigners();
-
-  // TODO: make configurable
-  const marginEngineAddress = "0x75537828f2ce51be7289709686a69cbfdbb714f1";
-
-  const factory = (await hre.ethers.getContract("Factory")) as Factory;
-
   const periphery = (await hre.ethers.getContract("Periphery")) as Periphery;
 
-  // approve
-  await factory.connect(wallet).setApproval(periphery.address, true);
+  const data: MultisigTemplate = {
+    periphery: periphery.address,
+    mints: [],
+  };
 
-  // initialize vamm
-  const marginEngine = (await hre.ethers.getContractAt(
-    "MarginEngine",
-    marginEngineAddress
-  )) as MarginEngine;
+  for (const mint of mints) {
+    const tmp = poolAddresses[mint.pool as keyof typeof poolAddresses];
 
-  const vammAddress = await marginEngine.vamm();
-  console.log("vamm address", vammAddress);
+    const marginEngine = (await hre.ethers.getContractAt(
+      "MarginEngine",
+      tmp.marginEngine
+    )) as MarginEngine;
+    const tokenAddress = await marginEngine.underlyingToken();
+    const token = (await hre.ethers.getContractAt(
+      "IERC20Minimal",
+      tokenAddress
+    )) as IERC20Minimal;
+    const decimals = await token.decimals();
 
-  const vamm = (await hre.ethers.getContractAt("VAMM", vammAddress)) as VAMM;
-
-  let vammVars = await vamm.vammVars();
-
-  console.log("vammVars.sqrtPriceX96", vammVars.sqrtPriceX96.toString());
-
-  if (vammVars.sqrtPriceX96.toString() === "0") {
-    await vamm
-      .connect(wallet)
-      .initializeVAMM(TickMath.getSqrtRatioAtTick(-1000).toString());
+    data.mints.push({
+      marginEngine: tmp.marginEngine,
+      token: token.address,
+      tickLower: mint.tickLower,
+      tickUpper: mint.tickUpper,
+      notional: hre.ethers.utils
+        .parseUnits(mint.notional.toString(), decimals)
+        .toString(),
+      isMint: mint.isMint,
+      marginDelta: hre.ethers.utils
+        .parseUnits(mint.marginDelta.toString(), decimals)
+        .toString(),
+      last: false,
+    });
   }
 
-  vammVars = await vamm.vammVars();
+  data.mints[data.mints.length - 1].last = true;
 
-  console.log("vammVars.sqrtPriceX96", vammVars.sqrtPriceX96.toString());
-
-  // mint liquidity
-
-  console.log("marginEngineAddress", marginEngineAddress);
-  console.log("wallet address", wallet.address);
-
-  console.log(
-    "historical apy",
-    utils.formatEther(await marginEngine.callStatic.getHistoricalApy())
-  );
-
-  await periphery.connect(wallet).mintOrBurn({
-    marginEngine: marginEngineAddress,
-    tickLower: -7000,
-    tickUpper: 0,
-    notional: toBn("100000"),
-    isMint: true,
-    marginDelta: 0,
-  });
+  await writeToMultisigTemplate(data);
 });
 
 module.exports = {};
