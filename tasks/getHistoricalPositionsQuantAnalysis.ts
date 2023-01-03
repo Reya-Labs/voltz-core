@@ -69,7 +69,7 @@ task(
     let fromBlock = deploymentBlockNumber;
     const toBlock = currentBlockNumber;
 
-    // Reset to the user-provided block, if it is povided
+    // Reset to the user-provided block, if it is provided
     if (taskArgs.fromBlock) {
       fromBlock = taskArgs.fromBlock;
     }
@@ -111,7 +111,7 @@ task(
           const to = BigNumber.from(
             (await hre.ethers.provider.getBlock(b)).timestamp
           );
-
+          
           const from = BigNumber.from(
             (await hre.ethers.provider.getBlock(b - 28 * blocksPerHour))
               .timestamp
@@ -140,7 +140,7 @@ task(
               .toNumber() / 1e9;
 
           const fixed_rate = (tickToFixedRate(tick) / 100).toFixed(6);
-
+          
           const positionRequirementSafety =
             await marginEngine.callStatic.getPositionMarginRequirement(
               taskArgs.owner,
@@ -162,7 +162,7 @@ task(
                 blockTag: b,
               }
             );
-
+          
           const positionInfo = await marginEngine.callStatic.getPosition(
             taskArgs.owner,
             taskArgs.tickLower,
@@ -188,7 +188,7 @@ task(
             positionRequirementLiquidation,
             positionRequirementSafety
           );
-
+      
           fs.appendFileSync(
             file,
             `${
@@ -206,6 +206,7 @@ task(
             )},${ethers.utils.formatEther(
               positionRequirementLiquidation
             )},${ethers.utils.formatEther(positionRequirementSafety)}\n`
+            
           );
         } catch (error) {
           console.log("Error: ", error);
