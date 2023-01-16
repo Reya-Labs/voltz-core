@@ -24,41 +24,42 @@ const getPositionsQueryString = (
     first: 1000, orderBy: id, orderDirection: asc, 
     where: {
       id_gt: "${lastID}"
-      createdTimestamp_lte: "${activeAtTimestamp}"
+      ${
+        activeAtTimestamp
+          ? `
+      createdTimestamp_lte: ${activeAtTimestamp}
       amm_: {
-        termStartTimestamp_lte: "${
-          activeAtTimestamp
-            ? `${activeAtTimestamp}${WAD_ZEROS}`
-            : `10000000000000000000000000000`
-        }"
-        termEndTimestamp_gte: "${
-          activeAtTimestamp ? `${activeAtTimestamp}${WAD_ZEROS}` : 0
-        }"
+        termStartTimestamp_lte: ${activeAtTimestamp}${WAD_ZEROS}
+        termEndTimestamp_gte: ${activeAtTimestamp}${WAD_ZEROS}
       }
+      `
+          : ""
+      }
+      
     }
   ) {
-    id
+  id
     amm {
       marginEngine {
-        id
-      }
-      rateOracle {
-        token {
-          decimals
-        }
-      }
-      termStartTimestamp
-      termEndTimestamp
-    }
-    owner {
       id
     }
-    tickLower
-    tickUpper
-    liquidity
-    positionType
-    isSettled
+      rateOracle {
+        token {
+        decimals
+      }
+    }
+    termStartTimestamp
+    termEndTimestamp
   }
+    owner {
+    id
+  }
+  tickLower
+  tickUpper
+  liquidity
+  positionType
+  isSettled
+}
 }
 `;
 
