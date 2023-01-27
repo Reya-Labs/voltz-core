@@ -1,11 +1,14 @@
 import { BigNumber } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { IAaveV3LendingPool, IAaveV2LendingPool } from "../../typechain";
+import {
+  IAaveV3LendingPool,
+  IAaveV2LendingPool,
+} from "../../typechain";
 import { BlockSpec, Datum, blocksPerDay } from "./common";
 
 export interface AaveV2DataSpec extends BlockSpec {
   hre: HardhatRuntimeEnvironment;
-  lendingPool: IAaveV3LendingPool;
+  lendingPool: IAaveV2LendingPool;
   underlyingAddress: string;
   borrow: boolean;
 }
@@ -29,11 +32,9 @@ async function* aaveDataGenerator(
 
       if (spec.borrow) {
         rate = BigNumber.from(0);
-        // TO DO: fix
-        // await lendingPool.getReserveNormalizedVariableDebt(
-        //   underlyingAddress,
-        //   { blockTag: b }
-        // );
+        await (
+          lendingPool as IAaveV2LendingPool
+        ).getReserveNormalizedVariableDebt(underlyingAddress, { blockTag: b });
       } else {
         rate = await lendingPool.getReserveNormalizedIncome(underlyingAddress, {
           blockTag: b,

@@ -6,9 +6,6 @@ import "../interfaces/rate_oracles/IAaveV3RateOracle.sol";
 import "../interfaces/aave/IAaveV3LendingPool.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
-// todo: get rid of this import before merging to main
-import "hardhat/console.sol";
-
 contract AaveV3RateOracle is BaseRateOracle, IAaveV3RateOracle {
     /// @inheritdoc IAaveV3RateOracle
     IAaveV3LendingPool public override aaveLendingPool;
@@ -42,11 +39,6 @@ contract AaveV3RateOracle is BaseRateOracle, IAaveV3RateOracle {
         resultRay = uint256(
             aaveLendingPool.getReserveNormalizedIncome(underlying)
         );
-        console.log(
-            "Their rate",
-            aaveLendingPool.getReserveNormalizedIncome(underlying)
-        );
-        console.log("Our rate", resultRay);
         if (resultRay == 0) {
             revert CustomErrors
                 .AaveV3PoolGetReserveNormalizedIncomeReturnedZero();
