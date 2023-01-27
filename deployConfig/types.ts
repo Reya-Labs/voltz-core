@@ -21,6 +21,7 @@ export interface RateOracleConfigDefaults {
 }
 export interface AaveConfig {
   aaveLendingPool?: string;
+  aaveLendingPoolDeploymentBlock?: number;
   aaveTokens: TokenConfig[];
 }
 export interface CompoundConfig {
@@ -40,6 +41,7 @@ export interface RocketPoolConfig {
 export interface ContractsConfig {
   weth?: string;
   aaveConfig?: AaveConfig;
+  aaveConfigV3?: AaveConfig;
   compoundConfig?: CompoundConfig;
   lidoConfig?: LidoConfig;
   rocketPoolConfig?: RocketPoolConfig;

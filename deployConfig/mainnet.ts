@@ -13,6 +13,7 @@ export const mainnetConfig: ContractsConfig = {
   aaveConfig: {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
+    aaveLendingPoolDeploymentBlock: 11367585,
     aaveTokens: [
       // Supply markets
       {
@@ -64,6 +65,21 @@ export const mainnetConfig: ContractsConfig = {
       //   ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
       //   daysOfTrustedDataPoints: DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS,
       // },
+    ],
+  },
+  aaveConfigV3: {
+    // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
+    aaveLendingPool: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+    aaveLendingPoolDeploymentBlock: 16291127,
+    aaveTokens: [
+      // Supply markets
+      {
+        name: "USDC",
+        borrow: false,
+        address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
+        daysOfTrustedDataPoints: DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS,
+      },
     ],
   },
   compoundConfig: {
