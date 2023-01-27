@@ -36,9 +36,7 @@ contract AaveV3RateOracle is BaseRateOracle, IAaveV3RateOracle {
         override
         returns (uint32 timestamp, uint256 resultRay)
     {
-        resultRay = uint256(
-            aaveLendingPool.getReserveNormalizedIncome(underlying)
-        );
+        resultRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
         if (resultRay == 0) {
             revert CustomErrors
                 .AaveV3PoolGetReserveNormalizedIncomeReturnedZero();
