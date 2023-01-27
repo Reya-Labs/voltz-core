@@ -6,6 +6,7 @@ import "../interfaces/rate_oracles/IAaveV3RateOracle.sol";
 import "../interfaces/aave/IAaveV3LendingPool.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
+// todo: get rid of this import before merging to main
 import "hardhat/console.sol";
 
 contract AaveV3RateOracle is BaseRateOracle, IAaveV3RateOracle {
