@@ -20,7 +20,7 @@ import { BigNumber } from "ethers";
 import path from "path";
 import mustache from "mustache";
 import { Datum } from "../historicalData/generators/common";
-import { buildAaveDataGenerator } from "../historicalData/generators/aave";
+import { buildAaveDataGenerator, buildAaveV3DataGenerator } from "../historicalData/generators/aave";
 import { buildCompoundDataGenerator } from "../historicalData/generators/compound";
 
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
@@ -201,8 +201,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         if (tokenDefinition.daysOfTrustedDataPoints) {
           trustedDataPointsGenerator = await buildAaveDataGenerator(
             hre,
-            aaveLendingPool,
-            existingAaveLendingPoolDeploymentBlock,
             tokenDefinition.address,
             tokenDefinition.daysOfTrustedDataPoints,
             tokenDefinition.borrow
@@ -246,12 +244,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
 
         if (tokenDefinition.daysOfTrustedDataPoints) {
-          trustedDataPointsGenerator = await buildAaveDataGenerator(
+          trustedDataPointsGenerator = await buildAaveV3DataGenerator(
             hre,
             aaveLendingPool,
-            existingAaveLendingPoolDeploymentBlock,
             tokenDefinition.address,
-            tokenDefinition.daysOfTrustedDataPoints,
             tokenDefinition.borrow
           );
         }

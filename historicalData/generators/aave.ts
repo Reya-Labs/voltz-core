@@ -98,9 +98,7 @@ export async function buildAaveDataGenerator(
 export async function buildAaveV3DataGenerator(
   hre: HardhatRuntimeEnvironment,
   lendingPool: IAaveV2LendingPool | IAaveV3LendingPool,
-  lendingPoolDeploymentBlock: number,
   underlyingAddress: string,
-  lookbackDays?: number,
   borrow = false,
   overrides?: Partial<AaveV3DataSpec>
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
