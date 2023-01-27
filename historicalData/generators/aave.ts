@@ -1,10 +1,7 @@
 import { BigNumber } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import {
-  IAaveV3LendingPool,
-  IAaveV2LendingPool,
-} from "../../typechain";
-import { BlockSpec, Datum, blocksPerDay } from "./common";
+import { IAaveV2LendingPool, IAaveV3LendingPool } from "../../typechain";
+import { BlockSpec, Datum } from "./common";
 
 export interface AaveV2DataSpec extends BlockSpec {
   hre: HardhatRuntimeEnvironment;
