@@ -13,8 +13,8 @@ parser = ArgumentParser()
 
 def parseSettings():
     parser.add_argument("-asset", "--asset", type=str,
-                        help="Asset for plotter (e.g. --asset rETH)", required=True)
-    parser.add_argument("-borrow", "--borrow", help="Is it a borrow market?", action='store_true')
+                        help="Asset for plotter (e.g. --asset rETH)", default="aUSDC")
+    parser.add_argument("-borrow", "--borrow", help="Is it a borrow market?", action='store_true', default=False)
 
     args = dict((k, v)
                 for k, v in vars(parser.parse_args()).items() if v is not None)
@@ -22,17 +22,16 @@ def parseSettings():
     ASSET = args["asset"]
     IS_BORROW = args["borrow"]
 
-    # lookback windows in seconds (five entries)
-    LOOKBACK_WINDOWS = [1 * SECONDS_IN_HOUR, 6 * SECONDS_IN_HOUR,
+    # lookback windows in seconds (six entries)
+    LOOKBACK_WINDOWS = [1 * SECONDS_IN_MINUTE, 1 * SECONDS_IN_HOUR, 6 * SECONDS_IN_HOUR,
                         24 * SECONDS_IN_HOUR, 7 * SECONDS_IN_DAY, 3 * 7 * SECONDS_IN_DAY]
-    LOOKBACK_WINDOW_LABELS = [
-        "1 hour", "6 hours", "1 day", "1 week", "3 weeks"]
+    LOOKBACK_WINDOW_LABELS = ["1 minute", "1 hour", "6 hours", "1 day", "1 week", "3 weeks"]
 
     # how frequent the apy should be (in seconds)
     APY_FREQUENCY = 5 * SECONDS_IN_MINUTE
 
     # apy limits for plots
-    APY_LIMITS = [0, 0.1]
+    APY_LIMITS = [0, 0.3]
 
     return ASSET, IS_BORROW, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS
 
@@ -44,9 +43,12 @@ def getDatasets():
     file_name = "historicalData/rates/"+prefix+"_{0}.csv"
     df_input = pd.read_csv(file_name.format(ASSET))
 
+    dataset_range_in_seconds = df_input.loc[:, "timestamp"].iloc[-1] - df_input.loc[:, "timestamp"].iloc[0]
+    valid_lookback_windows = [lookback_window for lookback_window in LOOKBACK_WINDOWS if lookback_window < dataset_range_in_seconds]
+
     rnis = getPreparedRNIData(df_input, False)
     apys = [getDailyApy(rnis, lookback=lookback, frequency=APY_FREQUENCY)
-            for lookback in LOOKBACK_WINDOWS]
+            for lookback in valid_lookback_windows]
     apy_df = pd.DataFrame(apys)
     apy_df.to_csv("historicalData/rates/{0}_APY.csv".format(ASSET), index=False)
 
@@ -68,6 +70,8 @@ def plot(rnis, apys):
     axs[0, 0].plot(rnis["timestamp"], rnis["liquidityIndex"])
 
     indices = [[0, 0, 1], [1, 0, 2], [2, 1, 0], [3, 1, 1], [4, 1, 2]]
+
+    indices = indices[:len(apys)]
 
     for [t, i, j] in indices:
         start_timestamp = apys[t]["timestamp"][0]
