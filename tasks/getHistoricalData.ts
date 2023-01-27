@@ -9,7 +9,7 @@ import {
 import { BigNumber } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { Datum } from "../historicalData/generators/common";
-import { buildAaveDataGenerator } from "../historicalData/generators/aave";
+import { buildAaveDataGenerator, buildAaveV3DataGenerator } from "../historicalData/generators/aave";
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
 import { buildCompoundDataGenerator } from "../historicalData/generators/compound";
@@ -213,7 +213,8 @@ task("getHistoricalData", "Retrieves the historical rates")
         aTokenUnderlyingAddresses[
           asset as keyof typeof aTokenUnderlyingAddresses
         ];
-      generator = await buildAaveDataGenerator(
+      // TODO: fix
+      generator = await buildAaveV3DataGenerator(
         hre,
         underlyingTokenAddress,
         undefined,
@@ -269,6 +270,8 @@ task("getHistoricalData", "Retrieves the historical rates")
 
     const header = "date,timestamp,liquidityIndex";
 
+    fs.rmSync(file);
+    fs.openSync(file, 'w')
     fs.appendFileSync(file, header + "\n");
     console.log(`block,${header}`);
 
@@ -308,13 +311,15 @@ task("getHistoricalData", "Retrieves the historical rates")
         console.error("Unordered timestamps", i);
         break;
       }
-      if (rates[i] <= rates[i - 1]) {
+      if (rates[i] < rates[i - 1]) {
         console.error("Unordered rates", i);
+        console.log(rates[i].toString(), rates[i - 1].toString())
         break;
       }
     }
 
     return { timestamps, rates };
   });
+
 
 module.exports = {};
