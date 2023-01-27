@@ -2,25 +2,25 @@
 
 pragma solidity =0.8.9;
 
-import "../interfaces/rate_oracles/IAaveRateOracle.sol";
-import "../interfaces/aave/IAaveV2LendingPool.sol";
+import "../interfaces/rate_oracles/IAaveV3RateOracle.sol";
+import "../interfaces/aave/IAaveV3LendingPool.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
-contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
-    /// @inheritdoc IAaveRateOracle
-    IAaveV2LendingPool public override aaveLendingPool;
+contract AaveV3RateOracle is BaseRateOracle, IAaveV3RateOracle {
+    /// @inheritdoc IAaveV3RateOracle
+    IAaveV3LendingPool public override aaveLendingPool;
 
-    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 1; // id of aave v2 is 1
+    uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 7; // id of aave v3 is 7
 
     constructor(
-        IAaveV2LendingPool _aaveLendingPool,
+        IAaveV3LendingPool _aaveLendingPool,
         IERC20Minimal _underlying,
         uint32[] memory _times,
         uint256[] memory _results
     ) BaseRateOracle(_underlying) {
         require(
             address(_aaveLendingPool) != address(0),
-            "aave pool must exist"
+            "aave v3 pool must exist"
         );
         // Check that underlying was set in BaseRateOracle
         require(address(underlying) != address(0), "underlying must exist");
@@ -36,9 +36,12 @@ contract AaveRateOracle is BaseRateOracle, IAaveRateOracle {
         override
         returns (uint32 timestamp, uint256 resultRay)
     {
-        resultRay = aaveLendingPool.getReserveNormalizedIncome(underlying);
+        resultRay = uint256(
+            aaveLendingPool.getReserveNormalizedIncome(underlying)
+        );
         if (resultRay == 0) {
-            revert CustomErrors.AavePoolGetReserveNormalizedIncomeReturnedZero();
+            revert CustomErrors
+                .AaveV3PoolGetReserveNormalizedIncomeReturnedZero();
         }
 
         return (Time.blockTimestampTruncated(), resultRay);
