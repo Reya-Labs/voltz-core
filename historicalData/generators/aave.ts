@@ -1,7 +1,6 @@
 import { BigNumber } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { IAaveV3LendingPool } from "../../typechain";
-import { IAaveV2LendingPool } from "../../typechain";
+import { IAaveV3LendingPool, IAaveV2LendingPool } from "../../typechain";
 import { BlockSpec, Datum, blocksPerDay } from "./common";
 
 export interface AaveV2DataSpec extends BlockSpec {
@@ -19,7 +18,9 @@ export interface AaveV3DataSpec extends BlockSpec {
 }
 
 // Generator function for Aave data
-async function* aaveDataGenerator(spec: AaveV2DataSpec | AaveV3DataSpec): AsyncGenerator<Datum> {
+async function* aaveDataGenerator(
+  spec: AaveV2DataSpec | AaveV3DataSpec
+): AsyncGenerator<Datum> {
   const { hre, underlyingAddress, lendingPool } = spec;
   for (let b = spec.fromBlock; b <= spec.toBlock; b += spec.blockInterval) {
     try {
@@ -97,7 +98,7 @@ export async function buildAaveV3DataGenerator(
   const currentBlock = await hre.ethers.provider.getBlock("latest");
 
   const defaults = {
-    fromBlock: 16496939 , // 16496939 = lending pool 1st tx block on mainnet
+    fromBlock: 16496939, // 16496939 = lending pool 1st tx block on mainnet
     blockInterval: blocksPerDay,
     toBlock: currentBlock.number,
     hre,
