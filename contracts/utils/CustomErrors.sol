@@ -75,6 +75,9 @@ interface CustomErrors {
     /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
     error AavePoolGetReserveNormalizedIncomeReturnedZero();
 
+    /// @dev getReserveNormalizedIncome() returned zero for underlying asset. Oracle only supports active Aave-V3 assets.
+    error AaveV3PoolGetReserveNormalizedIncomeReturnedZero();
+
     /// @dev getReserveNormalizedVariableDebt() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
     error AavePoolGetReserveNormalizedVariableDebtReturnedZero();
 
