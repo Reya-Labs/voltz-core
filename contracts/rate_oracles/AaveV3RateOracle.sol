@@ -40,11 +40,11 @@ contract AaveV3RateOracle is BaseRateOracle, IAaveV3RateOracle {
         returns (uint32 timestamp, uint256 resultRay)
     {
         resultRay = uint256(
-            aaveLendingPool.getReserveNormalizedIncome(address(underlying))
+            aaveLendingPool.getReserveNormalizedIncome(underlying)
         );
         console.log(
             "Their rate",
-            aaveLendingPool.getReserveNormalizedIncome(address(underlying))
+            aaveLendingPool.getReserveNormalizedIncome(underlying)
         );
         console.log("Our rate", resultRay);
         if (resultRay == 0) {
