@@ -9,7 +9,7 @@ import {
 import { BigNumber } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { Datum } from "../historicalData/generators/common";
-import { buildAaveDataGenerator, buildAaveV3DataGenerator } from "../historicalData/generators/aave";
+import { buildAaveV3DataGenerator } from "../historicalData/generators/aave";
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
 import { buildCompoundDataGenerator } from "../historicalData/generators/compound";
@@ -271,7 +271,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     const header = "date,timestamp,liquidityIndex";
 
     fs.rmSync(file);
-    fs.openSync(file, 'w')
+    fs.openSync(file, "w");
     fs.appendFileSync(file, header + "\n");
     console.log(`block,${header}`);
 
@@ -313,13 +313,12 @@ task("getHistoricalData", "Retrieves the historical rates")
       }
       if (rates[i] < rates[i - 1]) {
         console.error("Unordered rates", i);
-        console.log(rates[i].toString(), rates[i - 1].toString())
+        console.log(rates[i].toString(), rates[i - 1].toString());
         break;
       }
     }
 
     return { timestamps, rates };
   });
-
 
 module.exports = {};
