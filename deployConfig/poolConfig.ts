@@ -629,6 +629,38 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     },
   },
 
+  aUSDC_v7: {
+    rateOracle: "AaveV3RateOracle_USDC",
+    tickSpacing: 60,
+    cacheMaxAgeInSeconds: 21600,
+    lookbackWindowInSeconds: 10 * 24 * 60 * 60,
+    feeWad: "1000000000000000", // 0.1% LP Fees
+    liquidatorRewardWad: "50000000000000000", // 5%
+    vammFeeProtocolWad: "0",
+    isAlpha: false,
+    lpMarginCap: "0",
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: "2475725049149322752",
+      apyLowerMultiplierWad: "357695052136801152",
+      sigmaSquaredWad: "15061272045511",
+      alphaWad: "421609263410485",
+      betaWad: "36023046568447444",
+      xiUpperWad: "65000000000000000000",
+      xiLowerWad: "50000000000000000000",
+      tMaxWad: "31536000000000000000000000",
+      etaIMWad: "22914965104828940",
+      etaLMWad: "1184763601183461",
+      gap1: toBn("0"),
+      gap2: toBn("0"),
+      gap3: toBn("0"),
+      gap4: toBn("0"),
+      gap5: toBn("0"),
+      gap6: toBn("0"),
+      gap7: toBn("0"),
+      minMarginToIncentiviseLiquidators: "0",
+    },
+  },
+
   Goerli_cETH: {
     rateOracle: "CompoundRateOracle_cETH",
     tickSpacing: 60,
