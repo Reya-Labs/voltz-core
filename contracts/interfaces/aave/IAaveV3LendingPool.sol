@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity =0.8.9;
+import "../IERC20Minimal.sol";
 
 /**
  * @title IPool
@@ -13,5 +14,5 @@ interface IAaveV3LendingPool {
    * @param asset The address of the underlying asset of the reserve
    * @return The reserve's normalized income
    */
-  function getReserveNormalizedIncome(address asset) external view returns (uint256);
+  function getReserveNormalizedIncome(IERC20Minimal asset) external view returns (uint256);
 }

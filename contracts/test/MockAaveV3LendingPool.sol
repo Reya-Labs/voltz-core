@@ -3,7 +3,8 @@ pragma solidity =0.8.9;
 
 import "../interfaces/aave/IAaveV3LendingPool.sol";
 import "../utils/WadRayMath.sol";
-
+import "../interfaces/IERC20Minimal.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 import "hardhat/console.sol";
 
 contract MockAaveV3LendingPool is IAaveV3LendingPool {
@@ -82,85 +83,42 @@ contract MockAaveV3LendingPool is IAaveV3LendingPool {
         uint16 maxNumberReserves;
     }
 
-    // Map of reserves and their data (underlyingAssetOfReserve => reserveData)
-    mapping(address => ReserveData) internal _reserves;
+    mapping(IERC20Minimal => uint256) internal reserveNormalizedIncome;
+    mapping(IERC20Minimal => uint256) internal reserveNormalizedVariableDebt;
+    mapping(IERC20Minimal => uint256) internal startTime;
+    mapping(IERC20Minimal => uint256) internal factorPerSecondInRay; // E.g. 1000000001000000000000000000 for 0.0000001% per second = ~3.2% APY
 
-    // List of reserves as a map (reserveId => reserve).
-    // It is structured as a mapping for gas savings reasons, using the reserve id as index
-    mapping(uint256 => address) internal _reservesList;
+    mapping(IERC20Minimal => ReserveData) internal _reserves;
 
-    // Available liquidity that can be borrowed at once at stable rate, expressed in bps
-    uint64 internal _maxStableRateBorrowSizePercent;
-
-    // Maximum number of active reserves there have been in the protocol. It is the upper bound of the reserves list
-    uint16 internal _reservesCount;
-
-    uint256 public constant POOL_REVISION = 0x1;
-    uint256 internal constant SECONDS_PER_YEAR = 365 days;
-
-    function initialize() external virtual {
-        _maxStableRateBorrowSizePercent = 0.25e4;
-    }
-
-    function getReserveNormalizedIncome(address asset)
-        external
+    function getReserveNormalizedIncome(IERC20Minimal _underlyingAsset)
+        public
         view
-        virtual
         override
         returns (uint256)
     {
-        uint40 timestamp = _reserves[asset].lastUpdateTimestamp;
-        console.log(
-            "Last updated timestamp",
-            _reserves[asset].lastUpdateTimestamp
-        );
-
-        //solium-disable-next-line
-        if (timestamp == block.timestamp) {
-            //if the index was updated in the same block, no need to perform any calculation
-            console.log("Direct");
-            return _reserves[asset].liquidityIndex;
-        } else {
-            console.log("Calculation");
+        uint256 factorPerSecond = factorPerSecondInRay[_underlyingAsset];
+        if (factorPerSecond > 0) {
+            uint256 secondsSinceNormalizedIncomeSet = block.timestamp -
+                startTime[_underlyingAsset];
             return
-                calculateLinearInterest(
-                    _reserves[asset].currentLiquidityRate,
-                    timestamp
-                ).rayMul(_reserves[asset].liquidityIndex);
+                PRBMathUD60x18.mul(
+                    reserveNormalizedIncome[_underlyingAsset],
+                    PRBMathUD60x18.pow(
+                        factorPerSecond,
+                        secondsSinceNormalizedIncomeSet
+                    )
+                );
+        } else {
+            return reserveNormalizedIncome[_underlyingAsset];
         }
     }
 
-    function calculateLinearInterest(uint256 rate, uint40 lastUpdateTimestamp)
-        internal
-        view
-        returns (uint256)
-    {
-        //solium-disable-next-line
-        console.log("Timestamps", block.timestamp, "-", lastUpdateTimestamp);
-        console.log("Rate", block.timestamp - uint256(lastUpdateTimestamp));
-        uint256 result = rate *
-            (block.timestamp - uint256(lastUpdateTimestamp));
-        unchecked {
-            result = result / SECONDS_PER_YEAR;
-        }
-
-        return 1e27 + result;
-    }
 
     function setReserveNormalizedIncome(
-        address _underlyingAsset,
-        uint128 reserveNormalizedIncome
+        IERC20Minimal _underlyingAsset,
+        uint256 _reserveNormalizedIncome
     ) public {
-        console.log(block.timestamp);
-
-        _reserves[_underlyingAsset].liquidityIndex = reserveNormalizedIncome;
-        _reserves[_underlyingAsset]
-            .currentLiquidityRate = reserveNormalizedIncome;
-        require((block.timestamp == uint40(block.timestamp)), "TSOFLOW");
-        _reserves[_underlyingAsset].lastUpdateTimestamp = uint40(
-            block.timestamp
-        );
-
-        console.log(_reserves[_underlyingAsset].lastUpdateTimestamp);
+        reserveNormalizedIncome[_underlyingAsset] = _reserveNormalizedIncome;
+        startTime[_underlyingAsset] = block.timestamp;
     }
 }
