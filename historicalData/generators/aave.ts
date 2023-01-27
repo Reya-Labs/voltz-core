@@ -67,11 +67,21 @@ export async function buildAaveDataGenerator(
   // calculate from and to blocks
   const currentBlock = await hre.ethers.provider.getBlock("latest");
 
+  // const defaults = {
+  //   fromBlock: lookbackDays
+  //     ? currentBlock.number - blocksPerDay * lookbackDays
+  //     : lendingPoolDeploymentBlock, // lending pool deploy block on mainnet
+  //   blockInterval: blocksPerDay,
+  //   toBlock: currentBlock.number,
+  //   hre,
+  //   underlyingAddress,
+  //   borrow,
+  //   lendingPool,
+  // };
+
   const defaults = {
-    fromBlock: lookbackDays
-      ? currentBlock.number - blocksPerDay * lookbackDays
-      : lendingPoolDeploymentBlock, // lending pool deploy block on mainnet
-    blockInterval: blocksPerDay,
+    fromBlock: 16497500,
+    blockInterval: 300,
     toBlock: currentBlock.number,
     hre,
     underlyingAddress,
