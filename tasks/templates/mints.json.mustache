@@ -1,0 +1,110 @@
+{
+    "version": "1.0",
+    "chainId": "1",
+    "createdAt": 1654007302649,
+    "meta": {
+      "name": "Transactions Batch",
+      "description": "",
+      "txBuilderVersion": "1.8.0",
+      "createdFromSafeAddress": "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
+      "createdFromOwnerAddress": "",
+      "checksum": "0x6e317afc197279541328cf252e50867cfa15d2ed7e7426244328bdf15b94cfe7"
+    },
+    "transactions": [
+      {{#mints}}
+      {
+        "to": "{{token}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+            "inputs": [
+                {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+                },
+                {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+                }
+            ],
+            "name": "approve",
+            "outputs": [
+                {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        "contractInputsValues": {
+          "spender": "{{periphery}}",
+          "amount": "{{marginDelta}}"
+        }
+      },
+      {
+        "to": "{{periphery}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+            "inputs": [
+                {
+                "components": [
+                    {
+                    "internalType": "contract IMarginEngine",
+                    "name": "marginEngine",
+                    "type": "address"
+                    },
+                    {
+                    "internalType": "int24",
+                    "name": "tickLower",
+                    "type": "int24"
+                    },
+                    {
+                    "internalType": "int24",
+                    "name": "tickUpper",
+                    "type": "int24"
+                    },
+                    {
+                    "internalType": "uint256",
+                    "name": "notional",
+                    "type": "uint256"
+                    },
+                    {
+                    "internalType": "bool",
+                    "name": "isMint",
+                    "type": "bool"
+                    },
+                    {
+                    "internalType": "int256",
+                    "name": "marginDelta",
+                    "type": "int256"
+                    }
+                ],
+                "internalType": "struct IPeriphery.MintOrBurnParams",
+                "name": "params",
+                "type": "tuple"
+                }
+            ],
+            "name": "mintOrBurn",
+            "outputs": [
+                {
+                "internalType": "int256",
+                "name": "positionMarginRequirement",
+                "type": "int256"
+                }
+            ],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        "contractInputsValues": {
+          "params": "[ \"{{marginEngine}}\", \"{{tickLower}}\", \"{{tickUpper}}\", \"{{notional}}\", {{isMint}}, \"{{marginDelta}}\"]"
+        }
+      }
+      {{^last}},{{/last}}
+      {{/mints}}
+    ]
+  }
