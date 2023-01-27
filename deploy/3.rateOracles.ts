@@ -20,7 +20,10 @@ import { BigNumber } from "ethers";
 import path from "path";
 import mustache from "mustache";
 import { Datum } from "../historicalData/generators/common";
-import { buildAaveDataGenerator, buildAaveV3DataGenerator } from "../historicalData/generators/aave";
+import {
+  buildAaveDataGenerator,
+  buildAaveV3DataGenerator,
+} from "../historicalData/generators/aave";
 import { buildCompoundDataGenerator } from "../historicalData/generators/compound";
 
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
