@@ -113,7 +113,6 @@ contract MockAaveV3LendingPool is IAaveV3LendingPool {
         }
     }
 
-
     function setReserveNormalizedIncome(
         IERC20Minimal _underlyingAsset,
         uint256 _reserveNormalizedIncome
