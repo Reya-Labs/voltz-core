@@ -5,6 +5,13 @@ const TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS = {
   minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
 };
 
+const ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS = {
+  rateOracleBufferSize: 500,
+  minSecondsSinceLastUpdate: 3 * 60 * 60, // 3 hours
+};
+
+const DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS = 20;
+
 export const goerliConfig: ContractsConfig = {
   maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough
   weth: "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
@@ -66,5 +73,20 @@ export const goerliConfig: ContractsConfig = {
       ...TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS,
       daysOfTrustedDataPoints: 10,
     },
+  },
+  aaveConfigV3: {
+    // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
+    aaveLendingPool: "0x7b5C526B7F8dfdff278b4a3e045083FBA4028790",
+    aaveLendingPoolDeploymentBlock: 16291127,
+    aaveTokens: [
+      // Supply markets
+      {
+        name: "USDC",
+        borrow: false,
+        address: "0x7b5C526B7F8dfdff278b4a3e045083FBA4028790",
+        ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
+        daysOfTrustedDataPoints: DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS,
+      },
+    ],
   },
 };
