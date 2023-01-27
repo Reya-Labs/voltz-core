@@ -28,7 +28,7 @@ describe("Aave Borrow Rate Oracle", () => {
     loadFixture = waffle.createFixtureLoader([wallet, other]);
   });
 
-  describe("Aave Borrow specific behaviour", () => {
+  describe("Aave V3 Lend specific behaviour", () => {
     beforeEach("deploy and initialize test oracle", async () => {
       const { testRateOracle, aaveLendingPool, underlyingToken } =
         await loadFixture(Config.oracleFixture);
@@ -41,7 +41,7 @@ describe("Aave Borrow Rate Oracle", () => {
       const protocolID =
         await testAaveBorrowRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
-      expect(protocolID).to.eq(5);
+      expect(protocolID).to.eq(7);
     });
 
     const sampleRates = [
@@ -63,12 +63,7 @@ describe("Aave Borrow Rate Oracle", () => {
         await testAaveBorrowRateOracle.writeOracleEntry();
         const observeRate = await testAaveBorrowRateOracle.getLatestRateValue();
 
-        const rateBN = BigNumber.from(rate);
-
-        const increaseInRate = (BigNumber.from(10).pow(27)).add(rateBN.div(31557600));
-        const expectedRate = increaseInRate.mul(rateBN).div(BigNumber.from(10).pow(27));
-
-        expect(observeRate).to.eq(expectedRate);
+        expect(observeRate).to.eq(rate);
       });
     }
   });
