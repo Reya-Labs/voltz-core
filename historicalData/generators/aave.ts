@@ -70,7 +70,7 @@ export async function buildAaveDataGenerator(
   const defaults = {
     fromBlock: lookbackDays
       ? currentBlock.number - blocksPerDay * lookbackDays
-      : 11367585, // 11367585 = lending pool deploy block on mainnet
+      : lendingPoolDeploymentBlock, // lending pool deploy block on mainnet
     blockInterval: blocksPerDay,
     toBlock: currentBlock.number,
     hre,
@@ -90,6 +90,8 @@ export async function buildAaveDataGenerator(
 
 export async function buildAaveV3DataGenerator(
   hre: HardhatRuntimeEnvironment,
+  lendingPool: IAaveV2LendingPool | IAaveV3LendingPool,
+  lendingPoolDeploymentBlock: number,
   underlyingAddress: string,
   lookbackDays?: number,
   borrow = false,
@@ -99,16 +101,13 @@ export async function buildAaveV3DataGenerator(
   const currentBlock = await hre.ethers.provider.getBlock("latest");
 
   const defaults = {
-    fromBlock: 16496939, // 16496939 = lending pool 1st tx block on mainnet
-    blockInterval: blocksPerDay,
+    fromBlock: 16497500,
+    blockInterval: 300,
     toBlock: currentBlock.number,
     hre,
     underlyingAddress,
     borrow,
-    lendingPool: (await hre.ethers.getContractAt(
-      "IAaveV3LendingPool",
-      "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2" // mainnet lending pool address
-    )) as IAaveV3LendingPool,
+    lendingPool,
   };
 
   return aaveDataGenerator({

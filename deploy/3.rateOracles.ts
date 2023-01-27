@@ -10,6 +10,7 @@ import {
   BaseRateOracle,
   ERC20,
   IAaveV2LendingPool,
+  IAaveV3LendingPool,
   ILidoOracle,
   IRocketEth,
   IRocketNetworkBalances,
@@ -176,13 +177,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const deployConfig = getConfig(network);
 
   {
-    // Aave Rate Oracles
+    // Aave v2 Rate Oracles
     // Configure these if we have a lending pool and one or more tokens configured
     const aaveConfig = deployConfig.aaveConfig;
     const existingAaveLendingPoolAddress = aaveConfig?.aaveLendingPool;
+    const existingAaveLendingPoolDeploymentBlock =
+      aaveConfig?.aaveLendingPoolDeploymentBlock;
     const aaveTokens = aaveConfig?.aaveTokens;
 
-    if (existingAaveLendingPoolAddress && aaveTokens) {
+    if (
+      existingAaveLendingPoolAddress &&
+      existingAaveLendingPoolDeploymentBlock &&
+      aaveTokens
+    ) {
       const aaveLendingPool = (await ethers.getContractAt(
         "IAaveV2LendingPool",
         existingAaveLendingPoolAddress
@@ -194,10 +201,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         if (tokenDefinition.daysOfTrustedDataPoints) {
           trustedDataPointsGenerator = await buildAaveDataGenerator(
             hre,
+            aaveLendingPool,
+            existingAaveLendingPoolDeploymentBlock,
             tokenDefinition.address,
             tokenDefinition.daysOfTrustedDataPoints,
-            tokenDefinition.borrow,
-            { lendingPool: aaveLendingPool }
+            tokenDefinition.borrow
           );
         }
 
@@ -208,6 +216,53 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           contractName: tokenDefinition.borrow
             ? "AaveBorrowRateOracle"
             : "AaveRateOracle",
+          trustedDataPointsGenerator,
+        });
+      }
+    }
+    // End of Aave Rate Oracles
+  }
+
+  {
+    // Aave v3 Rate Oracles
+    // Configure these if we have a lending pool and one or more tokens configured
+    const aaveConfigV3 = deployConfig.aaveConfigV3;
+    const existingAaveLendingPoolAddress = aaveConfigV3?.aaveLendingPool;
+    const existingAaveLendingPoolDeploymentBlock =
+      aaveConfigV3?.aaveLendingPoolDeploymentBlock;
+    const aaveTokens = aaveConfigV3?.aaveTokens;
+
+    if (
+      existingAaveLendingPoolAddress &&
+      existingAaveLendingPoolDeploymentBlock &&
+      aaveTokens
+    ) {
+      const aaveLendingPool = (await ethers.getContractAt(
+        "IAaveV3LendingPool",
+        existingAaveLendingPoolAddress
+      )) as IAaveV3LendingPool;
+
+      for (const tokenDefinition of aaveTokens) {
+        let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
+
+        if (tokenDefinition.daysOfTrustedDataPoints) {
+          trustedDataPointsGenerator = await buildAaveDataGenerator(
+            hre,
+            aaveLendingPool,
+            existingAaveLendingPoolDeploymentBlock,
+            tokenDefinition.address,
+            tokenDefinition.daysOfTrustedDataPoints,
+            tokenDefinition.borrow
+          );
+        }
+
+        await deployAndConfigureWithGenerator({
+          hre,
+          initialArgs: [aaveLendingPool.address, tokenDefinition.address],
+          rateOracleConfig: tokenDefinition,
+          contractName: tokenDefinition.borrow
+            ? "AaveV3BorrowRateOracle"
+            : "AaveV3RateOracle",
           trustedDataPointsGenerator,
         });
       }
