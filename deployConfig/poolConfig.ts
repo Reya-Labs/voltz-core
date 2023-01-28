@@ -633,7 +633,7 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     rateOracle: "AaveV3RateOracle_USDC",
     tickSpacing: 60,
     cacheMaxAgeInSeconds: 21600,
-    lookbackWindowInSeconds: 5 * 60 * 60,
+    lookbackWindowInSeconds: 1 * 60 * 60,
     feeWad: "1000000000000000", // 0.1% LP Fees
     liquidatorRewardWad: "50000000000000000", // 5%
     vammFeeProtocolWad: "0",

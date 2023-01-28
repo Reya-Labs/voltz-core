@@ -83,7 +83,7 @@ export const goerliConfig: ContractsConfig = {
       {
         name: "USDC",
         borrow: false,
-        address: "0x7b5C526B7F8dfdff278b4a3e045083FBA4028790",
+        address: "0x65aFADD39029741B3b8f0756952C74678c9cEC93",
         ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
         daysOfTrustedDataPoints: DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS,
       },
