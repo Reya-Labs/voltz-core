@@ -41,44 +41,12 @@ async function writeToMultisigTemplate(data: MultisigTemplate) {
 
 const mints: MintOrBurnParams[] = [
   {
-    pool: "aDAI_v4",
-    tickLower: -9180,
-    tickUpper: 6960,
-    notional: 2379037,
+    pool: "aUSDC_v6",
+    tickLower: -10980,
+    tickUpper: 0,
+    notional: 5000000,
     isMint: true,
-    marginDelta: 31720,
-  },
-  {
-    pool: "borrow_aUSDT_v1",
-    tickLower: -15060,
-    tickUpper: -6960,
-    notional: 2980665,
-    isMint: true,
-    marginDelta: 39742,
-  },
-  {
-    pool: "cDAI_v4",
-    tickLower: -9180,
-    tickUpper: 6960,
-    notional: 2993763,
-    isMint: true,
-    marginDelta: 39917,
-  },
-  {
-    pool: "rETH_v2",
-    tickLower: -19440,
-    tickUpper: -10980,
-    notional: 3845,
-    isMint: true,
-    marginDelta: 76.9,
-  },
-  {
-    pool: "stETH_v2",
-    tickLower: -19440,
-    tickUpper: -10980,
-    notional: 1688,
-    isMint: true,
-    marginDelta: 33.8,
+    marginDelta: 50000,
   },
 ];
 
