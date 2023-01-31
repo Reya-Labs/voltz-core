@@ -27,10 +27,10 @@ const getPositionsQueryString = (
       ${
         activeAtTimestamp
           ? `
-      createdTimestamp_lte: ${activeAtTimestamp}
+      createdTimestamp_lte: "${activeAtTimestamp}"
       amm_: {
-        termStartTimestamp_lte: ${activeAtTimestamp}${WAD_ZEROS}
-        termEndTimestamp_gte: ${activeAtTimestamp}${WAD_ZEROS}
+        termStartTimestamp_lte: "${activeAtTimestamp}${WAD_ZEROS}"
+        termEndTimestamp_gte: "${activeAtTimestamp}${WAD_ZEROS}"
       }
       `
           : ""
