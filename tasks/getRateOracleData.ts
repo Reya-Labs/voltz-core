@@ -1,6 +1,7 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
 import { BaseRateOracle } from "../typechain";
+import { getRateOracleByNameOrAddress } from "./helpers";
 
 // eslint-disable-next-line no-unused-vars
 enum FETCH_STATUS {
@@ -14,7 +15,7 @@ const blocksPerDay = 6570; // 13.15 seconds per block
 
 task(
   "getRateOracleData",
-  "Predicts the IRS addresses used by a not-yet-created IRS instance"
+  "Gets historical liquidity index and APY values from an existing rate oracle. Some values may be duplicated."
 )
   .addParam(
     "fromBlock",
@@ -41,15 +42,15 @@ task(
     types.int
   )
   .addParam(
-    "rateOracleAddress",
-    "Queried Rate Oracle",
-    "0x0000000000000000000000000000000000000000",
+    "rateOracle",
+    "Name or address of Rate Oracle to query",
+    undefined,
     types.string
   )
   .setAction(async (taskArgs, hre) => {
-    const rateOracle = (await hre.ethers.getContractAt(
-      "BaseRateOracle",
-      taskArgs.rateOracleAddress
+    const rateOracle = (await getRateOracleByNameOrAddress(
+      hre,
+      taskArgs.rateOracle
     )) as BaseRateOracle;
 
     const currentBlock = await hre.ethers.provider.getBlock("latest");
@@ -68,11 +69,12 @@ task(
     const blocks: number[] = [];
     const timestamps: number[] = [];
     const apys: number[] = [];
+    const liquidityIndices: BigNumber[] = [];
 
     const fs = require("fs");
-    const file = `historicalData/rateOracleApy/${rateOracle.address}.csv`;
+    const file = `historicalData/rateOracleApy/${taskArgs.rateOracle}.csv`;
 
-    const header = "block,timestamp,apy";
+    const header = `block,timestamp,datetime,liquidityIndex,${taskArgs.lookbackWindow}-second APY`;
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
@@ -90,12 +92,25 @@ task(
       let fetch: FETCH_STATUS = FETCH_STATUS.FAILURE;
 
       try {
-        console.log(
-          "getting apy from",
-          block.timestamp - taskArgs.lookbackWindow,
-          "to",
-          block.timestamp
-        );
+        // console.log(
+        //   "getting apy from",
+        //   block.timestamp - taskArgs.lookbackWindow,
+        //   "to",
+        //   block.timestamp,
+        //   " from RateOracle at ",
+        //   rateOracle.address
+        // );
+
+        let liquidityIndexTimestamp, liquidityIndex;
+        try {
+          [liquidityIndexTimestamp, liquidityIndex] =
+            await rateOracle.getLastUpdatedRate({
+              blockTag: b,
+            });
+        } catch (error) {
+          liquidityIndex = BigNumber.from("-1");
+          liquidityIndexTimestamp = null;
+        }
 
         const apy = await rateOracle.getApyFromTo(
           block.timestamp - taskArgs.lookbackWindow,
@@ -106,7 +121,8 @@ task(
         );
 
         blocks.push(b);
-        timestamps.push(block.timestamp);
+        timestamps.push(liquidityIndexTimestamp || block.timestamp);
+        liquidityIndices.push(liquidityIndex);
         apys.push(apy.div(BigNumber.from(10).pow(9)).toNumber() / 1e9);
 
         fetch = FETCH_STATUS.SUCCESS;
@@ -119,13 +135,13 @@ task(
           const lastBlock = blocks[blocks.length - 1];
           const lastTimestamp = timestamps[timestamps.length - 1];
           const lastApy = apys[apys.length - 1];
+          const liquidityIndex = liquidityIndices[liquidityIndices.length - 1];
 
-          fs.appendFileSync(file, `${lastBlock},${lastTimestamp},${lastApy}\n`);
-          console.log(
-            `${lastBlock},${lastTimestamp},${new Date(
-              lastTimestamp * 1000
-            ).toISOString()},${lastApy}`
-          );
+          const output = `${lastBlock},${lastTimestamp},${new Date(
+            lastTimestamp * 1000
+          ).toISOString()},${liquidityIndex.toString()},${lastApy}`;
+          fs.appendFileSync(file, output + "\n");
+          console.log(output);
 
           break;
         }

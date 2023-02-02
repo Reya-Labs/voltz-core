@@ -9,7 +9,7 @@ import {
 import { BigNumber } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { Datum } from "../historicalData/generators/common";
-import { buildAaveV3DataGenerator } from "../historicalData/generators/aave";
+import { buildAaveDataGenerator } from "../historicalData/generators/aave";
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
 import { buildCompoundDataGenerator } from "../historicalData/generators/compound";
@@ -214,7 +214,7 @@ task("getHistoricalData", "Retrieves the historical rates")
           asset as keyof typeof aTokenUnderlyingAddresses
         ];
       // TODO: fix
-      generator = await buildAaveV3DataGenerator(
+      generator = await buildAaveDataGenerator(
         hre,
         underlyingTokenAddress,
         undefined,
