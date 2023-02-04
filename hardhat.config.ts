@@ -100,6 +100,9 @@ loadModuleIfContractsAreBuilt("./tasks/setPausability");
 loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
 loadModuleIfContractsAreBuilt("./tasks/compareGasCost");
 loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution");
+loadModuleIfContractsAreBuilt(
+  "./scripts/produceCommunityDeployerJSON/produceCommunityDeployerJSON"
+);
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -190,6 +193,20 @@ const config: HardhatUserConfig = {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
+    arbitrum: {
+      url: `${process.env.ARBITRUM_URL}`,
+      // gasPrice: 1,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
+    },
+    arbitrum_goerli: {
+      url: `${process.env.ARBITRUM_GOERLI_URL}`,
+      // gasPrice: 1,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
+    },
   },
   namedAccounts: {
     deployer: {
@@ -231,7 +248,22 @@ const config: HardhatUserConfig = {
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY || "",
+      goerli: process.env.ETHERSCAN_API_KEY || "",
+      // arbitrum: process.env.ARBISCAN_API_KEY || '',
+      arbitrum_goerli: process.env.ARBISCAN_API_KEY || "",
+    },
+    customChains: [
+      {
+        network: "arbitrum_goerli",
+        chainId: 421613,
+        urls: {
+          apiURL: "https://api-goerli.arbiscan.io/",
+          browserURL: "https://goerli.arbiscan.io",
+        },
+      },
+    ],
   },
 };
 
