@@ -4,6 +4,8 @@ import path from "path";
 
 const fs = require("fs");
 
+const snapshotTimeMS = 1675684800000 // Mon Feb 06 2023 12:00:00 GMT+0000
+
 task("generateCommunityDeployerJSON", "Generates JSON for voting").setAction(
   async (targArgs, _) => {
     // eslint-disable-next-line no-unused-expressions
@@ -19,7 +21,9 @@ task("generateCommunityDeployerJSON", "Generates JSON for voting").setAction(
           if (votingPowerPerAddress[seasonUser.owner] === undefined) {
             votingPowerPerAddress[seasonUser.owner] = 0;
           }
-          votingPowerPerAddress[seasonUser.owner] += 1;
+          if (badge.mintedTimestampInMS <= snapshotTimeMS) {
+            votingPowerPerAddress[seasonUser.owner] += 1;
+          }
         }
       }
     }
