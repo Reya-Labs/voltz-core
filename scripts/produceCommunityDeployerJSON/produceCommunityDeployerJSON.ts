@@ -17,13 +17,14 @@ task("generateCommunityDeployerJSON", "Generates JSON for voting").setAction(
     );
     for (const seasonUser of seasonUsers) {
       for (const badge of seasonUser.badges) {
-        if (badge.mintedTimestampInMS > 0) {
+        if (
+          badge.mintedTimestampInMS > 0 &&
+          badge.mintedTimestampInMS <= snapshotTimeMS
+        ) {
           if (votingPowerPerAddress[seasonUser.owner] === undefined) {
             votingPowerPerAddress[seasonUser.owner] = 0;
           }
-          if (badge.mintedTimestampInMS <= snapshotTimeMS) {
-            votingPowerPerAddress[seasonUser.owner] += 1;
-          }
+          votingPowerPerAddress[seasonUser.owner] += 1;
         }
       }
     }
