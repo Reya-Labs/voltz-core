@@ -18,7 +18,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract CommunityDeployer {
     /// @notice Timelock Period In Seconds, once the deployment is queued, 2 days need to pass in order to make deployment of the Voltz Factory possible
-    uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 10 minutes;
+    uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 2 days;
 
     /// @notice Multisig owner address
     address public ownerAddress;
