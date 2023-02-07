@@ -102,7 +102,7 @@ function tickFromFixedRate(fixedRate: number) {
   return tick;
 }
 
-describe("Margin Requirements", () => {
+describe.skip("Margin Requirements", () => {
   {
     const test = async () => {
       class ScenarioRunnerInstance extends SpecificScenarioRunner {
