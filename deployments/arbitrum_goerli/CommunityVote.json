@@ -3,7 +3,7 @@
   "chainId": "421613",
   "contracts": {
     "MarginEngine": {
-      "address": "0xcc3b4F054477c10c8c9ba1143D70251088C24bEa",
+      "address": "0x54B868B03c68A1307B24fB0A4b60b18A0714a94C",
       "abi": [
         {
           "inputs": [],
@@ -1910,7 +1910,7 @@
       ]
     },
     "VAMM": {
-      "address": "0xdBB86A7982f183ee0C52Fce584e32C728ACADe98",
+      "address": "0x6826fB8C1541af5DA3770FAE9Bb0bf9e4d49CeF8",
       "abi": [
         {
           "inputs": [],
@@ -3207,7 +3207,7 @@
       ]
     },
     "CommunityDeployer": {
-      "address": "0xFa9DDF4569206625370D2A8546f42c1CC924063c",
+      "address": "0x598402f52D916bbB0A43f5C506578447287c9333",
       "abi": [
         {
           "inputs": [
@@ -3378,6 +3378,19 @@
             }
           ],
           "name": "hasVoted",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "isDeployed",
           "outputs": [
             {
               "internalType": "bool",

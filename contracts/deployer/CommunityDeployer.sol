@@ -18,7 +18,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract CommunityDeployer {
     /// @notice Timelock Period In Seconds, once the deployment is queued, 2 days need to pass in order to make deployment of the Voltz Factory possible
-    uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 2 days;
+    uint256 public constant TIMELOCK_PERIOD_IN_SECONDS = 10 minutes;
 
     /// @notice Multisig owner address
     address public ownerAddress;
@@ -49,6 +49,9 @@ contract CommunityDeployer {
 
     /// @notice isQueued needs to be true in order for the timelock period to start in advance of the deployment
     bool public isQueued;
+
+    /// @notice isDeployed makes sure contract is deploying at most one Factory
+    bool public isDeployed;
 
     /// @notice Voltz Factory to be deployed in a scenario where a successful vote is followed by the queue and deployment
     IFactory public voltzFactory;
@@ -106,7 +109,10 @@ contract CommunityDeployer {
             block.timestamp > blockTimestampTimelockEnd,
             "timelock is ongoing"
         );
+        require(isDeployed == false, "already deployed");
+
         voltzFactory = new Factory(masterMarginEngine, masterVAMM);
+        isDeployed = true;
         Ownable(address(voltzFactory)).transferOwnership(ownerAddress);
     }
 

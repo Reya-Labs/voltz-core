@@ -23,7 +23,7 @@ fs.writeFile("scripts/voters.json", votersJSON, "utf8", (err) => {
 });
 
 // get claim for a particular address
-// const output =
-//   merkleDistributorInfo.claims["0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1"];
+const output =
+  merkleDistributorInfo.claims["0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1"];
 
-// console.log("output for an address", output);
+console.log("output for an address", output);

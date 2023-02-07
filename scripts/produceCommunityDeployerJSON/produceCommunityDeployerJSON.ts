@@ -4,7 +4,7 @@ import path from "path";
 
 const fs = require("fs");
 
-const snapshotTimeMS = 1675684800000 // Mon Feb 06 2023 12:00:00 GMT+0000
+const snapshotTimeMS = 1675684800000; // Mon Feb 06 2023 12:00:00 GMT+0000
 
 task("generateCommunityDeployerJSON", "Generates JSON for voting").setAction(
   async (targArgs, _) => {
@@ -57,5 +57,12 @@ task("generateCommunityDeployerJSON", "Generates JSON for voting").setAction(
       path.resolve(__dirname, "nftSnapshot.json"),
       JSON.stringify(sortedVotingPowerPerAddress, null, 2)
     );
+
+    let votingPowerSum = 0;
+    for (const address in votingPowerPerAddress) {
+      votingPowerSum += votingPowerPerAddress[address];
+    }
+
+    console.log("Voting Power Sum: ", votingPowerSum);
   }
 );
