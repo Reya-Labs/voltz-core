@@ -181,5 +181,21 @@
     "decimals": 6,
     "deploymentBlock": 16221212,
     "rateOracleID": 5
+  },
+
+  "aUSDC_v6": {
+    "marginEngine": "0x3AA060fb2C3432D16c1c0a9a22C6B23f7846Cf71",
+    "vamm": "0x2913a888C95d1300d66978905331c7F50EbC78b2",
+    "decimals": 6,
+    "deploymentBlock": 16519668,
+    "rateOracleID": 1
+  },
+
+  "aUSDC_v7": {
+    "marginEngine": "0xd1D1254ac96D8C5877372421b1c5E505207c4B21",
+    "vamm": "0x8773315B21961828d5bdaB9a29881b9aB25147f8",
+    "decimals": 6,
+    "deploymentBlock": 16501203,
+    "rateOracleID": 7
   }
 }
