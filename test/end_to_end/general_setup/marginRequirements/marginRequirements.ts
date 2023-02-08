@@ -179,7 +179,7 @@ describe.skip("Margin Requirements", () => {
       await scenario.run();
     };
 
-    it.only(
+    it(
       "VT Initial Margin Requirement at start (worst APY = 0%, fixed rate = 1%)",
       test
     );
@@ -1318,4 +1318,104 @@ describe.skip("Margin Requirements", () => {
 
     it("LP (0.002% - 0.005%) where fixed rate is 5% -> FT side", test);
   }
+});
+
+describe("Unwinds", () => {
+  const test = async () => {
+    class ScenarioRunnerInstance extends SpecificScenarioRunner {
+      override async run() {
+        await this.vamm.initializeVAMM(encodeSqrtRatioX96(1, 3).toString());
+        this.positions[0] = [
+          this.positions[0][0],
+          tickFromFixedRate(3.5),
+          tickFromFixedRate(2.5),
+        ];
+
+        await advanceTimeAndBlock(consts.ONE_MONTH, 1);
+        await advanceTimeAndBlock(
+          consts.ONE_MONTH.sub(consts.ONE_DAY.mul(2)),
+          1
+        );
+
+        // advance rate such that rate between start and end is 3%
+        const middleRate = this.getRateInRay(1.01 * (1 + 0.03) ** (58 / 365));
+        await this.e2eSetup.setNewRate(middleRate);
+
+        await this.openLPPosition(100000);
+        await this.swapAgainstLP(10000, "FT");
+
+        const p = this.positions[1];
+
+        // Set a ridiculously high minimum margin value, so that the FT position above becomes under water
+        await this.marginEngine.setMarginCalculatorParameters({
+          ...poolConfigs.default.marginCalculatorParams,
+          etaIMWad: BigNumber.from(
+            poolConfigs.default.marginCalculatorParams.etaIMWad
+          ).mul(1000000000),
+          etaLMWad: BigNumber.from(
+            poolConfigs.default.marginCalculatorParams.etaLMWad
+          ).mul(1000000000),
+        });
+
+        const positionInfoPreUnwind =
+          await this.marginEngine.callStatic.getPosition(p[0], p[1], p[2]);
+        const marginRequirementPreUnwind =
+          await this.marginEngine.callStatic.getPositionMarginRequirement(
+            p[0],
+            p[1],
+            p[2],
+            true
+          );
+        expect(
+          marginRequirementPreUnwind,
+          "Expected an underwater position"
+        ).to.be.gt(positionInfoPreUnwind.margin);
+
+        // Swap with deliberately zero (= far too little) new margin provided
+        // Verify that we can unwind the trade but not past zero into the opposite direction of trade
+        const isFT = false;
+        const swapParameters = {
+          marginEngine: this.marginEngine.address,
+          isFT: isFT,
+          notional: toBn("0"),
+          sqrtPriceLimitX96: isFT
+            ? BigNumber.from(MAX_SQRT_RATIO.sub(1))
+            : BigNumber.from(MIN_SQRT_RATIO.add(1)),
+          tickLower: p[1],
+          tickUpper: p[2],
+          marginDelta: toBn("0"),
+        };
+
+        // Notionals larger than the current position size should fail
+        for (const notional of [1000000000, 100000, 10001]) {
+          swapParameters.notional = toBn(notional.toString());
+
+          await expect(
+            this.e2eSetup.swapViaPeriphery(p[0], swapParameters),
+            `Expected to revert VT trade with notional ${notional} (not really an unwind)`
+          ).to.be.reverted;
+        }
+
+        // Notional equal to the current position size should succeed
+        swapParameters.notional = toBn("10000");
+        await this.e2eSetup.swapViaPeriphery(p[0], swapParameters);
+
+        const positionInfoPostUnwind =
+          await this.marginEngine.callStatic.getPosition(p[0], p[1], p[2]);
+        expect(
+          positionInfoPostUnwind.variableTokenBalance,
+          "Expect zero variable token balance after full unwind"
+        ).to.be.eq(0);
+      }
+    }
+
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  };
+
+  it.only(
+    "Test that flipping under-collateralised position to the other direction is disallowed",
+    test
+  );
 });
