@@ -50,6 +50,9 @@ contract CommunityDeployer {
     /// @notice isQueued needs to be true in order for the timelock period to start in advance of the deployment
     bool public isQueued;
 
+    /// @notice isDeployed makes sure contract is deploying at most one Factory
+    bool public isDeployed;
+
     /// @notice Voltz Factory to be deployed in a scenario where a successful vote is followed by the queue and deployment
     IFactory public voltzFactory;
 
@@ -106,7 +109,10 @@ contract CommunityDeployer {
             block.timestamp > blockTimestampTimelockEnd,
             "timelock is ongoing"
         );
+        require(isDeployed == false, "already deployed");
+
         voltzFactory = new Factory(masterMarginEngine, masterVAMM);
+        isDeployed = true;
         Ownable(address(voltzFactory)).transferOwnership(ownerAddress);
     }
 
