@@ -126,6 +126,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
   await trx.wait(); */
 
+  // mock Glp Rate Oracle
+
+  await deploy("GlpOracleDependencies", {
+    from: deployer,
+    log: doLogging,
+  });
+
   return true; // Only execute once
 };
 func.tags = ["Mocks"];
