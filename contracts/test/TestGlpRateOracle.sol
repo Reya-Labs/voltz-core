@@ -15,9 +15,9 @@ contract TestGlpRateOracle is GlpRateOracle, TestRateOracle {
 
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
     constructor(
-        IRewardRouter aaveLendingPool,
+        IRewardRouter rewardRouter,
         IERC20Minimal underlying,
         uint32[] memory times,
         uint256[] memory rates
-    ) GlpRateOracle(aaveLendingPool, underlying, times, rates) {}
+    ) GlpRateOracle(rewardRouter, underlying, times, rates) {}
 }
