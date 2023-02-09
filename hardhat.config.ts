@@ -200,7 +200,7 @@ const config: HardhatUserConfig = {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
-    arbitrum_goerli: {
+    arbitrumGoerli: {
       url: `${process.env.ARBITRUM_GOERLI_URL}`,
       // gasPrice: 1,
       accounts: {
@@ -252,18 +252,8 @@ const config: HardhatUserConfig = {
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       goerli: process.env.ETHERSCAN_API_KEY || "",
       arbitrum: process.env.ARBISCAN_API_KEY || '',
-      arbitrum_goerli: process.env.ARBISCAN_API_KEY || "",
+      arbitrumGoerli: process.env.ARBISCAN_API_KEY || "",
     },
-    customChains: [
-      {
-        network: "arbitrum_goerli",
-        chainId: 421613,
-        urls: {
-          apiURL: "https://api-goerli.arbiscan.io/",
-          browserURL: "https://goerli.arbiscan.io",
-        },
-      },
-    ],
   },
 };
 

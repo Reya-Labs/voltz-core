@@ -109,7 +109,7 @@
     "deploy:mainnet": "hardhat deploy --network mainnet --tags Factory,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/mainnetDeployment.json",
     "deploy:rinkeby": "hardhat deploy --network rinkeby --tags Factory,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/rinkebyDeployment.json",
     "deployCommunity:kovan": "hardhat deploy --network kovan --tags CommunityDeployer --export deployments/kovanCommunityVote.json",
-    "deployCommunity:arbitrum_goerli": "hardhat deploy --network arbitrum_goerli --tags CommunityDeployer --export deployments/arbitrum_goerli/CommunityVote.json",
+    "deployCommunity:arbitrumGoerli": "hardhat deploy --network arbitrumGoerli --tags CommunityDeployer --export deployments/arbitrumGoerli/CommunityVote.json",
     "deployCommunity:arbitrum": "hardhat deploy --network arbitrum --tags CommunityDeployer --export deployments/arbitrum/CommunityVote.json",
     "deploy:localhost": "npx hardhat node --tags Factory,Mocks,MockRateOracles,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/localhostDeployment.json --hostname 0.0.0.0",
     "deploy:mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/mainnetForkDeployment.json --hostname 0.0.0.0",

@@ -1,5 +1,5 @@
 {
-  "name": "arbitrum_goerli",
+  "name": "arbitrumGoerli",
   "chainId": "421613",
   "contracts": {
     "MarginEngine": {
