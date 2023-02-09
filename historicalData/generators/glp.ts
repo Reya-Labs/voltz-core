@@ -8,20 +8,18 @@ export interface GlpDataSpec extends BlockSpec {
 }
 
 // Generator function for Aave data
-async function* glpDataGenerator(
-  spec: GlpDataSpec
-): AsyncGenerator<Datum> {
+async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
   const { hre } = spec;
 
   const precision27 = BigNumber.from(10).pow(27);
   const precision18 = BigNumber.from(10).pow(18);
-  let lastIndex : BigNumber = precision27;
-  let lastReward : BigNumber = BigNumber.from(1);
-  let previousBlock = await hre.ethers.provider.getBlock(spec.fromBlock - spec.blockInterval);
+  let lastIndex: BigNumber = precision27;
+  let previousBlock = await hre.ethers.provider.getBlock(
+    spec.fromBlock - spec.blockInterval
+  );
   for (let b = spec.fromBlock; b <= spec.toBlock; b += spec.blockInterval) {
     try {
       const block = await hre.ethers.provider.getBlock(b);
-      let rate: BigNumber;
 
       const glpManager = (await hre.ethers.getContractAt(
         "IGlpManager",
@@ -41,24 +39,28 @@ async function* glpDataGenerator(
       const aumUsd = await glpManager.getAum(false, {
         blockTag: b,
       });
-      const ethPrice = await vault.getMinPrice("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", {
+      const ethPrice = await vault.getMinPrice(
+        "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+        {
+          blockTag: b,
+        }
+      );
+
+      const weeklyReward = await distributor.tokensPerInterval({
         blockTag: b,
       });
 
-      const weeklyReward = (await distributor.tokensPerInterval({
-        blockTag: b,
-      }));
-
       const timeDelta = block.timestamp - previousBlock.timestamp;
       previousBlock = block;
-      rate = weeklyReward.mul(timeDelta).div(aumUsd.div(ethPrice));
+      const rate = weeklyReward.mul(timeDelta).div(aumUsd.div(ethPrice));
 
-      if(rate.lte(0)){
+      if (rate.lte(0)) {
         throw new Error("Rate is 0");
       }
 
-      lastIndex = lastIndex.mul(rate.add(precision18).mul(precision27).div(precision18)).div(precision27);
-      lastReward = weeklyReward;
+      lastIndex = lastIndex
+        .mul(rate.add(precision18).mul(precision27).div(precision18))
+        .div(precision27);
 
       yield {
         blockNumber: b,
@@ -66,7 +68,6 @@ async function* glpDataGenerator(
         rate: lastIndex,
         error: null,
       };
-      
     } catch (e: unknown) {
       yield {
         blockNumber: b,
@@ -89,9 +90,9 @@ export async function buildGlpDataGenerator(
 
   const defaults = {
     fromBlock: lookbackDays
-    ? currentBlock - blocksPerDay * lookbackDays
-    : 19664221, // 8th of August
-    blockInterval: blocksPerDay,// 86400 - 1 day in seconds
+      ? currentBlock - blocksPerDay * lookbackDays
+      : 19664221, // 8th of August
+    blockInterval: blocksPerDay, // 86400 - 1 day in seconds
     toBlock: currentBlock,
     hre,
   };

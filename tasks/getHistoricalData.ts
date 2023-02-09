@@ -115,7 +115,7 @@ task("getHistoricalData", "Retrieves the historical rates")
       throw new Error(`Exactly one platform must be queried at a time`);
     }
 
-    if (hre.network.name !== "mainnet" &&  hre.network.name !== "arbitrum") {
+    if (hre.network.name !== "mainnet" && hre.network.name !== "arbitrum") {
       // TODO: support other networks using addresses from deployConfig
       throw new Error(
         `Invalid network. Only mainnet data extraction is currently supported`
@@ -133,7 +133,9 @@ task("getHistoricalData", "Retrieves the historical rates")
     let toBlock: number = currentBlock.number;
     const fromBlock: number = taskArgs.fromBlock
       ? taskArgs.fromBlock
-      : toBlock - taskArgs.lookbackDays * (taskArgs.glp ? blocksPerDayArbitrum : blocksPerDay);
+      : toBlock -
+        taskArgs.lookbackDays *
+          (taskArgs.glp ? blocksPerDayArbitrum : blocksPerDay);
 
     if (taskArgs.toBlock) {
       toBlock = Math.min(currentBlock.number, taskArgs.toBlock);
@@ -223,7 +225,7 @@ task("getHistoricalData", "Retrieves the historical rates")
         aTokenUnderlyingAddressesArbitrum[
           asset as keyof typeof aTokenUnderlyingAddressesArbitrum
         ];
-      const lendingPool =  (await hre.ethers.getContractAt(
+      const lendingPool = (await hre.ethers.getContractAt(
         "IPool",
         "0x794a61358D6845594F94dc1DB02A252b5b4814aD" // arbitrum lending pool address
       )) as IPool;
@@ -231,7 +233,7 @@ task("getHistoricalData", "Retrieves the historical rates")
       generator = await buildAaveV3DataGenerator(
         hre,
         lendingPool,
-        underlyingTokenAddress,
+        underlyingTokenAddress
       );
     }
 
@@ -303,11 +305,8 @@ task("getHistoricalData", "Retrieves the historical rates")
 
     // glp
     if (taskArgs.glp && hre.network.name === "arbitrum") {
-      asset = "GLP"
-      generator = await buildGlpDataGenerator(
-        hre,
-        1
-      );
+      asset = "GLP";
+      generator = await buildGlpDataGenerator(hre, 1);
     }
 
     // populate output file
