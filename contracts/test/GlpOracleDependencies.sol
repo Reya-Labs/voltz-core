@@ -9,7 +9,13 @@ import "../interfaces/glp/IRewardTracker.sol";
 import "../interfaces/glp/IRewardRouter.sol";
 import "../interfaces/glp/IRewardDistributor.sol";
 
-contract GlpOracleDependencies is IGlpManager, IVault, IRewardTracker, IRewardRouter, IRewardDistributor {
+contract GlpOracleDependencies is
+    IGlpManager,
+    IVault,
+    IRewardTracker,
+    IRewardRouter,
+    IRewardDistributor
+{
     uint256 _aum;
     uint256 _price;
     uint256 _tokensPerInterval;
@@ -27,7 +33,12 @@ contract GlpOracleDependencies is IGlpManager, IVault, IRewardTracker, IRewardRo
         return IVault(address(this));
     }
 
-    function getMinPrice(address _token) public view override returns (uint256) {
+    function getMinPrice(address _token)
+        public
+        view
+        override
+        returns (uint256)
+    {
         return _price;
     }
 
@@ -42,6 +53,7 @@ contract GlpOracleDependencies is IGlpManager, IVault, IRewardTracker, IRewardRo
     function feeGlpTracker() public view override returns (address) {
         return address(this);
     }
+
     function glpManager() public view override returns (address) {
         return address(this);
     }

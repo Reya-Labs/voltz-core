@@ -35,7 +35,7 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         _populateObservationsWithOnlyTrustedPoints(_times, _results);
     }
 
-    function _populateObservationsWithOnlyTrustedPoints (
+    function _populateObservationsWithOnlyTrustedPoints(
         uint32[] memory _times,
         uint256[] memory _results
     ) internal {
@@ -70,14 +70,20 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         returns (uint32 timestamp, uint256 resultRay)
     {
         // get last observation
-        OracleBuffer.Observation memory last = observations[oracleVars.rateIndex];
+        OracleBuffer.Observation memory last = observations[
+            oracleVars.rateIndex
+        ];
         uint32 lastTimestamp = last.blockTimestamp;
         uint216 lastIndexRay = last.observedValue;
         require(lastIndexRay > 0, "No previous observation");
 
         // all required contracts
-        IRewardTracker rewardTracker = IRewardTracker(rewardRouter.feeGlpTracker());
-        IRewardDistributor distributor = IRewardDistributor(rewardTracker.distributor());
+        IRewardTracker rewardTracker = IRewardTracker(
+            rewardRouter.feeGlpTracker()
+        );
+        IRewardDistributor distributor = IRewardDistributor(
+            rewardTracker.distributor()
+        );
         IGlpManager glpManager = IGlpManager(rewardRouter.glpManager());
         IVault vault = glpManager.vault();
 
@@ -88,7 +94,8 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
 
         uint256 timeSinceLastUpdate = block.timestamp - uint256(lastTimestamp);
         uint256 tokensSinceLastUpdate = tokensPerInterval * timeSinceLastUpdate;
-        uint256 apySinceLastUpdateWad = (tokensSinceLastUpdate * ethPrice) / glpPoolAum;
+        uint256 apySinceLastUpdateWad = (tokensSinceLastUpdate * ethPrice) /
+            glpPoolAum;
 
         // compute index from apy
         resultRay = (lastIndexRay * apySinceLastUpdateWad) / 1e18;

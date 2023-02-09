@@ -191,7 +191,7 @@ const config: HardhatUserConfig = {
       url: `${process.env.ARB_MAINNET_URL}`,
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
-      }
+      },
     },
     goerli: {
       url: `${process.env.GOERLI_URL}`,
