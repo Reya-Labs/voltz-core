@@ -6,7 +6,7 @@ import {
 } from "../deployConfig/parse-balance-map";
 import fs from "fs";
 
-const QUORUM_VOTES = 946; // TBC
+const QUORUM_VOTES = 946;
 const MULTISIG_ADDRESS = "0x8DC15493a8041f059f18ddBA98ee7dcf93b838Ad"; // MULTISIG ON ARBITRUM
 const BLOCK_TIMESTAMP_VOTING_END = 1676030400; // Fri Feb 10 2023 12:00:00 GMT+0000
 
