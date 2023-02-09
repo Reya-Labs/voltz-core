@@ -1,6 +1,6 @@
 import { BigNumber } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { IAaveV2LendingPool, IAaveV3LendingPool } from "../../typechain";
+import { IAaveV2LendingPool, IAaveV3LendingPool, IPool } from "../../typechain";
 import { BlockSpec, Datum } from "./common";
 
 export interface AaveV2DataSpec extends BlockSpec {
@@ -12,7 +12,7 @@ export interface AaveV2DataSpec extends BlockSpec {
 
 export interface AaveV3DataSpec extends BlockSpec {
   hre: HardhatRuntimeEnvironment;
-  lendingPool: IAaveV3LendingPool;
+  lendingPool: IPool | IAaveV3LendingPool;
   underlyingAddress: string;
   borrow: boolean;
 }
@@ -97,18 +97,18 @@ export async function buildAaveDataGenerator(
 
 export async function buildAaveV3DataGenerator(
   hre: HardhatRuntimeEnvironment,
-  lendingPool: IAaveV2LendingPool | IAaveV3LendingPool,
+  lendingPool: IAaveV2LendingPool | IPool,
   underlyingAddress: string,
   borrow = false,
   overrides?: Partial<AaveV3DataSpec>
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
   // calculate from and to blocks
-  const currentBlock = await hre.ethers.provider.getBlock("latest");
+  const currentBlock = await hre.ethers.provider.getBlockNumber();
 
   const defaults = {
-    fromBlock: 16497500,
-    blockInterval: 300,
-    toBlock: currentBlock.number,
+    fromBlock: hre.network.name === "mainnet" ? 19664221 : 16497500,
+    blockInterval: hre.network.name === "mainnet" ? 86400 : 300,
+    toBlock: currentBlock,
     hre,
     underlyingAddress,
     borrow,

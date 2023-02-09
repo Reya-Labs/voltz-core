@@ -17,6 +17,7 @@ def getPreparedRNIData(df_input, e_format=False):
     # ``liquidity index`` is de-scaled (by 10**27)
     floating_rni = []
     for rni in df["liquidityIndex"]:
+        rni = str(rni)
         float_rni = rni if e_format else rni[:-27] + "." + rni[-27:]
         floating_rni.append(float(float_rni))
 

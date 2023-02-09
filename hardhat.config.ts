@@ -85,6 +85,7 @@ loadModuleIfContractsAreBuilt("./tasks/rateOracle");
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
 loadModuleIfContractsAreBuilt("./tasks/decodeTransactionData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
+//import "./tasks/getHistoricalData";
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
 loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
@@ -185,6 +186,12 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
+    },
+    arbitrum: {
+      url: `${process.env.ARB_MAINNET_URL}`,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      }
     },
     goerli: {
       url: `${process.env.GOERLI_URL}`,
