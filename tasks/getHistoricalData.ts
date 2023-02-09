@@ -10,7 +10,10 @@ import {
 import { BigNumber } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { Datum } from "../historicalData/generators/common";
-import { buildAaveDataGenerator } from "../historicalData/generators/aave";
+import {
+  buildAaveDataGenerator,
+  buildAaveV3DataGenerator,
+} from "../historicalData/generators/aave";
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
 import { buildCompoundDataGenerator } from "../historicalData/generators/compound";

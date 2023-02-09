@@ -6,7 +6,6 @@ import "./OracleBuffer.sol";
 import "../interfaces/rate_oracles/IGlpRateOracle.sol";
 import "../interfaces/glp/IRewardTracker.sol";
 import "../interfaces/glp/IVault.sol";
-import "../interfaces/glp/IRewardDistributor.sol";
 import "../interfaces/glp/IRewardRouter.sol";
 import "../interfaces/glp/IGlpManager.sol";
 import "../rate_oracles/BaseRateOracle.sol";
@@ -32,34 +31,7 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         require(address(underlying) != address(0), "underlying must exist");
         rewardRouter = _rewardRouter;
 
-        _populateObservationsWithOnlyTrustedPoints(_times, _results);
-    }
-
-    function _populateObservationsWithOnlyTrustedPoints(
-        uint32[] memory _times,
-        uint256[] memory _results
-    ) internal {
-        // If we're using even half the max buffer size, something has gone wrong
-        require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
-        uint16 length = uint16(_times.length);
-        require(length == _results.length, "Lengths must match");
-
-        // This oracle needs initial trusted points
-        require(length > 0, "Missing initial observations");
-
-        // We must pass equal-sized dynamic arrays containing initial timestamps
-        uint32[] memory times = new uint32[](length);
-        uint256[] memory results = new uint256[](length);
-        for (uint256 i = 0; i < length; i++) {
-            times[i] = _times[i];
-            results[i] = _results[i];
-        }
-
-        (
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext,
-            oracleVars.rateIndex
-        ) = observations.initialize(times, results);
+        _populateInitialObservationsCustom(_times, _results, false);
     }
 
     /// @inheritdoc BaseRateOracle
@@ -81,24 +53,22 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         IRewardTracker rewardTracker = IRewardTracker(
             rewardRouter.feeGlpTracker()
         );
-        IRewardDistributor distributor = IRewardDistributor(
-            rewardTracker.distributor()
-        );
         IGlpManager glpManager = IGlpManager(rewardRouter.glpManager());
         IVault vault = glpManager.vault();
 
-        // calculate apy cince last update
-        uint256 tokensPerInterval = distributor.tokensPerInterval();
+        // calculate rate increase since last update
+        uint256 ethWadDistributedPerSecond = rewardTracker.tokensPerInterval();
         uint256 glpPoolAum = glpManager.getAum(false); // 30 decimals precision
-        uint256 ethPrice = vault.getMinPrice(distributor.rewardToken()); // 30 decimals precision
+        uint256 ethPrice = vault.getMinPrice(rewardTracker.rewardToken()); // 30 decimals precision
 
         uint256 timeSinceLastUpdate = block.timestamp - uint256(lastTimestamp);
-        uint256 tokensSinceLastUpdate = tokensPerInterval * timeSinceLastUpdate;
-        uint256 apySinceLastUpdateWad = (tokensSinceLastUpdate * ethPrice) /
+        uint256 ethWadSinceLastUpdate = ethWadDistributedPerSecond *
+            timeSinceLastUpdate;
+        uint256 rateIncreaseFactor = (ethWadSinceLastUpdate * ethPrice) /
             glpPoolAum;
 
-        // compute index from apy
-        resultRay = (lastIndexRay * apySinceLastUpdateWad) / 1e18;
+        // compute index using rate increase & last index
+        resultRay = (lastIndexRay * rateIncreaseFactor) / 1e18;
 
         if (resultRay == 0) {
             revert CustomErrors

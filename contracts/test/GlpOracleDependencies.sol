@@ -7,14 +7,12 @@ import "../interfaces/glp/IVault.sol";
 import "../interfaces/glp/IGlpManager.sol";
 import "../interfaces/glp/IRewardTracker.sol";
 import "../interfaces/glp/IRewardRouter.sol";
-import "../interfaces/glp/IRewardDistributor.sol";
 
 contract GlpOracleDependencies is
     IGlpManager,
     IVault,
     IRewardTracker,
-    IRewardRouter,
-    IRewardDistributor
+    IRewardRouter
 {
     uint256 _aum;
     uint256 _price;
@@ -46,7 +44,7 @@ contract GlpOracleDependencies is
         _price = price_;
     }
 
-    function distributor() public view override returns (address) {
+    function distributor() public view returns (address) {
         return address(this);
     }
 
