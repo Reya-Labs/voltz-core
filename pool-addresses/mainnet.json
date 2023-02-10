@@ -197,5 +197,13 @@
     "decimals": 6,
     "deploymentBlock": 16501203,
     "rateOracleID": 7
+  },
+
+  "aUSDC_v8": {
+    "marginEngine": "0xe6bA9270Cb517b9236331bc972FE016D0cF1168F",
+    "vamm": "0x66Ad47d8C8A0beDd32f5692fFB2df85041CD4Bd2",
+    "decimals": 6,
+    "deploymentBlock": 16593014,
+    "rateOracleID": 7
   }
 }
