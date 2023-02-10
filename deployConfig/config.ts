@@ -5,8 +5,8 @@ import { goerliConfig } from "./goerli";
 import { mainnetConfig } from "./mainnet";
 import { localhostConfig } from "./localhost";
 import { rinkebyConfig } from "./rinkeby";
-import { arbitrumConfig } from "./arbitrum"
-import { arbitrumGoerliConfig } from "./arbitrumGoerli"
+import { arbitrumConfig } from "./arbitrum";
+import { arbitrumGoerliConfig } from "./arbitrumGoerli";
 
 dotenv.config();
 

@@ -1,9 +1,9 @@
 import type { ContractsConfig } from "./types";
 
-const TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS = {
-  rateOracleBufferSize: 500,
-  minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
-};
+// const TWO_MONTHS_OF_SIX_HOURLY_DATAPOINTS = {
+//   rateOracleBufferSize: 500,
+//   minSecondsSinceLastUpdate: 18 * 60 * 60, // 18 hours
+// };
 
 const ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS = {
   rateOracleBufferSize: 500,
