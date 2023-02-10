@@ -269,8 +269,8 @@ task(
     types.int
   )
   .addParam("termEndTimestamp", "The UNIX timestamp of pool end")
-  .addVariadicPositionalParam(
-    "pools",
+  .addParam(
+    "pool",
     "The name of a pool as configured in deployConfig/poolConfig.ts (e.g. 'borrow_aDAI_v2', 'stETH_v1', etc.)"
   )
   .setAction(async (taskArgs, hre) => {
@@ -293,13 +293,15 @@ task(
     }
 
     // Validate all pool inputs before processing any
-    for (const pool of taskArgs.pools) {
-      if (pool in poolConfigs) {
-        poolConfigList.push(poolConfigs[pool]);
-      } else {
-        throw new Error(`No configuration for ${pool}.`);
-      }
-    }
+    // for (const pool of taskArgs.pools) {
+    //   if (pool in poolConfigs) {
+    //     poolConfigList.push(poolConfigs[pool]);
+    //   } else {
+    //     throw new Error(`No configuration for ${pool}.`);
+    //   }
+    // }
+
+    poolConfigList.push(poolConfigs[taskArgs.pool]);
 
     const factory = await hre.ethers.getContract("Factory");
     let nextFactoryNonce = await getFactoryNonce(hre, factory.address);
