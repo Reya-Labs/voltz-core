@@ -309,7 +309,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     // glp
     if (taskArgs.glp && hre.network.name === "arbitrum") {
       asset = "GLP";
-      generator = await buildGlpDataGenerator(hre, 1);
+      generator = await buildGlpDataGenerator(hre, taskArgs.lookbackDays);
     }
 
     // populate output file

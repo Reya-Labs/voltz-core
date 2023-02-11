@@ -18,6 +18,29 @@ contract TestGlpRateOracle is GlpRateOracle, TestRateOracle {
         IRewardRouter rewardRouter,
         IERC20Minimal underlying,
         uint32[] memory times,
-        uint256[] memory rates
-    ) GlpRateOracle(rewardRouter, underlying, times, rates) {}
+        uint256[] memory rates,
+        uint256 _lastEthGlpPrice,
+        uint256 _lastCumulativeRewardPerToken
+    )
+        GlpRateOracle(
+            rewardRouter,
+            underlying,
+            times,
+            rates,
+            _lastEthGlpPrice,
+            _lastCumulativeRewardPerToken
+        )
+    {}
+
+    function writeOracleEntry()
+        external
+        override(BaseRateOracle, GlpRateOracle)
+    {
+        (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
+            oracleVars.rateIndex,
+            oracleVars.rateCardinality,
+            oracleVars.rateCardinalityNext
+        );
+        pupulateLastGlpData();
+    }
 }
