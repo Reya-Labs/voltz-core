@@ -24,9 +24,10 @@ export const ConfigForGenericTests = {
     // set token
     await glpDependencies.setRewardToken(underlyingToken.address);
     // set price
-    await glpDependencies.setMinPrice(ethers.utils.parseUnits("10", 30));
+    await glpDependencies.setEthPrice(ethers.utils.parseUnits("10", 30));
+    await glpDependencies.setGlpPrice(ethers.utils.parseUnits("5", 30));
     // set tokens per interval
-    await glpDependencies.setTokensPerInterval(
+    await glpDependencies.setCumulativeRewardPerToken(
       ethers.utils.parseUnits("100", 18)
     );
     // set AUM
@@ -41,7 +42,9 @@ export const ConfigForGenericTests = {
       glpDependencies.address,
       underlyingToken.address,
       [currentBlock.timestamp],
-      ["1000000000000000000000000000"] // 1e27
+      ["1000000000000000000000000000"], // 1e27
+      ethers.utils.parseUnits("2", 30), // lastethGlpPrice
+      "0" // lastCumulativeRewardPerToken (1)
     )) as TestRateOracle;
     return {
       testRateOracle,
@@ -52,7 +55,7 @@ export const ConfigForGenericTests = {
   },
   setRateAsDecimal: async (rate: number) => {
     // The decimal value is scaled up by 10^27
-    await glpDependencies.setTokensPerInterval(
+    await glpDependencies.setCumulativeRewardPerToken(
       ethers.utils.parseUnits(rate.toString(), 18)
     );
   },

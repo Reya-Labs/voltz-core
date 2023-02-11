@@ -15,8 +15,9 @@ contract GlpOracleDependencies is
     IRewardRouter
 {
     uint256 _aum;
-    uint256 _price;
-    uint256 _tokensPerInterval;
+    uint256 _ethPrice;
+    uint256 _glpPrice;
+    uint256 _cumulativeRewardPerToken;
     address _rewardToken;
 
     function getAum(bool maximise) public view override returns (uint256) {
@@ -37,11 +38,28 @@ contract GlpOracleDependencies is
         override
         returns (uint256)
     {
-        return _price;
+        return _ethPrice;
     }
 
-    function setMinPrice(uint256 price_) public {
-        _price = price_;
+    function getMaxPrice(address _token)
+        public
+        view
+        override
+        returns (uint256)
+    {
+        return _ethPrice;
+    }
+
+    function getPrice(bool _maximise) public view returns (uint256) {
+        return _glpPrice;
+    }
+
+    function setGlpPrice(uint256 price_) public {
+        _glpPrice = price_;
+    }
+
+    function setEthPrice(uint256 price_) public {
+        _ethPrice = price_;
     }
 
     function distributor() public view returns (address) {
@@ -56,12 +74,12 @@ contract GlpOracleDependencies is
         return address(this);
     }
 
-    function tokensPerInterval() public view override returns (uint256) {
-        return _tokensPerInterval;
+    function cumulativeRewardPerToken() public view override returns (uint256) {
+        return _cumulativeRewardPerToken;
     }
 
-    function setTokensPerInterval(uint256 tokens_) public {
-        _tokensPerInterval = tokens_;
+    function setCumulativeRewardPerToken(uint256 rewards_) public {
+        _cumulativeRewardPerToken = rewards_;
     }
 
     function rewardToken() public view override returns (address) {
@@ -70,5 +88,13 @@ contract GlpOracleDependencies is
 
     function setRewardToken(address rewardToken_) public {
         _rewardToken = rewardToken_;
+    }
+
+    function glp() public view override returns (address) {
+        return address(this);
+    }
+
+    function totalSupply() public view returns (uint256) {
+        return _aum / _glpPrice;
     }
 }

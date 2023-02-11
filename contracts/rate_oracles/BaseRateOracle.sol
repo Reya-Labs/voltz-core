@@ -495,7 +495,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     /// @inheritdoc IRateOracle
-    function writeOracleEntry() external override(IRateOracle) {
+    function writeOracleEntry() external virtual override(IRateOracle) {
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,

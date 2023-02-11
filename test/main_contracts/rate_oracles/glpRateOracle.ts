@@ -3,18 +3,18 @@ import { BigNumber, Wallet } from "ethers";
 import {
   TestGlpRateOracle,
   GlpOracleDependencies,
-  ERC20Mock,
 } from "../../../typechain";
 import { expect } from "chai";
 import { ConfigForGenericTests as Config } from "./glpConfig";
+
+const GLP_PRECISION = BigNumber.from("1000000000000000000000000000000");
+const WAD_PRECISION = BigNumber.from("1000000000000000000");
 
 describe("Aave Borrow Rate Oracle", () => {
   let wallet: Wallet, other: Wallet;
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>;
   let mockGlpDependencies: GlpOracleDependencies;
   let testGlpRateOracle: TestGlpRateOracle;
-  let token: ERC20Mock;
-  let lastTimestamp: number;
 
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
@@ -23,12 +23,10 @@ describe("Aave Borrow Rate Oracle", () => {
 
   describe("Aave V3 Lend specific behaviour", () => {
     beforeEach("deploy and initialize test oracle", async () => {
-      const { testRateOracle, glpDependencies, underlyingToken, timestamp } =
+      const { testRateOracle, glpDependencies } =
         await loadFixture(Config.oracleFixture);
       mockGlpDependencies = glpDependencies;
-      token = underlyingToken;
       testGlpRateOracle = testRateOracle as unknown as TestGlpRateOracle;
-      lastTimestamp = timestamp;
     });
     it("Verify correct protocol ID for Aave Borrow rate oracle", async () => {
       const protocolID =
@@ -46,9 +44,8 @@ describe("Aave Borrow Rate Oracle", () => {
 
     for (const rate of sampleRates) {
       it(`Verify rate conversion (${rate})`, async () => {
-        const previousRate = BigNumber.from("1000000000000000000000000000");
-
-        const price = await mockGlpDependencies.getMinPrice(token.address); // 10
+        const previousRate = GLP_PRECISION.div(1000);
+        const previousGlpEthPrice = ethers.utils.parseUnits("2", 30);
 
         const scaledReward = ethers.utils.parseUnits(
           rate.reward.toString(),
@@ -56,21 +53,19 @@ describe("Aave Borrow Rate Oracle", () => {
         );
         const scaledAum = ethers.utils.parseUnits(rate.aum.toString(), 30);
         await mockGlpDependencies.setAum(scaledAum);
-        await mockGlpDependencies.setTokensPerInterval(scaledReward);
+        await mockGlpDependencies.setCumulativeRewardPerToken(scaledReward);
 
         await testGlpRateOracle.writeOracleEntry();
         const observeRate = await testGlpRateOracle.getLatestRateValue();
 
-        const currentBlock = await ethers.provider.getBlock("latest");
         ethers.utils.parseUnits(rate.aum.toString(), 30);
         const expected = previousRate
           .mul(
-            scaledReward
-              .mul(price)
-              .mul(currentBlock.timestamp - lastTimestamp)
-              .div(scaledAum)
+            GLP_PRECISION.add(
+              scaledReward.mul(previousGlpEthPrice).div(WAD_PRECISION)
+            )
           )
-          .div(BigNumber.from("1000000000000000000")); // div 1e18
+          .div(GLP_PRECISION);
 
         expect(observeRate).to.eq(expected);
       });

@@ -49,8 +49,8 @@ def getDatasets():
     rnis = getPreparedRNIData(df_input, False)
     apys = [getDailyApy(rnis, lookback=lookback, frequency=APY_FREQUENCY)
             for lookback in valid_lookback_windows]
-    apy_df = pd.DataFrame(apys)
-    apy_df.to_csv("historicalData/rates/{0}_APY.csv".format(ASSET), index=False)
+    # apy_df = pd.DataFrame(apys)
+    # apy_df.to_csv("historicalData/rates/{0}_APY.csv".format(ASSET), index=False)
 
     return rnis, apys
 
@@ -82,6 +82,11 @@ def plot(rnis, apys):
         axs[i, j].set_xticks([start_timestamp, end_timestamp])
         axs[i, j].set_xticklabels([datetime.date.fromtimestamp(
             start_timestamp), datetime.date.fromtimestamp(end_timestamp)])
+
+        # 5 day granularity of date lables
+        # axs[i, j].set_xticks(np.arange(start_timestamp,end_timestamp, 432000))
+        # axs[i, j].set_xticklabels([datetime.date.fromtimestamp(i) for i in np.arange(start_timestamp,end_timestamp, 432000)],
+        #     rotation=20, horizontalalignment = 'right')
 
         axs[i, j].set_ylim(APY_LIMITS)
 
