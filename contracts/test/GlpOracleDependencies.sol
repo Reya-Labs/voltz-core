@@ -14,18 +14,25 @@ contract GlpOracleDependencies is
     IRewardTracker,
     IRewardRouter
 {
-    uint256 _aum;
-    uint256 _ethPrice;
-    uint256 _glpPrice;
     uint256 _cumulativeRewardPerToken;
     address _rewardToken;
 
+    uint256 _aumMin;
+    uint256 _aumMax;
+    uint256 _ethPriceMin;
+    uint256 _ethPriceMax;
+    uint256 _glpSupply;
+
     function getAum(bool maximise) public view override returns (uint256) {
-        return _aum;
+        return maximise ? _aumMax : _aumMin;
     }
 
-    function setAum(uint256 aum_) public {
-        _aum = aum_;
+    function setAum(uint256 aum_, bool maximise) public {
+        if (maximise) {
+            _aumMax = aum_;
+        } else {
+            _aumMin = aum_;
+        }
     }
 
     function vault() public view override returns (IVault) {
@@ -38,7 +45,7 @@ contract GlpOracleDependencies is
         override
         returns (uint256)
     {
-        return _ethPrice;
+        return _ethPriceMin;
     }
 
     function getMaxPrice(address _token)
@@ -47,21 +54,38 @@ contract GlpOracleDependencies is
         override
         returns (uint256)
     {
-        return _ethPrice;
+        return _ethPriceMax;
     }
 
-    function getPrice(bool _maximise) public view returns (uint256) {
-        return _glpPrice;
+    function setEthPrice(uint256 price_, bool maximise) public {
+        if (maximise) {
+            _ethPriceMax = price_;
+        } else {
+            _ethPriceMin = price_;
+        }
     }
 
-    function setGlpPrice(uint256 price_) public {
-        _glpPrice = price_;
+    function cumulativeRewardPerToken() public view override returns (uint256) {
+        return _cumulativeRewardPerToken;
     }
 
-    function setEthPrice(uint256 price_) public {
-        _ethPrice = price_;
+    function setCumulativeRewardPerToken(uint256 rewards_) public {
+        _cumulativeRewardPerToken = rewards_;
     }
 
+    function setRewardToken(address rewardToken_) public {
+        _rewardToken = rewardToken_;
+    }
+
+    function setTotalSupply(uint256 glpSupply_) public {
+        _glpSupply = glpSupply_;
+    }
+
+    function totalSupply() public view returns (uint256) {
+        return _glpSupply;
+    }
+
+    // CONTRACT GETTERS
     function distributor() public view returns (address) {
         return address(this);
     }
@@ -74,27 +98,11 @@ contract GlpOracleDependencies is
         return address(this);
     }
 
-    function cumulativeRewardPerToken() public view override returns (uint256) {
-        return _cumulativeRewardPerToken;
-    }
-
-    function setCumulativeRewardPerToken(uint256 rewards_) public {
-        _cumulativeRewardPerToken = rewards_;
-    }
-
-    function rewardToken() public view override returns (address) {
-        return _rewardToken;
-    }
-
-    function setRewardToken(address rewardToken_) public {
-        _rewardToken = rewardToken_;
-    }
-
     function glp() public view override returns (address) {
         return address(this);
     }
 
-    function totalSupply() public view returns (uint256) {
-        return _aum / _glpPrice;
+    function rewardToken() public view override returns (address) {
+        return _rewardToken;
     }
 }
