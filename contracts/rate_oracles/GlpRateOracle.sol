@@ -40,6 +40,8 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         rewardRouter = _rewardRouter;
 
         _populateInitialObservationsCustom(_times, _results, false);
+
+        require(_lastEthGlpPrice > 0, "Price cannot be 0");
         lastEthGlpPrice = _lastEthGlpPrice;
         lastCumulativeRewardPerToken = _lastCumulativeRewardPerToken;
     }
@@ -73,8 +75,8 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         uint256 ethPriceMin = vault.getMinPrice(rewardToken); // 30 decimals precision
         uint256 ethPriceMax = vault.getMaxPrice(rewardToken);
         uint256 glpSupply = glp.totalSupply();
-        uint256 glpPriceMin = glpManager.getAum(false) / glpSupply; // min price
-        uint256 glpPriceMax = glpManager.getAum(true) / glpSupply; // max price
+        uint256 glpPriceMin = (glpManager.getAum(false) * 1e18) / glpSupply; // min price
+        uint256 glpPriceMax = (glpManager.getAum(true) * 1e18) / glpSupply; // max price
 
         require(
             ethPriceMin + ethPriceMax > 0 && glpPriceMin + glpPriceMax > 0,
@@ -83,9 +85,14 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
 
         uint256 ethGlpPrice = ((ethPriceMin + ethPriceMax) * GLP_PRECISION) /
             (glpPriceMin + glpPriceMax);
-
         lastEthGlpPrice = ethGlpPrice;
-        lastCumulativeRewardPerToken = rewardTracker.cumulativeRewardPerToken();
+
+        uint256 currentReward = rewardTracker.cumulativeRewardPerToken();
+        require(
+            currentReward >= lastCumulativeRewardPerToken,
+            "Unordered reward index"
+        );
+        lastCumulativeRewardPerToken = currentReward;
     }
 
     /// @inheritdoc BaseRateOracle
