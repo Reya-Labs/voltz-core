@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 import {
   TestGlpRateOracle,
   GlpOracleDependencies,
-  ERC20Mock
+  ERC20Mock,
 } from "../../../typechain";
 import { expect } from "chai";
 import { ConfigForGenericTests as Config } from "./glpConfig";
@@ -17,15 +17,14 @@ describe("Aave Borrow Rate Oracle", () => {
 
   describe("Aave V3 Lend specific behaviour", () => {
     it("Verify correct protocol ID for Aave Borrow rate oracle", async () => {
-      const { testRateOracle, glpDependencies } =
-        await Config.oracleFixture({
-          minEthPrice: GLP_PRECISION,
-          maxEthPrice: GLP_PRECISION,
-          minAum: GLP_PRECISION,
-          maxAum: GLP_PRECISION,
-          supply: GLP_PRECISION,
-          cummulativeReward: GLP_PRECISION,
-        });
+      const { testRateOracle, glpDependencies } = await Config.oracleFixture({
+        minEthPrice: GLP_PRECISION,
+        maxEthPrice: GLP_PRECISION,
+        minAum: GLP_PRECISION,
+        maxAum: GLP_PRECISION,
+        supply: GLP_PRECISION,
+        cummulativeReward: GLP_PRECISION,
+      });
       mockGlpDependencies = glpDependencies;
       testGlpRateOracle = testRateOracle as unknown as TestGlpRateOracle;
       const protocolID =
