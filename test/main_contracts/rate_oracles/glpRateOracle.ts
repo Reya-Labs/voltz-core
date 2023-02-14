@@ -113,7 +113,7 @@ describe("Aave Borrow Rate Oracle", () => {
           maxEthPrice: BigNumber.from(1590).mul(GLP_PRECISION),
           minAum: BigNumber.from(400000000).mul(GLP_PRECISION),
           maxAum: BigNumber.from(500000000).mul(GLP_PRECISION),
-          supply: BigNumber.from(450000000).mul(GLP_PRECISION),
+          supply: BigNumber.from(450000000).mul(WAD_PRECISION),
           cummulativeReward: BigNumber.from(30276237), // last rate = 1e27*(1+prevCum*ethGlp);
         },
         current: {
@@ -121,11 +121,16 @@ describe("Aave Borrow Rate Oracle", () => {
           maxEthPrice: BigNumber.from(1660).mul(GLP_PRECISION),
           minAum: BigNumber.from(400000000).mul(GLP_PRECISION),
           maxAum: BigNumber.from(500000000).mul(GLP_PRECISION),
-          supply: BigNumber.from(400000000).mul(GLP_PRECISION),
+          supply: BigNumber.from(400000000).mul(WAD_PRECISION),
           cummulativeReward: BigNumber.from(37276237),
+          expectedRewardsSinceLastUpdate: BigNumber.from(11018000000),
         },
         next: {
+          expectedLastPrice: BigNumber.from(
+            "1474666666666666666666666666666666"
+          ),
           cummulativeReward: BigNumber.from(39276237),
+          expectedRewardsSinceLastUpdate: BigNumber.from(2949333333),
         },
       },
       {
@@ -135,7 +140,7 @@ describe("Aave Borrow Rate Oracle", () => {
           maxEthPrice: BigNumber.from(1660).mul(GLP_PRECISION),
           minAum: BigNumber.from(400000000).mul(GLP_PRECISION),
           maxAum: BigNumber.from(500000000).mul(GLP_PRECISION),
-          supply: BigNumber.from(450000000).mul(GLP_PRECISION),
+          supply: BigNumber.from(450000000).mul(WAD_PRECISION), // => old Price = 1659
           cummulativeReward: BigNumber.from(30276237), // last rate = 1e27*(1+prevCum*ethGlp);
         },
         current: {
@@ -143,11 +148,14 @@ describe("Aave Borrow Rate Oracle", () => {
           maxEthPrice: BigNumber.from(17).mul(GLP_PRECISION),
           minAum: BigNumber.from(400000000).mul(GLP_PRECISION),
           maxAum: BigNumber.from(500000000).mul(GLP_PRECISION),
-          supply: BigNumber.from(600000000).mul(GLP_PRECISION),
+          supply: BigNumber.from(600000000).mul(WAD_PRECISION),
           cummulativeReward: BigNumber.from(37276237),
+          expectedRewardsSinceLastUpdate: BigNumber.from(11613000000),
         },
         next: {
+          expectedLastPrice: BigNumber.from(22).mul(GLP_PRECISION),
           cummulativeReward: BigNumber.from(89276237),
+          expectedRewardsSinceLastUpdate: BigNumber.from(1144000000),
         },
       },
       {
@@ -157,7 +165,7 @@ describe("Aave Borrow Rate Oracle", () => {
           maxEthPrice: BigNumber.from(19).mul(GLP_PRECISION),
           minAum: BigNumber.from(400000000).mul(GLP_PRECISION),
           maxAum: BigNumber.from(500000000).mul(GLP_PRECISION),
-          supply: BigNumber.from(450000000).mul(GLP_PRECISION),
+          supply: BigNumber.from(450000000).mul(WAD_PRECISION),
           cummulativeReward: BigNumber.from(30276237), // last rate = 1e27*(1+prevCum*ethGlp);
         },
         current: {
@@ -165,11 +173,14 @@ describe("Aave Borrow Rate Oracle", () => {
           maxEthPrice: BigNumber.from(7660).mul(GLP_PRECISION),
           minAum: BigNumber.from(400000000).mul(GLP_PRECISION),
           maxAum: BigNumber.from(500000000).mul(GLP_PRECISION),
-          supply: BigNumber.from(100000000).mul(GLP_PRECISION),
+          supply: BigNumber.from(100000000).mul(WAD_PRECISION),
           cummulativeReward: BigNumber.from(37276237),
+          expectedRewardsSinceLastUpdate: BigNumber.from(129500000),
         },
         next: {
+          expectedLastPrice: BigNumber.from(1702).mul(GLP_PRECISION),
           cummulativeReward: BigNumber.from(37276238),
+          expectedRewardsSinceLastUpdate: BigNumber.from(1702),
         },
       },
       {
@@ -179,7 +190,7 @@ describe("Aave Borrow Rate Oracle", () => {
           maxEthPrice: BigNumber.from(1590).mul(GLP_PRECISION),
           minAum: BigNumber.from(400000000).mul(GLP_PRECISION),
           maxAum: BigNumber.from(500000000).mul(GLP_PRECISION),
-          supply: BigNumber.from(450000000).mul(GLP_PRECISION),
+          supply: BigNumber.from(450000000).mul(WAD_PRECISION),
           cummulativeReward: BigNumber.from(30276237), // last rate = 1e27*(1+prevCum*ethGlp);
         },
         current: {
@@ -187,18 +198,23 @@ describe("Aave Borrow Rate Oracle", () => {
           maxEthPrice: BigNumber.from(1660).mul(GLP_PRECISION),
           minAum: BigNumber.from(400000000).mul(GLP_PRECISION),
           maxAum: BigNumber.from(500000000).mul(GLP_PRECISION),
-          supply: BigNumber.from(400000000).mul(GLP_PRECISION),
+          supply: BigNumber.from(400000000).mul(WAD_PRECISION),
           cummulativeReward: BigNumber.from(30276237),
+          expectedRewardsSinceLastUpdate: BigNumber.from(0),
         },
         next: {
-          cummulativeReward: BigNumber.from(30276237),
+          expectedLastPrice: BigNumber.from(
+            "1474666666666666666666666666666666"
+          ),
+          cummulativeReward: BigNumber.from(30276238),
+          expectedRewardsSinceLastUpdate: BigNumber.from(1474),
         },
       },
     ];
 
     for (const s of sampleRates) {
       it(`Verify rate conversion: (${s.description})`, async () => {
-        const { testRateOracle, glpDependencies, latestPrice, lastRate } =
+        const { testRateOracle, glpDependencies, lastRate } =
           await Config.oracleFixture({
             minEthPrice: s.prev.minEthPrice,
             maxEthPrice: s.prev.maxEthPrice,
@@ -227,35 +243,18 @@ describe("Aave Borrow Rate Oracle", () => {
         // CHECK RATE
         {
           const expected = lastRate
-            .mul(
-              GLP_PRECISION.add(
-                s.current.cummulativeReward
-                  .sub(s.prev.cummulativeReward)
-                  .mul(latestPrice)
-                  .div(GLP_PRECISION)
-              )
-            )
+            .mul(GLP_PRECISION.add(s.current.expectedRewardsSinceLastUpdate))
             .div(GLP_PRECISION);
 
           expect(observeRate).to.eq(expected);
         }
 
         // CHECK LAST PRICE AFTER WRITE
-        let currentPrice;
         {
-          const expected = s.current.minEthPrice
-            .add(s.current.maxEthPrice)
-            .mul(GLP_PRECISION)
-            .div(
-              s.current.minAum
-                .mul(WAD_PRECISION)
-                .div(s.current.supply)
-                .add(s.current.maxAum.mul(WAD_PRECISION).div(s.current.supply))
-            );
-          const price = await testGlpRateOracle.lastEthGlpPrice();
-          currentPrice = price;
+          const expected = s.next.expectedLastPrice;
+          const price = await testGlpRateOracle.lastEthPriceInGlp();
           const reward = await testGlpRateOracle.lastCumulativeRewardPerToken();
-          expect(price).to.eq(expected);
+          expect(price).to.be.closeTo(expected, 100);
           expect(reward).to.eq(s.current.cummulativeReward);
         }
 
@@ -269,14 +268,7 @@ describe("Aave Borrow Rate Oracle", () => {
           const nextObserveRate = await testGlpRateOracle.getLatestRateValue();
 
           const expected = observeRate
-            .mul(
-              GLP_PRECISION.add(
-                s.next.cummulativeReward
-                  .sub(s.current.cummulativeReward)
-                  .mul(currentPrice)
-                  .div(GLP_PRECISION)
-              )
-            )
+            .mul(GLP_PRECISION.add(s.next.expectedRewardsSinceLastUpdate))
             .div(GLP_PRECISION);
 
           expect(nextObserveRate).to.eq(expected);

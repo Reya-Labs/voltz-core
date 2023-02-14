@@ -3,6 +3,7 @@
 pragma solidity =0.8.9;
 
 import "./OracleBuffer.sol";
+import "../utils/FullMath.sol";
 import "../interfaces/rate_oracles/IGlpRateOracle.sol";
 import "../interfaces/glp/IRewardTracker.sol";
 import "../interfaces/glp/IVault.sol";
@@ -18,8 +19,13 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
 
     uint256 public constant GLP_PRECISION = 1e30;
 
-    uint256 public lastEthGlpPrice;
+    uint256 public lastEthPriceInGlp;
     uint256 public lastCumulativeRewardPerToken;
+
+    IGlpManager public glpManager;
+    IVault public vault;
+    IRewardTracker public rewardTracker;
+    IERC20 public glp;
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 8;
 
@@ -28,7 +34,7 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         IERC20Minimal _underlying,
         uint32[] memory _times,
         uint256[] memory _results,
-        uint256 _lastEthGlpPrice,
+        uint256 _lastEthPriceInGlp,
         uint256 _lastCumulativeRewardPerToken
     ) BaseRateOracle(_underlying) {
         require(
@@ -39,10 +45,12 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         require(address(underlying) != address(0), "underlying must exist");
         rewardRouter = _rewardRouter;
 
-        _populateInitialObservationsCustom(_times, _results, false);
+        refreashRewardContracts();
 
-        require(_lastEthGlpPrice > 0, "Price cannot be 0");
-        lastEthGlpPrice = _lastEthGlpPrice;
+        _populateInitialObservations(_times, _results, false);
+
+        require(_lastEthPriceInGlp > 0, "Price cannot be 0");
+        lastEthPriceInGlp = _lastEthPriceInGlp;
         lastCumulativeRewardPerToken = _lastCumulativeRewardPerToken;
     }
 
@@ -60,32 +68,50 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         pupulateLastGlpData();
     }
 
+    /// Used to refreash contracts dependencies in case of a GMX update
+    function refreashRewardContracts() public {
+        glpManager = IGlpManager(rewardRouter.glpManager());
+        vault = glpManager.vault();
+        rewardTracker = IRewardTracker(rewardRouter.feeGlpTracker());
+        glp = IERC20(glpManager.glp());
+    }
+
     /// @dev must be called after every write to the oracle buffer
     function pupulateLastGlpData() internal {
-        IGlpManager glpManager = IGlpManager(rewardRouter.glpManager());
-        IVault vault = glpManager.vault();
-        IRewardTracker rewardTracker = IRewardTracker(
-            rewardRouter.feeGlpTracker()
-        );
-        IERC20 glp = IERC20(glpManager.glp());
-
-        // average over min & max prce of GLP price feeds
+        // average over min & max price of GLP price feeds
         // see https://github.com/gmx-io/gmx-contracts/blob/master/contracts/core/VaultPriceFeed.sol
         address rewardToken = rewardTracker.rewardToken();
-        uint256 ethPriceMin = vault.getMinPrice(rewardToken); // 30 decimals precision
-        uint256 ethPriceMax = vault.getMaxPrice(rewardToken);
+        require(
+            rewardToken == address(underlying),
+            "Reward token isn't underlying"
+        );
+
+        uint256 ethPriceMinInUsd = vault.getMinPrice(rewardToken); // 30 decimals precision
+        uint256 ethPriceMaxInUsd = vault.getMaxPrice(rewardToken);
         uint256 glpSupply = glp.totalSupply();
-        uint256 glpPriceMin = (glpManager.getAum(false) * 1e18) / glpSupply; // min price
-        uint256 glpPriceMax = (glpManager.getAum(true) * 1e18) / glpSupply; // max price
+        uint256 glpPriceMinInUsd = FullMath.mulDiv(
+            glpManager.getAum(false),
+            1e18,
+            glpSupply
+        ); // min price
+        uint256 glpPriceMaxInUsd = FullMath.mulDiv(
+            glpManager.getAum(true),
+            1e18,
+            glpSupply
+        ); // max price
 
         require(
-            ethPriceMin + ethPriceMax > 0 && glpPriceMin + glpPriceMax > 0,
+            ethPriceMinInUsd + ethPriceMaxInUsd > 0 &&
+                glpPriceMinInUsd + glpPriceMaxInUsd > 0,
             "Failed to get GLP price"
         );
 
-        uint256 ethGlpPrice = ((ethPriceMin + ethPriceMax) * GLP_PRECISION) /
-            (glpPriceMin + glpPriceMax);
-        lastEthGlpPrice = ethGlpPrice;
+        uint256 ethPriceInGlp = FullMath.mulDiv(
+            ethPriceMinInUsd + ethPriceMaxInUsd,
+            GLP_PRECISION,
+            glpPriceMinInUsd + glpPriceMaxInUsd
+        );
+        lastEthPriceInGlp = ethPriceInGlp;
 
         uint256 currentReward = rewardTracker.cumulativeRewardPerToken();
         require(
@@ -114,13 +140,18 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         // calculate rate increase since last update
         uint256 cumulativeRewardPerToken = rewardTracker
             .cumulativeRewardPerToken();
-        uint256 rewardsRateSinceLastUpdate = ((cumulativeRewardPerToken -
-            lastCumulativeRewardPerToken) * lastEthGlpPrice) / GLP_PRECISION; // GLP_PRECISION
+        uint256 rewardsRateSinceLastUpdate = FullMath.mulDiv(
+            cumulativeRewardPerToken - lastCumulativeRewardPerToken,
+            lastEthPriceInGlp,
+            GLP_PRECISION
+        ); // GLP_PRECISION
 
         // compute index using rate increase & last index
-        resultRay =
-            (lastIndexRay * (GLP_PRECISION + rewardsRateSinceLastUpdate)) /
-            GLP_PRECISION;
+        resultRay = FullMath.mulDiv(
+            GLP_PRECISION + rewardsRateSinceLastUpdate,
+            lastIndexRay,
+            GLP_PRECISION
+        );
 
         if (resultRay == 0) {
             revert CustomErrors

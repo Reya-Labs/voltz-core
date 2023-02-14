@@ -31,7 +31,7 @@ contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
         );
         rocketNetworkBalances = _rocketNetworkBalances;
 
-        _populateInitialObservations(_times, _results);
+        _populateInitialObservations(_times, _results, true);
     }
 
     /// @inheritdoc BaseRateOracle

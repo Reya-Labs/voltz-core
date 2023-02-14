@@ -79,7 +79,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     /// @dev this must be called at the *end* of the constructor, after the contract member variables have been set, because it needs to read rates.
-    function _populateInitialObservationsCustom(
+    function _populateInitialObservations(
         uint32[] memory _times,
         uint256[] memory _results,
         bool includeLatestDataPoint
@@ -96,9 +96,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         );
 
         // We must pass equal-sized dynamic arrays containing initial timestamps and observed values
-        uint16 observationsLength = includeLatestDataPoint
-            ? length + 1
-            : length;
+        uint16 observationsLength = length + (includeLatestDataPoint ? 1 : 0);
         uint32[] memory times = new uint32[](observationsLength);
         uint256[] memory results = new uint256[](observationsLength);
         for (uint256 i = 0; i < length; i++) {
@@ -122,14 +120,6 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             oracleVars.rateCardinalityNext,
             oracleVars.rateIndex
         ) = observations.initialize(times, results);
-    }
-
-    /// @dev this must be called at the *end* of the constructor, after the contract member variables have been set, because it needs to read rates.
-    function _populateInitialObservations(
-        uint32[] memory _times,
-        uint256[] memory _results
-    ) internal {
-        _populateInitialObservationsCustom(_times, _results, true);
     }
 
     /// @notice Calculates the interpolated (counterfactual) rate value

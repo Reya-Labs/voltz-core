@@ -36,7 +36,7 @@ contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
         lidoOracle = _lidoOracle;
         refreshBeaconSpec();
 
-        _populateInitialObservations(_times, _results);
+        _populateInitialObservations(_times, _results, true);
     }
 
     /// Refresh the beacon spec from Lido's oracle. Permissionless.

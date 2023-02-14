@@ -51,7 +51,7 @@ contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
             ? 10**(DECIMALS_SCALING_THRESHOLD - decimals)
             : 0;
 
-        _populateInitialObservations(_times, _results);
+        _populateInitialObservations(_times, _results, true);
     }
 
     /// @inheritdoc BaseRateOracle
