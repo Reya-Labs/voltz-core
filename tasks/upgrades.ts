@@ -272,7 +272,8 @@ task(
     "proxyAddresses",
     "Comma-separated list of addresses of the proxies that we wish to upgrade",
     undefined,
-    types.string
+    types.string,
+    true
   )
   .addFlag(
     "multisig",
@@ -296,53 +297,59 @@ task(
       rateOracleUpdates: [],
       proxyUpgrades: [],
     };
-    const proxyAddresses = taskArgs.proxyAddresses.split(",");
 
-    // Now loop through all the proxies we want to upgrade
-    for (const currentProxyAddress of proxyAddresses) {
-      const proxy = (await hre.ethers.getContractAt(
-        taskArgs.contractType,
-        currentProxyAddress
-      )) as UUPSUpgradeable;
-      await assertProxyIsOfType(hre, proxy, taskArgs.contractType);
-      const proxyAddress = proxy.address;
-      const initImplAddress = await getImplementationAddress(hre, proxyAddress);
+    if (taskArgs.proxyAddresses) {
+      const proxyAddresses = taskArgs.proxyAddresses.split(",");
 
-      // TODO: check that the proxy is of the specified type and that we are not, e.g., upgrading a VAMM to be a MarginEngine!
-
-      const ownableProxy = proxy as unknown as OwnableUpgradeable;
-      const proxyOwner = await ownableProxy.owner();
-
-      if (initImplAddress === latestImplLogicAddress) {
-        console.log(
-          `The ${taskArgs.contractType} at ${proxyAddress} is using the latest logic (${latestImplLogicAddress}). No newer logic deployed!`
+      // Now loop through all the proxies we want to upgrade
+      for (const currentProxyAddress of proxyAddresses) {
+        const proxy = (await hre.ethers.getContractAt(
+          taskArgs.contractType,
+          currentProxyAddress
+        )) as UUPSUpgradeable;
+        await assertProxyIsOfType(hre, proxy, taskArgs.contractType);
+        const proxyAddress = proxy.address;
+        const initImplAddress = await getImplementationAddress(
+          hre,
+          proxyAddress
         );
-      } else {
-        // TODO: compare storage layouts and abort upgrade if not compatible
 
-        if (taskArgs.multisig) {
-          // Using multisig template instead of sending any transactions
-          data.proxyUpgrades.push({
-            proxyAddress: proxy.address,
-            newImplementation: latestImplLogicAddress,
-          });
+        // TODO: check that the proxy is of the specified type and that we are not, e.g., upgrading a VAMM to be a MarginEngine!
+
+        const ownableProxy = proxy as unknown as OwnableUpgradeable;
+        const proxyOwner = await ownableProxy.owner();
+
+        if (initImplAddress === latestImplLogicAddress) {
+          console.log(
+            `The ${taskArgs.contractType} at ${proxyAddress} is using the latest logic (${latestImplLogicAddress}). No newer logic deployed!`
+          );
         } else {
-          // Not using multisig template - actually send the transactions
-          if (multisig !== proxyOwner && deployer !== proxyOwner) {
-            console.log(
-              `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
-            );
+          // TODO: compare storage layouts and abort upgrade if not compatible
+
+          if (taskArgs.multisig) {
+            // Using multisig template instead of sending any transactions
+            data.proxyUpgrades.push({
+              proxyAddress: proxy.address,
+              newImplementation: latestImplLogicAddress,
+            });
           } else {
-            await proxy
-              .connect(await getSigner(hre, proxyOwner))
-              .upgradeTo(latestImplLogicAddress);
-            const newImplAddress = await getImplementationAddress(
-              hre,
-              proxyAddress
-            );
-            console.log(
-              `${taskArgs.contractType} at ${proxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
-            );
+            // Not using multisig template - actually send the transactions
+            if (multisig !== proxyOwner && deployer !== proxyOwner) {
+              console.log(
+                `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
+              );
+            } else {
+              await proxy
+                .connect(await getSigner(hre, proxyOwner))
+                .upgradeTo(latestImplLogicAddress);
+              const newImplAddress = await getImplementationAddress(
+                hre,
+                proxyAddress
+              );
+              console.log(
+                `${taskArgs.contractType} at ${proxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
+              );
+            }
           }
         }
       }
