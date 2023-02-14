@@ -56,10 +56,7 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
     }
 
     /// @inheritdoc IRateOracle
-    function writeOracleEntry()
-        external
-        override(BaseRateOracle, IRateOracle)
-    {
+    function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,
