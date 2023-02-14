@@ -132,11 +132,6 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         uint216 lastIndexRay = observations[oracleVars.rateIndex].observedValue;
         require(lastIndexRay > 0, "No previous observation");
 
-        // all required contracts
-        IRewardTracker rewardTracker = IRewardTracker(
-            rewardRouter.feeGlpTracker()
-        );
-
         // calculate rate increase since last update
         uint256 cumulativeRewardPerToken = rewardTracker
             .cumulativeRewardPerToken();
