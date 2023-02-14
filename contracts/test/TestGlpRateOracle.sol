@@ -10,7 +10,7 @@ import "hardhat/console.sol";
 import "../interfaces/glp/IRewardRouter.sol";
 import "./TestRateOracle.sol";
 
-contract TestGlpRateOracle is GlpRateOracle, TestRateOracle {
+contract TestGlpRateOracle is GlpRateOracle {
     // using OracleBuffer for OracleBuffer.Observation[65535];
 
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
@@ -32,15 +32,10 @@ contract TestGlpRateOracle is GlpRateOracle, TestRateOracle {
         )
     {}
 
-    function writeOracleEntry()
-        external
-        override(BaseRateOracle, GlpRateOracle)
-    {
-        (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
-            oracleVars.rateIndex,
-            oracleVars.rateCardinality,
-            oracleVars.rateCardinalityNext
-        );
-        pupulateLastGlpData();
+    function getLatestRateValue() external view returns (uint256) {
+        OracleBuffer.Observation memory rate = observations[
+            oracleVars.rateIndex
+        ];
+        return rate.observedValue;
     }
 }

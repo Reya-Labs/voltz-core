@@ -22,6 +22,7 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
     uint256 public lastEthPriceInGlp;
     uint256 public lastCumulativeRewardPerToken;
 
+    // GLP contract dependencies
     IGlpManager public glpManager;
     IVault public vault;
     IRewardTracker public rewardTracker;
@@ -57,7 +58,6 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
     /// @inheritdoc IRateOracle
     function writeOracleEntry()
         external
-        virtual
         override(BaseRateOracle, IRateOracle)
     {
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
@@ -74,20 +74,19 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         vault = glpManager.vault();
         rewardTracker = IRewardTracker(rewardRouter.feeGlpTracker());
         glp = IERC20(glpManager.glp());
+        address rewardToken = rewardTracker.rewardToken();
+        require(
+            rewardToken == address(underlying),
+            "Reward token isn't underlying"
+        );
     }
 
     /// @dev must be called after every write to the oracle buffer
     function pupulateLastGlpData() internal {
         // average over min & max price of GLP price feeds
         // see https://github.com/gmx-io/gmx-contracts/blob/master/contracts/core/VaultPriceFeed.sol
-        address rewardToken = rewardTracker.rewardToken();
-        require(
-            rewardToken == address(underlying),
-            "Reward token isn't underlying"
-        );
-
-        uint256 ethPriceMinInUsd = vault.getMinPrice(rewardToken); // 30 decimals precision
-        uint256 ethPriceMaxInUsd = vault.getMaxPrice(rewardToken);
+        uint256 ethPriceMinInUsd = vault.getMinPrice(address(underlying)); // 30 decimals precision
+        uint256 ethPriceMaxInUsd = vault.getMaxPrice(address(underlying));
         uint256 glpSupply = glp.totalSupply();
         uint256 glpPriceMinInUsd = FullMath.mulDiv(
             glpManager.getAum(false),
