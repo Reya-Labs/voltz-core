@@ -66,6 +66,8 @@ export const ConfigForGenericTests = {
       latestPrice, // lastethGlpPrice
       params.cummulativeReward // lastCumulativeRewardPerToken (1)
     )) as TestRateOracle;
+    await testRateOracle.setMinSecondsSinceLastUpdate(1);
+    await testRateOracle.increaseObservationCardinalityNext(20);
     return {
       testRateOracle,
       glpDependencies,

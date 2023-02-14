@@ -46,7 +46,7 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
         require(address(underlying) != address(0), "underlying must exist");
         rewardRouter = _rewardRouter;
 
-        refreashRewardContracts();
+        refreshRewardContracts();
 
         _populateInitialObservations(_times, _results, false);
 
@@ -57,16 +57,20 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
 
     /// @inheritdoc IRateOracle
     function writeOracleEntry() external override(BaseRateOracle, IRateOracle) {
+        uint16 previousRateIndex = oracleVars.rateIndex;
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
         );
-        pupulateLastGlpData();
+        // update last GLP data if there was an oracle write
+        if (oracleVars.rateIndex != previousRateIndex) {
+            populateLastGlpData();
+        }
     }
 
-    /// Used to refreash contracts dependencies in case of a GMX update
-    function refreashRewardContracts() public {
+    /// Used to refresh contracts dependencies in case of a GMX update
+    function refreshRewardContracts() public {
         glpManager = IGlpManager(rewardRouter.glpManager());
         vault = glpManager.vault();
         rewardTracker = IRewardTracker(rewardRouter.feeGlpTracker());
@@ -79,20 +83,20 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
     }
 
     /// @dev must be called after every write to the oracle buffer
-    function pupulateLastGlpData() internal {
+    function populateLastGlpData() internal {
         // average over min & max price of GLP price feeds
         // see https://github.com/gmx-io/gmx-contracts/blob/master/contracts/core/VaultPriceFeed.sol
-        uint256 ethPriceMinInUsd = vault.getMinPrice(address(underlying)); // 30 decimals precision
+        uint256 ethPriceMinInUsd = vault.getMinPrice(address(underlying));
         uint256 ethPriceMaxInUsd = vault.getMaxPrice(address(underlying));
         uint256 glpSupply = glp.totalSupply();
         uint256 glpPriceMinInUsd = FullMath.mulDiv(
             glpManager.getAum(false),
-            1e18,
+            ONE_IN_WAD,
             glpSupply
         ); // min price
         uint256 glpPriceMaxInUsd = FullMath.mulDiv(
             glpManager.getAum(true),
-            1e18,
+            ONE_IN_WAD,
             glpSupply
         ); // max price
 

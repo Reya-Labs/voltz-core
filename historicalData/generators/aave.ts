@@ -97,7 +97,7 @@ export async function buildAaveDataGenerator(
 
 export async function buildAaveV3DataGenerator(
   hre: HardhatRuntimeEnvironment,
-  lendingPool: IAaveV2LendingPool | IPool,
+  lendingPool: IAaveV3LendingPool | IPool,
   underlyingAddress: string,
   borrow = false,
   overrides?: Partial<AaveV3DataSpec>
