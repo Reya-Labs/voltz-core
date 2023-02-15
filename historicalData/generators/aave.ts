@@ -99,19 +99,23 @@ export async function buildAaveV3DataGenerator(
   hre: HardhatRuntimeEnvironment,
   lendingPool: IAaveV3LendingPool | IPool,
   underlyingAddress: string,
-  borrow = false,
+  lookbackDays: number,
   overrides?: Partial<AaveV3DataSpec>
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
   // calculate from and to blocks
   const currentBlock = await hre.ethers.provider.getBlockNumber();
+  const blocksPerDay = ["arbitrum", "arbitrumGoerli"].includes(hre.network.name ) ?  
+    60 * 60 * 24 * 3 : // 3 blocks per second
+    5 * 60 * 24;
+    
 
   const defaults = {
-    fromBlock: hre.network.name === "mainnet" ? 19664221 : 16497500,
-    blockInterval: hre.network.name === "mainnet" ? 86400 : 300,
+    fromBlock: currentBlock - blocksPerDay * lookbackDays,
+    blockInterval: blocksPerDay,
     toBlock: currentBlock,
     hre,
     underlyingAddress,
-    borrow,
+    borrow: false,
     lendingPool,
   };
 

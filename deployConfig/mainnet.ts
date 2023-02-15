@@ -10,6 +10,7 @@ const ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS = {
 export const mainnetConfig: ContractsConfig = {
   maxIrsDurationInSeconds: 60 * 60 * 24 * 9 * 31, // 9 months. Do not increase without checking that rate oracle buffers are large enough
   weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  multisig: "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
   aaveConfig: {
     // See deployment info at https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     aaveLendingPool: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9",
