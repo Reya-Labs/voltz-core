@@ -269,9 +269,9 @@ task(
     types.int
   )
   .addParam("termEndTimestamp", "The UNIX timestamp of pool end")
-  .addParam(
-    "pool",
-    "The name of a pool as configured in deployConfig/poolConfig.ts (e.g. 'borrow_aDAI_v2', 'stETH_v1', etc.)"
+  .addVariadicPositionalParam(
+    "pools",
+    "The names of pools in deployConfig/poolConfig.ts ('borrow_aDAI_v2 stETH_v1' - skip param name)"
   )
   .setAction(async (taskArgs, hre) => {
     // const pool = taskArgs.borrow ? "borrow_" + taskArgs.pool : taskArgs.pool;
@@ -293,17 +293,27 @@ task(
     }
 
     // Validate all pool inputs before processing any
-    // for (const pool of taskArgs.pools) {
-    //   if (pool in poolConfigs) {
-    //     poolConfigList.push(poolConfigs[pool]);
-    //   } else {
-    //     throw new Error(`No configuration for ${pool}.`);
-    //   }
-    // }
+    for (const pool of taskArgs.pools) {
+      if (pool in poolConfigs) {
+        poolConfigList.push(poolConfigs[pool]);
+      } else {
+        throw new Error(`No configuration for ${pool}.`);
+      }
+    }
 
-    poolConfigList.push(poolConfigs[taskArgs.pool]);
-
-    const factory = await hre.ethers.getContract("Factory");
+    let factory : ethers.Contract;
+    if (hre.network.name === 'arbitrum') {
+      // factory was deployed by community deployer and we are missing the deplyment artifact
+      const signer = (await hre.ethers.getSigners())[0];
+      factory = await hre.ethers.getContractAt(
+        "Factory",
+        "0xda66a7584da7210fd26726EFb12585734F7688c1",
+        signer
+      );
+    } else {
+      factory = await hre.ethers.getContract("Factory");
+    }
+    
     let nextFactoryNonce = await getFactoryNonce(hre, factory.address);
 
     for (const poolConfig of poolConfigList) {

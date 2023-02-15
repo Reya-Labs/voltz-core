@@ -55,7 +55,7 @@ const aTokenUnderlyingAddressesArbitrum = {
 };
 
 const blocksPerDay = 5 * 60 * 24; // 12 seconds per block = 5 blocks per minute
-const blocksPerDayArbitrum = 60 * 60 * 24; // 12 seconds per block = 5 blocks per minute
+const blocksPerDayArbitrum = 60 * 60 * 24 * 3; // 3 blocks per second
 
 task("getHistoricalData", "Retrieves the historical rates")
   .addOptionalParam(
@@ -89,7 +89,7 @@ task("getHistoricalData", "Retrieves the historical rates")
   )
   .addFlag("compound", "Get rates data from Compound")
   .addFlag("aave", "Get rates data from Aave")
-  .addFlag("glp", "Get rates data from Aave")
+  .addFlag("glp", "Get rates data from Glp")
   .addFlag(
     "borrow",
     "Choose to query borrow rate, ommit to query lending rates"
@@ -236,7 +236,8 @@ task("getHistoricalData", "Retrieves the historical rates")
       generator = await buildAaveV3DataGenerator(
         hre,
         lendingPool,
-        underlyingTokenAddress
+        underlyingTokenAddress,
+        taskArgs.lookbackDays ?? (currentBlock.number -  taskArgs.fromBlock) / blocksPerDayArbitrum
       );
     }
 

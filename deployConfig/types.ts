@@ -24,6 +24,14 @@ export interface AaveConfig {
   aaveLendingPoolDeploymentBlock?: number;
   aaveTokens: TokenConfig[];
 }
+
+export interface GlpConfig {
+  rewardRouter?: string;
+  rewardRouterDeploymentBlock?: number;
+  rewardToken?: string,
+  defaults: RateOracleConfigDefaults;
+}
+
 export interface CompoundConfig {
   compoundTokens: TokenConfig[];
 }
@@ -40,8 +48,10 @@ export interface RocketPoolConfig {
 }
 export interface ContractsConfig {
   weth?: string;
+  multisig?: string,
   aaveConfig?: AaveConfig;
   aaveConfigV3?: AaveConfig;
+  glpConfig?: GlpConfig;
   compoundConfig?: CompoundConfig;
   lidoConfig?: LidoConfig;
   rocketPoolConfig?: RocketPoolConfig;
