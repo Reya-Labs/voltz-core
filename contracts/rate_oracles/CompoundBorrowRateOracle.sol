@@ -41,7 +41,7 @@ contract CompoundBorrowRateOracle is
         require(address(underlying) != address(0), "underlying must exist");
         decimals = _decimals;
 
-        _populateInitialObservations(_times, _results);
+        _populateInitialObservations(_times, _results, true);
     }
 
     /// @inheritdoc BaseRateOracle

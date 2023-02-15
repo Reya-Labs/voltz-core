@@ -26,7 +26,7 @@ contract AaveBorrowRateOracle is BaseRateOracle, IAaveRateOracle {
         require(address(underlying) != address(0), "underlying must exist");
         aaveLendingPool = _aaveLendingPool;
 
-        _populateInitialObservations(_times, _results);
+        _populateInitialObservations(_times, _results, true);
     }
 
     /// @inheritdoc BaseRateOracle

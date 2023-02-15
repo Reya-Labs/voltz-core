@@ -2,6 +2,7 @@ import { task, types } from "hardhat/config";
 import {
   ICToken,
   ILidoOracle,
+  IPool,
   IRocketEth,
   IRocketNetworkBalances,
   IStETH,
@@ -9,10 +10,14 @@ import {
 import { BigNumber } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { Datum } from "../historicalData/generators/common";
-import { buildAaveDataGenerator } from "../historicalData/generators/aave";
+import {
+  buildAaveDataGenerator,
+  buildAaveV3DataGenerator,
+} from "../historicalData/generators/aave";
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
 import { buildCompoundDataGenerator } from "../historicalData/generators/compound";
+import { buildGlpDataGenerator } from "../historicalData/generators/glp";
 
 // lido
 const lidoStEthMainnetAddress = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
@@ -44,7 +49,13 @@ const aTokenUnderlyingAddresses = {
   aWETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
 };
 
+// aave arbitrum
+const aTokenUnderlyingAddressesArbitrum = {
+  aUSDC: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+};
+
 const blocksPerDay = 5 * 60 * 24; // 12 seconds per block = 5 blocks per minute
+const blocksPerDayArbitrum = 60 * 60 * 24; // 12 seconds per block = 5 blocks per minute
 
 task("getHistoricalData", "Retrieves the historical rates")
   .addOptionalParam(
@@ -78,6 +89,7 @@ task("getHistoricalData", "Retrieves the historical rates")
   )
   .addFlag("compound", "Get rates data from Compound")
   .addFlag("aave", "Get rates data from Aave")
+  .addFlag("glp", "Get rates data from Aave")
   .addFlag(
     "borrow",
     "Choose to query borrow rate, ommit to query lending rates"
@@ -94,6 +106,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     taskArgs.compound && platformCount++;
     taskArgs.rocket && platformCount++;
     taskArgs.lido && platformCount++;
+    taskArgs.glp && platformCount++;
 
     if (!taskArgs.fromBlock && !taskArgs.lookbackDays) {
       throw new Error(
@@ -105,7 +118,7 @@ task("getHistoricalData", "Retrieves the historical rates")
       throw new Error(`Exactly one platform must be queried at a time`);
     }
 
-    if (hre.network.name !== "mainnet") {
+    if (hre.network.name !== "mainnet" && hre.network.name !== "arbitrum") {
       // TODO: support other networks using addresses from deployConfig
       throw new Error(
         `Invalid network. Only mainnet data extraction is currently supported`
@@ -123,7 +136,9 @@ task("getHistoricalData", "Retrieves the historical rates")
     let toBlock: number = currentBlock.number;
     const fromBlock: number = taskArgs.fromBlock
       ? taskArgs.fromBlock
-      : toBlock - taskArgs.lookbackDays * blocksPerDay;
+      : toBlock -
+        taskArgs.lookbackDays *
+          (taskArgs.glp ? blocksPerDayArbitrum : blocksPerDay);
 
     if (taskArgs.toBlock) {
       toBlock = Math.min(currentBlock.number, taskArgs.toBlock);
@@ -170,7 +185,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     let generator: AsyncGenerator<Datum> | undefined;
 
     // compound
-    if (taskArgs.compound) {
+    if (taskArgs.compound && hre.network.name === "mainnet") {
       asset = `c${taskArgs.token}`;
       if (!Object.keys(cTokenAddresses).includes(asset)) {
         throw new Error(
@@ -195,8 +210,38 @@ task("getHistoricalData", "Retrieves the historical rates")
       );
     }
 
-    // aave
-    if (taskArgs.aave) {
+    // aave arbitrum
+    if (taskArgs.aave && hre.network.name === "arbitrum") {
+      if (taskArgs.token === "ETH") {
+        asset = `aWETH`;
+      } else {
+        asset = `a${taskArgs.token}`;
+      }
+
+      if (!Object.keys(aTokenUnderlyingAddresses).includes(asset)) {
+        throw new Error(
+          `Unrecognized error. Check that ${asset} is added to aave addresses!`
+        );
+      }
+
+      const underlyingTokenAddress =
+        aTokenUnderlyingAddressesArbitrum[
+          asset as keyof typeof aTokenUnderlyingAddressesArbitrum
+        ];
+      const lendingPool = (await hre.ethers.getContractAt(
+        "IPool",
+        "0x794a61358D6845594F94dc1DB02A252b5b4814aD" // arbitrum lending pool address
+      )) as IPool;
+
+      generator = await buildAaveV3DataGenerator(
+        hre,
+        lendingPool,
+        underlyingTokenAddress
+      );
+    }
+
+    // aave v2 ethereum
+    if (taskArgs.aave && hre.network.name === "mainnet") {
       if (taskArgs.token === "ETH") {
         asset = `aWETH`;
       } else {
@@ -221,11 +266,10 @@ task("getHistoricalData", "Retrieves the historical rates")
         taskArgs.borrow,
         { fromBlock, toBlock, blockInterval: taskArgs.blockInterval }
       );
-      // no need to get decimals
     }
 
     // lido
-    if (taskArgs.lido) {
+    if (taskArgs.lido && hre.network.name === "mainnet") {
       if (taskArgs.token === "ETH") {
         asset = `stETH`;
       } else {
@@ -244,7 +288,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     }
 
     // rocket
-    if (taskArgs.rocket) {
+    if (taskArgs.rocket && hre.network.name === "mainnet") {
       if (taskArgs.token === "ETH") {
         asset = `rETH`;
       } else {
@@ -260,6 +304,12 @@ task("getHistoricalData", "Retrieves the historical rates")
         toBlock,
         blockInterval: taskArgs.blockInterval,
       });
+    }
+
+    // glp
+    if (taskArgs.glp && hre.network.name === "arbitrum") {
+      asset = "GLP";
+      generator = await buildGlpDataGenerator(hre, taskArgs.lookbackDays);
     }
 
     // populate output file

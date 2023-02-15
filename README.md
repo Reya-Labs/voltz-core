@@ -158,6 +158,13 @@ If it does fail, there are two other approaches we can try:
    - This takes a little more effort and you must specify the (space separated) constructor params after the contract address, e.g: `npx hardhat --network mainnet verify --contract contracts/Factory.sol:VoltzERC1967Proxy 0x682F3e5685Ff51C232cF842840BA27E717C1AE2E 0x7380df8abb0c44617c2a64bf2d7d92caa852f03f 0x`
    - If the constructor params are complex, they can be imported from a file using the `--constructor-args` flag
 
+#### Verify on Arbitrum Goelri
+
+Make sure you have the Arbiscan Api Key in the env variables.
+Due to a Hardhat bug, we have to replace the Etherscan key with the Arbiscan one, otherwise, it would say the key is wrong.
+
+`npx hardhat --network arbitrumGoerli etherscan-verify --api-url https://api-goerli.arbiscan.io/`
+
 #### Mint tokens for testing
 
 There is a task for this. Run `npx hardhat help mintTestTokens` for task usage.

@@ -845,10 +845,15 @@ contract MarginEngine is
         /// @dev isUnwind means the trader is getting into a swap with the opposite direction to their net position
         /// @dev in that case it does not make sense to revert the transaction if the position margin requirement is not met since
         /// @dev it could have been even further from the requirement prior to the unwind
-        bool _isUnwind = (_position.variableTokenBalance > 0 &&
-            _variableTokenDelta < 0) ||
-            (_position.variableTokenBalance < 0 && _variableTokenDelta > 0);
-
+        bool _isUnwind = (
+                _variableTokenDelta < 0 && 
+                _position.variableTokenBalance + _variableTokenDelta >= 0 
+            ) ||
+            (
+                _variableTokenDelta > 0 &&
+                _position.variableTokenBalance + _variableTokenDelta <= 0
+            );
+ 
         if (_cumulativeFeeIncurred > 0) {
             _position.updateMarginViaDelta(-_cumulativeFeeIncurred.toInt256());
         }

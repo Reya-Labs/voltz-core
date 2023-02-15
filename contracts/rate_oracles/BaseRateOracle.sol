@@ -81,29 +81,39 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     /// @dev this must be called at the *end* of the constructor, after the contract member variables have been set, because it needs to read rates.
     function _populateInitialObservations(
         uint32[] memory _times,
-        uint256[] memory _results
+        uint256[] memory _results,
+        bool includeLatestDataPoint
     ) internal {
         // If we're using even half the max buffer size, something has gone wrong
         require(_times.length < OracleBuffer.MAX_BUFFER_LENGTH / 2, "MAXT");
         uint16 length = uint16(_times.length);
         require(length == _results.length, "Lengths must match");
 
+        // At least 1 initial observation is required
+        require(
+            includeLatestDataPoint || length > 0,
+            "No initial observations"
+        );
+
         // We must pass equal-sized dynamic arrays containing initial timestamps and observed values
-        uint32[] memory times = new uint32[](length + 1);
-        uint256[] memory results = new uint256[](length + 1);
+        uint16 observationsLength = length + (includeLatestDataPoint ? 1 : 0);
+        uint32[] memory times = new uint32[](observationsLength);
+        uint256[] memory results = new uint256[](observationsLength);
         for (uint256 i = 0; i < length; i++) {
             times[i] = _times[i];
             results[i] = _results[i];
         }
 
-        (
-            uint32 lastUpdatedTimestamp,
-            uint256 lastUpdatedRate
-        ) = getLastUpdatedRate();
+        if (includeLatestDataPoint) {
+            (
+                uint32 lastUpdatedTimestamp,
+                uint256 lastUpdatedRate
+            ) = getLastUpdatedRate();
 
-        // `observations.initialize` will check that all times are correctly sorted so no need to check here
-        times[length] = lastUpdatedTimestamp;
-        results[length] = lastUpdatedRate;
+            // `observations.initialize` will check that all times are correctly sorted so no need to check here
+            times[length] = lastUpdatedTimestamp;
+            results[length] = lastUpdatedRate;
+        }
 
         (
             oracleVars.rateCardinality,
@@ -475,7 +485,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     /// @inheritdoc IRateOracle
-    function writeOracleEntry() external override(IRateOracle) {
+    function writeOracleEntry() external virtual override(IRateOracle) {
         (oracleVars.rateIndex, oracleVars.rateCardinality) = writeRate(
             oracleVars.rateIndex,
             oracleVars.rateCardinality,
