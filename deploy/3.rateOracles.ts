@@ -79,7 +79,7 @@ const deployAndConfigureWithGenerator = async ({
   initialArgs,
   rateOracleConfig,
   contractName,
-  trustedDataPointsGenerator: generator
+  trustedDataPointsGenerator: generator,
 }: DeployAndConfigureWithGeneratorArgs) => {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
@@ -115,7 +115,7 @@ const deployAndConfigureWithGenerator = async ({
           timestamps.push(data.timestamp);
           rates.push(data.rate);
         }
-        if(data.glpData) {
+        if (data.glpData) {
           lastCummulativeReward = data.glpData.lastCummulativeReward;
           lastEthGlpPrice = data.glpData.lastEthGlpPrice;
         }
@@ -137,7 +137,7 @@ const deployAndConfigureWithGenerator = async ({
 
     let args = [...initialArgs, timestamps, rates];
     if (lastCummulativeReward.gt(0) && lastEthGlpPrice.gt(0)) {
-      args = [...args, lastEthGlpPrice, lastCummulativeReward]
+      args = [...args, lastEthGlpPrice, lastCummulativeReward];
     }
     console.log(`Deployment args are ${args.map((a) => a.toString())}`);
 
@@ -311,15 +311,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       );
 
       await deployAndConfigureWithGenerator({
-          hre,
-          initialArgs: [rewardRouter.address, rewardToken],
-          rateOracleConfig: {
-            name: null,
-            rateOracleBufferSize: glpConfig.defaults.rateOracleBufferSize,
-            minSecondsSinceLastUpdate: glpConfig.defaults.minSecondsSinceLastUpdate
-          },
-          contractName: "GlpRateOracle",
-          trustedDataPointsGenerator,
+        hre,
+        initialArgs: [rewardRouter.address, rewardToken],
+        rateOracleConfig: {
+          name: null,
+          rateOracleBufferSize: glpConfig.defaults.rateOracleBufferSize,
+          minSecondsSinceLastUpdate:
+            glpConfig.defaults.minSecondsSinceLastUpdate,
+        },
+        contractName: "GlpRateOracle",
+        trustedDataPointsGenerator,
       });
     }
   }

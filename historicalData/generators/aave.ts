@@ -104,10 +104,9 @@ export async function buildAaveV3DataGenerator(
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
   // calculate from and to blocks
   const currentBlock = await hre.ethers.provider.getBlockNumber();
-  const blocksPerDay = ["arbitrum", "arbitrumGoerli"].includes(hre.network.name ) ?  
-    60 * 60 * 24 * 3 : // 3 blocks per second
-    5 * 60 * 24;
-    
+  const blocksPerDay = ["arbitrum", "arbitrumGoerli"].includes(hre.network.name)
+    ? 60 * 60 * 24 * 3 // 3 blocks per second
+    : 5 * 60 * 24;
 
   const defaults = {
     fromBlock: currentBlock - blocksPerDay * lookbackDays,

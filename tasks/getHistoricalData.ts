@@ -237,7 +237,8 @@ task("getHistoricalData", "Retrieves the historical rates")
         hre,
         lendingPool,
         underlyingTokenAddress,
-        taskArgs.lookbackDays ?? (currentBlock.number -  taskArgs.fromBlock) / blocksPerDayArbitrum
+        taskArgs.lookbackDays ??
+          (currentBlock.number - taskArgs.fromBlock) / blocksPerDayArbitrum
       );
     }
 

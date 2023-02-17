@@ -41,12 +41,12 @@ async function writeToMultisigTemplate(data: MultisigTemplate) {
 
 const mints: MintOrBurnParams[] = [
   {
-    pool: "aUSDC_v8",
-    tickLower: -13920,
-    tickUpper: 0,
-    notional: 10000000,
+    pool: "glp",
+    tickLower: -38040,
+    tickUpper: -30000,
+    notional: 3150,
     isMint: true,
-    marginDelta: 100000,
+    marginDelta: 63,
   },
 ];
 

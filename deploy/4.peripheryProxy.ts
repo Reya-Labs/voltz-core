@@ -11,20 +11,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const multisig = config.multisig;
 
   let weth: string | undefined;
-  {
-    if (config.weth) {
-      weth = config.weth;
-    } else {
-      const wethContract = await ethers.getContractOrNull("MockWETH");
+  if (config.weth) {
+    weth = config.weth;
+  } else {
+    const wethContract = await ethers.getContractOrNull("MockWETH");
 
-      if (wethContract) {
-        weth = wethContract.address;
-      }
+    if (wethContract) {
+      weth = wethContract.address;
     }
-    console.log(`The address of WETH9 for this environment is ${weth}`);
-    if (!weth) {
-      throw new Error("WETH not deployed");
-    }
+  }
+  console.log(`The address of WETH9 for this environment is ${weth}`);
+  if (!weth) {
+    throw new Error("WETH not deployed");
   }
 
   const proxyDeployResult = await deploy("Periphery", {
