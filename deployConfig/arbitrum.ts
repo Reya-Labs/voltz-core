@@ -34,7 +34,7 @@ export const arbitrumConfig: ContractsConfig = {
     defaults: {
       ...ONE_YEAR_OF_EIGHT_HOURLY_DATAPOINTS,
       daysOfTrustedDataPoints: DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS,
-    }
+    },
   },
   skipFactoryDeploy: true, // On mainnet we use a community deployer
   factoryOwnedByMultisig: true, // On mainnet, transactions to the factory must go through a multisig

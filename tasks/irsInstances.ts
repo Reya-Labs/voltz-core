@@ -301,8 +301,8 @@ task(
       }
     }
 
-    let factory : ethers.Contract;
-    if (hre.network.name === 'arbitrum') {
+    let factory: ethers.Contract;
+    if (hre.network.name === "arbitrum") {
       // factory was deployed by community deployer and we are missing the deplyment artifact
       const signer = (await hre.ethers.getSigners())[0];
       factory = await hre.ethers.getContractAt(
@@ -313,7 +313,7 @@ task(
     } else {
       factory = await hre.ethers.getContract("Factory");
     }
-    
+
     let nextFactoryNonce = await getFactoryNonce(hre, factory.address);
 
     for (const poolConfig of poolConfigList) {

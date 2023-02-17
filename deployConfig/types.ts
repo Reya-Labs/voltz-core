@@ -28,7 +28,7 @@ export interface AaveConfig {
 export interface GlpConfig {
   rewardRouter?: string;
   rewardRouterDeploymentBlock?: number;
-  rewardToken?: string,
+  rewardToken?: string;
   defaults: RateOracleConfigDefaults;
 }
 
@@ -48,7 +48,7 @@ export interface RocketPoolConfig {
 }
 export interface ContractsConfig {
   weth?: string;
-  multisig?: string,
+  multisig?: string;
   aaveConfig?: AaveConfig;
   aaveConfigV3?: AaveConfig;
   glpConfig?: GlpConfig;

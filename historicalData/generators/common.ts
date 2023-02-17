@@ -6,9 +6,9 @@ export interface Datum {
   rate: BigNumber;
   error: unknown;
   glpData?: {
-    lastCummulativeReward: BigNumber,
-    lastEthGlpPrice: BigNumber
-  }
+    lastCummulativeReward: BigNumber;
+    lastEthGlpPrice: BigNumber;
+  };
 }
 
 export interface BlockSpec {

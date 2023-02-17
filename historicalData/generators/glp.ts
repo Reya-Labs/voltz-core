@@ -73,8 +73,8 @@ async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
         error: null,
         glpData: {
           lastCummulativeReward: prevCummulativeRewards,
-          lastEthGlpPrice: prevEthGlpPrice
-        }
+          lastEthGlpPrice: prevEthGlpPrice,
+        },
       };
     } catch (e: unknown) {
       yield {
@@ -94,7 +94,7 @@ export async function buildGlpDataGenerator(
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
   // calculate from and to blocks
   const currentBlock = await hre.ethers.provider.getBlockNumber();
-  const blocksPerDay = 86400*3;
+  const blocksPerDay = 86400 * 3;
 
   const defaults = {
     fromBlock: lookbackDays ? lookbackDays * blocksPerDay : 56109528, // 28th of Jan

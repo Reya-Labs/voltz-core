@@ -43,12 +43,12 @@ task("setPeriphery", "Sets the periphery")
     const factoryAddress = taskArgs.factoryAddress;
 
     if (taskArgs.multisig) {
-      const template : MultisigTemplateData = {
+      const template: MultisigTemplateData = {
         data: {
           peripheryAddress: peripheryAddress,
-          factoryAddress: factoryAddress
-        }
-      }
+          factoryAddress: factoryAddress,
+        },
+      };
       writeUpdateTransactionsToGnosisSafeTemplate(template);
     } else {
       const factory = await hre.ethers.getContract("Factory");
@@ -59,7 +59,6 @@ task("setPeriphery", "Sets the periphery")
       });
       await trx.wait();
     }
-    
   });
 
 module.exports = {};
