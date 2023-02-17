@@ -1,0 +1,57 @@
+{
+    "version": "1.0",
+    "chainId": "1",
+    "createdAt": 1654007302649,
+    "meta": {
+      "name": "Transactions Batch",
+      "description": "",
+      "txBuilderVersion": "1.8.0",
+      "createdFromSafeAddress": "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
+      "createdFromOwnerAddress": "",
+      "checksum": "0x6e317afc197279541328cf252e50867cfa15d2ed7e7426244328bdf15b94cfe7"
+    },
+    "transactions": [
+      {{#positions}}
+      {
+        "to": "{{periphery}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "contract IMarginEngine",
+              "name": "marginEngine",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "int24",
+              "name": "tickLower",
+              "type": "int24"
+            },
+            {
+              "internalType": "int24",
+              "name": "tickUpper",
+              "type": "int24"
+            }
+          ],
+          "name": "settlePositionAndWithdrawMargin",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        "contractInputsValues": {
+          "marginEngine": "{{marginEngine}}",
+          "owner": "{{owner}}",
+          "tickLower": "{{tickLower}}",
+          "tickUpper": "{{tickUpper}}"
+        }
+      }
+      {{^last}},{{/last}}
+      {{/positions}}
+    ]
+  }

@@ -76,7 +76,8 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
 
 loadModuleIfContractsAreBuilt("./tasks/irsInstances");
 loadModuleIfContractsAreBuilt("./tasks/mintTestTokens");
-loadModuleIfContractsAreBuilt("./tasks/mintLiquidity");
+loadModuleIfContractsAreBuilt("./tasks/pcv/mintLiquidity");
+loadModuleIfContractsAreBuilt("./tasks/pcv/settlePositions");
 loadModuleIfContractsAreBuilt("./tasks/updatePositionMargin");
 loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");

@@ -1,6 +1,6 @@
 import { task } from "hardhat/config";
-import { IERC20Minimal, MarginEngine, Periphery } from "../typechain";
-import * as poolAddresses from "../pool-addresses/mainnet.json";
+import { IERC20Minimal, MarginEngine, Periphery } from "../../typechain";
+import * as poolAddresses from "../../pool-addresses/mainnet.json";
 import path from "path";
 import mustache from "mustache";
 
