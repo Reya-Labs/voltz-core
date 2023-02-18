@@ -4,11 +4,11 @@ pragma solidity =0.8.9;
 
 import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
 import "../interfaces/compound/ICToken.sol";
-import "./BaseRateOracle.sol";
+import "./CompoundingRateOracle.sol";
 import "../utils/ExponentialNoError.sol";
 
 contract CompoundBorrowRateOracle is
-    BaseRateOracle,
+    CompoundingRateOracle,
     ICompoundRateOracle,
     ExponentialNoError
 {

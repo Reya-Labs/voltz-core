@@ -4,9 +4,9 @@ pragma solidity =0.8.9;
 
 import "../interfaces/rate_oracles/IAaveV3RateOracle.sol";
 import "../interfaces/aave/IAaveV3LendingPool.sol";
-import "../rate_oracles/BaseRateOracle.sol";
+import "../rate_oracles/CompoundingRateOracle.sol";
 
-contract AaveV3RateOracle is BaseRateOracle, IAaveV3RateOracle {
+contract AaveV3RateOracle is CompoundingRateOracle, IAaveV3RateOracle {
     /// @inheritdoc IAaveV3RateOracle
     IAaveV3LendingPool public override aaveLendingPool;
 

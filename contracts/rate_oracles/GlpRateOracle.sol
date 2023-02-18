@@ -9,10 +9,10 @@ import "../interfaces/glp/IRewardTracker.sol";
 import "../interfaces/glp/IVault.sol";
 import "../interfaces/glp/IRewardRouter.sol";
 import "../interfaces/glp/IGlpManager.sol";
-import "../rate_oracles/BaseRateOracle.sol";
+import "../rate_oracles/LinearRateOracle.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
+contract GlpRateOracle is LinearRateOracle, IGlpRateOracle {
     /// @inheritdoc IGlpRateOracle
     IRewardRouter public override rewardRouter;
     using OracleBuffer for OracleBuffer.Observation[65535];

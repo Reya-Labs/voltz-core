@@ -5,12 +5,12 @@ pragma solidity =0.8.9;
 import "../interfaces/rate_oracles/ILidoRateOracle.sol";
 import "../interfaces/lido/IStETH.sol";
 import "../interfaces/lido/ILidoOracle.sol";
-import "../rate_oracles/BaseRateOracle.sol";
+import "../rate_oracles/CompoundingRateOracle.sol";
 import "../utils/WadRayMath.sol";
 import "./OracleBuffer.sol";
 import "../core_libraries/Time.sol";
 
-contract LidoRateOracle is BaseRateOracle, ILidoRateOracle {
+contract LidoRateOracle is CompoundingRateOracle, ILidoRateOracle {
     IStETH public override stEth;
 
     // Lido info

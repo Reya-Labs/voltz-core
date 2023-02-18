@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 
 pragma solidity =0.8.9;
-import "../rate_oracles/BaseRateOracle.sol";
+import "../rate_oracles/CompoundingRateOracle.sol";
 import "../rate_oracles/OracleBuffer.sol";
 import "../interfaces/rate_oracles/IAaveRateOracle.sol";
 import "../utils/WadRayMath.sol";
@@ -11,7 +11,7 @@ import "../interfaces/aave/IAaveV2LendingPool.sol";
 /// @notice Common contract base for a Test Rate Oracle implementation.
 ///  This contract is abstract. To make the contract deployable, define a constructor.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
-abstract contract TestRateOracle is BaseRateOracle {
+abstract contract TestRateOracle is CompoundingRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     function getRate(uint16 index) external view returns (uint256, uint256) {

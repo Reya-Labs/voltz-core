@@ -5,10 +5,10 @@ pragma solidity =0.8.9;
 import "../interfaces/rate_oracles/IRocketPoolRateOracle.sol";
 import "../interfaces/rocketPool/IRocketEth.sol";
 import "../interfaces/rocketPool/IRocketNetworkBalances.sol";
-import "../rate_oracles/BaseRateOracle.sol";
+import "../rate_oracles/CompoundingRateOracle.sol";
 import "../utils/WadRayMath.sol";
 
-contract RocketPoolRateOracle is BaseRateOracle, IRocketPoolRateOracle {
+contract RocketPoolRateOracle is CompoundingRateOracle, IRocketPoolRateOracle {
     IRocketEth public override rocketEth;
     IRocketNetworkBalances public override rocketNetworkBalances;
 
