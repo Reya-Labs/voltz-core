@@ -130,11 +130,16 @@ contract GlpRateOracle is LinearRateOracle, IGlpRateOracle {
     {
         // get last observation
         uint216 lastIndexRay = observations[oracleVars.rateIndex].observedValue;
-        require(lastIndexRay > 0, "No previous observation");
 
         // calculate rate increase since last update
         uint256 cumulativeRewardPerToken = rewardTracker
             .cumulativeRewardPerToken();
+    
+        if (cumulativeRewardPerToken < lastCumulativeRewardPerToken) {
+            revert CustomErrors
+                .GlpRewardTrackerUnorderedRate();
+        }
+
         uint256 rewardsRateSinceLastUpdate = FullMath.mulDiv(
             cumulativeRewardPerToken - lastCumulativeRewardPerToken,
             lastEthPriceInGlp,
@@ -142,15 +147,12 @@ contract GlpRateOracle is LinearRateOracle, IGlpRateOracle {
         ); // GLP_PRECISION
 
         // compute index using rate increase & last index
-        resultRay = FullMath.mulDiv(
-            GLP_PRECISION + rewardsRateSinceLastUpdate,
-            lastIndexRay,
-            GLP_PRECISION
-        );
+        resultRay = lastIndexRay +
+            rewardsRateSinceLastUpdate / 1000;
 
-        if (resultRay == 0) {
+        if (resultRay < lastIndexRay) {
             revert CustomErrors
-                .GlpRewardTrackerCumulativeRewardPerTokenReturnedZero();
+                .GlpRewardTrackerUnorderedRate();
         }
 
         return (Time.blockTimestampTruncated(), resultRay);

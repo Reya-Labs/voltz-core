@@ -41,7 +41,7 @@ const CONFIGURATIONS_UNDER_TEST = [
   RocketPoolConfig,
 ];
 
-describe("Generic Rate Oracle Tests", () => {
+describe("Generic Compounding Rate Oracle Tests", () => {
   for (const Config of CONFIGURATIONS_UNDER_TEST) {
     // console.log(`Testing ${Config.configName}...`);
 

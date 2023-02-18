@@ -1,7 +1,7 @@
 import {
   ERC20Mock,
   GlpOracleDependencies,
-  TestRateOracle,
+  TestGlpRateOracle,
 } from "../../../typechain";
 import { deployments, ethers } from "hardhat";
 import { BigNumber } from "ethers";
@@ -11,6 +11,7 @@ const WAD_PRECISION = BigNumber.from("1000000000000000000");
 
 let glpDependencies: GlpOracleDependencies;
 let underlyingToken: ERC20Mock;
+let testGlpRateOracle: TestGlpRateOracle;
 
 type FixtureParams = {
   minEthPrice: BigNumber;
@@ -21,12 +22,23 @@ type FixtureParams = {
   cummulativeReward: BigNumber;
 };
 
+const defaultParams: FixtureParams = {
+  minEthPrice: BigNumber.from(1558).mul(GLP_PRECISION),
+  maxEthPrice: BigNumber.from(1590).mul(GLP_PRECISION),
+  minAum: BigNumber.from(400000000).mul(GLP_PRECISION),
+  maxAum: BigNumber.from(500000000).mul(GLP_PRECISION),
+  supply: BigNumber.from(450000000).mul(WAD_PRECISION),
+  cummulativeReward: BigNumber.from(0),
+};
+
 export const ConfigForGenericTests = {
   configName: "Glp",
-  startingExchangeRate: 1,
-  oracleFixture: async (params: FixtureParams) => {
+  startingExchangeRate: 0,
+  oracleFixture: async (p?: FixtureParams) => {
     // Use hardhat-deploy to deploy factory and mocks
     await deployments.fixture(["Factory", "Mocks"]);
+
+    const params = p ?? defaultParams;
 
     // store the aaveLendingPool and token for use when setting rates
     glpDependencies = (await ethers.getContract(
@@ -52,33 +64,46 @@ export const ConfigForGenericTests = {
     // calculate initial rate based on given ethPrice & cumm
     const rewardsRateSinceLastUpdate = params.cummulativeReward
       .mul(latestPrice)
-      .div(GLP_PRECISION);
-    const initialRate = GLP_PRECISION.div(1000)
-      .mul(GLP_PRECISION.add(rewardsRateSinceLastUpdate))
-      .div(GLP_PRECISION);
+      .div(GLP_PRECISION); // GLP PRECISION
+    const initialRateRay = rewardsRateSinceLastUpdate.div(1000);
 
     const currentBlock = await ethers.provider.getBlock("latest");
-    const testRateOracle = (await testRateOracleFactory.deploy(
+    const rateOracle = await testRateOracleFactory.deploy(
       glpDependencies.address,
       underlyingToken.address,
       [currentBlock.timestamp],
-      [initialRate], // 1e27
+      [initialRateRay], // 1e27
       latestPrice, // lastethGlpPrice
       params.cummulativeReward // lastCumulativeRewardPerToken (1)
-    )) as TestRateOracle;
-    await testRateOracle.setMinSecondsSinceLastUpdate(1);
-    await testRateOracle.increaseObservationCardinalityNext(20);
+    );
+    testGlpRateOracle = rateOracle as TestGlpRateOracle;
+
+    // set initial data
+    await glpDependencies.setCumulativeRewardPerToken(params.cummulativeReward);
+    await glpDependencies.setEthPrice(params.minEthPrice, false);
+    await glpDependencies.setEthPrice(params.maxEthPrice, true);
+    await glpDependencies.setAum(params.minAum, false);
+    await glpDependencies.setAum(params.maxAum, true);
+    await glpDependencies.setTotalSupply(params.supply);
     return {
-      testRateOracle,
+      testRateOracle: testGlpRateOracle,
       glpDependencies,
       latestPrice,
-      lastRate: initialRate,
+      lastRate: initialRateRay,
     };
   },
-  setRateAsDecimal: async (rate: number) => {
-    // The decimal value is scaled up by 10^27
-    await glpDependencies.setCumulativeRewardPerToken(
-      ethers.utils.parseUnits(rate.toString(), 18)
+  setRateAsDecimal: async (rewardsSinceLastUpdate: number) => {
+    // get last cumm & last price
+    const lastPrice = await testGlpRateOracle.lastEthPriceInGlp();
+    const lastReward = await testGlpRateOracle.lastCumulativeRewardPerToken();
+    const scaledNewlyRetreivedRate = ethers.utils.parseUnits(
+      rewardsSinceLastUpdate.toString(),
+      30
     );
+    const cumulativeRewardPerToken = scaledNewlyRetreivedRate
+      .mul(GLP_PRECISION)
+      .div(lastPrice)
+      .add(lastReward);
+    await glpDependencies.setCumulativeRewardPerToken(cumulativeRewardPerToken);
   },
 };

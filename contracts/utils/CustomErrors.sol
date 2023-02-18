@@ -90,8 +90,8 @@ interface CustomErrors {
     /// @dev ctoken.exchangeRateStored() returned zero for a given Compound ctoken. Oracle only supports active Compound assets.
     error CTokenExchangeRateReturnedZero();
 
-    /// @dev apy for GMX's GLP is zero.
-    error GlpRewardTrackerCumulativeRewardPerTokenReturnedZero();
+    /// @dev GMX's GLP returned unordered rewards value.
+    error GlpRewardTrackerUnorderedRate();
 
     /// @dev currentTime < queriedTime
     error OOO();

@@ -17,7 +17,6 @@ import "../utils/WadRayMath.sol";
 /// `getLastUpdatedRate` function and the `UNDERLYING_YIELD_BEARING_PROTOCOL_ID` constant.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
 abstract contract CompoundingRateOracle is BaseRateOracle {
-
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     /// @notice Calculates the interpolated (counterfactual) rate value

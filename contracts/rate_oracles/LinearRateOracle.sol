@@ -17,7 +17,6 @@ import "../utils/WadRayMath.sol";
 /// `getLastUpdatedRate` function and the `UNDERLYING_YIELD_BEARING_PROTOCOL_ID` constant.
 /// @dev Each specific rate oracle implementation will need to implement the virtual functions
 abstract contract LinearRateOracle is BaseRateOracle {
-
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     /// @inheritdoc IRateOracle
@@ -54,9 +53,7 @@ abstract contract LinearRateOracle is BaseRateOracle {
         );
 
         if (rateToRay > rateFromRay) {
-            uint256 result = WadRayMath.rayToWad(
-                rateToRay - rateFromRay
-            ); // apy 
+            uint256 result = WadRayMath.rayToWad(rateToRay - rateFromRay);
             return result;
         } else {
             return 0;
@@ -125,26 +122,20 @@ abstract contract LinearRateOracle is BaseRateOracle {
         OracleBuffer.Observation memory beforeOrAt,
         OracleBuffer.Observation memory atOrAfter,
         uint256 queriedTime
-    ) public pure virtual returns (uint256 rateValueRay) {
-
+    ) public view virtual returns (uint256 rateValueRay) {
         uint256 rateFromBeforeOrAtToAtOrAfterWad;
 
-        if (atOrAfter.observedValue > beforeOrAt.observedValue) {
-            uint256 rateFromBeforeOrAtToAtOrAfterRay = 
-                atOrAfter.observedValue - 
-                beforeOrAt.observedValue;
-
-            rateFromBeforeOrAtToAtOrAfterWad = WadRayMath.rayToWad(
-                rateFromBeforeOrAtToAtOrAfterRay
-            );
-        }
-
-        uint256 timeBetweenUpdates = atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp;
+        uint256 timeBetweenUpdates = atOrAfter.blockTimestamp -
+            beforeOrAt.blockTimestamp;
         uint256 timeSinceBeforeOrAt = queriedTime - beforeOrAt.blockTimestamp;
 
-        uint256 rateBetweenRay = atOrAfter.observedValue - beforeOrAt.observedValue;
+        uint256 rateBetweenRay = atOrAfter.observedValue -
+            beforeOrAt.observedValue;
 
-        rateValueRay = beforeOrAt.observedValue + (rateBetweenRay / timeBetweenUpdates) * timeSinceBeforeOrAt;
+        rateValueRay =
+            beforeOrAt.observedValue +
+            (rateBetweenRay / timeBetweenUpdates) *
+            timeSinceBeforeOrAt;
     }
 
     /// @notice Computes the APY based on the un-annualised rateFromTo value and timeInYears (in wei)
