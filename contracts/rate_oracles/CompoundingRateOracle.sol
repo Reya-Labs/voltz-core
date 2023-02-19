@@ -20,11 +20,12 @@ abstract contract CompoundingRateOracle is BaseRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     /// @inheritdoc BaseRateOracle
-    function getGrowthBetween(uint256 rateFromRay, uint256 rateToRay) 
+    function getGrowthBetween(uint256 rateFromRay, uint256 rateToRay)
         internal
         pure
         override
-    returns (uint256 growthBetweenRay) {
+        returns (uint256 growthBetweenRay)
+    {
         return WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY;
     }
 

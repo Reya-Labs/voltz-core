@@ -20,11 +20,12 @@ abstract contract LinearRateOracle is BaseRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     /// @inheritdoc BaseRateOracle
-    function getGrowthBetween(uint256 rateFromRay, uint256 rateToRay) 
+    function getGrowthBetween(uint256 rateFromRay, uint256 rateToRay)
         internal
         pure
         override
-    returns (uint256 growthBetweenRay) {
+        returns (uint256 growthBetweenRay)
+    {
         return rateToRay - rateFromRay;
     }
 
@@ -64,7 +65,10 @@ abstract contract LinearRateOracle is BaseRateOracle {
         uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
             timeDeltaBeforeOrAtToQueriedTimeWad
         );
-        uint256 factorInWad = PRBMathUD60x18.mul(apyFromBeforeOrAtToAtOrAfterWad, timeInYearsWad);
+        uint256 factorInWad = PRBMathUD60x18.mul(
+            apyFromBeforeOrAtToAtOrAfterWad,
+            timeInYearsWad
+        );
         uint256 factorInRay = WadRayMath.wadToRay(factorInWad);
         rateValueRay = beforeOrAtRateValueRay + factorInRay;
     }

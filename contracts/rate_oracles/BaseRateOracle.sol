@@ -266,8 +266,10 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
-                uint256 rateFromBeforeOrAtToAtOrAfterRay = 
-                    getGrowthBetween(beforeOrAt.observedValue, atOrAfter.observedValue);
+                uint256 rateFromBeforeOrAtToAtOrAfterRay = getGrowthBetween(
+                    beforeOrAt.observedValue,
+                    atOrAfter.observedValue
+                );
 
                 rateFromBeforeOrAtToAtOrAfterWad = WadRayMath.rayToWad(
                     rateFromBeforeOrAtToAtOrAfterRay
@@ -293,15 +295,14 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
-
     /// @notice Computes the growth between two rates. This should be implemented
-    /// depending on how the rate evolves. If rate compounds, this should be 
+    /// depending on how the rate evolves. If rate compounds, this should be
     /// a division i.e. (rateTo/rateFrom) - 1. If the rate does not compound,
     /// it should be a subtraction i.e. rateTo - rateFrom.
     /// @param rateFromRay Un-annualised starting rate (in ray)
     /// @param rateToRay Un-annualised ending rate (in ray)
     /// @return growthBetweenRay growth in between the given rates
-    function getGrowthBetween(uint256 rateFromRay, uint256 rateToRay) 
+    function getGrowthBetween(uint256 rateFromRay, uint256 rateToRay)
         internal
         pure
         virtual
