@@ -15,12 +15,14 @@ def parseSettings():
     parser.add_argument("-asset", "--asset", type=str,
                         help="Asset for plotter (e.g. --asset rETH)", default="aUSDC")
     parser.add_argument("-borrow", "--borrow", help="Is it a borrow market?", action='store_true', default=False)
+    parser.add_argument("-linear", "--linear", help="Is it a linear rate?", action='store_true', default=False)
 
     args = dict((k, v)
                 for k, v in vars(parser.parse_args()).items() if v is not None)
 
     ASSET = args["asset"]
     IS_BORROW = args["borrow"]
+    IS_LINEAR = args["linear"]
 
     # lookback windows in seconds (six entries)
     LOOKBACK_WINDOWS = [1 * SECONDS_IN_MINUTE, 1 * SECONDS_IN_HOUR, 6 * SECONDS_IN_HOUR,
@@ -31,9 +33,9 @@ def parseSettings():
     APY_FREQUENCY = 5 * SECONDS_IN_MINUTE
 
     # apy limits for plots
-    APY_LIMITS = [0, 0.3]
+    APY_LIMITS = [0, 1]
 
-    return ASSET, IS_BORROW, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS
+    return ASSET, IS_BORROW, IS_LINEAR, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS
 
 
 def getDatasets():
@@ -47,7 +49,7 @@ def getDatasets():
     valid_lookback_windows = [lookback_window for lookback_window in LOOKBACK_WINDOWS if lookback_window < dataset_range_in_seconds]
 
     rnis = getPreparedRNIData(df_input, False)
-    apys = [getDailyApy(rnis, lookback=lookback, frequency=APY_FREQUENCY)
+    apys = [getDailyApy(rnis, lookback=lookback, frequency=APY_FREQUENCY, linear=IS_LINEAR)
             for lookback in valid_lookback_windows]
     # apy_df = pd.DataFrame(apys)
     # apy_df.to_csv("historicalData/rates/{0}_APY.csv".format(ASSET), index=False)
@@ -102,6 +104,6 @@ def plot(rnis, apys):
     plt.show()
 
 
-ASSET, IS_BORROW, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS = parseSettings()
+ASSET, IS_BORROW, IS_LINEAR, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS = parseSettings()
 rnis, apys = getDatasets()
 plot(rnis, apys)

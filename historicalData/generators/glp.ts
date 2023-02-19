@@ -13,7 +13,7 @@ export interface GlpDataSpec extends BlockSpec {
 // Generator function for Aave data
 async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
   const { hre } = spec;
-  let lastIndex: BigNumber = precision27;
+  let lastIndex: BigNumber = BigNumber.from(0);
   const glpManager = (await hre.ethers.getContractAt(
     "IGlpManager",
     "0x321F653eED006AD1C29D174e17d96351BDe22649"
@@ -52,16 +52,13 @@ async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
         blockTag: b,
       });
 
-      lastIndex = lastIndex
-        .mul(
-          precision30.add(
-            cummulativeRewards
-              .sub(prevCummulativeRewards)
-              .mul(prevEthGlpPrice)
-              .div(precision30)
-          )
-        )
-        .div(precision30);
+      lastIndex = lastIndex.add(
+        cummulativeRewards
+          .sub(prevCummulativeRewards)
+          .mul(prevEthGlpPrice)
+          .div(precision30)
+          .div(1000)
+      );
 
       prevCummulativeRewards = cummulativeRewards;
       prevEthGlpPrice = await getEthGlpPrice(vault, glpManager, glp, b);
@@ -69,7 +66,7 @@ async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
       yield {
         blockNumber: b,
         timestamp: block.timestamp,
-        rate: lastIndex,
+        rate: lastIndex.add(precision27),
         error: null,
       };
     } catch (e: unknown) {
@@ -90,7 +87,7 @@ export async function buildGlpDataGenerator(
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
   // calculate from and to blocks
   const currentBlock = await hre.ethers.provider.getBlockNumber();
-  const blocksPerDay = 86400;
+  const blocksPerDay = 86400 * 3;
 
   const defaults = {
     fromBlock: lookbackDays

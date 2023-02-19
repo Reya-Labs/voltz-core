@@ -134,10 +134,9 @@ contract GlpRateOracle is LinearRateOracle, IGlpRateOracle {
         // calculate rate increase since last update
         uint256 cumulativeRewardPerToken = rewardTracker
             .cumulativeRewardPerToken();
-    
+
         if (cumulativeRewardPerToken < lastCumulativeRewardPerToken) {
-            revert CustomErrors
-                .GlpRewardTrackerUnorderedRate();
+            revert CustomErrors.GlpRewardTrackerUnorderedRate();
         }
 
         uint256 rewardsRateSinceLastUpdate = FullMath.mulDiv(
@@ -147,12 +146,10 @@ contract GlpRateOracle is LinearRateOracle, IGlpRateOracle {
         ); // GLP_PRECISION
 
         // compute index using rate increase & last index
-        resultRay = lastIndexRay +
-            rewardsRateSinceLastUpdate / 1000;
+        resultRay = lastIndexRay + rewardsRateSinceLastUpdate / 1000;
 
         if (resultRay < lastIndexRay) {
-            revert CustomErrors
-                .GlpRewardTrackerUnorderedRate();
+            revert CustomErrors.GlpRewardTrackerUnorderedRate();
         }
 
         return (Time.blockTimestampTruncated(), resultRay);

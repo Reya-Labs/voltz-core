@@ -50,34 +50,58 @@ def getRateAt(df_rni, at):
     else:
         raise Exception("Trying to get rate at an out-of-bounds timestamp")
 
+def getRateAt(df_rni, at):
+    closest = df_rni["timestamp"].searchsorted(at, side='right') - 1
+
+    if closest + 1 < len(df_rni["timestamp"]):
+        t_a = df_rni["timestamp"][closest]
+        v_a = df_rni["liquidityIndex"][closest]
+
+        t_b = df_rni["timestamp"][closest+1]
+        v_b = df_rni["liquidityIndex"][closest+1]
+
+        if not t_a <= at <= t_b or not v_a <= v_b:
+            raise Exception("Incorrect interpolation")
+
+        v_timestamp = ((t_b - at) * v_a + (at - t_a) * v_b) / (t_b - t_a)
+
+        return v_timestamp
+    else:
+        raise Exception("Trying to get rate at an out-of-bounds timestamp")
+
 
 # """
 #    This function returns the rate between two timestamps.
 #    It requires a prepared DataFrame.
 # """
-def getRateFromTo(df_rni, start, end):
+def getRateFromTo(df_rni, start, end, linear):
     if start > end:
         raise Exception("Invalid dates (start > end)")
 
     start_rate = getRateAt(df_rni, start)
     end_rate = getRateAt(df_rni, end)
 
-    return end_rate / start_rate - 1
+    if linear:
+        return end_rate - start_rate
+    else:
+        return end_rate / start_rate - 1
 
 
 # """
 #    This function returns the apy between two timestamps.
 #    It requires a prepared DataFrame.
 # """
-def getApyFromTo(df_rni, start, end):
-    rate = getRateFromTo(df_rni, start, end)
+def getApyFromTo(df_rni, start, end, linear):
+    rate = getRateFromTo(df_rni, start, end, linear)
 
     apy = pow(1 + rate, SECONDS_IN_YEAR / (end - start)) - 1
+    if linear:
+        apy = rate * SECONDS_IN_YEAR / (end - start)
 
     return apy
 
 
-def getDailyApy(df, lookback, frequency):
+def getDailyApy(df, lookback, frequency, linear):
 
     start_range = int(df["timestamp"][0]) + lookback + 1
     end_range = (int(df["timestamp"][len(df["timestamp"]) - 1]))
@@ -93,7 +117,7 @@ def getDailyApy(df, lookback, frequency):
     for date in range(start_range, end_range+1, frequency):
         dates.append(date)
 
-        apys.append(getApyFromTo(df, date - lookback, date))
+        apys.append(getApyFromTo(df, date - lookback, date, linear))
 
     df_apy = pd.DataFrame()
     df_apy["timestamp"] = dates

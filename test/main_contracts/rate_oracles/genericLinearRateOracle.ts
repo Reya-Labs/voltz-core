@@ -12,6 +12,7 @@ import {
 import { TestGlpRateOracle } from "../../../typechain";
 import { consts } from "../../helpers/constants";
 import { ConfigForGenericTests } from "./glpConfig";
+import Decimal from "decimal.js";
 
 const { provider } = waffle;
 
@@ -276,6 +277,9 @@ describe("Generic Linear Rate Oracle Tests", () => {
       });
 
       describe("#interpolateRateValue", async () => {
+        const PRECISION = 10;
+        const secondsPerYear = 31536000;
+
         beforeEach("deploy and initialize test oracle", async () => {
           ({ testRateOracle } = await Config.oracleFixture());
         });
@@ -286,61 +290,55 @@ describe("Generic Linear Rate Oracle Tests", () => {
             public startRate: number,
             public increaseFactor: number,
             public timeInSeconds: number,
-            public queryTime: number,
             _description?: string
           ) {
             if (_description) {
               this.description = `: ${_description}`;
             } else {
-              this.description = `(${startRate}, ${increaseFactor}, ${timeInSeconds}, ${queryTime})`;
+              this.description = `(${startRate}, ${increaseFactor}, ${timeInSeconds})`;
             }
           }
         }
 
         const tests = [
-          new InterpolateTest(1, 0.00000001, 86400, 86400),
-          new InterpolateTest(1, 0.0000000001, 86400, 3600),
-          new InterpolateTest(1, 0.000000000001, 86400, 60),
+          new InterpolateTest(1, 0.00000001, 86400),
+          new InterpolateTest(1, 0.0000000001, 3600),
+          new InterpolateTest(1, 0.000000000001, 60),
           new InterpolateTest(
             1,
             0.000000000000001,
-            86400,
             1,
             "1 second at insanely low interest"
           ),
-          new InterpolateTest(1, 1, 86400, 3600, "zero interest"),
-          new InterpolateTest(1, 1, 3600, 1, "zero interest (one second)"),
+          new InterpolateTest(1, 0, 86400, "zero interest"),
+          new InterpolateTest(1, 0, 1, "zero interest (one second)"),
           // new InterpolateTest(1, 0.9999999, 86400), // negative interest (factor < 1) not supported?
           // new InterpolateTest(1, 0.9999999, 1), // negative interest (factor < 1) not supported?
-          new InterpolateTest(1, 0.000000001, 3600, 3601),
-          new InterpolateTest(50, 0.000000001, 86400, 1),
-          new InterpolateTest(50, 0.000000001, 86400, 86399),
-          new InterpolateTest(1, 1787, 7776000, 86400, "3 months"),
-          new InterpolateTest(2, 0.5, 3601, 1),
-          new InterpolateTest(1, 1, 7776000, 7076000),
+          new InterpolateTest(1, 0.000000001, 1),
+          new InterpolateTest(50, 0.000000001, 86400),
+          new InterpolateTest(50, 0.000000001, 1),
+          new InterpolateTest(1, 0.000000001, 7776000, "3 months"),
+          new InterpolateTest(2, 0.000001, 1),
+          new InterpolateTest(
+            1,
+            1.000001,
+            7776000,
+            "3 months @ insanely high interest"
+          ),
         ];
 
         tests.forEach(function (t) {
           it(`interpolateRateValue${t.description}`, async () => {
+            const apyPlusOne = Number(
+              new Decimal(t.increaseFactor)
+                .mul(secondsPerYear)
+                .toFixed(PRECISION)
+            );
             const realizedInterpolatedRateValue =
               await testRateOracle.interpolateRateValue(
-                {
-                  blockTimestamp: 0,
-                  observedValue: toBn(
-                    t.startRate,
-                    consts.NORMALIZED_RATE_DECIMALS
-                  ),
-                  initialized: true,
-                },
-                {
-                  blockTimestamp: t.timeInSeconds,
-                  observedValue: toBn(
-                    t.startRate + t.increaseFactor,
-                    consts.NORMALIZED_RATE_DECIMALS
-                  ),
-                  initialized: true,
-                },
-                t.queryTime
+                toBn(t.startRate, consts.NORMALIZED_RATE_DECIMALS), // Starting value in ray
+                toBn(apyPlusOne),
+                toBn(t.timeInSeconds)
               );
 
             if (t.increaseFactor === 0) {
@@ -350,13 +348,12 @@ describe("Generic Linear Rate Oracle Tests", () => {
             } else {
               const slopeUntilQueryTime = realizedInterpolatedRateValue
                 .sub(toBn(t.startRate, consts.NORMALIZED_RATE_DECIMALS))
-                .div(t.queryTime);
+                .div(t.timeInSeconds);
 
-              expect(slopeUntilQueryTime).to.eq(
-                toBn(t.increaseFactor, consts.NORMALIZED_RATE_DECIMALS).div(
-                  t.timeInSeconds
-                )
-              );
+              expect(slopeUntilQueryTime).to.be.closeTo(
+                toBn(t.increaseFactor, consts.NORMALIZED_RATE_DECIMALS),
+                100000000000
+              ); // 0.00001 % error margin
             }
           });
         });

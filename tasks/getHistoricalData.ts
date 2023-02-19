@@ -148,29 +148,6 @@ task("getHistoricalData", "Retrieves the historical rates")
       console.error(`Invalid block range: ${fromBlock}-${toBlock}`);
     }
 
-    // lido
-    const stEth = (await hre.ethers.getContractAt(
-      "IStETH",
-      lidoStEthMainnetAddress
-    )) as IStETH;
-
-    // eslint-disable-next-line no-unused-vars
-    const lidoOracle = (await hre.ethers.getContractAt(
-      "ILidoOracle",
-      lidoOracleAddress
-    )) as ILidoOracle;
-
-    // rocket
-    const rocketNetworkBalances = (await hre.ethers.getContractAt(
-      "IRocketNetworkBalances",
-      RocketNetworkBalancesEthMainnet
-    )) as IRocketNetworkBalances;
-
-    const rocketEth = (await hre.ethers.getContractAt(
-      "IRocketEth",
-      rocketEthMainnetAddress
-    )) as IRocketEth;
-
     // compound
     let cToken: ICToken | undefined;
 
@@ -270,6 +247,16 @@ task("getHistoricalData", "Retrieves the historical rates")
 
     // lido
     if (taskArgs.lido && hre.network.name === "mainnet") {
+      const lidoOracle = (await hre.ethers.getContractAt(
+        "ILidoOracle",
+        lidoOracleAddress
+      )) as ILidoOracle;
+
+      const stEth = (await hre.ethers.getContractAt(
+        "IStETH",
+        lidoStEthMainnetAddress
+      )) as IStETH;
+
       if (taskArgs.token === "ETH") {
         asset = `stETH`;
       } else {
@@ -289,6 +276,16 @@ task("getHistoricalData", "Retrieves the historical rates")
 
     // rocket
     if (taskArgs.rocket && hre.network.name === "mainnet") {
+      const rocketNetworkBalances = (await hre.ethers.getContractAt(
+        "IRocketNetworkBalances",
+        RocketNetworkBalancesEthMainnet
+      )) as IRocketNetworkBalances;
+
+      const rocketEth = (await hre.ethers.getContractAt(
+        "IRocketEth",
+        rocketEthMainnetAddress
+      )) as IRocketEth;
+
       if (taskArgs.token === "ETH") {
         asset = `rETH`;
       } else {

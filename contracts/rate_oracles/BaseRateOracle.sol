@@ -121,6 +121,17 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         ) = observations.initialize(times, results);
     }
 
+    /// @notice Calculates the interpolated (counterfactual) rate value
+    /// @param beforeOrAtRateValueRay  Rate Value (in ray) before the timestamp for which we want to calculate the counterfactual rate value
+    /// @param apyFromBeforeOrAtToAtOrAfterWad Apy in the period between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
+    /// @param timeDeltaBeforeOrAtToQueriedTimeWad Time Delta (in wei seconds) between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
+    /// @return rateValueRay Counterfactual (interpolated) rate value in ray
+    function interpolateRateValue(
+        uint256 beforeOrAtRateValueRay,
+        uint256 apyFromBeforeOrAtToAtOrAfterWad,
+        uint256 timeDeltaBeforeOrAtToQueriedTimeWad
+    ) public pure virtual returns (uint256 rateValueRay);
+
     /// @inheritdoc IRateOracle
     function increaseObservationCardinalityNext(uint16 rateCardinalityNext)
         external
@@ -155,6 +166,255 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         view
         virtual
         returns (uint32 timestamp, uint256 rate);
+
+    /// @inheritdoc IRateOracle
+    function getRateFromTo(uint256 _from, uint256 _to)
+        public
+        view
+        override(IRateOracle)
+        returns (uint256)
+    {
+        require(_from <= _to, "from > to");
+
+        if (_from == _to) {
+            return 0;
+        }
+
+        // note that we have to convert the rate multiple into a "floating rate" for
+        // swap calculations, e.g. an index multiple of 1.04*10**27 corresponds to
+        // 0.04*10**27 = 4*10*25
+        uint32 currentTime = Time.blockTimestampTruncated();
+        uint32 from = Time.timestampAsUint32(_from);
+        uint32 to = Time.timestampAsUint32(_to);
+
+        uint256 rateFromRay = observeSingle(
+            currentTime,
+            from,
+            oracleVars.rateIndex,
+            oracleVars.rateCardinality
+        );
+        uint256 rateToRay = observeSingle(
+            currentTime,
+            to,
+            oracleVars.rateIndex,
+            oracleVars.rateCardinality
+        );
+
+        if (rateToRay > rateFromRay) {
+            uint256 result = WadRayMath.rayToWad(
+                getGrowthBetween(rateFromRay, rateToRay)
+            );
+            return result;
+        } else {
+            return 0;
+        }
+    }
+
+    /// @inheritdoc IRateOracle
+    function getRateFrom(uint256 _from)
+        public
+        view
+        override(IRateOracle)
+        returns (uint256)
+    {
+        return getRateFromTo(_from, block.timestamp);
+    }
+
+    function observeSingle(
+        uint32 currentTime,
+        uint32 queriedTime,
+        uint16 index,
+        uint16 cardinality
+    ) internal view returns (uint256 rateValueRay) {
+        if (currentTime < queriedTime) revert CustomErrors.OOO();
+
+        if (currentTime == queriedTime) {
+            OracleBuffer.Observation memory rate;
+            rate = observations[index];
+            if (rate.blockTimestamp != currentTime) {
+                rateValueRay = getCurrentRateInRay();
+            } else {
+                rateValueRay = rate.observedValue;
+            }
+            return rateValueRay;
+        }
+
+        uint256 currentValueRay = getCurrentRateInRay();
+        (
+            OracleBuffer.Observation memory beforeOrAt,
+            OracleBuffer.Observation memory atOrAfter
+        ) = observations.getSurroundingObservations(
+                queriedTime,
+                currentTime,
+                currentValueRay,
+                index,
+                cardinality
+            );
+
+        if (queriedTime == beforeOrAt.blockTimestamp) {
+            // we are at the left boundary
+            rateValueRay = beforeOrAt.observedValue;
+        } else if (queriedTime == atOrAfter.blockTimestamp) {
+            // we are at the right boundary
+            rateValueRay = atOrAfter.observedValue;
+        } else {
+            // we are in the middle
+            // find apy between beforeOrAt and atOrAfter
+
+            uint256 rateFromBeforeOrAtToAtOrAfterWad;
+
+            // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
+
+            if (atOrAfter.observedValue > beforeOrAt.observedValue) {
+                uint256 rateFromBeforeOrAtToAtOrAfterRay = 
+                    getGrowthBetween(beforeOrAt.observedValue, atOrAfter.observedValue);
+
+                rateFromBeforeOrAtToAtOrAfterWad = WadRayMath.rayToWad(
+                    rateFromBeforeOrAtToAtOrAfterRay
+                );
+            }
+
+            uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
+                (atOrAfter.blockTimestamp - beforeOrAt.blockTimestamp) *
+                    WadRayMath.WAD
+            );
+
+            uint256 apyFromBeforeOrAtToAtOrAfterWad = computeApyFromRate(
+                rateFromBeforeOrAtToAtOrAfterWad,
+                timeInYearsWad
+            );
+
+            // interpolate rateValue for queriedTime
+            rateValueRay = interpolateRateValue(
+                beforeOrAt.observedValue,
+                apyFromBeforeOrAtToAtOrAfterWad,
+                (queriedTime - beforeOrAt.blockTimestamp) * WadRayMath.WAD
+            );
+        }
+    }
+
+
+    /// @notice Computes the growth between two rates. This should be implemented
+    /// depending on how the rate evolves. If rate compounds, this should be 
+    /// a division i.e. (rateTo/rateFrom) - 1. If the rate does not compound,
+    /// it should be a subtraction i.e. rateTo - rateFrom.
+    /// @param rateFromRay Un-annualised starting rate (in ray)
+    /// @param rateToRay Un-annualised ending rate (in ray)
+    /// @return growthBetweenRay growth in between the given rates
+    function getGrowthBetween(uint256 rateFromRay, uint256 rateToRay) 
+        internal
+        pure
+        virtual
+        returns (uint256 growthBetweenRay);
+
+    /// @notice Computes the APY based on the un-annualised rateFromTo value and timeInYears (in wei)
+    /// @param rateFromToWad Un-annualised rate (in wei)
+    /// @param timeInYearsWad Time in years for the period for which we want to calculate the apy (in wei)
+    /// @return apyWad APY for a given rateFromTo and timeInYears
+    function computeApyFromRate(uint256 rateFromToWad, uint256 timeInYearsWad)
+        internal
+        pure
+        virtual
+        returns (uint256 apyWad);
+
+    /// @inheritdoc IRateOracle
+    function getApyFromTo(uint256 from, uint256 to)
+        public
+        view
+        override
+        returns (uint256 apyFromToWad)
+    {
+        require(from <= to, "Misordered dates");
+
+        uint256 rateFromToWad = getRateFromTo(from, to);
+
+        uint256 timeInSeconds = to - from;
+
+        uint256 timeInSecondsWad = PRBMathUD60x18.fromUint(timeInSeconds);
+
+        uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
+            timeInSecondsWad
+        );
+
+        apyFromToWad = computeApyFromRate(rateFromToWad, timeInYearsWad);
+    }
+
+    /// @inheritdoc IRateOracle
+    function getApyFrom(uint256 from)
+        public
+        view
+        override
+        returns (uint256 apyFromToWad)
+    {
+        return getApyFromTo(from, block.timestamp);
+    }
+
+    /// @inheritdoc IRateOracle
+    function variableFactor(
+        uint256 termStartTimestampInWeiSeconds,
+        uint256 termEndTimestampInWeiSeconds
+    ) public override(IRateOracle) returns (uint256 resultWad) {
+        bool cacheable;
+
+        (resultWad, cacheable) = _variableFactor(
+            termStartTimestampInWeiSeconds,
+            termEndTimestampInWeiSeconds
+        );
+
+        if (cacheable) {
+            uint32 termStartTimestamp = Time.timestampAsUint32(
+                PRBMathUD60x18.toUint(termStartTimestampInWeiSeconds)
+            );
+            uint32 termEndTimestamp = Time.timestampAsUint32(
+                PRBMathUD60x18.toUint(termEndTimestampInWeiSeconds)
+            );
+            settlementRateCache[termStartTimestamp][
+                termEndTimestamp
+            ] = resultWad;
+        }
+
+        return resultWad;
+    }
+
+    /// @inheritdoc IRateOracle
+    function variableFactorNoCache(
+        uint256 termStartTimestampInWeiSeconds,
+        uint256 termEndTimestampInWeiSeconds
+    ) public view override(IRateOracle) returns (uint256 resultWad) {
+        (resultWad, ) = _variableFactor(
+            termStartTimestampInWeiSeconds,
+            termEndTimestampInWeiSeconds
+        );
+    }
+
+    function _variableFactor(
+        uint256 termStartTimestampInWeiSeconds,
+        uint256 termEndTimestampInWeiSeconds
+    ) private view returns (uint256 resultWad, bool cacheable) {
+        uint32 termStartTimestamp = Time.timestampAsUint32(
+            PRBMathUD60x18.toUint(termStartTimestampInWeiSeconds)
+        );
+        uint32 termEndTimestamp = Time.timestampAsUint32(
+            PRBMathUD60x18.toUint(termEndTimestampInWeiSeconds)
+        );
+
+        require(termStartTimestamp > 0 && termEndTimestamp > 0, "UNITS");
+        if (settlementRateCache[termStartTimestamp][termEndTimestamp] != 0) {
+            resultWad = settlementRateCache[termStartTimestamp][
+                termEndTimestamp
+            ];
+            cacheable = false;
+        } else if (Time.blockTimestampTruncated() >= termEndTimestamp) {
+            resultWad = getRateFromTo(termStartTimestamp, termEndTimestamp);
+            cacheable = true;
+        } else {
+            resultWad = getRateFromTo(
+                termStartTimestamp,
+                Time.blockTimestampTruncated()
+            );
+            cacheable = false;
+        }
+    }
 
     /// @notice Store the last updated rate (returned by getLastUpdatedRate) into our buffer, unless a rate was written less than minSecondsSinceLastUpdate ago
     /// @param index The index of the Observation that was most recently written to the observations buffer. (Note that at least one Observation is written at contract construction time, so this is always defined.)
@@ -215,6 +475,63 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             oracleVars.rateCardinality,
             oracleVars.rateCardinalityNext
         );
+    }
+
+    /// @inheritdoc IRateOracle
+    function getLastRateSlope()
+        public
+        view
+        override
+        returns (uint256 rateChange, uint32 timeChange)
+    {
+        uint16 last = oracleVars.rateIndex;
+        uint16 lastButOne = (oracleVars.rateIndex >= 1)
+            ? oracleVars.rateIndex - 1
+            : oracleVars.rateCardinality - 1;
+
+        // check if there are at least two points in the rate oracle
+        // otherwise, revert with "Not Enough Points"
+        require(
+            oracleVars.rateCardinality >= 2 &&
+                observations[lastButOne].initialized &&
+                observations[lastButOne].observedValue <=
+                observations[last].observedValue,
+            "NEP"
+        );
+
+        rateChange =
+            observations[last].observedValue -
+            observations[lastButOne].observedValue;
+        timeChange =
+            observations[last].blockTimestamp -
+            observations[lastButOne].blockTimestamp;
+    }
+
+    /// @inheritdoc IRateOracle
+    function getCurrentRateInRay()
+        public
+        view
+        override
+        returns (uint256 currentRate)
+    {
+        (
+            uint32 lastUpdatedTimestamp,
+            uint256 lastUpdatedRate
+        ) = getLastUpdatedRate();
+
+        if (lastUpdatedTimestamp >= Time.blockTimestampTruncated()) {
+            return lastUpdatedRate;
+        }
+
+        // We can't get the current rate from the underlying platform, perhaps because it only pushes
+        // rates to chain periodically. So we extrapolate the likely current rate from recent rates.
+        (uint256 rateChange, uint32 timeChange) = getLastRateSlope();
+
+        currentRate =
+            lastUpdatedRate +
+            ((Time.blockTimestampTruncated() - lastUpdatedTimestamp) *
+                rateChange) /
+            timeChange;
     }
 
     /// @inheritdoc IRateOracle
