@@ -661,6 +661,38 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     },
   },
 
+  aUSDC_v8: {
+    rateOracle: "AaveV3RateOracle_USDC",
+    tickSpacing: 60,
+    cacheMaxAgeInSeconds: 21600,
+    lookbackWindowInSeconds: 12 * 24 * 60 * 60,
+    feeWad: "1000000000000000", // 0.1% LP Fees
+    liquidatorRewardWad: "50000000000000000", // 5%
+    vammFeeProtocolWad: "0",
+    isAlpha: false,
+    lpMarginCap: "0",
+    marginCalculatorParams: {
+      apyUpperMultiplierWad: "1624275191099762176",
+      apyLowerMultiplierWad: "685849255478507392",
+      sigmaSquaredWad: "3917186472030",
+      alphaWad: "507495522140469",
+      betaWad: "31022467740873076",
+      xiUpperWad: "76000000000000000000",
+      xiLowerWad: "50000000000000000000",
+      tMaxWad: "31536000000000000000000000",
+      etaIMWad: "36456192312702864",
+      etaLMWad: "1129283563868198",
+      gap1: toBn("0"),
+      gap2: toBn("0"),
+      gap3: toBn("0"),
+      gap4: toBn("0"),
+      gap5: toBn("0"),
+      gap6: toBn("0"),
+      gap7: toBn("0"),
+      minMarginToIncentiviseLiquidators: "0",
+    },
+  },
+
   glp: {
     rateOracle: "GlpRateOracle",
     tickSpacing: 60,
