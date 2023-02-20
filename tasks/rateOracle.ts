@@ -1,5 +1,6 @@
 import { task } from "hardhat/config";
 import { utils } from "ethers";
+import "@nomiclabs/hardhat-ethers";
 import { getRateOracleByNameOrAddress } from "./helpers";
 
 task(
@@ -15,7 +16,6 @@ task(
       hre,
       taskArgs.rateOracle
     );
-    // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
 
     const trx = await rateOracle.writeOracleEntry({ gasLimit: 10000000 });
     await trx.wait();
@@ -74,8 +74,6 @@ task(
       taskArgs.rateOracle
     );
     const { deployer, multisig } = await hre.getNamedAccounts();
-
-    // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
 
     const owner = await rateOracle.owner();
 

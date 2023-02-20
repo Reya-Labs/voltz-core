@@ -693,13 +693,13 @@ export const poolConfigs: { [name: string]: poolConfig } = {
     },
   },
 
-  glp: {
+  glpETH_v1: {
     rateOracle: "GlpRateOracle",
     tickSpacing: 60,
     cacheMaxAgeInSeconds: 21600,
     lookbackWindowInSeconds: 13 * 24 * 60 * 60,
     feeWad: "1000000000000000", // 0.1% LP Fees
-    liquidatorRewardWad: "50000000000000000", // 5%
+    liquidatorRewardWad: "0", // 5%
     vammFeeProtocolWad: "0",
     isAlpha: false,
     lpMarginCap: "0",

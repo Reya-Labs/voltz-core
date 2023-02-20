@@ -12,23 +12,17 @@ async function impersonateAccount(
     method: "hardhat_impersonateAccount",
     params: [acctAddress],
   });
-  // // It might be a multisig contract, in which case we also need to pretend it has money for gas
-  // await hre.ethers.provider.send("hardhat_setBalance", [
-  //   acctAddress,
-  //   "0x10000000000000000000",
-  // ]);
 }
 
 async function getSigner(hre: HardhatRuntimeEnvironment, acctAddress: string) {
   if (hre.network.name === "hardhat" || hre.network.name === "localhost") {
-    // We can impersonate the account
     await impersonateAccount(hre, acctAddress);
   }
   return await hre.ethers.getSigner(acctAddress);
 }
 
 task("checkWithdrawal", "Checks withdrawal of user").setAction(
-  async (taskArgs, hre) => {
+  async (_, hre) => {
     const accountAddress = "0x7626fbA64DEB1683a364c32F30370215f05C1F09";
     const positions: Position[] = await getPositions();
 

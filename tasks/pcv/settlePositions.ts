@@ -30,7 +30,6 @@ async function writeToMultisigTemplate(data: MultisigTemplate) {
   fs.writeFileSync(file, output);
 }
 
-// TODO: to be added: tx execution and simulation
 task("settlePositions", "It settles all matured positions")
   .addParam("owner", "The address of owner of positions")
   .setAction(async (taskArgs, hre) => {
@@ -48,8 +47,6 @@ task("settlePositions", "It settles all matured positions")
         active: false,
       }
     );
-
-    console.log("positions:", positions);
 
     const data: MultisigTemplate = {
       periphery: periphery.address,

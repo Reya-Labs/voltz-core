@@ -4,6 +4,8 @@ import * as poolAddresses from "../../pool-addresses/mainnet.json";
 import path from "path";
 import mustache from "mustache";
 
+import "@nomiclabs/hardhat-ethers";
+
 type MintOrBurnParams = {
   pool: string;
   tickLower: number;
@@ -50,7 +52,6 @@ const mints: MintOrBurnParams[] = [
   },
 ];
 
-// TODO: to be added: tx execution and simulation
 task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
   const periphery = (await hre.ethers.getContract("Periphery")) as Periphery;
 

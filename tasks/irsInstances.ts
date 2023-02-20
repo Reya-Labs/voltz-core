@@ -71,7 +71,7 @@ async function writeIrsCreationTransactionsToGnosisSafeTemplate(
 ) {
   // Get external template with fetch
   const template = fs.readFileSync(
-    path.join(__dirname, "CreateIrsTransactions.json.mustache"),
+    path.join(__dirname, "templates/CreateIrsTransactions.json.mustache"),
     "utf8"
   );
   const output = mustache.render(template, data);

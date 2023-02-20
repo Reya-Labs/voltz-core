@@ -1,5 +1,8 @@
 import { BigNumber, utils } from "ethers";
 import { GraphQLClient, gql } from "graphql-request";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 const getPositionHistoryQueryString = (id: string): string => `
   {
@@ -259,8 +262,7 @@ export class PositionHistory {
   }
 
   async getInfo() {
-    const endpoint =
-      "https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1";
+    const endpoint = process.env.SUBGRAPH_URL || "";
     const graphQLClient = new GraphQLClient(endpoint);
 
     console.log("id:", this.id);

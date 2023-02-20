@@ -16,7 +16,7 @@ async function writeUpdateTransactionsToGnosisSafeTemplate(
   const fs = require("fs");
 
   const template = fs.readFileSync(
-    path.join(__dirname, "setPeriphery.json.mustache"),
+    path.join(__dirname, "templates/setPeriphery.json.mustache"),
     "utf8"
   );
   const output = mustache.render(template, data);

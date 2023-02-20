@@ -22,7 +22,7 @@ async function writeUpdateTransactionsToGnosisSafeTemplate(
   // Get external template with fetch
   const fs = require("fs");
   const template = fs.readFileSync(
-    path.join(__dirname, "setIsAlpha.json.mustache"),
+    path.join(__dirname, "templates/setIsAlpha.json.mustache"),
     "utf8"
   );
   const output = mustache.render(template, data);

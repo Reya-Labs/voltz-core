@@ -22,7 +22,7 @@ async function writeLiquidationOfPositionsToGnosisSafeTemplate(
   // Get external template with fetch
   const fs = require("fs");
   const template = fs.readFileSync(
-    path.join(__dirname, "liquidatePositions.json.mustache"),
+    path.join(__dirname, "templates/liquidatePositions.json.mustache"),
     "utf8"
   );
   const output = mustache.render(template, data);
