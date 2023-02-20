@@ -1,50 +1,41 @@
 import { task, types } from "hardhat/config";
-import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
-import { BigNumber, BigNumberish, ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
+import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
+import { ethers } from "ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
-import * as poolAddresses from "../pool-addresses/mainnet.json";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { getAddresses } from "../pool-addresses/getAddresses";
+import {
+  getBlockAtTimestamp,
+  getPositionInfo,
+  getPositionRequirements,
+  sortPositions,
+} from "./helpers";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
-async function getBlockAtTimestamp(
-  hre: HardhatRuntimeEnvironment,
-  timestamp: number
-) {
-  let lo = 0;
-  let hi = (await hre.ethers.provider.getBlock("latest")).number;
-  let answer = 0;
-
-  while (lo <= hi) {
-    const mid = Math.floor((lo + hi) / 2);
-    const midBlock = await hre.ethers.provider.getBlock(mid);
-
-    // console.log(midBlock.timestamp, timestamp);
-
-    if (midBlock.timestamp >= timestamp) {
-      answer = midBlock.number;
-      hi = mid - 1;
-    } else {
-      lo = mid + 1;
-    }
-  }
-
-  return answer;
-}
+const formatNumber = (value: number): string => {
+  return value.toFixed(4);
+};
 
 task("checkPositionsHealth", "Check positions")
   .addParam("exportFolder", "Folder to export")
-  .addParam(
+  .addOptionalParam(
     "pools",
     "Comma-separated pool names as in pool-addresses/mainnet.json"
   )
   .setAction(async (taskArgs, hre) => {
     const fs = require("fs");
 
-    const poolNames = taskArgs.pools.split(",");
+    // Get pool addresses of the given network
+    const poolAddresses = getAddresses(hre.network.name);
 
+    // Get the queried pool names
+    const poolNames: string[] = taskArgs.pools
+      ? taskArgs.pools.split(",")
+      : Object.keys(poolAddresses).filter((item) => !(item === "default"));
+
+    // Generate margin engine and output file for each pool
     const pools: {
       [name: string]: {
         index: number;
@@ -53,6 +44,14 @@ task("checkPositionsHealth", "Check positions")
         marginEngine: MarginEngine;
       };
     } = {};
+
+    const EXPORT_FOLDER = `position-status/data/${taskArgs.exportFolder}`;
+
+    // Check if folder exists, or create one if it doesn't
+    if (!fs.existsSync(EXPORT_FOLDER)) {
+      fs.mkdirSync(EXPORT_FOLDER, { recursive: true });
+    }
+
     for (let i = 0; i < poolNames.length; i++) {
       const p = poolNames[i];
       const tmp = poolAddresses[p as keyof typeof poolAddresses];
@@ -68,12 +67,13 @@ task("checkPositionsHealth", "Check positions")
 
       pools[tmp.marginEngine.toLowerCase()] = {
         index: i,
-        file: `position-status/data/${taskArgs.exportFolder}/${p}.csv`,
+        file: `${EXPORT_FOLDER}/${p}.csv`,
         decimals: tmp.decimals,
         marginEngine: marginEngine,
       };
     }
 
+    // Create the header and write it in each pool output file
     const header =
       "margin_engine,owner,lower_tick,upper_tick,position_margin,position_liquidity,position_notional,position_requirement_liquidation,position_requirement_safety,status";
 
@@ -87,102 +87,60 @@ task("checkPositionsHealth", "Check positions")
     }
     console.log(header);
 
+    // Fetch all positions and filter out the positions that are not in the queried pools
     let positions: Position[] = await getPositions();
     positions = positions.filter((p) =>
       Object.keys(pools).includes(p.marginEngine.toLowerCase())
     );
-    positions.sort((a, b) => {
-      const i_a =
-        pools[a.marginEngine.toLowerCase() as keyof typeof pools].index;
-      const i_b =
-        pools[b.marginEngine.toLowerCase() as keyof typeof pools].index;
 
-      if (i_a === i_b) {
-        if (a.owner.toLowerCase() === b.owner.toLowerCase()) {
-          if (a.tickLower === b.tickLower) {
-            return a.tickUpper - b.tickUpper;
-          } else {
-            return a.tickLower - b.tickLower;
-          }
-        } else {
-          return a.owner.toLowerCase() < b.owner.toLowerCase() ? -1 : 1;
-        }
-      } else {
-        return i_a < i_b ? -1 : 1;
+    // Sort positions
+    positions = sortPositions(positions, pools);
+
+    for (
+      let position_index = 0;
+      position_index < positions.length;
+      position_index += 1
+    ) {
+      const position = positions[position_index];
+
+      // Log the progress
+      if (position_index % 100 === 0) {
+        console.log(`${position_index}/${positions.length} positions`);
       }
-    });
 
-    console.log("# of positions:", positions.length);
-
-    for (const position of positions) {
       const tmp =
         pools[position.marginEngine.toLowerCase() as keyof typeof pools];
 
       const marginEngine = tmp.marginEngine;
       const decimals = tmp.decimals;
 
-      const positionRequirementSafety =
-        await marginEngine.callStatic.getPositionMarginRequirement(
-          position.owner,
-          position.tickLower,
-          position.tickUpper,
-          false
-        );
+      const { safetyThreshold, liquidationThreshold } =
+        await getPositionRequirements(marginEngine, position, decimals);
 
-      const positionRequirementLiquidation =
-        await marginEngine.callStatic.getPositionMarginRequirement(
-          position.owner,
-          position.tickLower,
-          position.tickUpper,
-          true
-        );
-
-      const positionInfo = await marginEngine.callStatic.getPosition(
-        position.owner,
-        position.tickLower,
-        position.tickUpper
+      const { liquidity, margin, variableTokenBalance } = await getPositionInfo(
+        marginEngine,
+        position,
+        decimals
       );
 
       let status = "HEALTHY";
-      if (positionInfo.margin.lte(positionRequirementLiquidation)) {
+      if (margin < liquidationThreshold) {
         status = "DANGER";
-      } else if (positionInfo.margin.lte(positionRequirementSafety)) {
+      } else if (margin < safetyThreshold) {
         status = "WARNING";
       }
 
-      console.log(
-        marginEngine.address,
-        position.owner,
-        position.tickLower,
-        position.tickUpper,
-        ethers.utils.formatUnits(positionInfo.margin, decimals),
-        ethers.utils.formatUnits(positionInfo._liquidity, decimals),
-        ethers.utils.formatUnits(positionInfo.variableTokenBalance, decimals),
-        ethers.utils.formatUnits(positionRequirementLiquidation, decimals),
-        ethers.utils.formatUnits(positionRequirementSafety, decimals),
-        status
-      );
-      fs.appendFileSync(
-        tmp.file,
-        `${marginEngine.address},${position.owner},${position.tickLower},${
-          position.tickUpper
-        },${ethers.utils.formatUnits(
-          positionInfo.margin,
-          decimals
-        )},${ethers.utils.formatUnits(
-          positionInfo._liquidity,
-          decimals
-        )},${ethers.utils.formatUnits(
-          positionInfo.variableTokenBalance,
-          decimals
-        )},${ethers.utils.formatUnits(
-          positionRequirementLiquidation,
-          decimals
-        )},${ethers.utils.formatUnits(
-          positionRequirementSafety,
-          decimals
-        )},${status}\n`
-      );
+      const info = `${marginEngine.address},${position.owner},${
+        position.tickLower
+      },${position.tickUpper},${formatNumber(margin)},${formatNumber(
+        liquidity
+      )},${formatNumber(variableTokenBalance)},${formatNumber(
+        liquidationThreshold
+      )},${formatNumber(safetyThreshold)},${status}\n`;
+
+      console.log(info);
+
+      fs.appendFileSync(tmp.file, info + "\n");
     }
   });
 
@@ -202,8 +160,17 @@ task("getPositionInfo", "Get all information about some position")
     types.int
   )
   .setAction(async (taskArgs, hre) => {
-    let positions: Position[] = await getPositions();
+    const fs = require("fs");
 
+    // Get the queried pool names
+    const poolAddresses = getAddresses(hre.network.name);
+
+    // Get the queried pool names
+    const poolNames: string[] = taskArgs.pools
+      ? taskArgs.pools.split(",")
+      : Object.keys(poolAddresses).filter((item) => !(item === "default"));
+
+    // Generate smart contracts for each pool
     const pools: {
       [name: string]: {
         index: number;
@@ -211,30 +178,17 @@ task("getPositionInfo", "Get all information about some position")
         marginEngine: MarginEngine;
         rateOracle: BaseRateOracle;
         name: string;
+        deploymentBlock: number;
       };
     } = {};
 
-    const poolNames: string[] = taskArgs.pools
-      ? taskArgs.pools.split(",")
-      : Object.keys(poolAddresses);
-
-    const filter_pools: string[] = [];
-
     for (let i = 0; i < poolNames.length; i++) {
       const p = poolNames[i];
-
-      if (p === "default") {
-        continue;
-      }
-
       const tmp = poolAddresses[p as keyof typeof poolAddresses];
 
       if (!tmp) {
-        throw new Error(`Pool ${p} doesnt's exist.`);
+        throw new Error(`Pool ${p} doesn't exist.`);
       }
-
-      filter_pools.push(tmp.marginEngine.toLowerCase());
-      // console.log(tmp.marginEngine.toLowerCase());
 
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
@@ -254,13 +208,17 @@ task("getPositionInfo", "Get all information about some position")
         marginEngine: marginEngine,
         rateOracle: rateOracle,
         name: p,
+        deploymentBlock: tmp.deploymentBlock,
       };
     }
 
+    // Fetch all positions and filter out the positions that are not in the queried pools
+    let positions: Position[] = await getPositions();
     positions = positions.filter((p) =>
-      filter_pools.includes(p.marginEngine.toLowerCase())
+      Object.keys(pools).includes(p.marginEngine.toLowerCase())
     );
 
+    // Filter by owners
     if (taskArgs.owners) {
       const filter_owners = taskArgs.owners
         .split(",")
@@ -271,6 +229,7 @@ task("getPositionInfo", "Get all information about some position")
       );
     }
 
+    // Filter by lower ticks
     if (taskArgs.tickLowers) {
       const filter_tickLowers = taskArgs.tickLowers.split(",");
 
@@ -279,6 +238,7 @@ task("getPositionInfo", "Get all information about some position")
       );
     }
 
+    // Filter by upper ticks
     if (taskArgs.tickUppers) {
       const filter_tickUppers = taskArgs.tickUppers.split(",");
 
@@ -287,118 +247,111 @@ task("getPositionInfo", "Get all information about some position")
       );
     }
 
-    positions.sort((a, b) => {
-      const i_a =
-        pools[a.marginEngine.toLowerCase() as keyof typeof pools].index;
-      const i_b =
-        pools[b.marginEngine.toLowerCase() as keyof typeof pools].index;
-
-      if (i_a === i_b) {
-        if (a.owner.toLowerCase() === b.owner.toLowerCase()) {
-          if (a.tickLower === b.tickLower) {
-            return a.tickUpper - b.tickUpper;
-          } else {
-            return a.tickLower - b.tickLower;
-          }
-        } else {
-          return a.owner.toLowerCase() < b.owner.toLowerCase() ? -1 : 1;
-        }
-      } else {
-        return i_a < i_b ? -1 : 1;
-      }
-    });
-
+    // Sort positions
+    positions = sortPositions(positions, pools);
     console.log("positions:", positions);
 
-    const fs = require("fs");
+    for (
+      let position_index = 0;
+      position_index < positions.length;
+      position_index += 1
+    ) {
+      const p = positions[position_index];
 
-    for (const p of positions) {
+      // Log the progress
+      if (position_index % 100 === 0) {
+        console.log(`${position_index}/${positions.length} positions`);
+      }
+
       const tmp = pools[p.marginEngine.toLowerCase() as keyof typeof pools];
 
+      // Create a folder for this position
       const EXPORT_FOLDER = `position-status/data/${tmp.name}#${p.owner}#${p.tickLower}#${p.tickUpper}`;
 
       if (!fs.existsSync(EXPORT_FOLDER)) {
         fs.mkdirSync(EXPORT_FOLDER, { recursive: true });
       }
 
+      // Empty the file info.txt inside the folder
       fs.writeFile(`${EXPORT_FOLDER}/info.txt`, "", () => {});
+      fs.writeFile(`${EXPORT_FOLDER}/mints.csv`, "", () => {});
+      fs.writeFile(`${EXPORT_FOLDER}/swaps.csv`, "", () => {});
+      fs.writeFile(`${EXPORT_FOLDER}/margin_updates.csv`, "", () => {});
+      fs.writeFile(`${EXPORT_FOLDER}/liquidations.csv`, "", () => {});
+      fs.writeFile(`${EXPORT_FOLDER}/settlements.csv`, "", () => {});
 
-      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `POOL: ${tmp.name}\n`);
-      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `OWNER: ${p.owner}\n`);
+      // Output the identifiers of the positions
+      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `Pool: ${tmp.name}\n`);
+      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `Owner: ${p.owner}\n`);
       fs.appendFileSync(
         `${EXPORT_FOLDER}/info.txt`,
-        `TICK RANGE: ${p.tickLower} -> ${p.tickUpper}\n`
-      );
-      fs.appendFileSync(
-        `${EXPORT_FOLDER}/info.txt`,
-        `FIXED RATE RANGE: ${(1.0001 ** -p.tickUpper).toFixed(4)}% -> ${
-          1.0001 ** -p.tickLower
-        }%\n`
+        `Tick range: ${p.tickLower} -> ${p.tickUpper}\n`
       );
 
+      // Output the fixed rate range
+      const fixedRateLower = 1.0001 ** -p.tickUpper;
+      const fixedRateUpper = 1.0001 ** -p.tickLower;
+
+      fs.appendFileSync(
+        `${EXPORT_FOLDER}/info.txt`,
+        `Fixed rate range: ${formatNumber(fixedRateLower)}% -> ${formatNumber(
+          fixedRateUpper
+        )}%\n`
+      );
+
+      // Get the vamm and output the current fixed rate
       const vamm = (await hre.ethers.getContractAt(
         "VAMM",
         await tmp.marginEngine.vamm()
       )) as VAMM;
 
       const tick = (await vamm.vammVars()).tick;
+      const currentFixedRate = 1.0001 ** -tick;
 
       fs.appendFileSync(
         `${EXPORT_FOLDER}/info.txt`,
-        `CURRENT FIXED RATE ${(1.0001 ** -tick).toFixed(2)}%\n`
+        `Current fixed rate: ${formatNumber(currentFixedRate)}%\n`
       );
 
-      let positionRequirementSafety: BigNumberish = BigNumber.from(0);
-      let positionRequirementLiquidation: BigNumberish = BigNumber.from(0);
+      // Get the margin requirements
+      let safetyThreshold = 0;
+      let liquidationThreshold = 0;
+
       try {
-        positionRequirementSafety =
-          await tmp.marginEngine.callStatic.getPositionMarginRequirement(
-            p.owner,
-            p.tickLower,
-            p.tickUpper,
-            false
-          );
+        const marginRequiremens = await getPositionRequirements(
+          tmp.marginEngine,
+          p,
+          tmp.decimals
+        );
 
-        positionRequirementLiquidation =
-          await tmp.marginEngine.callStatic.getPositionMarginRequirement(
-            p.owner,
-            p.tickLower,
-            p.tickUpper,
-            true
-          );
-      } catch (_) {}
+        safetyThreshold = marginRequiremens.safetyThreshold;
+        liquidationThreshold = marginRequiremens.liquidationThreshold;
+      } catch {}
 
-      const positionInfo = await tmp.marginEngine.callStatic.getPosition(
-        p.owner,
-        p.tickLower,
-        p.tickUpper
+      // Get the position info
+      const { liquidity, margin, fixedTokenBalance, variableTokenBalance } =
+        await getPositionInfo(tmp.marginEngine, p, tmp.decimals);
+
+      fs.appendFileSync(
+        `${EXPORT_FOLDER}/info.txt`,
+        `Liquidity: ${formatNumber(liquidity)}\n`
       );
 
       fs.appendFileSync(
         `${EXPORT_FOLDER}/info.txt`,
-        `FIXED TOKENS: ${ethers.utils.formatUnits(
-          positionInfo.fixedTokenBalance,
-          tmp.decimals
-        )}, VARIABLE TOKENS: ${ethers.utils.formatUnits(
-          positionInfo.variableTokenBalance,
-          tmp.decimals
-        )},\n`
+        `Fixed tokens: ${formatNumber(
+          fixedTokenBalance
+        )}, Variable tokens: ${formatNumber(variableTokenBalance)}\n`
       );
 
       fs.appendFileSync(
         `${EXPORT_FOLDER}/info.txt`,
-        `MARGIN: ${ethers.utils.formatUnits(
-          positionInfo.margin,
-          tmp.decimals
-        )}, LIQUIDATION: ${ethers.utils.formatUnits(
-          positionRequirementLiquidation,
-          tmp.decimals
-        )}, SAFETY: ${ethers.utils.formatUnits(
-          positionRequirementSafety,
-          tmp.decimals
-        )}\n`
+        `Margin: ${margin}, Liquidation: ${formatNumber(
+          liquidationThreshold
+        )}, Safety: ${formatNumber(safetyThreshold)}\n`
       );
 
+      // Get action history
       const history = new PositionHistory(
         `${p.marginEngine.toLowerCase()}#${p.owner.toLowerCase()}#${
           p.tickLower
@@ -410,122 +363,115 @@ task("getPositionInfo", "Get all information about some position")
 
       await history.getInfo();
 
-      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `\n`);
+      // Output mints
       fs.appendFileSync(
-        `${EXPORT_FOLDER}/info.txt`,
-        `${history.mints.length} MINTS: \n`
+        `${EXPORT_FOLDER}/mints.csv`,
+        "timestamp,date,notional,tx_url\n"
       );
       for (const item of history.mints) {
+        const date = new Date(item.timestamp * 1000).toISOString();
+        const txURL = `etherscan.io/tx/${item.transaction}`;
+
         fs.appendFileSync(
-          `${EXPORT_FOLDER}/info.txt`,
-          `${item.timestamp} (${new Date(
-            item.timestamp * 1000
-          ).toISOString()}): +${(item.notional + 0.00005).toFixed(
-            4
-          )} (tx: etherscan.io/tx/${item.transaction})\n`
+          `${EXPORT_FOLDER}/mints.csv`,
+          `${item.timestamp},${date},${formatNumber(item.notional)},${txURL}\n`
         );
       }
 
-      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `\n`);
-      fs.appendFileSync(
-        `${EXPORT_FOLDER}/info.txt`,
-        `${history.burns.length} BURNS: \n`
-      );
+      // Output burns
       for (const item of history.burns) {
+        const date = new Date(item.timestamp * 1000).toISOString();
+        const txURL = `etherscan.io/tx/${item.transaction}`;
+
         fs.appendFileSync(
-          `${EXPORT_FOLDER}/info.txt`,
-          `${item.timestamp} (${new Date(
-            item.timestamp * 1000
-          ).toISOString()}): -${(item.notional + 0.00005).toFixed(
-            4
-          )} (tx: etherscan.io/tx/${item.transaction})\n`
+          `${EXPORT_FOLDER}/mints.csv`,
+          `${item.timestamp},${date},-${formatNumber(item.notional)},${txURL}\n`
         );
       }
 
-      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `\n`);
+      // Output swaps
       fs.appendFileSync(
-        `${EXPORT_FOLDER}/info.txt`,
-        `${history.swaps.length} SWAPS: \n`
+        `${EXPORT_FOLDER}/swaps.csv`,
+        "timestamp,date,notional,avg_fixed_rate,fees,tx_url\n"
       );
-      for (let it_swaps = 0; it_swaps < history.swaps.length; it_swaps += 1) {
-        const item = history.swaps[it_swaps];
-        fs.appendFileSync(
-          `${EXPORT_FOLDER}/info.txt`,
-          `${item.timestamp} (${new Date(
-            item.timestamp * 1000
-          ).toISOString()}): ${(item.variableTokenDelta + 0.00005).toFixed(
-            4
-          )} @ ${
-            item.variableTokenDelta !== 0
-              ? (
-                  -item.unbalancedFixedTokenDelta / item.variableTokenDelta
-                ).toFixed(4)
-              : "-"
-          }%`
-        );
+      for (const item of history.swaps) {
+        const avgFixedRate =
+          item.variableTokenDelta === 0
+            ? 0
+            : -item.unbalancedFixedTokenDelta / item.variableTokenDelta;
+
+        const date = new Date(item.timestamp * 1000).toISOString();
+        const txURL = `etherscan.io/tx/${item.transaction}`;
 
         fs.appendFileSync(
-          `${EXPORT_FOLDER}/info.txt`,
-          ` paying ${(item.fees + 0.00005).toFixed(
-            4
-          )} fees (tx: etherscan.io/tx/${item.transaction})\n`
+          `${EXPORT_FOLDER}/swaps.csv`,
+          `${item.timestamp},${date},${formatNumber(
+            item.variableTokenDelta
+          )},${formatNumber(avgFixedRate)}%,${formatNumber(
+            item.fees
+          )},${txURL}\n`
         );
       }
 
-      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `\n`);
+      // Output margin updates
       fs.appendFileSync(
-        `${EXPORT_FOLDER}/info.txt`,
-        `${history.marginUpdates.length} MARGIN UPDATES: \n`
+        `${EXPORT_FOLDER}/margin_updates.csv`,
+        "timestamp,date,margin_delta,tx_url\n"
       );
+
       for (const item of history.marginUpdates) {
+        const date = new Date(item.timestamp * 1000).toISOString();
+        const txURL = `etherscan.io/tx/${item.transaction}`;
+
         fs.appendFileSync(
-          `${EXPORT_FOLDER}/info.txt`,
-          `${item.timestamp} (${new Date(
-            item.timestamp * 1000
-          ).toISOString()}): ${item.marginDelta.toFixed(
-            4
-          )} (tx: etherscan.io/tx/${item.transaction})\n`
+          `${EXPORT_FOLDER}/margin_updates.csv`,
+          `${item.timestamp},${date},${formatNumber(
+            item.marginDelta
+          )},${txURL}\n`
         );
       }
 
-      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `\n`);
+      // Output liquidations
       fs.appendFileSync(
-        `${EXPORT_FOLDER}/info.txt`,
-        `${history.liquidations.length} LIQUIDATIONS: \n`
+        `${EXPORT_FOLDER}/liquidations.csv`,
+        "timestamp,date,reward,tx_url\n"
       );
+
       for (const item of history.liquidations) {
+        const date = new Date(item.timestamp * 1000).toISOString();
+        const txURL = `etherscan.io/tx/${item.transaction}`;
+
         fs.appendFileSync(
-          `${EXPORT_FOLDER}/info.txt`,
-          `${item.timestamp} (${new Date(
-            item.timestamp * 1000
-          ).toISOString()}): ${item.reward.toFixed(4)} (tx: etherscan.io/tx/${
-            item.transaction
-          })\n`
+          `${EXPORT_FOLDER}/liquidations.csv`,
+          `${item.timestamp},${date},${formatNumber(item.reward)},${txURL}\n`
         );
       }
 
-      fs.appendFileSync(`${EXPORT_FOLDER}/info.txt`, `\n`);
+      // Output settlements
       fs.appendFileSync(
-        `${EXPORT_FOLDER}/info.txt`,
-        `${history.settlements.length} SETTLEMENTS: \n`
+        `${EXPORT_FOLDER}/settlements.csv`,
+        "timestamp,date,settlement_cashflow,tx_url\n"
       );
+
       for (const item of history.settlements) {
+        const date = new Date(item.timestamp * 1000).toISOString();
+        const txURL = `etherscan.io/tx/${item.transaction}`;
+
         fs.appendFileSync(
           `${EXPORT_FOLDER}/info.txt`,
-          `${item.timestamp} (${new Date(
-            item.timestamp * 1000
-          ).toISOString()}): ${(item.settlementCashflow + 0.00005).toFixed(
-            4
-          )} (tx: etherscan.io/tx/${item.transaction})\n`
+          `${item.timestamp},${date},${formatNumber(
+            item.settlementCashflow
+          )},${txURL}\n`
         );
       }
 
+      // Output the behaviour of margin requirement over time
       if (taskArgs.healthHistory) {
         const currentBlock = await hre.ethers.provider.getBlock("latest");
         const currentBlockNumber = currentBlock.number;
 
         const header =
-          "timestamp,block,tick,position_margin,position_requirement_liquidation,position_requirement_safety,fixed_token_balance,variable_token_balance\n";
+          "timestamp,block,fixed_rate,position_margin,position_requirement_liquidation,position_requirement_safety,fixed_token_balance,variable_token_balance\n";
 
         fs.writeFile(`${EXPORT_FOLDER}/progress.csv`, header, () => {});
 
@@ -535,71 +481,58 @@ task("getPositionInfo", "Get all information about some position")
             18
           )
         );
-        const startBlock = await getBlockAtTimestamp(hre, startTimestamp);
+
+        const startBlock = Math.max(
+          await getBlockAtTimestamp(hre, startTimestamp),
+          tmp.deploymentBlock
+        );
+
+        const totalIterations =
+          Math.floor(
+            (currentBlockNumber - startBlock) / taskArgs.blockInterval
+          ) +
+          ((currentBlockNumber - startBlock) % taskArgs.blockInterval === 0
+            ? 0
+            : 1);
 
         for (
-          let b = startBlock + 1;
+          let b = startBlock + 1, iterations = 0;
           b <= currentBlockNumber;
-          b += taskArgs.blockInterval
+          iterations += 1
         ) {
           const block = await hre.ethers.provider.getBlock(b);
 
-          console.log("block:", b);
+          // Log for progress
+          if (iterations % 10 === 0) {
+            console.log(`${iterations}/${totalIterations} iterations`);
+          }
 
-          const positionRequirementSafety =
-            await tmp.marginEngine.callStatic.getPositionMarginRequirement(
-              p.owner,
-              p.tickLower,
-              p.tickUpper,
-              false,
-              {
-                blockTag: b,
-              }
-            );
+          if (((b - startBlock - 1) / taskArgs.blockInterval) % 100 < 1) {
+            console.log();
+          }
 
-          const positionRequirementLiquidation =
-            await tmp.marginEngine.callStatic.getPositionMarginRequirement(
-              p.owner,
-              p.tickLower,
-              p.tickUpper,
-              true,
-              {
-                blockTag: b,
-              }
-            );
+          const { liquidationThreshold, safetyThreshold } =
+            await getPositionRequirements(tmp.marginEngine, p, tmp.decimals, b);
 
-          const positionInfo = await tmp.marginEngine.callStatic.getPosition(
-            p.owner,
-            p.tickLower,
-            p.tickUpper,
-            {
-              blockTag: b,
-            }
-          );
+          // Get the position info
+          const { margin, fixedTokenBalance, variableTokenBalance } =
+            await getPositionInfo(tmp.marginEngine, p, tmp.decimals, b);
 
           const tick = (await vamm.vammVars({ blockTag: b })).tick;
+          const currentFixedRate = 1.0001 ** -tick;
 
+          console.log("here", `${EXPORT_FOLDER}/progress.csv`);
           fs.appendFileSync(
             `${EXPORT_FOLDER}/progress.csv`,
-            `${block.timestamp},${b},${
-              1.0001 ** -tick
-            }%,${ethers.utils.formatUnits(
-              positionInfo.margin,
-              tmp.decimals
-            )},${ethers.utils.formatUnits(
-              positionRequirementLiquidation,
-              tmp.decimals
-            )},${ethers.utils.formatUnits(
-              positionRequirementSafety,
-              tmp.decimals
-            )},${ethers.utils.formatUnits(
-              positionInfo.fixedTokenBalance,
-              tmp.decimals
-            )},${ethers.utils.formatUnits(
-              positionInfo.variableTokenBalance,
-              tmp.decimals
-            )}\n`
+            `${block.timestamp},${b},${formatNumber(
+              currentFixedRate
+            )}%,${margin},${liquidationThreshold},${safetyThreshold},${fixedTokenBalance},${variableTokenBalance}\n`
           );
+
+          if (b >= currentBlockNumber) {
+            break;
+          }
+          b = Math.min(currentBlockNumber, b + taskArgs.blockInterval);
         }
       }
     }
@@ -632,6 +565,8 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
       };
     } = {};
 
+    const poolAddresses = getAddresses(hre.network.name);
+
     const poolNames: string[] = taskArgs.pools
       ? taskArgs.pools.split(",")
       : Object.keys(poolAddresses);
@@ -652,7 +587,6 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
       }
 
       filter_pools.push(tmp.marginEngine.toLowerCase());
-      // console.log(tmp.marginEngine.toLowerCase());
 
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",

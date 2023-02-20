@@ -41,7 +41,12 @@ async function writeRateOracleConfigToGnosisSafeTemplate(
   // Get external template with fetch
   const fs = require("fs");
   const template = fs.readFileSync(
-    path.join(__dirname, "..", "tasks", "rateOracleConfig.json.mustache"),
+    path.join(
+      __dirname,
+      "..",
+      "tasks",
+      "templates/rateOracleConfig.json.mustache"
+    ),
     "utf8"
   );
   const output = mustache.render(template, data);

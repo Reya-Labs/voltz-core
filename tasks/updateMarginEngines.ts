@@ -6,7 +6,7 @@ import { task } from "hardhat/config";
 import mustache from "mustache";
 import path from "path";
 import { poolConfig, poolConfigs } from "../deployConfig/poolConfig";
-import * as poolAddresses from "../pool-addresses/mainnet.json";
+import { getAddresses } from "../pool-addresses/getAddresses";
 
 interface MultisigTemplateData {
   marginEngineAddress: string;
@@ -48,7 +48,7 @@ async function writeGnosisSafeTemplate(data: {
   // Get external template with fetch
   const fs = require("fs");
   const template = fs.readFileSync(
-    path.join(__dirname, "updateMarginEngines.json.mustache"),
+    path.join(__dirname, "templates/updateMarginEngines.json.mustache"),
     "utf8"
   );
   const output = mustache.render(template, data);
@@ -71,7 +71,7 @@ task("updateMarginEngines", "Updates the MC Parameters of a pool")
   .addFlag("updateLiquidatorReward")
   .addFlag("updateMarginCalculatorParams")
   .addFlag("updateLookbackWindow")
-  .setAction(async (taskArgs, _) => {
+  .setAction(async (taskArgs, hre) => {
     const poolNames = taskArgs.pools.split(",");
 
     const updates: {
@@ -85,6 +85,8 @@ task("updateMarginEngines", "Updates the MC Parameters of a pool")
       setMasterMarginEngine: taskArgs.setMasterMarginEngine ? true : false,
       factoryAddress: "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf",
     };
+
+    const poolAddresses = getAddresses(hre.network.name);
 
     for (const pool of poolNames) {
       let poolConfig: poolConfig;

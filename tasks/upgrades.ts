@@ -48,7 +48,7 @@ async function writeUpgradeTransactionsToGnosisSafeTemplate(
   // Get external template with fetch
   try {
     const template = fs.readFileSync(
-      path.join(__dirname, "UpgradeIrs.json.mustache"),
+      path.join(__dirname, "templates/UpgradeIrs.json.mustache"),
       "utf8"
     );
     const output = mustache.render(template, data);
