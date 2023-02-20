@@ -144,10 +144,17 @@ if (!!process.env.FORK_MAINNET) {
     chains: {
       42161: {
         hardforkHistory: {
-          london: 0
-        }
-      }
-    }
+          byzantium: 0,
+          constantinople: 0,
+          petersburg: 0,
+          istanbul: 0,
+          muirGlacier: 0,
+          london: 0,
+          arrowGlacier: 0,
+          merge: 0,
+        },
+      },
+    },
   };
 } else if (!!process.env.FORK_KOVAN) {
   hardhatNetworkConfig = {

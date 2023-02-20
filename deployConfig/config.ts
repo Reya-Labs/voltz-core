@@ -29,6 +29,8 @@ const config: ContractsConfigMap = {
     ? { ...mainnetConfig, skipFactoryDeploy: false }
     : process.env.FORK_KOVAN
     ? kovanConfig
+    : process.env.FORK_ARBITRUM
+    ? arbitrumConfig
     : localhostConfig,
 };
 

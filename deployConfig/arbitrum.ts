@@ -33,7 +33,7 @@ export const arbitrumConfig: ContractsConfig = {
     rewardToken: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
     defaults: {
       ...ONE_YEAR_OF_EIGHT_HOURLY_DATAPOINTS,
-      daysOfTrustedDataPoints: 15,
+      daysOfTrustedDataPoints: 1,
     },
   },
   skipFactoryDeploy: true, // On mainnet we use a community deployer
