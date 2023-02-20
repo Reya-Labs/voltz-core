@@ -89,7 +89,7 @@ loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 //import "./tasks/getHistoricalData";
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
 loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
-loadModuleIfContractsAreBuilt("./tasks/checkPositions");
+import "./tasks/checkPositions";
 loadModuleIfContractsAreBuilt("./tasks/playground");
 loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
@@ -130,6 +130,24 @@ if (!!process.env.FORK_MAINNET) {
       url: `${process.env.MAINNET_URL}`,
       // blockNumber: 15919000,
     },
+  };
+} else if (!!process.env.FORK_ARBITRUM) {
+  hardhatNetworkConfig = {
+    allowUnlimitedContractSize: true,
+    saveDeployments: true,
+    chainId: 42161,
+    live: false,
+    forking: {
+      url: `${process.env.ARBITRUM_URL}`,
+      blockNumber: 62736164,
+    },
+    chains: {
+      42161: {
+        hardforkHistory: {
+          london: 0
+        }
+      }
+    }
   };
 } else if (!!process.env.FORK_KOVAN) {
   hardhatNetworkConfig = {

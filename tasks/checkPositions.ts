@@ -4,7 +4,8 @@ import { BigNumber, BigNumberish, ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
-import * as poolAddresses from "../pool-addresses/mainnet.json";
+import * as poolAddressesMainnet from "../pool-addresses/mainnet.json";
+import * as poolAddressesArbitrum from "../pool-addresses/arbitrum.json";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
@@ -55,7 +56,9 @@ task("checkPositionsHealth", "Check positions")
     } = {};
     for (let i = 0; i < poolNames.length; i++) {
       const p = poolNames[i];
-      const tmp = poolAddresses[p as keyof typeof poolAddresses];
+      const tmp = hre.network.name === "mainnet" ? 
+        poolAddressesMainnet[p as keyof typeof poolAddressesMainnet] :
+        poolAddressesArbitrum[p as keyof typeof poolAddressesArbitrum];
 
       if (!tmp) {
         throw new Error(`Pool ${p} doesnt's exist.`);
@@ -216,7 +219,7 @@ task("getPositionInfo", "Get all information about some position")
 
     const poolNames: string[] = taskArgs.pools
       ? taskArgs.pools.split(",")
-      : Object.keys(poolAddresses);
+      : Object.keys(poolAddressesMainnet);
 
     const filter_pools: string[] = [];
 
@@ -227,7 +230,7 @@ task("getPositionInfo", "Get all information about some position")
         continue;
       }
 
-      const tmp = poolAddresses[p as keyof typeof poolAddresses];
+      const tmp = poolAddressesMainnet[p as keyof typeof poolAddressesMainnet];
 
       if (!tmp) {
         throw new Error(`Pool ${p} doesnt's exist.`);
@@ -634,7 +637,7 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
 
     const poolNames: string[] = taskArgs.pools
       ? taskArgs.pools.split(",")
-      : Object.keys(poolAddresses);
+      : Object.keys(poolAddressesMainnet);
 
     const filter_pools: string[] = [];
 
@@ -645,7 +648,7 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
         continue;
       }
 
-      const tmp = poolAddresses[p as keyof typeof poolAddresses];
+      const tmp = poolAddressesMainnet[p as keyof typeof poolAddressesMainnet];
 
       if (!tmp) {
         throw new Error(`Pool ${p} doesnt's exist.`);
@@ -752,7 +755,7 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
         continue;
       }
 
-      const tmp = poolAddresses[p as keyof typeof poolAddresses];
+      const tmp = poolAddressesMainnet[p as keyof typeof poolAddressesMainnet];
       const pool = pools[tmp.marginEngine.toLowerCase() as keyof typeof pools];
       if (currentTimestamp <= pool.termEndTimestamp) {
         continue;

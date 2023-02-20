@@ -68,6 +68,10 @@ async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
         timestamp: block.timestamp,
         rate: lastIndex.add(precision27),
         error: null,
+        glpData: {
+          lastCummulativeReward: prevCummulativeRewards,
+          lastEthGlpPrice: prevEthGlpPrice,
+        },
       };
     } catch (e: unknown) {
       yield {
@@ -116,7 +120,7 @@ async function getEthGlpPrice(
       blockTag: block,
     }
   );
-  const ethMaxPrice = await vault.getMinPrice(
+  const ethMaxPrice = await vault.getMaxPrice(
     "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
     {
       blockTag: block,

@@ -12,6 +12,7 @@ import {
   IAaveV2LendingPool,
   IAaveV3LendingPool,
   ILidoOracle,
+  IRewardRouter,
   IRocketEth,
   IRocketNetworkBalances,
   IStETH,
@@ -28,6 +29,7 @@ import { buildCompoundDataGenerator } from "../historicalData/generators/compoun
 
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
+import { buildGlpDataGenerator } from "../historicalData/generators/glp";
 
 interface RateOracleConfigTemplateData {
   rateOracles: RateOracleConfigForTemplate[];
@@ -80,12 +82,14 @@ const deployAndConfigureWithGenerator = async ({
   trustedDataPointsGenerator: generator,
 }: DeployAndConfigureWithGeneratorArgs) => {
   const { deploy } = hre.deployments;
-  const { deployer, multisig } = await hre.getNamedAccounts();
+  const { deployer } = await hre.getNamedAccounts();
   const doLogging = true;
 
-  // Get the maxIrsDuration (used to sanity check buffer size)
   const network = hre.network.name;
   const deployConfig = getConfig(network);
+  const multisig = deployConfig.multisig;
+
+  // Get the maxIrsDuration (used to sanity check buffer size)
   const maxIrsDurationInSeconds = deployConfig.maxIrsDurationInSeconds;
 
   const rateOracleIdentifier =
@@ -98,6 +102,8 @@ const deployAndConfigureWithGenerator = async ({
     // There is no rate oracle already deployed with this rateOracleIdentifier. Deploy one now. But first, get some trusted data points if required.
     let timestamps: number[] = [];
     let rates: BigNumber[] = [];
+    let lastCummulativeReward = BigNumber.from(0);
+    let lastEthGlpPrice = BigNumber.from(0);
 
     if (generator) {
       for await (const data of generator) {
@@ -109,6 +115,10 @@ const deployAndConfigureWithGenerator = async ({
           timestamps.push(data.timestamp);
           rates.push(data.rate);
         }
+        if (data.glpData) {
+          lastCummulativeReward = data.glpData.lastCummulativeReward;
+          lastEthGlpPrice = data.glpData.lastEthGlpPrice;
+        }
       }
 
       // console.log(
@@ -118,11 +128,17 @@ const deployAndConfigureWithGenerator = async ({
       // );
 
       // We skip the most recent timestamp & rate, since it should be from ~now and the contract will write this itself
-      timestamps = timestamps.slice(0, -1);
-      rates = rates.slice(0, -1);
+      // only applied if Oracle is not GLP (this oracle doesn't get latest update in constructor)
+      if (lastCummulativeReward.eq(0) && lastEthGlpPrice.eq(0)) {
+        timestamps = timestamps.slice(0, -1);
+        rates = rates.slice(0, -1);
+      }
     }
 
-    const args = [...initialArgs, timestamps, rates];
+    let args = [...initialArgs, timestamps, rates];
+    if (lastCummulativeReward.gt(0) && lastEthGlpPrice.gt(0)) {
+      args = [...args, lastEthGlpPrice, lastCummulativeReward];
+    }
     console.log(`Deployment args are ${args.map((a) => a.toString())}`);
 
     await deploy(rateOracleIdentifier, {
@@ -160,7 +176,7 @@ const deployAndConfigureWithGenerator = async ({
     multisigConfig = multisigConfig.concat(multisigChanges);
   }
 
-  if (multisig.toLowerCase() !== ownerOfRateOracle.toLowerCase()) {
+  if (multisig && multisig.toLowerCase() !== ownerOfRateOracle.toLowerCase()) {
     console.log(
       `Transferring ownership of ${rateOracleIdentifier} at ${rateOracleContract.address} to ${multisig}`
     );
@@ -250,8 +266,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           trustedDataPointsGenerator = await buildAaveV3DataGenerator(
             hre,
             aaveLendingPool,
-            tokenDefinition.address,
-            tokenDefinition.borrow
+            tokenDefinition.address
           );
         }
 
@@ -267,6 +282,46 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       }
     }
     // End of Aave Rate Oracles
+  }
+
+  {
+    // GLP Rate Oracle
+    const glpConfig = deployConfig.glpConfig;
+    const existingReawrdRouter = glpConfig?.rewardRouter;
+    const existingRewardRouterDeploymentBlock =
+      glpConfig?.rewardRouterDeploymentBlock;
+    const rewardToken = glpConfig?.rewardToken;
+
+    if (
+      existingReawrdRouter &&
+      existingRewardRouterDeploymentBlock &&
+      rewardToken
+    ) {
+      const rewardRouter = (await ethers.getContractAt(
+        "IRewardRouter",
+        existingReawrdRouter
+      )) as IRewardRouter;
+
+      let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
+
+      trustedDataPointsGenerator = await buildGlpDataGenerator(
+        hre,
+        glpConfig.defaults.daysOfTrustedDataPoints
+      );
+
+      await deployAndConfigureWithGenerator({
+        hre,
+        initialArgs: [rewardRouter.address, rewardToken],
+        rateOracleConfig: {
+          name: null,
+          rateOracleBufferSize: glpConfig.defaults.rateOracleBufferSize,
+          minSecondsSinceLastUpdate:
+            glpConfig.defaults.minSecondsSinceLastUpdate,
+        },
+        contractName: "GlpRateOracle",
+        trustedDataPointsGenerator,
+      });
+    }
   }
 
   // Compound Rate Oracles
