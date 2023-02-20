@@ -12,8 +12,8 @@ import "../core_libraries/Time.sol";
 import "../utils/WadRayMath.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
-///  This contract is abstract and partially implemented by the Compounding and Linear Contracts.
-/// @dev Each specific oracle need to implement either Linear or Compounding contracts.
+///  This abstract contract is inherited by both Compounding and Linear Rate Oracles.
+/// @dev Each specific oracle must implement either Linear or Compounding contracts.
 abstract contract BaseRateOracle is IRateOracle, Ownable {
     uint256 public constant ONE_IN_WAD = 1e18;
 
@@ -202,7 +202,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
         if (rateToRay > rateFromRay) {
             uint256 result = WadRayMath.rayToWad(
-                getGrowthBetween(rateFromRay, rateToRay)
+                getRateOfReturn(rateFromRay, rateToRay)
             );
             return result;
         } else {
@@ -266,7 +266,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
-                uint256 rateFromBeforeOrAtToAtOrAfterRay = getGrowthBetween(
+                uint256 rateFromBeforeOrAtToAtOrAfterRay = getRateOfReturn(
                     beforeOrAt.observedValue,
                     atOrAfter.observedValue
                 );
@@ -295,18 +295,18 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
-    /// @notice Computes the growth between two rates. This should be implemented
+    /// @notice Computes the growth between two liquidity indexes. This should be implemented
     /// depending on how the rate evolves. If rate compounds, this should be
     /// a division i.e. (rateTo/rateFrom) - 1. If the rate does not compound,
     /// it should be a subtraction i.e. rateTo - rateFrom.
-    /// @param rateFromRay Un-annualised starting rate (in ray)
-    /// @param rateToRay Un-annualised ending rate (in ray)
-    /// @return growthBetweenRay growth in between the given rates
-    function getGrowthBetween(uint256 rateFromRay, uint256 rateToRay)
+    /// @param rateFromRay Un-annualised starting index (in ray)
+    /// @param rateToRay Un-annualised ending index (in ray)
+    /// @return rateOfReturn rate of return between the given points (in ray)
+    function getRateOfReturn(uint256 rateFromRay, uint256 rateToRay)
         internal
         pure
         virtual
-        returns (uint256 growthBetweenRay);
+        returns (uint256 rateOfReturn);
 
     /// @notice Computes the APY based on the un-annualised rateFromTo value and timeInYears (in wei)
     /// @param rateFromToWad Un-annualised rate (in wei)

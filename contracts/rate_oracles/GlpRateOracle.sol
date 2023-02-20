@@ -145,8 +145,15 @@ contract GlpRateOracle is LinearRateOracle, IGlpRateOracle {
             GLP_PRECISION
         ); // GLP_PRECISION
 
+        // convert from GLP precision (1e30) to RAY
+        uint256 rewardsRateSinceLastUpdateRay = FullMath.mulDiv(
+            rewardsRateSinceLastUpdate,
+            WadRayMath.RAY,
+            GLP_PRECISION
+        );
+
         // compute index using rate increase & last index
-        resultRay = lastIndexRay + rewardsRateSinceLastUpdate / 1000;
+        resultRay = lastIndexRay + rewardsRateSinceLastUpdateRay;
 
         if (resultRay < lastIndexRay) {
             revert CustomErrors.GlpRewardTrackerUnorderedRate();

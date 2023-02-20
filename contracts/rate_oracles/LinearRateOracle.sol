@@ -20,13 +20,13 @@ abstract contract LinearRateOracle is BaseRateOracle {
     using OracleBuffer for OracleBuffer.Observation[65535];
 
     /// @inheritdoc BaseRateOracle
-    function getGrowthBetween(uint256 rateFromRay, uint256 rateToRay)
+    function getRateOfReturn(uint256 rateFromRay, uint256 rateToRay)
         internal
         pure
         override
-        returns (uint256 growthBetweenRay)
+        returns (uint256 rateOfReturn)
     {
-        return rateToRay - rateFromRay;
+        rateOfReturn = rateToRay - rateFromRay;
     }
 
     /// @notice Computes the APY based on the un-annualised rateFromTo value and timeInYears (in wei)
@@ -43,12 +43,12 @@ abstract contract LinearRateOracle is BaseRateOracle {
             return 0;
         }
 
-        uint256 exponentWad = PRBMathUD60x18.div(
+        uint256 multiplierWad = PRBMathUD60x18.div(
             PRBMathUD60x18.fromUint(1),
             timeInYearsWad
         );
 
-        apyWad = PRBMathUD60x18.mul(rateFromToWad, exponentWad);
+        apyWad = PRBMathUD60x18.mul(rateFromToWad, multiplierWad);
     }
 
     /// @inheritdoc BaseRateOracle
