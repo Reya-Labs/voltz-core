@@ -34,7 +34,7 @@ import {
   decodeInfoPostMint,
   decodeInfoPostSwap,
   getErrorSignature,
-} from "../../../tasks/errorHandling";
+} from "../../../tasks/utils/errorHandling";
 
 const { provider } = waffle;
 
