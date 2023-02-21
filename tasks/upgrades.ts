@@ -11,7 +11,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
 import * as fs from "fs";
 import path from "path";
-import { getRateOracleByNameOrAddress } from "./helpers";
+import { getRateOracleByNameOrAddress } from "./utils/helpers";
 
 const _ERC1967_IMPLEMENTATION_SLOT =
   "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
