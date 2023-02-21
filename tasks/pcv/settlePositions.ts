@@ -3,9 +3,7 @@ import { Periphery } from "../../typechain";
 import path from "path";
 import mustache from "mustache";
 import { getPositions } from "@voltz-protocol/subgraph-data";
-import * as dotenv from "dotenv";
-
-dotenv.config();
+import { getProtocolSubgraphURL } from "../../scripts/getProtocolSubgraphURL";
 
 type MultisigTemplate = {
   periphery: string;
@@ -39,7 +37,7 @@ task("settlePositions", "It settles all matured positions")
       (await hre.ethers.provider.getBlock("latest")).timestamp * 1000;
 
     const positions = await getPositions(
-      process.env.SUBGRAPH_URL || "",
+      getProtocolSubgraphURL(hre.network.name),
       currentTimeInMS,
       {
         owners: [taskArgs.owner],

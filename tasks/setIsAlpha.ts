@@ -34,7 +34,7 @@ async function writeUpdateTransactionsToGnosisSafeTemplate(
 task("setIsAlpha", "Set is alpha in margin engine and VAMM").setAction(
   async (taskArgs, hre) => {
     const marginEngineAddresses = new Set<string>();
-    const positions: Position[] = await getPositions();
+    const positions: Position[] = await getPositions(hre.network.name);
     for (const position of positions) {
       marginEngineAddresses.add(position.marginEngine);
     }

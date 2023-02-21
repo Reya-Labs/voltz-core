@@ -1,7 +1,5 @@
 import { GraphQLClient, gql } from "graphql-request";
-
-import * as dotenv from "dotenv";
-dotenv.config();
+import { getProtocolSubgraphURL } from "./getProtocolSubgraphURL";
 
 export interface Position {
   marginEngine: string;
@@ -64,9 +62,10 @@ const getPositionsQueryString = (
 `;
 
 export async function getPositions(
+  networkName: string,
   activeAtTimestamp?: number
 ): Promise<Position[]> {
-  const endpoint = process.env.SUBGRAPH_URL || "";
+  const endpoint = getProtocolSubgraphURL(networkName);
   const graphQLClient = new GraphQLClient(endpoint);
 
   let lastID = "";

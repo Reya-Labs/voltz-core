@@ -88,7 +88,7 @@ task("checkPositionsHealth", "Check positions")
     console.log(header);
 
     // Fetch all positions and filter out the positions that are not in the queried pools
-    let positions: Position[] = await getPositions();
+    let positions: Position[] = await getPositions(hre.network.name);
     positions = positions.filter((p) =>
       Object.keys(pools).includes(p.marginEngine.toLowerCase())
     );
@@ -213,7 +213,7 @@ task("getPositionInfo", "Get all information about some position")
     }
 
     // Fetch all positions and filter out the positions that are not in the queried pools
-    let positions: Position[] = await getPositions();
+    let positions: Position[] = await getPositions(hre.network.name);
     positions = positions.filter((p) =>
       Object.keys(pools).includes(p.marginEngine.toLowerCase())
     );
@@ -552,7 +552,7 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
     const currentTimestamp = (await hre.ethers.provider.getBlock("latest"))
       .timestamp;
 
-    let positions: Position[] = await getPositions();
+    let positions: Position[] = await getPositions(hre.network.name);
 
     const pools: {
       [name: string]: {

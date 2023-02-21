@@ -50,6 +50,7 @@ task("liquidatePositions", "Liquidate liquidatable positions")
     console.log("margin engine addresses:", marginEngineAddresses);
 
     const positions: Position[] = await getPositions(
+      hre.network.name,
       Math.floor(Date.now() / 1000)
     );
 
