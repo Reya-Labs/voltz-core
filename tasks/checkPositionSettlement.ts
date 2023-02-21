@@ -33,6 +33,7 @@ task("checkPositionSettlement", "Check positions")
   )
   .setAction(async (taskArgs, hre) => {
     const swaps: Swap[] = await getSwaps(
+      hre.network.name,
       taskArgs.owner,
       taskArgs.tickLower,
       taskArgs.tickUpper,

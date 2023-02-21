@@ -11,7 +11,7 @@ task("getLiquidityDistribution", "Retrieves the liquidity distribution")
     "pools",
     "Comma-separated pool names as in pool-addresses/mainnet.json"
   )
-  .setAction(async (taskArgs, _) => {
+  .setAction(async (taskArgs, hre) => {
     const positions: Position[] = await getPositions(
       hre.network.name,
       Math.floor(Date.now() / 1000)

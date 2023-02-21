@@ -361,7 +361,7 @@ task("getPositionInfo", "Get all information about some position")
         tmp.decimals
       );
 
-      await history.getInfo();
+      await history.getInfo(hre.network.name);
 
       // Output mints
       fs.appendFileSync(
@@ -707,7 +707,7 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
         tmp.decimals
       );
 
-      await history.getInfo();
+      await history.getInfo(hre.network.name);
 
       let pnl = 0;
       let margin_in = 0;

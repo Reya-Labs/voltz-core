@@ -1,6 +1,7 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
 import { IMarginEngine } from "../typechain";
+import { getAddresses } from "../pool-addresses/getAddresses";
 
 // eslint-disable-next-line no-unused-vars
 enum FETCH_STATUS {
@@ -10,25 +11,7 @@ enum FETCH_STATUS {
   SUCCESS,
 }
 
-const blocksPerDay = 6570; // 13.15 seconds per block
-
-const deploymentBlocks = {
-  "0x21F9151d6e06f834751b614C2Ff40Fc28811B235": 15058080,
-};
-
-const getDeploymentBlock = (address: string): number => {
-  if (!Object.keys(deploymentBlocks).includes(address)) {
-    throw new Error(
-      `Unrecognized error. Check the deployment block of ${address}!`
-    );
-  }
-  return deploymentBlocks[address as keyof typeof deploymentBlocks];
-};
-
-task(
-  "getHistoricalApy",
-  "Predicts the IRS addresses used by a not-yet-created IRS instance"
-)
+task("getHistoricalApy", "Get historical APY of some given margine engine")
   .addOptionalParam(
     "fromBlock",
     "Get data from this past block number (up to some larger block number defined by `toBlock`)",
@@ -38,7 +21,7 @@ task(
   .addParam(
     "blockInterval",
     "Script will fetch data every `blockInterval` blocks (between `fromBlock` and `toBlock`)",
-    blocksPerDay,
+    7200,
     types.int
   )
   .addOptionalParam(
@@ -47,23 +30,25 @@ task(
     undefined,
     types.int
   )
-  .addParam(
-    "marginEngineAddress",
-    "Queried Margin Engine Address",
-    "0x0000000000000000000000000000000000000000",
-    types.string
-  )
+  .addParam("pool", "Queried pool")
   .setAction(async (taskArgs, hre) => {
-    const marginEngine = (await hre.ethers.getContractAt(
-      "MarginEngine",
-      taskArgs.marginEngineAddress
-    )) as IMarginEngine;
+    const fs = require("fs");
 
-    const deploymentBlockNumber = getDeploymentBlock(marginEngine.address);
-    if (!deploymentBlockNumber) {
-      throw new Error("Couldn't fetch deployment block number");
+    const poolAddresses = getAddresses(hre.network.name);
+    const pool = poolAddresses[taskArgs.pool as keyof typeof poolAddresses];
+
+    if (!pool) {
+      throw new Error(`Unrecognized pool name ${hre.network.name}`);
     }
 
+    const deploymentBlockNumber = pool.deploymentBlock;
+
+    const marginEngine = (await hre.ethers.getContractAt(
+      "MarginEngine",
+      pool.marginEngine
+    )) as IMarginEngine;
+
+    // Set the block range of the query
     const currentBlock = await hre.ethers.provider.getBlock("latest");
     const currentBlockNumber = currentBlock.number;
     let fromBlock = deploymentBlockNumber;
@@ -81,27 +66,25 @@ task(
       console.error(`Invalid block range: ${fromBlock}-${toBlock}`);
     }
 
-    const deploymentBlock = await hre.ethers.provider.getBlock(
-      deploymentBlockNumber
-    );
+    // Create the output file
+    const EXPORT_FOLDER = `historicalData/historicalApy`;
 
-    console.log(
-      `This margin engine (${marginEngine.address}) was deployed at ${new Date(
-        deploymentBlock.timestamp * 1000
-      ).toISOString()}.\n`
-    );
+    // Check if folder exists, or create one if it doesn't
+    if (!fs.existsSync(EXPORT_FOLDER)) {
+      fs.mkdirSync(EXPORT_FOLDER, { recursive: true });
+    }
 
-    const blocks: number[] = [];
-    const timestamps: number[] = [];
-    const apys: number[] = [];
-
-    const fs = require("fs");
-    const file = `historicalData/historicalApy/${marginEngine.address}.csv`;
+    const file = `${EXPORT_FOLDER}/${marginEngine.address}.csv`;
 
     const header = "block,timestamp,apy";
 
     fs.appendFileSync(file, header + "\n");
     console.log(header);
+
+    // Initialize data
+    const blocks: number[] = [];
+    const timestamps: number[] = [];
+    const apys: number[] = [];
 
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
       const block = await hre.ethers.provider.getBlock(b);
@@ -118,9 +101,7 @@ task(
             historicalApy.div(BigNumber.from(10).pow(9)).toNumber() / 1e9
           );
           fetch = FETCH_STATUS.SUCCESS;
-        } catch (error) {
-          // console.log("error:", error);
-        }
+        } catch (error) {}
       }
 
       switch (fetch) {

@@ -12,11 +12,11 @@ import { Position } from "../scripts/getPositions";
 
 export async function getRateOracleByNameOrAddress(
   hre: HardhatRuntimeEnvironment,
-  _addressOrname: string
+  addressOrname: string
 ): Promise<BaseRateOracle> {
-  return (await (isAddress(_addressOrname)
-    ? hre.ethers.getContractAt("BaseRateOracle", _addressOrname)
-    : hre.ethers.getContract(_addressOrname))) as BaseRateOracle;
+  return (await (isAddress(addressOrname)
+    ? hre.ethers.getContractAt("BaseRateOracle", addressOrname)
+    : hre.ethers.getContract(addressOrname))) as BaseRateOracle;
 }
 
 interface IrsInstance {

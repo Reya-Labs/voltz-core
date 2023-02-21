@@ -22,6 +22,11 @@ task(
   .addOptionalParam("tickUppers", "Filter by tick uppers")
   .setAction(async (taskArgs, hre) => {
     let fixedAndVariableMath;
+
+    // TODO: hard-coded account (suggestion: move this to some utility
+    // that gets hre.network.name as argument and returns the FixedAndVariableMath
+    // library)
+
     if (hre.network.name === "mainnet") {
       fixedAndVariableMath = (await hre.ethers.getContractAt(
         "FixedAndVariableMathTest",
