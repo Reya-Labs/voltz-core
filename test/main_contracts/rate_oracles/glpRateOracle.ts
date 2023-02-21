@@ -7,6 +7,7 @@ import {
 } from "../../../typechain";
 import { expect } from "chai";
 import { ConfigForGenericTests as Config } from "./glpConfig";
+import { advanceTimeAndBlock } from "../../helpers/time";
 
 const GLP_PRECISION = BigNumber.from("1000000000000000000000000000000");
 const WAD_PRECISION = BigNumber.from("1000000000000000000");
@@ -103,6 +104,57 @@ describe("Aave Borrow Rate Oracle", () => {
       );
 
       await expect(testGlpRateOracle.writeOracleEntry()).to.be.reverted;
+    });
+
+    // this test runs with data from 21st Feb 2023 - 12pm
+    it(`Verify getApy with realistic numbers`, async () => {
+      const prev = {
+        minEthPrice: BigNumber.from("1675040000000000000000000000000000"),
+        maxEthPrice: BigNumber.from("1675040000000000000000000000000000"),
+        minAum: BigNumber.from("500659236326665686228353491203195598169"),
+        maxAum: BigNumber.from("500659236326665256228353491203195598169"),
+        supply: BigNumber.from("522840468811348953941584644"),
+        cummulativeReward: BigNumber.from("193676115672356956833719619"),
+      };
+      const current = {
+        minEthPrice: BigNumber.from("1675040000000000000000000000000000"),
+        maxEthPrice: BigNumber.from("1675040000000000000000000000000000"),
+        minAum: BigNumber.from("500659236326665686228353491203195598169"),
+        maxAum: BigNumber.from("500659236326665256228353491203195598169"),
+        supply: BigNumber.from("522840468811348953941584644"),
+        cummulativeReward: prev.cummulativeReward.add(
+          BigNumber.from("4803240740740740")
+            .mul(GLP_PRECISION)
+            .mul(86400)
+            .div(prev.supply)
+        ),
+      };
+      const { testRateOracle, glpDependencies } = await Config.oracleFixture(
+        prev
+      );
+      mockGlpDependencies = glpDependencies;
+      testGlpRateOracle = testRateOracle as unknown as TestGlpRateOracle;
+      await testRateOracle.setMinSecondsSinceLastUpdate(1);
+      await testRateOracle.increaseObservationCardinalityNext(20);
+
+      // set current price & reward
+      await mockGlpDependencies.setCumulativeRewardPerToken(
+        current.cummulativeReward
+      );
+      await mockGlpDependencies.setEthPrice(current.minEthPrice, false);
+      await mockGlpDependencies.setEthPrice(current.maxEthPrice, true);
+      await mockGlpDependencies.setAum(current.minAum, false);
+      await mockGlpDependencies.setAum(current.maxAum, true);
+      await mockGlpDependencies.setTotalSupply(current.supply);
+
+      // write new rate
+      const block = await ethers.provider.getBlock("latest");
+      await advanceTimeAndBlock(BigNumber.from(86400), 2);
+
+      const apy = await testGlpRateOracle.getApyFrom(block.timestamp); // wad
+
+      expect(apy).to.be.gte(BigNumber.from(50).mul(WAD_PRECISION).div(100));
+      expect(apy).to.be.lte(BigNumber.from(60).mul(WAD_PRECISION).div(100));
     });
 
     const sampleRates = [

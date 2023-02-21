@@ -43,12 +43,7 @@ abstract contract LinearRateOracle is BaseRateOracle {
             return 0;
         }
 
-        uint256 multiplierWad = PRBMathUD60x18.div(
-            PRBMathUD60x18.fromUint(1),
-            timeInYearsWad
-        );
-
-        apyWad = PRBMathUD60x18.mul(rateFromToWad, multiplierWad);
+        apyWad = PRBMathUD60x18.div(rateFromToWad, timeInYearsWad);
     }
 
     /// @inheritdoc BaseRateOracle
