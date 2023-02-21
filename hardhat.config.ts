@@ -75,25 +75,21 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
 };
 
 loadModuleIfContractsAreBuilt("./tasks/irsInstances");
-loadModuleIfContractsAreBuilt("./tasks/mintTestTokens");
 loadModuleIfContractsAreBuilt("./tasks/pcv/mintLiquidity");
 loadModuleIfContractsAreBuilt("./tasks/pcv/settlePositions");
 loadModuleIfContractsAreBuilt("./tasks/updatePositionMargin");
 loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
-loadModuleIfContractsAreBuilt("./tasks/updateAPYFor15Days");
 loadModuleIfContractsAreBuilt("./tasks/rateOracle");
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
 loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
-loadModuleIfContractsAreBuilt("./tasks/playground");
 loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
 loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
 loadModuleIfContractsAreBuilt("./tasks/estimateCashflow");
-loadModuleIfContractsAreBuilt("./tasks/migratePeriphery");
 loadModuleIfContractsAreBuilt("./tasks/checkPositionSettlement");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
 loadModuleIfContractsAreBuilt("./tasks/setPausability");

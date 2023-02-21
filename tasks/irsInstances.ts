@@ -15,7 +15,7 @@ import {
   getIRSByMarginEngineAddress,
   getRateOracleByNameOrAddress,
   getIrsInstanceEvents,
-} from "./helpers";
+} from "./utils/helpers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
 import * as fs from "fs";

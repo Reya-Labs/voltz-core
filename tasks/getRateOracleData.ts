@@ -1,7 +1,7 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
 import { BaseRateOracle } from "../typechain";
-import { getRateOracleByNameOrAddress } from "./helpers";
+import { getRateOracleByNameOrAddress } from "./utils/helpers";
 
 // eslint-disable-next-line no-unused-vars
 enum FETCH_STATUS {

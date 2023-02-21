@@ -7,7 +7,7 @@ import { toBn } from "../test/helpers/toBn";
 import * as poolAddresses from "../pool-addresses/mainnet.json";
 
 import { MAX_SQRT_RATIO, MIN_SQRT_RATIO } from "../test/shared/utilities";
-import { decodeInfoPostSwap } from "./errorHandling";
+import { decodeInfoPostSwap } from "./utils/errorHandling";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 

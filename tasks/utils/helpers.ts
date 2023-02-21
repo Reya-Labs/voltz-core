@@ -6,9 +6,9 @@ import {
   IFCM,
   IMarginEngine,
   IVAMM,
-} from "../typechain";
+} from "../../typechain";
 import { ethers, utils } from "ethers";
-import { Position } from "../scripts/getPositions";
+import { Position } from "../../scripts/getPositions";
 
 export async function getRateOracleByNameOrAddress(
   hre: HardhatRuntimeEnvironment,
