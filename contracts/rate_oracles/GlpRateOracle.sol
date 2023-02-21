@@ -9,10 +9,10 @@ import "../interfaces/glp/IRewardTracker.sol";
 import "../interfaces/glp/IVault.sol";
 import "../interfaces/glp/IRewardRouter.sol";
 import "../interfaces/glp/IGlpManager.sol";
-import "../rate_oracles/BaseRateOracle.sol";
+import "../rate_oracles/LinearRateOracle.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
+contract GlpRateOracle is LinearRateOracle, IGlpRateOracle {
     /// @inheritdoc IGlpRateOracle
     IRewardRouter public override rewardRouter;
     using OracleBuffer for OracleBuffer.Observation[65535];
@@ -130,27 +130,33 @@ contract GlpRateOracle is BaseRateOracle, IGlpRateOracle {
     {
         // get last observation
         uint216 lastIndexRay = observations[oracleVars.rateIndex].observedValue;
-        require(lastIndexRay > 0, "No previous observation");
 
         // calculate rate increase since last update
         uint256 cumulativeRewardPerToken = rewardTracker
             .cumulativeRewardPerToken();
+
+        if (cumulativeRewardPerToken < lastCumulativeRewardPerToken) {
+            revert CustomErrors.GlpRewardTrackerUnorderedRate();
+        }
+
         uint256 rewardsRateSinceLastUpdate = FullMath.mulDiv(
             cumulativeRewardPerToken - lastCumulativeRewardPerToken,
             lastEthPriceInGlp,
             GLP_PRECISION
         ); // GLP_PRECISION
 
-        // compute index using rate increase & last index
-        resultRay = FullMath.mulDiv(
-            GLP_PRECISION + rewardsRateSinceLastUpdate,
-            lastIndexRay,
+        // convert from GLP precision (1e30) to RAY
+        uint256 rewardsRateSinceLastUpdateRay = FullMath.mulDiv(
+            rewardsRateSinceLastUpdate,
+            WadRayMath.RAY,
             GLP_PRECISION
         );
 
-        if (resultRay == 0) {
-            revert CustomErrors
-                .GlpRewardTrackerCumulativeRewardPerTokenReturnedZero();
+        // compute index using rate increase & last index
+        resultRay = lastIndexRay + rewardsRateSinceLastUpdateRay;
+
+        if (resultRay < lastIndexRay) {
+            revert CustomErrors.GlpRewardTrackerUnorderedRate();
         }
 
         return (Time.blockTimestampTruncated(), resultRay);

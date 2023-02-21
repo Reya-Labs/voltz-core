@@ -4,9 +4,9 @@ pragma solidity =0.8.9;
 
 import "../interfaces/rate_oracles/ICompoundRateOracle.sol";
 import "../interfaces/compound/ICToken.sol";
-import "./BaseRateOracle.sol";
+import "./CompoundingRateOracle.sol";
 
-contract CompoundRateOracle is BaseRateOracle, ICompoundRateOracle {
+contract CompoundRateOracle is CompoundingRateOracle, ICompoundRateOracle {
     /// @inheritdoc ICompoundRateOracle
     ICToken public immutable override ctoken;
 

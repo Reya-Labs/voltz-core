@@ -12,9 +12,8 @@ import "../core_libraries/Time.sol";
 import "../utils/WadRayMath.sol";
 
 /// @notice Common contract base for a Rate Oracle implementation.
-///  This contract is abstract. To make the contract deployable override the
-/// `getLastUpdatedRate` function and the `UNDERLYING_YIELD_BEARING_PROTOCOL_ID` constant.
-/// @dev Each specific rate oracle implementation will need to implement the virtual functions
+///  This abstract contract is inherited by both Compounding and Linear Rate Oracles.
+/// @dev Each specific oracle must implement either Linear or Compounding contracts.
 abstract contract BaseRateOracle is IRateOracle, Ownable {
     uint256 public constant ONE_IN_WAD = 1e18;
 
@@ -127,24 +126,11 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     /// @param apyFromBeforeOrAtToAtOrAfterWad Apy in the period between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
     /// @param timeDeltaBeforeOrAtToQueriedTimeWad Time Delta (in wei seconds) between the timestamp of the beforeOrAt Rate and the atOrAfter Rate
     /// @return rateValueRay Counterfactual (interpolated) rate value in ray
-    /// @dev Given [beforeOrAt, atOrAfter] where the timestamp for which the counterfactual is calculated is within that range (but does not touch any of the bounds)
-    /// @dev We can calculate the apy for [beforeOrAt, atOrAfter] --> refer to this value as apyFromBeforeOrAtToAtOrAfter
-    /// @dev Then we want a counterfactual rate value which results in apy_before_after if the apy is calculated between [beforeOrAt, timestampForCounterfactual]
-    /// @dev Hence (1+rateValueWei/beforeOrAtRateValueWei)^(1/timeInYears) = apyFromBeforeOrAtToAtOrAfter
-    /// @dev Hence rateValueWei = beforeOrAtRateValueWei * (1+apyFromBeforeOrAtToAtOrAfter)^timeInYears - 1)
     function interpolateRateValue(
         uint256 beforeOrAtRateValueRay,
         uint256 apyFromBeforeOrAtToAtOrAfterWad,
         uint256 timeDeltaBeforeOrAtToQueriedTimeWad
-    ) public pure virtual returns (uint256 rateValueRay) {
-        uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
-            timeDeltaBeforeOrAtToQueriedTimeWad
-        );
-        uint256 apyPlusOne = apyFromBeforeOrAtToAtOrAfterWad + ONE_IN_WAD;
-        uint256 factorInWad = PRBMathUD60x18.pow(apyPlusOne, timeInYearsWad);
-        uint256 factorInRay = WadRayMath.wadToRay(factorInWad);
-        rateValueRay = WadRayMath.rayMul(beforeOrAtRateValueRay, factorInRay);
-    }
+    ) public pure virtual returns (uint256 rateValueRay);
 
     /// @inheritdoc IRateOracle
     function increaseObservationCardinalityNext(uint16 rateCardinalityNext)
@@ -216,7 +202,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
         if (rateToRay > rateFromRay) {
             uint256 result = WadRayMath.rayToWad(
-                WadRayMath.rayDiv(rateToRay, rateFromRay) - WadRayMath.RAY
+                getRateOfReturn(rateFromRay, rateToRay)
             );
             return result;
         } else {
@@ -280,10 +266,10 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             // more generally, what should our terminology be to distinguish cases where we represetn a 5% APY as = 1.05 vs. 0.05? We should pick a clear terminology and be use it throughout our descriptions / Hungarian notation / user defined types.
 
             if (atOrAfter.observedValue > beforeOrAt.observedValue) {
-                uint256 rateFromBeforeOrAtToAtOrAfterRay = WadRayMath.rayDiv(
-                    atOrAfter.observedValue,
-                    beforeOrAt.observedValue
-                ) - WadRayMath.RAY;
+                uint256 rateFromBeforeOrAtToAtOrAfterRay = getRateOfReturn(
+                    beforeOrAt.observedValue,
+                    atOrAfter.observedValue
+                );
 
                 rateFromBeforeOrAtToAtOrAfterWad = WadRayMath.rayToWad(
                     rateFromBeforeOrAtToAtOrAfterRay
@@ -309,6 +295,19 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
         }
     }
 
+    /// @notice Computes the growth between two liquidity indexes. This should be implemented
+    /// depending on how the rate evolves. If rate compounds, this should be
+    /// a division i.e. (rateTo/rateFrom) - 1. If the rate does not compound,
+    /// it should be a subtraction i.e. rateTo - rateFrom.
+    /// @param rateFromRay Un-annualised starting index (in ray)
+    /// @param rateToRay Un-annualised ending index (in ray)
+    /// @return rateOfReturn rate of return between the given points (in ray)
+    function getRateOfReturn(uint256 rateFromRay, uint256 rateToRay)
+        internal
+        pure
+        virtual
+        returns (uint256 rateOfReturn);
+
     /// @notice Computes the APY based on the un-annualised rateFromTo value and timeInYears (in wei)
     /// @param rateFromToWad Un-annualised rate (in wei)
     /// @param timeInYearsWad Time in years for the period for which we want to calculate the apy (in wei)
@@ -316,22 +315,8 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     function computeApyFromRate(uint256 rateFromToWad, uint256 timeInYearsWad)
         internal
         pure
-        returns (uint256 apyWad)
-    {
-        if (rateFromToWad == 0) {
-            return 0;
-        }
-
-        uint256 exponentWad = PRBMathUD60x18.div(
-            PRBMathUD60x18.fromUint(1),
-            timeInYearsWad
-        );
-        uint256 apyPlusOneWad = PRBMathUD60x18.pow(
-            (PRBMathUD60x18.fromUint(1) + rateFromToWad),
-            exponentWad
-        );
-        apyWad = apyPlusOneWad - PRBMathUD60x18.fromUint(1);
-    }
+        virtual
+        returns (uint256 apyWad);
 
     /// @inheritdoc IRateOracle
     function getApyFromTo(uint256 from, uint256 to)
