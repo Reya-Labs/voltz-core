@@ -61,6 +61,7 @@ const getPositionsQueryString = (
 }
 `;
 
+// TODO: getPositions(...) should be replaced by querying subgraph-data
 export async function getPositions(
   networkName: string,
   activeAtTimestamp?: number

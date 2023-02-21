@@ -259,6 +259,8 @@ export class PositionHistory {
     return settlements;
   }
 
+  // TODO: we don't need this extra function once getPositions(...) is called from
+  // subgraph-data because that'd be able to return history as well
   async getInfo(networkName: string) {
     const endpoint = getProtocolSubgraphURL(networkName);
     const graphQLClient = new GraphQLClient(endpoint);

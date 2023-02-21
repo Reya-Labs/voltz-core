@@ -1,4 +1,5 @@
 import { GraphQLClient, gql } from "graphql-request";
+import { getProtocolSubgraphURL } from "./getProtocolSubgraphURL";
 
 export interface Swap {
   createdTimestamp: string;
@@ -38,14 +39,16 @@ function getSwapQueryString(
 `;
 }
 
+// TODO: getSwaps(...) should be replaced by querying subgraph-data information
+// about position and extracing the swaps associated to that
 export async function getSwaps(
+  networkName: string,
   owner: string,
   tickLower: number,
   tickUpper: number,
   marginEngine: string
 ): Promise<Swap[]> {
-  const endpoint =
-    "https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1";
+  const endpoint = getProtocolSubgraphURL(networkName);
   const graphQLClient = new GraphQLClient(endpoint);
 
   const firstCount = 1000;

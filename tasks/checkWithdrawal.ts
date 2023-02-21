@@ -23,9 +23,11 @@ async function getSigner(hre: HardhatRuntimeEnvironment, acctAddress: string) {
 
 task("checkWithdrawal", "Checks withdrawal of user").setAction(
   async (_, hre) => {
+    // TODO: hard-coded address
     const accountAddress = "0x7626fbA64DEB1683a364c32F30370215f05C1F09";
     const positions: Position[] = await getPositions(hre.network.name);
 
+    // TODO: hard-coded address
     const periphery = (await hre.ethers.getContractAt(
       "Periphery",
       "0x07ced903e6ad0278cc32bc83a3fc97112f763722"

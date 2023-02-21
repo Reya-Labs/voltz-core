@@ -84,7 +84,6 @@ loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
 loadModuleIfContractsAreBuilt("./tasks/updateAPYFor15Days");
 loadModuleIfContractsAreBuilt("./tasks/rateOracle");
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
-loadModuleIfContractsAreBuilt("./tasks/decodeTransactionData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
 loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
@@ -99,7 +98,6 @@ loadModuleIfContractsAreBuilt("./tasks/checkPositionSettlement");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
 loadModuleIfContractsAreBuilt("./tasks/setPausability");
 loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
-loadModuleIfContractsAreBuilt("./tasks/compareGasCost");
 loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution");
 loadModuleIfContractsAreBuilt(
   "./scripts/produceCommunityDeployerJSON/produceCommunityDeployerJSON"
