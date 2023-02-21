@@ -1,8 +1,6 @@
 import { BigNumber, utils } from "ethers";
 import { GraphQLClient, gql } from "graphql-request";
-import * as dotenv from "dotenv";
-
-dotenv.config();
+import { getProtocolSubgraphURL } from "./getProtocolSubgraphURL";
 
 const getPositionHistoryQueryString = (id: string): string => `
   {
@@ -261,8 +259,8 @@ export class PositionHistory {
     return settlements;
   }
 
-  async getInfo() {
-    const endpoint = process.env.SUBGRAPH_URL || "";
+  async getInfo(networkName: string) {
+    const endpoint = getProtocolSubgraphURL(networkName);
     const graphQLClient = new GraphQLClient(endpoint);
 
     console.log("id:", this.id);

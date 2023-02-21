@@ -13,6 +13,7 @@ task("getLiquidityDistribution", "Retrieves the liquidity distribution")
   )
   .setAction(async (taskArgs, _) => {
     const positions: Position[] = await getPositions(
+      hre.network.name,
       Math.floor(Date.now() / 1000)
     );
 

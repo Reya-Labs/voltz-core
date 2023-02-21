@@ -40,6 +40,7 @@ task(
     }
 
     let positions: Position[] = await getPositions(
+      hre.network.name,
       Math.floor(Date.now() / 1000)
     );
     if (taskArgs.owners) {
