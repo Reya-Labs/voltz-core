@@ -249,7 +249,6 @@ task("getPositionInfo", "Get all information about some position")
 
     // Sort positions
     positions = sortPositions(positions, pools);
-    console.log("positions:", positions);
 
     for (
       let position_index = 0;
@@ -507,10 +506,6 @@ task("getPositionInfo", "Get all information about some position")
             console.log(`${iterations}/${totalIterations} iterations`);
           }
 
-          if (((b - startBlock - 1) / taskArgs.blockInterval) % 100 < 1) {
-            console.log();
-          }
-
           const { liquidationThreshold, safetyThreshold } =
             await getPositionRequirements(tmp.marginEngine, p, tmp.decimals, b);
 
@@ -521,7 +516,6 @@ task("getPositionInfo", "Get all information about some position")
           const tick = (await vamm.vammVars({ blockTag: b })).tick;
           const currentFixedRate = 1.0001 ** -tick;
 
-          console.log("here", `${EXPORT_FOLDER}/progress.csv`);
           fs.appendFileSync(
             `${EXPORT_FOLDER}/progress.csv`,
             `${block.timestamp},${b},${formatNumber(
@@ -665,9 +659,6 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
         return i_a < i_b ? -1 : 1;
       }
     });
-
-    console.log("positions:", positions);
-    console.log("number of positions found:", positions.length);
 
     const fs = require("fs");
 
