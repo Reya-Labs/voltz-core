@@ -10,10 +10,6 @@ This repository contains the smart contracts that power Voltz Protocol. Over tim
 
 We would love to see how you can build and improve upon what we've built here at Voltz.
 
-## Community Deployment
-
-Community Deployer Address Kovan: 0x9ff64338E09F46708Af86d72Dc9F0E226B07a279
-
 ## Active LP Optimization
 
 In order to test out a simple Active LP Optimizer on top of Voltz Protocol, head over to [Active LP Simulation](https://github.com/Voltz-Protocol/voltz-core/blob/main/test/active_lp_management_strategy/active_lp_management_strategy.ts).
@@ -131,17 +127,12 @@ You can now interact with a fork of the current mainnet system using `--network 
 
 To change the block production cadence of the local blockchain (sometimes useful to mirror timing on mainnet), see commented out lines in `deploy/0.factory.ts`
 
-#### Deploy to kovan
+#### Deploy to goerli
 
-To deploy our contracts to the kovan testnet, first check the configuration for kovan in [the deployment config](./deployConfig/config.ts), and once it is correct run:
+To deploy our contracts to the goerli testnet, first check the configuration for goerli in [the deployment config](./deployConfig/goerli.ts), and once it is correct run:
 
-`yarn deploy:kovan`
+`yarn deploy:goerli`
 
-#### Deploy to mainnet
-
-To deploy our contracts to the kovan testnet, first check the configuration for kovan in [the deployment config](./deployConfig/config.ts), and once it is correct run:
-
-`yarn deploy:kovan`
 
 #### Source code verification
 
@@ -173,7 +164,7 @@ There is a task for this. Run `npx hardhat help mintTestTokens` for task usage.
 
 Run: `npx hardhat createIrsInstance --network <networkName> --rate-oracle <rateOracleName> [--tick-spacing <tickSpacingValue>]`
 
-Where `rateOracleName` is the name of a rate oracle instance as defined in the `deployments/<networkName>` directory. E.g. it might be "MockTestRateOracle" on localhost, or "AaveRateOracle_USDT" on kovan.
+Where `rateOracleName` is the name of a rate oracle instance as defined in the `deployments/<networkName>` directory. E.g. it might be "MockTestRateOracle" on localhost, or "AaveRateOracle_USDT" on goerli.
 
 #### List IRS Instances
 

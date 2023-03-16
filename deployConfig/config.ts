@@ -1,10 +1,8 @@
 import * as dotenv from "dotenv";
 import type { ContractsConfig, ContractsConfigMap } from "./types";
-import { kovanConfig } from "./kovan";
 import { goerliConfig } from "./goerli";
 import { mainnetConfig } from "./mainnet";
 import { localhostConfig } from "./localhost";
-import { rinkebyConfig } from "./rinkeby";
 import { arbitrumConfig } from "./arbitrum";
 import { arbitrumGoerliConfig } from "./arbitrumGoerli";
 
@@ -15,20 +13,15 @@ function duplicateExists(arr: string[]) {
 }
 
 const config: ContractsConfigMap = {
-  kovan: kovanConfig,
   goerli: goerliConfig,
-  rinkeby: rinkebyConfig,
   // localhost: mainnetConfig, // Uncomment if testing against a fork of an existing mainnet system
   localhost: localhostConfig,
   mainnet: mainnetConfig,
   arbitrum: arbitrumConfig,
   arbitrumGoerli: arbitrumGoerliConfig,
-  // hardhat: kovanConfig, // uncomment if testing against a kovan fork
   // hardhat: { ...mainnetConfig, skipFactoryDeploy: false, }, // uncomment if deploying a new system against a mainnet fork
   hardhat: process.env.FORK_MAINNET
     ? { ...mainnetConfig, skipFactoryDeploy: false }
-    : process.env.FORK_KOVAN
-    ? kovanConfig
     : localhostConfig,
 };
 

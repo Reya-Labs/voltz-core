@@ -8,14 +8,12 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-prettier";
-// import "@tenderly/hardhat-tenderly";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-storage-layout";
 import { HardhatNetworkUserConfig } from "hardhat/types";
-// import "@primitivefi/hardhat-dodoc"; bring back on demand
 
 dotenv.config();
 
@@ -124,15 +122,6 @@ if (!!process.env.FORK_MAINNET) {
       // blockNumber: 15919000,
     },
   };
-} else if (!!process.env.FORK_KOVAN) {
-  hardhatNetworkConfig = {
-    allowUnlimitedContractSize: true,
-    saveDeployments: true,
-    live: false,
-    forking: {
-      url: `${process.env.KOVAN_URL}`,
-    },
-  };
 }
 
 const config: HardhatUserConfig = {
@@ -164,40 +153,20 @@ const config: HardhatUserConfig = {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
-    // ropsten: {
-    //   url: `${process.env.ROPSTEN_URL}`,
-    // },
-    kovan: {
-      url: `${process.env.KOVAN_URL}`,
-      // gasPrice: 1,
-      accounts: {
-        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
-      },
-    },
-    rinkeby: {
-      url: `${process.env.RINKEBY_URL}`,
-      // gasPrice: 1,
-      accounts: {
-        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
-      },
-    },
     goerli: {
       url: `${process.env.GOERLI_URL}`,
-      // gasPrice: 1,
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
     arbitrum: {
       url: `${process.env.ARBITRUM_URL}`,
-      // gasPrice: 1,
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
     arbitrumGoerli: {
       url: `${process.env.ARBITRUM_GOERLI_URL}`,
-      // gasPrice: 1,
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
@@ -207,10 +176,6 @@ const config: HardhatUserConfig = {
     deployer: {
       balance: (10 ** 24).toString(),
       default: 0, // here this will by default take the first account as deployer
-    },
-    multisig: {
-      default: 0, // here this will by default take the first account as deployer
-      1: "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
     },
     alice: {
       default: 1,

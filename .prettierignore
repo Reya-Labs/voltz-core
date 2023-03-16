@@ -7,4 +7,3 @@ typechain
 docs
 deployments/**
 localhostDeployment.json
-tasks/liquidatePositions.mustache.json
