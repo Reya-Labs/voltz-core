@@ -21,7 +21,6 @@ interface UpgradeTemplateData {
     factoryAddress: string;
     newMasterMarginEngine?: string;
     newMasterVAMM?: string;
-    // TODO: FCMs
   };
   rateOracleUpdates: {
     marginEngineAddress: string;
