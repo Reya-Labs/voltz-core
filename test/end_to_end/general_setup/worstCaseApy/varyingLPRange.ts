@@ -6,7 +6,7 @@ import {
   MIN_SQRT_RATIO,
 } from "../../../shared/utilities";
 import { ScenarioRunner, e2eParameters } from "../general";
-import { poolConfigs } from "../../../../poolConfig/poolConfig";
+import { testConfig } from "../../../../poolConfigs/testConfig";
 import { toBn } from "evm-bn";
 import { expect } from "../../../shared/expect";
 
@@ -14,14 +14,12 @@ import { expect } from "../../../shared/expect";
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(2),
   numActors: 2,
-  marginCalculatorParams: poolConfigs.default.marginCalculatorParams,
-  lookBackWindowAPY: BigNumber.from(
-    poolConfigs.default.lookbackWindowInSeconds
-  ),
+  marginCalculatorParams: testConfig.marginCalculatorParams,
+  lookBackWindowAPY: BigNumber.from(testConfig.lookbackWindowInSeconds),
   startingPrice: encodeSqrtRatioX96(1, 1),
   feeProtocol: 0,
-  fee: BigNumber.from(poolConfigs.default.feeWad),
-  tickSpacing: poolConfigs.default.tickSpacing,
+  fee: BigNumber.from(testConfig.feeWad),
+  tickSpacing: testConfig.tickSpacing,
   positions: [
     [0, 0, 0],
     [1, -60, 60],

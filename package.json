@@ -114,9 +114,7 @@
     "deploy:localhost": "npx hardhat node --tags Factory,Mocks,MockRateOracles,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/localhostDeployment.json --hostname 0.0.0.0",
     "deploy:mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/mainnetForkDeployment.json --hostname 0.0.0.0",
     "deploy:empty_mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory --export deployments/mainnetForkDeployment.json --hostname 0.0.0.0",
-    "createTestIrs:localhost": "npx hardhat createIrsInstance --network localhost --rate-oracle 'MockTokenRateOracle' --tick-spacing 3000",
-    "generateEndToEndActivity:localhost": "npx hardhat test --network localhost test/end_to_end/general_setup/scenario0/scenario0.ts",
-    "inspectMellow:mainnet": "npx hardhat getPositionInfo --network mainnet --owners 0x48D254034b4b5C3d2cB003c3243703Ff5Fd5aa47,0x7f1c3fFFEEE9a79438e7A942aDcbfb7f48751f65,0xe3e34Fd11DD7E67BAD5625AC168dC53307892d21,0xF5688cD441028B3872104a8260AE832e20CcA928,0x97834834B7215636E8D4ac48Cb32920B26F029C7,0xfAC9400DA6776B78621E4907A8009b3cdA9E35a1,0xA8D1a79989D1847593747C44663CEF151aFa01db,0x48D254034b4b5C3d2cB003c3243703Ff5Fd5aa47,0xBBC446081cb7515a524D31e4afDB19dfc6BAa124,0xA776DC46b119C3A6f599076f893DD6459ea542bd"
+    "check:pool_details": "npx ts-node poolConfigs/checkPoolInformation.ts"
   },
   "repository": {
     "type": "git",

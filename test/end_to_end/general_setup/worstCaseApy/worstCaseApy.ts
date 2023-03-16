@@ -5,39 +5,24 @@ import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
 import { encodeSqrtRatioX96, MAX_SQRT_RATIO } from "../../../shared/utilities";
 import { ScenarioRunner, e2eParameters } from "../general";
-import { poolConfigs } from "../../../../poolConfig/poolConfig";
+import { testConfig } from "../../../../poolConfigs/testConfig";
 
 /// SCENARIO VARIABLE
-// const LP_LOWER_TICK = -6960; // 2%
 const LP_LOWER_TICK = -16080; // 5%
-
-// const LP_UPPER_TICK = 6960; // 0.5%
 const LP_UPPER_TICK = -13860; // 4%
-
-// const STARTING_PRICE = encodeSqrtRatioX96(2, 1); // 0.5% starting fixed rate
-// const STARTING_PRICE = encodeSqrtRatioX96(1, 2); // 2% starting fixed rate
 const STARTING_PRICE = encodeSqrtRatioX96(1, 4); // 4% starting fixed rate
-// const STARTING_PRICE = encodeSqrtRatioX96(2, 9); // 4.5% starting fixed rate
-// const STARTING_PRICE = encodeSqrtRatioX96(1, 5); // 5% starting fixed rate
-// const STARTING_PRICE = encodeSqrtRatioX96(1, 8); // 8% starting fixed rate
-
 const CHANGE = toBn("0.00002", 27); // 2.93% historical apy
-// const CHANGE = toBn("0.00005", 27); // 7.47% historical apy
-// const CHANGE = toBn("0.0001", 27); // 15.47% historical apy
-///
 
 // aDAI v2 pool configuration
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(2),
   numActors: 2,
-  marginCalculatorParams: poolConfigs.default.marginCalculatorParams,
-  lookBackWindowAPY: BigNumber.from(
-    poolConfigs.default.lookbackWindowInSeconds
-  ),
+  marginCalculatorParams: testConfig.marginCalculatorParams,
+  lookBackWindowAPY: BigNumber.from(testConfig.lookbackWindowInSeconds),
   startingPrice: STARTING_PRICE,
   feeProtocol: 0,
-  fee: BigNumber.from(poolConfigs.default.feeWad),
-  tickSpacing: poolConfigs.default.tickSpacing,
+  fee: BigNumber.from(testConfig.feeWad),
+  tickSpacing: testConfig.tickSpacing,
   positions: [
     [0, LP_LOWER_TICK, LP_UPPER_TICK], // range of LP
     [1, -60, 60],
@@ -120,13 +105,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
         await this.openLPPosition();
         openedLP = true;
       }
-
-      //   if (i >= 14 * 4) {
-      //     if (!performedSwap) {
-      //       await this.swapAgainstLP();
-      //       performedSwap = true;
-      //     }
-      //   }
 
       const positionRequirementSafety =
         await this.marginEngine.callStatic.getPositionMarginRequirement(

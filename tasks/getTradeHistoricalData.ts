@@ -4,10 +4,9 @@ import { Factory, Periphery } from "../typechain";
 import "@nomiclabs/hardhat-ethers";
 import { toBn } from "../test/helpers/toBn";
 
-import * as poolAddresses from "../pool-addresses/mainnet.json";
-
 import { MAX_SQRT_RATIO, MIN_SQRT_RATIO } from "../test/shared/utilities";
 import { decodeInfoPostSwap } from "./utils/errorHandling";
+import { pools } from "../pool-addresses/pools";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
@@ -59,7 +58,7 @@ task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
       return;
     }
 
-    const poolInfo = poolAddresses[taskArgs.pool as keyof typeof poolAddresses];
+    const poolInfo = pools.mainnet[taskArgs.pool as keyof typeof pools.mainnet];
     if (poolInfo === undefined) {
       return;
     }

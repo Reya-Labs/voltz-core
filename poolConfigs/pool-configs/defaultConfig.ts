@@ -1,4 +1,4 @@
-import { toBn } from "../test/helpers/toBn";
+import { toBn } from "../../test/helpers/toBn";
 
 export const gaps = {
   gap1: toBn("0"),

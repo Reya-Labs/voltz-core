@@ -6,7 +6,7 @@ import { task } from "hardhat/config";
 import mustache from "mustache";
 import path from "path";
 import { poolConfigs } from "../poolConfig/poolConfig";
-import { getAddresses } from "../pool-addresses/getAddresses";
+import { getNetworkPools } from "../pool-addresses/getPools";
 import { PoolConfiguration } from "../poolConfig/types";
 
 interface MultisigTemplateData {
@@ -87,7 +87,7 @@ task("updateMarginEngines", "Updates the MC Parameters of a pool")
       factoryAddress: "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf",
     };
 
-    const poolAddresses = getAddresses(hre.network.name);
+    const poolAddresses = getNetworkPools(hre.network.name);
 
     for (const pool of poolNames) {
       let poolConfig: PoolConfiguration;

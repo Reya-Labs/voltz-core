@@ -1,6 +1,6 @@
 import { BigNumberish } from "ethers";
 
-export interface PoolConfiguration {
+export type IndividualPoolConfiguration = {
   // The name or address of the rate oracle as defined in deployments/<network> (e.g. 'AaveRateOracle_USDT')
   rateOracle: string;
 
@@ -49,4 +49,12 @@ export interface PoolConfiguration {
     gap7: BigNumberish;
     minMarginToIncentiviseLiquidators: BigNumberish;
   };
-}
+};
+
+export type NetworkPoolConfigurations = {
+  [name: string]: IndividualPoolConfiguration;
+};
+
+export type PoolConfigurations = {
+  [name: string]: NetworkPoolConfigurations;
+};

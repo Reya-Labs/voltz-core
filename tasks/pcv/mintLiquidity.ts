@@ -4,7 +4,7 @@ import path from "path";
 import mustache from "mustache";
 
 import "@nomiclabs/hardhat-ethers";
-import { getAddresses } from "../../pool-addresses/getAddresses";
+import { getNetworkPools } from "../../pool-addresses/getPools";
 
 type MintOrBurnParams = {
   pool: string;
@@ -55,7 +55,7 @@ const mints: MintOrBurnParams[] = [
 task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
   const periphery = (await hre.ethers.getContract("Periphery")) as Periphery;
 
-  const poolAddresses = getAddresses(hre.network.name);
+  const poolAddresses = getNetworkPools(hre.network.name);
 
   const data: MultisigTemplate = {
     periphery: periphery.address,

@@ -3,8 +3,8 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 
-import * as poolAddresses from "../pool-addresses/mainnet.json";
 import { utils } from "ethers";
+import { pools } from "../poolConfigs/pool-addresses/pools";
 
 task("getLiquidityDistribution", "Retrieves the liquidity distribution")
   .addParam(
@@ -18,6 +18,7 @@ task("getLiquidityDistribution", "Retrieves the liquidity distribution")
     );
 
     const poolNames: string[] = taskArgs.pools.split(",");
+    const poolAddresses = pools.mainnet;
 
     for (let i = 0; i < poolNames.length; i++) {
       const p = poolNames[i];

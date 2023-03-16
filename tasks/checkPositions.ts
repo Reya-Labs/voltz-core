@@ -4,7 +4,7 @@ import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
 import { ethers } from "ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
-import { getAddresses } from "../pool-addresses/getAddresses";
+import { getNetworkPools } from "../pool-addresses/getPools";
 import {
   getBlockAtTimestamp,
   getPositionInfo,
@@ -28,7 +28,7 @@ task("checkPositionsHealth", "Check positions")
     const fs = require("fs");
 
     // Get pool addresses of the given network
-    const poolAddresses = getAddresses(hre.network.name);
+    const poolAddresses = getNetworkPools(hre.network.name);
 
     // Get the queried pool names
     const poolNames: string[] = taskArgs.pools
@@ -163,7 +163,7 @@ task("getPositionInfo", "Get all information about some position")
     const fs = require("fs");
 
     // Get the queried pool names
-    const poolAddresses = getAddresses(hre.network.name);
+    const poolAddresses = getNetworkPools(hre.network.name);
 
     // Get the queried pool names
     const poolNames: string[] = taskArgs.pools
@@ -559,7 +559,7 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
       };
     } = {};
 
-    const poolAddresses = getAddresses(hre.network.name);
+    const poolAddresses = getNetworkPools(hre.network.name);
 
     const poolNames: string[] = taskArgs.pools
       ? taskArgs.pools.split(",")

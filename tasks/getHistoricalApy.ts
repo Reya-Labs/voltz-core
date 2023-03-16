@@ -1,7 +1,7 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
 import { IMarginEngine } from "../typechain";
-import { getAddresses } from "../pool-addresses/getAddresses";
+import { getNetworkPools } from "../pool-addresses/getPools";
 
 // eslint-disable-next-line no-unused-vars
 enum FETCH_STATUS {
@@ -34,7 +34,7 @@ task("getHistoricalApy", "Get historical APY of some given margine engine")
   .setAction(async (taskArgs, hre) => {
     const fs = require("fs");
 
-    const poolAddresses = getAddresses(hre.network.name);
+    const poolAddresses = getNetworkPools(hre.network.name);
     const pool = poolAddresses[taskArgs.pool as keyof typeof poolAddresses];
 
     if (!pool) {
