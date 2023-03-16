@@ -17,7 +17,7 @@
     "./scripts",
     "./tasks",
     "./test",
-    "./typechain",
+    "./typechain"
   ],
   "files": ["./hardhat.config.ts"]
 }

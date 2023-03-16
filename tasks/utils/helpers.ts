@@ -110,7 +110,11 @@ export function sortPositions(
 
 export async function getPositionInfo(
   marginEngine: IMarginEngine,
-  position: Position,
+  position: {
+    owner: string;
+    tickLower: number;
+    tickUpper: number;
+  },
   tokenDecimals: number,
   block?: number
 ): Promise<{
@@ -152,7 +156,11 @@ export async function getPositionInfo(
 
 export async function getPositionRequirements(
   marginEngine: IMarginEngine,
-  position: Position,
+  position: {
+    owner: string;
+    tickLower: number;
+    tickUpper: number;
+  },
   tokenDecimals: number,
   block?: number
 ): Promise<{ safetyThreshold: number; liquidationThreshold: number }> {
