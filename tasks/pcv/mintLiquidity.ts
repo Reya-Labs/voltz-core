@@ -1,10 +1,10 @@
 import { task } from "hardhat/config";
 import { IERC20Minimal, MarginEngine, Periphery } from "../../typechain";
-import * as poolAddresses from "../../pool-addresses/mainnet.json";
 import path from "path";
 import mustache from "mustache";
 
 import "@nomiclabs/hardhat-ethers";
+import { getAddresses } from "../../pool-addresses/getAddresses";
 
 type MintOrBurnParams = {
   pool: string;
@@ -32,7 +32,7 @@ type MultisigTemplate = {
 async function writeToMultisigTemplate(data: MultisigTemplate) {
   const fs = require("fs");
   const template = fs.readFileSync(
-    path.join(__dirname, "templates/mints.json.mustache"),
+    path.join(__dirname, "../templates/mints.json.mustache"),
     "utf8"
   );
   const output = mustache.render(template, data);
@@ -43,17 +43,19 @@ async function writeToMultisigTemplate(data: MultisigTemplate) {
 
 const mints: MintOrBurnParams[] = [
   {
-    pool: "glp",
+    pool: "glpETH_v2",
     tickLower: -38040,
-    tickUpper: -30000,
-    notional: 3150,
+    tickUpper: -23040,
+    notional: 3000,
     isMint: true,
-    marginDelta: 63,
+    marginDelta: 60,
   },
 ];
 
 task("mintLiquidity", "Mints liquidity").setAction(async (_, hre) => {
   const periphery = (await hre.ethers.getContract("Periphery")) as Periphery;
+
+  const poolAddresses = getAddresses(hre.network.name);
 
   const data: MultisigTemplate = {
     periphery: periphery.address,

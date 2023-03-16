@@ -18,7 +18,7 @@ import {
   // XI_UPPER,
 } from "../../../shared/utilities";
 import { ScenarioRunner, e2eParameters } from "../general";
-import { poolConfigs } from "../../../../deployConfig/poolConfig";
+import { poolConfigs } from "../../../../poolConfig/poolConfig";
 
 const { provider } = waffle;
 

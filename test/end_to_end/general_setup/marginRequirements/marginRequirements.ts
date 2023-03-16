@@ -6,7 +6,7 @@ import {
   MIN_SQRT_RATIO,
 } from "../../../shared/utilities";
 import { ScenarioRunner, e2eParameters } from "../general";
-import { poolConfigs } from "../../../../deployConfig/poolConfig";
+import { poolConfigs } from "../../../../poolConfig/poolConfig";
 import { toBn } from "evm-bn";
 import { expect } from "../../../shared/expect";
 import { advanceTimeAndBlock } from "../../../helpers/time";

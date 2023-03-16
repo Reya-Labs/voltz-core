@@ -5,8 +5,9 @@ import { BigNumberish } from "ethers";
 import { task } from "hardhat/config";
 import mustache from "mustache";
 import path from "path";
-import { poolConfig, poolConfigs } from "../deployConfig/poolConfig";
+import { poolConfigs } from "../poolConfig/poolConfig";
 import { getAddresses } from "../pool-addresses/getAddresses";
+import { PoolConfiguration } from "../poolConfig/types";
 
 interface MultisigTemplateData {
   marginEngineAddress: string;
@@ -89,7 +90,7 @@ task("updateMarginEngines", "Updates the MC Parameters of a pool")
     const poolAddresses = getAddresses(hre.network.name);
 
     for (const pool of poolNames) {
-      let poolConfig: poolConfig;
+      let poolConfig: PoolConfiguration;
       let poolInfo: {
         marginEngine: string;
         decimals: number;

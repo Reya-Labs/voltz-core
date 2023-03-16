@@ -265,7 +265,7 @@ task("getPositionInfo", "Get all information about some position")
       const tmp = pools[p.marginEngine.toLowerCase() as keyof typeof pools];
 
       // Create a folder for this position
-      const EXPORT_FOLDER = `position-status/data/${tmp.name}#${p.owner}#${p.tickLower}#${p.tickUpper}`;
+      const EXPORT_FOLDER = `position-status/data/${hre.network.name}#${tmp.name}#${p.owner}#${p.tickLower}#${p.tickUpper}`;
 
       if (!fs.existsSync(EXPORT_FOLDER)) {
         fs.mkdirSync(EXPORT_FOLDER, { recursive: true });
@@ -457,7 +457,7 @@ task("getPositionInfo", "Get all information about some position")
         const txURL = `etherscan.io/tx/${item.transaction}`;
 
         fs.appendFileSync(
-          `${EXPORT_FOLDER}/info.txt`,
+          `${EXPORT_FOLDER}/settlements.csv`,
           `${item.timestamp},${date},${formatNumber(
             item.settlementCashflow
           )},${txURL}\n`

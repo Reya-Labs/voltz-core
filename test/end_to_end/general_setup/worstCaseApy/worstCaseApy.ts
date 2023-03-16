@@ -5,7 +5,7 @@ import { consts } from "../../../helpers/constants";
 import { advanceTimeAndBlock } from "../../../helpers/time";
 import { encodeSqrtRatioX96, MAX_SQRT_RATIO } from "../../../shared/utilities";
 import { ScenarioRunner, e2eParameters } from "../general";
-import { poolConfigs } from "../../../../deployConfig/poolConfig";
+import { poolConfigs } from "../../../../poolConfig/poolConfig";
 
 /// SCENARIO VARIABLE
 // const LP_LOWER_TICK = -6960; // 2%

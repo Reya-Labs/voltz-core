@@ -54,7 +54,7 @@ const aTokenUnderlyingAddressesArbitrum = {
   aUSDC: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
 };
 
-const blocksPerDay = 5 * 60 * 24; // 12 seconds per block = 5 blocks per minute
+const blocksPerDay = 7200;
 const blocksPerDayArbitrum = 60 * 60 * 24 * 3; // 3 blocks per second
 
 task("getHistoricalData", "Retrieves the historical rates")
@@ -89,6 +89,7 @@ task("getHistoricalData", "Retrieves the historical rates")
   )
   .addFlag("compound", "Get rates data from Compound")
   .addFlag("aave", "Get rates data from Aave")
+  .addFlag("aaveV3", "Get rates data from Aave V3")
   .addFlag("glp", "Get rates data from Glp")
   .addFlag(
     "borrow",
@@ -102,6 +103,7 @@ task("getHistoricalData", "Retrieves the historical rates")
   )
   .setAction(async (taskArgs, hre) => {
     let platformCount = 0;
+    taskArgs.aaveV3 && platformCount++;
     taskArgs.aave && platformCount++;
     taskArgs.compound && platformCount++;
     taskArgs.rocket && platformCount++;
@@ -188,7 +190,7 @@ task("getHistoricalData", "Retrieves the historical rates")
     }
 
     // aave arbitrum
-    if (taskArgs.aave && hre.network.name === "arbitrum") {
+    if (taskArgs.aaveV3 && hre.network.name === "arbitrum") {
       if (taskArgs.token === "ETH") {
         asset = `aWETH`;
       } else {
@@ -244,6 +246,39 @@ task("getHistoricalData", "Retrieves the historical rates")
         undefined,
         taskArgs.borrow,
         { fromBlock, toBlock, blockInterval: taskArgs.blockInterval }
+      );
+    }
+
+    // aave v3 ethereum
+    if (taskArgs.aaveV3 && hre.network.name === "mainnet") {
+      if (taskArgs.token === "ETH") {
+        asset = `aWETH`;
+      } else {
+        asset = `a${taskArgs.token}`;
+      }
+
+      if (!Object.keys(aTokenUnderlyingAddresses).includes(asset)) {
+        throw new Error(
+          `Unrecognized error. Check that ${asset} is added to aave addresses!`
+        );
+      }
+
+      const lendingPool = (await hre.ethers.getContractAt(
+        "IPool",
+        "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2" // arbitrum lending pool address
+      )) as IPool;
+
+      const underlyingTokenAddress =
+        aTokenUnderlyingAddresses[
+          asset as keyof typeof aTokenUnderlyingAddresses
+        ];
+      // TODO: fix
+      generator = await buildAaveV3DataGenerator(
+        hre,
+        lendingPool,
+        underlyingTokenAddress,
+        taskArgs.lookbackDays ??
+          (currentBlock.number - taskArgs.fromBlock) / blocksPerDay
       );
     }
 

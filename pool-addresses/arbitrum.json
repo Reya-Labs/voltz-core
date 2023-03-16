@@ -1,9 +1,26 @@
 {
+
+  "aUSDC_v1": {
+    "marginEngine": "0x0ca700b946c446d878a497c50fb98844a85a2dd9",
+    "vamm": "0x1d7E4d7c1629c9D6E3Bb6a344496b1B782c9ca9a",
+    "decimals": 6,
+    "deploymentBlock": 63216317,
+    "rateOracleID": 7
+  },
+
   "glpETH_v1": {
     "marginEngine": "0xC1a44601a9F141ECA8823f99b0b7fFF55F2A6e17",
     "vamm": "0xB69c2b77C844b55F9924242df4299a1598753320",
     "decimals": 18,
     "deploymentBlock": 60949827,
+    "rateOracleID": 8
+  },
+
+  "glpETH_v2": {
+    "marginEngine": "0xf9850b06aaabab6be56558d58e94a3fd621b161e",
+    "vamm": "0x1aac6232b7c7cd6c8479077844eb0302cca0d2af",
+    "decimals": 18,
+    "deploymentBlock": 70061963,
     "rateOracleID": 8
   }
 }

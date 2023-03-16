@@ -32,6 +32,11 @@ task(
         "FixedAndVariableMathTest",
         "0x2D2EE238Ca74B546BfA64864f5654b5Ed7673f87"
       )) as FixedAndVariableMathTest;
+    } else if (hre.network.name === "arbitrum") {
+      fixedAndVariableMath = (await hre.ethers.getContractAt(
+        "FixedAndVariableMathTest",
+        "0x6975b83ef331e65d146e4c64fb45392cd2237a3c"
+      )) as FixedAndVariableMathTest;
     } else {
       console.log(
         "WARNING - Contract FixedAndVariableMathTest is going to be deployed on network:",
