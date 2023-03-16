@@ -9,7 +9,7 @@ task(
 )
   .addParam(
     "rateOracle",
-    "The address of a rate oracle, or the name of the rate oracle as defined in deployments/<network> (e.g. 'AaveRateOracle_USDT'"
+    "The address of a rate oracle, or the name of the rate oracle as defined in deployments/<network> (e.g. 'AaveRateOracle_USDT')"
   )
   .setAction(async (taskArgs, hre) => {
     const rateOracle = await getRateOracleByNameOrAddress(
@@ -34,13 +34,11 @@ task(
       hre,
       taskArgs.rateOracle
     );
-    // console.log(`Listing Rates known by Rate Oracle ${rateOracle.address}`);
 
     const underlying = await rateOracle.underlying();
     console.log("Underlying token:", underlying);
 
     const oracleVars = await rateOracle.oracleVars();
-    // console.log(`oracleVars,${oracleVars}`);
     let csvOutput = `timestamp,value,rawTimestamp,rawValue`;
 
     for (let i = 0; i <= oracleVars.rateIndex; i++) {
@@ -50,11 +48,6 @@ task(
       ).toISOString();
       const observedValue = utils.formatUnits(observation.observedValue, 27);
 
-      if (!observation.initialized) {
-        throw new Error(
-          `Error reading data from oracle buffer at position ${i}`
-        );
-      }
       csvOutput += `\n${observationTimeString},${observedValue},${observation.blockTimestamp},"${observation.observedValue}"`;
     }
     console.log(csvOutput);

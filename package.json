@@ -111,7 +111,8 @@
     "deploy:localhost": "npx hardhat node --tags Factory,Mocks,MockRateOracles,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/localhostDeployment.json --hostname 0.0.0.0",
     "deploy:mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/mainnetForkDeployment.json --hostname 0.0.0.0",
     "deploy:empty_mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory --export deployments/mainnetForkDeployment.json --hostname 0.0.0.0",
-    "check:pool_details": "npx ts-node poolConfigs/checkPoolInformation.ts"
+    "check:pool_details": "npx ts-node poolConfigs/checkPoolInformation.ts",
+    "check:rate_oracle_buffers": "npx ts-node scripts/checkRateOracleBuffers.ts"
   },
   "repository": {
     "type": "git",
