@@ -9,7 +9,7 @@ import {
   TICK_SPACING,
 } from "../../../shared/utilities";
 import { ScenarioRunner, e2eParameters } from "../general";
-import { testConfig } from "../../../../poolConfigs/testConfig";
+import { testConfig } from "../../../../poolConfigs/pool-configs/testConfig";
 
 const { provider } = waffle;
 

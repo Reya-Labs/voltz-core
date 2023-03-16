@@ -1,7 +1,7 @@
 import { gaps } from "./defaultConfig";
-import { IndividualPoolConfiguration } from "./types";
+import { SinglePoolConfiguration } from "./types";
 
-export const testConfig: IndividualPoolConfiguration = {
+export const testConfig: SinglePoolConfiguration = {
   rateOracle: "MockRateOracle",
   tickSpacing: 60,
   cacheMaxAgeInSeconds: 21600,

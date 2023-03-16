@@ -1,4 +1,4 @@
-export type IndividualPool = {
+export type SinglePool = {
   marginEngine: string;
   vamm: string;
   decimals: number;
@@ -7,7 +7,7 @@ export type IndividualPool = {
 };
 
 export type NetworkPools = {
-  [key: string]: IndividualPool;
+  [key: string]: SinglePool;
 };
 
 export type Pools = {

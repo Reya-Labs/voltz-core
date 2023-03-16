@@ -5,9 +5,8 @@ import { BigNumberish } from "ethers";
 import { task } from "hardhat/config";
 import mustache from "mustache";
 import path from "path";
-import { poolConfigs } from "../poolConfig/poolConfig";
-import { getNetworkPools } from "../pool-addresses/getPools";
-import { PoolConfiguration } from "../poolConfig/types";
+import { getPool } from "../poolConfigs/pool-addresses/pools";
+import { getPoolConfig } from "../poolConfigs/pool-configs/poolConfig";
 
 interface MultisigTemplateData {
   marginEngineAddress: string;
@@ -87,22 +86,9 @@ task("updateMarginEngines", "Updates the MC Parameters of a pool")
       factoryAddress: "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf",
     };
 
-    const poolAddresses = getNetworkPools(hre.network.name);
-
     for (const pool of poolNames) {
-      let poolConfig: PoolConfiguration;
-      let poolInfo: {
-        marginEngine: string;
-        decimals: number;
-        deploymentBlock: number;
-      };
-
-      if (pool in poolConfigs) {
-        poolConfig = poolConfigs[pool];
-        poolInfo = poolAddresses[pool as keyof typeof poolAddresses];
-      } else {
-        throw new Error(`No configuration for ${pool}.`);
-      }
+      const poolConfig = getPoolConfig(hre.network.name, pool);
+      const poolInfo = getPool(hre.network.name, pool);
 
       const data: MultisigTemplateData = {
         marginEngineAddress: poolInfo.marginEngine,

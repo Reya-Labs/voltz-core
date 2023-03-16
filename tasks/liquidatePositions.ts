@@ -5,7 +5,7 @@ import mustache from "mustache";
 import path from "path";
 
 import { getPositions, Position } from "../scripts/getPositions";
-import { pools } from "../pool-addresses/pools";
+import { getPool } from "../poolConfigs/pool-addresses/pools";
 
 interface liquidationTemplateData {
   liquidatablePositions: {
@@ -44,7 +44,7 @@ task("liquidatePositions", "Liquidate liquidatable positions")
 
     const poolNames = taskArgs.pools.split(",");
     const marginEngineAddresses = poolNames.map((poolName: string) => {
-      return pools.mainnet[poolName as keyof typeof pools.mainnet].marginEngine;
+      return getPool(hre.network.name, poolName);
     });
 
     console.log("margin engine addresses:", marginEngineAddresses);

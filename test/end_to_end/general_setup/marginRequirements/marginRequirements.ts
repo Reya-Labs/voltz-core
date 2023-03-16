@@ -9,7 +9,7 @@ import { ScenarioRunner, e2eParameters } from "../general";
 import { toBn } from "evm-bn";
 import { expect } from "../../../shared/expect";
 import { advanceTimeAndBlock } from "../../../helpers/time";
-import { testConfig } from "../../../../poolConfigs/testConfig";
+import { testConfig } from "../../../../poolConfigs/pool-configs/testConfig";
 
 // aDAI v2 pool configuration
 const e2eParams: e2eParameters = {

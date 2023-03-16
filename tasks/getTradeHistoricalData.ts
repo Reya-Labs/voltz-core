@@ -6,7 +6,7 @@ import { toBn } from "../test/helpers/toBn";
 
 import { MAX_SQRT_RATIO, MIN_SQRT_RATIO } from "../test/shared/utilities";
 import { decodeInfoPostSwap } from "./utils/errorHandling";
-import { pools } from "../pool-addresses/pools";
+import { getPool } from "../poolConfigs/pool-addresses/pools";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
@@ -58,7 +58,7 @@ task("getTradeHistoricalData", "Retrieves trade historical data on Voltz")
       return;
     }
 
-    const poolInfo = pools.mainnet[taskArgs.pool as keyof typeof pools.mainnet];
+    const poolInfo = getPool("mainnet", taskArgs.pool);
     if (poolInfo === undefined) {
       return;
     }

@@ -21,8 +21,8 @@ import mustache from "mustache";
 import * as fs from "fs";
 import path from "path";
 import "@nomiclabs/hardhat-ethers";
-import { poolConfigs } from "../poolConfig/poolConfig";
-import { PoolConfiguration } from "../poolConfig/types";
+import { SinglePoolConfiguration } from "../poolConfigs/pool-configs/types";
+import { getNetworkPoolConfigs } from "../poolConfigs/pool-configs/poolConfig";
 
 interface SingleIrsData {
   factoryAddress: string;
@@ -143,7 +143,7 @@ async function configureIrs(
   hre: HardhatRuntimeEnvironment,
   marginEngine: IMarginEngine,
   vamm: IVAMM,
-  poolConfig: PoolConfiguration
+  poolConfig: SinglePoolConfiguration
 ) {
   // Set the config for our IRS instance
   // TODO: allow values to be overridden with task parameters, as required
@@ -276,7 +276,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     // const pool = taskArgs.borrow ? "borrow_" + taskArgs.pool : taskArgs.pool;
-    const poolConfigList: PoolConfiguration[] = [];
+    const poolConfigList: SinglePoolConfiguration[] = [];
     const multisigTemplateData: SingleIrsData[] = [];
 
     // Validate inputs
@@ -292,6 +292,8 @@ task(
     if (termStartTimestamp + 86400 > termEndTimestamp) {
       throw new Error("Unfunctional pool. Check start and end timestamps!");
     }
+
+    const poolConfigs = getNetworkPoolConfigs(hre.network.name);
 
     // Validate all pool inputs before processing any
     for (const pool of taskArgs.pools) {
@@ -441,7 +443,9 @@ task(
   .addParam("marginEngine", "The address of the margin engine")
   .addParam("pool", "The name of the pool (e.g. 'aDAI', 'stETH', etc.)")
   .setAction(async (taskArgs, hre) => {
-    let poolConfig: PoolConfiguration;
+    const poolConfigs = getNetworkPoolConfigs(hre.network.name);
+
+    let poolConfig: SinglePoolConfiguration;
     if (taskArgs.pool in poolConfigs) {
       poolConfig = poolConfigs[taskArgs.pool];
     } else {

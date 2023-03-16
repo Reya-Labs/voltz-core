@@ -1,4 +1,4 @@
-import { IndividualPool, NetworkPools, Pools } from "./types";
+import { SinglePool, NetworkPools, Pools } from "./types";
 
 const pools: Pools = {
   mainnet: {
@@ -271,10 +271,7 @@ export const getNetworkPools = (networkName: string): NetworkPools => {
   throw new Error("Network not found");
 };
 
-export const getPool = (
-  networkName: string,
-  poolName: string
-): IndividualPool => {
+export const getPool = (networkName: string, poolName: string): SinglePool => {
   const networkPools = getNetworkPools(networkName);
 
   const tmp = networkPools[poolName as keyof typeof networkPools];

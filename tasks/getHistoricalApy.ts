@@ -1,7 +1,7 @@
 import { task, types } from "hardhat/config";
 import { BigNumber } from "ethers";
 import { IMarginEngine } from "../typechain";
-import { getNetworkPools } from "../pool-addresses/getPools";
+import { getNetworkPools } from "../poolConfigs/pool-addresses/pools";
 
 // eslint-disable-next-line no-unused-vars
 enum FETCH_STATUS {

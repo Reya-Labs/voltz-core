@@ -1,6 +1,6 @@
 import { defaultConfig, gaps } from "./defaultConfig";
 import {
-  IndividualPoolConfiguration,
+  SinglePoolConfiguration,
   NetworkPoolConfigurations,
   PoolConfigurations,
 } from "./types";
@@ -393,7 +393,7 @@ export const getNetworkPoolConfigs = (
 export const getPoolConfig = (
   networkName: string,
   poolName: string
-): IndividualPoolConfiguration => {
+): SinglePoolConfiguration => {
   const networkConfigs = getNetworkPoolConfigs(networkName);
 
   const tmp = networkConfigs[poolName as keyof typeof networkConfigs];

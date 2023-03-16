@@ -4,7 +4,7 @@ import path from "path";
 import mustache from "mustache";
 
 import "@nomiclabs/hardhat-ethers";
-import { getNetworkPools } from "../../pool-addresses/getPools";
+import { getNetworkPools } from "../../poolConfigs/pool-addresses/pools";
 
 type MintOrBurnParams = {
   pool: string;

@@ -1,6 +1,6 @@
 import { BigNumberish } from "ethers";
 
-export type IndividualPoolConfiguration = {
+export type SinglePoolConfiguration = {
   // The name or address of the rate oracle as defined in deployments/<network> (e.g. 'AaveRateOracle_USDT')
   rateOracle: string;
 
@@ -52,7 +52,7 @@ export type IndividualPoolConfiguration = {
 };
 
 export type NetworkPoolConfigurations = {
-  [name: string]: IndividualPoolConfiguration;
+  [name: string]: SinglePoolConfiguration;
 };
 
 export type PoolConfigurations = {

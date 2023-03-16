@@ -4,13 +4,13 @@ import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
 import { ethers } from "ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
-import { getNetworkPools } from "../pool-addresses/getPools";
 import {
   getBlockAtTimestamp,
   getPositionInfo,
   getPositionRequirements,
   sortPositions,
 } from "./utils/helpers";
+import { getNetworkPools } from "../poolConfigs/pool-addresses/pools";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
