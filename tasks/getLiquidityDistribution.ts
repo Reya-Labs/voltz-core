@@ -22,7 +22,6 @@ task("getLiquidityDistribution", "Retrieves the liquidity distribution")
   .addVariadicPositionalParam("pools", "Comma-separated pool names")
   .setAction(async (taskArgs, hre) => {
     const start = Date.now();
-
     const fs = require("fs");
 
     const exportFolder = `tasks/output/liquidity_distributions`;
