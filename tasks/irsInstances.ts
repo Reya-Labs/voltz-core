@@ -21,7 +21,8 @@ import mustache from "mustache";
 import * as fs from "fs";
 import path from "path";
 import "@nomiclabs/hardhat-ethers";
-import { poolConfig, poolConfigs } from "../deployConfig/poolConfig";
+import { poolConfigs } from "../poolConfig/poolConfig";
+import { PoolConfiguration } from "../poolConfig/types";
 
 interface SingleIrsData {
   factoryAddress: string;
@@ -142,7 +143,7 @@ async function configureIrs(
   hre: HardhatRuntimeEnvironment,
   marginEngine: IMarginEngine,
   vamm: IVAMM,
-  poolConfig: poolConfig
+  poolConfig: PoolConfiguration
 ) {
   // Set the config for our IRS instance
   // TODO: allow values to be overridden with task parameters, as required
@@ -275,7 +276,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     // const pool = taskArgs.borrow ? "borrow_" + taskArgs.pool : taskArgs.pool;
-    const poolConfigList: poolConfig[] = [];
+    const poolConfigList: PoolConfiguration[] = [];
     const multisigTemplateData: SingleIrsData[] = [];
 
     // Validate inputs
@@ -440,7 +441,7 @@ task(
   .addParam("marginEngine", "The address of the margin engine")
   .addParam("pool", "The name of the pool (e.g. 'aDAI', 'stETH', etc.)")
   .setAction(async (taskArgs, hre) => {
-    let poolConfig: poolConfig;
+    let poolConfig: PoolConfiguration;
     if (taskArgs.pool in poolConfigs) {
       poolConfig = poolConfigs[taskArgs.pool];
     } else {
