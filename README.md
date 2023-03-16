@@ -133,7 +133,6 @@ To deploy our contracts to the goerli testnet, first check the configuration for
 
 `yarn deploy:goerli`
 
-
 #### Source code verification
 
 To verify the deployed contracts in etherscan, ensure that you have a valid `ETHERSCAN_API_KEY` value defined in your `.env` file, and ensure that your repo state matches the state at which the contracts in question were deployed, and then run:

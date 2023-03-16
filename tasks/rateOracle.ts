@@ -73,6 +73,7 @@ task(
       hre,
       taskArgs.rateOracle
     );
+
     const { deployer, multisig } = await hre.getNamedAccounts();
 
     const owner = await rateOracle.owner();
