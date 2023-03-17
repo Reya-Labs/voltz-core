@@ -1,6 +1,5 @@
 import { task } from "hardhat/config";
 import { utils } from "ethers";
-import "@nomiclabs/hardhat-ethers";
 import { getRateOracleByNameOrAddress } from "./utils/helpers";
 
 // Description:

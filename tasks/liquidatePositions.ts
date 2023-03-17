@@ -1,6 +1,5 @@
 import { task } from "hardhat/config";
 import { MarginEngine } from "../typechain";
-import { ethers } from "ethers";
 import mustache from "mustache";
 import path from "path";
 
@@ -107,7 +106,10 @@ task("liquidatePositions", "Liquidate liquidatable positions")
 
       // Retrieve margin engine end timestamps in seconds
       const marginEngineEndTimestamp = Number(
-        ethers.utils.formatUnits(await marginEngine.termEndTimestampWad(), 18)
+        hre.ethers.utils.formatUnits(
+          await marginEngine.termEndTimestampWad(),
+          18
+        )
       );
 
       // Check if the pool has matured

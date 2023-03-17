@@ -1,5 +1,4 @@
 import { task } from "hardhat/config";
-import "@nomiclabs/hardhat-ethers";
 import { getRateOracleByNameOrAddress } from "./utils/helpers";
 import { getConfig } from "../deployConfig/config";
 

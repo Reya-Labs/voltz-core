@@ -1,6 +1,5 @@
 import { task, types } from "hardhat/config";
 import { BaseRateOracle, MarginEngine } from "../typechain";
-import "@nomiclabs/hardhat-ethers";
 import { toBn } from "evm-bn";
 import { getProtocolSubgraphURL } from "../scripts/getProtocolSubgraphURL";
 import { getPositions } from "@voltz-protocol/subgraph-data";

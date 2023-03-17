@@ -20,7 +20,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
 import * as fs from "fs";
 import path from "path";
-import "@nomiclabs/hardhat-ethers";
 import { SinglePoolConfiguration } from "../poolConfigs/pool-configs/types";
 import { getNetworkPoolConfigs } from "../poolConfigs/pool-configs/poolConfig";
 

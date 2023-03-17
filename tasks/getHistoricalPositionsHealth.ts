@@ -1,7 +1,5 @@
 import { task, types } from "hardhat/config";
 import { IVAMM, MarginEngine } from "../typechain";
-import { ethers } from "ethers";
-import "@nomiclabs/hardhat-ethers";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
@@ -107,15 +105,17 @@ task("getHistoricalPositionsHealth", "Check positions")
 
       fs.appendFileSync(
         file,
-        `${block.timestamp},${b},${tick},${ethers.utils.formatEther(
+        `${block.timestamp},${b},${tick},${hre.ethers.utils.formatEther(
           positionInfo.margin
-        )},${ethers.utils.formatEther(
+        )},${hre.ethers.utils.formatEther(
           positionInfo._liquidity
-        )},${ethers.utils.formatEther(
+        )},${hre.ethers.utils.formatEther(
           positionInfo.variableTokenBalance
-        )},${ethers.utils.formatEther(
+        )},${hre.ethers.utils.formatEther(
           positionRequirementLiquidation
-        )},${ethers.utils.formatEther(positionRequirementSafety)},${status}\n`
+        )},${hre.ethers.utils.formatEther(
+          positionRequirementSafety
+        )},${status}\n`
       );
     }
   });
