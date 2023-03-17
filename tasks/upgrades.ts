@@ -21,7 +21,6 @@ interface UpgradeTemplateData {
     factoryAddress: string;
     newMasterMarginEngine?: string;
     newMasterVAMM?: string;
-    // TODO: FCMs
   };
   rateOracleUpdates: {
     marginEngineAddress: string;
@@ -96,7 +95,7 @@ async function getSigner(hre: HardhatRuntimeEnvironment, acctAddress: string) {
   return await hre.ethers.getSigner(acctAddress);
 }
 
-// TODO: make this task a generic upgrade task, that can upgrade any or all of vamm, marginEngine, fcms and periphery
+// TODO: make this task a generic upgrade task, that can upgrade any or all of vamm, marginEngine and periphery
 task(
   "deployUpdatedImplementations",
   `Deploys a new instance of the logic contract used by instances of the following contracts ${proxiedContractTypesAsString}`
@@ -230,8 +229,8 @@ async function assertProxyIsOfType(
   if (contractType === "MarginEngine") {
     try {
       const marginEngine = proxyContract as MarginEngine;
-      // All MarginEngines implement marginEngineParameters
-      await marginEngine.marginEngineParameters();
+      // All MarginEngines implement cacheMaxAgeInSeconds
+      await marginEngine.cacheMaxAgeInSeconds();
     } catch (e) {
       console.error(e);
       throw Error(
@@ -250,14 +249,13 @@ async function assertProxyIsOfType(
       );
     }
   } else {
-    // TODO: add support for periphery, FCMs
+    // TODO: add support for periphery
     throw Error(
       `Could not assert that proxy at ${proxyContract.address} is of type: ${contractType}`
     );
   }
 }
 
-// TODO: add aaveFcm and compoundFcm params/flags, and do all in one go
 task(
   "upgradeProxy",
   "Upgrades the factory's implementation address and/or proxy instances (e.g. VAMMs, MarginEngines) to use the latest deployed implementation logic"
@@ -272,7 +270,8 @@ task(
     "proxyAddresses",
     "Comma-separated list of addresses of the proxies that we wish to upgrade",
     undefined,
-    types.string
+    types.string,
+    true
   )
   .addFlag(
     "multisig",
@@ -296,53 +295,59 @@ task(
       rateOracleUpdates: [],
       proxyUpgrades: [],
     };
-    const proxyAddresses = taskArgs.proxyAddresses.split(",");
 
-    // Now loop through all the proxies we want to upgrade
-    for (const currentProxyAddress of proxyAddresses) {
-      const proxy = (await hre.ethers.getContractAt(
-        taskArgs.contractType,
-        currentProxyAddress
-      )) as UUPSUpgradeable;
-      await assertProxyIsOfType(hre, proxy, taskArgs.contractType);
-      const proxyAddress = proxy.address;
-      const initImplAddress = await getImplementationAddress(hre, proxyAddress);
+    if (taskArgs.proxyAddresses) {
+      const proxyAddresses = taskArgs.proxyAddresses.split(",");
 
-      // TODO: check that the proxy is of the specified type and that we are not, e.g., upgrading a VAMM to be a MarginEngine!
-
-      const ownableProxy = proxy as unknown as OwnableUpgradeable;
-      const proxyOwner = await ownableProxy.owner();
-
-      if (initImplAddress === latestImplLogicAddress) {
-        console.log(
-          `The ${taskArgs.contractType} at ${proxyAddress} is using the latest logic (${latestImplLogicAddress}). No newer logic deployed!`
+      // Now loop through all the proxies we want to upgrade
+      for (const currentProxyAddress of proxyAddresses) {
+        const proxy = (await hre.ethers.getContractAt(
+          taskArgs.contractType,
+          currentProxyAddress
+        )) as UUPSUpgradeable;
+        await assertProxyIsOfType(hre, proxy, taskArgs.contractType);
+        const proxyAddress = proxy.address;
+        const initImplAddress = await getImplementationAddress(
+          hre,
+          proxyAddress
         );
-      } else {
-        // TODO: compare storage layouts and abort upgrade if not compatible
 
-        if (taskArgs.multisig) {
-          // Using multisig template instead of sending any transactions
-          data.proxyUpgrades.push({
-            proxyAddress: proxy.address,
-            newImplementation: latestImplLogicAddress,
-          });
+        // TODO: check that the proxy is of the specified type and that we are not, e.g., upgrading a VAMM to be a MarginEngine!
+
+        const ownableProxy = proxy as unknown as OwnableUpgradeable;
+        const proxyOwner = await ownableProxy.owner();
+
+        if (initImplAddress === latestImplLogicAddress) {
+          console.log(
+            `The ${taskArgs.contractType} at ${proxyAddress} is using the latest logic (${latestImplLogicAddress}). No newer logic deployed!`
+          );
         } else {
-          // Not using multisig template - actually send the transactions
-          if (multisig !== proxyOwner && deployer !== proxyOwner) {
-            console.log(
-              `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
-            );
+          // TODO: compare storage layouts and abort upgrade if not compatible
+
+          if (taskArgs.multisig) {
+            // Using multisig template instead of sending any transactions
+            data.proxyUpgrades.push({
+              proxyAddress: proxy.address,
+              newImplementation: latestImplLogicAddress,
+            });
           } else {
-            await proxy
-              .connect(await getSigner(hre, proxyOwner))
-              .upgradeTo(latestImplLogicAddress);
-            const newImplAddress = await getImplementationAddress(
-              hre,
-              proxyAddress
-            );
-            console.log(
-              `${taskArgs.contractType} at ${proxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
-            );
+            // Not using multisig template - actually send the transactions
+            if (multisig !== proxyOwner && deployer !== proxyOwner) {
+              console.log(
+                `Not authorised to upgrade the proxy at ${proxyAddress} (owned by ${proxyOwner})`
+              );
+            } else {
+              await proxy
+                .connect(await getSigner(hre, proxyOwner))
+                .upgradeTo(latestImplLogicAddress);
+              const newImplAddress = await getImplementationAddress(
+                hre,
+                proxyAddress
+              );
+              console.log(
+                `${taskArgs.contractType} at ${proxy.address} has been upgraded from implementation ${initImplAddress} to ${newImplAddress}`
+              );
+            }
           }
         }
       }
@@ -476,7 +481,7 @@ task(
     }
   });
 
-// TODO: combine update tasks for VAMM, Margine Engine, Periphery and FCMs
+// TODO: combine update tasks for VAMM, Margine Engine and Periphery
 task(
   "updatePeriphery",
   "Changes the Periphery Proxy to use to the newly deployed implemenatation logic"
