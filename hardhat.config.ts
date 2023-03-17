@@ -86,7 +86,7 @@ loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
 loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
 loadModuleIfContractsAreBuilt("./tasks/estimateCashflow");
-loadModuleIfContractsAreBuilt("./tasks/checkPositionSettlement");
+loadModuleIfContractsAreBuilt("./tasks/calculatePositionSettlement");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
 loadModuleIfContractsAreBuilt("./tasks/setPausability");
 loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");

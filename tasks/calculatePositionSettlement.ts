@@ -13,9 +13,9 @@ import { getNetworkPools } from "../poolConfigs/pool-addresses/pools";
 //   otherwise, it estimates it assuming liquidity index remains 0 until the end of the pool.
 //
 // Example:
-//   ``npx hardhat checkPositionSettlement --network mainnet --pool stETH_v1 --owner 0xf8f6b70a36f4398f0853a311dc6699aba8333cc1 --tick-lower -69060 --tick-upper 0``
+//   ``npx hardhat calculatePositionSettlement --network mainnet --pool stETH_v1 --owner 0xf8f6b70a36f4398f0853a311dc6699aba8333cc1 --tick-lower -69060 --tick-upper 0``
 
-task("checkPositionSettlement", "Check positions")
+task("calculatePositionSettlement", "Check positions")
   .addParam("pool", "Pool name")
   .addParam("owner", "Owner of position")
   .addParam("tickLower", "Tick lower of position", "-69060", types.string)
@@ -84,7 +84,7 @@ task("checkPositionSettlement", "Check positions")
     }
 
     if (1000 * timeEnd < currentTimeInMS) {
-      console.warn("The given pool has not reached maturity yet!");
+      console.warn("Warning! The given pool has not reached maturity yet.");
     }
 
     let totalSettlementCashflow = 0;
