@@ -73,8 +73,8 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
 };
 
 // PCV transactions
-loadModuleIfContractsAreBuilt("./tasks/pcv/mintLiquidity");
-loadModuleIfContractsAreBuilt("./tasks/pcv/settlePositions");
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints");
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
 
 // Localhost time maninupulation support
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock"); //
