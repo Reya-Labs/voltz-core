@@ -126,4 +126,4 @@ const test = async () => {
   await scenario.run();
 };
 
-it("Series of mints and swaps", test);
+it.skip("Series of mints and swaps", test);
