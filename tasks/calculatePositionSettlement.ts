@@ -1,8 +1,6 @@
 import { task, types } from "hardhat/config";
 import { BaseRateOracle, MarginEngine } from "../typechain";
-import { ethers } from "ethers";
 import "@nomiclabs/hardhat-ethers";
-import { number } from "mathjs";
 import { toBn } from "evm-bn";
 import { getProtocolSubgraphURL } from "../scripts/getProtocolSubgraphURL";
 import { getPositions } from "@voltz-protocol/subgraph-data";
@@ -48,7 +46,7 @@ task("calculatePositionSettlement", "Check positions")
 
     // Retrieve term end of the pool
     const termEndWad = await marginEngine.termEndTimestampWad();
-    const timeEnd = number(ethers.utils.formatUnits(termEndWad, 18));
+    const timeEnd = Number(hre.ethers.utils.formatUnits(termEndWad, 18));
 
     // Get the queried position
     const positions = (
@@ -105,7 +103,7 @@ task("calculatePositionSettlement", "Check positions")
       );
 
       const variableFactor = Number(
-        ethers.utils.formatUnits(variableFactorWad, 18)
+        hre.ethers.utils.formatUnits(variableFactorWad, 18)
       );
 
       // Calculate settlement cashflow of this swap and add it to the total sum
