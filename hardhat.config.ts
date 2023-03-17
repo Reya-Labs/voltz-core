@@ -73,7 +73,7 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
 };
 
 // PCV transactions
-loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints"); // 
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints"); //
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions"); //
 
 // Localhost time maninupulation support
@@ -82,7 +82,7 @@ loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock"); //
 // Data extractions
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy"); //
-loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
+loadModuleIfContractsAreBuilt("./tasks/getSlippageData");
 
 // Position support
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
@@ -92,7 +92,7 @@ loadModuleIfContractsAreBuilt("./tasks/liquidatePositions"); //
 
 // Pool support
 loadModuleIfContractsAreBuilt("./tasks/irsInstances");
-loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
+loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines"); //
 loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution"); //
 
 // System support

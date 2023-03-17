@@ -8,7 +8,6 @@ import {
   IStETH,
 } from "../typechain";
 import { BigNumber } from "ethers";
-import "@nomiclabs/hardhat-ethers";
 import { Datum } from "../historicalData/generators/common";
 import {
   buildAaveDataGenerator,
