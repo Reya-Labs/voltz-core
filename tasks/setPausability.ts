@@ -16,6 +16,12 @@ interface MultisigTemplateData {
   chainId: string;
 }
 
+// Description:
+//   This task generates a tx json for multisig to pause the given pools.
+//
+// Example:
+//   ``npx hardhat setPausability --network mainnet aUSDC_v9 aUSDC_v11``
+
 function writeUpdateTransactionsToGnosisSafeTemplate(
   data: MultisigTemplateData
 ) {
