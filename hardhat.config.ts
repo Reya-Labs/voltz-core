@@ -72,33 +72,45 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
   }
 };
 
-loadModuleIfContractsAreBuilt("./tasks/irsInstances");
+// PCV transactions
 loadModuleIfContractsAreBuilt("./tasks/pcv/mintLiquidity");
 loadModuleIfContractsAreBuilt("./tasks/pcv/settlePositions");
-loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
-loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
-loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
-loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
-loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
 
-loadModuleIfContractsAreBuilt("./tasks/checkPositions");
+// Localhost time maninupulation support
+loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock"); //
+
+// Data extractions
+loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
+loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy"); //
 loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
-loadModuleIfContractsAreBuilt("./tasks/upgrades");
-loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
+
+// Position support
+loadModuleIfContractsAreBuilt("./tasks/checkPositions");
 loadModuleIfContractsAreBuilt("./tasks/estimateCashflow");
-loadModuleIfContractsAreBuilt("./tasks/calculatePositionSettlement");
-loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
-loadModuleIfContractsAreBuilt("./tasks/setPausability");
+loadModuleIfContractsAreBuilt("./tasks/calculatePositionSettlement"); //
+loadModuleIfContractsAreBuilt("./tasks/liquidatePositions"); //
+
+// Pool support
+loadModuleIfContractsAreBuilt("./tasks/irsInstances");
 loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
-loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution");
+loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution"); //
+
+// System support
+loadModuleIfContractsAreBuilt("./tasks/setPausability"); //
+loadModuleIfContractsAreBuilt("./tasks/setPeriphery"); //
+loadModuleIfContractsAreBuilt("./tasks/upgrades");
+
+// Rate oracle support
+loadModuleIfContractsAreBuilt("./tasks/getRateOracleData"); //
+loadModuleIfContractsAreBuilt("./tasks/queryRateOracleEntry"); //
+loadModuleIfContractsAreBuilt("./tasks/transferRateOracleOwnership"); //
+loadModuleIfContractsAreBuilt("./tasks/writeRateOracleEntries"); //
+loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext"); //
+
+// Community deployer script
 loadModuleIfContractsAreBuilt(
   "./scripts/produceCommunityDeployerJSON/produceCommunityDeployerJSON"
 );
-
-loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
-loadModuleIfContractsAreBuilt("./tasks/queryRateOracleEntry");
-loadModuleIfContractsAreBuilt("./tasks/transferRateOracleOwnership");
-loadModuleIfContractsAreBuilt("./tasks/writeRateOracleEntries");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
