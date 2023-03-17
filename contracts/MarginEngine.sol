@@ -53,7 +53,10 @@ contract MarginEngine is
 
     function setPausability(bool state) external onlyVAMM {
         paused = state;
-        _fcm.setPausability(state);
+
+        if (address(_fcm) != address(0)) {
+            _fcm.setPausability(state);
+        }
     }
 
     /// @dev In the litepaper the timeFactor is exp(-beta*(t-s)/t_max) where t is the maturity timestamp, and t_max is the max number of seconds for the IRS AMM duration, s is the current timestamp and beta is a diffusion process parameter set via calibration

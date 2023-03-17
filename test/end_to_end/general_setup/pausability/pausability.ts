@@ -73,7 +73,6 @@ class ScenarioRunnerInstance extends ScenarioRunner {
     await this.vamm.initializeVAMM(this.params.startingPrice.toString());
 
     const otherWallet = provider.getWallets()[1];
-    console.log("wallets:", this.owner.address, otherWallet.address);
 
     // wallet with no permission cannot pause the contracts
     await expect(this.vamm.connect(otherWallet).setPausability(true)).to.be
@@ -140,6 +139,10 @@ class ScenarioRunnerInstance extends ScenarioRunner {
 
     await this.e2eSetup.mintViaAMM(p[0], p[1], p[2], liquidityDeltaBn);
 
+    if (!(this.params.rateOracle === 1 || this.params.rateOracle === 2)) {
+      return;
+    }
+
     // check if FCM works when unpaused
     await this.e2eSetup.initiateFullyCollateralisedFixedTakerSwap(
       p[0],
@@ -178,11 +181,14 @@ class ScenarioRunnerInstance extends ScenarioRunner {
   }
 }
 
-const test = async () => {
-  console.log("pausability");
-  const scenario = new ScenarioRunnerInstance(e2eParams);
-  await scenario.init();
-  await scenario.run();
+const tests = async () => {
+  for (const rateOracleID of [1, 4]) {
+    e2eParams.rateOracle = rateOracleID;
+
+    const scenario = new ScenarioRunnerInstance(e2eParams);
+    await scenario.init();
+    await scenario.run();
+  }
 };
 
-it("pausability", test);
+it("pausability for FCM and non-FCM pools", tests);
