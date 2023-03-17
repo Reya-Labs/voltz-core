@@ -5,13 +5,12 @@ import { BigNumberish } from "ethers";
 import { task } from "hardhat/config";
 import mustache from "mustache";
 import path from "path";
-import { getPool } from "../poolConfigs/pool-addresses/pools";
+import { getConfig } from "../deployConfig/config";
+import { getNetworkPools, getPool } from "../poolConfigs/pool-addresses/pools";
 import { getPoolConfig } from "../poolConfigs/pool-configs/poolConfig";
 
-interface MultisigTemplateData {
+interface SingleUpdateTemplateData {
   marginEngineAddress: string;
-
-  upgradeMarginEngine: boolean;
 
   updateLiquidatorReward: boolean;
   liquidatorReward: BigNumberish;
@@ -42,9 +41,15 @@ interface MultisigTemplateData {
   lookbackWindowInSeconds: BigNumberish;
 }
 
-async function writeGnosisSafeTemplate(data: {
-  pools: MultisigTemplateData[];
-}) {
+interface MultisigTemplateData {
+  factoryAddress: string;
+  multisig: string;
+  chainId: string;
+
+  pools: SingleUpdateTemplateData[];
+}
+
+function writeGnosisSafeTemplate(data: MultisigTemplateData) {
   // Get external template with fetch
   const fs = require("fs");
   const template = fs.readFileSync(
@@ -60,60 +65,67 @@ async function writeGnosisSafeTemplate(data: {
   );
 }
 
-task("updateMarginEngines", "Updates the MC Parameters of a pool")
-  .addParam("pools", "The name of the pool (e.g. 'aDAI_v2', 'stETH_v1', etc.)")
-  .addFlag(
-    "multisig",
-    "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
-  )
-  .addFlag("upgradeMarginEngine")
-  .addFlag("setMasterMarginEngine")
-  .addFlag("updateLiquidatorReward")
-  .addFlag("updateMarginCalculatorParams")
-  .addFlag("updateLookbackWindow")
-  .setAction(async (taskArgs, hre) => {
-    const poolNames = taskArgs.pools.split(",");
+// Description:
+//   This task generates multisig txs to update configuration of margin engine.
+//     - First, you need to update the configuration in './poolConfigs/pool-configs/poolConfig.ts'
+//   for the corresponding pools
+//     - Then, run this task with the flags set depending what parameters you like to update
+//
+// Example:
+//   ``npx hardhat updateMarginEngines --network mainnet aUSDC_v11 aDAI_v4 --liq-rew --mc-params --lb-win``
 
-    const updates: {
-      pools: MultisigTemplateData[];
-      newImplementation: string;
-      setMasterMarginEngine: boolean;
-      factoryAddress: string;
-    } = {
+task("updateMarginEngines", "It updates the configurations of given pools")
+  .addVariadicPositionalParam("pools", "Comma-separated pool names")
+  .addFlag("liqRew") // liquidator reward update flag
+  .addFlag("mcParams") // margin calculator parameters update flag
+  .addFlag("lbWin") // lookback window update flag
+  .setAction(async (taskArgs, hre) => {
+    // Fetch pool details
+    const poolNames: string[] = taskArgs.pools;
+    const poolDetails = getNetworkPools(hre.network.name);
+
+    // Check if queried pools are in the config
+    for (const pool of poolNames) {
+      if (!Object.keys(poolDetails).includes(pool)) {
+        throw new Error(`Pool ${pool} is not present in the pools.`);
+      }
+    }
+
+    // Fetch factory
+    const factory = await hre.ethers.getContract("Factory");
+
+    // Retrieve multisig address for the current network
+    const network = hre.network.name;
+    const deployConfig = getConfig(network);
+    const multisig = deployConfig.multisig;
+
+    // Initialize the data keeper
+    const data: MultisigTemplateData = {
       pools: [],
-      newImplementation: "0x2457d958dbebacc9daa41b47592faca5845f8fc3",
-      setMasterMarginEngine: taskArgs.setMasterMarginEngine ? true : false,
-      factoryAddress: "0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf",
+      factoryAddress: factory.address,
+      multisig: multisig,
+      chainId: await hre.getChainId(),
     };
 
     for (const pool of poolNames) {
       const poolConfig = getPoolConfig(hre.network.name, pool);
-      const poolInfo = getPool(hre.network.name, pool);
+      const poolDetails = getPool(hre.network.name, pool);
 
-      const data: MultisigTemplateData = {
-        marginEngineAddress: poolInfo.marginEngine,
+      const singleData: SingleUpdateTemplateData = {
+        marginEngineAddress: poolDetails.marginEngine,
 
-        upgradeMarginEngine: taskArgs.upgradeMarginEngine ? true : false,
-
-        updateLiquidatorReward: taskArgs.updateLiquidatorReward ? true : false,
+        updateLiquidatorReward: taskArgs.liqRew ? true : false,
         liquidatorReward: poolConfig.liquidatorRewardWad,
 
-        updateMarginCalculatorParams: taskArgs.updateMarginCalculatorParams
-          ? true
-          : false,
+        updateMarginCalculatorParams: taskArgs.mcParams ? true : false,
         marginCalculatorParams: poolConfig.marginCalculatorParams,
 
-        updateLookbackWindow: taskArgs.updateLookbackWindow ? true : false,
+        updateLookbackWindow: taskArgs.lbWin ? true : false,
         lookbackWindowInSeconds: poolConfig.lookbackWindowInSeconds,
       };
 
-      updates.pools.push(data);
+      data.pools.push(singleData);
     }
 
-    if (taskArgs.multisig) {
-      console.log(updates);
-      await writeGnosisSafeTemplate(updates);
-    } else {
-      throw new Error("Non-multisig is not implemented yet.");
-    }
+    writeGnosisSafeTemplate(data);
   });
