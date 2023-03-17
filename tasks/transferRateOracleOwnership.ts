@@ -3,6 +3,8 @@ import "@nomiclabs/hardhat-ethers";
 import { getRateOracleByNameOrAddress } from "./utils/helpers";
 import { getConfig } from "../deployConfig/config";
 
+const Confirm = require("prompt-confirm");
+
 // Description:
 //   This task pushes an on-chain transaction to transfer ownership of a given rate oracle to multisig
 //
@@ -39,7 +41,19 @@ task(
     if (owner === multisig) {
       console.log(`Already owned by ${multisig}. No need to transfer`);
     } else if (owner === deployer) {
-      await rateOracle.transferOwnership(multisig);
+      const prompt = new Confirm(
+        `Are you sure that you want to transfer the ownership of ${rateOracle.address} to ${multisig}?`
+      );
+
+      const response = await prompt.run();
+
+      if (!response) {
+        console.log("Rejected");
+        return;
+      }
+
+      const tx = await rateOracle.transferOwnership(multisig);
+      await tx.wait();
       console.log(`Ownership transferred from ${owner} to ${multisig}`);
     } else {
       console.log(
