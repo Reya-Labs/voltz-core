@@ -1,12 +1,6 @@
 import { isAddress } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import {
-  BaseRateOracle,
-  Factory,
-  IFCM,
-  IMarginEngine,
-  IVAMM,
-} from "../../typechain";
+import { BaseRateOracle, Factory, IMarginEngine, IVAMM } from "../../typechain";
 import { ethers, utils } from "ethers";
 import { Position } from "../../scripts/getPositions";
 
@@ -22,7 +16,6 @@ export async function getRateOracleByNameOrAddress(
 interface IrsInstance {
   marginEngine: IMarginEngine;
   vamm: IVAMM;
-  fcm: IFCM;
 }
 
 export async function getIRSByMarginEngineAddress(
@@ -34,11 +27,9 @@ export async function getIRSByMarginEngineAddress(
     marginEngineAddress
   )) as IMarginEngine;
   const vammAddress = await marginEngine.vamm();
-  const fcmAddress = await marginEngine.fcm();
 
   const vamm = (await hre.ethers.getContractAt("IVAMM", vammAddress)) as IVAMM;
-  const fcm = (await hre.ethers.getContractAt("IFCM", fcmAddress)) as IFCM;
-  return { marginEngine, vamm, fcm };
+  return { marginEngine, vamm };
 }
 
 export async function getIrsInstanceEvents(

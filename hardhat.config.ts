@@ -75,14 +75,12 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
 loadModuleIfContractsAreBuilt("./tasks/irsInstances");
 loadModuleIfContractsAreBuilt("./tasks/pcv/mintLiquidity");
 loadModuleIfContractsAreBuilt("./tasks/pcv/settlePositions");
-loadModuleIfContractsAreBuilt("./tasks/updatePositionMargin");
 loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
-loadModuleIfContractsAreBuilt("./tasks/rateOracle");
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
-loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
+
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
 loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
@@ -96,6 +94,11 @@ loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution");
 loadModuleIfContractsAreBuilt(
   "./scripts/produceCommunityDeployerJSON/produceCommunityDeployerJSON"
 );
+
+loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
+loadModuleIfContractsAreBuilt("./tasks/queryRateOracleEntry");
+loadModuleIfContractsAreBuilt("./tasks/transferRateOracleOwnership");
+loadModuleIfContractsAreBuilt("./tasks/writeRateOracleEntries");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
