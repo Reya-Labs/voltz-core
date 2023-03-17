@@ -267,7 +267,7 @@ export class ScenarioRunner {
         this.rateOracle = (await rateOracleFactory.deploy(
           this.stETH.address,
           this.lidoOracle.address,
-          this.weth.address,
+          this.token.address,
           [],
           []
         )) as IRateOracle;
