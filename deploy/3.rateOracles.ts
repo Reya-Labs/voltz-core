@@ -6,17 +6,7 @@ import {
   applyBufferConfig,
   RateOracleConfigForTemplate,
 } from "../deployConfig/utils";
-import {
-  BaseRateOracle,
-  ERC20,
-  IAaveV2LendingPool,
-  IAaveV3LendingPool,
-  ILidoOracle,
-  IRewardRouter,
-  IRocketEth,
-  IRocketNetworkBalances,
-  IStETH,
-} from "../typechain";
+import { BaseRateOracle, ERC20 } from "../typechain";
 import { BigNumber } from "ethers";
 import path from "path";
 import mustache from "mustache";
@@ -27,7 +17,10 @@ import { buildCompoundDataGenerator } from "../historicalData/generators/compoun
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
 import { buildGlpDataGenerator } from "../historicalData/generators/glp";
-import { getBlockAtTimestamp } from "../tasks/utils/helpers";
+import {
+  getBlockAtTimestamp,
+  getEstimatedBlocksPerDay,
+} from "../tasks/utils/helpers";
 import { ONE_DAY_IN_SECONDS } from "../tasks/utils/constants";
 
 interface RateOracleConfigTemplateData {
@@ -195,6 +188,33 @@ const deployAndConfigureWithGenerator = async ({
   }
 };
 
+const getBlockSpec = async (
+  hre: HardhatRuntimeEnvironment,
+  daysOfTrustedDataPoints: number
+): Promise<{
+  fromBlock: number;
+  toBlock: number;
+  blockInterval: number;
+}> => {
+  const currentBlock = await hre.ethers.provider.getBlock("latest");
+
+  const toBlock = currentBlock.number;
+  const fromBlock = await getBlockAtTimestamp(
+    hre,
+    currentBlock.timestamp - ONE_DAY_IN_SECONDS * daysOfTrustedDataPoints
+  );
+  const blockInterval = await getEstimatedBlocksPerDay(
+    hre,
+    daysOfTrustedDataPoints
+  );
+
+  return {
+    fromBlock,
+    toBlock,
+    blockInterval,
+  };
+};
+
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const network = hre.network.name;
   const deployConfig = getConfig(network);
@@ -213,24 +233,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       existingAaveLendingPoolDeploymentBlock &&
       aaveTokens
     ) {
-      const aaveLendingPool = (await ethers.getContractAt(
-        "IAaveV2LendingPool",
-        existingAaveLendingPoolAddress
-      )) as IAaveV2LendingPool;
-
       for (const tokenDefinition of aaveTokens) {
         let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
 
         if (tokenDefinition.daysOfTrustedDataPoints) {
-          const currentBlock = await hre.ethers.provider.getBlock("latest");
-
-          const toBlock = currentBlock.number;
-          const fromBlock = await getBlockAtTimestamp(
+          const { fromBlock, toBlock, blockInterval } = await getBlockSpec(
             hre,
-            currentBlock.timestamp -
-              ONE_DAY_IN_SECONDS * tokenDefinition.daysOfTrustedDataPoints
+            tokenDefinition.daysOfTrustedDataPoints
           );
-          const blockInterval = Math.floor(toBlock - fromBlock / 24 / 60 / 60);
 
           trustedDataPointsGenerator = await buildAaveDataGenerator({
             hre,
@@ -239,13 +249,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             borrow: tokenDefinition.borrow || false,
             fromBlock: fromBlock,
             toBlock: toBlock,
-            blockInterval: blockInterval,
+            blockInterval,
           });
         }
 
         await deployAndConfigureWithGenerator({
           hre,
-          initialArgs: [aaveLendingPool.address, tokenDefinition.address],
+          initialArgs: [
+            existingAaveLendingPoolAddress,
+            tokenDefinition.address,
+          ],
           rateOracleConfig: tokenDefinition,
           contractName: tokenDefinition.borrow
             ? "AaveBorrowRateOracle"
@@ -271,25 +284,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       existingAaveLendingPoolDeploymentBlock &&
       aaveTokens
     ) {
-      const aaveLendingPool = (await ethers.getContractAt(
-        "IAaveV3LendingPool",
-        existingAaveLendingPoolAddress
-      )) as IAaveV3LendingPool;
-
       for (const tokenDefinition of aaveTokens) {
         let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
 
         if (tokenDefinition.daysOfTrustedDataPoints) {
-          const currentBlock = await hre.ethers.provider.getBlock("latest");
-
-          const toBlock = currentBlock.number;
-          const fromBlock = await getBlockAtTimestamp(
+          const { fromBlock, toBlock, blockInterval } = await getBlockSpec(
             hre,
-            currentBlock.timestamp -
-              ONE_DAY_IN_SECONDS * tokenDefinition.daysOfTrustedDataPoints
-          );
-          const blockInterval = Math.floor(
-            toBlock - fromBlock / ONE_DAY_IN_SECONDS
+            tokenDefinition.daysOfTrustedDataPoints
           );
 
           trustedDataPointsGenerator = await buildAaveDataGenerator({
@@ -305,7 +306,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await deployAndConfigureWithGenerator({
           hre,
-          initialArgs: [aaveLendingPool.address, tokenDefinition.address],
+          initialArgs: [
+            existingAaveLendingPoolAddress,
+            tokenDefinition.address,
+          ],
           rateOracleConfig: tokenDefinition,
           contractName: tokenDefinition.borrow
             ? "AaveV3BorrowRateOracle"
@@ -320,31 +324,37 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   {
     // GLP Rate Oracle
     const glpConfig = deployConfig.glpConfig;
+
     const existingReawrdRouter = glpConfig?.rewardRouter;
     const existingRewardRouterDeploymentBlock =
       glpConfig?.rewardRouterDeploymentBlock;
     const rewardToken = glpConfig?.rewardToken;
+    const daysOfTrustedDataPoints = glpConfig?.defaults.daysOfTrustedDataPoints;
 
     if (
       existingReawrdRouter &&
       existingRewardRouterDeploymentBlock &&
       rewardToken
     ) {
-      const rewardRouter = (await ethers.getContractAt(
-        "IRewardRouter",
-        existingReawrdRouter
-      )) as IRewardRouter;
-
       let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
 
-      trustedDataPointsGenerator = await buildGlpDataGenerator(
-        hre,
-        glpConfig.defaults.daysOfTrustedDataPoints
-      );
+      if (daysOfTrustedDataPoints) {
+        const { fromBlock, toBlock, blockInterval } = await getBlockSpec(
+          hre,
+          daysOfTrustedDataPoints
+        );
+
+        trustedDataPointsGenerator = await buildGlpDataGenerator({
+          hre,
+          fromBlock,
+          toBlock,
+          blockInterval,
+        });
+      }
 
       await deployAndConfigureWithGenerator({
         hre,
-        initialArgs: [rewardRouter.address, rewardToken],
+        initialArgs: [existingReawrdRouter, rewardToken],
         rateOracleConfig: {
           name: null,
           rateOracleBufferSize: glpConfig.defaults.rateOracleBufferSize,
@@ -357,163 +367,171 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
   }
 
-  // Compound Rate Oracles
-  // Configure these if we have a one or more cTokens configured
-  const compoundConfig = deployConfig.compoundConfig;
-  const compoundTokens = compoundConfig && compoundConfig.compoundTokens;
+  {
+    // Compound Rate Oracles
+    // Configure these if we have a one or more cTokens configured
+    const compoundConfig = deployConfig.compoundConfig;
+    const compoundTokens = compoundConfig && compoundConfig.compoundTokens;
 
-  if (compoundTokens) {
-    for (const tokenDefinition of compoundTokens) {
-      const cToken = await ethers.getContractAt(
-        "ICToken",
-        tokenDefinition.address
-      );
-
-      let underlyingAddress: string;
-      let underlyingDecimals: number;
-      let ethPool: boolean;
-
-      if (tokenDefinition.name === "cETH") {
-        if (deployConfig.weth) {
-          underlyingAddress = deployConfig.weth;
-          underlyingDecimals = 18;
-          ethPool = true;
-        } else {
-          throw new Error("WETH not found");
-        }
-      } else {
-        const underlying = (await ethers.getContractAt(
-          "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-          await cToken.underlying()
-        )) as ERC20;
-
-        underlyingAddress = underlying.address;
-        underlyingDecimals = await underlying.decimals();
-        ethPool = false;
-      }
-
-      let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
-
-      if (tokenDefinition.daysOfTrustedDataPoints) {
-        trustedDataPointsGenerator = await buildCompoundDataGenerator(
-          hre,
-          cToken.address,
-          tokenDefinition.daysOfTrustedDataPoints,
-          tokenDefinition.borrow,
-          ethPool
+    if (compoundTokens) {
+      for (const tokenDefinition of compoundTokens) {
+        const cToken = await ethers.getContractAt(
+          "ICToken",
+          tokenDefinition.address
         );
-      }
 
-      await deployAndConfigureWithGenerator({
-        hre,
-        initialArgs: [
-          cToken.address,
-          ethPool,
-          underlyingAddress,
-          underlyingDecimals,
-        ],
-        rateOracleConfig: tokenDefinition,
-        contractName: tokenDefinition.borrow
-          ? "CompoundBorrowRateOracle"
-          : "CompoundRateOracle",
-        trustedDataPointsGenerator,
-      });
+        let underlyingAddress: string;
+        let underlyingDecimals: number;
+        let ethPool: boolean;
+
+        if (tokenDefinition.name === "cETH") {
+          if (deployConfig.weth) {
+            underlyingAddress = deployConfig.weth;
+            underlyingDecimals = 18;
+            ethPool = true;
+          } else {
+            throw new Error("WETH not found");
+          }
+        } else {
+          const underlying = (await ethers.getContractAt(
+            "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
+            await cToken.underlying()
+          )) as ERC20;
+
+          underlyingAddress = underlying.address;
+          underlyingDecimals = await underlying.decimals();
+          ethPool = false;
+        }
+
+        let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
+
+        if (tokenDefinition.daysOfTrustedDataPoints) {
+          const { fromBlock, toBlock, blockInterval } = await getBlockSpec(
+            hre,
+            tokenDefinition.daysOfTrustedDataPoints
+          );
+
+          trustedDataPointsGenerator = await buildCompoundDataGenerator({
+            hre,
+            fromBlock,
+            toBlock,
+            blockInterval,
+            cTokenAddress: tokenDefinition.address,
+            isEther: tokenDefinition.name === "cETH",
+            borrow: tokenDefinition.borrow || false,
+          });
+        }
+
+        await deployAndConfigureWithGenerator({
+          hre,
+          initialArgs: [
+            cToken.address,
+            ethPool,
+            underlyingAddress,
+            underlyingDecimals,
+          ],
+          rateOracleConfig: tokenDefinition,
+          contractName: tokenDefinition.borrow
+            ? "CompoundBorrowRateOracle"
+            : "CompoundRateOracle",
+          trustedDataPointsGenerator,
+        });
+      }
     }
   }
   // End of Compound Rate Oracles
 
   // Lido Rate Oracle
-  const lidoConfig = deployConfig.lidoConfig;
-  const lidoStETHAddress = lidoConfig?.lidoStETH;
-  const lidoOracleAddress = lidoConfig?.lidoOracle;
+  {
+    const lidoConfig = deployConfig.lidoConfig;
+    const lidoStETHAddress = lidoConfig?.lidoStETH;
+    const lidoOracleAddress = lidoConfig?.lidoOracle;
+    const daysOfTrustedDataPoints =
+      lidoConfig?.defaults.daysOfTrustedDataPoints;
 
-  if (lidoStETHAddress) {
-    let wethAddress: string;
-    if (deployConfig.weth) {
-      wethAddress = deployConfig.weth;
-    } else {
-      throw new Error("WETH not found");
-    }
+    if (lidoStETHAddress) {
+      let wethAddress: string;
+      if (deployConfig.weth) {
+        wethAddress = deployConfig.weth;
+      } else {
+        throw new Error("WETH not found");
+      }
 
-    let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
+      let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
 
-    if (lidoConfig.defaults.daysOfTrustedDataPoints) {
-      trustedDataPointsGenerator = await buildLidoDataGenerator(
+      if (daysOfTrustedDataPoints) {
+        const { fromBlock, toBlock, blockInterval } = await getBlockSpec(
+          hre,
+          daysOfTrustedDataPoints
+        );
+
+        trustedDataPointsGenerator = await buildLidoDataGenerator({
+          hre,
+          fromBlock,
+          toBlock,
+          blockInterval,
+        });
+      }
+
+      await deployAndConfigureWithGenerator({
         hre,
-        lidoConfig.defaults.daysOfTrustedDataPoints,
-        {
-          stEth: (await ethers.getContractAt(
-            "IStETH",
-            lidoStETHAddress
-          )) as IStETH,
-          lidoOracle: lidoOracleAddress
-            ? ((await ethers.getContractAt(
-                "ILidoOracle",
-                lidoOracleAddress
-              )) as ILidoOracle)
-            : undefined,
-        }
-      );
+        initialArgs: [lidoStETHAddress, lidoOracleAddress, wethAddress],
+        rateOracleConfig: {
+          name: null,
+          rateOracleBufferSize: lidoConfig.defaults.rateOracleBufferSize,
+          minSecondsSinceLastUpdate:
+            lidoConfig.defaults.minSecondsSinceLastUpdate,
+        },
+        contractName: "LidoRateOracle",
+        trustedDataPointsGenerator,
+      });
     }
-
-    await deployAndConfigureWithGenerator({
-      hre,
-      initialArgs: [lidoStETHAddress, lidoOracleAddress, wethAddress],
-      rateOracleConfig: {
-        name: null,
-        rateOracleBufferSize: lidoConfig.defaults.rateOracleBufferSize,
-        minSecondsSinceLastUpdate:
-          lidoConfig.defaults.minSecondsSinceLastUpdate,
-      },
-      contractName: "LidoRateOracle",
-      trustedDataPointsGenerator,
-    });
   }
   // End of Lido Rate Oracle
 
   // RocketPool Rate Oracle
-  const rocketPoolConfig = deployConfig.rocketPoolConfig;
-  const rocketEthAddress = rocketPoolConfig?.rocketPoolRocketToken;
-  const rocketNetworkBalancesAddress = rocketPoolConfig?.rocketNetworkBalances;
+  {
+    const rocketPoolConfig = deployConfig.rocketPoolConfig;
+    const rocketEthAddress = rocketPoolConfig?.rocketPoolRocketToken;
+    const rocketNetworkBalancesAddress =
+      rocketPoolConfig?.rocketNetworkBalances;
+    const daysOfTrustedDataPoints =
+      rocketPoolConfig?.defaults.daysOfTrustedDataPoints;
 
-  if (rocketEthAddress && rocketNetworkBalancesAddress) {
-    let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
-    const rocketEth = (await ethers.getContractAt(
-      "IRocketEth",
-      rocketEthAddress
-    )) as IRocketEth;
-    const rocketNetworkBalances = (await ethers.getContractAt(
-      "IRocketNetworkBalances",
-      rocketNetworkBalancesAddress
-    )) as IRocketNetworkBalances;
+    if (rocketEthAddress && rocketNetworkBalancesAddress) {
+      let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
 
-    if (rocketPoolConfig.defaults.daysOfTrustedDataPoints) {
-      trustedDataPointsGenerator = await buildRocketDataGenerator(
+      if (daysOfTrustedDataPoints) {
+        const { fromBlock, toBlock, blockInterval } = await getBlockSpec(
+          hre,
+          daysOfTrustedDataPoints
+        );
+
+        trustedDataPointsGenerator = await buildRocketDataGenerator({
+          hre,
+          fromBlock,
+          toBlock,
+          blockInterval,
+        });
+      }
+
+      await deployAndConfigureWithGenerator({
         hre,
-        rocketPoolConfig.defaults.daysOfTrustedDataPoints,
-        {
-          rocketEth,
-          rocketNetworkBalances,
-        }
-      );
+        initialArgs: [
+          rocketEthAddress,
+          rocketNetworkBalancesAddress,
+          deployConfig.weth,
+        ],
+        rateOracleConfig: {
+          name: null,
+          rateOracleBufferSize: rocketPoolConfig.defaults.rateOracleBufferSize,
+          minSecondsSinceLastUpdate:
+            rocketPoolConfig.defaults.minSecondsSinceLastUpdate,
+        },
+        contractName: "RocketPoolRateOracle",
+        trustedDataPointsGenerator,
+      });
     }
-
-    await deployAndConfigureWithGenerator({
-      hre,
-      initialArgs: [
-        rocketEth.address,
-        rocketNetworkBalances.address,
-        deployConfig.weth,
-      ],
-      rateOracleConfig: {
-        name: null,
-        rateOracleBufferSize: rocketPoolConfig.defaults.rateOracleBufferSize,
-        minSecondsSinceLastUpdate:
-          rocketPoolConfig.defaults.minSecondsSinceLastUpdate,
-      },
-      contractName: "RocketPoolRateOracle",
-      trustedDataPointsGenerator,
-    });
   }
   // End of Rocket Pool Rate Oracle
   if (multisigConfig.length > 0) {
