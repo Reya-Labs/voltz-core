@@ -24,6 +24,8 @@ import {
 import { ONE_DAY_IN_SECONDS } from "../tasks/utils/constants";
 
 interface RateOracleConfigTemplateData {
+  chainId: string;
+  multisig: string;
   rateOracles: RateOracleConfigForTemplate[];
 }
 
@@ -538,6 +540,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // Flag the last entry to tell the template to stop adding commas
     multisigConfig[multisigConfig.length - 1].last = true;
     await writeRateOracleConfigToGnosisSafeTemplate({
+      chainId: await hre.getChainId(),
+      multisig: deployConfig.multisig,
       rateOracles: multisigConfig,
     });
   }

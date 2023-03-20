@@ -96,6 +96,8 @@ loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines"); //
 loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution"); //
 
 // System support
+loadModuleIfContractsAreBuilt("./tasks/deployUpdatedImplementations"); //
+loadModuleIfContractsAreBuilt("./tasks/hotSwapRateOracle"); //
 loadModuleIfContractsAreBuilt("./tasks/setPausability"); //
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery"); //
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
