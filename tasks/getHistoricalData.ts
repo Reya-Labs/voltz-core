@@ -24,8 +24,23 @@ const supportedPlatforms: { [key: string]: string[] } = {
   arbitrum: ["aaveV3", "glp"],
 };
 
+// Description:
+//   This task fetches rates from external platforms such as Aave, Compound, Lido, Rocket or GLP.
+//   Check the support platforms above for more granularity.
+//
+//   Params:
+//     - toBlock: block where the scraping ends (default: current block)
+//
+//     - fromBlock: block where the scraping starts
+//     - lookbackDays: the scraping is performed this number of days before toBlock
+//     Only one of this parameters should be passed (fromBlock has higher priority)
+//
+//     - blockInterval: the frequency of scraping in blocks (default: est. number of blocks per day)
+//
+//     - platform: the platform where the scraping happens
 // Example:
 //   ``npx hardhat getHistoricalData --network mainnet --from-block 16618430 --platform aaveV3Borrow --token USDC``
+//   ``npx hardhat getHistoricalData --network arbitrum --lookback-days 30 --platform glp --token ETH``
 
 task("getHistoricalData", "Retrieves the historical rates")
   .addOptionalParam(
