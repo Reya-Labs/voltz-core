@@ -80,7 +80,7 @@ loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions"); //
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock"); //
 
 // Data extractions
-loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
+loadModuleIfContractsAreBuilt("./tasks/getHistoricalData"); //
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy"); //
 loadModuleIfContractsAreBuilt("./tasks/getSlippageData"); //
 

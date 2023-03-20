@@ -13,7 +13,7 @@ const ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS = {
 const DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS = 20;
 
 export const goerliConfig: ContractsConfig = {
-  maxIrsDurationInSeconds: 60 * 60 * 24 * 32, // 32 days. Do not increase without checking that rate oracle buffers are large enough
+  maxIrsDurationInSeconds: 60 * 60 * 24 * 64, // 64 days. Do not increase without checking that rate oracle buffers are large enough
   weth: "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
   multisig: "0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1",
   compoundConfig: {

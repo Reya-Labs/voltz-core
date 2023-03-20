@@ -22,6 +22,7 @@ import * as fs from "fs";
 import path from "path";
 import { SinglePoolConfiguration } from "../poolConfigs/pool-configs/types";
 import { getNetworkPoolConfigs } from "../poolConfigs/pool-configs/poolConfig";
+import { getNetworkPausers } from "../poolConfigs/pausers/pausers";
 
 interface SingleIrsData {
   factoryAddress: string;
@@ -63,6 +64,11 @@ interface SingleIrsData {
 }
 
 interface MultisigTemplateData {
+  multisig: string;
+  chainId: string;
+  pausers: {
+    pauser: string;
+  }[];
   irsInstances: SingleIrsData[];
 }
 
@@ -71,7 +77,7 @@ async function writeIrsCreationTransactionsToGnosisSafeTemplate(
 ) {
   // Get external template with fetch
   const template = fs.readFileSync(
-    path.join(__dirname, "templates/CreateIrsTransactions.json.mustache"),
+    path.join(__dirname, "templates/createIrsTransactions.json.mustache"),
     "utf8"
   );
   const output = mustache.render(template, data);
@@ -274,6 +280,11 @@ task(
     "The names of pools in deployConfig/poolConfig.ts ('borrow_aDAI_v2 stETH_v1' - skip param name)"
   )
   .setAction(async (taskArgs, hre) => {
+    // Retrieve multisig address for the current network
+    const network = hre.network.name;
+    const deployConfig = getConfig(network);
+    const multisig = deployConfig.multisig;
+
     // const pool = taskArgs.borrow ? "borrow_" + taskArgs.pool : taskArgs.pool;
     const poolConfigList: SinglePoolConfiguration[] = [];
     const multisigTemplateData: SingleIrsData[] = [];
@@ -303,19 +314,7 @@ task(
       }
     }
 
-    let factory: ethers.Contract;
-    if (hre.network.name === "arbitrum") {
-      // factory was deployed by community deployer and we are missing the deplyment artifact
-      const signer = (await hre.ethers.getSigners())[0];
-      factory = await hre.ethers.getContractAt(
-        "Factory",
-        "0xda66a7584da7210fd26726EFb12585734F7688c1",
-        signer
-      );
-    } else {
-      factory = await hre.ethers.getContract("Factory");
-    }
-
+    const factory = await hre.ethers.getContract("Factory");
     let nextFactoryNonce = await getFactoryNonce(hre, factory.address);
 
     for (const poolConfig of poolConfigList) {
@@ -431,6 +430,11 @@ task(
       multisigTemplateData[multisigTemplateData.length - 1].last = true;
       writeIrsCreationTransactionsToGnosisSafeTemplate({
         irsInstances: multisigTemplateData,
+        pausers: getNetworkPausers(hre.network.name).map((p) => ({
+          pauser: p,
+        })),
+        multisig,
+        chainId: await hre.getChainId(),
       });
     }
   });
@@ -471,12 +475,6 @@ task(
     const a = e.args;
     const startTimestamp = a.termStartTimestampWad.div(toBn(1)).toNumber();
     const endTimestamp = a.termEndTimestampWad.div(toBn(1)).toNumber();
-    // const startTimeString = new Date(startTimestamp * 1000)
-    //   .toISOString()
-    //   .substring(0, 10);
-    // const endTImeString = new Date(endTimestamp * 1000)
-    //   .toISOString()
-    //   .substring(0, 10);
     const startTimeString = new Date(startTimestamp * 1000).toISOString();
     const endTImeString = new Date(endTimestamp * 1000).toISOString();
 
