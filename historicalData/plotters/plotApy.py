@@ -12,16 +12,14 @@ parser = ArgumentParser()
 
 
 def parseSettings():
-    parser.add_argument("-asset", "--asset", type=str,
-                        help="Asset for plotter (e.g. --asset rETH)", default="aUSDC")
-    parser.add_argument("-borrow", "--borrow", help="Is it a borrow market?", action='store_true', default=False)
+    parser.add_argument("-id", "--id", type=str,
+                        help="The name of the .csv file from rates")
     parser.add_argument("-linear", "--linear", help="Is it a linear rate?", action='store_true', default=False)
 
     args = dict((k, v)
                 for k, v in vars(parser.parse_args()).items() if v is not None)
 
-    ASSET = args["asset"]
-    IS_BORROW = args["borrow"]
+    ID = args["id"]
     IS_LINEAR = args["linear"]
 
     # lookback windows in seconds (six entries)
@@ -33,17 +31,14 @@ def parseSettings():
     APY_FREQUENCY = 5 * SECONDS_IN_MINUTE
 
     # apy limits for plots
-    APY_LIMITS = [0, 1]
+    APY_LIMITS = [0, 0.1]
 
-    return ASSET, IS_BORROW, IS_LINEAR, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS
+    return ID, IS_LINEAR, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS
 
 
 def getDatasets():
-    prefix = "f"
-    if (IS_BORROW): 
-        prefix += "_borrow"
-    file_name = "historicalData/rates/"+prefix+"_{0}.csv"
-    df_input = pd.read_csv(file_name.format(ASSET))
+    file_name = "historicalData/rates/{0}.csv".format(ID)
+    df_input = pd.read_csv(file_name)
 
     dataset_range_in_seconds = df_input.loc[:, "timestamp"].iloc[-1] - df_input.loc[:, "timestamp"].iloc[0]
     valid_lookback_windows = [lookback_window for lookback_window in LOOKBACK_WINDOWS if lookback_window < dataset_range_in_seconds]
@@ -51,8 +46,6 @@ def getDatasets():
     rnis = getPreparedRNIData(df_input, False)
     apys = [getDailyApy(rnis, lookback=lookback, frequency=APY_FREQUENCY, linear=IS_LINEAR)
             for lookback in valid_lookback_windows]
-    # apy_df = pd.DataFrame(apys)
-    # apy_df.to_csv("historicalData/rates/{0}_APY.csv".format(ASSET), index=False)
 
     return rnis, apys
 
@@ -60,9 +53,9 @@ def getDatasets():
 def plot(rnis, apys):
     fig, axs = plt.subplots(2, 3)
     fig.set_size_inches(20, 6)
-    fig.suptitle("Historical data for {0}".format(ASSET))
+    fig.suptitle("Historical data for {0}".format(ID))
     fig.canvas.manager.set_window_title(
-        "Historical data for {0}".format(ASSET))
+        "Historical data for {0}".format(ID))
 
     axs[0, 0].set_title("Raw rates")
     axs[0, 0].set_xticks(
@@ -85,11 +78,6 @@ def plot(rnis, apys):
         axs[i, j].set_xticklabels([datetime.date.fromtimestamp(
             start_timestamp), datetime.date.fromtimestamp(end_timestamp)])
 
-        # 5 day granularity of date lables
-        # axs[i, j].set_xticks(np.arange(start_timestamp,end_timestamp, 432000))
-        # axs[i, j].set_xticklabels([datetime.date.fromtimestamp(i) for i in np.arange(start_timestamp,end_timestamp, 432000)],
-        #     rotation=20, horizontalalignment = 'right')
-
         axs[i, j].set_ylim(APY_LIMITS)
 
         yticks = [i for i in np.linspace(APY_LIMITS[0], APY_LIMITS[1], 6)]
@@ -100,10 +88,10 @@ def plot(rnis, apys):
         axs[i, j].plot(apys[t]["timestamp"], apys[t]["apy"])
 
     fig.tight_layout()
-    plt.savefig("historicalData/rates/{0}.jpg".format(ASSET))
+    plt.savefig("historicalData/rates/{0}.jpg".format(ID))
     plt.show()
 
 
-ASSET, IS_BORROW, IS_LINEAR, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS = parseSettings()
+ID, IS_LINEAR, LOOKBACK_WINDOWS, LOOKBACK_WINDOW_LABELS, APY_FREQUENCY, APY_LIMITS = parseSettings()
 rnis, apys = getDatasets()
 plot(rnis, apys)

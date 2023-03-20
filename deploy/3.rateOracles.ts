@@ -21,15 +21,13 @@ import { BigNumber } from "ethers";
 import path from "path";
 import mustache from "mustache";
 import { Datum } from "../historicalData/generators/common";
-import {
-  buildAaveDataGenerator,
-  buildAaveV3DataGenerator,
-} from "../historicalData/generators/aave";
+import { buildAaveDataGenerator } from "../historicalData/generators/aave";
 import { buildCompoundDataGenerator } from "../historicalData/generators/compound";
 
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
 import { buildGlpDataGenerator } from "../historicalData/generators/glp";
+import { getBlockAtTimestamp } from "../tasks/utils/helpers";
 
 interface RateOracleConfigTemplateData {
   rateOracles: RateOracleConfigForTemplate[];
@@ -223,12 +221,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
 
         if (tokenDefinition.daysOfTrustedDataPoints) {
-          trustedDataPointsGenerator = await buildAaveDataGenerator(
+          const currentBlock = await hre.ethers.provider.getBlock("latest");
+
+          const toBlock = currentBlock.number;
+          const fromBlock = await getBlockAtTimestamp(
             hre,
-            tokenDefinition.address,
-            tokenDefinition.daysOfTrustedDataPoints,
-            tokenDefinition.borrow
+            currentBlock.timestamp -
+              24 * 60 * 60 * tokenDefinition.daysOfTrustedDataPoints
           );
+          const blockInterval = Math.floor(toBlock - fromBlock / 24 / 60 / 60);
+
+          trustedDataPointsGenerator = await buildAaveDataGenerator({
+            hre,
+            underlyingAddress: tokenDefinition.address,
+            lendingPoolAddress: existingAaveLendingPoolAddress,
+            borrow: tokenDefinition.borrow || false,
+            fromBlock: fromBlock,
+            toBlock: toBlock,
+            blockInterval: blockInterval,
+          });
         }
 
         await deployAndConfigureWithGenerator({
@@ -268,12 +279,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
 
         if (tokenDefinition.daysOfTrustedDataPoints) {
-          trustedDataPointsGenerator = await buildAaveV3DataGenerator(
+          const currentBlock = await hre.ethers.provider.getBlock("latest");
+
+          const toBlock = currentBlock.number;
+          const fromBlock = await getBlockAtTimestamp(
             hre,
-            aaveLendingPool,
-            tokenDefinition.address,
-            tokenDefinition.daysOfTrustedDataPoints
+            currentBlock.timestamp -
+              24 * 60 * 60 * tokenDefinition.daysOfTrustedDataPoints
           );
+          const blockInterval = Math.floor(toBlock - fromBlock / 24 / 60 / 60);
+
+          trustedDataPointsGenerator = await buildAaveDataGenerator({
+            hre,
+            underlyingAddress: tokenDefinition.address,
+            lendingPoolAddress: existingAaveLendingPoolAddress,
+            borrow: tokenDefinition.borrow || false,
+            fromBlock: fromBlock,
+            toBlock: toBlock,
+            blockInterval: blockInterval,
+          });
         }
 
         await deployAndConfigureWithGenerator({

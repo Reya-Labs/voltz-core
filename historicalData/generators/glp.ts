@@ -10,7 +10,7 @@ export interface GlpDataSpec extends BlockSpec {
   hre: HardhatRuntimeEnvironment;
 }
 
-// Generator function for Aave data
+// Generator function for GLP data
 async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
   const { hre } = spec;
   let lastIndex: BigNumber = BigNumber.from(0);

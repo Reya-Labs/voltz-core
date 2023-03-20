@@ -82,7 +82,7 @@ loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock"); //
 // Data extractions
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy"); //
-loadModuleIfContractsAreBuilt("./tasks/getSlippageData");
+loadModuleIfContractsAreBuilt("./tasks/getSlippageData"); //
 
 // Position support
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
