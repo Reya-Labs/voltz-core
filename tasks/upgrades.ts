@@ -110,9 +110,7 @@ async function assertProxyIsOfType(
 //   otherwise, it sends the txs directly.
 //
 // Example:
-//   ``npx hardhat upgradeProxy --network mainnet --multisig --factory contract-type VAMM
-//     --proxy-addresses 0xae16Bb8Fe13001b61DdB44e2cEae472D6af08755,0x538E4FFeE8AEd76EfE35565c322a7B0d8cDb4CFF
-//   ``
+//   ``npx hardhat upgradeProxy --network mainnet --multisig --factory --contract-type VAMM --proxy-addresses 0xae16Bb8Fe13001b61DdB44e2cEae472D6af08755,0x538E4FFeE8AEd76EfE35565c322a7B0d8cDb4CFF``
 
 task(
   "upgradeProxy",
