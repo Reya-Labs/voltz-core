@@ -73,41 +73,41 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
 };
 
 // PCV transactions
-loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints"); //
-loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions"); //
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints");
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
 
 // Localhost time maninupulation support
-loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock"); //
+loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
 
 // Data extractions
-loadModuleIfContractsAreBuilt("./tasks/getHistoricalData"); //
-loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy"); //
-loadModuleIfContractsAreBuilt("./tasks/getSlippageData"); //
+loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
+loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
+loadModuleIfContractsAreBuilt("./tasks/getSlippageData");
 
 // Position support
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
 loadModuleIfContractsAreBuilt("./tasks/estimateCashflow");
-loadModuleIfContractsAreBuilt("./tasks/calculatePositionSettlement"); //
-loadModuleIfContractsAreBuilt("./tasks/liquidatePositions"); //
+loadModuleIfContractsAreBuilt("./tasks/calculatePositionSettlement");
+loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
 
 // Pool support
 loadModuleIfContractsAreBuilt("./tasks/irsInstances");
-loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines"); //
-loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution"); //
+loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
+loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution");
 
 // System support
-loadModuleIfContractsAreBuilt("./tasks/deployUpdatedImplementations"); //
-loadModuleIfContractsAreBuilt("./tasks/hotSwapRateOracle"); //
-loadModuleIfContractsAreBuilt("./tasks/setPausability"); //
-loadModuleIfContractsAreBuilt("./tasks/setPeriphery"); //
+loadModuleIfContractsAreBuilt("./tasks/deployUpdatedImplementations");
+loadModuleIfContractsAreBuilt("./tasks/hotSwapRateOracle");
+loadModuleIfContractsAreBuilt("./tasks/setPausability");
+loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
 
 // Rate oracle support
-loadModuleIfContractsAreBuilt("./tasks/getRateOracleData"); //
-loadModuleIfContractsAreBuilt("./tasks/queryRateOracleEntry"); //
-loadModuleIfContractsAreBuilt("./tasks/transferRateOracleOwnership"); //
-loadModuleIfContractsAreBuilt("./tasks/writeRateOracleEntries"); //
-loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext"); //
+loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
+loadModuleIfContractsAreBuilt("./tasks/queryRateOracleEntry");
+loadModuleIfContractsAreBuilt("./tasks/transferRateOracleOwnership");
+loadModuleIfContractsAreBuilt("./tasks/writeRateOracleEntries");
+loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
 
 // Community deployer script
 loadModuleIfContractsAreBuilt(
