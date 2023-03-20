@@ -28,6 +28,7 @@ import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
 import { buildGlpDataGenerator } from "../historicalData/generators/glp";
 import { getBlockAtTimestamp } from "../tasks/utils/helpers";
+import { ONE_DAY_IN_SECONDS } from "../tasks/utils/constants";
 
 interface RateOracleConfigTemplateData {
   rateOracles: RateOracleConfigForTemplate[];
@@ -227,14 +228,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           const fromBlock = await getBlockAtTimestamp(
             hre,
             currentBlock.timestamp -
-              24 * 60 * 60 * tokenDefinition.daysOfTrustedDataPoints
+              ONE_DAY_IN_SECONDS * tokenDefinition.daysOfTrustedDataPoints
           );
           const blockInterval = Math.floor(toBlock - fromBlock / 24 / 60 / 60);
 
           trustedDataPointsGenerator = await buildAaveDataGenerator({
             hre,
             underlyingAddress: tokenDefinition.address,
-            lendingPoolAddress: existingAaveLendingPoolAddress,
+            version: 2,
             borrow: tokenDefinition.borrow || false,
             fromBlock: fromBlock,
             toBlock: toBlock,
@@ -285,14 +286,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           const fromBlock = await getBlockAtTimestamp(
             hre,
             currentBlock.timestamp -
-              24 * 60 * 60 * tokenDefinition.daysOfTrustedDataPoints
+              ONE_DAY_IN_SECONDS * tokenDefinition.daysOfTrustedDataPoints
           );
-          const blockInterval = Math.floor(toBlock - fromBlock / 24 / 60 / 60);
+          const blockInterval = Math.floor(
+            toBlock - fromBlock / ONE_DAY_IN_SECONDS
+          );
 
           trustedDataPointsGenerator = await buildAaveDataGenerator({
             hre,
             underlyingAddress: tokenDefinition.address,
-            lendingPoolAddress: existingAaveLendingPoolAddress,
+            version: 3,
             borrow: tokenDefinition.borrow || false,
             fromBlock: fromBlock,
             toBlock: toBlock,

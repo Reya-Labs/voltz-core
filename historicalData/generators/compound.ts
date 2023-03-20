@@ -1,49 +1,74 @@
 import { BigNumber } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { ICToken, IERC20Minimal } from "../../typechain";
-import { BlockSpec, Datum, blocksPerDay } from "./common";
+import { ERC20, ICToken } from "../../typechain";
+import { BlockSpec, Datum } from "./common";
 
 export interface CompoundDataSpec extends BlockSpec {
   hre: HardhatRuntimeEnvironment;
-  cToken: ICToken;
+  cTokenAddress: string;
   borrow: boolean;
-  decimals: number;
+  isEther: boolean;
 }
 
 // Generator function for Compound data
 async function* compoundDataGenerator(
   spec: CompoundDataSpec
 ): AsyncGenerator<Datum> {
-  const { hre, cToken, decimals } = spec;
+  const { hre, cTokenAddress, isEther } = spec;
+
+  // Fetch cToken contract
+  const cToken = (await hre.ethers.getContractAt(
+    "ICToken",
+    cTokenAddress
+  )) as ICToken;
+
+  // Fetch underlying token decimals
+  let decimals = 18;
+
+  if (!isEther) {
+    const underlying = (await hre.ethers.getContractAt(
+      "IERC20Minimal",
+      await cToken.underlying()
+    )) as ERC20;
+
+    decimals = await underlying.decimals();
+  }
 
   for (let b = spec.fromBlock; b <= spec.toBlock; b += spec.blockInterval) {
     try {
       const block = await hre.ethers.provider.getBlock(b);
       let rate: BigNumber;
 
+      // Fetch rate for borrowing
       if (spec.borrow) {
         const borrowRateMantissa = await cToken.borrowRatePerBlock({
           blockTag: b,
         });
+
         const accrualBlockNumber = await cToken.accrualBlockNumber({
           blockTag: b,
         });
+
         const blockDelta = BigNumber.from(b).sub(accrualBlockNumber);
         const simpleInterestFactor = borrowRateMantissa.mul(
           BigNumber.from(blockDelta)
         );
+
         const borrowIndexPrior = await cToken.borrowIndex({
           blockTag: b,
         });
+
         rate = simpleInterestFactor
           .mul(borrowIndexPrior)
           .div(BigNumber.from(10).pow(18)) // all the above are in wad
           .add(borrowIndexPrior)
           .mul(BigNumber.from(10).pow(9)); // scale to ray
       } else {
+        // Fetch rate for lending
         rate = await cToken.exchangeRateStored({
           blockTag: b,
         });
+
         if (decimals > 17) {
           rate = rate.div(BigNumber.from(10).pow(decimals - 17));
         } else if (decimals < 17) {
@@ -68,46 +93,7 @@ async function* compoundDataGenerator(
 }
 
 export async function buildCompoundDataGenerator(
-  hre: HardhatRuntimeEnvironment,
-  cTokenAddress: string,
-  lookbackDays?: number,
-  borrow = false,
-  isEther = false,
-  overrides?: Partial<CompoundDataSpec>
+  spec: CompoundDataSpec
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
-  // calculate from and to blocks
-  const currentBlock = await hre.ethers.provider.getBlock("latest");
-  const cToken = (await hre.ethers.getContractAt(
-    "ICToken",
-    cTokenAddress
-  )) as ICToken;
-
-  let decimals;
-  if (isEther) {
-    decimals = 18;
-  } else {
-    const underlying = (await hre.ethers.getContractAt(
-      "IERC20Minimal",
-      await cToken.underlying()
-    )) as IERC20Minimal;
-
-    decimals = await underlying.decimals();
-  }
-
-  const defaults = {
-    fromBlock: lookbackDays
-      ? currentBlock.number - blocksPerDay * lookbackDays
-      : 7710760, // 7710760 = cUSDC deployment
-    blockInterval: blocksPerDay,
-    toBlock: currentBlock.number,
-    hre,
-    borrow,
-    decimals,
-    cToken,
-  };
-
-  return compoundDataGenerator({
-    ...defaults,
-    ...overrides,
-  });
+  return compoundDataGenerator(spec);
 }

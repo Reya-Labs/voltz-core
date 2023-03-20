@@ -1,33 +1,14 @@
 import { task, types } from "hardhat/config";
-import {
-  ILidoOracle,
-  IRocketEth,
-  IRocketNetworkBalances,
-  IStETH,
-} from "../typechain";
 import { Datum } from "../historicalData/generators/common";
 import { buildAaveDataGenerator } from "../historicalData/generators/aave";
 import { buildLidoDataGenerator } from "../historicalData/generators/lido";
 import { buildRocketDataGenerator } from "../historicalData/generators/rocket";
 import { buildCompoundDataGenerator } from "../historicalData/generators/compound";
 import { buildGlpDataGenerator } from "../historicalData/generators/glp";
-import { getBlockAtTimestamp } from "./utils/helpers";
+import { getBlockAtTimestamp, getEstimatedBlocksPerDay } from "./utils/helpers";
 import { getTokenAddress } from "../poolConfigs/tokens/tokenConfig";
 import { getCTokenAddress } from "../poolConfigs/external-contracts/compound";
-import {
-  getAaveV2LendingPoolAddress,
-  getAaveV3LendingPoolAddress,
-} from "../poolConfigs/external-contracts/aave";
-import {
-  getLidoOracleAddress,
-  getLidoStETHAddress,
-} from "../poolConfigs/external-contracts/lido";
-import {
-  getRocketETHAddress,
-  getRocketNetworkBalancesEthAddress,
-} from "../poolConfigs/external-contracts/rocket";
-
-const blocksPerDay = 7200;
+import { ONE_DAY_IN_SECONDS } from "./utils/constants";
 
 const supportedPlatforms: { [key: string]: string[] } = {
   mainnet: [
@@ -59,10 +40,10 @@ task("getHistoricalData", "Retrieves the historical rates")
     undefined,
     types.int
   )
-  .addParam(
+  .addOptionalParam(
     "blockInterval",
     "Script will fetch data every `--block-interval` blocks (between `--from-block` and `--to-block`)",
-    blocksPerDay,
+    undefined,
     types.int
   )
   .addOptionalParam(
@@ -84,7 +65,8 @@ task("getHistoricalData", "Retrieves the historical rates")
     const platform = taskArgs.platform;
     const network = hre.network.name;
     const tokenName = taskArgs.token;
-    const blockInterval = taskArgs.blockInterval;
+    const blockInterval =
+      taskArgs.blockInterval || (await getEstimatedBlocksPerDay(hre));
 
     // Check if platform is supported
     if (!Object.keys(supportedPlatforms).includes(network)) {
@@ -119,7 +101,7 @@ task("getHistoricalData", "Retrieves the historical rates")
       ? taskArgs.fromBlock
       : await getBlockAtTimestamp(
           hre,
-          currentBlock.timestamp - taskArgs.lookbackDays * 24 * 60 * 60
+          currentBlock.timestamp - taskArgs.lookbackDays * ONE_DAY_IN_SECONDS
         );
 
     // Check the block range
@@ -129,23 +111,6 @@ task("getHistoricalData", "Retrieves the historical rates")
 
     // Initialize generator
     let generator: AsyncGenerator<Datum> | undefined;
-
-    // Compound / Compound Borrow
-    if (platform === "compound" || platform === "compoundBorrow") {
-      const cToken = getCTokenAddress(network, tokenName);
-
-      const isEther = tokenName === "ETH";
-      const isBorrow = platform === "compoundBorrow";
-
-      generator = await buildCompoundDataGenerator(
-        hre,
-        cToken,
-        undefined,
-        isBorrow,
-        isEther,
-        { fromBlock, toBlock, blockInterval: blockInterval }
-      );
-    }
 
     //  Aave v3
     if (
@@ -158,22 +123,38 @@ task("getHistoricalData", "Retrieves the historical rates")
       const tokenAddress = getTokenAddress(network, tokenName);
 
       // Fetch aave v3 lending pool
-      const lendingPoolAddress =
-        platform === "aaveV3" || platform === "aaveV3Borrow"
-          ? getAaveV3LendingPoolAddress(network)
-          : getAaveV2LendingPoolAddress(network);
+      const version =
+        platform === "aaveV3" || platform === "aaveV3Borrow" ? 3 : 2;
 
       const borrow = platform === "aaveV3Borrow" || platform === "aaveV2Borrow";
 
       // Instantiate generator
       generator = await buildAaveDataGenerator({
         hre,
-        lendingPoolAddress,
+        version,
         underlyingAddress: tokenAddress,
         borrow,
-        fromBlock: fromBlock,
-        blockInterval: blockInterval,
-        toBlock: toBlock,
+        fromBlock,
+        blockInterval,
+        toBlock,
+      });
+    }
+
+    // Compound / Compound Borrow
+    if (platform === "compound" || platform === "compoundBorrow") {
+      const cTokenAddress = getCTokenAddress(network, tokenName);
+
+      const isEther = tokenName === "ETH";
+      const borrow = platform === "compoundBorrow";
+
+      generator = await buildCompoundDataGenerator({
+        fromBlock,
+        toBlock,
+        blockInterval,
+        hre,
+        cTokenAddress,
+        isEther,
+        borrow,
       });
     }
 
@@ -183,24 +164,11 @@ task("getHistoricalData", "Retrieves the historical rates")
         throw new Error(`Only ETH token needs to be passed for Lido.`);
       }
 
-      // Fetch Lido Oracle address
-      const lidoOracle = (await hre.ethers.getContractAt(
-        "ILidoOracle",
-        getLidoOracleAddress(network)
-      )) as ILidoOracle;
-
-      // Fetch stETH address
-      const stEth = (await hre.ethers.getContractAt(
-        "IStETH",
-        getLidoStETHAddress(network)
-      )) as IStETH;
-
-      generator = await buildLidoDataGenerator(hre, undefined, {
-        stEth,
-        lidoOracle,
+      generator = await buildLidoDataGenerator({
+        hre,
         fromBlock,
         toBlock,
-        blockInterval: blockInterval,
+        blockInterval,
       });
     }
 
@@ -209,20 +177,8 @@ task("getHistoricalData", "Retrieves the historical rates")
       if (!(tokenName === "ETH")) {
         throw new Error(`Only ETH token needs to be passed for Rocket.`);
       }
-
-      const rocketNetworkBalances = (await hre.ethers.getContractAt(
-        "IRocketNetworkBalances",
-        getRocketNetworkBalancesEthAddress(network)
-      )) as IRocketNetworkBalances;
-
-      const rocketEth = (await hre.ethers.getContractAt(
-        "IRocketEth",
-        getRocketETHAddress(network)
-      )) as IRocketEth;
-
-      generator = await buildRocketDataGenerator(hre, undefined, {
-        rocketNetworkBalances,
-        rocketEth,
+      generator = await buildRocketDataGenerator({
+        hre,
         fromBlock,
         toBlock,
         blockInterval,
@@ -240,7 +196,12 @@ task("getHistoricalData", "Retrieves the historical rates")
         throw new Error(`Only ETH token needs to be passed for Rocket.`);
       }
 
-      generator = await buildGlpDataGenerator(hre, taskArgs.lookbackDays);
+      generator = await buildGlpDataGenerator({
+        hre,
+        fromBlock,
+        toBlock,
+        blockInterval,
+      });
     }
 
     const exportFolder = `historicalData/rates`;

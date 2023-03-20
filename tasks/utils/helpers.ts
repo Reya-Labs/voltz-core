@@ -3,6 +3,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { BaseRateOracle, Factory, IMarginEngine, IVAMM } from "../../typechain";
 import { ethers, utils } from "ethers";
 import { Position } from "../../scripts/getPositions";
+import { ONE_DAY_IN_SECONDS } from "./constants";
 
 export async function getRateOracleByNameOrAddress(
   hre: HardhatRuntimeEnvironment,
@@ -64,6 +65,22 @@ export async function getBlockAtTimestamp(
   }
 
   return answer;
+}
+
+export async function getEstimatedBlocksPerDay(
+  hre: HardhatRuntimeEnvironment,
+  days: number = 30
+): Promise<number> {
+  const block = await hre.ethers.provider.getBlock("latest");
+
+  const now = block.timestamp;
+  const old = block.timestamp - ONE_DAY_IN_SECONDS * days;
+
+  const blockAtOld = await getBlockAtTimestamp(hre, old);
+
+  return Math.floor(
+    ((block.number - blockAtOld) * ONE_DAY_IN_SECONDS) / (now - old)
+  );
 }
 
 // Sort positions by margin engine, owner, tick lower and tick upper
