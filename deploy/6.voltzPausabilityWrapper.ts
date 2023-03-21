@@ -29,6 +29,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       console.log("Transferring to multisig...");
       const tx = await voltzPausabilityWrapper.transferOwnership(multisig);
       await tx.wait();
+      console.log("Done");
     }
 
     return true; // Only execute once
@@ -40,3 +41,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 func.tags = ["VoltzPausabilityWrapper"];
 func.id = "VoltzPausabilityWrapper";
 export default func;
+
+// npx hardhat deploy --network arbitrum --tags VoltzPausabilityWrapper,Messages --export deployments/arbitrumDeployment.json
