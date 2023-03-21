@@ -2,8 +2,13 @@
 
 pragma solidity =0.8.9;
 
-import "./VAMM.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+
+interface VAMMInterface {
+    function setPausability(bool state) external;
+
+    function paused() external view returns (bool);
+}
 
 contract VoltzPausabilityWrapper is Ownable {
     mapping (address => bool) internal pausers;
@@ -24,7 +29,7 @@ contract VoltzPausabilityWrapper is Ownable {
         pausers[to] = false;
     } 
 
-    function pauseContracts(VAMM[] memory vamms) external {
+    function pauseContracts(VAMMInterface[] memory vamms) external {
         require(pausers[msg.sender], "No privilege");
 
         for (uint256 i = 0; i < vamms.length; i++) {
@@ -34,7 +39,7 @@ contract VoltzPausabilityWrapper is Ownable {
         }
     }
 
-    function unpauseContracts(VAMM[] memory vamms) external {
+    function unpauseContracts(VAMMInterface[] memory vamms) external {
         require(pausers[msg.sender], "No privilege");
 
         for (uint256 i = 0; i < vamms.length; i++) {
