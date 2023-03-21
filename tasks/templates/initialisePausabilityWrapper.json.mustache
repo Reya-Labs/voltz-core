@@ -1,0 +1,65 @@
+{
+  "version": "1.0",
+  "chainId": "{{chainId}}",
+  "createdAt": 1654007302649,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.8.0",
+    "createdFromSafeAddress": "{{multisig}}",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "transactions": [
+    {{#pools}}
+    {
+      "to": "{{vamm}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "permission",
+            "type": "bool"
+          }
+        ],
+        "name": "changePauser",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "account": "{{voltzPausabilityWrapper}}",
+        "permission": "true"
+      }
+    },
+    {{/pools}}
+    {{#pausers}}
+    {
+      "to": "{{voltzPausabilityWrapper}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          }
+        ],
+        "name": "grantPermission",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      "contractInputsValues": {
+        "to": "{{pauser}}"
+      }
+    },
+    {{/pausers}}
+  ]
+}
