@@ -1,1 +1,2 @@
 export const ONE_DAY_IN_SECONDS = 86400;
+export const ONE_YEAR_IN_SECONDS = 31536000;
