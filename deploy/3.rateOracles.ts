@@ -327,14 +327,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // GLP Rate Oracle
     const glpConfig = deployConfig.glpConfig;
 
-    const existingReawrdRouter = glpConfig?.rewardRouter;
+    const existingRewardRouter = glpConfig?.rewardRouter;
     const existingRewardRouterDeploymentBlock =
       glpConfig?.rewardRouterDeploymentBlock;
     const rewardToken = glpConfig?.rewardToken;
     const daysOfTrustedDataPoints = glpConfig?.defaults.daysOfTrustedDataPoints;
 
     if (
-      existingReawrdRouter &&
+      existingRewardRouter &&
       existingRewardRouterDeploymentBlock &&
       rewardToken
     ) {
@@ -356,7 +356,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
       await deployAndConfigureWithGenerator({
         hre,
-        initialArgs: [existingReawrdRouter, rewardToken],
+        initialArgs: [existingRewardRouter, rewardToken],
         rateOracleConfig: {
           name: null,
           rateOracleBufferSize: glpConfig.defaults.rateOracleBufferSize,

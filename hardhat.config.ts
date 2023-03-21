@@ -76,7 +76,7 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints");
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
 
-// Localhost time maninupulation support
+// Localhost time manipulation support
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
 
 // Data extractions
@@ -98,7 +98,6 @@ loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution");
 // System support
 loadModuleIfContractsAreBuilt("./tasks/deployUpdatedImplementations");
 loadModuleIfContractsAreBuilt("./tasks/hotSwapRateOracle");
-loadModuleIfContractsAreBuilt("./tasks/initialisePausabilityWrapper");
 loadModuleIfContractsAreBuilt("./tasks/setPausability");
 loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
 loadModuleIfContractsAreBuilt("./tasks/upgrades");
@@ -108,6 +107,7 @@ loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
 loadModuleIfContractsAreBuilt("./tasks/queryRateOracleEntry");
 loadModuleIfContractsAreBuilt("./tasks/transferRateOracleOwnership");
 loadModuleIfContractsAreBuilt("./tasks/writeRateOracleEntries");
+loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
 
 // Community deployer script
 loadModuleIfContractsAreBuilt(

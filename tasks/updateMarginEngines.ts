@@ -6,7 +6,7 @@ import { task } from "hardhat/config";
 import mustache from "mustache";
 import path from "path";
 import { getConfig } from "../deployConfig/config";
-import { getNetworkPools, getPool } from "../poolConfigs/pool-addresses/pools";
+import { getPool } from "../poolConfigs/pool-addresses/pools";
 import { getPoolConfig } from "../poolConfigs/pool-configs/poolConfig";
 
 interface SingleUpdateTemplateData {
@@ -82,14 +82,6 @@ task("updateMarginEngines", "It updates the configurations of given pools")
   .setAction(async (taskArgs, hre) => {
     // Fetch pool details
     const poolNames: string[] = taskArgs.pools;
-    const poolDetails = getNetworkPools(hre.network.name);
-
-    // Check if queried pools are in the config
-    for (const pool of poolNames) {
-      if (!Object.keys(poolDetails).includes(pool)) {
-        throw new Error(`Pool ${pool} is not present in the pools.`);
-      }
-    }
 
     // Fetch factory
     const factory = await hre.ethers.getContract("Factory");

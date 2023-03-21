@@ -4,7 +4,7 @@ import { task } from "hardhat/config";
 import mustache from "mustache";
 import path from "path";
 import { getConfig } from "../deployConfig/config";
-import { getNetworkPools } from "../poolConfigs/pool-addresses/pools";
+import { getPool } from "../poolConfigs/pool-addresses/pools";
 
 interface MultisigTemplateData {
   pauses: {
@@ -42,14 +42,6 @@ task("setPausability", "Set pausability state")
   .setAction(async (taskArgs, hre) => {
     // Fetch pool details
     const poolNames: string[] = taskArgs.pools;
-    const poolDetails = getNetworkPools(hre.network.name);
-
-    // Check if queried pools are in the config
-    for (const pool of poolNames) {
-      if (!Object.keys(poolDetails).includes(pool)) {
-        throw new Error(`Pool ${pool} is not present in the pools.`);
-      }
-    }
 
     // Retrieve multisig address for the current network
     const network = hre.network.name;
@@ -65,7 +57,7 @@ task("setPausability", "Set pausability state")
 
     // Iterate through the given pools and add them to the keeper
     for (const poolName of poolNames) {
-      const pool = poolDetails[poolName];
+      const pool = getPool(network, poolName);
 
       const pause = {
         vammAddress: pool.vamm,
