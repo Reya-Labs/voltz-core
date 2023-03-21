@@ -41,5 +41,3 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 func.tags = ["VoltzPausabilityWrapper"];
 func.id = "VoltzPausabilityWrapper";
 export default func;
-
-// npx hardhat deploy --network arbitrum --tags VoltzPausabilityWrapper,Messages --export deployments/arbitrumDeployment.json
