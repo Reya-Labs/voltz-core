@@ -3,7 +3,7 @@ import { BaseRateOracle, MarginEngine } from "../typechain";
 import { toBn } from "evm-bn";
 import { getProtocolSubgraphURL } from "../scripts/getProtocolSubgraphURL";
 import { getPositions } from "@voltz-protocol/subgraph-data";
-import { getNetworkPools } from "../poolConfigs/pool-addresses/pools";
+import { getPool } from "../poolConfigs/pool-addresses/pools";
 
 // Description:
 //   This task calculates the actual settlement cashflow of a position if the pool has reached maturity;
@@ -18,15 +18,7 @@ task("calculatePositionSettlement", "Check positions")
   .addParam("tickLower", "Tick lower of position", "-69060", types.string)
   .addParam("tickUpper", "Tick upper of position", "0", types.string)
   .setAction(async (taskArgs, hre) => {
-    // Fetch pool details
-    const poolDetails = getNetworkPools(hre.network.name);
-
-    // Check if queried pools are in the config
-    if (!Object.keys(poolDetails).includes(taskArgs.pool)) {
-      throw new Error(`Pool ${taskArgs.pool} is not present in the pools.`);
-    }
-
-    const pool = poolDetails[taskArgs.pool];
+    const pool = getPool(hre.network.name, taskArgs.pool);
 
     // Fetch current time
     const currentTimeInMS =

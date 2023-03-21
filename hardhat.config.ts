@@ -76,7 +76,7 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints");
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
 
-// Localhost time maninupulation support
+// Localhost time manipulation support
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
 
 // Data extractions
