@@ -1,14 +1,9 @@
 import { isAddress } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import {
-  BaseRateOracle,
-  Factory,
-  IFCM,
-  IMarginEngine,
-  IVAMM,
-} from "../../typechain";
+import { BaseRateOracle, Factory, IMarginEngine, IVAMM } from "../../typechain";
 import { ethers, utils } from "ethers";
 import { Position } from "../../scripts/getPositions";
+import { ONE_DAY_IN_SECONDS } from "./constants";
 
 export async function getRateOracleByNameOrAddress(
   hre: HardhatRuntimeEnvironment,
@@ -22,7 +17,6 @@ export async function getRateOracleByNameOrAddress(
 interface IrsInstance {
   marginEngine: IMarginEngine;
   vamm: IVAMM;
-  fcm: IFCM;
 }
 
 export async function getIRSByMarginEngineAddress(
@@ -34,11 +28,9 @@ export async function getIRSByMarginEngineAddress(
     marginEngineAddress
   )) as IMarginEngine;
   const vammAddress = await marginEngine.vamm();
-  const fcmAddress = await marginEngine.fcm();
 
   const vamm = (await hre.ethers.getContractAt("IVAMM", vammAddress)) as IVAMM;
-  const fcm = (await hre.ethers.getContractAt("IFCM", fcmAddress)) as IFCM;
-  return { marginEngine, vamm, fcm };
+  return { marginEngine, vamm };
 }
 
 export async function getIrsInstanceEvents(
@@ -73,6 +65,22 @@ export async function getBlockAtTimestamp(
   }
 
   return answer;
+}
+
+export async function getEstimatedBlocksPerDay(
+  hre: HardhatRuntimeEnvironment,
+  days: number = 30
+): Promise<number> {
+  const block = await hre.ethers.provider.getBlock("latest");
+
+  const now = block.timestamp;
+  const old = block.timestamp - ONE_DAY_IN_SECONDS * days;
+
+  const blockAtOld = await getBlockAtTimestamp(hre, old);
+
+  return Math.floor(
+    ((block.number - blockAtOld) * ONE_DAY_IN_SECONDS) / (now - old)
+  );
 }
 
 // Sort positions by margin engine, owner, tick lower and tick upper
@@ -110,7 +118,11 @@ export function sortPositions(
 
 export async function getPositionInfo(
   marginEngine: IMarginEngine,
-  position: Position,
+  position: {
+    owner: string;
+    tickLower: number;
+    tickUpper: number;
+  },
   tokenDecimals: number,
   block?: number
 ): Promise<{
@@ -152,7 +164,11 @@ export async function getPositionInfo(
 
 export async function getPositionRequirements(
   marginEngine: IMarginEngine,
-  position: Position,
+  position: {
+    owner: string;
+    tickLower: number;
+    tickUpper: number;
+  },
   tokenDecimals: number,
   block?: number
 ): Promise<{ safetyThreshold: number; liquidationThreshold: number }> {

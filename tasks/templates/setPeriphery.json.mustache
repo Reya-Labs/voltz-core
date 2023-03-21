@@ -1,17 +1,16 @@
 {
     "version": "1.0",
-    "chainId": "42161",
+    "chainId": "{{chainId}}",
     "createdAt": 1654007302649,
     "meta": {
       "name": "Transactions Batch",
       "description": "",
       "txBuilderVersion": "1.8.0",
-      "createdFromSafeAddress": "0x8DC15493a8041f059f18ddBA98ee7dcf93b838Ad",
+      "createdFromSafeAddress": "{{multisig}}",
       "createdFromOwnerAddress": "",
       "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
     },
     "transactions": [
-      {{#data}}
       {
         "to": "{{factoryAddress}}",
         "value": "0",
@@ -31,6 +30,5 @@
           "_periphery": "{{peripheryAddress}}"
         }
       }
-      {{/data}}
     ]
   }

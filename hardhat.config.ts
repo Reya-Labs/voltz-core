@@ -8,14 +8,12 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-prettier";
-// import "@tenderly/hardhat-tenderly";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-storage-layout";
 import { HardhatNetworkUserConfig } from "hardhat/types";
-// import "@primitivefi/hardhat-dodoc"; bring back on demand
 
 dotenv.config();
 
@@ -74,27 +72,44 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
   }
 };
 
-loadModuleIfContractsAreBuilt("./tasks/irsInstances");
-loadModuleIfContractsAreBuilt("./tasks/pcv/mintLiquidity");
-loadModuleIfContractsAreBuilt("./tasks/pcv/settlePositions");
-loadModuleIfContractsAreBuilt("./tasks/updatePositionMargin");
-loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
+// PCV transactions
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints");
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
+
+// Localhost time manipulation support
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
-loadModuleIfContractsAreBuilt("./tasks/rateOracle");
-loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
+
+// Data extractions
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
-loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
+loadModuleIfContractsAreBuilt("./tasks/getSlippageData");
+
+// Position support
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
-loadModuleIfContractsAreBuilt("./tasks/getTradeHistoricalData");
-loadModuleIfContractsAreBuilt("./tasks/upgrades");
-loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
 loadModuleIfContractsAreBuilt("./tasks/estimateCashflow");
-loadModuleIfContractsAreBuilt("./tasks/checkPositionSettlement");
-loadModuleIfContractsAreBuilt("./tasks/getHistoricalPositionsHealth");
-loadModuleIfContractsAreBuilt("./tasks/setPausability");
+loadModuleIfContractsAreBuilt("./tasks/calculatePositionSettlement");
+loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
+
+// Pool support
+loadModuleIfContractsAreBuilt("./tasks/irsInstances");
 loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
 loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution");
+
+// System support
+loadModuleIfContractsAreBuilt("./tasks/deployUpdatedImplementations");
+loadModuleIfContractsAreBuilt("./tasks/hotSwapRateOracle");
+loadModuleIfContractsAreBuilt("./tasks/setPausability");
+loadModuleIfContractsAreBuilt("./tasks/setPeriphery");
+loadModuleIfContractsAreBuilt("./tasks/upgrades");
+
+// Rate oracle support
+loadModuleIfContractsAreBuilt("./tasks/getRateOracleData");
+loadModuleIfContractsAreBuilt("./tasks/queryRateOracleEntry");
+loadModuleIfContractsAreBuilt("./tasks/transferRateOracleOwnership");
+loadModuleIfContractsAreBuilt("./tasks/writeRateOracleEntries");
+loadModuleIfContractsAreBuilt("./tasks/increaseObservationCardinalityNext");
+
+// Community deployer script
 loadModuleIfContractsAreBuilt(
   "./scripts/produceCommunityDeployerJSON/produceCommunityDeployerJSON"
 );
@@ -122,15 +137,6 @@ if (!!process.env.FORK_MAINNET) {
     forking: {
       url: `${process.env.MAINNET_URL}`,
       // blockNumber: 15919000,
-    },
-  };
-} else if (!!process.env.FORK_KOVAN) {
-  hardhatNetworkConfig = {
-    allowUnlimitedContractSize: true,
-    saveDeployments: true,
-    live: false,
-    forking: {
-      url: `${process.env.KOVAN_URL}`,
     },
   };
 }
@@ -164,40 +170,20 @@ const config: HardhatUserConfig = {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
-    // ropsten: {
-    //   url: `${process.env.ROPSTEN_URL}`,
-    // },
-    kovan: {
-      url: `${process.env.KOVAN_URL}`,
-      // gasPrice: 1,
-      accounts: {
-        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
-      },
-    },
-    rinkeby: {
-      url: `${process.env.RINKEBY_URL}`,
-      // gasPrice: 1,
-      accounts: {
-        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
-      },
-    },
     goerli: {
       url: `${process.env.GOERLI_URL}`,
-      // gasPrice: 1,
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
     arbitrum: {
       url: `${process.env.ARBITRUM_URL}`,
-      // gasPrice: 1,
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
     arbitrumGoerli: {
       url: `${process.env.ARBITRUM_GOERLI_URL}`,
-      // gasPrice: 1,
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
@@ -207,10 +193,6 @@ const config: HardhatUserConfig = {
     deployer: {
       balance: (10 ** 24).toString(),
       default: 0, // here this will by default take the first account as deployer
-    },
-    multisig: {
-      default: 0, // here this will by default take the first account as deployer
-      1: "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
     },
     alice: {
       default: 1,

@@ -16,5 +16,3 @@ export interface BlockSpec {
   blockInterval: number;
   toBlock: number; //
 }
-
-export const blocksPerDay = 5 * 60 * 24; // 12 seconds per block = 5 blocks per minute

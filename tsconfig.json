@@ -10,11 +10,14 @@
     "resolveJsonModule": true
   },
   "include": [
-    "./scripts",
-    "./test",
-    "./typechain",
     "./deploy",
-    "deployConfig/parse-balance-map.ts"
+    "./deployConfig",
+    "./historicalData",
+    "./poolConfigs",
+    "./scripts",
+    "./tasks",
+    "./test",
+    "./typechain"
   ],
   "files": ["./hardhat.config.ts"]
 }

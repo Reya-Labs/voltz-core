@@ -1,17 +1,33 @@
 import { BigNumber } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import {
+  getLidoOracleAddress,
+  getLidoStETHAddress,
+} from "../../poolConfigs/external-contracts/lido";
 import { toBn } from "../../test/helpers/toBn";
 import { ILidoOracle, IStETH } from "../../typechain";
-import { BlockSpec, Datum, blocksPerDay } from "./common";
+import { BlockSpec, Datum } from "./common";
 
 export interface LidoDataSpec extends BlockSpec {
-  stEth: IStETH;
-  lidoOracle: ILidoOracle;
+  hre: HardhatRuntimeEnvironment;
 }
 
-// Generator function for Aave data
+// Generator function for Lido data
 async function* lidoDataGenerator(spec: LidoDataSpec): AsyncGenerator<Datum> {
-  const { stEth, lidoOracle } = spec;
+  const { hre } = spec;
+
+  // Fetch Lido Oracle address
+  const lidoOracle = (await hre.ethers.getContractAt(
+    "ILidoOracle",
+    getLidoOracleAddress(hre.network.name)
+  )) as ILidoOracle;
+
+  // Fetch stETH address
+  const stEth = (await hre.ethers.getContractAt(
+    "IStETH",
+    getLidoStETHAddress(hre.network.name)
+  )) as IStETH;
+
   for (let b = spec.fromBlock; b <= spec.toBlock; b += spec.blockInterval) {
     let previousCompletedTimestamp: BigNumber | undefined;
     try {
@@ -58,31 +74,7 @@ async function* lidoDataGenerator(spec: LidoDataSpec): AsyncGenerator<Datum> {
 }
 
 export async function buildLidoDataGenerator(
-  hre: HardhatRuntimeEnvironment,
-  lookbackDays?: number,
-  overrides?: Partial<LidoDataSpec>
+  spec: LidoDataSpec
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
-  // calculate from and to blocks
-  const currentBlock = await hre.ethers.provider.getBlock("latest");
-
-  const defaults = {
-    fromBlock: lookbackDays
-      ? currentBlock.number - blocksPerDay * lookbackDays
-      : 11593216, // 11593216 = ~stEth deploy on mainnet
-    blockInterval: blocksPerDay,
-    toBlock: currentBlock.number,
-    stEth: (await hre.ethers.getContractAt(
-      "IStETH",
-      "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84" // mainnet stEth address
-    )) as IStETH,
-    lidoOracle: (await hre.ethers.getContractAt(
-      "ILidoOracle",
-      "0x442af784a788a5bd6f42a01ebe9f287a871243fb" // mainnet lido oracle address
-    )) as ILidoOracle,
-  };
-
-  return lidoDataGenerator({
-    ...defaults,
-    ...overrides,
-  });
+  return lidoDataGenerator(spec);
 }

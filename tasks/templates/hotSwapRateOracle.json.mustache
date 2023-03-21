@@ -1,0 +1,85 @@
+{
+  "version": "1.0",
+  "chainId": "{{chainId}}",
+  "createdAt": 1654007302649,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.8.0",
+    "createdFromSafeAddress": "{{multisig}}",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "transactions": [
+    {{#rateOracleUpdates}}
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+              {
+                "internalType": "contract IRateOracle",
+                "name": "__rateOracle",
+                "type": "address"
+              }
+          ],
+        "name": "setRateOracle",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "__rateOracle": "{{rateOracleAddress}}"
+      }
+    },
+    {
+      "to": "{{vammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [],
+        "name": "refreshRateOracle",
+        "payable": false
+      },
+      "contractInputsValues": {}
+    },
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_secondsAgo",
+              "type": "uint256"
+            }
+          ],
+        "name": "setLookbackWindowInSeconds",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_secondsAgo": "{{lookbackWindowInSecondsPlusOne}}"
+      }
+    },
+    {
+      "to": "{{marginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_secondsAgo",
+              "type": "uint256"
+            }
+          ],
+        "name": "setLookbackWindowInSeconds",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_secondsAgo": "{{lookbackWindowInSeconds}}"
+      }
+    }{{^last}},{{/last}}
+    {{/rateOracleUpdates}}
+  ]
+}

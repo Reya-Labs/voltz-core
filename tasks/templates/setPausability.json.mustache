@@ -1,17 +1,43 @@
 {
   "version": "1.0",
-  "chainId": "1",
+  "chainId": "{{chainId}}",
   "createdAt": 1654007302649,
   "meta": {
     "name": "Transactions Batch",
     "description": "",
     "txBuilderVersion": "1.8.0",
-    "createdFromSafeAddress": "0xb527E950fC7c4F581160768f48b3bfA66a7dE1f0",
+    "createdFromSafeAddress": "{{multisig}}",
     "createdFromOwnerAddress": "",
     "checksum": "0x6e317afc197279541328cf252e50867cfa15d2ed7e7426244328bdf15b94cfe7"
   },
   "transactions": [
     {{#pauses}}
+    {
+      "to": "{{vammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "permission",
+            "type": "bool"
+          }
+        ],
+        "name": "changePauser",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "account": "{{multisig}}",
+        "permission": "true"
+      }
+    },
+
     {
       "to": "{{vammAddress}}",
       "value": "0",
@@ -33,6 +59,32 @@
         "state": "{{pausabilityState}}"
       }
     },
+    
+    {
+      "to": "{{vammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "permission",
+            "type": "bool"
+          }
+        ],
+        "name": "changePauser",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "account": "{{multisig}}",
+        "permission": "false"
+      }
+    }{{^last}},{{/last}}
     {{/pauses}}
   ]
 }

@@ -1,16 +1,15 @@
 import { task, types } from "hardhat/config";
-import "@nomiclabs/hardhat-ethers";
 import { BaseRateOracle, MarginEngine, VAMM } from "../typechain";
 import { ethers } from "ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { PositionHistory } from "../scripts/getPositionHistory";
-import { getAddresses } from "../pool-addresses/getAddresses";
 import {
   getBlockAtTimestamp,
   getPositionInfo,
   getPositionRequirements,
   sortPositions,
 } from "./utils/helpers";
+import { getNetworkPools } from "../poolConfigs/pool-addresses/pools";
 
 const blocksPerDay = 6570; // 13.15 seconds per block
 
@@ -28,7 +27,7 @@ task("checkPositionsHealth", "Check positions")
     const fs = require("fs");
 
     // Get pool addresses of the given network
-    const poolAddresses = getAddresses(hre.network.name);
+    const poolAddresses = getNetworkPools(hre.network.name);
 
     // Get the queried pool names
     const poolNames: string[] = taskArgs.pools
@@ -163,7 +162,7 @@ task("getPositionInfo", "Get all information about some position")
     const fs = require("fs");
 
     // Get the queried pool names
-    const poolAddresses = getAddresses(hre.network.name);
+    const poolAddresses = getNetworkPools(hre.network.name);
 
     // Get the queried pool names
     const poolNames: string[] = taskArgs.pools
@@ -265,7 +264,7 @@ task("getPositionInfo", "Get all information about some position")
       const tmp = pools[p.marginEngine.toLowerCase() as keyof typeof pools];
 
       // Create a folder for this position
-      const EXPORT_FOLDER = `position-status/data/${tmp.name}#${p.owner}#${p.tickLower}#${p.tickUpper}`;
+      const EXPORT_FOLDER = `position-status/data/${hre.network.name}#${tmp.name}#${p.owner}#${p.tickLower}#${p.tickUpper}`;
 
       if (!fs.existsSync(EXPORT_FOLDER)) {
         fs.mkdirSync(EXPORT_FOLDER, { recursive: true });
@@ -457,7 +456,7 @@ task("getPositionInfo", "Get all information about some position")
         const txURL = `etherscan.io/tx/${item.transaction}`;
 
         fs.appendFileSync(
-          `${EXPORT_FOLDER}/info.txt`,
+          `${EXPORT_FOLDER}/settlements.csv`,
           `${item.timestamp},${date},${formatNumber(
             item.settlementCashflow
           )},${txURL}\n`
@@ -559,7 +558,7 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
       };
     } = {};
 
-    const poolAddresses = getAddresses(hre.network.name);
+    const poolAddresses = getNetworkPools(hre.network.name);
 
     const poolNames: string[] = taskArgs.pools
       ? taskArgs.pools.split(",")

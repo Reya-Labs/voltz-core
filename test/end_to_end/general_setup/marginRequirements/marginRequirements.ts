@@ -6,23 +6,21 @@ import {
   MIN_SQRT_RATIO,
 } from "../../../shared/utilities";
 import { ScenarioRunner, e2eParameters } from "../general";
-import { poolConfigs } from "../../../../deployConfig/poolConfig";
 import { toBn } from "evm-bn";
 import { expect } from "../../../shared/expect";
 import { advanceTimeAndBlock } from "../../../helpers/time";
+import { testConfig } from "../../../../poolConfigs/pool-configs/testConfig";
 
 // aDAI v2 pool configuration
 const e2eParams: e2eParameters = {
   duration: consts.ONE_MONTH.mul(2),
   numActors: 2,
-  marginCalculatorParams: poolConfigs.default.marginCalculatorParams,
-  lookBackWindowAPY: BigNumber.from(
-    poolConfigs.default.lookbackWindowInSeconds
-  ),
+  marginCalculatorParams: testConfig.marginCalculatorParams,
+  lookBackWindowAPY: BigNumber.from(testConfig.lookbackWindowInSeconds),
   startingPrice: encodeSqrtRatioX96(1, 1),
   feeProtocol: 0,
-  fee: BigNumber.from(poolConfigs.default.feeWad),
-  tickSpacing: poolConfigs.default.tickSpacing,
+  fee: BigNumber.from(testConfig.feeWad),
+  tickSpacing: testConfig.tickSpacing,
   positions: [
     [0, 0, 0],
     [1, -60, 60],
@@ -1348,12 +1346,12 @@ describe("Unwinds", () => {
 
         // Set a ridiculously high minimum margin value, so that the FT position above becomes under water
         await this.marginEngine.setMarginCalculatorParameters({
-          ...poolConfigs.default.marginCalculatorParams,
+          ...testConfig.marginCalculatorParams,
           etaIMWad: BigNumber.from(
-            poolConfigs.default.marginCalculatorParams.etaIMWad
+            testConfig.marginCalculatorParams.etaIMWad
           ).mul(1000000000),
           etaLMWad: BigNumber.from(
-            poolConfigs.default.marginCalculatorParams.etaLMWad
+            testConfig.marginCalculatorParams.etaLMWad
           ).mul(1000000000),
         });
 

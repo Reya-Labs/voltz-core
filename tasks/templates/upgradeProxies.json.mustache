@@ -1,0 +1,80 @@
+{
+  "version": "1.0",
+  "chainId": "{{chainId}}",
+  "createdAt": 1654007302649,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.8.0",
+    "createdFromSafeAddress": "{{multisig}}",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "transactions": [
+    {{#proxyUpgrades}}
+    {
+      "to": "{{proxyAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newImplementation",
+              "type": "address"
+            }
+          ],
+        "name": "upgradeTo",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "newImplementation": "{{newImplementation}}"
+      }
+    },
+    {{/proxyUpgrades}}
+    {{#factoryUpdates}}
+    {{#newMasterMarginEngine}}
+    {
+      "to": "{{factoryAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "contract IMarginEngine",
+              "name": "_masterMarginEngine",
+              "type": "address"
+            }
+          ],
+        "name": "setMasterMarginEngine",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_masterMarginEngine": "{{.}}"
+      }
+    },
+    {{/newMasterMarginEngine}}
+    {{#newMasterVAMM}}
+    {
+      "to": "{{factoryAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "contract IVAMM",
+              "name": "_masterVAMM",
+              "type": "address"
+            }
+          ],
+        "name": "setMasterVAMM",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "_masterVAMM": "{{.}}"
+      }
+    },
+    {{/newMasterVAMM}}
+    {{/factoryUpdates}}
+  ]
+}

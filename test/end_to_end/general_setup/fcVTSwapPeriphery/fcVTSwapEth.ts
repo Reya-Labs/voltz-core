@@ -4,21 +4,12 @@ import { BigNumber, ethers, utils, Wallet } from "ethers";
 import { toBn } from "evm-bn";
 import { consts } from "../../../helpers/constants";
 import {
-  // ALPHA,
-  // APY_LOWER_MULTIPLIER,
-  // APY_UPPER_MULTIPLIER,
-  // BETA,
   encodeSqrtRatioX96,
-  // MIN_DELTA_IM,
-  // MIN_DELTA_LM,
   MIN_SQRT_RATIO,
   TICK_SPACING,
-  // T_MAX,
-  // XI_LOWER,
-  // XI_UPPER,
 } from "../../../shared/utilities";
 import { ScenarioRunner, e2eParameters } from "../general";
-import { poolConfigs } from "../../../../deployConfig/poolConfig";
+import { testConfig } from "../../../../poolConfigs/pool-configs/testConfig";
 
 const { provider } = waffle;
 
@@ -27,33 +18,7 @@ const MAX_AMOUNT = BigNumber.from(10).pow(27);
 const e2eParamsStableCoin: e2eParameters = {
   duration: consts.ONE_MONTH,
   numActors: 5,
-  marginCalculatorParams: poolConfigs.default.marginCalculatorParams,
-  // marginCalculatorParams: {
-  //   apyUpperMultiplierWad: APY_UPPER_MULTIPLIER,
-  //   apyLowerMultiplierWad: APY_LOWER_MULTIPLIER,
-  //   minDeltaLMWad: MIN_DELTA_LM,
-  //   minDeltaIMWad: MIN_DELTA_IM,
-  //   sigmaSquaredWad: toBn("0.15"),
-  //   alphaWad: ALPHA,
-  //   betaWad: BETA,
-  //   xiUpperWad: XI_UPPER,
-  //   xiLowerWad: XI_LOWER,
-  //   tMaxWad: T_MAX,
-
-  //   devMulLeftUnwindLMWad: toBn("0.5"),
-  //   devMulRightUnwindLMWad: toBn("0.5"),
-  //   devMulLeftUnwindIMWad: toBn("0.8"),
-  //   devMulRightUnwindIMWad: toBn("0.8"),
-
-  //   fixedRateDeviationMinLeftUnwindLMWad: toBn("0.1"),
-  //   fixedRateDeviationMinRightUnwindLMWad: toBn("0.1"),
-
-  //   fixedRateDeviationMinLeftUnwindIMWad: toBn("0.3"),
-  //   fixedRateDeviationMinRightUnwindIMWad: toBn("0.3"),
-
-  //   gammaWad: toBn("1.0"),
-  //   minMarginToIncentiviseLiquidators: 0, // keep zero for now then do tests with the min liquidator incentive
-  // },
+  marginCalculatorParams: testConfig.marginCalculatorParams,
   lookBackWindowAPY: consts.ONE_WEEK,
   startingPrice: encodeSqrtRatioX96(1, 1),
   feeProtocol: 0,
@@ -75,10 +40,6 @@ class ScenarioRunnerStableCoin extends ScenarioRunner {
 
   override async run() {
     await this.factory.setPeriphery(this.periphery.address);
-
-    // await this.vamm.setIsAlpha(true);
-    // await this.marginEngine.setIsAlpha(true);
-    // await this.periphery.setLPMarginCap(this.vamm.address, toBn("4000"));
 
     this.wallets = [];
     for (let i = 0; i < this.params.numActors; i++) {
@@ -147,9 +108,6 @@ describe("FC VT Swap Periphery: Stable Coin", async () => {
       )
       .then((result) => {
         fixedTokenDeltaUnbalanced = parseFloat(utils.formatEther(result[3]));
-        // fixedTokenDelta = parseFloat(utils.formatEther(result[0]));
-        // variableTokenDelta = parseFloat(utils.formatEther(result[1]));
-        // feeIncured = parseFloat(utils.formatEther(result[2]));
       });
 
     fcVTMarginReq =

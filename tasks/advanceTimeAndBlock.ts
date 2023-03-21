@@ -1,5 +1,11 @@
 import { task } from "hardhat/config";
 
+// Description:
+//   This task advances time and block on localhost network.
+//
+// Example:
+//   ``npx hardhat advanceTimeAndBlock --network localhost --time 86400 --blocks 7200``
+
 task("advanceTimeAndBlock", "Advance Time and Block")
   .addParam("time", "Time")
   .addParam("blocks", "Number of Blocks")

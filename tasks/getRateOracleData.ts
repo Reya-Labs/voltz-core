@@ -1,17 +1,20 @@
 import { task, types } from "hardhat/config";
-import { BigNumber } from "ethers";
 import { BaseRateOracle } from "../typechain";
 import { getRateOracleByNameOrAddress } from "./utils/helpers";
 
-// eslint-disable-next-line no-unused-vars
-enum FETCH_STATUS {
-  // eslint-disable-next-line no-unused-vars
-  FAILURE,
-  // eslint-disable-next-line no-unused-vars
-  SUCCESS,
-}
+const blocksPerDay = 7200;
 
-const blocksPerDay = 6570; // 13.15 seconds per block
+const formatNumber = (value: number): string => {
+  return value.toFixed(4);
+};
+
+// Description:
+//   This task fetches the APYs and liquidity indices of a rate oracle and outputs the results into .csv file
+
+// Example:
+//   ``npx hardhat getRateOracleData --network mainnet --from-block 16593430 --block-interval 7200 --lookback-window 86400 --rate-oracle 0xA6BA323693f9e9B591F79fbDb947c7330ca2d7ab``
+
+// Estimated execution time: 1s per 1 data point
 
 task(
   "getRateOracleData",
@@ -48,13 +51,20 @@ task(
     types.string
   )
   .setAction(async (taskArgs, hre) => {
+    const start = Date.now();
+    const fs = require("fs");
+
+    // Fetch rate oracle
     const rateOracle = (await getRateOracleByNameOrAddress(
       hre,
       taskArgs.rateOracle
     )) as BaseRateOracle;
 
+    // Fetch current block
     const currentBlock = await hre.ethers.provider.getBlock("latest");
     const currentBlockNumber = currentBlock.number;
+
+    // Compute starting and ending blocks
     let toBlock = currentBlockNumber;
     const fromBlock = taskArgs.fromBlock;
 
@@ -62,57 +72,36 @@ task(
       toBlock = Math.min(currentBlockNumber, taskArgs.toBlock);
     }
 
+    // Check the block range
     if (fromBlock >= toBlock) {
       console.error(`Invalid block range: ${fromBlock}-${toBlock}`);
     }
 
-    const blocks: number[] = [];
-    const timestamps: number[] = [];
-    const apys: number[] = [];
-    const liquidityIndices: BigNumber[] = [];
+    const exportFolder = `historicalData/rateOracleApy`;
+    // Check if folder exists, or create one if it doesn't
+    if (!fs.existsSync(exportFolder)) {
+      fs.mkdirSync(exportFolder, { recursive: true });
+    }
 
-    const fs = require("fs");
-    const file = `historicalData/rateOracleApy/${taskArgs.rateOracle}.csv`;
-
+    // Initialize the export file
+    const exportFile = `${exportFolder}/${taskArgs.rateOracle}.csv`;
     const header = `block,timestamp,datetime,liquidityIndex,${taskArgs.lookbackWindow}-second APY`;
 
-    fs.appendFileSync(file, header + "\n");
+    fs.appendFileSync(exportFile, header + "\n");
     console.log(header);
-
-    // advance time by 1 day for Rocket to pick the right block time average
-
-    // if (hre.network.name === 'localhost') {
-    //     for (let i = 0; i < blocksPerDay; i++) {
-    //     await hre.network.provider.send("evm_mine", []);
-    //     }
-    // }
 
     for (let b = fromBlock; b <= toBlock; b += taskArgs.blockInterval) {
       const block = await hre.ethers.provider.getBlock(b);
-      let fetch: FETCH_STATUS = FETCH_STATUS.FAILURE;
 
       try {
-        // console.log(
-        //   "getting apy from",
-        //   block.timestamp - taskArgs.lookbackWindow,
-        //   "to",
-        //   block.timestamp,
-        //   " from RateOracle at ",
-        //   rateOracle.address
-        // );
+        // Get the last updated rate
+        const [liquidityIndexTimestamp, liquidityIndex] =
+          await rateOracle.getLastUpdatedRate({
+            blockTag: b,
+          });
 
-        let liquidityIndexTimestamp, liquidityIndex;
-        try {
-          [liquidityIndexTimestamp, liquidityIndex] =
-            await rateOracle.getLastUpdatedRate({
-              blockTag: b,
-            });
-        } catch (error) {
-          liquidityIndex = BigNumber.from("-1");
-          liquidityIndexTimestamp = null;
-        }
-
-        const apy = await rateOracle.getApyFromTo(
+        // Get APY over the look-back window
+        const apyWad = await rateOracle.getApyFromTo(
           block.timestamp - taskArgs.lookbackWindow,
           block.timestamp,
           {
@@ -120,37 +109,22 @@ task(
           }
         );
 
-        blocks.push(b);
-        timestamps.push(liquidityIndexTimestamp || block.timestamp);
-        liquidityIndices.push(liquidityIndex);
-        apys.push(apy.div(BigNumber.from(10).pow(9)).toNumber() / 1e9);
+        // Export the data to .csv file
+        const apy = Number(hre.ethers.utils.formatUnits(apyWad, 16));
 
-        fetch = FETCH_STATUS.SUCCESS;
+        const output = `${b},${liquidityIndexTimestamp},${new Date(
+          liquidityIndexTimestamp * 1000
+        ).toISOString()},${liquidityIndex.toString()},${formatNumber(apy)}%`;
+
+        fs.appendFileSync(exportFile, output + "\n");
+        console.log(output);
       } catch (error) {
-        // console.log("error:", error);
-      }
-
-      switch (fetch) {
-        case FETCH_STATUS.SUCCESS: {
-          const lastBlock = blocks[blocks.length - 1];
-          const lastTimestamp = timestamps[timestamps.length - 1];
-          const lastApy = apys[apys.length - 1];
-          const liquidityIndex = liquidityIndices[liquidityIndices.length - 1];
-
-          const output = `${lastBlock},${lastTimestamp},${new Date(
-            lastTimestamp * 1000
-          ).toISOString()},${liquidityIndex.toString()},${lastApy}`;
-          fs.appendFileSync(file, output + "\n");
-          console.log(output);
-
-          break;
-        }
-        case FETCH_STATUS.FAILURE: {
-          console.log(`Couldn't fetch at block ${b}`);
-          break;
-        }
+        console.warn(`Couldn't fetch at block ${b}`);
       }
     }
+
+    const end = Date.now();
+    console.log(`Finished in ${(end - start) / 1000} seconds.`);
   });
 
 module.exports = {};

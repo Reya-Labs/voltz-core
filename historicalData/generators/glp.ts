@@ -1,45 +1,65 @@
 import { BigNumber } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import {
+  getGlpManagerAddress,
+  getGlpRewardTrackerAddress,
+  getGlpTokenAddress,
+  getGlpVaultAddress,
+} from "../../poolConfigs/external-contracts/glp";
+import { getTokenAddress } from "../../poolConfigs/tokens/tokenConfig";
 import { ERC20, IGlpManager, IRewardTracker, IVault } from "../../typechain";
 import { BlockSpec, Datum } from "./common";
 
 const precision27 = BigNumber.from(10).pow(27);
 const precision30 = BigNumber.from(10).pow(30);
 const precision18 = BigNumber.from(10).pow(18);
+
 export interface GlpDataSpec extends BlockSpec {
   hre: HardhatRuntimeEnvironment;
 }
 
-// Generator function for Aave data
+// Generator function for GLP data
 async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
   const { hre } = spec;
-  let lastIndex: BigNumber = BigNumber.from(0);
+
+  // Fetch GLP manager contract
   const glpManager = (await hre.ethers.getContractAt(
     "IGlpManager",
-    "0x321F653eED006AD1C29D174e17d96351BDe22649"
+    getGlpManagerAddress(hre.network.name)
   )) as IGlpManager;
 
+  // Fetch reward tracker contract
   const rewardTracker = (await hre.ethers.getContractAt(
     "IRewardTracker",
-    "0x4e971a87900b931fF39d1Aad67697F49835400b6"
+    getGlpRewardTrackerAddress(hre.network.name)
   )) as IRewardTracker;
 
+  // Fetch vault contract
   const vault = (await hre.ethers.getContractAt(
     "IVault",
-    "0x489ee077994B6658eAfA855C308275EAd8097C4A"
+    getGlpVaultAddress(hre.network.name)
   )) as IVault;
 
+  // Fetch GLP token contract
   const glp = (await hre.ethers.getContractAt(
     "ERC20",
-    "0x4277f8F2c384827B5273592FF7CeBd9f2C1ac258"
+    getGlpTokenAddress(hre.network.name)
   )) as ERC20;
+
+  // Fetch WETH token address
+  const wethAddress = getTokenAddress(hre.network.name, "WETH");
+
+  // Initialise data
+  let lastIndex: BigNumber = BigNumber.from(0);
 
   let prevEthGlpPrice = await getEthGlpPrice(
     vault,
     glpManager,
     glp,
+    wethAddress,
     spec.fromBlock
   );
+
   let prevCummulativeRewards = await rewardTracker.cumulativeRewardPerToken({
     blockTag: spec.fromBlock,
   });
@@ -61,7 +81,13 @@ async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
       );
 
       prevCummulativeRewards = cummulativeRewards;
-      prevEthGlpPrice = await getEthGlpPrice(vault, glpManager, glp, b);
+      prevEthGlpPrice = await getEthGlpPrice(
+        vault,
+        glpManager,
+        glp,
+        wethAddress,
+        b
+      );
 
       yield {
         blockNumber: b,
@@ -85,48 +111,30 @@ async function* glpDataGenerator(spec: GlpDataSpec): AsyncGenerator<Datum> {
 }
 
 export async function buildGlpDataGenerator(
-  hre: HardhatRuntimeEnvironment,
-  lookbackDays?: number,
-  overrides?: Partial<GlpDataSpec>
+  spec: GlpDataSpec
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
-  // calculate from and to blocks
-  const currentBlock = await hre.ethers.provider.getBlockNumber();
-  const blocksPerDay = 86400 * 3;
-
-  const defaults = {
-    fromBlock: lookbackDays ? lookbackDays * blocksPerDay : 56109528, // 28th of Jan
-    blockInterval: blocksPerDay, // 86400 - 1 day in seconds
-    toBlock: currentBlock,
-    hre,
-  };
-
-  return glpDataGenerator({
-    ...defaults,
-    ...overrides,
-  });
+  return glpDataGenerator(spec);
 }
 
 async function getEthGlpPrice(
   vault: IVault,
   glpManager: IGlpManager,
   glp: ERC20,
+  wethAddress: string,
   block: number
 ): Promise<BigNumber> {
-  const ethMinPrice = await vault.getMinPrice(
-    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-    {
-      blockTag: block,
-    }
-  );
-  const ethMaxPrice = await vault.getMinPrice(
-    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-    {
-      blockTag: block,
-    }
-  );
+  const ethMinPrice = await vault.getMinPrice(wethAddress, {
+    blockTag: block,
+  });
+
+  const ethMaxPrice = await vault.getMinPrice(wethAddress, {
+    blockTag: block,
+  });
+
   const glpMinAum = await glpManager.getAum(false, {
     blockTag: block,
   });
+
   const glpMaxAum = await glpManager.getAum(true, {
     blockTag: block,
   });

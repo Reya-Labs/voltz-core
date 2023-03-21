@@ -8,6 +8,7 @@ import {
 import { ethers, BigNumber } from "ethers";
 
 import { getPositions, Position } from "../scripts/getPositions";
+import { getSigner } from "./utils/getSigner";
 
 const SECONDS_PER_YEAR = 31536000;
 
@@ -16,21 +17,58 @@ task(
   "Checks the insolvency status of positions at maturity by estimating the expected cashflow."
 )
   .addFlag("onlyFullyUnwound", "Considers only fully unwound positions")
+  .addFlag("onlyActive", "Considers only active positions")
   .addFlag("onlyInsolvent", "Prints cashflows of insolvent positions only")
+  .addFlag(
+    "onlyLiquidatable",
+    "Prints cashflows of liquidatable positions only"
+  )
   .addOptionalParam("owners", "Filter by list of owners")
   .addOptionalParam("tickLowers", "Filter by tick lowers")
   .addOptionalParam("tickUppers", "Filter by tick uppers")
+  .addOptionalParam(
+    "networkName",
+    "Name of underlying network when using forks"
+  )
   .setAction(async (taskArgs, hre) => {
-    let fixedAndVariableMath;
+    let networkName = hre.network.name;
+    if (taskArgs.networkName) {
+      if (hre.network.name !== "localhost" && hre.network.name !== "hardhat") {
+        throw new Error(`Cannot redefine name for network ${hre.network.name}`);
+      }
+
+      networkName = taskArgs.networkName;
+    }
+
+    // Create a folder for the output data
+    const EXPORT_FOLDER = `position-status/data/${networkName}`;
+    const fs = require("fs");
+    if (!fs.existsSync(EXPORT_FOLDER)) {
+      fs.mkdirSync(EXPORT_FOLDER, { recursive: true });
+    }
+
+    const EXPORT_FILE = `${EXPORT_FOLDER}/estimated-cashflow.csv`;
+
+    const header =
+      "Margin Engine,Owner,Lower Tick,Upper Tick,Status,Fixed Token Balance,Variable Token Balance,Current Margin,Estimated Cashflow,Estimated PnL,Estimated Insolvency,Margin After Liquidation,Estimated Cashflow After Liquidation,Estimated PnL After Liquidation,Estimated Insolvency After Liquidation";
+    fs.writeFile(EXPORT_FILE, header + "\n", () => {});
+
+    const { deployer } = await hre.getNamedAccounts();
+    const localhostLiquidator = await getSigner(hre, deployer);
 
     // TODO: hard-coded account (suggestion: move this to some utility
     // that gets hre.network.name as argument and returns the FixedAndVariableMath
     // library)
-
-    if (hre.network.name === "mainnet") {
+    let fixedAndVariableMath;
+    if (networkName === "mainnet") {
       fixedAndVariableMath = (await hre.ethers.getContractAt(
         "FixedAndVariableMathTest",
         "0x2D2EE238Ca74B546BfA64864f5654b5Ed7673f87"
+      )) as FixedAndVariableMathTest;
+    } else if (networkName === "arbitrum") {
+      fixedAndVariableMath = (await hre.ethers.getContractAt(
+        "FixedAndVariableMathTest",
+        "0x6975b83ef331e65d146e4c64fb45392cd2237a3c"
       )) as FixedAndVariableMathTest;
     } else {
       console.log(
@@ -45,9 +83,10 @@ task(
     }
 
     let positions: Position[] = await getPositions(
-      hre.network.name,
+      networkName,
       Math.floor(Date.now() / 1000)
     );
+
     if (taskArgs.owners) {
       const filter_owners = taskArgs.owners
         .split(",")
@@ -84,7 +123,6 @@ task(
       BigNumber.from(10).pow(18)
     );
 
-    let noneInsolvent = true;
     for (const marginEngineAddress of marginEngineAddresses) {
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
@@ -106,7 +144,6 @@ task(
       const termEndTimestampWad = await marginEngine.termEndTimestampWad();
 
       const historicalAPY = await marginEngine.callStatic.getHistoricalApy();
-
       let estimatedVariableFactor = historicalAPY
         .mul(termEndTimestampWad.sub(termCurrentTimestampWad))
         .div(BigNumber.from(10).pow(18))
@@ -132,7 +169,14 @@ task(
 
         if (
           taskArgs.onlyFullyUnwound &&
-          positionInfo.variableTokenBalance.abs().gt(10)
+          positionInfo.variableTokenBalance.abs().gt(100)
+        ) {
+          continue;
+        }
+
+        if (
+          taskArgs.onlyActive &&
+          positionInfo.variableTokenBalance.abs().lte(100)
         ) {
           continue;
         }
@@ -163,48 +207,118 @@ task(
           );
 
         let status = "HEALTHY";
-        if (positionInfo.margin.lte(positionRequirementLiquidation)) {
+        if (positionInfo.margin.lt(positionRequirementLiquidation)) {
           status = "DANGER";
-        } else if (positionInfo.margin.lte(positionRequirementSafety)) {
+        } else if (positionInfo.margin.lt(positionRequirementSafety)) {
           status = "WARNING";
+        }
+
+        if (status !== "DANGER" && taskArgs.onlyLiquidatable) {
+          continue;
+        }
+
+        let marginAfterLiquidation: BigNumber | null = null;
+        let estimatedCashflowAfterLiquidation: BigNumber | null = null;
+        if (localhostLiquidator && status === "DANGER") {
+          if (
+            !positionInfo.variableTokenBalance.isZero() &&
+            positionRequirementLiquidation.gt(BigNumber.from(0))
+          ) {
+            await marginEngine
+              .connect(localhostLiquidator)
+              .liquidatePosition(
+                position.owner,
+                position.tickLower,
+                position.tickUpper
+              );
+          }
+
+          const positionInfoAfterLiquidation =
+            await marginEngine.callStatic.getPosition(
+              position.owner,
+              position.tickLower,
+              position.tickUpper
+            );
+
+          marginAfterLiquidation = positionInfoAfterLiquidation.margin;
+
+          estimatedCashflowAfterLiquidation =
+            await fixedAndVariableMath.calculateSettlementCashflow(
+              positionInfoAfterLiquidation.fixedTokenBalance,
+              positionInfoAfterLiquidation.variableTokenBalance,
+              termStartTimestampWad,
+              termEndTimestampWad,
+              estimatedVariableFactor
+            );
         }
 
         if (
           !taskArgs.onlyInsolvent ||
           positionInfo.margin.add(estimatedCashflow).lt(0)
         ) {
-          if (noneInsolvent) {
-            console.log(
-              "(Margin Engine, Owner, Lower Tick, Upper Tick, Status, Fixed Token Balance, Variable Token Balance, Current Margin, Estimated Cashflow Delta, Estimated Total Cashflow)"
-            );
-          }
-
-          console.log(
-            marginEngineAddress,
-            position.owner,
-            position.tickLower,
-            position.tickUpper,
-            status,
-            ethers.utils.formatUnits(positionInfo.fixedTokenBalance, decimals),
-            ethers.utils.formatUnits(
+          fs.appendFileSync(
+            EXPORT_FILE,
+            `${marginEngineAddress},${position.owner},${position.tickLower},${
+              position.tickUpper
+            },${status},${ethers.utils.formatUnits(
+              positionInfo.fixedTokenBalance,
+              decimals
+            )},${ethers.utils.formatUnits(
               positionInfo.variableTokenBalance,
               decimals
-            ),
-            ethers.utils.formatUnits(positionInfo.margin, decimals),
-            ethers.utils.formatUnits(estimatedCashflow, decimals),
-            ethers.utils.formatUnits(
+            )},${ethers.utils.formatUnits(
+              positionInfo.margin,
+              decimals
+            )},${ethers.utils.formatUnits(
+              estimatedCashflow,
+              decimals
+            )},${ethers.utils.formatUnits(
               positionInfo.margin.add(estimatedCashflow),
               decimals
-            )
+            )},${
+              positionInfo.margin.add(estimatedCashflow).lt(0)
+                ? ethers.utils.formatUnits(
+                    positionInfo.margin.add(estimatedCashflow),
+                    decimals
+                  )
+                : 0
+            },${
+              marginAfterLiquidation
+                ? ethers.utils.formatUnits(marginAfterLiquidation, decimals)
+                : "N/A"
+            },${
+              estimatedCashflowAfterLiquidation
+                ? ethers.utils.formatUnits(
+                    estimatedCashflowAfterLiquidation,
+                    decimals
+                  )
+                : "N/A"
+            },${
+              marginAfterLiquidation && estimatedCashflowAfterLiquidation
+                ? ethers.utils.formatUnits(
+                    marginAfterLiquidation.add(
+                      estimatedCashflowAfterLiquidation
+                    ),
+                    decimals
+                  )
+                : "N/A"
+            },${
+              marginAfterLiquidation && estimatedCashflowAfterLiquidation
+                ? marginAfterLiquidation
+                    .add(estimatedCashflowAfterLiquidation)
+                    .lt(0)
+                  ? ethers.utils.formatUnits(
+                      marginAfterLiquidation.add(
+                        estimatedCashflowAfterLiquidation
+                      ),
+                      decimals
+                    )
+                  : 0
+                : "N/A"
+            }\n`
           );
-
-          noneInsolvent = false;
         }
       }
-    }
-
-    if (noneInsolvent) {
-      console.log("None. :-)");
     }
   });
 
