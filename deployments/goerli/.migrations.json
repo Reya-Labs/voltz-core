@@ -2,5 +2,6 @@
   "Factory": 1656356212,
   "Periphery": 1656358298,
   "FCMs": 1656358346,
-  "PeripheryProxy": 1658412899
+  "PeripheryProxy": 1658412899,
+  "VoltzPausabilityWrapper": 1679388761
 }

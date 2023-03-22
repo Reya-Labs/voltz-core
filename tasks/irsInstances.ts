@@ -259,6 +259,13 @@ async function configureIrs(
   }
 }
 
+// Description:
+//   This task generates tx json for multisig to deploy and configure pool if --multisig flag is set;
+//   otherwise, it will send the transactions directly.
+
+// Example:
+//   ``npx hardhat createIrsInstances --network arbitrum --multisig --term-start-timestamp 1679395930 --term-end-timestamp 1680249130 glpETH_v2``
+
 task(
   "createIrsInstances",
   "Calls the Factory to deploy a new Interest Rate Swap instance"
@@ -427,12 +434,18 @@ task(
     }
 
     if (taskArgs.multisig && multisigTemplateData.length > 0) {
+      const voltzPausabilityWrapper = await hre.ethers.getContract(
+        "VoltzPausabilityWrapper"
+      );
+
       multisigTemplateData[multisigTemplateData.length - 1].last = true;
       writeIrsCreationTransactionsToGnosisSafeTemplate({
         irsInstances: multisigTemplateData,
-        pausers: getNetworkPausers(hre.network.name).map((p) => ({
-          pauser: p,
-        })),
+        pausers: getNetworkPausers(hre.network.name)
+          .concat([voltzPausabilityWrapper.address])
+          .map((p) => ({
+            pauser: p,
+          })),
         multisig,
         chainId: await hre.getChainId(),
       });

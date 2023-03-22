@@ -2,5 +2,6 @@
   "CommunityDeployer": 1653237834,
   "Factory": 1653852354,
   "PeripheryProxy": 1653853137,
-  "FCMs": 1653853293
+  "FCMs": 1653853293,
+  "VoltzPausabilityWrapper": 1679389071
 }
