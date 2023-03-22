@@ -51,11 +51,18 @@ task("liquidatePositions", "Liquidate liquidatable positions")
     "multisig",
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
+  .addOptionalParam(
+    "networkName",
+    "Name of underlying network when using forks"
+  )
+  .addOptionalParam("owners", "Filter by list of owners")
   .addVariadicPositionalParam("pools", "Comma-separated pool names")
   .setAction(async (taskArgs, hre) => {
+    const network = taskArgs.networkName || hre.network.name;
+
     // Fetch pool details
     const poolNames: string[] = taskArgs.pools;
-    const poolDetails = getNetworkPools(hre.network.name);
+    const poolDetails = getNetworkPools(network);
 
     // Check if queried pools are in the config
     for (const pool of poolNames) {
@@ -69,21 +76,28 @@ task("liquidatePositions", "Liquidate liquidatable positions")
     const currentTimeInMS = currentBlock.timestamp * 1000;
 
     // Retrieve all positions from subgraph
-    const positions = (
-      await getPositions(
-        getProtocolSubgraphURL(hre.network.name),
-        currentTimeInMS,
-        {
-          ammIDs: poolNames.map((pool) => poolDetails[pool].vamm),
-        }
-      )
-    ).filter((position) => position.positionType === 3);
+    let positions = await getPositions(
+      getProtocolSubgraphURL(network),
+      currentTimeInMS,
+      {
+        ammIDs: poolNames.map((pool) => poolDetails[pool].vamm),
+      }
+    );
+
+    if (taskArgs.owners) {
+      const filter_owners = taskArgs.owners
+        .split(",")
+        .map((p: string) => p.toLowerCase());
+
+      positions = positions.filter((p) =>
+        filter_owners.includes(p.owner.toLowerCase())
+      );
+    }
 
     // Get deployer address
     const { deployer } = await hre.getNamedAccounts();
 
     // Retrieve multisig address for the current network
-    const network = hre.network.name;
     const deployConfig = getConfig(network);
     const multisig = deployConfig.multisig;
 
