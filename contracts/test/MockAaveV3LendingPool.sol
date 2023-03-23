@@ -120,4 +120,36 @@ contract MockAaveV3LendingPool is IAaveV3LendingPool {
         reserveNormalizedIncome[_underlyingAsset] = _reserveNormalizedIncome;
         startTime[_underlyingAsset] = block.timestamp;
     }
+
+    function getReserveNormalizedVariableDebt(IERC20Minimal _underlyingAsset)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 factorPerSecond = factorPerSecondInRay[_underlyingAsset];
+        if (factorPerSecond > 0) {
+            uint256 secondsSinceNormalizedVariableDebtSet = block.timestamp -
+                startTime[_underlyingAsset];
+            return
+                PRBMathUD60x18.mul(
+                    reserveNormalizedVariableDebt[_underlyingAsset],
+                    PRBMathUD60x18.pow(
+                        factorPerSecond,
+                        secondsSinceNormalizedVariableDebtSet
+                    )
+                );
+        } else {
+            return reserveNormalizedVariableDebt[_underlyingAsset];
+        }
+    }
+
+    function setReserveNormalizedVariableDebt(
+        IERC20Minimal _underlyingAsset,
+        uint256 _reserveNormalizedVariableDebt
+    ) public {
+        reserveNormalizedVariableDebt[
+            _underlyingAsset
+        ] = _reserveNormalizedVariableDebt;
+        startTime[_underlyingAsset] = block.timestamp;
+    }
 }

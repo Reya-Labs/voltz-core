@@ -83,7 +83,10 @@ async function writeIrsCreationTransactionsToGnosisSafeTemplate(
   const output = mustache.render(template, data);
 
   const jsonDir = path.join(__dirname, "JSONs");
-  const outFile = path.join(jsonDir, "createIrsTransactions.json");
+  const outFile = path.join(
+    jsonDir,
+    `${data.chainId}-createIrsTransactions.json`
+  );
   if (!fs.existsSync(jsonDir)) {
     fs.mkdirSync(jsonDir);
   }

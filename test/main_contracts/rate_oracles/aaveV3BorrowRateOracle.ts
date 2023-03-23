@@ -1,16 +1,16 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
-import { MockAaveLendingPool } from "../../../typechain/MockAaveLendingPool";
+import { MockAaveV3LendingPool } from "../../../typechain/MockAaveV3LendingPool";
 import { expect } from "chai";
-import { TestAaveBorrowRateOracle } from "../../../typechain/TestAaveBorrowRateOracle";
-import { ConfigForGenericTests as Config } from "./aaveBorrowConfig";
+import { TestAaveV3BorrowRateOracle } from "../../../typechain/TestAaveV3BorrowRateOracle";
+import { ConfigForGenericTests as Config } from "./aaveV3BorrowConfig";
 import { ERC20Mock } from "../../../typechain";
 
-describe("Aave Borrow Rate Oracle", () => {
+describe("Aave v3 Borrow Rate Oracle", () => {
   let wallet: Wallet, other: Wallet;
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>;
-  let mockAaveLendingPool: MockAaveLendingPool;
-  let testAaveBorrowRateOracle: TestAaveBorrowRateOracle;
+  let mockAaveLendingPool: MockAaveV3LendingPool;
+  let testAaveBorrowRateOracle: TestAaveV3BorrowRateOracle;
   let token: ERC20Mock;
 
   before("create fixture loader", async () => {
@@ -25,13 +25,13 @@ describe("Aave Borrow Rate Oracle", () => {
       mockAaveLendingPool = aaveLendingPool;
       token = underlyingToken;
       testAaveBorrowRateOracle =
-        testRateOracle as unknown as TestAaveBorrowRateOracle;
+        testRateOracle as unknown as TestAaveV3BorrowRateOracle;
     });
-    it("Verify correct protocol ID for Aave Borrow rate oracle", async () => {
+    it("Verify correct protocol ID for Aave v3 Borrow rate oracle", async () => {
       const protocolID =
         await testAaveBorrowRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
-      expect(protocolID).to.eq(5);
+      expect(protocolID).to.eq(9);
     });
 
     const sampleRates = [

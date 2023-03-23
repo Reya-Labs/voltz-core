@@ -2,26 +2,15 @@ import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { MockAaveV3LendingPool } from "../../../typechain/MockAaveV3LendingPool";
 import { expect } from "chai";
-import { TestAaveBorrowRateOracle } from "../../../typechain/TestAaveBorrowRateOracle";
-// import { toBn } from "../../helpers/toBn";
 import { ConfigForGenericTests as Config } from "./aavev3Config";
-import {
-  ERC20Mock,
-  // TestRateOracle,
-  //   TestRateOracle__factory,
-} from "../../../typechain";
-// import { advanceTimeAndBlock } from "../../helpers/time";
+import { ERC20Mock, TestAaveV3RateOracle } from "../../../typechain";
 
-// const { provider } = waffle;
-
-describe("Aave Borrow Rate Oracle", () => {
+describe("Aave v3 Rate Oracle", () => {
   let wallet: Wallet, other: Wallet;
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>;
   let mockAaveLendingPool: MockAaveV3LendingPool;
-  let testAaveBorrowRateOracle: TestAaveBorrowRateOracle;
+  let testAaveV3RateOracle: TestAaveV3RateOracle;
   let token: ERC20Mock;
-  // let writeBlocks: number[];
-  // let updateBlocks: number[];
 
   before("create fixture loader", async () => {
     [wallet, other] = await (ethers as any).getSigners();
@@ -34,12 +23,11 @@ describe("Aave Borrow Rate Oracle", () => {
         await loadFixture(Config.oracleFixture);
       mockAaveLendingPool = aaveLendingPool;
       token = underlyingToken;
-      testAaveBorrowRateOracle =
-        testRateOracle as unknown as TestAaveBorrowRateOracle;
+      testAaveV3RateOracle = testRateOracle as unknown as TestAaveV3RateOracle;
     });
     it("Verify correct protocol ID for Aave Borrow rate oracle", async () => {
       const protocolID =
-        await testAaveBorrowRateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
+        await testAaveV3RateOracle.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
 
       expect(protocolID).to.eq(7);
     });
@@ -60,8 +48,8 @@ describe("Aave Borrow Rate Oracle", () => {
           token.address,
           rate
         );
-        await testAaveBorrowRateOracle.writeOracleEntry();
-        const observeRate = await testAaveBorrowRateOracle.getLatestRateValue();
+        await testAaveV3RateOracle.writeOracleEntry();
+        const observeRate = await testAaveV3RateOracle.getLatestRateValue();
 
         expect(observeRate).to.eq(rate);
       });
