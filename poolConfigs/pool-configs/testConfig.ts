@@ -11,6 +11,8 @@ export const testConfig: SinglePoolConfiguration = {
   vammFeeProtocolWad: "0",
   isAlpha: false,
   lpMarginCap: "0",
+  termStartTimestamp: 0,
+  termEndTimestamp: 0,
   marginCalculatorParams: {
     apyUpperMultiplierWad: "2624177575615731712",
     apyLowerMultiplierWad: "264566723394122112",

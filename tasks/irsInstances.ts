@@ -274,14 +274,6 @@ task(
     "multisig",
     "If set, the task will output a JSON file for use in a multisig, instead of sending transactions on chain"
   )
-  .addFlag("borrow", "If set, configs are taken from a the borrow pool")
-  .addOptionalParam(
-    "termStartTimestamp",
-    "The UNIX timestamp of pool start",
-    undefined,
-    types.int
-  )
-  .addParam("termEndTimestamp", "The UNIX timestamp of pool end")
   .addVariadicPositionalParam(
     "pools",
     "The names of pools in deployConfig/poolConfig.ts ('borrow_aDAI_v2 stETH_v1' - skip param name)"
@@ -292,23 +284,8 @@ task(
     const deployConfig = getConfig(network);
     const multisig = deployConfig.multisig;
 
-    // const pool = taskArgs.borrow ? "borrow_" + taskArgs.pool : taskArgs.pool;
     const poolConfigList: SinglePoolConfiguration[] = [];
     const multisigTemplateData: SingleIrsData[] = [];
-
-    // Validate inputs
-    const block = await hre.ethers.provider.getBlock("latest");
-
-    let termStartTimestamp = block.timestamp;
-    const termEndTimestamp = taskArgs.termEndTimestamp;
-
-    if (taskArgs.termStartTimestamp) {
-      termStartTimestamp = taskArgs.termStartTimestamp;
-    }
-
-    if (termStartTimestamp + 86400 > termEndTimestamp) {
-      throw new Error("Unfunctional pool. Check start and end timestamps!");
-    }
 
     const poolConfigs = getNetworkPoolConfigs(hre.network.name);
 
@@ -321,10 +298,24 @@ task(
       }
     }
 
+    // Get current timestamp
+    const currentBlock = await hre.ethers.provider.getBlock("latest");
+    const currentTime = currentBlock.timestamp;
+
     const factory = await hre.ethers.getContract("Factory");
     let nextFactoryNonce = await getFactoryNonce(hre, factory.address);
 
     for (const poolConfig of poolConfigList) {
+      const termStartTimestamp = poolConfig.termStartTimestamp;
+      const termEndTimestamp = poolConfig.termEndTimestamp;
+
+      if (
+        termStartTimestamp + 86400 > termEndTimestamp ||
+        currentTime > termEndTimestamp
+      ) {
+        throw new Error("Unfunctional pool. Check start and end timestamps!");
+      }
+
       const rateOracle = await getRateOracleByNameOrAddress(
         hre,
         poolConfig.rateOracle

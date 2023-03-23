@@ -1,4 +1,5 @@
 import { toBn } from "../../test/helpers/toBn";
+import { SinglePoolConfiguration } from "./types";
 
 export const gaps = {
   gap1: toBn("0"),
@@ -10,7 +11,10 @@ export const gaps = {
   gap7: toBn("0"),
 };
 
-export const defaultConfig = {
+export const defaultConfig: Omit<
+  SinglePoolConfiguration,
+  "rateOracle" | "termStartTimestamp" | "termEndTimestamp"
+> = {
   tickSpacing: 60,
   cacheMaxAgeInSeconds: 21600,
   lookbackWindowInSeconds: 11 * 24 * 60 * 60,

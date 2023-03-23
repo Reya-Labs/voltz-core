@@ -18,6 +18,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1672311600,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1961509192811945728",
         apyLowerMultiplierWad: "839562149274473984",
@@ -44,6 +46,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1677522287,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1091579257039114496",
         apyLowerMultiplierWad: "639081725111729280",
@@ -70,6 +74,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1678874687,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1997732578350006784",
         apyLowerMultiplierWad: "503942403715130240",
@@ -97,6 +103,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1661155200,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1335271526375451392",
         apyLowerMultiplierWad: "509107441213905856",
@@ -124,6 +132,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1672311600,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1541503860988607488",
         apyLowerMultiplierWad: "735787843918297600",
@@ -151,6 +161,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1672311600,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1524558286851522816",
         apyLowerMultiplierWad: "904438053912618880",
@@ -178,6 +190,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1672311600,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1244805770720191488",
         apyLowerMultiplierWad: "519968303078757824",
@@ -205,6 +219,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1672311600,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1294448551566335488",
         apyLowerMultiplierWad: "684989793245359616",
@@ -234,6 +250,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1664539200,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1997843654128647680",
         apyLowerMultiplierWad: "589110018839187200",
@@ -261,6 +279,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1661155200,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1349916020965325824",
         apyLowerMultiplierWad: "532711169308407232",
@@ -288,6 +308,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1672311600,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1268646339904882432",
         apyLowerMultiplierWad: "368362724500037120",
@@ -316,6 +338,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1676995012,
+      termEndTimestamp: 1680264000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1192463954583689984",
         apyLowerMultiplierWad: "626177954097487488",
@@ -343,6 +367,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
+      termStartTimestamp: 1678874727,
+      termEndTimestamp: 1681300800,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1644304481377574400",
         apyLowerMultiplierWad: "536407239345220288",
@@ -364,16 +390,25 @@ const poolConfigs: PoolConfigurations = {
     // Goerli pools
     Goerli_cETH: {
       rateOracle: "CompoundRateOracle_cETH",
+      // Keep timestamps 0 but change on local machine on-demand
+      termStartTimestamp: 0,
+      termEndTimestamp: 0,
       ...defaultConfig,
     },
 
     Goerli_cUSDC: {
       rateOracle: "CompoundRateOracle_cUSDC",
+      // Keep timestamps 0 but change on local machine on-demand
+      termStartTimestamp: 0,
+      termEndTimestamp: 0,
       ...defaultConfig,
     },
 
     Goerli_borrow_cUSDT: {
       rateOracle: "CompoundBorrowRateOracle_cUSDT",
+      // Keep timestamps 0 but change on local machine on-demand
+      termStartTimestamp: 0,
+      termEndTimestamp: 0,
       ...defaultConfig,
     },
   },
