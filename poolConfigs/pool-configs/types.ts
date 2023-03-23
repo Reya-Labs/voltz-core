@@ -28,6 +28,12 @@ export type SinglePoolConfiguration = {
   // Scaled margin cap
   lpMarginCap: BigNumberish;
 
+  // Term start timestamp
+  termStartTimestamp: number;
+
+  // Term end timestamp
+  termEndTimestamp: number;
+
   // Margin Calculator parameters
   marginCalculatorParams: {
     apyUpperMultiplierWad: BigNumberish;

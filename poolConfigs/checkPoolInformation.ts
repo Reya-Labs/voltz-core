@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 
 import { ethers } from "ethers";
+import { toBn } from "evm-bn";
 import {
   BaseRateOracle__factory,
   ERC20__factory,
@@ -183,6 +184,30 @@ const checkPoolInformation = async () => {
       if (!liquidatorRewardWad.eq(poolConfig.liquidatorRewardWad)) {
         throw new Error(
           `liquidatorRewardWad doesn't match for ${poolName} configuration`
+        );
+      }
+
+      // Check term start timestamp
+      const termStartTimestampWad = await marginEngine.termStartTimestampWad();
+
+      if (
+        !termStartTimestampWad.eq(
+          toBn(poolConfig.termStartTimestamp.toString())
+        )
+      ) {
+        throw new Error(
+          `termStartTimestampWad doesn't match for ${poolName} configuration`
+        );
+      }
+
+      // Check term end timestamp
+      const termEndTimestampWad = await marginEngine.termEndTimestampWad();
+
+      if (
+        !termEndTimestampWad.eq(toBn(poolConfig.termEndTimestamp.toString()))
+      ) {
+        throw new Error(
+          `termEndTimestampWad doesn't match for ${poolName} configuration`
         );
       }
 
