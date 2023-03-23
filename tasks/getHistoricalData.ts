@@ -21,7 +21,7 @@ const supportedPlatforms: { [key: string]: string[] } = {
     "lido",
     "rocket",
   ],
-  arbitrum: ["aaveV3", "glp"],
+  arbitrum: ["aaveV3", "aaveV3Borrow", "glp"],
 };
 
 // Description:

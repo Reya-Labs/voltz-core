@@ -15,4 +15,6 @@ interface IAaveV3LendingPool {
    * @return The reserve's normalized income
    */
   function getReserveNormalizedIncome(IERC20Minimal asset) external view returns (uint256);
+
+  function getReserveNormalizedVariableDebt(IERC20Minimal underlyingAsset) external view returns (uint256);
 }

@@ -81,6 +81,9 @@ interface CustomErrors {
     /// @dev getReserveNormalizedVariableDebt() returned zero for underlying asset. Oracle only supports active Aave-V2 assets.
     error AavePoolGetReserveNormalizedVariableDebtReturnedZero();
 
+    /// @dev getReserveNormalizedVariableDebt() returned zero for underlying asset. Oracle only supports active Aave-V3 assets.
+    error AaveV3PoolGetReserveNormalizedVariableDebtReturnedZero();
+
     /// @dev getPooledEthByShares() returned zero for Lido's stETH.
     error LidoGetPooledEthBySharesReturnedZero();
 

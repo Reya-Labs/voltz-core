@@ -24,6 +24,14 @@ export const arbitrumConfig: ContractsConfig = {
         ...ONE_YEAR_OF_EIGHT_HOURLY_DATAPOINTS,
         daysOfTrustedDataPoints: DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS,
       },
+      // Borrow markets
+      {
+        name: "USDC",
+        borrow: true,
+        address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+        ...ONE_YEAR_OF_EIGHT_HOURLY_DATAPOINTS,
+        daysOfTrustedDataPoints: 15,
+      },
     ],
   },
   glpConfig: {

@@ -107,6 +107,7 @@
     "prepare": "husky install",
     "deploy:goerli": "hardhat deploy --network goerli --tags Factory,RateOracles,PeripheryProxy,FCMs,VoltzPausabilityWrapper,Messages --export deployments/goerliDeployment.json",
     "deploy:mainnet": "hardhat deploy --network mainnet --tags Factory,RateOracles,PeripheryProxy,FCMs,VoltzPausabilityWrapper,Messages --export deployments/mainnetDeployment.json",
+    "deploy:arbitrum": "hardhat deploy --network arbitrum --tags Factory,RateOracles,PeripheryProxy,FCMs,VoltzPausabilityWrapper,Messages --export deployments/arbitrumDeployment.json",
     "deployCommunity:arbitrumGoerli": "hardhat deploy --network arbitrumGoerli --tags CommunityDeployer --export deployments/arbitrumGoerli/CommunityVote.json",
     "deployCommunity:arbitrum": "hardhat deploy --network arbitrum --tags CommunityDeployer --export deployments/arbitrum/CommunityVote.json",
     "deploy:localhost": "npx hardhat node --tags Factory,Mocks,MockRateOracles,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/localhostDeployment.json --hostname 0.0.0.0",
