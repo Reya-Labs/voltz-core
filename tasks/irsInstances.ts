@@ -264,7 +264,11 @@ async function configureIrs(
 //   otherwise, it will send the transactions directly.
 
 // Example:
-//   ``npx hardhat createIrsInstances --network arbitrum --multisig --term-start-timestamp 1679395930 --term-end-timestamp 1680249130 glpETH_v2``
+//   ``npx hardhat createIrsInstances --network arbitrum --multisig glpETH_v2``
+
+// Commands for Q2.1 rollover:
+// ``npx hardhat createIrsInstances --network mainnet --multisig aUSDC_v12 aUSDC_v13 borrow_aUSDC_v2 stETH_v3 rETH_v3 borrow_aETH_v3 borrow_cUSDT_v2 borrow_aUSDT_v2``
+// ``npx hardhat createIrsInstances --network arbitrum --multisig aUSDC_v2 borrow_aUSDC_v2``
 
 task(
   "createIrsInstances",

@@ -92,6 +92,64 @@ const poolConfigs: PoolConfigurations = {
       },
     },
 
+    // new aUSDC lend v2
+    aUSDC_v12: {
+      rateOracle: "AaveRateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "1000000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1682856000,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
+    // new aUSDC lend v3 - 2 weeks
+    aUSDC_v13: {
+      rateOracle: "AaveV3RateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "1000000000000000", // 0.1% LP Fees
+      liquidatorRewardWad: "50000000000000000", // 5%
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1681473600,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
     // borrow aUSDC pools
     borrow_aUSDC_v1: {
       rateOracle: "AaveBorrowRateOracle_USDC",
@@ -116,6 +174,35 @@ const poolConfigs: PoolConfigurations = {
         tMaxWad: "31536000000000000000000000",
         etaIMWad: "2913059813811162",
         etaLMWad: "887007499577303",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
+    // new aUSDC borrow v2
+    borrow_aUSDC_v2: {
+      rateOracle: "AaveBorrowRateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "1000000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1682856000,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
         ...gaps,
         minMarginToIncentiviseLiquidators: "0",
       },
@@ -208,6 +295,35 @@ const poolConfigs: PoolConfigurations = {
       },
     },
 
+    // new stETH
+    stETH_v3: {
+      rateOracle: "LidoRateOracle",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "3000000000000000", // todo: change
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1682856000,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
     // rETH pools
     rETH_v2: {
       rateOracle: "RocketPoolRateOracle",
@@ -232,6 +348,35 @@ const poolConfigs: PoolConfigurations = {
         tMaxWad: "31536000000000000000000000",
         etaIMWad: "66398733965684952",
         etaLMWad: "1597943440019691",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
+    // new rETH
+    rETH_v3: {
+      rateOracle: "RocketPoolRateOracle",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "3000000000000000", // todo: change
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1682856000,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
         ...gaps,
         minMarginToIncentiviseLiquidators: "0",
       },
@@ -268,6 +413,35 @@ const poolConfigs: PoolConfigurations = {
       },
     },
 
+    // new aETH borrow v2
+    borrow_aETH_v3: {
+      rateOracle: "AaveBorrowRateOracle_WETH",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "3000000000000000", // todo: change
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1682856000,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
     // borrow cUSDT pools
     borrow_cUSDT_v1: {
       rateOracle: "CompoundBorrowRateOracle_cUSDT",
@@ -292,6 +466,35 @@ const poolConfigs: PoolConfigurations = {
         tMaxWad: "31536000000000000000000000",
         etaIMWad: "3736643999597247",
         etaLMWad: "522548241306638",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
+    // new cUSDT borrow
+    borrow_cUSDT_v2: {
+      rateOracle: "CompoundBorrowRateOracle_cUSDT",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "1000000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1682856000,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
         ...gaps,
         minMarginToIncentiviseLiquidators: "0",
       },
@@ -325,6 +528,35 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
     },
+
+    // new aUSDT borrow v2
+    borrow_aUSDT_v2: {
+      rateOracle: "AaveBorrowRateOracle_USDT",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "1000000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1682856000,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
   },
 
   arbitrum: {
@@ -351,6 +583,64 @@ const poolConfigs: PoolConfigurations = {
         tMaxWad: "31536000000000000000000000",
         etaIMWad: "24932053398198104",
         etaLMWad: "3959638123311051",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
+    // new aUSDC lend v3 -- 2 weeks
+    aUSDC_v2: {
+      rateOracle: "AaveV3RateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "1000000000000000", // 0.1% LP Fees
+      liquidatorRewardWad: "50000000000000000", // 5%
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1681473600,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
+    // new aUSDC borrow v2
+    borrow_aUSDC_v2: {
+      rateOracle: "AaveV3BorrowRateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
+      feeWad: "1000000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1680264000,
+      termEndTimestamp: 1682856000,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "0", // todo: change
+        apyLowerMultiplierWad: "0", // todo: change
+        sigmaSquaredWad: "0", // todo: change
+        alphaWad: "0", // todo: change
+        betaWad: "0", // todo: change
+        xiUpperWad: "0", // todo: change
+        xiLowerWad: "0", // todo: change
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "0", // todo: change
+        etaLMWad: "0", // todo: change
         ...gaps,
         minMarginToIncentiviseLiquidators: "0",
       },
