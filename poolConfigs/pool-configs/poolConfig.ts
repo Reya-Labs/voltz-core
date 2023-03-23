@@ -301,7 +301,7 @@ const poolConfigs: PoolConfigurations = {
       tickSpacing: 60,
       cacheMaxAgeInSeconds: 21600,
       lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
-      feeWad: "3000000000000000", // todo: change
+      feeWad: "1000000000000000",
       liquidatorRewardWad: "50000000000000000",
       vammFeeProtocolWad: "0",
       isAlpha: false,
@@ -359,7 +359,7 @@ const poolConfigs: PoolConfigurations = {
       tickSpacing: 60,
       cacheMaxAgeInSeconds: 21600,
       lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
-      feeWad: "3000000000000000", // todo: change
+      feeWad: "1000000000000000",
       liquidatorRewardWad: "50000000000000000",
       vammFeeProtocolWad: "0",
       isAlpha: false,
@@ -419,7 +419,7 @@ const poolConfigs: PoolConfigurations = {
       tickSpacing: 60,
       cacheMaxAgeInSeconds: 21600,
       lookbackWindowInSeconds: 0 * 24 * 60 * 60, // todo: change
-      feeWad: "3000000000000000", // todo: change
+      feeWad: "1000000000000000", // todo: change
       liquidatorRewardWad: "50000000000000000",
       vammFeeProtocolWad: "0",
       isAlpha: false,
