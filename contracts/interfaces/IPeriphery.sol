@@ -34,16 +34,16 @@ interface IPeriphery is CustomErrors {
 
     /// @dev emitted when position margin is updated
     event UpdatePositionMargin(
-        PositionDetails position, 
-        int256 marginDelta, 
+        PositionDetails position,
+        int256 marginDelta,
         bool fullyWithdraw
     );
 
     /// @dev emitted when liquidity is minted or burnt
     event MintOrBurn(
         PositionDetails position,
-        uint256 notional, 
-        bool isMint, 
+        uint256 notional,
+        bool isMint,
         int256 positionMarginRequirement
     );
 
@@ -59,7 +59,7 @@ interface IPeriphery is CustomErrors {
     event RolloverWithMint(
         PositionDetails oldPosition,
         PositionDetails newPosition,
-        uint256 notional, 
+        uint256 notional,
         bool isMint,
         int256 newPositionMarginRequirement
     );

@@ -148,12 +148,14 @@ contract Periphery is
 
         updatePositionMargin(marginEngine, tickLower, tickUpper, 0, true); // fully withdraw
 
-        emit SettlePositionAndWithdrawMargin(PositionDetails({
-            marginEngine: marginEngine,
-            owner: owner,
-            tickLower: tickLower,
-            tickUpper: tickUpper
-        }));
+        emit SettlePositionAndWithdrawMargin(
+            PositionDetails({
+                marginEngine: marginEngine,
+                owner: owner,
+                tickLower: tickLower,
+                tickUpper: tickUpper
+            })
+        );
     }
 
     function updatePositionMargin(
