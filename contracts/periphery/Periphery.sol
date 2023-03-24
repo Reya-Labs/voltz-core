@@ -99,7 +99,7 @@ contract Periphery is
         vammOwnerOnly(vamm)
     {
         _lpMarginCaps[vamm] = lpMarginCapNew;
-        emit MarginCap(vamm, _lpMarginCaps[vamm]);
+        emit MarginCap(vamm, lpMarginCapNew);
     }
 
     function setLPMarginCumulative(IVAMM vamm, int256 lpMarginCumulative)
@@ -108,6 +108,7 @@ contract Periphery is
         vammOwnerOnly(vamm)
     {
         _lpMarginCumulatives[vamm] = lpMarginCumulative;
+        emit MarginCumulative(vamm, lpMarginCumulative);
     }
 
     function accountLPMarginCap(
@@ -146,6 +147,13 @@ contract Periphery is
         marginEngine.settlePosition(owner, tickLower, tickUpper);
 
         updatePositionMargin(marginEngine, tickLower, tickUpper, 0, true); // fully withdraw
+
+        emit SettlePositionAndWithdrawMargin(PositionDetails({
+            marginEngine: marginEngine,
+            owner: owner,
+            tickLower: tickLower,
+            tickUpper: tickUpper
+        }));
     }
 
     function updatePositionMargin(
@@ -262,6 +270,17 @@ contract Periphery is
             );
         }
 
+        emit UpdatePositionMargin(
+            PositionDetails({
+                marginEngine: marginEngine,
+                owner: msg.sender,
+                tickLower: tickLower,
+                tickUpper: tickUpper
+            }),
+            marginDelta,
+            fullyWithdraw
+        );
+
         return marginDelta;
     }
 
@@ -371,6 +390,18 @@ contract Periphery is
                 isLPAfter
             );
         }
+
+        emit MintOrBurn(
+            PositionDetails({
+                marginEngine: params.marginEngine,
+                owner: msg.sender,
+                tickLower: params.tickLower,
+                tickUpper: params.tickUpper
+            }),
+            params.notional,
+            params.isMint,
+            positionMarginRequirement
+        );
     }
 
     function swap(SwapPeripheryParams memory params)
@@ -469,6 +500,22 @@ contract Periphery is
                 false // _fullyWithdraw
             );
         }
+
+        emit Swap(
+            PositionDetails({
+                marginEngine: params.marginEngine,
+                owner: msg.sender,
+                tickLower: params.tickLower,
+                tickUpper: params.tickUpper
+            }),
+            params.isFT,
+            params.notional,
+            SwapOutput({
+                variableTokenDelta: _variableTokenDelta,
+                cumulativeFeeIncurred: _cumulativeFeeIncurred,
+                marginRequirement: _marginRequirement
+            })
+        );
     }
 
     function fullyCollateralisedVTSwap(
@@ -535,6 +582,24 @@ contract Periphery is
         );
 
         newPositionMarginRequirement = mintOrBurn(paramsNewPosition);
+
+        emit RolloverWithMint(
+            PositionDetails({
+                marginEngine: marginEngine,
+                owner: owner,
+                tickLower: tickLower,
+                tickUpper: tickUpper
+            }),
+            PositionDetails({
+                marginEngine: paramsNewPosition.marginEngine,
+                owner: msg.sender,
+                tickLower: paramsNewPosition.tickLower,
+                tickUpper: paramsNewPosition.tickUpper
+            }),
+            paramsNewPosition.notional,
+            paramsNewPosition.isMint,
+            newPositionMarginRequirement
+        );
     }
 
     function rolloverWithSwap(
@@ -572,6 +637,28 @@ contract Periphery is
             _tickAfter,
 
         ) = swap(paramsNewPosition);
+
+        emit RolloverWithSwap(
+            PositionDetails({
+                marginEngine: marginEngine,
+                owner: owner,
+                tickLower: tickLower,
+                tickUpper: tickUpper
+            }),
+            PositionDetails({
+                marginEngine: paramsNewPosition.marginEngine,
+                owner: msg.sender,
+                tickLower: paramsNewPosition.tickLower,
+                tickUpper: paramsNewPosition.tickUpper
+            }),
+            paramsNewPosition.isFT,
+            paramsNewPosition.notional,
+            SwapOutput({
+                variableTokenDelta: _variableTokenDelta,
+                cumulativeFeeIncurred: _cumulativeFeeIncurred,
+                marginRequirement: _marginRequirement
+            })
+        );
     }
 
     function getCurrentTick(IMarginEngine marginEngine)
