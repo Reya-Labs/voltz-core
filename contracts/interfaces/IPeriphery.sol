@@ -8,10 +8,70 @@ import "../utils/CustomErrors.sol";
 import "../interfaces/IWETH.sol";
 
 interface IPeriphery is CustomErrors {
-    // events
+    // structs for events
+    struct PositionDetails {
+        IMarginEngine marginEngine;
+        address owner;
+        int24 tickLower;
+        int24 tickUpper;
+    }
 
+    struct SwapOutput {
+        int256 variableTokenDelta;
+        uint256 cumulativeFeeIncurred;
+        int256 marginRequirement;
+    }
+
+    // events
     /// @dev emitted after new lp margin cap is set
     event MarginCap(IVAMM vamm, int256 lpMarginCapNew);
+
+    /// @dev emitted when new lp margin cumulative is set
+    event MarginCumulative(IVAMM vamm, int256 lpMarginCumulative);
+
+    /// @dev emitted when position is settled and all margin withdrawn
+    event SettlePositionAndWithdrawMargin(PositionDetails position);
+
+    /// @dev emitted when position margin is updated
+    event UpdatePositionMargin(
+        PositionDetails position, 
+        int256 marginDelta, 
+        bool fullyWithdraw
+    );
+
+    /// @dev emitted when liquidity is minted or burnt
+    event MintOrBurn(
+        PositionDetails position,
+        uint256 notional, 
+        bool isMint, 
+        int256 positionMarginRequirement
+    );
+
+    /// @dev emitted when swap happens
+    event Swap(
+        PositionDetails position,
+        bool isFT,
+        uint256 notional,
+        SwapOutput output
+    );
+
+    /// @dev emitted when position is rolled over with mint
+    event RolloverWithMint(
+        PositionDetails oldPosition,
+        PositionDetails newPosition,
+        uint256 notional, 
+        bool isMint,
+        int256 newPositionMarginRequirement
+    );
+
+    /// @dev emitted when position is rolled over with swap
+    event RolloverWithSwap(
+        PositionDetails oldPosition,
+        PositionDetails newPosition,
+        bool isFT,
+        uint256 notional,
+        SwapOutput output
+    );
 
     // structs
 
