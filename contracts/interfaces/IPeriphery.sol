@@ -17,8 +17,10 @@ interface IPeriphery is CustomErrors {
     }
 
     struct SwapOutput {
+        int256 fixedTokenDelta;
         int256 variableTokenDelta;
         uint256 cumulativeFeeIncurred;
+        int256 fixedTokenDeltaUnbalanced;
         int256 marginRequirement;
     }
 

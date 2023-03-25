@@ -513,8 +513,10 @@ contract Periphery is
             params.isFT,
             params.notional,
             SwapOutput({
+                fixedTokenDelta: _fixedTokenDelta,
                 variableTokenDelta: _variableTokenDelta,
                 cumulativeFeeIncurred: _cumulativeFeeIncurred,
+                fixedTokenDeltaUnbalanced: _fixedTokenDeltaUnbalanced,
                 marginRequirement: _marginRequirement
             })
         );
@@ -656,8 +658,10 @@ contract Periphery is
             paramsNewPosition.isFT,
             paramsNewPosition.notional,
             SwapOutput({
+                fixedTokenDelta: _fixedTokenDelta,
                 variableTokenDelta: _variableTokenDelta,
                 cumulativeFeeIncurred: _cumulativeFeeIncurred,
+                fixedTokenDeltaUnbalanced: _fixedTokenDeltaUnbalanced,
                 marginRequirement: _marginRequirement
             })
         );
