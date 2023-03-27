@@ -49,7 +49,7 @@ function writeUpgradeTransactionsToGnosisSafeTemplate(
     );
     const output = mustache.render(template, data);
 
-    const file = `./tasks/JSONs/upgradeProxies.json`;
+    const file = `./tasks/JSONs/${data.chainId}-upgradeProxies.json`;
     fs.writeFileSync(file, output);
   } catch (e) {
     console.log("error:", e);
