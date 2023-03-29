@@ -79,6 +79,9 @@ loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
 // Localhost time manipulation support
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
 
+// Pool initial leverages
+loadModuleIfContractsAreBuilt("./tasks/getPoolLeverages");
+
 // Data extractions
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
@@ -137,6 +140,25 @@ if (!!process.env.FORK_MAINNET) {
     forking: {
       url: `${process.env.MAINNET_URL}`,
       // blockNumber: 15919000,
+    },
+  };
+}
+
+// steps to hack hardhat such that Arbitrum forking works:
+// 1. (install custom patch) yarn add -D hardhat@npm:@gzeoneth/hardhat@2.10.1-gzeon-c8fe47dd4
+// 2. Go to the package (./node_modules/hardhat/internal/hardhat-network/provider/fork/ForkBlockchain.js:24)
+// and change to ``this._forkIgnoreUnknownTxType = true;``
+
+// please update if you find smarter ways :)
+
+if (!!process.env.FORK_ARBITRUM) {
+  hardhatNetworkConfig = {
+    allowUnlimitedContractSize: true,
+    saveDeployments: true,
+    chainId: 42161,
+    live: false,
+    forking: {
+      url: `${process.env.ARBITRUM_URL}`,
     },
   };
 }

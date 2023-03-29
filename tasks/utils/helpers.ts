@@ -203,3 +203,8 @@ export async function getPositionRequirements(
     ),
   };
 }
+
+// Convert fixed rate to spaced tick
+export function tickAtFixedRate(fixedRate: number): number {
+  return 60 * Math.round(-Math.log(fixedRate) / Math.log(1.0001) / 60);
+}

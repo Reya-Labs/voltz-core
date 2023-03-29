@@ -6,6 +6,7 @@ import mustache from "mustache";
 import { getPool } from "../../poolConfigs/pool-addresses/pools";
 import { mints } from "./mints";
 import { getConfig } from "../../deployConfig/config";
+import { tickAtFixedRate } from "../utils/helpers";
 
 type MultisigTemplate = {
   periphery: string;
@@ -33,11 +34,6 @@ async function writeToMultisigTemplate(data: MultisigTemplate) {
 
   const file = `./tasks/JSONs/pcv-mints.json`;
   fs.writeFileSync(file, output);
-}
-
-// Convert fixed rate to spaced tick
-function getTick(fixedRate: number): number {
-  return 60 * Math.round(-Math.log(fixedRate) / Math.log(1.0001) / 60);
 }
 
 // Description:
@@ -77,8 +73,8 @@ task("pcv-mints", "Mints liquidity").setAction(async (_, hre) => {
     const tokenAddress = await marginEngine.underlyingToken();
 
     // Process parameters
-    const tickLower = getTick(mint.fixedRateUpper);
-    const tickUpper = getTick(mint.fixedRateLower);
+    const tickLower = tickAtFixedRate(mint.fixedRateUpper);
+    const tickUpper = tickAtFixedRate(mint.fixedRateLower);
     const notional = hre.ethers.utils
       .parseUnits((mint.marginDelta * mint.leverage).toString(), pool.decimals)
       .toString();
