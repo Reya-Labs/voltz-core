@@ -190,7 +190,7 @@ async function configureIrs(
   const currentFeeWad = await vamm.feeWad();
   if (currentFeeWad.toString() === "0") {
     // Fee  can only be set if it has never been set
-    trx = await vamm.setFee(poolConfig.vammFeeProtocolWad, {
+    trx = await vamm.setFee(poolConfig.feeWad, {
       gasLimit: 10000000,
     });
     await trx.wait();
@@ -271,7 +271,7 @@ async function configureIrs(
 
 // Commands for Q2.1 rollover:
 // ``npx hardhat createIrsInstances --network mainnet --multisig aUSDC_v12 aUSDC_v13 borrow_aUSDC_v2 stETH_v3 rETH_v3 borrow_aETH_v3 borrow_cUSDT_v2 borrow_aUSDT_v2``
-// ``npx hardhat createIrsInstances --network arbitrum --multisig aUSDC_v2 borrow_aUSDC_v2``
+// ``npx hardhat createIrsInstances --network arbitrum --multisig aUSDC_v2 borrow_aUSDC_v1``
 
 task(
   "createIrsInstances",
