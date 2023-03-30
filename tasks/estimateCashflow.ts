@@ -50,7 +50,7 @@ task(
     const EXPORT_FILE = `${EXPORT_FOLDER}/estimated-cashflow.csv`;
 
     const header =
-      "Margin Engine,Owner,Lower Tick,Upper Tick,Status,Fixed Token Balance,Variable Token Balance,Current Margin,Estimated Cashflow,Estimated PnL,Estimated Insolvency,Margin After Liquidation,Estimated Cashflow After Liquidation,Estimated PnL After Liquidation,Estimated Insolvency After Liquidation";
+      "Margin Engine,Owner,Lower Tick,Upper Tick,Status,Fixed Token Balance,Variable Token Balance,Current Margin,Accumulated Fees,Estimated Cashflow,Estimated PnL,Estimated Insolvency,Margin After Liquidation,Estimated Cashflow After Liquidation,Estimated PnL After Liquidation,Estimated Insolvency After Liquidation";
     fs.writeFile(EXPORT_FILE, header + "\n", () => {});
 
     const { deployer } = await hre.getNamedAccounts();
@@ -256,67 +256,79 @@ task(
           !taskArgs.onlyInsolvent ||
           positionInfo.margin.add(estimatedCashflow).lt(0)
         ) {
-          fs.appendFileSync(
-            EXPORT_FILE,
-            `${marginEngineAddress},${position.owner},${position.tickLower},${
-              position.tickUpper
-            },${status},${ethers.utils.formatUnits(
-              positionInfo.fixedTokenBalance,
-              decimals
-            )},${ethers.utils.formatUnits(
+          const output = [
+            // Margin Engine
+            marginEngineAddress,
+            // Owner
+            position.owner,
+            // Lower Tick
+            position.tickLower,
+            // Upper Tick
+            position.tickUpper,
+            // Status
+            status,
+            // Fixed Token Balance
+            ethers.utils.formatUnits(positionInfo.fixedTokenBalance, decimals),
+            // Variable Token Balance
+            ethers.utils.formatUnits(
               positionInfo.variableTokenBalance,
               decimals
-            )},${ethers.utils.formatUnits(
-              positionInfo.margin,
+            ),
+            // Current Margin
+            ethers.utils.formatUnits(
+              positionInfo.margin.sub(positionInfo.accumulatedFees),
               decimals
-            )},${ethers.utils.formatUnits(
-              estimatedCashflow,
-              decimals
-            )},${ethers.utils.formatUnits(
+            ),
+            // Accumulated Fees
+            ethers.utils.formatUnits(positionInfo.accumulatedFees, decimals),
+            // Estimated Cashflow
+            ethers.utils.formatUnits(estimatedCashflow, decimals),
+            // Estimated PnL,
+            ethers.utils.formatUnits(
               positionInfo.margin.add(estimatedCashflow),
               decimals
-            )},${
-              positionInfo.margin.add(estimatedCashflow).lt(0)
-                ? ethers.utils.formatUnits(
-                    positionInfo.margin.add(estimatedCashflow),
-                    decimals
-                  )
-                : 0
-            },${
-              marginAfterLiquidation
-                ? ethers.utils.formatUnits(marginAfterLiquidation, decimals)
-                : "N/A"
-            },${
-              estimatedCashflowAfterLiquidation
-                ? ethers.utils.formatUnits(
-                    estimatedCashflowAfterLiquidation,
-                    decimals
-                  )
-                : "N/A"
-            },${
-              marginAfterLiquidation && estimatedCashflowAfterLiquidation
+            ),
+            // Estimated Insolvency
+            positionInfo.margin.add(estimatedCashflow).lt(0)
+              ? ethers.utils.formatUnits(
+                  positionInfo.margin.add(estimatedCashflow),
+                  decimals
+                )
+              : 0,
+            // Margin After Liquidation
+            marginAfterLiquidation
+              ? ethers.utils.formatUnits(marginAfterLiquidation, decimals)
+              : "N/A",
+            // Estimated Cashflow After Liquidation
+            estimatedCashflowAfterLiquidation
+              ? ethers.utils.formatUnits(
+                  estimatedCashflowAfterLiquidation,
+                  decimals
+                )
+              : "N/A",
+            // Estimated PnL After Liquidation
+            marginAfterLiquidation && estimatedCashflowAfterLiquidation
+              ? ethers.utils.formatUnits(
+                  marginAfterLiquidation.add(estimatedCashflowAfterLiquidation),
+                  decimals
+                )
+              : "N/A",
+            // Estimated Insolvency After Liquidation
+            marginAfterLiquidation && estimatedCashflowAfterLiquidation
+              ? marginAfterLiquidation
+                  .add(estimatedCashflowAfterLiquidation)
+                  .lt(0)
                 ? ethers.utils.formatUnits(
                     marginAfterLiquidation.add(
                       estimatedCashflowAfterLiquidation
                     ),
                     decimals
                   )
-                : "N/A"
-            },${
-              marginAfterLiquidation && estimatedCashflowAfterLiquidation
-                ? marginAfterLiquidation
-                    .add(estimatedCashflowAfterLiquidation)
-                    .lt(0)
-                  ? ethers.utils.formatUnits(
-                      marginAfterLiquidation.add(
-                        estimatedCashflowAfterLiquidation
-                      ),
-                      decimals
-                    )
-                  : 0
-                : "N/A"
-            }\n`
-          );
+                : 0
+              : "N/A",
+          ].join(",");
+
+          fs.appendFileSync(EXPORT_FILE, output + "\n");
         }
       }
     }

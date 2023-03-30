@@ -327,8 +327,25 @@ task("getPositionInfo", "Get all information about some position")
       } catch {}
 
       // Get the position info
-      const { liquidity, margin, fixedTokenBalance, variableTokenBalance } =
-        await getPositionInfo(tmp.marginEngine, p, tmp.decimals);
+      const {
+        liquidity,
+        margin,
+        fixedTokenBalance,
+        variableTokenBalance,
+        accumulatedFees,
+      } = await getPositionInfo(tmp.marginEngine, p, tmp.decimals);
+
+      // Get action history
+      const history = new PositionHistory(
+        `${p.marginEngine.toLowerCase()}#${p.owner.toLowerCase()}#${
+          p.tickLower
+        }#${p.tickUpper}`,
+        p.tickLower,
+        p.tickUpper,
+        tmp.decimals
+      );
+
+      await history.getInfo(hre.network.name);
 
       fs.appendFileSync(
         `${EXPORT_FOLDER}/info.txt`,
@@ -349,17 +366,10 @@ task("getPositionInfo", "Get all information about some position")
         )}, Safety: ${formatNumber(safetyThreshold)}\n`
       );
 
-      // Get action history
-      const history = new PositionHistory(
-        `${p.marginEngine.toLowerCase()}#${p.owner.toLowerCase()}#${
-          p.tickLower
-        }#${p.tickUpper}`,
-        p.tickLower,
-        p.tickUpper,
-        tmp.decimals
+      fs.appendFileSync(
+        `${EXPORT_FOLDER}/info.txt`,
+        `Accumulated fees: ${formatNumber(accumulatedFees)}\n`
       );
-
-      await history.getInfo(hre.network.name);
 
       // Output mints
       fs.appendFileSync(
