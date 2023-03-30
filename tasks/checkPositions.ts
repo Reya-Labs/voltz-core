@@ -158,6 +158,7 @@ task("getPositionInfo", "Get all information about some position")
     blocksPerDay,
     types.int
   )
+  .addFlag("unsettled", "Flag that skips settled positions")
   .setAction(async (taskArgs, hre) => {
     const fs = require("fs");
 
@@ -216,6 +217,10 @@ task("getPositionInfo", "Get all information about some position")
     positions = positions.filter((p) =>
       Object.keys(pools).includes(p.marginEngine.toLowerCase())
     );
+
+    if (taskArgs.unsettled) {
+      positions = positions.filter((p) => !p.isSettled);
+    }
 
     // Filter by owners
     if (taskArgs.owners) {
