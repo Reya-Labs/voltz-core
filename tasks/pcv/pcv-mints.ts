@@ -32,7 +32,7 @@ async function writeToMultisigTemplate(data: MultisigTemplate) {
   );
   const output = mustache.render(template, data);
 
-  const file = `./tasks/JSONs/pcv-mints.json`;
+  const file = `./tasks/JSONs/${data.chainId}-pcv-mints.json`;
   fs.writeFileSync(file, output);
 }
 

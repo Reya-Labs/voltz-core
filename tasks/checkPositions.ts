@@ -376,6 +376,13 @@ task("getPositionInfo", "Get all information about some position")
         `Accumulated fees: ${formatNumber(accumulatedFees)}\n`
       );
 
+      fs.appendFileSync(
+        `${EXPORT_FOLDER}/info.txt`,
+        `Total margin updates: ${formatNumber(
+          history.marginUpdates.reduce((acc, mu) => acc + mu.marginDelta, 0)
+        )}\n`
+      );
+
       // Output mints
       fs.appendFileSync(
         `${EXPORT_FOLDER}/mints.csv`,
