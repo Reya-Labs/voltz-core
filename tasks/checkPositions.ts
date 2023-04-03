@@ -269,7 +269,7 @@ task("getPositionInfo", "Get all information about some position")
       const tmp = pools[p.marginEngine.toLowerCase() as keyof typeof pools];
 
       // Create a folder for this position
-      const EXPORT_FOLDER = `position-status/data/${hre.network.name}#${tmp.name}#${p.owner}#${p.tickLower}#${p.tickUpper}`;
+      const EXPORT_FOLDER = `position-status/data/${p.owner}/${hre.network.name}/${tmp.name}#${p.tickLower}#${p.tickUpper}`;
 
       if (!fs.existsSync(EXPORT_FOLDER)) {
         fs.mkdirSync(EXPORT_FOLDER, { recursive: true });
