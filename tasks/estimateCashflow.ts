@@ -275,10 +275,7 @@ task(
               decimals
             ),
             // Current Margin
-            ethers.utils.formatUnits(
-              positionInfo.margin.sub(positionInfo.accumulatedFees),
-              decimals
-            ),
+            ethers.utils.formatUnits(positionInfo.margin, decimals),
             // Accumulated Fees
             ethers.utils.formatUnits(positionInfo.accumulatedFees, decimals),
             // Estimated Cashflow
