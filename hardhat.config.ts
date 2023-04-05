@@ -90,6 +90,7 @@ loadModuleIfContractsAreBuilt("./tasks/getSlippageData");
 // Position support
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
 loadModuleIfContractsAreBuilt("./tasks/estimateCashflow");
+loadModuleIfContractsAreBuilt("./tasks/maturedPositionsPnL");
 loadModuleIfContractsAreBuilt("./tasks/calculatePositionSettlement");
 loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
 

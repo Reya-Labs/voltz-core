@@ -1,14 +1,11 @@
 import { task } from "hardhat/config";
-import {
-  FixedAndVariableMathTest,
-  MarginEngine,
-  BaseRateOracle,
-  IERC20Minimal,
-} from "../typechain";
+import { MarginEngine, BaseRateOracle, IERC20Minimal } from "../typechain";
 import { ethers, BigNumber } from "ethers";
 
 import { getPositions, Position } from "../scripts/getPositions";
 import { getSigner } from "./utils/getSigner";
+import { getPool } from "../poolConfigs/pool-addresses/pools";
+import { calculateSettlementCashflow } from "./utils/calculateSettlementCashflow";
 
 const SECONDS_PER_YEAR = 31536000;
 
@@ -30,7 +27,11 @@ task(
     "networkName",
     "Name of underlying network when using forks"
   )
+  .addVariadicPositionalParam("pools", "Comma-separated pool names")
   .setAction(async (taskArgs, hre) => {
+    // Fetch pool details
+    const poolNames: string[] = taskArgs.pools;
+
     let networkName = hre.network.name;
     if (taskArgs.networkName) {
       if (hre.network.name !== "localhost" && hre.network.name !== "hardhat") {
@@ -55,32 +56,6 @@ task(
 
     const { deployer } = await hre.getNamedAccounts();
     const localhostLiquidator = await getSigner(hre, deployer);
-
-    // TODO: hard-coded account (suggestion: move this to some utility
-    // that gets hre.network.name as argument and returns the FixedAndVariableMath
-    // library)
-    let fixedAndVariableMath;
-    if (networkName === "mainnet") {
-      fixedAndVariableMath = (await hre.ethers.getContractAt(
-        "FixedAndVariableMathTest",
-        "0x2D2EE238Ca74B546BfA64864f5654b5Ed7673f87"
-      )) as FixedAndVariableMathTest;
-    } else if (networkName === "arbitrum") {
-      fixedAndVariableMath = (await hre.ethers.getContractAt(
-        "FixedAndVariableMathTest",
-        "0x6975b83ef331e65d146e4c64fb45392cd2237a3c"
-      )) as FixedAndVariableMathTest;
-    } else {
-      console.log(
-        "WARNING - Contract FixedAndVariableMathTest is going to be deployed on network:",
-        hre.network.name
-      );
-      const fixedAndVariableMathFactory = await hre.ethers.getContractFactory(
-        "FixedAndVariableMathTest"
-      );
-      fixedAndVariableMath =
-        (await fixedAndVariableMathFactory.deploy()) as FixedAndVariableMathTest;
-    }
 
     let positions: Position[] = await getPositions(
       networkName,
@@ -113,20 +88,19 @@ task(
       );
     }
 
-    const marginEngineAddresses = new Set<string>();
-    for (const position of positions) {
-      marginEngineAddresses.add(position.marginEngine);
-    }
-
     const currentBlock = await hre.ethers.provider.getBlock("latest");
     const termCurrentTimestampWad = BigNumber.from(currentBlock.timestamp).mul(
       BigNumber.from(10).pow(18)
     );
 
-    for (const marginEngineAddress of marginEngineAddresses) {
+    for (const pool of poolNames) {
+      console.log(`Processing pool ${pool}`);
+
+      const poolDetails = getPool(hre.network.name, pool);
+
       const marginEngine = (await hre.ethers.getContractAt(
         "MarginEngine",
-        marginEngineAddress
+        poolDetails.marginEngine
       )) as MarginEngine;
 
       const baseRateOracle = (await hre.ethers.getContractAt(
@@ -156,11 +130,11 @@ task(
         )
       );
 
-      for (const position of positions) {
-        if (position.marginEngine !== marginEngineAddress) {
-          continue;
-        }
+      const pool_positions = positions.filter(
+        (p) => p.marginEngine === poolDetails.marginEngine.toLowerCase()
+      );
 
+      for (const position of pool_positions) {
         const positionInfo = await marginEngine.callStatic.getPosition(
           position.owner,
           position.tickLower,
@@ -181,14 +155,13 @@ task(
           continue;
         }
 
-        const estimatedCashflow =
-          await fixedAndVariableMath.calculateSettlementCashflow(
-            positionInfo.fixedTokenBalance,
-            positionInfo.variableTokenBalance,
-            termStartTimestampWad,
-            termEndTimestampWad,
-            estimatedVariableFactor
-          );
+        const estimatedCashflow = await calculateSettlementCashflow(
+          positionInfo.fixedTokenBalance,
+          positionInfo.variableTokenBalance,
+          termStartTimestampWad,
+          termEndTimestampWad,
+          estimatedVariableFactor
+        );
 
         const positionRequirementSafety =
           await marginEngine.callStatic.getPositionMarginRequirement(
@@ -242,14 +215,13 @@ task(
 
           marginAfterLiquidation = positionInfoAfterLiquidation.margin;
 
-          estimatedCashflowAfterLiquidation =
-            await fixedAndVariableMath.calculateSettlementCashflow(
-              positionInfoAfterLiquidation.fixedTokenBalance,
-              positionInfoAfterLiquidation.variableTokenBalance,
-              termStartTimestampWad,
-              termEndTimestampWad,
-              estimatedVariableFactor
-            );
+          estimatedCashflowAfterLiquidation = await calculateSettlementCashflow(
+            positionInfoAfterLiquidation.fixedTokenBalance,
+            positionInfoAfterLiquidation.variableTokenBalance,
+            termStartTimestampWad,
+            termEndTimestampWad,
+            estimatedVariableFactor
+          );
         }
 
         if (
@@ -258,7 +230,7 @@ task(
         ) {
           const output = [
             // Margin Engine
-            marginEngineAddress,
+            poolDetails.marginEngine,
             // Owner
             position.owner,
             // Lower Tick
