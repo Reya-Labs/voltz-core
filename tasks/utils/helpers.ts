@@ -1,7 +1,7 @@
 import { isAddress } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { BaseRateOracle, Factory, IMarginEngine, IVAMM } from "../../typechain";
-import { ethers, utils } from "ethers";
+import { BigNumber, ethers, utils } from "ethers";
 import { Position } from "../../scripts/getPositions";
 import { ONE_DAY_IN_SECONDS } from "./constants";
 
@@ -207,4 +207,13 @@ export async function getPositionRequirements(
 // Convert fixed rate to spaced tick
 export function tickAtFixedRate(fixedRate: number): number {
   return 60 * Math.round(-Math.log(fixedRate) / Math.log(1.0001) / 60);
+}
+
+export function sqrtPriceX96AtFixedRate(fixedRate: number): BigNumber {
+  const sqrtPrice = 1.0001 ** (tickAtFixedRate(fixedRate) / 2);
+  const x96 = BigNumber.from(2).pow(96);
+  const scale = 10 ** 12;
+  return BigNumber.from(Math.round(sqrtPrice * scale))
+    .mul(x96)
+    .div(scale);
 }
