@@ -1,0 +1,39 @@
+{
+    "version": "1.0",
+    "chainId": "{{chainId}}",
+    "createdAt": 1654007302649,
+    "meta": {
+      "name": "Transactions Batch",
+      "description": "",
+      "txBuilderVersion": "1.8.0",
+      "createdFromSafeAddress": "{{multisig}}",
+      "createdFromOwnerAddress": "",
+      "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "transactions": [
+      {{#inits}}
+      {
+        "to": "{{vamm}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96",
+              "type": "uint160"
+            }
+          ],
+          "name": "initializeVAMM",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        "contractInputsValues": {
+          "sqrtPriceX96": "{{sqrtPriceX96}}"
+        }
+      }
+      {{^last}},{{/last}}
+      {{/inits}}
+    ]
+  }

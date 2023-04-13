@@ -36,7 +36,7 @@ const poolConfigs: PoolConfigurations = {
       },
     },
 
-    aUSDC_v13: {
+    aUSDC_v14: {
       rateOracle: "AaveV3RateOracle_USDC",
       tickSpacing: 60,
       cacheMaxAgeInSeconds: 21600,
@@ -46,8 +46,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
-      termStartTimestamp: 1680264000,
-      termEndTimestamp: 1681473600,
+      termStartTimestamp: 1681473600,
+      termEndTimestamp: 1682856000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1159016137597612800",
         apyLowerMultiplierWad: "697533314566558592",
@@ -247,7 +247,7 @@ const poolConfigs: PoolConfigurations = {
 
   arbitrum: {
     // aUSDC pools
-    aUSDC_v2: {
+    aUSDC_v3: {
       rateOracle: "AaveV3RateOracle_USDC",
       tickSpacing: 60,
       cacheMaxAgeInSeconds: 21600,
@@ -257,8 +257,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
-      termStartTimestamp: 1680264000,
-      termEndTimestamp: 1681473600,
+      termStartTimestamp: 1681473600,
+      termEndTimestamp: 1682856000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1373338572872450048",
         apyLowerMultiplierWad: "510202508166526656",
@@ -305,7 +305,7 @@ const poolConfigs: PoolConfigurations = {
     },
 
     // GLP pools
-    glpETH_v2: {
+    glpETH_v3: {
       rateOracle: "GlpRateOracle",
       tickSpacing: 60,
       cacheMaxAgeInSeconds: 21600,
@@ -315,8 +315,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
-      termStartTimestamp: 1678874727,
-      termEndTimestamp: 1681300800,
+      termStartTimestamp: 1681300800,
+      termEndTimestamp: 1685534400,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1644304481377574400",
         apyLowerMultiplierWad: "536407239345220288",

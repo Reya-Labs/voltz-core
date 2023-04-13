@@ -72,6 +72,9 @@ const loadModuleIfContractsAreBuilt = async (modulePath: string) => {
   }
 };
 
+// Initialise VAMM
+loadModuleIfContractsAreBuilt("./tasks/vamm/init-vamms");
+
 // PCV transactions
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints");
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
