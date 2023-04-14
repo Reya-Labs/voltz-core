@@ -60,7 +60,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
-    if (Time.isCloseToMaturityOrBeyondMaturity(termEndTimestampWad)) {
+    if (Time.isCloseToMaturityOrBeyondMaturity(termEndTimestampWad, _maturityBufferWad)) {
       revert("closeToOrBeyondMaturity");
     }
     _;
@@ -196,6 +196,14 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
     return _isAlpha;
   }
 
+  /// @inheritdoc IVAMM
+  function maturityBufferWad() external view override returns (uint256) {
+    if (_maturityBufferWad == 0) {
+      return Time.SECONDS_IN_DAY_WAD;
+    }
+    return _maturityBufferWad;
+  }
+
   /// @dev modifier that ensures the
   modifier onlyMarginEngine () {
     if (msg.sender != address(_marginEngine)) {
@@ -257,6 +265,14 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
   function setIsAlpha(bool __isAlpha) external override onlyOwner {
     _isAlpha = __isAlpha;
     emit IsAlpha(_isAlpha);
+  }
+
+  /// @inheritdoc IVAMM
+  function setMaturityBufferWad(uint256 __maturityBufferWad) external override onlyOwner {
+    require(__maturityBufferWad < termEndTimestampWad - termStartTimestampWad, "MB>>");
+
+    _maturityBufferWad = __maturityBufferWad;
+    emit MaturityBufferWad(_maturityBufferWad);
   }
 
   function burn(

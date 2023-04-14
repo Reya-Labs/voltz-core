@@ -58,6 +58,10 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @dev __isAlpha is the newly set value for the _isAlpha boolean
     event IsAlpha(bool __isAlpha);
 
+    /// @dev emitted after the _maturityBufferWad is updated by the owner of the VAMM
+    /// @dev _maturityBufferWad dictates how long before maturity users can trade
+    event MaturityBufferWad(uint256 __maturityBufferWad);
+
     event VAMMPriceChange(int24 tick);
 
     // structs
@@ -180,6 +184,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @return If true, the VAMM Proxy is currently in alpha state, hence minting can only be done via the periphery. If false, minting can be done directly via VAMM.
     function isAlpha() external view returns (bool);
 
+    /// @return gap represented in WAD seconds between the maturity timestamp and end of pool trading
+    function maturityBufferWad() external view returns (uint256);
+
     /// @notice The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
     function fixedTokenGrowthGlobalX128() external view returns (int256);
@@ -212,6 +219,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @dev if the VAMM is at the alpha state, mints can only be done via the periphery which in turn takes care of notional caps for the LPs
     /// @dev this function can only be called by the owner of the VAMM
     function setIsAlpha(bool __isAlpha) external;
+
+    /// @notice Sets buffer between maturity and end of trading
+    function setMaturityBufferWad(uint256 __maturityBufferWad) external;
 
     /// @notice Function that sets fee of the vamm
     /// @dev The vamm's fee (proportion) in wad

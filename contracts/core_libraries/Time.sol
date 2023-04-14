@@ -26,13 +26,17 @@ library Time {
         require((timestamp = uint32(_timestamp)) == _timestamp, "TSOFLOW");
     }
 
-    function isCloseToMaturityOrBeyondMaturity(uint256 termEndTimestampWad)
+    function isCloseToMaturityOrBeyondMaturity(uint256 termEndTimestampWad, uint256 maturityBufferWad)
         internal
         view
         returns (bool vammInactive)
     {
-        return
+        if (maturityBufferWad == 0) {
             Time.blockTimestampScaled() + SECONDS_IN_DAY_WAD >=
+            termEndTimestampWad;
+        }
+        return
+            Time.blockTimestampScaled() + maturityBufferWad >=
             termEndTimestampWad;
     }
 }
