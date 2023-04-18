@@ -130,6 +130,14 @@ const pools: Pools = {
       rateOracleID: 5,
     },
 
+    borrow_aUSDC_v3: {
+      marginEngine: "0x2aA6aCEBC206a2a5C4bf0ba015C6ce1017726b22",
+      vamm: "0xb62d44e1bD91E868B682c09b1792a9026F35B1E4",
+      decimals: 6,
+      deploymentBlock: 17061888,
+      rateOracleID: 9,
+    },
+
     aDAI_v1: {
       marginEngine: "0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e",
       vamm: "0xA1a75F6689949fF413Aa115D300f5e30F35Ba061",
@@ -337,6 +345,14 @@ const pools: Pools = {
       vamm: "0x8ce24926b49f9e1b97dc21109ed8ab67cf0293c2",
       decimals: 6,
       deploymentBlock: 74969179,
+      rateOracleID: 9,
+    },
+
+    borrow_aUSDC_v2: {
+      marginEngine: "0x6fe3ed5529f77f0bb1b21b7b5f2d8bc67180a3c0",
+      vamm: "0xb97191595b38b192e776402a6ed2a23c7cf25582",
+      decimals: 6,
+      deploymentBlock: 81000196,
       rateOracleID: 9,
     },
 
