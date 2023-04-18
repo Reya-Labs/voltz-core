@@ -227,7 +227,7 @@ contract MarginEngine is
     /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
     /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
     modifier checkCurrentTimestampTermEndTimestampDelta() {
-        if (Time.isCloseToMaturityOrBeyondMaturity(_termEndTimestampWad)) {
+        if (Time.isCloseToMaturityOrBeyondMaturity(_termEndTimestampWad, _vamm.maturityBufferWad())) {
             revert CustomErrors.closeToOrBeyondMaturity();
         }
         _;

@@ -60,7 +60,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
   /// @dev Modifier that ensures new LP positions cannot be minted after one day before the maturity of the vamm
   /// @dev also ensures new swaps cannot be conducted after one day before maturity of the vamm
   modifier checkCurrentTimestampTermEndTimestampDelta() {
-    if (Time.isCloseToMaturityOrBeyondMaturity(termEndTimestampWad)) {
+    if (Time.isCloseToMaturityOrBeyondMaturity(termEndTimestampWad, _maturityBufferWad)) {
       revert("closeToOrBeyondMaturity");
     }
     _;
@@ -93,7 +93,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
   constructor () initializer {}
 
   /// @inheritdoc IVAMM
-  function initialize(IMarginEngine __marginEngine, int24 __tickSpacing) external override initializer {
+  function initialize(IMarginEngine __marginEngine, int24 __tickSpacing, uint256 __maturityBufferWad) external override initializer {
 
     require(address(__marginEngine) != address(0), "ME = 0");
     // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
@@ -108,6 +108,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
     _maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
     termStartTimestampWad = _marginEngine.termStartTimestampWad();
     termEndTimestampWad = _marginEngine.termEndTimestampWad();
+    _maturityBufferWad = __maturityBufferWad;
 
     __Ownable_init();
     __UUPSUpgradeable_init();
@@ -194,6 +195,14 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
   /// @inheritdoc IVAMM
   function isAlpha() external view override returns (bool) {
     return _isAlpha;
+  }
+
+  /// @inheritdoc IVAMM
+  function maturityBufferWad() external view override returns (uint256) {
+    if (_maturityBufferWad == 0) {
+      return Time.SECONDS_IN_DAY_WAD;
+    }
+    return _maturityBufferWad;
   }
 
   /// @dev modifier that ensures the

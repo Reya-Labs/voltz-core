@@ -150,7 +150,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
     }
 
     /// @dev "constructor" for proxy instances
-    function initialize(IMarginEngine __marginEngine, int24 __tickSpacing)
+    function initialize(IMarginEngine __marginEngine, int24 __tickSpacing, uint256 __maturityBufferWad)
         external;
 
     // immutables
@@ -179,6 +179,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
 
     /// @return If true, the VAMM Proxy is currently in alpha state, hence minting can only be done via the periphery. If false, minting can be done directly via VAMM.
     function isAlpha() external view returns (bool);
+
+    /// @return gap represented in WAD seconds between the maturity timestamp and end of pool trading
+    function maturityBufferWad() external view returns (uint256);
 
     /// @notice The fixed token growth accumulated per unit of liquidity for the entire life of the vamm
     /// @dev This value can overflow the uint256
