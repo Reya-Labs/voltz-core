@@ -332,6 +332,34 @@ const poolConfigs: PoolConfigurations = {
       },
     },
 
+    borrow_aUSDC_v2: {
+      rateOracle: "AaveV3BorrowRateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 11 * 24 * 60 * 60,
+      feeWad: "1000000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1681473600,
+      termEndTimestamp: 1682856000,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "1055780406407716096",
+        apyLowerMultiplierWad: "619085035084998656",
+        sigmaSquaredWad: "6704058141044",
+        alphaWad: "46902374877651",
+        betaWad: "2509066255330718",
+        xiUpperWad: "30000000000000000000",
+        xiLowerWad: "68000000000000000000",
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "1667098101341705",
+        etaLMWad: "667281832268321",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+    },
+
     // GLP pools
     glpETH_v3: {
       rateOracle: "GlpRateOracle",
