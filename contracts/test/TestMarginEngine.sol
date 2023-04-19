@@ -309,19 +309,6 @@ contract TestMarginEngine is MarginEngine {
         );
     }
 
-    function getPositionMargin(
-        address owner,
-        int24 tickLower,
-        int24 tickUpper
-    ) external view returns (int256) {
-        Position.Info storage position = positions.get(
-            owner,
-            tickLower,
-            tickUpper
-        );
-        return position.margin;
-    }
-
     function getIsLiquidatable() external view returns (bool) {
         return keepInMindIsLiquidatable;
     }
