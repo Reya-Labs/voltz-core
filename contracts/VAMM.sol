@@ -7,13 +7,9 @@ import "./interfaces/IVAMM.sol";
 import "./interfaces/IPeriphery.sol";
 import "./core_libraries/TickBitmap.sol";
 import "./utils/SafeCastUni.sol";
-import "./utils/SqrtPriceMath.sol";
 import "./core_libraries/SwapMath.sol";
 import "./interfaces/rate_oracles/IRateOracle.sol";
-import "./interfaces/IERC20Minimal.sol";
 import "./interfaces/IFactory.sol";
-import "prb-math/contracts/PRBMathUD60x18.sol";
-import "prb-math/contracts/PRBMathSD59x18.sol";
 import "./core_libraries/FixedAndVariableMath.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./utils/FixedPoint128.sol";
@@ -69,8 +65,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
   modifier checkIsAlpha() {
     
     if (_isAlpha) {
-      IPeriphery _periphery = _factory.periphery();
-      require(msg.sender==address(_periphery), "pphry only");
+      require(msg.sender==address(_factory.periphery()), "pphry only");
     }
 
     _;
@@ -80,8 +75,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
   modifier checkIsAlphaBurn() {
     
     if (_isAlpha) {
-      IPeriphery _periphery = _factory.periphery();
-      require(msg.sender==address(_periphery) || msg.sender==address(_marginEngine), "pphry only");
+      require(msg.sender==address(_factory.periphery()) || msg.sender==address(_marginEngine), "pphry only");
     }
 
     _;
@@ -106,6 +100,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
     _factory = IFactory(msg.sender);
     _tickSpacing = __tickSpacing;
     _maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
+
     termStartTimestampWad = _marginEngine.termStartTimestampWad();
     termEndTimestampWad = _marginEngine.termEndTimestampWad();
     _maturityBufferWad = __maturityBufferWad;
@@ -199,9 +194,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
 
   /// @inheritdoc IVAMM
   function maturityBufferWad() external view override returns (uint256) {
-    if (_maturityBufferWad == 0) {
-      return Time.SECONDS_IN_DAY_WAD;
-    }
     return _maturityBufferWad;
   }
 
@@ -401,7 +393,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
       revert CustomErrors.LiquidityDeltaMustBePositiveInMint(amount);
     }
 
-    require(msg.sender==recipient || _factory.isApproved(recipient, msg.sender), "only msg.sender or approved can mint");
+    require(msg.sender==recipient || _factory.isApproved(recipient, msg.sender), "not authorized");
 
     positionMarginRequirement = updatePosition(
       ModifyPositionParams({
@@ -432,7 +424,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
     checksBeforeSwap(params, vammVarsStart, params.amountSpecified > 0);
 
     if (!(msg.sender == address(_marginEngine) || msg.sender==address(_marginEngine.fcm()))) {
-      require(msg.sender==params.recipient || _factory.isApproved(params.recipient, msg.sender), "only sender or approved integration");
+      require(msg.sender==params.recipient || _factory.isApproved(params.recipient, msg.sender), "not authorized");
     }
 
     /// @dev lock the vamm while the swap is taking place

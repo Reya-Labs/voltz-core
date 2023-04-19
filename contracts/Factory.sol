@@ -109,6 +109,8 @@ contract Factory is IFactory, Ownable {
     IMarginEngine marginEngine = IMarginEngine(address(new VoltzERC1967Proxy(address(masterMarginEngine), "")));
     IVAMM vamm = IVAMM(address(new VoltzERC1967Proxy(address(masterVAMM), "")));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
+
+    require(_termEndTimestampWad - _termStartTimestampWad > _maturityBufferWad, "MB>>");
     vamm.initialize(marginEngine, _tickSpacing, _maturityBufferWad);
     marginEngine.setVAMM(vamm);
 

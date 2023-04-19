@@ -150,8 +150,11 @@ interface IVAMM is IPositionStructs, CustomErrors {
     }
 
     /// @dev "constructor" for proxy instances
-    function initialize(IMarginEngine __marginEngine, int24 __tickSpacing, uint256 __maturityBufferWad)
-        external;
+    function initialize(
+        IMarginEngine __marginEngine,
+        int24 __tickSpacing,
+        uint256 __maturityBufferWad
+    ) external;
 
     // immutables
 

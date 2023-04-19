@@ -168,8 +168,7 @@ contract MarginEngine is
     ) external override initializer {
         require(address(__underlyingToken) != address(0), "UT");
         require(address(__rateOracle) != address(0), "RO");
-        require(__termStartTimestampWad != 0, "TS");
-        require(__termEndTimestampWad != 0, "TE");
+        require(__termStartTimestampWad != 0 && __termEndTimestampWad != 0, "TS/E");
         require(__termEndTimestampWad > __termStartTimestampWad, "TE<=TS");
 
         _underlyingToken = __underlyingToken;
@@ -1025,13 +1024,10 @@ contract MarginEngine is
         address _owner,
         int24 _tickLower,
         int24 _tickUpper
-    ) internal returns (int256 _variableTokenDelta) {
+    ) internal returns (int256) {
         Tick.checkTicks(_tickLower, _tickUpper);
 
         if (_position.variableTokenBalance != 0) {
-            int256 _fixedTokenDelta;
-            uint256 _cumulativeFeeIncurred;
-
             /// @dev initiate a swap
 
             bool _isFT = _position.variableTokenBalance < 0;
@@ -1060,9 +1056,9 @@ contract MarginEngine is
             });
 
             (
-                _fixedTokenDelta,
-                _variableTokenDelta,
-                _cumulativeFeeIncurred,
+                int256 _fixedTokenDelta,
+                int256 _variableTokenDelta,
+                uint256 _cumulativeFeeIncurred,
                 ,
 
             ) = _vamm.swap(_params);
@@ -1079,6 +1075,8 @@ contract MarginEngine is
                 _fixedTokenDelta,
                 _variableTokenDelta
             );
+
+            return _variableTokenDelta;
         }
     }
 
@@ -1298,17 +1296,12 @@ contract MarginEngine is
             return 0;
         }
 
-        int256 _fixedTokenBalanceWad = PRBMathSD59x18.fromInt(
-            _fixedTokenBalance
-        );
-        int256 _variableTokenBalanceWad = PRBMathSD59x18.fromInt(
-            _variableTokenBalance
-        );
-
         /// exp1 = fixedTokenBalance*timeInYearsFromTermStartToTermEnd*0.01
         // this can either be negative or positive depending on the sign of the fixedTokenBalance
         int256 _exp1Wad = PRBMathSD59x18.mul(
-            _fixedTokenBalanceWad,
+            PRBMathSD59x18.fromInt(
+                _fixedTokenBalance
+            ),
             FixedAndVariableMath
                 .fixedFactor(true, _termStartTimestampWad, _termEndTimestampWad)
                 .toInt256()
@@ -1319,7 +1312,9 @@ contract MarginEngine is
         int256 _exp2Wad = 0;
         if (_variableTokenBalance != 0) {
             _exp2Wad = PRBMathSD59x18.mul(
-                _variableTokenBalanceWad,
+                PRBMathSD59x18.fromInt(
+                    _variableTokenBalance
+                ),
                 worstCaseVariableFactorAtMaturity(
                     _variableTokenBalance < 0,
                     _isLM,

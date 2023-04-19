@@ -25,7 +25,7 @@ import { ethers, waffle } from "hardhat";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 
 import { toBn } from "evm-bn";
-import { TICK_SPACING } from "./utilities";
+import { TICK_SPACING, ONE_DAY_WAD } from "./utilities";
 import { CompoundFCM } from "../../typechain/CompoundFCM";
 const { provider } = waffle;
 
@@ -331,6 +331,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termStartTimestampBN,
     termEndTimestampBN,
     TICK_SPACING,
+    ONE_DAY_WAD.mod(24),
     { gasLimit: 10000000 }
   );
   let receiptLogs = (await deployTrx.wait()).logs;
@@ -365,7 +366,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     compoundRateOracleTest.address,
     termStartTimestampBN,
     termEndTimestampBN,
-    TICK_SPACING
+    TICK_SPACING,
+    ONE_DAY_WAD.mod(24)
   );
 
   receiptLogs = (await deployTrxCompound.wait()).logs;

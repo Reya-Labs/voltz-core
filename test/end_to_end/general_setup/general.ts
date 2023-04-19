@@ -1,6 +1,6 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
-import { formatRay } from "../../shared/utilities";
+import { formatRay, ONE_DAY_WAD } from "../../shared/utilities";
 import {
   AaveFCM,
   Actor,
@@ -363,6 +363,7 @@ export class ScenarioRunner {
       termStartTimestamp,
       termEndTimestamp,
       this.params.tickSpacing,
+      ONE_DAY_WAD.mod(24),
       { gasLimit: 10000000 }
     );
 
