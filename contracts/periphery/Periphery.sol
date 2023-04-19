@@ -171,6 +171,15 @@ contract Periphery is
             tickUpper
         );
 
+        if (fullyWithdraw) {
+            /// @dev if this is intended as a fullyWithdraw, position margin must be positive
+            if (position.margin <= 0) {
+                return 0;
+            } else {
+                marginDelta = -position.margin;
+            }
+        }
+
         bool isAlpha = marginEngine.isAlpha();
         IVAMM vamm = marginEngine.vamm();
         bytes32 encodedPosition = keccak256(
@@ -190,10 +199,6 @@ contract Periphery is
         }
 
         IERC20Minimal underlyingToken = marginEngine.underlyingToken();
-
-        if (fullyWithdraw) {
-            marginDelta = -position.margin;
-        }
 
         if (address(underlyingToken) == address(_weth)) {
             if (marginDelta < 0) {
