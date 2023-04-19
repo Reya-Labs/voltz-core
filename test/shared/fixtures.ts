@@ -331,7 +331,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termStartTimestampBN,
     termEndTimestampBN,
     TICK_SPACING,
-    ONE_DAY_WAD.mod(24),
+    ONE_DAY_WAD.div(24),
     { gasLimit: 10000000 }
   );
   let receiptLogs = (await deployTrx.wait()).logs;
@@ -367,7 +367,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termStartTimestampBN,
     termEndTimestampBN,
     TICK_SPACING,
-    ONE_DAY_WAD.mod(24)
+    ONE_DAY_WAD.div(24)
   );
 
   receiptLogs = (await deployTrxCompound.wait()).logs;

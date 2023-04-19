@@ -363,7 +363,7 @@ export class ScenarioRunner {
       termStartTimestamp,
       termEndTimestamp,
       this.params.tickSpacing,
-      ONE_DAY_WAD.mod(24),
+      ONE_DAY_WAD.div(24),
       { gasLimit: 10000000 }
     );
 
@@ -637,6 +637,7 @@ export class ScenarioRunner {
           fee = infoPostSwap.fee;
           availableNotional = infoPostSwap.availableNotional;
         } else {
+          console.log(errSig);
           throw new Error("Additional margin amount cannot be established");
         }
       }
