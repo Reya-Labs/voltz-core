@@ -30,6 +30,7 @@ import { TickMath } from "../shared/tickMath";
 import { mul } from "../shared/functions";
 import { advanceTimeAndBlock } from "../helpers/time";
 import { consts } from "../helpers/constants";
+import { assert } from "chai";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -820,6 +821,86 @@ describe("Periphery", async () => {
       );
 
     console.log("          margin requirement:", marginRequirement);
+  });
+
+  it("fully withdraw negative position margin", async () => {
+    await marginEngineTest.setPosition(
+      wallet.address,
+      -1,
+      1,
+      1,
+      toBn("-1000"),
+      0,
+      0,
+      0,
+      0,
+      0,
+      false
+    );
+
+    const balanceBefore = (await token.balanceOf(other.address)).toString();
+
+    await advanceTimeAndBlock(consts.ONE_MONTH.mul(12), 12);
+    await periphery
+      .connect(wallet)
+      .settlePositionAndWithdrawMargin(
+        marginEngineTest.address,
+        wallet.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      )
+      .then(
+        async (_) => {
+          const balanceAfter = (
+            await token.balanceOf(other.address)
+          ).toString();
+          assert(
+            BigNumber.from(balanceAfter).toString(),
+            BigNumber.from(balanceBefore).toString()
+          );
+        },
+        () => {
+          assert(false);
+        }
+      );
+  });
+
+  it("fully withdraw positive position margin", async () => {
+    await marginEngineTest.updatePositionMargin(
+      wallet.address,
+      -TICK_SPACING,
+      TICK_SPACING,
+      toBn("1000")
+    );
+
+    await advanceTimeAndBlock(consts.ONE_MONTH.mul(12), 12);
+
+    const balanceBefore = (await token.balanceOf(other.address)).toString();
+
+    await periphery
+      .connect(other)
+      .settlePositionAndWithdrawMargin(
+        marginEngineTest.address,
+        other.address,
+        -TICK_SPACING,
+        TICK_SPACING
+      )
+      .then(
+        async () => {
+          const balanceAfter = (
+            await token.balanceOf(other.address)
+          ).toString();
+          assert(
+            BigNumber.from(balanceAfter)
+              .sub(BigNumber.from(balanceBefore))
+              .toString(),
+            toBn("1000").toString()
+          );
+        },
+        () => {
+          assert(false);
+        }
+      );
   });
 
   it("approvals work as expected", async () => {
