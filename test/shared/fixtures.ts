@@ -389,7 +389,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   ) as TestMarginEngine;
 
   const vammCompound = vammTestFactory.attach(vammAddress) as TestVAMM;
-  const settingTxCompound = await vammCompound.setMaturityBuffer(ONE_DAY_WAD.div(24));
+  const settingTxCompound = await vammCompound.setMaturityBuffer(
+    ONE_DAY_WAD.div(24)
+  );
   await settingTxCompound.wait();
 
   const fcmTestFactoryCompound = await ethers.getContractFactory("CompoundFCM");
