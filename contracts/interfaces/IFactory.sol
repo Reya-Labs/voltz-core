@@ -68,8 +68,7 @@ interface IFactory is CustomErrors {
         IRateOracle _rateOracle,
         uint256 _termStartTimestampWad,
         uint256 _termEndTimestampWad,
-        int24 _tickSpacing,
-        uint256 _maturityBufferWad
+        int24 _tickSpacing
     )
         external
         returns (

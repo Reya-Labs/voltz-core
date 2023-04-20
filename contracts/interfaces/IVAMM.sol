@@ -152,8 +152,7 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @dev "constructor" for proxy instances
     function initialize(
         IMarginEngine __marginEngine,
-        int24 __tickSpacing,
-        uint256 __maturityBufferWad
+        int24 __tickSpacing
     ) external;
 
     // immutables
@@ -218,6 +217,9 @@ interface IVAMM is IPositionStructs, CustomErrors {
     /// @dev if the VAMM is at the alpha state, mints can only be done via the periphery which in turn takes care of notional caps for the LPs
     /// @dev this function can only be called by the owner of the VAMM
     function setIsAlpha(bool __isAlpha) external;
+
+    /// @notice Function that sets buffer between maturity and time of last possible trade
+    function setMaturityBuffer(uint256 __maturityBufferWad) external;
 
     /// @notice Function that sets fee of the vamm
     /// @dev The vamm's fee (proportion) in wad

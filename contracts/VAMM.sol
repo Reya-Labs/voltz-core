@@ -87,7 +87,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
   constructor () initializer {}
 
   /// @inheritdoc IVAMM
-  function initialize(IMarginEngine __marginEngine, int24 __tickSpacing, uint256 __maturityBufferWad) external override initializer {
+  function initialize(IMarginEngine __marginEngine, int24 __tickSpacing) external override initializer {
 
     require(address(__marginEngine) != address(0), "ME = 0");
     // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
@@ -103,7 +103,6 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
 
     termStartTimestampWad = _marginEngine.termStartTimestampWad();
     termEndTimestampWad = _marginEngine.termEndTimestampWad();
-    _maturityBufferWad = __maturityBufferWad;
 
     __Ownable_init();
     __UUPSUpgradeable_init();
@@ -258,6 +257,12 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
   function setIsAlpha(bool __isAlpha) external override onlyOwner {
     _isAlpha = __isAlpha;
     emit IsAlpha(_isAlpha);
+  }
+
+  /// @inheritdoc IVAMM
+  function setMaturityBuffer(uint256 __maturityBufferWad) external override {
+    require(__maturityBufferWad < termEndTimestampWad - termStartTimestampWad, "MB>>");
+    _maturityBufferWad = __maturityBufferWad;
   }
 
   function burn(

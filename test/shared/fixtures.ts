@@ -331,7 +331,6 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     termStartTimestampBN,
     termEndTimestampBN,
     TICK_SPACING,
-    ONE_DAY_WAD.div(24),
     { gasLimit: 10000000 }
   );
   let receiptLogs = (await deployTrx.wait()).logs;
@@ -357,6 +356,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const vammTestFactory = await ethers.getContractFactory("TestVAMM");
   const vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
 
+  const settingTx = await vammTest.setMaturityBuffer(ONE_DAY_WAD.div(24));
+  await settingTx.wait();
+
   const fcmTestFactory = await ethers.getContractFactory("AaveFCM");
   const fcmTest = fcmTestFactory.attach(fcmAddress) as AaveFCM;
 
@@ -366,8 +368,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     compoundRateOracleTest.address,
     termStartTimestampBN,
     termEndTimestampBN,
-    TICK_SPACING,
-    ONE_DAY_WAD.div(24)
+    TICK_SPACING
   );
 
   receiptLogs = (await deployTrxCompound.wait()).logs;
@@ -388,6 +389,8 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   ) as TestMarginEngine;
 
   const vammCompound = vammTestFactory.attach(vammAddress) as TestVAMM;
+  const settingTxCompound = await vammCompound.setMaturityBuffer(ONE_DAY_WAD.div(24));
+  await settingTxCompound.wait();
 
   const fcmTestFactoryCompound = await ethers.getContractFactory("CompoundFCM");
   const fcmCompound = fcmTestFactoryCompound.attach(fcmAddress) as CompoundFCM;

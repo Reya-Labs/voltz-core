@@ -105,26 +105,21 @@ contract Factory is IFactory, Ownable {
   }
 
 
-  function deployIrsInstance(IERC20Minimal _underlyingToken, IRateOracle _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing, uint256 _maturityBufferWad) external override onlyOwner returns (IMarginEngine marginEngineProxy, IVAMM vammProxy, IFCM fcmProxy) {
+  function deployIrsInstance(IERC20Minimal _underlyingToken, IRateOracle _rateOracle, uint256 _termStartTimestampWad, uint256 _termEndTimestampWad, int24 _tickSpacing) external override onlyOwner returns (IMarginEngine marginEngineProxy, IVAMM vammProxy, IFCM fcmProxy) {
     IMarginEngine marginEngine = IMarginEngine(address(new VoltzERC1967Proxy(address(masterMarginEngine), "")));
     IVAMM vamm = IVAMM(address(new VoltzERC1967Proxy(address(masterVAMM), "")));
     marginEngine.initialize(_underlyingToken, _rateOracle, _termStartTimestampWad, _termEndTimestampWad);
-
-    require(_termEndTimestampWad - _termStartTimestampWad > _maturityBufferWad, "MB>>");
-    vamm.initialize(marginEngine, _tickSpacing, _maturityBufferWad);
+    vamm.initialize(marginEngine, _tickSpacing);
     marginEngine.setVAMM(vamm);
 
     IRateOracle r = IRateOracle(_rateOracle);
     require(r.underlying() == _underlyingToken, "Tokens do not match");
     uint8 yieldBearingProtocolID = r.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
-
-    // todo: after adding maturity timestamp the stack was too deep
-    // commented FCM code, need review
-    // IFCM _masterFCM = masterFCMs[yieldBearingProtocolID];
+    IFCM _masterFCM = masterFCMs[yieldBearingProtocolID];
     IFCM fcm;
 
-    if (address(masterFCMs[yieldBearingProtocolID]) != address(0)) {
-      fcm = IFCM(address(new VoltzERC1967Proxy(address(masterFCMs[yieldBearingProtocolID]), "")));
+    if (address(_masterFCM) != address(0)) {
+      fcm = IFCM(address(new VoltzERC1967Proxy(address(_masterFCM), "")));
       fcm.initialize(vamm, marginEngine);
       marginEngine.setFCM(fcm);
       Ownable(address(fcm)).transferOwnership(msg.sender);

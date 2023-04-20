@@ -363,7 +363,6 @@ export class ScenarioRunner {
       termStartTimestamp,
       termEndTimestamp,
       this.params.tickSpacing,
-      ONE_DAY_WAD.div(24),
       { gasLimit: 10000000 }
     );
 
@@ -391,6 +390,9 @@ export class ScenarioRunner {
     const vammFactory = await ethers.getContractFactory("VAMM");
 
     const vamm = vammFactory.attach(vammAddress) as IVAMM;
+
+    const settingTx = await vamm.setMaturityBuffer(ONE_DAY_WAD.div(24));
+    await settingTx.wait();
 
     let fcm;
     switch (this.params.rateOracle) {
