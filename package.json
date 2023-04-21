@@ -111,6 +111,7 @@
     "deployCommunity:arbitrumGoerli": "hardhat deploy --network arbitrumGoerli --tags CommunityDeployer --export deployments/arbitrumGoerli/CommunityVote.json",
     "deployCommunity:arbitrum": "hardhat deploy --network arbitrum --tags CommunityDeployer --export deployments/arbitrum/CommunityVote.json",
     "deploy:localhost": "npx hardhat node --tags Factory,Mocks,MockRateOracles,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/localhostDeployment.json --hostname 0.0.0.0",
+    "deploy:avalancheInsti1Testnet": "hardhat deploy --network avalancheInsti1Testnet --tags Factory,VoltzPausabilityWrapper,Messages --export deployments/avalanceInsti1TestnetDeployment.json",
     "deploy:mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/mainnetForkDeployment.json --hostname 0.0.0.0",
     "deploy:empty_mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory --export deployments/mainnetForkDeployment.json --hostname 0.0.0.0",
     "check:pool_details": "npx ts-node poolConfigs/checkPoolInformation.ts",
