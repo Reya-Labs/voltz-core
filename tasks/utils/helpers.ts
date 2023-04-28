@@ -217,3 +217,12 @@ export function sqrtPriceX96AtFixedRate(fixedRate: number): BigNumber {
     .mul(x96)
     .div(scale);
 }
+
+export function sqrtPriceX96AtTick(tick: number): BigNumber {
+  const sqrtPrice = 1.0001 ** (tick / 2);
+  const x96 = BigNumber.from(2).pow(96);
+  const scale = 10 ** 12;
+  return BigNumber.from(Math.round(sqrtPrice * scale))
+    .mul(x96)
+    .div(scale);
+}

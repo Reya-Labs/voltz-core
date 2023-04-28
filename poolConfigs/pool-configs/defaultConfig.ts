@@ -37,4 +37,5 @@ export const defaultConfig: Omit<
     ...gaps,
     minMarginToIncentiviseLiquidators: "0",
   },
+  initTick: 0,
 };

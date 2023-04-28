@@ -15,6 +15,7 @@ import {
   getIRSByMarginEngineAddress,
   getRateOracleByNameOrAddress,
   getIrsInstanceEvents,
+  sqrtPriceX96AtTick,
 } from "./utils/helpers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import mustache from "mustache";
@@ -60,6 +61,7 @@ interface SingleIrsData {
     gap7: BigNumberish;
     minMarginToIncentiviseLiquidators: BigNumberish;
   };
+  sqrtPriceX96: BigNumberish;
   last: boolean; // Used to stop adding commas in JSON template
 }
 
@@ -270,8 +272,8 @@ async function configureIrs(
 //   ``npx hardhat createIrsInstances --network arbitrum --multisig glpETH_v2``
 
 // Commands for Q2.1 rollover:
-// ``npx hardhat createIrsInstances --network mainnet --multisig aUSDC_v12 aUSDC_v13 borrow_aUSDC_v2 stETH_v3 rETH_v3 borrow_aETH_v3 borrow_cUSDT_v2 borrow_aUSDT_v2``
-// ``npx hardhat createIrsInstances --network arbitrum --multisig aUSDC_v2 borrow_aUSDC_v1``
+// ``npx hardhat createIrsInstances --network mainnet --multisig aUSDC_v15 borrow_aUSDC_v4 borrow_aUSDC_v5 stETH_v4 rETH_v4 borrow_aETH_v4 borrow_cUSDT_v3 borrow_aUSDT_v3``
+// ``npx hardhat createIrsInstances --network arbitrum --multisig borrow_aUSDC_v3 borrow_aUSDC_v4``
 
 task(
   "createIrsInstances",
@@ -356,6 +358,9 @@ task(
       );
 
       if (taskArgs.multisig) {
+        // todo: make this transaction to non-multisig case
+        const initSqrtPriceX96 = sqrtPriceX96AtTick(poolConfig.initTick);
+
         const data: SingleIrsData = {
           factoryAddress: factory.address,
           underlyingTokenAddress: underlyingToken.address,
@@ -379,6 +384,7 @@ task(
           lpMarginCap: poolConfig.lpMarginCap,
           marginCalculatorParams: poolConfig.marginCalculatorParams,
           liquidatorRewardWad: poolConfig.liquidatorRewardWad,
+          sqrtPriceX96: initSqrtPriceX96,
           last: false,
         };
 

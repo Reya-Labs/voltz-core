@@ -14,6 +14,7 @@ import { getSigner } from "./utils/getSigner";
 import {
   getPositionRequirements,
   getRateOracleByNameOrAddress,
+  sqrtPriceX96AtTick,
   tickAtFixedRate,
 } from "./utils/helpers";
 
@@ -141,6 +142,19 @@ task(
 
       console.log(`Configuring IRS...`);
 
+      const initSqrtPriceX96 = sqrtPriceX96AtTick(poolConfig.initTick);
+      const initFixedRate = Math.pow(1.0001, -poolConfig.initTick) / 100;
+
+      console.log(`Setting fixed rate to ${(initFixedRate * 100).toFixed(2)}%`);
+
+      // Set initial price
+      {
+        const trx = await vamm
+          .connect(multisig)
+          .initializeVAMM(initSqrtPriceX96);
+        await trx.wait();
+      }
+
       // Set margin engine parameters
       {
         const trx = await marginEngine
@@ -213,21 +227,13 @@ task(
         const leverage = 10;
         const notional = marginDelta * leverage;
 
-        const historicalAPYWad =
-          await marginEngine.callStatic.getHistoricalApy();
-        const historicalAPY = Number(
-          hre.ethers.utils.formatUnits(historicalAPYWad, 18)
-        );
+        const fixedRateLower = Math.max(0.001, initFixedRate - 0.005);
+        const fixedRateUpper = initFixedRate + 0.005;
 
-        const fixedRateLower = Math.max(0.001, historicalAPY - 0.005);
-        const fixedRateUpper = historicalAPY + 0.005;
+        const tickLower = tickAtFixedRate(fixedRateUpper * 100);
+        const tickUpper = tickAtFixedRate(fixedRateLower * 100);
 
-        const tickLower = tickAtFixedRate(fixedRateUpper);
-        const tickUpper = tickAtFixedRate(fixedRateLower);
-
-        console.log(
-          `Minting ${notional} between ${fixedRateLower}-${fixedRateUpper}.`
-        );
+        console.log(`Minting ${notional} between ${tickLower}-${tickUpper}.`);
 
         {
           const tx = await underlyingToken
@@ -329,6 +335,8 @@ task(
               },
               decimals
             );
+
+          console.log(`im, lm:`, im, lm);
 
           console.log("max. leverage for VT:");
           console.log(`liquidation: ${formatNumber(notional / lm)}x`);

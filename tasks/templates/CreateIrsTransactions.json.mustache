@@ -333,6 +333,27 @@
       "contractInputsValues": {
         "_marginCalculatorParameters": "[\"{{marginCalculatorParams.apyUpperMultiplierWad}}\",\"{{marginCalculatorParams.apyLowerMultiplierWad}}\",\"{{marginCalculatorParams.sigmaSquaredWad}}\",\"{{marginCalculatorParams.alphaWad}}\",\"{{marginCalculatorParams.betaWad}}\",\"{{marginCalculatorParams.xiUpperWad}}\",\"{{marginCalculatorParams.xiLowerWad}}\",\"{{marginCalculatorParams.tMaxWad}}\",\"{{marginCalculatorParams.etaIMWad}}\",\"{{marginCalculatorParams.etaLMWad}}\",\"{{marginCalculatorParams.gap1}}\",\"{{marginCalculatorParams.gap2}}\",\"{{marginCalculatorParams.gap3}}\",\"{{marginCalculatorParams.gap4}}\",\"{{marginCalculatorParams.gap5}}\",\"{{marginCalculatorParams.gap6}}\",\"{{marginCalculatorParams.gap7}}\",\"{{marginCalculatorParams.minMarginToIncentiviseLiquidators}}\"]"
       }
+    },
+    {
+        "to": "{{predictedVammAddress}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "uint160",
+              "name": "sqrtPriceX96",
+              "type": "uint160"
+            }
+          ],
+          "name": "initializeVAMM",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        "contractInputsValues": {
+          "sqrtPriceX96": "{{sqrtPriceX96}}"
+        }
     }{{^last}},{{/last}}
     {{/irsInstances}}
   ]
