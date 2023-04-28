@@ -34,6 +34,9 @@ export type SinglePoolConfiguration = {
   // Term end timestamp
   termEndTimestamp: number;
 
+  // Starting tick
+  initTick: number;
+
   // Margin Calculator parameters
   marginCalculatorParams: {
     apyUpperMultiplierWad: BigNumberish;
