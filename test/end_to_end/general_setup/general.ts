@@ -1,6 +1,6 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, utils, Wallet } from "ethers";
-import { formatRay } from "../../shared/utilities";
+import { formatRay, ONE_DAY_WAD } from "../../shared/utilities";
 import {
   AaveFCM,
   Actor,
@@ -391,6 +391,9 @@ export class ScenarioRunner {
 
     const vamm = vammFactory.attach(vammAddress) as IVAMM;
 
+    const settingTx = await vamm.setMaturityBuffer(ONE_DAY_WAD.div(24));
+    await settingTx.wait();
+
     let fcm;
     switch (this.params.rateOracle) {
       case 1: {
@@ -636,6 +639,7 @@ export class ScenarioRunner {
           fee = infoPostSwap.fee;
           availableNotional = infoPostSwap.availableNotional;
         } else {
+          console.log(errSig);
           throw new Error("Additional margin amount cannot be established");
         }
       }
