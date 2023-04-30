@@ -5,6 +5,7 @@ import mustache from "mustache";
 import { getPositions } from "@voltz-protocol/subgraph-data";
 import { getProtocolSubgraphURL } from "../../scripts/getProtocolSubgraphURL";
 import { getConfig } from "../../deployConfig/config";
+import { ONE_DAY_IN_SECONDS } from "../utils/constants";
 
 type MultisigTemplate = {
   periphery: string;
@@ -33,7 +34,7 @@ async function writeToMultisigTemplate(data: MultisigTemplate) {
 }
 
 // Description:
-//   This task generates multisig transactions to settle all matured positions
+//   This task generates multisig transactions to settle all positions that are matured or mature in the next 24 hours.
 //
 // Example:
 //   ``npx hardhat pcv-settlePositions --network mainnet``
@@ -54,15 +55,18 @@ task(
   const currentTimeInMS =
     (await hre.ethers.provider.getBlock("latest")).timestamp * 1000;
 
-  const positions = await getPositions(
-    getProtocolSubgraphURL(hre.network.name),
-    currentTimeInMS,
-    {
-      owners: [multisig],
-      settled: false,
-      active: false,
-    }
-  );
+  const oneDayInMS = ONE_DAY_IN_SECONDS * 1000;
+
+  const positions = (
+    await getPositions(
+      getProtocolSubgraphURL(hre.network.name),
+      currentTimeInMS,
+      {
+        owners: [multisig],
+        settled: false,
+      }
+    )
+  ).filter((p) => p.amm.termEndTimestampInMS <= currentTimeInMS + oneDayInMS);
 
   if (positions.length === 0) {
     console.warn("No matured positions.");
