@@ -25,7 +25,7 @@ import { ethers, waffle } from "hardhat";
 import { advanceTimeAndBlock, getCurrentTimestamp } from "../helpers/time";
 
 import { toBn } from "evm-bn";
-import { TICK_SPACING } from "./utilities";
+import { TICK_SPACING, ONE_DAY_WAD } from "./utilities";
 import { CompoundFCM } from "../../typechain/CompoundFCM";
 const { provider } = waffle;
 
@@ -356,6 +356,9 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const vammTestFactory = await ethers.getContractFactory("TestVAMM");
   const vammTest = vammTestFactory.attach(vammAddress) as TestVAMM;
 
+  const settingTx = await vammTest.setMaturityBuffer(ONE_DAY_WAD.div(24));
+  await settingTx.wait();
+
   const fcmTestFactory = await ethers.getContractFactory("AaveFCM");
   const fcmTest = fcmTestFactory.attach(fcmAddress) as AaveFCM;
 
@@ -386,6 +389,10 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   ) as TestMarginEngine;
 
   const vammCompound = vammTestFactory.attach(vammAddress) as TestVAMM;
+  const settingTxCompound = await vammCompound.setMaturityBuffer(
+    ONE_DAY_WAD.div(24)
+  );
+  await settingTxCompound.wait();
 
   const fcmTestFactoryCompound = await ethers.getContractFactory("CompoundFCM");
   const fcmCompound = fcmTestFactoryCompound.attach(fcmAddress) as CompoundFCM;

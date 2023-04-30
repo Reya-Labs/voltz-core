@@ -349,7 +349,7 @@ describe("VAMM", () => {
     });
 
     it("check checkCurrentTimestampTermEndTimestampDelta", async () => {
-      advanceTimeAndBlock(sub(consts.ONE_WEEK, consts.ONE_DAY), 1);
+      advanceTimeAndBlock(sub(consts.ONE_WEEK, consts.ONE_DAY.div(24)), 1);
       await expect(vammTest.checkMaturityDuration()).to.be.revertedWith(
         "closeToOrBeyondMaturity"
       );

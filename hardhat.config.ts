@@ -214,6 +214,12 @@ const config: HardhatUserConfig = {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
+    avalancheInsti1Testnet: {
+      url: `${process.env.AVALANCE_INSTI1_TESTNET_URL}`,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
+    },
   },
   namedAccounts: {
     deployer: {

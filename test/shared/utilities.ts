@@ -17,6 +17,7 @@ export const INVALID_ORACLE_ID: string =
   "0x0000000000000000000000000000000000000000000000000000000000000001";
 
 export const TICK_SPACING: number = 60;
+export const ONE_DAY_WAD: BigNumber = toBn("86400");
 
 export const SECONDS_IN_YEAR: BigNumber = toBn("31536000");
 // export const BLOCK_TIMESTAMP: number = 1632249308;
