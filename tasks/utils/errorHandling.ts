@@ -1,5 +1,5 @@
 import { BigNumber, ethers, utils } from "ethers";
-import * as factory from "./../../artifacts/contracts/Factory.sol/Factory.json";
+import * as factory from "./Factory.json";
 
 export const iface = new ethers.utils.Interface(factory.abi);
 
