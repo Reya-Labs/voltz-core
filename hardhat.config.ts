@@ -89,7 +89,9 @@ loadModuleIfContractsAreBuilt("./tasks/getPoolLeverages");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");
 loadModuleIfContractsAreBuilt("./tasks/getSlippageData");
-loadModuleIfContractsAreBuilt("./scripts/produceCommunityDeployerJSON/getVotesFromNfts");
+loadModuleIfContractsAreBuilt(
+  "./scripts/produceCommunityDeployerJSON/getVotesFromNfts"
+);
 
 // Position support
 loadModuleIfContractsAreBuilt("./tasks/checkPositions");
