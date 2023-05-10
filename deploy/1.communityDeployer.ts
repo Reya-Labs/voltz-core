@@ -6,9 +6,9 @@ import {
 } from "../deployConfig/parse-balance-map";
 import fs from "fs";
 
-const QUORUM_VOTES = 946;
-const MULTISIG_ADDRESS = "0x8DC15493a8041f059f18ddBA98ee7dcf93b838Ad"; // MULTISIG ON ARBITRUM
-const BLOCK_TIMESTAMP_VOTING_END = 1676030400; // Fri Feb 10 2023 12:00:00 GMT+0000
+const QUORUM_VOTES = 1669;
+const MULTISIG_ADDRESS = "0x7D48F1AC18E3b60387271535E29258da26C02030";
+const BLOCK_TIMESTAMP_VOTING_END = 1684065600; // Sun May 14 2023 12:00:00 GMT+0000
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   try {
