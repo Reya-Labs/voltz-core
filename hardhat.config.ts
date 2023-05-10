@@ -217,8 +217,20 @@ const config: HardhatUserConfig = {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
     },
+    avalanche: {
+      url: `${process.env.AVALANCHE_URL}`,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
+    },
+    avalancheFuji: {
+      url: `${process.env.AVALANCHE_FUJI_URL}`,
+      accounts: {
+        mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
+      },
+    },
     avalancheInsti1Testnet: {
-      url: `${process.env.AVALANCE_INSTI1_TESTNET_URL}`,
+      url: `${process.env.AVALANCHE_INSTI1_TESTNET_URL}`,
       accounts: {
         mnemonic: `${process.env.SECRET_SEED_PHRASE}`,
       },
@@ -260,12 +272,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    apiKey: {
-      mainnet: process.env.ETHERSCAN_API_KEY || "",
-      goerli: process.env.ETHERSCAN_API_KEY || "",
-      arbitrum: process.env.ARBISCAN_API_KEY || "",
-      arbitrumGoerli: process.env.ARBISCAN_API_KEY || "",
-    },
+    apiKey: process.env.API_KEY,
     customChains: [
       {
         network: "arbitrumGoerli",
