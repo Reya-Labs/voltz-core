@@ -94,6 +94,35 @@ const poolConfigs: PoolConfigurations = {
       initTick: -12938,
     },
 
+    borrow_aUSDC_v6: {
+      rateOracle: "AaveV3BorrowRateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 13 * 24 * 60 * 60,
+      feeWad: "1000000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1684083600,
+      termEndTimestamp: 1685534400,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "1246328792246992896",
+        apyLowerMultiplierWad: "571288518738991680",
+        sigmaSquaredWad: "4421123499352",
+        alphaWad: "413946676242590",
+        betaWad: "27210198230929540",
+        xiUpperWad: "30000000000000000000",
+        xiLowerWad: "56000000000000000000",
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "3887858919780962",
+        etaLMWad: "1724214308951546",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+      initTick: -11909,
+    },
+
     // aDAI pools
 
     // cDAI pools
