@@ -37,6 +37,9 @@ export type SinglePoolConfiguration = {
   // Starting tick
   initTick: number;
 
+  // Trading halted buffer in seconds
+  maturityBuffer: number;
+
   // Margin Calculator parameters
   marginCalculatorParams: {
     apyUpperMultiplierWad: BigNumberish;

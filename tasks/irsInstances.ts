@@ -24,6 +24,7 @@ import path from "path";
 import { SinglePoolConfiguration } from "../poolConfigs/pool-configs/types";
 import { getNetworkPoolConfigs } from "../poolConfigs/pool-configs/poolConfig";
 import { getNetworkPausers } from "../poolConfigs/pausers/pausers";
+import { getPool } from "../poolConfigs/pool-addresses/pools";
 
 interface SingleIrsData {
   factoryAddress: string;
@@ -62,6 +63,7 @@ interface SingleIrsData {
     minMarginToIncentiviseLiquidators: BigNumberish;
   };
   sqrtPriceX96: BigNumberish;
+  maturityBufferWad: BigNumberish;
   last: boolean; // Used to stop adding commas in JSON template
 }
 
@@ -175,6 +177,11 @@ async function configureIrs(
   );
   await trx.wait();
   trx = await marginEngine.setLiquidatorReward(poolConfig.liquidatorRewardWad, {
+    gasLimit: 10000000,
+  });
+  await trx.wait();
+
+  trx = await vamm.setMaturityBuffer(toBn(poolConfig.maturityBuffer), {
     gasLimit: 10000000,
   });
   await trx.wait();
@@ -319,7 +326,7 @@ task(
       const termEndTimestamp = poolConfig.termEndTimestamp;
 
       if (
-        termStartTimestamp + 86400 > termEndTimestamp ||
+        termStartTimestamp + poolConfig.maturityBuffer > termEndTimestamp ||
         currentTime > termEndTimestamp
       ) {
         throw new Error("Unfunctional pool. Check start and end timestamps!");
@@ -385,6 +392,7 @@ task(
           marginCalculatorParams: poolConfig.marginCalculatorParams,
           liquidatorRewardWad: poolConfig.liquidatorRewardWad,
           sqrtPriceX96: initSqrtPriceX96,
+          maturityBufferWad: toBn(poolConfig.maturityBuffer),
           last: false,
         };
 
@@ -643,5 +651,70 @@ task(
       }
     }
   });
+
+  task(
+    "setMaturityBuffer",
+    "Set the buffer to maturity after which trading is stopped"
+  ).addVariadicPositionalParam(
+    "pools",
+    "The names of pools in deployConfig/pool.ts ('borrow_aDAI_v2 stETH_v1' - skip param name)"
+  ).addFlag("multisig", "Signal if json should be created")
+    .setAction(async (taskArgs, hre) => {
+      const network = hre.network.name;
+      const deployConfig = getConfig(network)
+      const multisig = deployConfig.multisig;
+
+      const multisigData : {
+        multisig: string;
+        chainId: string;
+        pools: {
+          vammAddress: string,
+          maturityBufferWad: string,
+          last?: boolean
+        }[];
+      } = {
+        multisig: multisig,
+        chainId: await hre.getChainId(),
+        pools: []
+      }
+
+      for (const poolName of taskArgs.pools) {
+        const pool = getPool(network, poolName);
+        const poolConfigs = getNetworkPoolConfigs(hre.network.name)[poolName];
+
+        if (taskArgs.multisig) {
+          multisigData.pools.push({
+            vammAddress: pool.vamm,
+            maturityBufferWad: toBn(poolConfigs.maturityBuffer).toString()
+          })
+        } else {
+          const vamm = (await hre.ethers.getContractAt("IVAMM", pool.vamm)) as IVAMM;
+          const tx = await vamm.setMaturityBuffer(toBn(poolConfigs.maturityBuffer));
+          await tx.wait()
+        }
+      }
+
+      if(taskArgs.multisig) {
+        multisigData.pools[multisigData.pools.length - 1].last = true;
+
+        const template = fs.readFileSync(
+          path.join(__dirname, "templates/setMaturityBuffer.json.mustache"),
+          "utf8"
+        );
+        const output = mustache.render(template, multisigData);
+      
+        const jsonDir = path.join(__dirname, "JSONs");
+        const outFile = path.join(
+          jsonDir,
+          `${multisigData.chainId}-setMaturityBuffer.json`
+        );
+        if (!fs.existsSync(jsonDir)) {
+          fs.mkdirSync(jsonDir);
+        }
+        fs.writeFileSync(outFile, output);
+      
+        console.log("Output written to ", outFile.toString());
+      }
+    });
 
 module.exports = {};

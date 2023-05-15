@@ -34,6 +34,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -10784,
+      maturityBuffer: 86400,
     },
 
     borrow_aUSDC_v4: {
@@ -63,6 +64,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -12672,
+      maturityBuffer: 3600,
     },
 
     borrow_aUSDC_v5: {
@@ -92,6 +94,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -12938,
+      maturityBuffer: 3600,
     },
 
     borrow_aUSDC_v6: {
@@ -121,6 +124,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -11909,
+      maturityBuffer: 3600,
     },
 
     // aDAI pools
@@ -155,6 +159,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -16187,
+      maturityBuffer: 3600,
     },
 
     // rETH pools
@@ -185,6 +190,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -16660,
+      maturityBuffer: 3600,
     },
 
     // aETH pools
@@ -217,6 +223,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -13122,
+      maturityBuffer: 3600,
     },
 
     // borrow cUSDT pools
@@ -247,6 +254,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -14372,
+      maturityBuffer: 3600,
     },
 
     // borrow aUSDT pools
@@ -277,6 +285,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -12721,
+      maturityBuffer: 3600,
     },
   },
 
@@ -311,6 +320,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -10707,
+      maturityBuffer: 3600,
     },
 
     borrow_aUSDC_v4: {
@@ -340,6 +350,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -10607,
+      maturityBuffer: 3600,
     },
 
     // GLP pools
@@ -370,6 +381,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: 0,
+      maturityBuffer: 3600,
     },
   },
 
