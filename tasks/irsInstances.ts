@@ -652,69 +652,76 @@ task(
     }
   });
 
-  task(
-    "setMaturityBuffer",
-    "Set the buffer to maturity after which trading is stopped"
-  ).addVariadicPositionalParam(
+task(
+  "setMaturityBuffer",
+  "Set the buffer to maturity after which trading is stopped"
+)
+  .addVariadicPositionalParam(
     "pools",
     "The names of pools in deployConfig/pool.ts ('borrow_aDAI_v2 stETH_v1' - skip param name)"
-  ).addFlag("multisig", "Signal if json should be created")
-    .setAction(async (taskArgs, hre) => {
-      const network = hre.network.name;
-      const deployConfig = getConfig(network)
-      const multisig = deployConfig.multisig;
+  )
+  .addFlag("multisig", "Signal if json should be created")
+  .setAction(async (taskArgs, hre) => {
+    const network = hre.network.name;
+    const deployConfig = getConfig(network);
+    const multisig = deployConfig.multisig;
 
-      const multisigData : {
-        multisig: string;
-        chainId: string;
-        pools: {
-          vammAddress: string,
-          maturityBufferWad: string,
-          last?: boolean
-        }[];
-      } = {
-        multisig: multisig,
-        chainId: await hre.getChainId(),
-        pools: []
-      }
+    const multisigData: {
+      multisig: string;
+      chainId: string;
+      pools: {
+        vammAddress: string;
+        maturityBufferWad: string;
+        last?: boolean;
+      }[];
+    } = {
+      multisig: multisig,
+      chainId: await hre.getChainId(),
+      pools: [],
+    };
 
-      for (const poolName of taskArgs.pools) {
-        const pool = getPool(network, poolName);
-        const poolConfigs = getNetworkPoolConfigs(hre.network.name)[poolName];
+    for (const poolName of taskArgs.pools) {
+      const pool = getPool(network, poolName);
+      const poolConfigs = getNetworkPoolConfigs(hre.network.name)[poolName];
 
-        if (taskArgs.multisig) {
-          multisigData.pools.push({
-            vammAddress: pool.vamm,
-            maturityBufferWad: toBn(poolConfigs.maturityBuffer).toString()
-          })
-        } else {
-          const vamm = (await hre.ethers.getContractAt("IVAMM", pool.vamm)) as IVAMM;
-          const tx = await vamm.setMaturityBuffer(toBn(poolConfigs.maturityBuffer));
-          await tx.wait()
-        }
-      }
-
-      if(taskArgs.multisig) {
-        multisigData.pools[multisigData.pools.length - 1].last = true;
-
-        const template = fs.readFileSync(
-          path.join(__dirname, "templates/setMaturityBuffer.json.mustache"),
-          "utf8"
+      if (taskArgs.multisig) {
+        multisigData.pools.push({
+          vammAddress: pool.vamm,
+          maturityBufferWad: toBn(poolConfigs.maturityBuffer).toString(),
+        });
+      } else {
+        const vamm = (await hre.ethers.getContractAt(
+          "IVAMM",
+          pool.vamm
+        )) as IVAMM;
+        const tx = await vamm.setMaturityBuffer(
+          toBn(poolConfigs.maturityBuffer)
         );
-        const output = mustache.render(template, multisigData);
-      
-        const jsonDir = path.join(__dirname, "JSONs");
-        const outFile = path.join(
-          jsonDir,
-          `${multisigData.chainId}-setMaturityBuffer.json`
-        );
-        if (!fs.existsSync(jsonDir)) {
-          fs.mkdirSync(jsonDir);
-        }
-        fs.writeFileSync(outFile, output);
-      
-        console.log("Output written to ", outFile.toString());
+        await tx.wait();
       }
-    });
+    }
+
+    if (taskArgs.multisig) {
+      multisigData.pools[multisigData.pools.length - 1].last = true;
+
+      const template = fs.readFileSync(
+        path.join(__dirname, "templates/setMaturityBuffer.json.mustache"),
+        "utf8"
+      );
+      const output = mustache.render(template, multisigData);
+
+      const jsonDir = path.join(__dirname, "JSONs");
+      const outFile = path.join(
+        jsonDir,
+        `${multisigData.chainId}-setMaturityBuffer.json`
+      );
+      if (!fs.existsSync(jsonDir)) {
+        fs.mkdirSync(jsonDir);
+      }
+      fs.writeFileSync(outFile, output);
+
+      console.log("Output written to ", outFile.toString());
+    }
+  });
 
 module.exports = {};
