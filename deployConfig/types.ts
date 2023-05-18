@@ -46,6 +46,12 @@ export interface RocketPoolConfig {
   rocketNetworkBalances?: string;
   defaults: RateOracleConfigDefaults;
 }
+
+export interface SofrConfig {
+  priceFeed: string;
+  tokens: TokenConfig[];
+}
+
 export interface ContractsConfig {
   weth?: string;
   multisig: string;
@@ -55,6 +61,7 @@ export interface ContractsConfig {
   compoundConfig?: CompoundConfig;
   lidoConfig?: LidoConfig;
   rocketPoolConfig?: RocketPoolConfig;
+  sofrConfig?: SofrConfig;
   skipFactoryDeploy?: boolean;
   factoryOwnedByMultisig?: boolean;
   maxIrsDurationInSeconds: number;

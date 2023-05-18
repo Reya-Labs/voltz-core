@@ -22,6 +22,7 @@ import {
   getEstimatedBlocksPerDay,
 } from "../tasks/utils/helpers";
 import { ONE_DAY_IN_SECONDS } from "../tasks/utils/constants";
+import { buildRedstoneDataGenerator } from "../historicalData/generators/redstone";
 
 interface RateOracleConfigTemplateData {
   chainId: string;
@@ -536,6 +537,44 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
   }
   // End of Rocket Pool Rate Oracle
+
+  // SOFR Rate Oracle
+  {
+    const sofrConfig = deployConfig.sofrConfig;
+    const priceFeed = sofrConfig?.priceFeed;
+    const tokens = sofrConfig?.tokens;
+
+    if (priceFeed && tokens) {
+      for (const tokenDefinition of tokens) {
+        let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
+
+        if (tokenDefinition.daysOfTrustedDataPoints) {
+          const { fromBlock, toBlock, blockInterval } = await getBlockSpec(
+            hre,
+            tokenDefinition.daysOfTrustedDataPoints
+          );
+
+          trustedDataPointsGenerator = await buildRedstoneDataGenerator({
+            hre,
+            rate: "sofr-offchain",
+            fromBlock: fromBlock,
+            toBlock: toBlock,
+            blockInterval,
+          });
+        }
+
+        await deployAndConfigureWithGenerator({
+          hre,
+          initialArgs: [priceFeed, tokenDefinition.address],
+          rateOracleConfig: tokenDefinition,
+          contractName: "SofrRateOracle",
+          trustedDataPointsGenerator,
+        });
+      }
+    }
+  }
+  // End of SOFR Rate Oracle
+
   if (multisigConfig.length > 0) {
     // Flag the last entry to tell the template to stop adding commas
     multisigConfig[multisigConfig.length - 1].last = true;

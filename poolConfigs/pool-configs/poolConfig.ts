@@ -411,6 +411,37 @@ const poolConfigs: PoolConfigurations = {
       ...defaultConfig,
     },
   },
+
+  avalancheFuji: {
+    Fuji_sofrVUSD: {
+      rateOracle: "SofrRateOracle_VUSD",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 15 * 24 * 60 * 60,
+      feeWad: "1000000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1684411200,
+      termEndTimestamp: 1684504800,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "1312184160984122368",
+        apyLowerMultiplierWad: "756392184804765312",
+        sigmaSquaredWad: "250056096553",
+        alphaWad: "598386657143742",
+        betaWad: "28876210592140504",
+        xiUpperWad: "21000000000000000000",
+        xiLowerWad: "88000000000000000000",
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "4964636705503048",
+        etaLMWad: "2425100518553894",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+      initTick: -16180,
+    },
+  },
 };
 
 export const getNetworkPoolConfigs = (
