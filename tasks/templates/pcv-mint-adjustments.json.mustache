@@ -1,0 +1,77 @@
+{
+    "version": "1.0",
+    "chainId": "{{chainId}}",
+    "createdAt": 1654007302649,
+    "meta": {
+      "name": "Transactions Batch",
+      "description": "",
+      "txBuilderVersion": "1.8.0",
+      "createdFromSafeAddress": "{{multisig}}",
+      "createdFromOwnerAddress": "",
+      "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "transactions": [
+      {{#mints}}
+      {
+        "to": "{{periphery}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+            "inputs": [
+                {
+                "components": [
+                    {
+                    "internalType": "contract IMarginEngine",
+                    "name": "marginEngine",
+                    "type": "address"
+                    },
+                    {
+                    "internalType": "int24",
+                    "name": "tickLower",
+                    "type": "int24"
+                    },
+                    {
+                    "internalType": "int24",
+                    "name": "tickUpper",
+                    "type": "int24"
+                    },
+                    {
+                    "internalType": "uint256",
+                    "name": "notional",
+                    "type": "uint256"
+                    },
+                    {
+                    "internalType": "bool",
+                    "name": "isMint",
+                    "type": "bool"
+                    },
+                    {
+                    "internalType": "int256",
+                    "name": "marginDelta",
+                    "type": "int256"
+                    }
+                ],
+                "internalType": "struct IPeriphery.MintOrBurnParams",
+                "name": "params",
+                "type": "tuple"
+                }
+            ],
+            "name": "mintOrBurn",
+            "outputs": [
+                {
+                "internalType": "int256",
+                "name": "positionMarginRequirement",
+                "type": "int256"
+                }
+            ],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        "contractInputsValues": {
+          "params": "[ \"{{marginEngine}}\", \"{{tickLower}}\", \"{{tickUpper}}\", \"{{notional}}\", true, 0]"
+        }
+      }
+      {{^last}},{{/last}}
+      {{/mints}}
+    ]
+  }
