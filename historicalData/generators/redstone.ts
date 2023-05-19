@@ -5,6 +5,7 @@ import { BlockSpec, Datum } from "./common";
 import { getSofrPriceFeedAddress } from "../../poolConfigs/external-contracts/redstone";
 
 import { DateTime } from "luxon";
+// eslint-disable-next-line node/no-extraneous-import
 import axios from "axios";
 import { getBlockAtTimestamp } from "../../tasks/utils/helpers";
 

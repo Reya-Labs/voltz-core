@@ -3,6 +3,9 @@ import { BigNumber, Wallet } from "ethers";
 import { expect } from "chai";
 import { ConfigForGenericTests as Config } from "./redstoneConfig";
 import { MockRedstonePriceFeed, TestSofrRateOracle } from "../../../typechain";
+import { advanceTimeAndBlock } from "../../helpers/time";
+
+const { provider } = waffle;
 
 describe("Sofr Rate Oracle", () => {
   let wallet: Wallet, other: Wallet;
@@ -52,7 +55,7 @@ describe("Sofr Rate Oracle", () => {
       ).to.be.closeTo(0.000801, 0.000001);
     });
 
-    it("apy", async () => {
+    it("apy from rate of return", async () => {
       const apy = await testSofrRateOracle.exposedComputeApyFromRate(
         await testSofrRateOracle.exposedGetRateOfReturn(
           BigNumber.from(107576689).mul(pow19),
@@ -67,7 +70,7 @@ describe("Sofr Rate Oracle", () => {
       );
     });
 
-    it("interpolate rate vlue", async () => {
+    it("interpolate rate value", async () => {
       {
         const interpolatedRate = await testSofrRateOracle.interpolateRateValue(
           BigNumber.from(107576689).mul(pow19),
@@ -91,6 +94,52 @@ describe("Sofr Rate Oracle", () => {
           parseFloat(ethers.utils.formatUnits(interpolatedRate, 27))
         ).to.be.closeTo(1.07662953, 0.00000001);
       }
+    });
+
+    it("apy from to", async () => {
+      await testSofrRateOracle.increaseObservationCardinalityNext(16);
+      while (true) {
+        await testSofrRateOracle.writeOracleEntry();
+        if ((await priceFeed.canAdvanceIndex()) === false) {
+          break;
+        }
+        await priceFeed.advanceIndex();
+      }
+
+      const currentBlock = await provider.getBlock("latest");
+      await advanceTimeAndBlock(
+        BigNumber.from(1692472134 - currentBlock.timestamp),
+        1
+      );
+      const apy = await testSofrRateOracle.getApyFrom(1683201600);
+
+      expect(parseFloat(ethers.utils.formatUnits(apy, 18))).to.be.closeTo(
+        0.0506,
+        0.00003
+      );
+    });
+
+    it("apy from to (2)", async () => {
+      await testSofrRateOracle.increaseObservationCardinalityNext(16);
+      while (true) {
+        await testSofrRateOracle.writeOracleEntry();
+        if ((await priceFeed.canAdvanceIndex()) === false) {
+          break;
+        }
+        await priceFeed.advanceIndex();
+      }
+
+      const currentBlock = await provider.getBlock("latest");
+      await advanceTimeAndBlock(
+        BigNumber.from(1683633600 - currentBlock.timestamp),
+        1
+      );
+      const apy = await testSofrRateOracle.getApyFrom(1683547200);
+
+      expect(parseFloat(ethers.utils.formatUnits(apy, 18))).to.be.closeTo(
+        0.0506,
+        0.00001
+      );
     });
   });
 });

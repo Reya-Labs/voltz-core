@@ -38,6 +38,10 @@ contract MockRedstonePriceFeed is IPriceFeed {
         startedAt = _startedAt[leftIndex];
     }
 
+    function canAdvanceIndex() public view returns (bool) {
+        return leftIndex + 1 < rightIndex;
+    }
+
     function advanceIndex() public {
         leftIndex += 1;
     }

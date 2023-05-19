@@ -424,7 +424,7 @@ const poolConfigs: PoolConfigurations = {
       isAlpha: false,
       lpMarginCap: "0",
       termStartTimestamp: 1684411200,
-      termEndTimestamp: 1684504800,
+      termEndTimestamp: 1684760400,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1312184160984122368",
         apyLowerMultiplierWad: "756392184804765312",

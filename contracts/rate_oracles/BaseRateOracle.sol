@@ -479,12 +479,7 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
     }
 
     /// @inheritdoc IRateOracle
-    function getLastRateSlope()
-        public
-        view
-        override
-        returns (uint256 rateChange, uint32 timeChange)
-    {
+    function getLastRateApy() public view override returns (uint256 apyWad) {
         uint16 last = oracleVars.rateIndex;
         uint16 lastButOne = (oracleVars.rateIndex >= 1)
             ? oracleVars.rateIndex - 1
@@ -500,12 +495,18 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
             "NEP"
         );
 
-        rateChange =
-            observations[last].observedValue -
-            observations[lastButOne].observedValue;
-        timeChange =
-            observations[last].blockTimestamp -
-            observations[lastButOne].blockTimestamp;
+        uint256 rateFromToRay = getRateOfReturn(
+            observations[lastButOne].observedValue,
+            observations[last].observedValue
+        );
+        uint256 rateFromToWad = WadRayMath.rayToWad(rateFromToRay);
+
+        uint256 timeInYearsWad = FixedAndVariableMath.accrualFact(
+            (observations[last].blockTimestamp -
+                observations[lastButOne].blockTimestamp) * WadRayMath.WAD
+        );
+
+        apyWad = computeApyFromRate(rateFromToWad, timeInYearsWad);
     }
 
     /// @inheritdoc IRateOracle
@@ -526,13 +527,13 @@ abstract contract BaseRateOracle is IRateOracle, Ownable {
 
         // We can't get the current rate from the underlying platform, perhaps because it only pushes
         // rates to chain periodically. So we extrapolate the likely current rate from recent rates.
-        (uint256 rateChange, uint32 timeChange) = getLastRateSlope();
-
-        currentRate =
-            lastUpdatedRate +
-            ((Time.blockTimestampTruncated() - lastUpdatedTimestamp) *
-                rateChange) /
-            timeChange;
+        uint256 apyWad = getLastRateApy();
+        currentRate = interpolateRateValue(
+            lastUpdatedRate,
+            apyWad,
+            (Time.blockTimestampTruncated() - lastUpdatedTimestamp) *
+                WadRayMath.WAD
+        );
     }
 
     /// @inheritdoc IRateOracle
