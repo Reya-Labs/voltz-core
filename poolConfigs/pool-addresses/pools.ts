@@ -154,6 +154,14 @@ const pools: Pools = {
       rateOracleID: 9,
     },
 
+    borrow_aUSDC_v6: {
+      marginEngine: "0xfdE2837a8eB925C2e17b8AFD323FBa66126c9B2c",
+      vamm: "0xd6Fc50C52B198f5017a4bd383C92A3dA753883A3",
+      decimals: 6,
+      deploymentBlock: 17265084,
+      rateOracleID: 9,
+    },
+
     aDAI_v1: {
       marginEngine: "0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e",
       vamm: "0xA1a75F6689949fF413Aa115D300f5e30F35Ba061",

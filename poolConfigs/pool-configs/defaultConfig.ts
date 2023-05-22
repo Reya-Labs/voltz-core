@@ -38,4 +38,5 @@ export const defaultConfig: Omit<
     minMarginToIncentiviseLiquidators: "0",
   },
   initTick: 0,
+  maturityBuffer: 86400,
 };

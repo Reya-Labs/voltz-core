@@ -205,6 +205,25 @@
       }
     },
     {
+      "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+          {
+              "internalType": "uint256",
+              "name": "__maturityBufferWad",
+              "type": "uint256"
+          }
+          ],
+          "name": "setMaturityBuffer",
+          "payable": false
+      },
+      "contractInputsValues": {
+          "__maturityBufferWad": "{{maturityBufferWad}}"
+      }
+    },
+    {
       "to": "{{predictedMarginEngineAddress}}",
       "value": "0",
       "data": null,

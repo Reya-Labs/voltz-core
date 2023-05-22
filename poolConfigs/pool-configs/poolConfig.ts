@@ -34,6 +34,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -10784,
+      maturityBuffer: 86400,
     },
 
     borrow_aUSDC_v4: {
@@ -63,6 +64,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -12672,
+      maturityBuffer: 3600,
     },
 
     borrow_aUSDC_v5: {
@@ -92,6 +94,37 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -12938,
+      maturityBuffer: 3600,
+    },
+
+    borrow_aUSDC_v6: {
+      rateOracle: "AaveV3BorrowRateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 13 * 24 * 60 * 60,
+      feeWad: "1000000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1684083600,
+      termEndTimestamp: 1685534400,
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "1246328792246992896",
+        apyLowerMultiplierWad: "571288518738991680",
+        sigmaSquaredWad: "4421123499352",
+        alphaWad: "413946676242590",
+        betaWad: "27210198230929540",
+        xiUpperWad: "30000000000000000000",
+        xiLowerWad: "56000000000000000000",
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "3887858919780962",
+        etaLMWad: "1724214308951546",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+      initTick: -11909,
+      maturityBuffer: 3600,
     },
 
     // aDAI pools
@@ -126,6 +159,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -16187,
+      maturityBuffer: 3600,
     },
 
     // rETH pools
@@ -156,6 +190,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -16660,
+      maturityBuffer: 3600,
     },
 
     // aETH pools
@@ -188,6 +223,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -13122,
+      maturityBuffer: 3600,
     },
 
     // borrow cUSDT pools
@@ -218,6 +254,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -14372,
+      maturityBuffer: 3600,
     },
 
     // borrow aUSDT pools
@@ -248,6 +285,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -12721,
+      maturityBuffer: 3600,
     },
   },
 
@@ -282,6 +320,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -10707,
+      maturityBuffer: 3600,
     },
 
     borrow_aUSDC_v4: {
@@ -311,6 +350,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -10607,
+      maturityBuffer: 3600,
     },
 
     // GLP pools
@@ -341,6 +381,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: 0,
+      maturityBuffer: 3600,
     },
   },
 
