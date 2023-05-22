@@ -9,7 +9,7 @@ import { getBlockAtTimestamp, getEstimatedBlocksPerDay } from "./utils/helpers";
 import { getTokenAddress } from "../poolConfigs/tokens/tokenConfig";
 import { getCTokenAddress } from "../poolConfigs/external-contracts/compound";
 import { ONE_DAY_IN_SECONDS } from "./utils/constants";
-import { buildRedstoneDataGenerator } from "../historicalData/generators/redstone";
+import { buildSofrDataGenerator } from "../historicalData/generators/sofr";
 
 const supportedPlatforms: { [key: string]: string[] } = {
   mainnet: [
@@ -232,7 +232,7 @@ task("getHistoricalData", "Retrieves the historical rates")
         throw new Error(`Only USDC token needs to be passed for Redstone.`);
       }
 
-      generator = await buildRedstoneDataGenerator({
+      generator = await buildSofrDataGenerator({
         hre,
         fromBlock,
         toBlock,

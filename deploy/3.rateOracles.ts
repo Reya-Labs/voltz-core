@@ -22,7 +22,7 @@ import {
   getEstimatedBlocksPerDay,
 } from "../tasks/utils/helpers";
 import { ONE_DAY_IN_SECONDS } from "../tasks/utils/constants";
-import { buildRedstoneDataGenerator } from "../historicalData/generators/redstone";
+import { buildSofrDataGenerator } from "../historicalData/generators/sofr";
 
 interface RateOracleConfigTemplateData {
   chainId: string;
@@ -554,7 +554,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             tokenDefinition.daysOfTrustedDataPoints
           );
 
-          trustedDataPointsGenerator = await buildRedstoneDataGenerator({
+          trustedDataPointsGenerator = await buildSofrDataGenerator({
             hre,
             rate: "sofr-offchain",
             fromBlock: fromBlock,

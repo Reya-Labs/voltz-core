@@ -10,15 +10,13 @@ contract MockRedstonePriceFeed is IPriceFeed {
     uint256 leftIndex;
     uint256 rightIndex;
     int256[1000] _rate;
-    uint256[1000] _startedAt;
 
     function decimals() external pure override returns (uint8) {
         return 8;
     }
 
-    function pushRate(int256 rate, uint256 startedAt) public {
+    function pushRate(int256 rate) public {
         _rate[rightIndex] = rate;
-        _startedAt[rightIndex] = startedAt;
         rightIndex += 1;
     }
 
@@ -35,7 +33,6 @@ contract MockRedstonePriceFeed is IPriceFeed {
         )
     {
         rate = _rate[leftIndex];
-        startedAt = _startedAt[leftIndex];
     }
 
     function canAdvanceIndex() public view returns (bool) {

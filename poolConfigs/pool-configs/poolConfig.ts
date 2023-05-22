@@ -440,6 +440,7 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -16180,
+      maturityBuffer: 3600,
     },
   },
 };

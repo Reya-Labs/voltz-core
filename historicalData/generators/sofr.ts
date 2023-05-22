@@ -2,7 +2,10 @@ import { BigNumber, ethers } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { IPriceFeed } from "../../typechain";
 import { BlockSpec, Datum } from "./common";
-import { getSofrPriceFeedAddress } from "../../poolConfigs/external-contracts/redstone";
+import {
+  getSofrIndexValueAddress,
+  getSofrIndexEffectiveDateAddress,
+} from "../../poolConfigs/external-contracts/sofr";
 
 import { DateTime } from "luxon";
 // eslint-disable-next-line node/no-extraneous-import
@@ -23,7 +26,7 @@ export const effectiveDateToTimestamp = (effectiveDate: string): number => {
   }).toSeconds();
 };
 
-export interface RedstoneDataSpec extends BlockSpec {
+export interface SofrDataSpec extends BlockSpec {
   hre: HardhatRuntimeEnvironment;
   rate: "sofr" | "sofr-offchain";
 }
@@ -39,55 +42,51 @@ type Sofrai = {
 };
 
 // Generator function for Redstone data
-async function* redstoneDataGenerator(
-  spec: RedstoneDataSpec
-): AsyncGenerator<Datum> {
-  const { hre, rate } = spec;
+async function* sofrDataGenerator(spec: SofrDataSpec): AsyncGenerator<Datum> {
+  const { hre } = spec;
 
-  let priceFeed: IPriceFeed;
-  switch (rate) {
-    case "sofr": {
-      priceFeed = (await hre.ethers.getContractAt(
-        "IPriceFeed",
-        getSofrPriceFeedAddress(hre.network.name)
-      )) as IPriceFeed;
-      break;
-    }
+  const sofrIndexValue = (await hre.ethers.getContractAt(
+    "IPriceFeed",
+    getSofrIndexValueAddress(hre.network.name)
+  )) as IPriceFeed;
 
-    default: {
-      throw new Error(`Unrecongized version ${rate} for Redstone`);
-    }
-  }
+  const sofrIndexEffectiveDate = (await hre.ethers.getContractAt(
+    "IPriceFeed",
+    getSofrIndexEffectiveDateAddress(hre.network.name)
+  )) as IPriceFeed;
 
-  const priceFeedDecimals = await priceFeed.decimals();
-  if (priceFeedDecimals > 27) {
+  const priceFeedDecimals = await sofrIndexValue.decimals();
+  if (priceFeedDecimals !== 8) {
     throw new Error(
       `Price Feed has ${priceFeedDecimals} decimals. Unsupported precision`
     );
   }
 
-  const scale = BigNumber.from(10).pow(27 - priceFeedDecimals);
+  const scale = BigNumber.from(10).pow(19);
 
-  let lastStartedAt = null;
+  let lastUpdate = null;
   for (let b = spec.fromBlock; b <= spec.toBlock; b += spec.blockInterval) {
     try {
-      const latestSofrData = await priceFeed.latestRoundData({ blockTag: b });
+      const sofrIndex = await sofrIndexValue.latestRoundData({ blockTag: b });
+      const sofrIndexTimestamp = await sofrIndexEffectiveDate.latestRoundData({
+        blockTag: b,
+      });
 
       if (
-        lastStartedAt !== null &&
-        lastStartedAt === latestSofrData.startedAt.toNumber()
+        lastUpdate !== null &&
+        lastUpdate === sofrIndexTimestamp.answer.toNumber()
       ) {
         continue;
       }
 
       yield {
         blockNumber: b,
-        timestamp: latestSofrData.startedAt.toNumber(),
-        rate: latestSofrData.answer.mul(scale),
+        timestamp: sofrIndexTimestamp.answer.toNumber(),
+        rate: sofrIndex.answer.mul(scale),
         error: null,
       };
 
-      lastStartedAt = latestSofrData.startedAt.toNumber();
+      lastUpdate = sofrIndexTimestamp.answer.toNumber();
     } catch (e: unknown) {
       yield {
         blockNumber: b,
@@ -101,7 +100,7 @@ async function* redstoneDataGenerator(
 
 // Generator function for Redstone data
 async function* sofrOffChainDataGenerator(
-  spec: RedstoneDataSpec
+  spec: SofrDataSpec
 ): AsyncGenerator<Datum> {
   const { hre, rate } = spec;
 
@@ -148,12 +147,12 @@ async function* sofrOffChainDataGenerator(
   }
 }
 
-export async function buildRedstoneDataGenerator(
-  spec: RedstoneDataSpec
+export async function buildSofrDataGenerator(
+  spec: SofrDataSpec
 ): Promise<AsyncGenerator<Datum, any, unknown>> {
   if (spec.rate === "sofr-offchain") {
     return sofrOffChainDataGenerator(spec);
   }
 
-  return redstoneDataGenerator(spec);
+  return sofrDataGenerator(spec);
 }

@@ -10,9 +10,14 @@ contract TestSofrRateOracle is SofrRateOracle {
     // using OracleBuffer for OracleBuffer.Observation[65535];
 
     // rateOracleAddress should be a function of underlyingProtocol and underlyingToken?
-    constructor(IPriceFeed _priceFeed, IERC20Minimal _underlying)
+    constructor(
+        IPriceFeed _sofrIndexValue,
+        IPriceFeed _sofrIndexEffectiveDate,
+        IERC20Minimal _underlying
+    )
         SofrRateOracle(
-            _priceFeed,
+            _sofrIndexValue,
+            _sofrIndexEffectiveDate,
             _underlying,
             new uint32[](0),
             new uint256[](0)

@@ -133,7 +133,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: doLogging,
   });
 
-  await deploy("MockRedstonePriceFeed", {
+  await deploy("MockRedstonePriceFeed1", {
+    contract: "MockRedstonePriceFeed",
+    from: deployer,
+    log: doLogging,
+  });
+
+  await deploy("MockRedstonePriceFeed2", {
+    contract: "MockRedstonePriceFeed",
     from: deployer,
     log: doLogging,
   });

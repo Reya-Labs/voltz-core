@@ -1,7 +1,7 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, Wallet } from "ethers";
 import { expect } from "chai";
-import { ConfigForGenericTests as Config } from "./redstoneConfig";
+import { ConfigForGenericTests as Config } from "./sofrConfig";
 import { MockRedstonePriceFeed, TestSofrRateOracle } from "../../../typechain";
 import { advanceTimeAndBlock } from "../../helpers/time";
 
@@ -10,7 +10,8 @@ const { provider } = waffle;
 describe("Sofr Rate Oracle", () => {
   let wallet: Wallet, other: Wallet;
   let loadFixture: ReturnType<typeof waffle.createFixtureLoader>;
-  let priceFeed: MockRedstonePriceFeed;
+  let _sofrIndexValue: MockRedstonePriceFeed;
+  let _sofrIndexEffectiveDate: MockRedstonePriceFeed;
   let testSofrRateOracle: TestSofrRateOracle;
 
   const pow18 = BigNumber.from(10).pow(18);
@@ -23,11 +24,11 @@ describe("Sofr Rate Oracle", () => {
 
   describe("Sofr specific behaviour", () => {
     beforeEach("deploy and initialize test oracle", async () => {
-      const { testRateOracle, sofrIndex } = await loadFixture(
-        Config.oracleFixture
-      );
+      const { testRateOracle, sofrIndexValue, sofrIndexEffectiveDate } =
+        await loadFixture(Config.oracleFixture);
       testSofrRateOracle = testRateOracle as unknown as TestSofrRateOracle;
-      priceFeed = sofrIndex;
+      _sofrIndexValue = sofrIndexValue;
+      _sofrIndexEffectiveDate = sofrIndexEffectiveDate;
     });
 
     it("Verify correct protocol ID for Sofr rate oracle", async () => {
@@ -41,7 +42,6 @@ describe("Sofr Rate Oracle", () => {
       const rateInfo = await testSofrRateOracle.getLastUpdatedRate();
       expect(rateInfo.timestamp).to.be.eq(1682510400);
       expect(rateInfo.resultRay).to.be.eq(BigNumber.from(107547978).mul(pow19));
-      await priceFeed.advanceIndex();
     });
 
     it("rate of return", async () => {
@@ -100,10 +100,11 @@ describe("Sofr Rate Oracle", () => {
       await testSofrRateOracle.increaseObservationCardinalityNext(16);
       while (true) {
         await testSofrRateOracle.writeOracleEntry();
-        if ((await priceFeed.canAdvanceIndex()) === false) {
+        if ((await _sofrIndexValue.canAdvanceIndex()) === false) {
           break;
         }
-        await priceFeed.advanceIndex();
+        await _sofrIndexValue.advanceIndex();
+        await _sofrIndexEffectiveDate.advanceIndex();
       }
 
       const currentBlock = await provider.getBlock("latest");
@@ -123,10 +124,11 @@ describe("Sofr Rate Oracle", () => {
       await testSofrRateOracle.increaseObservationCardinalityNext(16);
       while (true) {
         await testSofrRateOracle.writeOracleEntry();
-        if ((await priceFeed.canAdvanceIndex()) === false) {
+        if ((await _sofrIndexValue.canAdvanceIndex()) === false) {
           break;
         }
-        await priceFeed.advanceIndex();
+        await _sofrIndexValue.advanceIndex();
+        await _sofrIndexEffectiveDate.advanceIndex();
       }
 
       const currentBlock = await provider.getBlock("latest");

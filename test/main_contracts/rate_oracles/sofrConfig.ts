@@ -5,7 +5,8 @@ import {
 } from "../../../typechain";
 import { deployments, ethers } from "hardhat";
 
-let sofrIndex: MockRedstonePriceFeed;
+let sofrIndexValue: MockRedstonePriceFeed;
+let sofrIndexEffectiveDate: MockRedstonePriceFeed;
 let underlyingToken: ERC20Mock;
 
 export const ConfigForGenericTests = {
@@ -14,9 +15,14 @@ export const ConfigForGenericTests = {
     // Use hardhat-deploy to deploy factory and mocks
     await deployments.fixture(["Factory", "Mocks"]);
 
-    sofrIndex = (await ethers.getContract(
-      "MockRedstonePriceFeed"
+    sofrIndexValue = (await ethers.getContract(
+      "MockRedstonePriceFeed1"
     )) as MockRedstonePriceFeed;
+
+    sofrIndexEffectiveDate = (await ethers.getContract(
+      "MockRedstonePriceFeed2"
+    )) as MockRedstonePriceFeed;
+
     const ratesAndTimestamps = [
       [1.07547978, 1682510400],
       [1.07562318, 1682596800],
@@ -30,10 +36,11 @@ export const ConfigForGenericTests = {
     ];
 
     for (const rateAndTimestamp of ratesAndTimestamps) {
-      sofrIndex.pushRate(
-        ethers.utils.parseUnits(rateAndTimestamp[0].toString(), 8),
-        rateAndTimestamp[1]
+      sofrIndexValue.pushRate(
+        ethers.utils.parseUnits(rateAndTimestamp[0].toString(), 8)
       );
+
+      sofrIndexEffectiveDate.pushRate(rateAndTimestamp[1]);
     }
 
     const TestRateOracleFactory = await ethers.getContractFactory(
@@ -43,9 +50,15 @@ export const ConfigForGenericTests = {
     underlyingToken = (await ethers.getContract("ERC20Mock")) as ERC20Mock;
 
     const testRateOracle = (await TestRateOracleFactory.deploy(
-      sofrIndex.address,
+      sofrIndexValue.address,
+      sofrIndexEffectiveDate.address,
       underlyingToken.address
     )) as TestRateOracle;
-    return { testRateOracle, sofrIndex, underlyingToken };
+    return {
+      testRateOracle,
+      sofrIndexValue,
+      sofrIndexEffectiveDate,
+      underlyingToken,
+    };
   },
 };

@@ -2,7 +2,7 @@
 
 pragma solidity =0.8.9;
 
-import "../interfaces/rate_oracles/IRedstoneRateOracle.sol";
+import "../interfaces/rate_oracles/ISofrRateOracle.sol";
 import "../interfaces/redstone/IPriceFeed.sol";
 import "../rate_oracles/BaseRateOracle.sol";
 
@@ -14,11 +14,13 @@ import "../utils/SafeCastUni.sol";
 import "../core_libraries/FixedAndVariableMath.sol";
 import "../utils/WadRayMath.sol";
 
-contract SofrRateOracle is BaseRateOracle, IRedstoneRateOracle {
+contract SofrRateOracle is BaseRateOracle, ISofrRateOracle {
     uint256 public constant SOFR_RAY_RATIO = 1e19;
 
-    /// @inheritdoc IRedstoneRateOracle
-    IPriceFeed public override priceFeed;
+    /// @inheritdoc ISofrRateOracle
+    IPriceFeed public override sofrIndexValue;
+    /// @inheritdoc ISofrRateOracle
+    IPriceFeed public override sofrIndexEffectiveDate;
 
     uint8 public constant override UNDERLYING_YIELD_BEARING_PROTOCOL_ID = 10;
 
@@ -29,19 +31,28 @@ contract SofrRateOracle is BaseRateOracle, IRedstoneRateOracle {
     uint256 public constant SECONDS_IN_360DAY_YEAR_IN_WAD = 31104000e18;
 
     constructor(
-        IPriceFeed _priceFeed,
+        IPriceFeed _sofrIndexValue,
+        IPriceFeed _sofrIndexEffectiveDate,
         IERC20Minimal _underlying,
         uint32[] memory _times,
         uint256[] memory _results
     ) BaseRateOracle(_underlying) {
         require(
-            address(_priceFeed) != address(0),
-            "price feed contract must exist"
+            address(_sofrIndexValue) != address(0),
+            "sofr index value contract must exist"
         );
+        require(
+            address(_sofrIndexEffectiveDate) != address(0),
+            "sofr index effective date contract must exist"
+        );
+
         // Check that underlying was set in BaseRateOracle
         require(address(underlying) != address(0), "underlying must exist");
-        priceFeed = _priceFeed;
-        require(priceFeed.decimals() == 8, "8 decimals");
+
+        sofrIndexValue = _sofrIndexValue;
+        sofrIndexEffectiveDate = _sofrIndexEffectiveDate;
+
+        require(sofrIndexValue.decimals() == 8, "8 decimals");
 
         _populateInitialObservations(_times, _results, true);
     }
@@ -53,15 +64,19 @@ contract SofrRateOracle is BaseRateOracle, IRedstoneRateOracle {
         override
         returns (uint32 timestamp, uint256 resultRay)
     {
-        (, int256 sofrIndex, uint256 sofrIndexTimestamp, , ) = priceFeed
+        (, int256 sofrIndex, , , ) = sofrIndexValue.latestRoundData();
+        (, int256 sofrIndexTimestamp, , , ) = sofrIndexEffectiveDate
             .latestRoundData();
-        if (sofrIndex <= 0) {
+        if (sofrIndex <= 0 || sofrIndexTimestamp <= 0) {
             revert CustomErrors.RedstoneLatestRoundDataReturnedNegativeOrZero();
         }
 
         uint256 sofrIndexRay = sofrIndex.toUint256() * SOFR_RAY_RATIO;
+        uint32 sofrIndexTimestampUint32 = Time.timestampAsUint32(
+            sofrIndexTimestamp.toUint256()
+        );
 
-        return (Time.timestampAsUint32(sofrIndexTimestamp), sofrIndexRay);
+        return (sofrIndexTimestampUint32, sofrIndexRay);
     }
 
     /// @notice Divide a given time in seconds by the number of seconds in a 360-day year
