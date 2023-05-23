@@ -7936,13 +7936,18 @@
       ]
     },
     "SofrRateOracle_VUSD": {
-      "address": "0x4870b57E2e4bAA82ac8CC87350A2959e4b51694f",
+      "address": "0xf2ffF11A75E77f702f32514f2F7Aa66d7A419C42",
       "abi": [
         {
           "inputs": [
             {
               "internalType": "contract IPriceFeed",
-              "name": "_priceFeed",
+              "name": "_sofrIndexValue",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IPriceFeed",
+              "name": "_sofrIndexEffectiveDate",
               "type": "address"
             },
             {
@@ -8502,17 +8507,12 @@
         },
         {
           "inputs": [],
-          "name": "getLastRateSlope",
+          "name": "getLastRateApy",
           "outputs": [
             {
               "internalType": "uint256",
-              "name": "rateChange",
+              "name": "apyWad",
               "type": "uint256"
-            },
-            {
-              "internalType": "uint32",
-              "name": "timeChange",
-              "type": "uint32"
             }
           ],
           "stateMutability": "view",
@@ -8719,19 +8719,6 @@
         },
         {
           "inputs": [],
-          "name": "priceFeed",
-          "outputs": [
-            {
-              "internalType": "contract IPriceFeed",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
           "name": "renounceOwnership",
           "outputs": [],
           "stateMutability": "nonpayable",
@@ -8769,6 +8756,32 @@
               "internalType": "uint256",
               "name": "",
               "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "sofrIndexEffectiveDate",
+          "outputs": [
+            {
+              "internalType": "contract IPriceFeed",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "sofrIndexValue",
+          "outputs": [
+            {
+              "internalType": "contract IPriceFeed",
+              "name": "",
+              "type": "address"
             }
           ],
           "stateMutability": "view",

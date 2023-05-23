@@ -12,7 +12,8 @@ export const avalancheFujiConfig: ContractsConfig = {
   weth: "0xd00ae08403b9bbb9124bb305c09058e32c39a48c", // wavax
   multisig: "0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1",
   sofrConfig: {
-    priceFeed: "0x42Ea045b70856c8cc20784A5B45EA35a80C8aDd9",
+    sofrIndexValue: "0x12bd99a29fA3f24A857288DcCDE922D8f498c737",
+    sofrIndexEffectiveDate: "0x93CF2aF3071D10131F063f69AAb468a7F2279c52",
     tokens: [
       {
         name: "VUSD",

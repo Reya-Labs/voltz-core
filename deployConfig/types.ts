@@ -48,7 +48,8 @@ export interface RocketPoolConfig {
 }
 
 export interface SofrConfig {
-  priceFeed: string;
+  sofrIndexValue: string;
+  sofrIndexEffectiveDate: string;
   tokens: TokenConfig[];
 }
 

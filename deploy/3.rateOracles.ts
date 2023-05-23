@@ -541,10 +541,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // SOFR Rate Oracle
   {
     const sofrConfig = deployConfig.sofrConfig;
-    const priceFeed = sofrConfig?.priceFeed;
+    const sofrIndexValue = sofrConfig?.sofrIndexValue;
+    const sofrIndexEffectiveDate = sofrConfig?.sofrIndexEffectiveDate;
     const tokens = sofrConfig?.tokens;
 
-    if (priceFeed && tokens) {
+    if (sofrIndexValue && sofrIndexEffectiveDate && tokens) {
       for (const tokenDefinition of tokens) {
         let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
 
@@ -565,7 +566,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         await deployAndConfigureWithGenerator({
           hre,
-          initialArgs: [priceFeed, tokenDefinition.address],
+          initialArgs: [
+            sofrIndexValue,
+            sofrIndexEffectiveDate,
+            tokenDefinition.address,
+          ],
           rateOracleConfig: tokenDefinition,
           contractName: "SofrRateOracle",
           trustedDataPointsGenerator,

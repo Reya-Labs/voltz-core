@@ -423,8 +423,8 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
-      termStartTimestamp: 1684411200,
-      termEndTimestamp: 1684760400,
+      termStartTimestamp: 1684839365,
+      termEndTimestamp: 1685556000,
       marginCalculatorParams: {
         apyUpperMultiplierWad: "1312184160984122368",
         apyLowerMultiplierWad: "756392184804765312",
