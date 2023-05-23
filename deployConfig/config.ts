@@ -7,6 +7,7 @@ import { arbitrumConfig } from "./arbitrum";
 import { arbitrumGoerliConfig } from "./arbitrumGoerli";
 import { avalancheInsti1Testnet } from "./avalancheInsti1Testnet";
 import { avalancheFujiConfig } from "./avalancheFuji";
+import { avalancheConfig } from "./avalanche";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ const config: ContractsConfigMap = {
   mainnet: mainnetConfig,
   arbitrum: arbitrumConfig,
   arbitrumGoerli: arbitrumGoerliConfig,
+  avalanche: avalancheConfig,
   avalancheFuji: avalancheFujiConfig,
   avalancheInsti1Testnet: avalancheInsti1Testnet,
   // hardhat: { ...mainnetConfig, skipFactoryDeploy: false, }, // uncomment if deploying a new system against a mainnet fork
