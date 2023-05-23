@@ -1,0 +1,87 @@
+{
+    "version": "1.0",
+    "chainId": "{{fromChainId}}",
+    "createdAt": 1654007302649,
+    "meta": {
+      "name": "Transactions Batch",
+      "description": "",
+      "txBuilderVersion": "1.8.0",
+      "createdFromSafeAddress": "{{fromMultisig}}",
+      "createdFromOwnerAddress": "",
+      "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "transactions": [
+      {
+        "to": "{{token}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+            "inputs": [
+                {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+                },
+                {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+                }
+            ],
+            "name": "approve",
+            "outputs": [
+                {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        "contractInputsValues": {
+          "spender": "{{bridgeZap}}",
+          "amount": "{{amountToBridge}}"
+        }
+      },
+      {
+        "to": "{{bridgeZap}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+            "inputs": [
+              { "internalType": "address", "name": "to", "type": "address" },
+              { "internalType": "uint256", "name": "chainId", "type": "uint256" },
+              { "internalType": "contract IERC20", "name": "token", "type": "address" },
+              {
+                "internalType": "uint256[]",
+                "name": "liquidityAmounts",
+                "type": "uint256[]"
+              },
+              { "internalType": "uint256", "name": "minToMint", "type": "uint256" },
+              { "internalType": "uint256", "name": "liqDeadline", "type": "uint256" },
+              { "internalType": "uint8", "name": "tokenIndexFrom", "type": "uint8" },
+              { "internalType": "uint8", "name": "tokenIndexTo", "type": "uint8" },
+              { "internalType": "uint256", "name": "minDy", "type": "uint256" },
+              { "internalType": "uint256", "name": "swapDeadline", "type": "uint256" }
+            ],
+            "name": "zapAndDepositAndSwap",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        "contractInputsValues": {
+          "to": "{{toMultisig}}",
+          "chainId": "{{toChainId}}",
+          "token": "{{auxToken}}",
+          "liquidityAmounts": "[0, \"{{amountToBridge}}\", 0]",
+          "minToMint": "{{minAmountToMint}}",
+          "liqDeadline": "{{liquidityDeadline}}",
+          "tokenIndexFrom": "0",
+          "tokenIndexTo": "2",
+          "minDy": "{{minToReceive}}",
+          "swapDeadline": "{{receiveDeadline}}"
+        }
+      }
+    ]
+  }

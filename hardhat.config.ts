@@ -78,6 +78,7 @@ loadModuleIfContractsAreBuilt("./tasks/vamm/init-vamms");
 // PCV transactions
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints");
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-bridge-avalanche");
 
 // Localhost time manipulation support
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
