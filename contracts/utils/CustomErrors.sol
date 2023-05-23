@@ -96,6 +96,9 @@ interface CustomErrors {
     /// @dev GMX's GLP returned unordered rewards value.
     error GlpRewardTrackerUnorderedRate();
 
+    /// @dev Redstone's PriceFeed contract returned a zero rate
+    error RedstoneLatestRoundDataReturnedNegativeOrZero();
+
     /// @dev currentTime < queriedTime
     error OOO();
 }

@@ -81,15 +81,6 @@ describe(`RocketPool Rate Oracle`, () => {
       });
     }
 
-    const getRateSlope = async () => {
-      const rateSlope = await testRocketPoolRateOracle.getLastRateSlope();
-      return (
-        rateSlope.rateChange.div(BigNumber.from(10).pow(18)).toNumber() /
-        1e9 /
-        rateSlope.timeChange
-      );
-    };
-
     const getBlockSlope = async () => {
       const blockSlope = await testRocketPoolRateOracle.getBlockSlope();
       return blockSlope.timeChange / blockSlope.blockChange.toNumber();
@@ -117,7 +108,6 @@ describe(`RocketPool Rate Oracle`, () => {
       );
 
       try {
-        console.log("rate slope:", await getRateSlope());
         const currentRate =
           await testRocketPoolRateOracle.getCurrentRateInRay();
         console.log("current rate:", "rate:", currentRate.toString());
@@ -181,8 +171,6 @@ describe(`RocketPool Rate Oracle`, () => {
 
       // await writeOracleInfo();
 
-      expect(await getRateSlope()).to.be.closeTo(1 / 86400 / 1e4, 1e-8);
-
       const [rateTimestamp, rateValue, _] =
         await testRocketPoolRateOracle.observations(1);
 
@@ -219,8 +207,6 @@ describe(`RocketPool Rate Oracle`, () => {
       }
 
       // await writeOracleInfo();
-
-      expect(await getRateSlope()).to.be.closeTo(1 / (2 * 86400) / 1e4, 1e-8);
 
       const [rateTimestamp, rateValue, _] =
         await testRocketPoolRateOracle.observations(1);
@@ -505,10 +491,6 @@ describe(`RocketPool Rate Oracle`, () => {
       }
 
       // await writeOracleInfo();
-
-      const rateSlope = await getRateSlope();
-
-      expect(rateSlope).to.closeTo(3 / 1e4 / 86400, 1e-9);
     });
   });
 });

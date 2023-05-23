@@ -133,6 +133,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: doLogging,
   });
 
+  await deploy("MockRedstonePriceFeed1", {
+    contract: "MockRedstonePriceFeed",
+    from: deployer,
+    log: doLogging,
+  });
+
+  await deploy("MockRedstonePriceFeed2", {
+    contract: "MockRedstonePriceFeed",
+    from: deployer,
+    log: doLogging,
+  });
+
   return true; // Only execute once
 };
 func.tags = ["Mocks"];

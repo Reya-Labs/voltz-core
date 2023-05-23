@@ -9,6 +9,7 @@ import { getBlockAtTimestamp, getEstimatedBlocksPerDay } from "./utils/helpers";
 import { getTokenAddress } from "../poolConfigs/tokens/tokenConfig";
 import { getCTokenAddress } from "../poolConfigs/external-contracts/compound";
 import { ONE_DAY_IN_SECONDS } from "./utils/constants";
+import { buildSofrDataGenerator } from "../historicalData/generators/sofr";
 
 const supportedPlatforms: { [key: string]: string[] } = {
   mainnet: [
@@ -22,6 +23,7 @@ const supportedPlatforms: { [key: string]: string[] } = {
     "rocket",
   ],
   arbitrum: ["aaveV3", "aaveV3Borrow", "glp"],
+  avalancheFuji: ["sofr", "sofr-offchain"],
 };
 
 // Description:
@@ -208,7 +210,7 @@ task("getHistoricalData", "Retrieves the historical rates")
 
       // check if token is ETH
       if (!(tokenName === "ETH")) {
-        throw new Error(`Only ETH token needs to be passed for Rocket.`);
+        throw new Error(`Only ETH token needs to be passed for GLP.`);
       }
 
       generator = await buildGlpDataGenerator({
@@ -216,6 +218,26 @@ task("getHistoricalData", "Retrieves the historical rates")
         fromBlock,
         toBlock,
         blockInterval,
+      });
+    }
+
+    // sofr
+    if (platform === "sofr" || platform === "sofr-offchain") {
+      if (!(hre.network.name === "avalancheFuji")) {
+        throw new Error(`Network ${network} unsupported for SOFR.`);
+      }
+
+      // check if token is ETH
+      if (!(tokenName === "USDC")) {
+        throw new Error(`Only USDC token needs to be passed for Redstone.`);
+      }
+
+      generator = await buildSofrDataGenerator({
+        hre,
+        fromBlock,
+        toBlock,
+        blockInterval,
+        rate: platform,
       });
     }
 

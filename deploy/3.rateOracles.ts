@@ -22,6 +22,7 @@ import {
   getEstimatedBlocksPerDay,
 } from "../tasks/utils/helpers";
 import { ONE_DAY_IN_SECONDS } from "../tasks/utils/constants";
+import { buildSofrDataGenerator } from "../historicalData/generators/sofr";
 
 interface RateOracleConfigTemplateData {
   chainId: string;
@@ -536,6 +537,49 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
   }
   // End of Rocket Pool Rate Oracle
+
+  // SOFR Rate Oracle
+  {
+    const sofrConfig = deployConfig.sofrConfig;
+    const sofrIndexValue = sofrConfig?.sofrIndexValue;
+    const sofrIndexEffectiveDate = sofrConfig?.sofrIndexEffectiveDate;
+    const tokens = sofrConfig?.tokens;
+
+    if (sofrIndexValue && sofrIndexEffectiveDate && tokens) {
+      for (const tokenDefinition of tokens) {
+        let trustedDataPointsGenerator: AsyncGenerator<Datum> | null = null;
+
+        if (tokenDefinition.daysOfTrustedDataPoints) {
+          const { fromBlock, toBlock, blockInterval } = await getBlockSpec(
+            hre,
+            tokenDefinition.daysOfTrustedDataPoints
+          );
+
+          trustedDataPointsGenerator = await buildSofrDataGenerator({
+            hre,
+            rate: "sofr-offchain",
+            fromBlock: fromBlock,
+            toBlock: toBlock,
+            blockInterval,
+          });
+        }
+
+        await deployAndConfigureWithGenerator({
+          hre,
+          initialArgs: [
+            sofrIndexValue,
+            sofrIndexEffectiveDate,
+            tokenDefinition.address,
+          ],
+          rateOracleConfig: tokenDefinition,
+          contractName: "SofrRateOracle",
+          trustedDataPointsGenerator,
+        });
+      }
+    }
+  }
+  // End of SOFR Rate Oracle
+
   if (multisigConfig.length > 0) {
     // Flag the last entry to tell the template to stop adding commas
     multisigConfig[multisigConfig.length - 1].last = true;

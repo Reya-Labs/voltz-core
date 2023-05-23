@@ -117,13 +117,13 @@ interface IRateOracle is CustomErrors {
     /// @return yieldBearingProtocolID unique id of the underlying yield bearing protocol
     function UNDERLYING_YIELD_BEARING_PROTOCOL_ID() external view returns(uint8 yieldBearingProtocolID);
 
-    /// @notice returns the last change in rate and time
-    /// Gets the last two observations and returns the change in rate and time.
+    /// @notice returns the last apy
+    /// Gets the last two observations and returns the apy between them.
     /// This can help us to extrapolate an estiamte of the current rate from recent known rates. 
-    function getLastRateSlope()
+    function getLastRateApy()
         external
         view
-        returns (uint256 rateChange, uint32 timeChange);
+        returns (uint256 apyWad);
 
     /// @notice Get the current "rate" in Ray at the current timestamp.
     /// This might be a direct reading if real-time readings are available, or it might be an extrapolation from recent known rates.
