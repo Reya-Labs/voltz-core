@@ -3,7 +3,7 @@ import type { ContractsConfig } from "./types";
 const DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS = 5;
 
 const ONE_YEAR_OF_EIGHT_HOURLY_DATAPOINTS = {
-  rateOracleBufferSize: 1095, // 1 yaer worth of updates
+  rateOracleBufferSize: 1095, // 1 year worth of updates
   minSecondsSinceLastUpdate: 8 * 60 * 60, // 8 hours
 };
 

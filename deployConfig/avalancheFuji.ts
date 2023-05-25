@@ -17,7 +17,6 @@ export const avalancheFujiConfig: ContractsConfig = {
     tokens: [
       {
         name: "VUSD",
-        borrow: false,
         address: "0x54B868B03c68A1307B24fB0A4b60b18A0714a94C",
         ...ONE_YEAR_OF_EIGHTEEN_HOURLY_DATAPOINTS,
         daysOfTrustedDataPoints: DEFAULT_DAYS_OF_TRUSTED_DATA_POINTS,

@@ -78,6 +78,7 @@ loadModuleIfContractsAreBuilt("./tasks/vamm/init-vamms");
 // PCV transactions
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints");
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-bridge-avalanche");
 
 // Localhost time manipulation support
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
@@ -166,6 +167,18 @@ if (!!process.env.FORK_ARBITRUM) {
     live: false,
     forking: {
       url: `${process.env.ARBITRUM_URL}`,
+    },
+  };
+}
+
+if (!!process.env.FORK_AVALANCHE) {
+  hardhatNetworkConfig = {
+    allowUnlimitedContractSize: true,
+    saveDeployments: true,
+    chainId: 43114,
+    live: false,
+    forking: {
+      url: `${process.env.AVALANCHE_URL}`,
     },
   };
 }

@@ -23,6 +23,7 @@ const supportedPlatforms: { [key: string]: string[] } = {
     "rocket",
   ],
   arbitrum: ["aaveV3", "aaveV3Borrow", "glp"],
+  avalanche: ["sofr", "sofr-offchain"],
   avalancheFuji: ["sofr", "sofr-offchain"],
 };
 
@@ -223,7 +224,10 @@ task("getHistoricalData", "Retrieves the historical rates")
 
     // sofr
     if (platform === "sofr" || platform === "sofr-offchain") {
-      if (!(hre.network.name === "avalancheFuji")) {
+      if (
+        !(hre.network.name === "avalanche") &&
+        !(hre.network.name === "avalancheFuji")
+      ) {
         throw new Error(`Network ${network} unsupported for SOFR.`);
       }
 
