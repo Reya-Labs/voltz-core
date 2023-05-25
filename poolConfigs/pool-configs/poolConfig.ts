@@ -412,6 +412,68 @@ const poolConfigs: PoolConfigurations = {
     },
   },
 
+  avalanche: {
+    sofrUSDC_30Sep23: {
+      rateOracle: "SofrRateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 12 * 24 * 60 * 60,
+      feeWad: "200000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1684931400,
+      termEndTimestamp: 1696075800, // Sat Sep 30 2023 12:10:00 GMT+0000 --- or --- 8:10am ET
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "1195822076938761216",
+        apyLowerMultiplierWad: "552245153274983104",
+        sigmaSquaredWad: "77698030151",
+        alphaWad: "158729649983672",
+        betaWad: "2992806066945250",
+        xiUpperWad: "49000000000000000000",
+        xiLowerWad: "65000000000000000000",
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "4234548183121879",
+        etaLMWad: "3219417770957672",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+      initTick: -16096, // 5.00%
+      maturityBuffer: 3600,
+    },
+
+    sofrUSDC_31Dec23: {
+      rateOracle: "SofrRateOracle_USDC",
+      tickSpacing: 60,
+      cacheMaxAgeInSeconds: 21600,
+      lookbackWindowInSeconds: 12 * 24 * 60 * 60,
+      feeWad: "200000000000000",
+      liquidatorRewardWad: "50000000000000000",
+      vammFeeProtocolWad: "0",
+      isAlpha: false,
+      lpMarginCap: "0",
+      termStartTimestamp: 1684931400,
+      termEndTimestamp: 1704028200, // Sun Dec 31 2023 13:10:00 GMT+0000 --- or --- 8:10am ET
+      marginCalculatorParams: {
+        apyUpperMultiplierWad: "1195822076938761216",
+        apyLowerMultiplierWad: "552245153274983104",
+        sigmaSquaredWad: "293881821469",
+        alphaWad: "481800756160545",
+        betaWad: "9668671536427820",
+        xiUpperWad: "49000000000000000000",
+        xiLowerWad: "65000000000000000000",
+        tMaxWad: "31536000000000000000000000",
+        etaIMWad: "4234548183121879",
+        etaLMWad: "3219417770957672",
+        ...gaps,
+        minMarginToIncentiviseLiquidators: "0",
+      },
+      initTick: -15262, // 4.6%
+      maturityBuffer: 3600,
+    },
+  },
+
   avalancheFuji: {
     Fuji_sofrVUSD: {
       rateOracle: "SofrRateOracle_VUSD",

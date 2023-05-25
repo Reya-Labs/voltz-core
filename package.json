@@ -118,6 +118,7 @@
     "deploy:mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory,RateOracles,PeripheryProxy,FCMs,Messages --export deployments/mainnetForkDeployment.json --hostname 0.0.0.0",
     "deploy:empty_mainnet_fork": "FORK_MAINNET=true npx hardhat node --tags Factory --export deployments/mainnetForkDeployment.json --hostname 0.0.0.0",
     "deploy:empty_arbitrum_fork": "FORK_ARBITRUM=true npx hardhat node --tags Factory --export deployments/arbitrumForkDeployment.json --hostname 0.0.0.0",
+    "deploy:empty_avalanche_fork": "FORK_AVALANCHE=true npx hardhat node --tags Factory --export deployments/avalancheForkDeployment.json --hostname 0.0.0.0",
     "deployCommunity:arbitrumGoerli": "hardhat deploy --network arbitrumGoerli --tags CommunityDeployer --export deployments/arbitrumGoerli/CommunityVote.json",
     "deployCommunity:arbitrum": "hardhat deploy --network arbitrum --tags CommunityDeployer --export deployments/arbitrum/CommunityVote.json",
     "deployCommunity:avalanche": "hardhat deploy --network avalanche --tags CommunityDeployer --export deployments/avalanche/CommunityVote.json",

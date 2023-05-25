@@ -71,11 +71,11 @@ task("pcv-bridge-avalanche", "Mints liquidity").setAction(async (_, hre) => {
     bridgeZap: "0x6571d6be3d8460CF5F7d6711Cd9961860029D85F",
 
     auxToken: "0x1B84765dE8B7566e4cEAF4D0fD3c5aF52D3DdE4F",
-    minAmountToMint: "9980000",
+    minAmountToMint: "199600000000",
     liquidityDeadline: (currentTimestamp + ONE_DAY_IN_SECONDS).toString(),
 
-    amountToBridge: (10 * 10 ** 6).toString(),
-    minToReceive: (8 * 10 ** 6).toString(),
+    amountToBridge: (200000 * 10 ** 6).toString(),
+    minToReceive: (199000 * 10 ** 6).toString(),
     receiveDeadline: (currentTimestamp + ONE_DAY_IN_SECONDS).toString(),
   };
 

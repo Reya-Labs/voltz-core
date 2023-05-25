@@ -31,6 +31,10 @@ const holders: { [network: string]: { [token: string]: string } } = {
     "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8":
       "0x489ee077994b6658eafa855c308275ead8097c4a",
   },
+  avalanche: {
+    "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e":
+      "0x9f8c163cba728e99993abe7495f06c0a3c8ac8b9",
+  },
 };
 
 const formatNumber = (value: number): string => {
@@ -202,6 +206,10 @@ task(
       }
 
       console.log(`IRS configured.`);
+
+      // await factory
+      //   .connect(multisig)
+      //   .setPeriphery((await hre.ethers.getContract("Periphery")).address);
 
       const periphery = (await hre.ethers.getContractAt(
         "Periphery",

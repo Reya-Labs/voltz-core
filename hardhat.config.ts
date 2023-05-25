@@ -171,6 +171,18 @@ if (!!process.env.FORK_ARBITRUM) {
   };
 }
 
+if (!!process.env.FORK_AVALANCHE) {
+  hardhatNetworkConfig = {
+    allowUnlimitedContractSize: true,
+    saveDeployments: true,
+    chainId: 43114,
+    live: false,
+    forking: {
+      url: `${process.env.AVALANCHE_URL}`,
+    },
+  };
+}
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.9",

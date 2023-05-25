@@ -452,6 +452,24 @@ const pools: Pools = {
       rateOracleID: 8,
     },
   },
+
+  avalanche: {
+    sofrUSDC_30Sep23: {
+      marginEngine: "0xc1a44601a9f141eca8823f99b0b7fff55f2a6e17",
+      vamm: "0xb69c2b77c844b55f9924242df4299a1598753320",
+      decimals: 6,
+      deploymentBlock: 30435778,
+      rateOracleID: 10,
+    },
+
+    sofrUSDC_31Dec23: {
+      marginEngine: "0x0ca700b946c446d878a497c50fb98844a85a2dd9",
+      vamm: "0x1d7e4d7c1629c9d6e3bb6a344496b1b782c9ca9a",
+      decimals: 6,
+      deploymentBlock: 30435778,
+      rateOracleID: 10,
+    },
+  },
 };
 
 export const getNetworkPools = (networkName: string): NetworkPools => {
