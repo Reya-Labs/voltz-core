@@ -162,6 +162,22 @@ const pools: Pools = {
       rateOracleID: 9,
     },
 
+    borrow_aUSDC_30Jun23: {
+      marginEngine: "0xd47fa3314c9c16ebca3dfe3e0c52c24f1311a22b",
+      vamm: "0xe8ddb4676eec36acffdffa6707f422e23a8dfc12",
+      decimals: 6,
+      deploymentBlock: 0, // todo: TBC
+      rateOracleID: 5,
+    },
+
+    borrow_av3USDC_30Jun23: {
+      marginEngine: "0x2a778e24c3c7b37472efe8fa448fc92b694e9b25",
+      vamm: "0x3ca96c10ac0b7651c9ea78b110db9e2e355893df",
+      decimals: 6,
+      deploymentBlock: 0, // todo: TBC
+      rateOracleID: 9,
+    },
+
     aDAI_v1: {
       marginEngine: "0x317916f91050Ee7e4F53F7c94e83FBD4eCAdec7e",
       vamm: "0xA1a75F6689949fF413Aa115D300f5e30F35Ba061",
@@ -428,6 +444,22 @@ const pools: Pools = {
       rateOracleID: 9,
     },
 
+    borrow_av3USDC_30Jun23: {
+      marginEngine: "0xc73a470241168c14d3cd19c94f6f1c46073fba79",
+      vamm: "0xa3c0c89ac146b89edd17efd4e9c43cc4fc35ec1e",
+      decimals: 6,
+      deploymentBlock: 0, // todo: TBC
+      rateOracleID: 9,
+    },
+
+    borrow_av3USDC_31Aug23: {
+      marginEngine: "0x9b5b9d31c7b4a826cd30c09136a2fdea9c69efcd",
+      vamm: "0x3ecf01157e9b1a66197325771b63789d1fb18f1f",
+      decimals: 6,
+      deploymentBlock: 0, // todo: TBC
+      rateOracleID: 9,
+    },
+
     glpETH_v1: {
       marginEngine: "0xC1a44601a9F141ECA8823f99b0b7fFF55F2A6e17",
       vamm: "0xB69c2b77C844b55F9924242df4299a1598753320",
@@ -449,6 +481,14 @@ const pools: Pools = {
       vamm: "0x034f2b4137ed637c6b6ca9636d5f9fee0998e5f1",
       decimals: 18,
       deploymentBlock: 79959637,
+      rateOracleID: 8,
+    },
+
+    glpETH_28Jun23: {
+      marginEngine: "0xbe958ba49be73d3020cb62e512619da953a2bab1",
+      vamm: "0x22393f23f16925d282aeca0a8464dccaf10ee480",
+      decimals: 18,
+      deploymentBlock: 0, // todo: TBC
       rateOracleID: 8,
     },
   },

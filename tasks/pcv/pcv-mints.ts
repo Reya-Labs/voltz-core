@@ -74,7 +74,7 @@ task("pcv-mints", "Mints liquidity").setAction(async (_, hre) => {
     )) as MarginEngine;
 
     // Retrieve token address
-    const tokenAddress = await marginEngine.underlyingToken();
+    const tokenAddress = mint.token ?? (await marginEngine.underlyingToken());
 
     // Process parameters
     const tickLower = tickAtFixedRate(mint.fixedRateUpper);
