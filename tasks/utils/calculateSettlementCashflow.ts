@@ -4,7 +4,7 @@ const WAD = BigNumber.from(10).pow(18);
 const SECONDS_IN_YEAR = BigNumber.from(31536000);
 const ONE_HUNDRED = BigNumber.from(100);
 
-const accrualFactWad = (
+export const accrualFactWad = (
   termStartTimestampWad: BigNumber,
   termEndTimestampWad: BigNumber
 ): BigNumber => {

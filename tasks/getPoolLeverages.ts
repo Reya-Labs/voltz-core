@@ -30,6 +30,8 @@ const holders: { [network: string]: { [token: string]: string } } = {
   arbitrum: {
     "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8":
       "0x489ee077994b6658eafa855c308275ead8097c4a",
+    "0x82af49447d8a07e3bd95bd0d56f35241523fbab1":
+      "0x489ee077994b6658eafa855c308275ead8097c4a",
   },
   avalanche: {
     "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e":

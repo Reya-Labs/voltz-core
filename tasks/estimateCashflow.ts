@@ -5,7 +5,10 @@ import { ethers, BigNumber } from "ethers";
 import { getPositions, Position } from "../scripts/getPositions";
 import { getSigner } from "./utils/getSigner";
 import { getPool } from "../poolConfigs/pool-addresses/pools";
-import { calculateSettlementCashflow } from "./utils/calculateSettlementCashflow";
+import {
+  calculateSettlementCashflow,
+  accrualFactWad,
+} from "./utils/calculateSettlementCashflow";
 
 const SECONDS_PER_YEAR = 31536000;
 
@@ -51,7 +54,7 @@ task(
     const EXPORT_FILE = `${EXPORT_FOLDER}/estimated-cashflow.csv`;
 
     const header =
-      "Margin Engine,Owner,Lower Tick,Upper Tick,Status,Fixed Token Balance,Variable Token Balance,Current Margin,Accumulated Fees,Estimated Cashflow,Estimated PnL,Estimated Insolvency,Margin After Liquidation,Estimated Cashflow After Liquidation,Estimated PnL After Liquidation,Estimated Insolvency After Liquidation";
+      "Pool,Margin Engine,Owner,Lower Tick,Upper Tick,Status,Fixed Token Balance,Variable Token Balance,Current Margin,Accumulated Fees,Estimated Cashflow,Estimated PnL,Estimated APY,Estimated Insolvency,Margin After Liquidation,Estimated Cashflow After Liquidation,Estimated Margin+PnL After Liquidation,Estimated Insolvency After Liquidation";
     fs.writeFile(EXPORT_FILE, header + "\n", () => {});
 
     const { deployer } = await hre.getNamedAccounts();
@@ -155,13 +158,30 @@ task(
           continue;
         }
 
-        const estimatedCashflow = await calculateSettlementCashflow(
+        const estimatedCashflow = calculateSettlementCashflow(
           positionInfo.fixedTokenBalance,
           positionInfo.variableTokenBalance,
           termStartTimestampWad,
           termEndTimestampWad,
           estimatedVariableFactor
         );
+
+        const estimatedPnL =
+          positionInfo.accumulatedFees.add(estimatedCashflow);
+
+        const estimatedAPY =
+          (1 +
+            parseFloat(ethers.utils.formatUnits(estimatedPnL, decimals)) /
+              parseFloat(
+                ethers.utils.formatUnits(positionInfo.margin, decimals)
+              )) **
+            (1 /
+              parseFloat(
+                ethers.utils.formatEther(
+                  accrualFactWad(termStartTimestampWad, termEndTimestampWad)
+                )
+              )) -
+          1;
 
         const positionRequirementSafety =
           await marginEngine.callStatic.getPositionMarginRequirement(
@@ -215,7 +235,7 @@ task(
 
           marginAfterLiquidation = positionInfoAfterLiquidation.margin;
 
-          estimatedCashflowAfterLiquidation = await calculateSettlementCashflow(
+          estimatedCashflowAfterLiquidation = calculateSettlementCashflow(
             positionInfoAfterLiquidation.fixedTokenBalance,
             positionInfoAfterLiquidation.variableTokenBalance,
             termStartTimestampWad,
@@ -229,6 +249,8 @@ task(
           positionInfo.margin.add(estimatedCashflow).lt(0)
         ) {
           const output = [
+            // Pool Name
+            pool,
             // Margin Engine
             poolDetails.marginEngine,
             // Owner
@@ -252,11 +274,10 @@ task(
             ethers.utils.formatUnits(positionInfo.accumulatedFees, decimals),
             // Estimated Cashflow
             ethers.utils.formatUnits(estimatedCashflow, decimals),
-            // Estimated PnL,
-            ethers.utils.formatUnits(
-              positionInfo.margin.add(estimatedCashflow),
-              decimals
-            ),
+            // Estimated PnL
+            ethers.utils.formatUnits(estimatedPnL, decimals),
+            // Estimated APY
+            estimatedAPY,
             // Estimated Insolvency
             positionInfo.margin.add(estimatedCashflow).lt(0)
               ? ethers.utils.formatUnits(
@@ -275,7 +296,7 @@ task(
                   decimals
                 )
               : "N/A",
-            // Estimated PnL After Liquidation
+            // Estimated Margin+PnL After Liquidation
             marginAfterLiquidation && estimatedCashflowAfterLiquidation
               ? ethers.utils.formatUnits(
                   marginAfterLiquidation.add(estimatedCashflowAfterLiquidation),

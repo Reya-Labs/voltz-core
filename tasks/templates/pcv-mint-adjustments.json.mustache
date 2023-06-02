@@ -68,10 +68,64 @@
             "type": "function"
         },
         "contractInputsValues": {
-          "params": "[ \"{{marginEngine}}\", \"{{tickLower}}\", \"{{tickUpper}}\", \"{{notional}}\", true, 0]"
+          "params": "[ \"{{marginEngine}}\", \"{{tickLower}}\", \"{{tickUpper}}\", \"{{notionalDelta}}\", \"{{isMint}}\", \"{{marginDelta}}\"]"
         }
       }
       {{^last}},{{/last}}
       {{/mints}}
+      {{#marginUpdates}}
+      {
+        "to": "{{periphery}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "contract IMarginEngine",
+              "name": "marginEngine",
+              "type": "address"
+            },
+            {
+              "internalType": "int24",
+              "name": "tickLower",
+              "type": "int24"
+            },
+            {
+              "internalType": "int24",
+              "name": "tickUpper",
+              "type": "int24"
+            },
+            {
+              "internalType": "int256",
+              "name": "marginDelta",
+              "type": "int256"
+            },
+            {
+              "internalType": "bool",
+              "name": "fullyWithdraw",
+              "type": "bool"
+            }
+          ],
+          "name": "updatePositionMargin",
+          "outputs": [
+            {
+              "internalType": "int256",
+              "name": "",
+              "type": "int256"
+            }
+          ],
+          "stateMutability": "payable",
+          "type": "function"
+        },
+        "contractInputsValues": {
+          "marginEngine": "{{marginEngine}}",
+          "tickLower": "{{tickLower}}",
+          "tickUpper": "{{tickUpper}}",
+          "marginDelta": "{{marginDelta}}",
+          "fullyWithdraw": "false"
+        }
+      }
+      {{^last}},{{/last}}
+      {{/marginUpdates}}
     ]
   }
