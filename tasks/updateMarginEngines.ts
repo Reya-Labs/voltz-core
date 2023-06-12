@@ -8,6 +8,8 @@ import path from "path";
 import { getConfig } from "../deployConfig/config";
 import { getPool } from "../poolConfigs/pool-addresses/pools";
 import { getPoolConfig } from "../poolConfigs/pool-configs/poolConfig";
+import { getSigner } from "./utils/getSigner";
+import { IMarginEngine } from "../typechain";
 
 interface SingleUpdateTemplateData {
   marginEngineAddress: string;
@@ -75,10 +77,12 @@ function writeGnosisSafeTemplate(data: MultisigTemplateData) {
 //   ``npx hardhat updateMarginEngines --network mainnet aUSDC_v11 aDAI_v4 --liq-rew --mc-params --lb-win``
 
 task("updateMarginEngines", "It updates the configurations of given pools")
-  .addVariadicPositionalParam("pools", "Comma-separated pool names")
+  .addVariadicPositionalParam("pools", "Space-separated pool names")
   .addFlag("liqRew") // liquidator reward update flag
   .addFlag("mcParams") // margin calculator parameters update flag
   .addFlag("lbWin") // lookback window update flag
+  .addFlag("multisig") // generate json
+  .addOptionalParam("underlyingNetwork", "The underlying network of the fork")
   .setAction(async (taskArgs, hre) => {
     // Fetch pool details
     const poolNames: string[] = taskArgs.pools;
@@ -87,7 +91,7 @@ task("updateMarginEngines", "It updates the configurations of given pools")
     const factory = await hre.ethers.getContract("Factory");
 
     // Retrieve multisig address for the current network
-    const network = hre.network.name;
+    const network: string = taskArgs.underlyingNetwork || hre.network.name;
     const deployConfig = getConfig(network);
     const multisig = deployConfig.multisig;
 
@@ -100,8 +104,8 @@ task("updateMarginEngines", "It updates the configurations of given pools")
     };
 
     for (const pool of poolNames) {
-      const poolConfig = getPoolConfig(hre.network.name, pool);
-      const poolDetails = getPool(hre.network.name, pool);
+      const poolConfig = getPoolConfig(network, pool);
+      const poolDetails = getPool(network, pool);
 
       const singleData: SingleUpdateTemplateData = {
         marginEngineAddress: poolDetails.marginEngine,
@@ -119,5 +123,33 @@ task("updateMarginEngines", "It updates the configurations of given pools")
       data.pools.push(singleData);
     }
 
-    writeGnosisSafeTemplate(data);
+    if (taskArgs.multisig) {
+      writeGnosisSafeTemplate(data);
+    } else {
+      const multisigSigner = await getSigner(hre, data.multisig);
+      for (const pool of data.pools) {
+        const marginEngine = (await hre.ethers.getContractAt(
+          "MarginEngine",
+          pool.marginEngineAddress
+        )) as IMarginEngine;
+
+        if (pool.updateMarginCalculatorParams) {
+          await marginEngine
+            .connect(multisigSigner)
+            .setMarginCalculatorParameters(pool.marginCalculatorParams);
+        }
+
+        if (pool.updateLiquidatorReward) {
+          await marginEngine
+            .connect(multisigSigner)
+            .setLiquidatorReward(pool.liquidatorReward);
+        }
+
+        if (pool.updateLookbackWindow) {
+          await marginEngine
+            .connect(multisigSigner)
+            .setLookbackWindowInSeconds(pool.lookbackWindowInSeconds);
+        }
+      }
+    }
   });

@@ -8,6 +8,10 @@ export const getProtocolSubgraphURL = (networkName: string): string => {
       return "https://api.thegraph.com/subgraphs/name/voltzprotocol/arbitrum-v1";
     }
 
+    case "avalanche": {
+      return "https://api.thegraph.com/subgraphs/name/voltzprotocol/avalanche-v1";
+    }
+
     default: {
       throw new Error(`Unrecognized network name ${networkName}`);
     }
