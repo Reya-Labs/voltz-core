@@ -10,6 +10,8 @@ const json = JSON.parse(
 
 const merkleDistributorInfo: MerkleDistributorInfo = parseBalanceMap(json);
 
+console.log("Merkle Root:", merkleDistributorInfo.merkleRoot);
+
 const voters = merkleDistributorInfo.claims;
 
 const votersJSON = JSON.stringify(voters);

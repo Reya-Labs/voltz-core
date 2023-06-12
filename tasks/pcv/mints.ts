@@ -4,7 +4,7 @@ type MintParams = {
   fixedRateUpper: number;
   marginDelta: number;
   leverage: number;
-  token: string | undefined;
+  token?: string;
 };
 
 // Example:
