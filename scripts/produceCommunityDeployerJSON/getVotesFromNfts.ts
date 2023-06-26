@@ -10,6 +10,10 @@ type Badge = {
   mintedTimestamp: string;
 };
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 const badgesQuery = (lastId: string, deadline: number) => {
   return `
     {
@@ -43,7 +47,6 @@ const badgesQuery = (lastId: string, deadline: number) => {
  * @note the deadline only applies to the community badges
  */
 task("getVotes", "Creates JSON with address and number of votes")
-  .addOptionalParam("subgraph", "Link to community badges subgraph")
   .addFlag("genesis", "Include genesis nfts")
   .addFlag("storyboard", "Include storyboard nfts")
   .addFlag("community", "Include community SBTs")
@@ -51,7 +54,12 @@ task("getVotes", "Creates JSON with address and number of votes")
   .setAction(async (taskArgs, _) => {
     const fs = require("fs");
 
-    if (taskArgs.community && (!taskArgs.subgraph || !taskArgs.deadline)) {
+    const subgraphs = [
+      "https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-mainnet",
+      "https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-arbitrum",
+    ];
+
+    if (taskArgs.community && !taskArgs.deadline) {
       throw new Error(
         "Please provide community badges subgraph link and deadline"
       );
@@ -61,39 +69,43 @@ task("getVotes", "Creates JSON with address and number of votes")
 
     // get community badges
     if (taskArgs.community) {
-      // connect to subgraph & get badges claimed until deadline
-      const client = new GraphQLClient(taskArgs.subgraph);
-      let lastId = "";
-      while (true) {
-        const query = badgesQuery(lastId, taskArgs.deadline);
+      for (const subgraph of subgraphs) {
+        // connect to subgraph & get badges claimed until deadline
+        const client = new GraphQLClient(subgraph);
+        let lastId = "";
+        while (true) {
+          const query = badgesQuery(lastId, taskArgs.deadline);
 
-        const call = async () => {
-          return client.request(
-            gql`
-              ${query}
-            `
-          );
-        };
-        const data: { badges: Badge[] } = await exponentialBackoff(call);
+          const call = async () => {
+            return client.request(
+              gql`
+                ${query}
+              `
+            );
+          };
+          const data: { badges: Badge[] } = await exponentialBackoff(call);
 
-        if (!data.badges) throw new Error("Failed to get badges");
+          if (!data.badges) throw new Error("Failed to get badges");
 
-        data.badges.forEach((e) => {
-          const owner = e.id.split("#")[0];
-          userVotes.set(owner, (userVotes.get(owner) ?? 0) + 1);
-        });
+          data.badges.forEach((e) => {
+            const owner = e.id.split("#")[0];
+            userVotes.set(owner, (userVotes.get(owner) ?? 0) + 1);
+          });
 
-        if (data.badges.length !== 1000) {
-          break;
-        }
-        const last = data.badges.at(-1);
-        if (last) {
-          lastId = last.id;
-        } else {
-          throw new Error("Something went wrong in badges parsing");
+          if (data.badges.length !== 1000) {
+            break;
+          }
+          const last = data.badges.at(-1);
+          if (last) {
+            lastId = last.id;
+          } else {
+            throw new Error("Something went wrong in badges parsing");
+          }
         }
       }
     }
+
+    await delay(10000);
 
     // get storyboard badges
     if (taskArgs.storyboard) {
@@ -138,8 +150,12 @@ task("getVotes", "Creates JSON with address and number of votes")
             `Something whent wron when fetching storyboard NFT ${tokenId}`
           );
         }
+
+        await delay(10000);
       }
     }
+
+    await delay(10000);
 
     // get genesis badges
     if (taskArgs.genesis) {
@@ -175,6 +191,8 @@ task("getVotes", "Creates JSON with address and number of votes")
         }
 
         cursor = response.raw.cursor;
+
+        await delay(10000);
       }
     }
 
