@@ -8,6 +8,12 @@ const json = JSON.parse(
   fs.readFileSync("deployConfig/nftSnapshot.json", { encoding: "utf8" })
 );
 
+let sum = 0;
+for (const addr in json) {
+  sum += json[addr];
+}
+console.log("Power sum", sum);
+
 const merkleDistributorInfo: MerkleDistributorInfo = parseBalanceMap(json);
 
 console.log("Merkle Root:", merkleDistributorInfo.merkleRoot);
