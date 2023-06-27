@@ -31,3 +31,5 @@ __cr_notes
 tasks/output/
 scripts/output/
 deployConfig/nftSnapshot.json
+scripts/voters.json
+scripts/produceCommunityDeployerJSON/nftSnapshot.json
