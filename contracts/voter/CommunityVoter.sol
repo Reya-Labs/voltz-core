@@ -4,12 +4,6 @@ pragma solidity =0.8.9;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-/// @notice
-// we are unable to deploy both the master vamm and the master margin engine in this contract since in that scenario it would
-// exceed the maximum contract size limit, instead we deploy the master margin engine and master vamm separately and link their addresses
-// to the community deployer
-// verify with etherscan
-
 contract CommunityVoter {
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     uint256 public quorumVotes;
@@ -68,7 +62,7 @@ contract CommunityVoter {
 
     /// @notice Vote for the proposal
     /// @param _index index of the voter
-    /// @param _numberOfVotes number of voltz genesis nfts held by the msg.sender before the snapshot was taken
+    /// @param _numberOfVotes number of voltz nfts and sbts held by the msg.sender before the snapshot was taken
     /// @param _yesVote if this boolean is true then the msg.sender is casting a yes vote, if the boolean is false the msg.sender is casting a no vote
     /// @param _merkleProof merkle proof that needs to be verified against the merkle root to check the msg.sender against the snapshot
     function castVote(
