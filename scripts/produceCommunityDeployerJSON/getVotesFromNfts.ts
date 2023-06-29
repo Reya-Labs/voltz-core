@@ -4,6 +4,7 @@ import { exponentialBackoff } from "../../tasks/utils/retry";
 import Moralis from "moralis";
 import { EvmChain } from "@moralisweb3/common-evm-utils";
 import path from "path";
+import { getBlockAtTimestamp } from "../../tasks/utils/helpers";
 
 type Badge = {
   id: string;
@@ -50,25 +51,25 @@ task("getVotes", "Creates JSON with address and number of votes")
   .addFlag("genesis", "Include genesis nfts")
   .addFlag("storyboard", "Include storyboard nfts")
   .addFlag("community", "Include community SBTs")
-  .addOptionalParam("deadline", "Snapshot timestamp for claiming these nfts")
-  .setAction(async (taskArgs, _) => {
+  .addParam("deadline", "Snapshot timestamp for claiming these nfts")
+  .setAction(async (taskArgs, hre) => {
     const fs = require("fs");
 
-    const subgraphs = [
-      "https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-mainnet",
-      "https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-arbitrum",
-    ];
+    const deadlineBlock = await getBlockAtTimestamp(hre, taskArgs.deadline);
 
-    if (taskArgs.community && !taskArgs.deadline) {
-      throw new Error(
-        "Please provide community badges subgraph link and deadline"
-      );
-    }
+    await Moralis.start({
+      apiKey: process.env.MORALIS_API_KEY,
+    });
 
     const userVotes = new Map<string, number>();
 
     // get community badges
     if (taskArgs.community) {
+      const subgraphs = [
+        "https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-mainnet",
+        "https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-arbitrum",
+      ];
+
       for (const subgraph of subgraphs) {
         // connect to subgraph & get badges claimed until deadline
         const client = new GraphQLClient(subgraph);
@@ -105,7 +106,7 @@ task("getVotes", "Creates JSON with address and number of votes")
       }
     }
 
-    await delay(10000);
+    await delay(1000);
 
     // get storyboard badges
     if (taskArgs.storyboard) {
@@ -130,13 +131,11 @@ task("getVotes", "Creates JSON with address and number of votes")
         "112609494121553808227738304253835389972062342885632102145619604942986883891201",
         "112609494121553808227738304253835389972062342885632102145619604952882488541185",
       ];
-      await Moralis.start({
-        apiKey: process.env.MORALIS_API_KEY,
-      });
-      for (const tokenId of tokenIds) {
-        const address = "0x495f947276749ce646f68ac8c248420045cb7b5e";
-        const chain = EvmChain.ETHEREUM;
 
+      const address = "0x495f947276749ce646f68ac8c248420045cb7b5e";
+      const chain = EvmChain.ETHEREUM;
+
+      for (const tokenId of tokenIds) {
         const response = await Moralis.EvmApi.nft.getNFTTokenIdOwners({
           address,
           chain,
@@ -147,36 +146,64 @@ task("getVotes", "Creates JSON with address and number of votes")
           userVotes.set(owner, userVotes.get(owner) ?? 0 + 1);
         } else {
           throw new Error(
-            `Something whent wron when fetching storyboard NFT ${tokenId}`
+            `Something whent wrong when fetching storyboard NFT ${tokenId}`
           );
         }
 
-        await delay(10000);
+        await delay(1000);
+      }
+
+      for (const tokenId of tokenIds) {
+        const response = await Moralis.EvmApi.nft.getNFTTransfers({
+          address,
+          chain,
+          tokenId,
+        });
+
+        response.result.forEach((transfer) => {
+          if (taskArgs.deadline < transfer.blockTimestamp.getTime() / 1000) {
+            console.log("Recent Storyboard transfer!!");
+
+            userVotes.set(
+              transfer.fromAddress?.lowercase ?? "0",
+              (userVotes.get(transfer.fromAddress?.lowercase ?? "0") ?? 0) + 1
+            );
+            // this can become 0 as well since balance can become negative as well
+            if (userVotes.get(transfer.fromAddress?.lowercase ?? "0") === 0) {
+              userVotes.delete(transfer.fromAddress?.lowercase ?? "0");
+            }
+
+            userVotes.set(
+              transfer.toAddress?.lowercase ?? "0",
+              (userVotes.get(transfer.toAddress?.lowercase ?? "0") ?? 0) - 1
+            );
+            if (userVotes.get(transfer.toAddress?.lowercase ?? "0") === 0) {
+              userVotes.delete(transfer.toAddress?.lowercase ?? "0");
+            }
+          }
+        });
+
+        await delay(1000);
       }
     }
 
-    await delay(10000);
+    await delay(1000);
 
     // get genesis badges
     if (taskArgs.genesis) {
-      // connect to opensea api & get genesis collection badges owners
-      let cursor: string | undefined;
-      if (!taskArgs.storyboard) {
-        await Moralis.start({
-          apiKey: process.env.MORALIS_API_KEY,
-        });
-      }
-      while (true) {
-        const chain = EvmChain.ETHEREUM;
-        const address = "0x8C7E68e7706842BFc70053C4cED21500488e73a8";
+      const chain = EvmChain.ETHEREUM;
+      const address = "0x8C7E68e7706842BFc70053C4cED21500488e73a8";
 
+      // connect to opensea api & get genesis collection badges owners
+      let holdersCursor: string | undefined;
+      while (true) {
         const response = await Moralis.EvmApi.nft.getNFTOwners({
           address,
           chain,
           format: "decimal",
           mediaItems: false,
           limit: 100,
-          cursor,
+          cursor: holdersCursor,
         });
 
         response.result.forEach((e) => {
@@ -190,9 +217,47 @@ task("getVotes", "Creates JSON with address and number of votes")
           break;
         }
 
-        cursor = response.raw.cursor;
+        holdersCursor = response.raw.cursor;
 
-        await delay(10000);
+        await delay(1000);
+      }
+
+      let transfersCursor: string | undefined;
+      while (true) {
+        const response = await Moralis.EvmApi.nft.getNFTContractTransfers({
+          address,
+          chain,
+          fromBlock: deadlineBlock,
+          limit: 100,
+          cursor: transfersCursor,
+        });
+
+        response.result.forEach((transfer) => {
+          userVotes.set(
+            transfer.fromAddress?.lowercase ?? "0",
+            (userVotes.get(transfer.fromAddress?.lowercase ?? "0") ?? 0) + 1
+          );
+          // this can become 0 as well since balance can become negative as well
+          if (userVotes.get(transfer.fromAddress?.lowercase ?? "0") === 0) {
+            userVotes.delete(transfer.fromAddress?.lowercase ?? "0");
+          }
+
+          userVotes.set(
+            transfer.toAddress?.lowercase ?? "0",
+            (userVotes.get(transfer.toAddress?.lowercase ?? "0") ?? 0) - 1
+          );
+          if (userVotes.get(transfer.toAddress?.lowercase ?? "0") === 0) {
+            userVotes.delete(transfer.toAddress?.lowercase ?? "0");
+          }
+        });
+
+        if (response.result.length < 100) {
+          break;
+        }
+
+        transfersCursor = response.raw.cursor;
+
+        await delay(1000);
       }
     }
 
