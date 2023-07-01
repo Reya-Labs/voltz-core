@@ -9,6 +9,10 @@ export interface Position {
   liquidity: string;
   positionType: number; // 1 - FT, 2 - VT, 3 - LP
   isSettled: boolean;
+  totalMarginIn: number;
+  totalMarginOut: number;
+  totalFeesPaidToLps: number;
+  totalFeesAsLp: number;
 }
 
 const WAD_ZEROS = "000000000000000000";
@@ -57,6 +61,12 @@ const getPositionsQueryString = (
   liquidity
   positionType
   isSettled
+  swaps {
+    cumulativeFeeIncurred
+  }
+  marginUpdates {
+    marginDelta
+  }
 }
 }
 `;
@@ -89,6 +99,10 @@ export async function getPositions(
         liquidity: position.liquidity,
         positionType: Number(position.positionType),
         isSettled: position.isSettled,
+        totalMarginIn: 0,
+        totalMarginOut: 0, 
+        totalFeesPaidToLps: 0,
+        totalFeesAsLp: 0
       });
     }
 

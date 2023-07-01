@@ -74,7 +74,7 @@ task("checkPositionsHealth", "Check positions")
 
     // Create the header and write it in each pool output file
     const header =
-      "margin_engine,owner,lower_tick,upper_tick,position_margin,position_liquidity,position_notional,position_requirement_liquidation,position_requirement_safety,status";
+      "margin_engine,owner,lower_tick,upper_tick,total_margin_in,total_margin_out,total_fees_paid_to_lps,total_fees_as_lp";
 
     for (let i = 0; i < poolNames.length; i++) {
       const p = poolNames[i];
@@ -113,8 +113,8 @@ task("checkPositionsHealth", "Check positions")
       const marginEngine = tmp.marginEngine;
       const decimals = tmp.decimals;
 
-      const { safetyThreshold, liquidationThreshold } =
-        await getPositionRequirements(marginEngine, position, decimals);
+      const safetyThreshold = 0;
+      const liquidationThreshold = 0;
 
       const { liquidity, margin, variableTokenBalance } = await getPositionInfo(
         marginEngine,
@@ -131,11 +131,7 @@ task("checkPositionsHealth", "Check positions")
 
       const info = `${marginEngine.address},${position.owner},${
         position.tickLower
-      },${position.tickUpper},${formatNumber(margin)},${formatNumber(
-        liquidity
-      )},${formatNumber(variableTokenBalance)},${formatNumber(
-        liquidationThreshold
-      )},${formatNumber(safetyThreshold)},${status}\n`;
+      },${position.tickUpper},${position.totalMarginIn, position.totalMarginOut, position.totalFeesPaidToLps, position.totalFeesAsLp}\n`;
 
       console.log(info);
 
