@@ -71,7 +71,8 @@ task(
 
   const glpMarginEngineAddress = "0xbe958ba49be73d3020cb62e512619da953a2bab1";
   const wethAddress = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
-  const emergencyMarginEngineImpl = "0x";
+  const emergencyMarginEngineImpl =
+    "0xbe74538cba79fc440f8809e01b36c97AFBda23Ce";
 
   const positions = (await readCSVFile("tasks/glp_amounts.csv")) as {
     owner: string;
@@ -85,42 +86,43 @@ task(
   const deployConfig = getConfig(network);
 
   // Upgrade GLP margin engine
-  const batch: MultisigTemplateData = {
-    multisig: deployConfig.multisig,
-    chainId: await hre.getChainId(),
-    glpMarginEngineAddress,
-    emergencyMarginEngineImpl,
-    wethAddress,
-    protocolContribution: toBn(143).toString(),
-    batches: [
-      {
-        batch: [
-          {
-            owner: positions[0].owner,
-            tickLower: positions[0].tickLower.toString(),
-            tickUpper: positions[0].tickUpper.toString(),
-            amount: positions[0].amount,
-            last: true,
-          },
-        ],
-      },
-    ],
-  };
 
   // Set custom settlement amounts
   console.log("Setting custom settlement amounts...");
+
+  const batches: {
+    batch: {
+      owner: string;
+      tickLower: string;
+      tickUpper: string;
+      amount: string;
+      last: boolean;
+    }[];
+  }[] = [];
 
   {
     const batchSize = 10;
     let total = 0;
     for (let i = 0; i < positions.length; i += batchSize) {
-      const batch =
+      const slice =
         i + batchSize < positions.length
           ? positions.slice(i, i + batchSize)
           : positions.slice(i);
 
+      const batch = slice.map((p) => ({
+        owner: p.owner,
+        tickLower: p.tickLower.toString(),
+        tickUpper: p.tickUpper.toString(),
+        amount: p.amount,
+        last: false,
+      }));
+
+      batch[batch.length - 1].last = true;
+      batches.push({
+        batch,
+      });
+
       total += batch.length;
-      // todo: append tx to set custom settlements to this batch
     }
 
     if (total !== positions.length) {
@@ -130,7 +132,17 @@ task(
     }
   }
 
-  await writeUpdateTransactionsToGnosisSafeTemplate(batch);
+  const data: MultisigTemplateData = {
+    multisig: deployConfig.multisig,
+    chainId: await hre.getChainId(),
+    glpMarginEngineAddress,
+    emergencyMarginEngineImpl,
+    wethAddress,
+    protocolContribution: toBn(143).toString(),
+    batches,
+  };
+
+  await writeUpdateTransactionsToGnosisSafeTemplate(data);
 });
 
 module.exports = {};
