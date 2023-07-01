@@ -9,8 +9,7 @@ export interface Position {
   liquidity: string;
   positionType: number; // 1 - FT, 2 - VT, 3 - LP
   isSettled: boolean;
-  totalMarginIn: number;
-  totalMarginOut: number;
+  netMargin: number;
   totalFeesPaidToLps: number;
   totalFeesAsLp: number;
 }
@@ -91,6 +90,15 @@ export async function getPositions(
     const positions_batch = JSON.parse(JSON.stringify(data, undefined, 2));
 
     for (const position of positions_batch.positions) {
+
+      console.log(position);
+
+      // todo: need to check and test
+      let netMargin = position.marginUpdates.reduce((sum:any, current:any) => sum + Number(current['marginDelta']), 0);
+      console.log("netMargin", netMargin); 
+      let totalFeesPaidToLps =  position.swaps.reduce((sum:any, current:any) => sum - Number(current['cumulativeFeeIncurred']), 0);
+      console.log("totalFeesPaidToLps", totalFeesPaidToLps);
+
       positions.push({
         marginEngine: position.amm.marginEngine.id,
         owner: position.owner.id,
@@ -99,10 +107,9 @@ export async function getPositions(
         liquidity: position.liquidity,
         positionType: Number(position.positionType),
         isSettled: position.isSettled,
-        totalMarginIn: 0,
-        totalMarginOut: 0, 
-        totalFeesPaidToLps: 0,
-        totalFeesAsLp: 0
+        netMargin: netMargin,
+        totalFeesPaidToLps: totalFeesPaidToLps,
+        totalFeesAsLp: -1,// note -1 indicates this is not filled from contracts yet 
       });
     }
 

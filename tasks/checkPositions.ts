@@ -74,7 +74,7 @@ task("checkPositionsHealth", "Check positions")
 
     // Create the header and write it in each pool output file
     const header =
-      "margin_engine,owner,lower_tick,upper_tick,total_margin_in,total_margin_out,total_fees_paid_to_lps,total_fees_as_lp";
+      "margin_engine,owner,lower_tick,upper_tick,net_margin,total_fees_paid_to_lps,total_fees_as_lp";
 
     for (let i = 0; i < poolNames.length; i++) {
       const p = poolNames[i];
@@ -113,27 +113,15 @@ task("checkPositionsHealth", "Check positions")
       const marginEngine = tmp.marginEngine;
       const decimals = tmp.decimals;
 
-      const safetyThreshold = 0;
-      const liquidationThreshold = 0;
+      // todo: needs to be checked
 
-      const { liquidity, margin, variableTokenBalance } = await getPositionInfo(
-        marginEngine,
-        position,
-        decimals
-      );
+      const {
+        accumulatedFees,
+      } = await getPositionInfo(tmp.marginEngine, position, tmp.decimals);
 
-      let status = "HEALTHY";
-      if (margin < liquidationThreshold) {
-        status = "DANGER";
-      } else if (margin < safetyThreshold) {
-        status = "WARNING";
-      }
+      position.totalFeesAsLp = accumulatedFees;
 
-      const info = `${marginEngine.address},${position.owner},${
-        position.tickLower
-      },${position.tickUpper},${position.totalMarginIn, position.totalMarginOut, position.totalFeesPaidToLps, position.totalFeesAsLp}\n`;
-
-      console.log(info);
+      const info = `${marginEngine.address},${position.owner},${position.tickLower},${position.tickUpper},${position.netMargin}, ${position.totalFeesPaidToLps}, ${position.totalFeesAsLp}`;
 
       fs.appendFileSync(tmp.file, info + "\n");
     }
@@ -742,6 +730,7 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
 
       fs.appendFileSync(`${EXPORT_FOLDER}/all-pools.csv`, csv_row);
       fs.appendFileSync(tmp.file, csv_row);
+      break; 
     }
   });
 
