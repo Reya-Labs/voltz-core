@@ -90,13 +90,18 @@ export async function getPositions(
     const positions_batch = JSON.parse(JSON.stringify(data, undefined, 2));
 
     for (const position of positions_batch.positions) {
-
       console.log(position);
 
       // todo: need to check and test
-      let netMargin = position.marginUpdates.reduce((sum:any, current:any) => sum + Number(current['marginDelta']), 0);
-      console.log("netMargin", netMargin); 
-      let totalFeesPaidToLps =  position.swaps.reduce((sum:any, current:any) => sum - Number(current['cumulativeFeeIncurred']), 0);
+      const netMargin = position.marginUpdates.reduce(
+        (sum: any, current: any) => sum + Number(current.marginDelta),
+        0
+      );
+      console.log("netMargin", netMargin);
+      const totalFeesPaidToLps = position.swaps.reduce(
+        (sum: any, current: any) => sum - Number(current.cumulativeFeeIncurred),
+        0
+      );
       console.log("totalFeesPaidToLps", totalFeesPaidToLps);
 
       positions.push({
@@ -109,7 +114,7 @@ export async function getPositions(
         isSettled: position.isSettled,
         netMargin: netMargin,
         totalFeesPaidToLps: totalFeesPaidToLps,
-        totalFeesAsLp: -1,// note -1 indicates this is not filled from contracts yet 
+        totalFeesAsLp: -1, // note -1 indicates this is not filled from contracts yet
       });
     }
 

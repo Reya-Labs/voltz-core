@@ -111,13 +111,14 @@ task("checkPositionsHealth", "Check positions")
         pools[position.marginEngine.toLowerCase() as keyof typeof pools];
 
       const marginEngine = tmp.marginEngine;
-      const decimals = tmp.decimals;
 
       // todo: needs to be checked
 
-      const {
-        accumulatedFees,
-      } = await getPositionInfo(tmp.marginEngine, position, tmp.decimals);
+      const { accumulatedFees } = await getPositionInfo(
+        tmp.marginEngine,
+        position,
+        tmp.decimals
+      );
 
       position.totalFeesAsLp = accumulatedFees;
 
@@ -730,7 +731,6 @@ task("checkMaturityPnL", "Check positions' P&L at maturity")
 
       fs.appendFileSync(`${EXPORT_FOLDER}/all-pools.csv`, csv_row);
       fs.appendFileSync(tmp.file, csv_row);
-      break; 
     }
   });
 
