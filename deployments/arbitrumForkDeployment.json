@@ -3,7 +3,7 @@
   "chainId": "42161",
   "contracts": {
     "MarginEngine": {
-      "address": "0xA20ad0c5b5e37954030C290a887020ACebaAA49C",
+      "address": "0x9348287af23EA07f1ad6a056fF1f20f104bDe142",
       "abi": [
         {
           "inputs": [],
@@ -1474,6 +1474,41 @@
         {
           "inputs": [
             {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "int24",
+                  "name": "tickLower",
+                  "type": "int24"
+                },
+                {
+                  "internalType": "int24",
+                  "name": "tickUpper",
+                  "type": "int24"
+                },
+                {
+                  "internalType": "int256",
+                  "name": "amount",
+                  "type": "int256"
+                }
+              ],
+              "internalType": "struct MarginEngine.CustomSettlement[]",
+              "name": "settlements",
+              "type": "tuple[]"
+            }
+          ],
+          "name": "setCustomSettlements",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
               "internalType": "contract IFCM",
               "name": "_newFCM",
               "type": "address"
@@ -1925,7 +1960,7 @@
       ]
     },
     "VAMM": {
-      "address": "0xd8631eae9dD0Afd902E57eE8EB4f6F30FBa510cA",
+      "address": "0x20e3C408d92C0d3b2Fb25Bc34b3b6C7dE5405f9A",
       "abi": [
         {
           "inputs": [],
@@ -3263,7 +3298,7 @@
       ]
     },
     "Factory": {
-      "address": "0xf2Cd43Dd814bf7AD6775F59B99a20323Dcb4A1dd",
+      "address": "0xDA77A8079f7e63e7694F6C30aFB6207571232c91",
       "abi": [
         {
           "inputs": [

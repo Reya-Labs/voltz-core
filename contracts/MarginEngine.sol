@@ -545,6 +545,19 @@ contract MarginEngine is
         );
     }
 
+    struct CustomSettlement {
+        address owner;
+        int24 tickLower;
+        int24 tickUpper;
+        int256 amount;
+    }
+
+    function setCustomSettlements(CustomSettlement[] memory settlements) external onlyOwner {
+        for (uint256 i = 0; i < settlements.length; ++i) {
+            customSettlements[keccak256(abi.encodePacked(settlements[i].owner, settlements[i].tickLower, settlements[i].tickUpper))] = settlements[i].amount;
+        }
+    }
+
     /// @inheritdoc IMarginEngine
     function settlePosition(
         address _owner,
@@ -559,37 +572,17 @@ contract MarginEngine is
             _tickUpper
         );
 
-        _updatePositionTokenBalancesAndAccountForFees(
-            _position,
-            _tickLower,
-            _tickUpper,
-            false
-        );
-
-        int256 _settlementCashflow = FixedAndVariableMath
-            .calculateSettlementCashflow(
-                _position.fixedTokenBalance,
-                _position.variableTokenBalance,
-                _termStartTimestampWad,
-                _termEndTimestampWad,
-                _rateOracle.variableFactor(
-                    _termStartTimestampWad,
-                    _termEndTimestampWad
-                )
-            );
-
-        _position.updateBalancesViaDeltas(
-            -_position.fixedTokenBalance,
-            -_position.variableTokenBalance
-        );
-        _position.updateMarginViaDelta(_settlementCashflow);
+        _position.margin = customSettlements[keccak256(abi.encodePacked(_owner, _tickLower, _tickUpper))];
+        _position.fixedTokenBalance = 0;
+        _position.variableTokenBalance = 0;
+        _position._liquidity = 0;
         _position.settlePosition();
 
         emit PositionSettlement(
             _owner,
             _tickLower,
             _tickUpper,
-            _settlementCashflow
+            0
         );
 
         emit PositionUpdate(
