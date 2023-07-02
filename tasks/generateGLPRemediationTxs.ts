@@ -138,7 +138,7 @@ task(
     glpMarginEngineAddress,
     emergencyMarginEngineImpl,
     wethAddress,
-    protocolContribution: toBn(143).toString(),
+    protocolContribution: toBn("142.4662").toString(),
     batches,
   };
 
