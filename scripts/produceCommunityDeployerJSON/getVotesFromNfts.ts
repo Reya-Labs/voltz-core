@@ -106,7 +106,7 @@ task("getVotes", "Creates JSON with address and number of votes")
       }
     }
 
-    await delay(1000);
+    await delay(10000);
 
     // get storyboard badges
     if (taskArgs.storyboard) {
@@ -150,7 +150,7 @@ task("getVotes", "Creates JSON with address and number of votes")
           );
         }
 
-        await delay(1000);
+        await delay(10000);
       }
 
       for (const tokenId of tokenIds) {
@@ -183,11 +183,11 @@ task("getVotes", "Creates JSON with address and number of votes")
           }
         });
 
-        await delay(1000);
+        await delay(10000);
       }
     }
 
-    await delay(1000);
+    await delay(10000);
 
     // get genesis badges
     if (taskArgs.genesis) {
@@ -219,7 +219,7 @@ task("getVotes", "Creates JSON with address and number of votes")
 
         holdersCursor = response.raw.cursor;
 
-        await delay(1000);
+        await delay(10000);
       }
 
       let transfersCursor: string | undefined;
@@ -257,7 +257,7 @@ task("getVotes", "Creates JSON with address and number of votes")
 
         transfersCursor = response.raw.cursor;
 
-        await delay(1000);
+        await delay(10000);
       }
     }
 
