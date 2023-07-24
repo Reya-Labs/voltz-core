@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "chainId": "{{chainId}}",
+  "createdAt": 1654007302649,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.8.0",
+    "createdFromSafeAddress": "{{multisig}}",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x6e317afc197279541328cf252e50867cfa15d2ed7e7426244328bdf15b94cfe7"
+  },
+  "transactions": [
+    {{#pools}}
+    {{#updateMaturityBuffer}}
+    {
+      "to": "{{vammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+      "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "__maturityBufferWad",
+            "type": "uint256"
+          }
+        ],
+        "name": "setMaturityBuffer",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      "contractInputsValues": {
+        "__maturityBufferWad": "{{maturityBuffer}}",
+      }
+    },
+    {{/updateMaturityBuffer}}
+
+    {{#updateFeeProtocol}}
+    {
+      "to": "{{vammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint8",
+            "name": "feeProtocol",
+            "type": "uint8"
+          }
+        ],
+        "name": "setFeeProtocol",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      "contractInputsValues": {
+        "feeProtocol": "{{feeProtocol}}"
+      }
+    },
+    {{/updateFeeProtocol}}
+
+    {{#updateFee}}
+    {
+      "to": "{{vammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "newFeeWad",
+            "type": "uint256"
+          }
+        ],
+        "name": "setFee",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      "contractInputsValues": {
+        "newFeeWad": "{{fee}}"
+      }
+    },
+    {{/updateFee}}
+
+    {{/pools}}
+  ]
+}

@@ -8,7 +8,7 @@ export const testConfig: SinglePoolConfiguration = {
   lookbackWindowInSeconds: 21600,
   feeWad: "3000000000000000",
   liquidatorRewardWad: "50000000000000000",
-  vammFeeProtocolWad: "0",
+  vammFeeProtocol: "0",
   isAlpha: false,
   lpMarginCap: "0",
   termStartTimestamp: 0,

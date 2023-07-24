@@ -20,7 +20,7 @@ export const defaultConfig: Omit<
   lookbackWindowInSeconds: 11 * 24 * 60 * 60,
   feeWad: "1000000000000000",
   liquidatorRewardWad: "50000000000000000",
-  vammFeeProtocolWad: "0",
+  vammFeeProtocol: "0",
   isAlpha: false,
   lpMarginCap: "0",
   marginCalculatorParams: {
