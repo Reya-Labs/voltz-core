@@ -166,7 +166,7 @@ const pools: Pools = {
       marginEngine: "0xd47fa3314c9c16ebca3dfe3e0c52c24f1311a22b",
       vamm: "0xe8ddb4676eec36acffdffa6707f422e23a8dfc12",
       decimals: 6,
-      deploymentBlock: 0, // todo: TBC
+      deploymentBlock: 17378808,
       rateOracleID: 5,
     },
 
@@ -174,7 +174,23 @@ const pools: Pools = {
       marginEngine: "0x2a778e24c3c7b37472efe8fa448fc92b694e9b25",
       vamm: "0x3ca96c10ac0b7651c9ea78b110db9e2e355893df",
       decimals: 6,
-      deploymentBlock: 0, // todo: TBC
+      deploymentBlock: 17378808,
+      rateOracleID: 9,
+    },
+
+    borrow_aUSDC_31Jul23: {
+      marginEngine: "0x7dcd48966eb559dfa6db842ba312c96dce0cb0b2",
+      vamm: "0x037c8d42972c3c058224a2e51b5cb9b504f75b77",
+      decimals: 6,
+      deploymentBlock: 17591482,
+      rateOracleID: 5,
+    },
+
+    borrow_av3USDC_31Jul23: {
+      marginEngine: "0x19654a85a96da7b39aa605259ee1568e55ccb9ba",
+      vamm: "0xd9a3f015a4ffd645014ec0f43148685be8754737",
+      decimals: 6,
+      deploymentBlock: 17591482,
       rateOracleID: 9,
     },
 
@@ -448,7 +464,7 @@ const pools: Pools = {
       marginEngine: "0xc73a470241168c14d3cd19c94f6f1c46073fba79",
       vamm: "0xa3c0c89ac146b89edd17efd4e9c43cc4fc35ec1e",
       decimals: 6,
-      deploymentBlock: 0, // todo: TBC
+      deploymentBlock: 96338929,
       rateOracleID: 9,
     },
 
@@ -456,7 +472,7 @@ const pools: Pools = {
       marginEngine: "0x9b5b9d31c7b4a826cd30c09136a2fdea9c69efcd",
       vamm: "0x3ecf01157e9b1a66197325771b63789d1fb18f1f",
       decimals: 6,
-      deploymentBlock: 0, // todo: TBC
+      deploymentBlock: 96338929,
       rateOracleID: 9,
     },
 
@@ -488,7 +504,7 @@ const pools: Pools = {
       marginEngine: "0xbe958ba49be73d3020cb62e512619da953a2bab1",
       vamm: "0x22393f23f16925d282aeca0a8464dccaf10ee480",
       decimals: 18,
-      deploymentBlock: 0, // todo: TBC
+      deploymentBlock: 96338929,
       rateOracleID: 8,
     },
   },

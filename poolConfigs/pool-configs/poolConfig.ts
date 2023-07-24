@@ -7,7 +7,7 @@ import {
 
 const poolConfigs: PoolConfigurations = {
   mainnet: {
-    borrow_aUSDC_30Jun23: {
+    borrow_aUSDC_31Jul23: {
       rateOracle: "AaveBorrowRateOracle_USDC",
       tickSpacing: 60,
       cacheMaxAgeInSeconds: 21600,
@@ -17,89 +17,58 @@ const poolConfigs: PoolConfigurations = {
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
-      termStartTimestamp: 1685523600,
-      termEndTimestamp: 1688126400, // Fri Jun 30 2023 12:00:00 GMT+0000
+      termStartTimestamp: 1688061600,
+      termEndTimestamp: 1690804800, // Mon Jul 31 2023 12:00:00 GMT+0000
       marginCalculatorParams: {
-        apyUpperMultiplierWad: "1114135216988942464",
-        apyLowerMultiplierWad: "875900881810274944",
-        sigmaSquaredWad: "1049725094039",
-        alphaWad: "770411150365860",
-        betaWad: "14045375270969446",
-        xiUpperWad: "22000000000000000000",
-        xiLowerWad: "68000000000000000000",
+        apyUpperMultiplierWad: "1146204661260759424",
+        apyLowerMultiplierWad: "507864050510418688",
+        sigmaSquaredWad: "1586020206297",
+        alphaWad: "17170368073678",
+        betaWad: "379021800451551",
+        xiUpperWad: "57000000000000000000",
+        xiLowerWad: "29000000000000000000",
         tMaxWad: "31536000000000000000000000",
-        etaIMWad: "4877671313963962",
-        etaLMWad: "2539120751534275",
+        etaIMWad: "4741249425712320",
+        etaLMWad: "3992590632739256",
         ...gaps,
         minMarginToIncentiviseLiquidators: "0",
       },
-      initTick: -12058,
+      initTick: -12384, // 3.45%
       maturityBuffer: 3600,
     },
 
-    borrow_av3USDC_30Jun23: {
+    borrow_av3USDC_31Jul23: {
       rateOracle: "AaveV3BorrowRateOracle_USDC",
       tickSpacing: 60,
       cacheMaxAgeInSeconds: 21600,
-      lookbackWindowInSeconds: 15 * 24 * 60 * 60,
+      lookbackWindowInSeconds: 11 * 24 * 60 * 60,
       feeWad: "1000000000000000",
       liquidatorRewardWad: "50000000000000000",
       vammFeeProtocolWad: "0",
       isAlpha: false,
       lpMarginCap: "0",
-      termStartTimestamp: 1685523600,
-      termEndTimestamp: 1688126400, // Fri Jun 30 2023 12:00:00 GMT+0000
+      termStartTimestamp: 1688061600,
+      termEndTimestamp: 1690804800, // Mon Jul 31 2023 12:00:00 GMT+0000
       marginCalculatorParams: {
-        apyUpperMultiplierWad: "1184725046009880320",
-        apyLowerMultiplierWad: "575516776378539840",
-        sigmaSquaredWad: "3274342158343",
-        alphaWad: "1531366392221818",
-        betaWad: "24196129760001924",
-        xiUpperWad: "25000000000000000000",
-        xiLowerWad: "61000000000000000000",
+        apyUpperMultiplierWad: "1148245886510063104",
+        apyLowerMultiplierWad: "646020935846405760",
+        sigmaSquaredWad: "1449113237668",
+        alphaWad: "676788765980896",
+        betaWad: "11816366698687032",
+        xiUpperWad: "69000000000000000000",
+        xiLowerWad: "34000000000000000000",
         tMaxWad: "31536000000000000000000000",
-        etaIMWad: "4811560193370494",
-        etaLMWad: "824243063488649",
+        etaIMWad: "4777086546814766",
+        etaLMWad: "3814303129355370",
         ...gaps,
         minMarginToIncentiviseLiquidators: "0",
       },
-      initTick: -11668,
+      initTick: -11632, // 3.2%
       maturityBuffer: 3600,
     },
   },
 
   arbitrum: {
-    // aUSDC borrow pools
-    borrow_av3USDC_30Jun23: {
-      rateOracle: "AaveV3BorrowRateOracle_USDC",
-      tickSpacing: 60,
-      cacheMaxAgeInSeconds: 21600,
-      lookbackWindowInSeconds: 13 * 24 * 60 * 60,
-      feeWad: "1000000000000000",
-      liquidatorRewardWad: "50000000000000000",
-      vammFeeProtocolWad: "0",
-      isAlpha: false,
-      lpMarginCap: "0",
-      termStartTimestamp: 1685523600,
-      termEndTimestamp: 1688126400, // Fri Jun 30 2023 12:00:00 GMT+0000
-      marginCalculatorParams: {
-        apyUpperMultiplierWad: "1406941241730705152",
-        apyLowerMultiplierWad: "500790184633923520",
-        sigmaSquaredWad: "2496808645685",
-        alphaWad: "244093552965375",
-        betaWad: "14136010820279574",
-        xiUpperWad: "16000000000000000000",
-        xiLowerWad: "68000000000000000000",
-        tMaxWad: "31536000000000000000000000",
-        etaIMWad: "2988819497220332",
-        etaLMWad: "1118219462831499",
-        ...gaps,
-        minMarginToIncentiviseLiquidators: "0",
-      },
-      initTick: -9301,
-      maturityBuffer: 3600,
-    },
-
     borrow_av3USDC_31Aug23: {
       rateOracle: "AaveV3BorrowRateOracle_USDC",
       tickSpacing: 60,
@@ -127,37 +96,6 @@ const poolConfigs: PoolConfigurations = {
         minMarginToIncentiviseLiquidators: "0",
       },
       initTick: -9301,
-      maturityBuffer: 3600,
-    },
-
-    // GLP pools
-    glpETH_28Jun23: {
-      rateOracle: "GlpRateOracle",
-      tickSpacing: 60,
-      cacheMaxAgeInSeconds: 21600,
-      lookbackWindowInSeconds: 14 * 24 * 60 * 60,
-      feeWad: "5000000000000000", // 0.5% LP Fees
-      liquidatorRewardWad: "50000000000000000", // 5%
-      vammFeeProtocolWad: "0",
-      isAlpha: false,
-      lpMarginCap: "0",
-      termStartTimestamp: 1685523600,
-      termEndTimestamp: 1687919400, // Wed Jun 28 2023 02:30:00 GMT+0000
-      marginCalculatorParams: {
-        apyUpperMultiplierWad: "1209358168717856256",
-        apyLowerMultiplierWad: "228239625856421728",
-        sigmaSquaredWad: "41826291005464",
-        alphaWad: "4298950189896987",
-        betaWad: "50217814101598760",
-        xiUpperWad: "31000000000000000000",
-        xiLowerWad: "55000000000000000000",
-        tMaxWad: "31536000000000000000000000",
-        etaIMWad: "4993403947323154",
-        etaLMWad: "1645276067621130",
-        ...gaps,
-        minMarginToIncentiviseLiquidators: "0",
-      },
-      initTick: -21891,
       maturityBuffer: 3600,
     },
   },
