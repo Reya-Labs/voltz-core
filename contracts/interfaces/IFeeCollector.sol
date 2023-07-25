@@ -3,10 +3,17 @@
 pragma solidity =0.8.9;
 
 interface IFeeCollector {
-
     // Events
-    event FeeDistributed(address asset, uint256 defaultFundsDelta, uint256 protocolFeesDelta);
-    event FeeCollected(address asset, bool fromDefaultFund, uint256 collectedAmount);
+    event FeeDistributed(
+        address asset,
+        uint256 defaultFundsDelta,
+        uint256 protocolFeesDelta
+    );
+    event FeeCollected(
+        address asset,
+        bool fromDefaultFund,
+        uint256 collectedAmount
+    );
     event DefaultFundPaused(bool _defaultFundPaused);
 
     // immutables
@@ -16,10 +23,12 @@ interface IFeeCollector {
     /// @param asset Token address of interest
     /// @return defaultFundsDelta delta amount added to the default fund
     /// @return protocolFeesDelta delta amounts added to the protocol fee fund
-    function distributeFees(address asset) external returns (uint256 defaultFundsDelta, uint256 protocolFeesDelta);
+    function distributeFees(address asset)
+        external
+        returns (uint256 defaultFundsDelta, uint256 protocolFeesDelta);
 
     /// @notice Allocated the entire contract's balance in spefied assets to the default fund and the protocol fees
-    function distributeAllFees(address[] memory assets) external; 
+    function distributeAllFees(address[] memory assets) external;
 
     /// @notice Transfers the specified amount in given asset to the owner
     /// @param asset Token address of asset that is transferred
@@ -27,10 +36,15 @@ interface IFeeCollector {
     /// @param fromDefaultFund Flags the source of the funds
     /// @return defaultFundsDelta delta amount subtracted from the default fund
     /// @return protocolFeesDelta delta amounts subtracted from the protocol fee fund
-    function collectFees(address asset, uint256 amount, bool fromDefaultFund) external returns (uint256 defaultFundsDelta, uint256 protocolFeesDelta);
+    function collectFees(
+        address asset,
+        uint256 amount,
+        bool fromDefaultFund
+    ) external returns (uint256 defaultFundsDelta, uint256 protocolFeesDelta);
 
     /// @notice Transfers the entire fund balance in the given assets to owner
-    function collectAllFees(address[] memory assets, bool fromDefaultFund) external;
+    function collectAllFees(address[] memory assets, bool fromDefaultFund)
+        external;
 
     /// @notice Pauses/Restarts the accumulation of default funds
     function setDefaultFundPaused(bool _defaultFundPaused) external;
