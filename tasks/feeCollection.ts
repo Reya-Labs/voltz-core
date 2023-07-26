@@ -1,5 +1,4 @@
 import "@nomiclabs/hardhat-ethers";
-
 import { task } from "hardhat/config";
 import mustache from "mustache";
 import path from "path";
@@ -13,9 +12,10 @@ interface MultisigTemplateData {
     amount: string;
   }[];
   feeCollectorAddress: string;
-  distributeAssets: string[];
-  collectDefaultFund: string[];
-  collectProtocolFees: string[];
+  distributeAssets: boolean;
+  collectDefaultFund: boolean;
+  collectProtocolFees: boolean;
+  assets: string[];
   multisig: string;
   chainId: string;
 }
@@ -40,8 +40,7 @@ function writeUpdateTransactionsToGnosisSafeTemplate(
 //   if the --multisig flag is set. Otherwise, it executes the transaction.
 //
 // Example:
-//   ``npx hardhat collectFees --network mainnet --collect --distribute
-//  --transfer-protocol-fee --transfer-default-fund --multisig aUSDC_v1 aUSDC_v2``
+//   ``npx hardhat collectFees --network mainnet --collect --distribute --transfer-protocol-fee --transfer-default-fund --multisig aUSDC_v1 aUSDC_v2``
 //
 task("collectFees", "Set pausability state")
   .addFlag("collect", "Triggers collection from Margin Engine to Fee Collector")
@@ -66,9 +65,10 @@ task("collectFees", "Set pausability state")
 
     const data: MultisigTemplateData = {
       poolsCollection: [],
-      distributeAssets: [],
-      collectDefaultFund: [],
-      collectProtocolFees: [],
+      distributeAssets: false,
+      collectDefaultFund: false,
+      collectProtocolFees: false,
+      assets: [],
       feeCollectorAddress: "",
       multisig: "",
       chainId: "",
@@ -107,15 +107,7 @@ task("collectFees", "Set pausability state")
     }
 
     /// note: can be extended to customize assets list
-    if (taskArgs.distribute) {
-      data.distributeAssets = assetsList;
-    }
-    if (taskArgs.transferProtocolFee) {
-      data.collectProtocolFees = assetsList;
-    }
-    if (taskArgs.transferDefaultFund) {
-      data.collectDefaultFund = assetsList;
-    }
+    data.assets = assetsList;
 
     if (taskArgs.multisig) {
       const multisig = deployConfig.multisig;
@@ -138,32 +130,24 @@ task("collectFees", "Set pausability state")
         await tx.wait();
       }
 
-      if (data.distributeAssets.length > 0) {
-        const tx = await feeCollector.distributeAllFees(data.distributeAssets, {
+      if (data.distributeAssets) {
+        const tx = await feeCollector.distributeAllFees(data.assets, {
           gasLimit: 10000000,
         });
         await tx.wait();
       }
 
-      if (data.collectDefaultFund.length > 0) {
-        const tx = await feeCollector.collectAllFees(
-          data.collectDefaultFund,
-          true,
-          {
-            gasLimit: 10000000,
-          }
-        );
+      if (data.collectDefaultFund) {
+        const tx = await feeCollector.collectAllFees(data.assets, true, {
+          gasLimit: 10000000,
+        });
         await tx.wait();
       }
 
-      if (data.collectProtocolFees.length > 0) {
-        const tx = await feeCollector.collectAllFees(
-          data.collectProtocolFees,
-          false,
-          {
-            gasLimit: 10000000,
-          }
-        );
+      if (data.collectProtocolFees) {
+        const tx = await feeCollector.collectAllFees(data.assets, false, {
+          gasLimit: 10000000,
+        });
         await tx.wait();
       }
     }

@@ -106,6 +106,7 @@ loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
 loadModuleIfContractsAreBuilt("./tasks/irsInstances");
 loadModuleIfContractsAreBuilt("./tasks/updateMarginEngines");
 loadModuleIfContractsAreBuilt("./tasks/getLiquidityDistribution");
+loadModuleIfContractsAreBuilt("./tasks/feeCollection");
 
 // System support
 loadModuleIfContractsAreBuilt("./tasks/deployUpdatedImplementations");
