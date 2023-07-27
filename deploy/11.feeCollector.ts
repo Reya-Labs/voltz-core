@@ -36,11 +36,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (multisig !== deployer && multisig) {
     // Transfer ownership
+    const trx = await feeCollectorProxyInstance.transferOwnership(multisig);
+    await trx.wait();
     console.log(
       `Transferred ownership of FeeCollector Proxy at ${proxyAddress} to ${multisig}`
     );
-    const trx = await feeCollectorProxyInstance.transferOwnership(multisig);
-    await trx.wait();
   }
 
   const owner = await feeCollectorProxyInstance.owner();

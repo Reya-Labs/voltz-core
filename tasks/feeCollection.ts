@@ -42,7 +42,7 @@ function writeUpdateTransactionsToGnosisSafeTemplate(
 // Example:
 //   ``npx hardhat collectFees --network mainnet --collect --distribute --transfer-protocol-fee --transfer-default-fund --multisig aUSDC_v1 aUSDC_v2``
 //
-task("collectFees", "Set pausability state")
+task("collectFees", "Executes actions for fee collection by the protocol owner")
   .addFlag("collect", "Triggers collection from Margin Engine to Fee Collector")
   .addFlag(
     "distribute",

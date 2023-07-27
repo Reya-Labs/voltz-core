@@ -9,14 +9,6 @@ import "./interfaces/IFeeCollector.sol";
 import "./interfaces/IERC20Minimal.sol";
 import "./core_libraries/SafeTransferLib.sol";
 
-/**
-todo: remove
-Current strategy
-- fee collection should be called on a ME level by the multisig, giving the recepient as FeeCollector
-    - best to call the above at the end of a pool
-- fee distribution is called in the Fee collector on each underlying token
-- fee collection is called on each token
- */
 contract FeeCollector is
     FeeCollectorStorage,
     IFeeCollector,
@@ -45,18 +37,18 @@ contract FeeCollector is
 
     /// @inheritdoc IFeeCollector
     function distributeFees(address asset) public override onlyOwner returns (uint256 defaultFundsDelta, uint256 protocolFeesDelta) {
-        // todo: check for roudups/downs of division
         uint256 contractBalance = IERC20Minimal(asset).balanceOf(address(this));
+        uint256 distributionAmount = contractBalance > (protocolFees[asset] + defaultFund[asset]) ?
+            contractBalance - protocolFees[asset] - defaultFund[asset] : 0;
         if ( defaultFundPaused ) {
-            protocolFees[asset] += contractBalance;
-
-            protocolFeesDelta = contractBalance;
+            protocolFeesDelta = distributionAmount;
+            protocolFees[asset] += protocolFeesDelta;
         } else {
-            defaultFund[asset] += contractBalance/2;
-            protocolFees[asset] += contractBalance/2;
+            defaultFundsDelta = distributionAmount/2 + distributionAmount%2;
+            protocolFeesDelta = distributionAmount/2;
 
-            defaultFundsDelta = contractBalance/2;
-            protocolFeesDelta = contractBalance/2;
+            defaultFund[asset] += defaultFundsDelta;
+            protocolFees[asset] += protocolFeesDelta;
         }
         emit FeeDistributed(asset, defaultFundsDelta, protocolFeesDelta);
     }
@@ -88,11 +80,11 @@ contract FeeCollector is
             specifiedAmount;
 
         if (fromDefaultFund) {
-            defaultFund[asset] -= amount;
             defaultFundsDelta = amount;
+            defaultFund[asset] -= defaultFundsDelta;
         } else {
-            protocolFees[asset] -= amount;
             protocolFeesDelta = amount;
+            protocolFees[asset] -= protocolFeesDelta;
         }
         IERC20Minimal(asset).safeTransfer(msg.sender, amount);
 

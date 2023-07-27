@@ -154,7 +154,7 @@ describe("Fee Collector", () => {
       // DISTRIBUTE
       await feeCollectorTest.connect(wallet).distributeFees(token.address);
       expect(accumulatedProtocolFee.div(2)).to.be.eq(
-        await feeCollectorTest.getDefaultFund(token.address)
+        (await feeCollectorTest.getDefaultFund(token.address)).sub(1)
       );
       expect(accumulatedProtocolFee.div(2)).to.be.eq(
         await feeCollectorTest.getProtocolFees(token.address)
@@ -168,7 +168,7 @@ describe("Fee Collector", () => {
       const balance1 = await token.balanceOf(wallet.address);
       expect(accumulatedProtocolFee.div(6)).to.be.eq(balance1.sub(balance0));
       expect(accumulatedProtocolFee.div(3)).to.be.eq(
-        await feeCollectorTest.getDefaultFund(token.address)
+        (await feeCollectorTest.getDefaultFund(token.address)).sub(1)
       );
 
       await feeCollectorTest
@@ -187,9 +187,8 @@ describe("Fee Collector", () => {
         .connect(wallet)
         .collectFees(token.address, maxFlag, true);
       const balance3 = await token.balanceOf(wallet.address);
-      expect(accumulatedProtocolFee.div(6).mul(2)).to.be.closeTo(
-        balance3.sub(balance2),
-        1
+      expect(accumulatedProtocolFee.mul(2).div(6)).to.be.eq(
+        balance3.sub(balance2).sub(1)
       );
       expect(BigNumber.from(0)).to.be.eq(
         await feeCollectorTest.getDefaultFund(token.address)
@@ -376,7 +375,7 @@ describe("Fee Collector", () => {
         .connect(wallet)
         .collectFees(token.address, maxFlag, true);
       const balance3 = await token.balanceOf(wallet.address);
-      expect(BigNumber.from(0)).to.be.closeTo(balance3.sub(balance2), 1);
+      expect(BigNumber.from(0)).to.be.eq(balance3.sub(balance2));
       expect(BigNumber.from(0)).to.be.eq(
         await feeCollectorTest.getDefaultFund(token.address)
       );
@@ -550,7 +549,7 @@ describe("Fee Collector", () => {
       expect(accumulatedProtocolFee.div(2)).to.be.eq(
         await feeCollectorTest.getProtocolFees(token.address)
       );
-      expect(accumulatedProtocolFee2.div(2)).to.be.eq(
+      expect(accumulatedProtocolFee2.div(2).add(1)).to.be.eq(
         await feeCollectorTest.getDefaultFund(token2.address)
       );
       expect(accumulatedProtocolFee2.div(2)).to.be.eq(
@@ -565,13 +564,11 @@ describe("Fee Collector", () => {
         .collectAllFees([token.address, token2.address], true);
       const balance1_token1 = await token.balanceOf(wallet.address);
       const balance1_token2 = await token2.balanceOf(wallet.address);
-      expect(accumulatedProtocolFee.div(2)).to.be.closeTo(
-        balance1_token1.sub(balance0_token1),
-        1
+      expect(accumulatedProtocolFee.div(2)).to.be.eq(
+        balance1_token1.sub(balance0_token1)
       );
-      expect(accumulatedProtocolFee2.div(2)).to.be.closeTo(
-        balance1_token2.sub(balance0_token2),
-        1
+      expect(accumulatedProtocolFee2.div(2)).to.be.eq(
+        balance1_token2.sub(balance0_token2).sub(1)
       );
       expect(BigNumber.from(0)).to.be.eq(
         await feeCollectorTest.getDefaultFund(token.address)
@@ -585,13 +582,11 @@ describe("Fee Collector", () => {
         .collectAllFees([token.address, token2.address], false);
       const balance2_token1 = await token.balanceOf(wallet.address);
       const balance2_token2 = await token2.balanceOf(wallet.address);
-      expect(accumulatedProtocolFee.div(2)).to.be.closeTo(
-        balance2_token1.sub(balance1_token1),
-        1
+      expect(accumulatedProtocolFee.div(2)).to.be.eq(
+        balance2_token1.sub(balance1_token1)
       );
-      expect(accumulatedProtocolFee2.div(2)).to.be.closeTo(
-        balance2_token2.sub(balance1_token2),
-        1
+      expect(accumulatedProtocolFee2.div(2)).to.be.eq(
+        balance2_token2.sub(balance1_token2)
       );
       expect(BigNumber.from(0)).to.be.eq(
         await feeCollectorTest.getProtocolFees(token.address)
