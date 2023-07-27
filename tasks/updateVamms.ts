@@ -10,12 +10,13 @@ import { getPool } from "../poolConfigs/pool-addresses/pools";
 import { getPoolConfig } from "../poolConfigs/pool-configs/poolConfig";
 import { getSigner } from "./utils/getSigner";
 import { IVAMM } from "../typechain";
+import { toBn } from "../test/helpers/toBn";
 
 interface SingleUpdateTemplateData {
   vammAddress: string;
 
   updateMaturityBuffer: boolean;
-  maturityBuffer: BigNumberish;
+  maturityBufferWad: BigNumberish;
 
   updateFeeProtocol: boolean;
   feeProtocol: BigNumberish;
@@ -92,7 +93,7 @@ task("updateVamms", "It updates the configurations of given pools")
         vammAddress: poolDetails.vamm,
 
         updateMaturityBuffer: taskArgs.maturityBuffer ? true : false,
-        maturityBuffer: poolConfig.maturityBuffer,
+        maturityBufferWad: toBn(poolConfig.maturityBuffer),
 
         updateFeeProtocol: taskArgs.feeProtocol ? true : false,
         feeProtocol: poolConfig.vammFeeProtocol,
@@ -117,7 +118,7 @@ task("updateVamms", "It updates the configurations of given pools")
         if (pool.updateMaturityBuffer) {
           await vamm
             .connect(multisigSigner)
-            .setMaturityBuffer(pool.maturityBuffer);
+            .setMaturityBuffer(pool.maturityBufferWad);
         }
 
         if (pool.updateFeeProtocol) {
