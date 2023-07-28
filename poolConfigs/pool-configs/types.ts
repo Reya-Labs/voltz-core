@@ -19,8 +19,8 @@ export type SinglePoolConfiguration = {
   // Percentage of liquidator reward (wad)
   liquidatorRewardWad: BigNumberish;
 
-  // Fraction of fee protocol (wad)
-  vammFeeProtocolWad: BigNumberish;
+  // Denominator for fee protocol
+  vammFeeProtocol: BigNumberish;
 
   // alpha state
   isAlpha: boolean;

@@ -197,7 +197,7 @@ task(
       {
         const trx = await vamm
           .connect(multisig)
-          .setFeeProtocol(poolConfig.vammFeeProtocolWad);
+          .setFeeProtocol(poolConfig.vammFeeProtocol);
         await trx.wait();
       }
 

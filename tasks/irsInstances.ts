@@ -190,7 +190,7 @@ async function configureIrs(
   const currentFeeProtocol = currentVammVars.feeProtocol;
   if (currentFeeProtocol === 0) {
     // Fee protocol can only be set if it has never been set
-    trx = await vamm.setFeeProtocol(poolConfig.vammFeeProtocolWad, {
+    trx = await vamm.setFeeProtocol(poolConfig.vammFeeProtocol, {
       gasLimit: 10000000,
     });
     await trx.wait();
