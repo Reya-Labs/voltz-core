@@ -20,7 +20,7 @@ export type SinglePoolConfiguration = {
   liquidatorRewardWad: BigNumberish;
 
   // Denominator for fee protocol
-  vammFeeProtocol: BigNumberish;
+  vammFeeProtocol: number;
 
   // alpha state
   isAlpha: boolean;

@@ -35,7 +35,7 @@ async function writeToMultisigTemplate(data: MultisigTemplate) {
 //
 // Example:
 //   ``npx hardhat init-vamms --network mainnet``
-
+// IMPORTANT! initializing VAMM resets protocol feees to 0
 task("init-vamms", "Initialises VAMMs").setAction(async (_, hre) => {
   // Retrieve multisig address for the current network
   const network = hre.network.name;
