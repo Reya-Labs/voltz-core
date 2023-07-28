@@ -1,0 +1,116 @@
+{
+    "version": "1.0",
+    "chainId": "{{chainId}}",
+    "createdAt": 1654007302649,
+    "meta": {
+      "name": "Transactions Batch",
+      "description": "",
+      "txBuilderVersion": "1.8.0",
+      "createdFromSafeAddress": "{{multisig}}",
+      "createdFromOwnerAddress": "",
+      "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "transactions": [
+      {{#poolsCollection}}
+      {
+        "to": "{{marginEngineAddress}}",
+        "value": "0",
+        "data": null,
+        "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_recipient",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "collectProtocol",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        "contractInputsValues": {
+          "_recipient": "{{feeCollectorAddress}}",
+          "_amount": "{{amount}}"
+        }
+      },
+      {{/poolsCollection}}
+      {{#distributeAssets}}
+      {
+        {
+          "inputs": [
+              {
+                "internalType": "address[]",
+                "name": "assets",
+                "type": "address[]"
+              }
+            ],
+            "name": "distributeAllFees",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        "contractInputsValues": {
+          "assets": "{{assets}}",
+        }
+      },
+      {{/distributeAssets}}
+      {{#collectDefaultFund}}
+      {
+        {
+          "inputs": [
+            {
+              "internalType": "address[]",
+              "name": "assets",
+              "type": "address[]"
+            },
+            {
+              "internalType": "bool",
+              "name": "fromDefaultFund",
+              "type": "bool"
+            }
+          ],
+          "name": "collectAllFees",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        "contractInputsValues": {
+          "assets": "{{assets}}",
+          "fromDefaultFund": true
+        }
+      },
+      {{/collectDefaultFund}}
+      {{#collectProtocolFees}}
+      {
+        {
+          "inputs": [
+            {
+              "internalType": "address[]",
+              "name": "assets",
+              "type": "address[]"
+            },
+            {
+              "internalType": "bool",
+              "name": "fromDefaultFund",
+              "type": "bool"
+            }
+          ],
+          "name": "collectAllFees",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        "contractInputsValues": {
+          "assets": "{{assets}}",
+          "fromDefaultFund": false
+        }
+      }
+      {{/collectProtocolFees}}
+    ]
+  }

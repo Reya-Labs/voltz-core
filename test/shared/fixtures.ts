@@ -9,6 +9,7 @@ import { AaveFCM } from "../../typechain/AaveFCM";
 import {
   E2ESetup,
   ERC20Mock,
+  FeeCollector,
   FixedAndVariableMathTest,
   MockAaveLendingPool,
   MockAToken,
@@ -106,6 +107,28 @@ export async function marginEngineMasterTestFixture() {
     (await marginEngineMasterTestFactory.deploy()) as TestMarginEngine;
 
   return { marginEngineMasterTest };
+}
+
+export async function feeCollectorTestFixture() {
+  const feeCollectorTestFactory = await ethers.getContractFactory(
+    "FeeCollector"
+  );
+  const feeCollectorTestImpl =
+    (await feeCollectorTestFactory.deploy()) as FeeCollector;
+
+  const proxyFactory = await ethers.getContractFactory("VoltzERC1967Proxy");
+  const proxyInstance = await proxyFactory.deploy(
+    feeCollectorTestImpl.address,
+    []
+  );
+
+  const feeCollectorTest = (await ethers.getContractAt(
+    "FeeCollector",
+    proxyInstance.address
+  )) as FeeCollector;
+  await feeCollectorTest.initialize();
+
+  return { feeCollectorTest };
 }
 
 export async function activeLPManagementStrategyTestFixture() {
@@ -240,6 +263,7 @@ interface MetaFixture {
   fcmTest: AaveFCM;
   fcmCompound: CompoundFCM;
   testFixedAndVariableMath: FixedAndVariableMathTest;
+  feeCollectorTest: FeeCollector;
 }
 
 export const metaFixture = async function (): Promise<MetaFixture> {
@@ -247,6 +271,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
   const { vammMasterTest } = await vammMasterTestFixture();
   const { fcmMasterTest, fcmMasterCompound } = await fcmMasterTestFixture();
   const { testFixedAndVariableMath } = await fixedAndVariableMathFixture();
+  const { feeCollectorTest } = await feeCollectorTestFixture();
   const { factory } = await factoryFixture(
     marginEngineMasterTest.address,
     vammMasterTest.address
@@ -416,6 +441,7 @@ export const metaFixture = async function (): Promise<MetaFixture> {
     fcmTest,
     fcmCompound,
     testFixedAndVariableMath,
+    feeCollectorTest,
   };
 };
 

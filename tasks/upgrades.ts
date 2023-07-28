@@ -33,6 +33,7 @@ const proxiedContractTypes = [
   "Periphery",
   "AaveFCM",
   "CompoundFCM",
+  "FeeCollector",
 ];
 const proxiedContractTypesAsString = proxiedContractTypes
   .map((c) => `"${c}"`)
