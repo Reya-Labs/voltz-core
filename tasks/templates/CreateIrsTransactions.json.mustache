@@ -373,6 +373,27 @@
         "contractInputsValues": {
           "sqrtPriceX96": "{{sqrtPriceX96}}"
         }
+    },
+    {
+      "to": "{{predictedVammAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "uint8",
+            "name": "feeProtocol",
+            "type": "uint8"
+          }
+        ],
+        "name": "setFeeProtocol",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      "contractInputsValues": {
+        "feeProtocol": "{{feeWad}}"
+      }
     }{{^last}},{{/last}}
     {{/irsInstances}}
   ]

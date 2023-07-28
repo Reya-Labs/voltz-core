@@ -40,6 +40,7 @@ interface SingleIrsData {
   lookbackWindowInSeconds: number;
   liquidatorRewardWad: BigNumberish;
   feeWad: BigNumberish;
+  feeProtocol: number;
   isAlpha: boolean;
   lpMarginCap: BigNumberish;
   marginCalculatorParams: {
@@ -387,6 +388,7 @@ task(
           cacheMaxAgeInSeconds: poolConfig.cacheMaxAgeInSeconds,
           lookbackWindowInSeconds: poolConfig.lookbackWindowInSeconds,
           feeWad: poolConfig.feeWad,
+          feeProtocol: poolConfig.vammFeeProtocol,
           isAlpha: poolConfig.isAlpha,
           lpMarginCap: poolConfig.lpMarginCap,
           marginCalculatorParams: poolConfig.marginCalculatorParams,
