@@ -37,9 +37,8 @@ contract FeeCollector is
 
     /// @inheritdoc IFeeCollector
     function distributeFees(address asset) public override onlyOwner returns (uint256 defaultFundsDelta, uint256 protocolFeesDelta) {
-        uint256 contractBalance = IERC20Minimal(asset).balanceOf(address(this));
-        uint256 distributionAmount = contractBalance > (protocolFees[asset] + defaultFund[asset]) ?
-            contractBalance - protocolFees[asset] - defaultFund[asset] : 0;
+        uint256 distributionAmount =
+            IERC20Minimal(asset).balanceOf(address(this)) - protocolFees[asset] - defaultFund[asset];
         if ( defaultFundPaused ) {
             protocolFeesDelta = distributionAmount;
             protocolFees[asset] += protocolFeesDelta;

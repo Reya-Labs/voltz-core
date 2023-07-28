@@ -3,5 +3,6 @@
   "Periphery": 1656358298,
   "FCMs": 1656358346,
   "PeripheryProxy": 1658412899,
-  "VoltzPausabilityWrapper": 1679388761
+  "VoltzPausabilityWrapper": 1679388761,
+  "FeeCollectorProxy": 1690470199
 }
