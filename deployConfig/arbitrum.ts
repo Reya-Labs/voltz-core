@@ -32,6 +32,13 @@ export const arbitrumConfig: ContractsConfig = {
         ...ONE_YEAR_OF_EIGHT_HOURLY_DATAPOINTS,
         daysOfTrustedDataPoints: 15,
       },
+      {
+        name: "USDT",
+        borrow: true,
+        address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+        ...ONE_YEAR_OF_EIGHT_HOURLY_DATAPOINTS,
+        daysOfTrustedDataPoints: 15,
+      },
     ],
   },
   glpConfig: {
