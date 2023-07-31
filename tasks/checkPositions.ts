@@ -74,7 +74,7 @@ task("checkPositionsHealth", "Check positions")
 
     // Create the header and write it in each pool output file
     const header =
-      "margin_engine,owner,lower_tick,upper_tick,position_margin,position_liquidity,position_notional,position_requirement_liquidation,position_requirement_safety,status";
+      "margin_engine,owner,lower_tick,upper_tick,net_margin,total_fees_paid_to_lps,total_fees_as_lp";
 
     for (let i = 0; i < poolNames.length; i++) {
       const p = poolNames[i];
@@ -111,33 +111,18 @@ task("checkPositionsHealth", "Check positions")
         pools[position.marginEngine.toLowerCase() as keyof typeof pools];
 
       const marginEngine = tmp.marginEngine;
-      const decimals = tmp.decimals;
 
-      const { safetyThreshold, liquidationThreshold } =
-        await getPositionRequirements(marginEngine, position, decimals);
+      // todo: needs to be checked
 
-      const { liquidity, margin, variableTokenBalance } = await getPositionInfo(
-        marginEngine,
+      const { accumulatedFees } = await getPositionInfo(
+        tmp.marginEngine,
         position,
-        decimals
+        tmp.decimals
       );
 
-      let status = "HEALTHY";
-      if (margin < liquidationThreshold) {
-        status = "DANGER";
-      } else if (margin < safetyThreshold) {
-        status = "WARNING";
-      }
+      position.totalFeesAsLp = accumulatedFees;
 
-      const info = `${marginEngine.address},${position.owner},${
-        position.tickLower
-      },${position.tickUpper},${formatNumber(margin)},${formatNumber(
-        liquidity
-      )},${formatNumber(variableTokenBalance)},${formatNumber(
-        liquidationThreshold
-      )},${formatNumber(safetyThreshold)},${status}\n`;
-
-      console.log(info);
+      const info = `${marginEngine.address},${position.owner},${position.tickLower},${position.tickUpper},${position.netMargin}, ${position.totalFeesPaidToLps}, ${position.totalFeesAsLp}`;
 
       fs.appendFileSync(tmp.file, info + "\n");
     }
