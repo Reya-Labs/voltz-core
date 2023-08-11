@@ -3,7 +3,7 @@
   "chainId": "42161",
   "contracts": {
     "MarginEngine": {
-      "address": "0x9348287af23EA07f1ad6a056fF1f20f104bDe142",
+      "address": "0xe22C0E020C99e9aEd339618FdCEa2871d678Ef38",
       "abi": [
         {
           "inputs": [],
@@ -1960,7 +1960,7 @@
       ]
     },
     "VAMM": {
-      "address": "0x20e3C408d92C0d3b2Fb25Bc34b3b6C7dE5405f9A",
+      "address": "0xF3b23b373dc8854cC2936F4Ab4b8E782011cCf87",
       "abi": [
         {
           "inputs": [],
@@ -3298,7 +3298,7 @@
       ]
     },
     "Factory": {
-      "address": "0xDA77A8079f7e63e7694F6C30aFB6207571232c91",
+      "address": "0x4E56A6186983Bd4C9C77efD4210dD23652e0Fd51",
       "abi": [
         {
           "inputs": [

@@ -563,7 +563,7 @@ contract MarginEngine is
         address _owner,
         int24 _tickLower,
         int24 _tickUpper
-    ) external override whenNotPaused onlyAfterMaturity {
+    ) external override {
         Tick.checkTicks(_tickLower, _tickUpper);
 
         Position.Info storage _position = positions.get(
@@ -867,7 +867,7 @@ contract MarginEngine is
             false
         ).toInt256();
 
-        if (_position.margin <= _positionMarginRequirement) {
+        if (_position.margin < _positionMarginRequirement) {
             revert CustomErrors.MarginLessThanMinimum(
                 _positionMarginRequirement
             );
