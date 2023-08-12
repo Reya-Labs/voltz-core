@@ -492,36 +492,21 @@ contract MarginEngine is
             _tickUpper
         );
 
-        /// @dev if in alpha --> revert (unless call via periphery)
-        if (_isAlpha) {
-            IPeriphery _periphery = _factory.periphery();
-            require(msg.sender == address(_periphery), "pphry only");
+        require(_marginDelta <= 0, "NoDeposit");
+
+        if (
+            _owner != msg.sender && !_factory.isApproved(_owner, msg.sender)
+        ) {
+            revert CustomErrors.OnlyOwnerCanUpdatePosition();
         }
 
-        _updatePositionTokenBalancesAndAccountForFees(
-            _position,
-            _tickLower,
-            _tickUpper,
-            false
-        ); // isMint=false
-
-        if (_marginDelta < 0) {
-            if (
-                _owner != msg.sender && !_factory.isApproved(_owner, msg.sender)
-            ) {
-                revert CustomErrors.OnlyOwnerCanUpdatePosition();
-            }
-
-            _position.updateMarginViaDelta(_marginDelta);
-
-            _checkPositionMarginCanBeUpdated(_position, _tickLower, _tickUpper);
-
-            _transferMargin(_owner, _marginDelta);
-        } else {
-            _position.updateMarginViaDelta(_marginDelta);
-
-            _transferMargin(msg.sender, _marginDelta);
+        if (!_position.isSettled) {
+            revert CustomErrors.PositionNotSettled();
         }
+
+        _position.updateMarginViaDelta(_marginDelta);
+
+        _transferMargin(_owner, _marginDelta);
 
         _position.rewardPerAmount = 0;
 
@@ -888,11 +873,22 @@ contract MarginEngine is
         int24 _tickLower,
         int24 _tickUpper
     ) internal {
-        if (!_position.isSettled) {
-            revert CustomErrors.PositionNotSettled();
-        }
-        if (_position.margin < 0) {
-            revert CustomErrors.WithdrawalExceedsCurrentMargin();
+        /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
+        /// @dev their margin is to withdraw it completely. If so, the position needs to be settled
+        if (Time.blockTimestampScaled() >= _termEndTimestampWad) {
+            if (!_position.isSettled) {
+                revert CustomErrors.PositionNotSettled();
+            }
+            if (_position.margin < 0) {
+                revert CustomErrors.WithdrawalExceedsCurrentMargin();
+            }
+        } else {
+            /// @dev if we haven't reached maturity yet, then check if the position margin requirement is satisfied if not then the position margin update will also revert
+            _checkPositionMarginAboveRequirement(
+                _position,
+                _tickLower,
+                _tickUpper
+            );
         }
     }
 
