@@ -481,7 +481,7 @@ contract MarginEngine is
         int24 _tickLower,
         int24 _tickUpper,
         int256 _marginDelta
-    ) external override whenNotPaused nonZeroDelta(_marginDelta) {
+    ) external override nonZeroDelta(_marginDelta) {
         require(_owner != address(0), "O0");
 
         Tick.checkTicks(_tickLower, _tickUpper);
@@ -554,7 +554,9 @@ contract MarginEngine is
 
     function setCustomSettlements(CustomSettlement[] memory settlements) external onlyOwner {
         for (uint256 i = 0; i < settlements.length; ++i) {
-            customSettlements[keccak256(abi.encodePacked(settlements[i].owner, settlements[i].tickLower, settlements[i].tickUpper))] = settlements[i].amount;
+            bytes32 key = keccak256(abi.encodePacked(settlements[i].owner, settlements[i].tickLower, settlements[i].tickUpper));
+            customSettlements[key] = settlements[i].amount;
+            isCustomSettlementEnabled[key] = true;
         }
     }
 
@@ -572,7 +574,10 @@ contract MarginEngine is
             _tickUpper
         );
 
-        _position.margin = customSettlements[keccak256(abi.encodePacked(_owner, _tickLower, _tickUpper))];
+        bytes32 key = keccak256(abi.encodePacked(_owner, _tickLower, _tickUpper));
+        require(isCustomSettlementEnabled[key], "NoCS");
+
+        _position.margin = customSettlements[key];
         _position.fixedTokenBalance = 0;
         _position.variableTokenBalance = 0;
         _position._liquidity = 0;
@@ -867,7 +872,7 @@ contract MarginEngine is
             false
         ).toInt256();
 
-        if (_position.margin < _positionMarginRequirement) {
+        if (_position.margin <= _positionMarginRequirement) {
             revert CustomErrors.MarginLessThanMinimum(
                 _positionMarginRequirement
             );
@@ -883,22 +888,11 @@ contract MarginEngine is
         int24 _tickLower,
         int24 _tickUpper
     ) internal {
-        /// @dev If the IRS AMM has reached maturity, the only reason why someone would want to update
-        /// @dev their margin is to withdraw it completely. If so, the position needs to be settled
-        if (Time.blockTimestampScaled() >= _termEndTimestampWad) {
-            if (!_position.isSettled) {
-                revert CustomErrors.PositionNotSettled();
-            }
-            if (_position.margin < 0) {
-                revert CustomErrors.WithdrawalExceedsCurrentMargin();
-            }
-        } else {
-            /// @dev if we haven't reached maturity yet, then check if the position margin requirement is satisfied if not then the position margin update will also revert
-            _checkPositionMarginAboveRequirement(
-                _position,
-                _tickLower,
-                _tickUpper
-            );
+        if (!_position.isSettled) {
+            revert CustomErrors.PositionNotSettled();
+        }
+        if (_position.margin < 0) {
+            revert CustomErrors.WithdrawalExceedsCurrentMargin();
         }
     }
 

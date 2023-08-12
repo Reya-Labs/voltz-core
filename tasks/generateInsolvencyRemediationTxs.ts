@@ -28,24 +28,27 @@ interface MultisigTemplateData {
 const insolvencyCases = [
   {
     marginEngineAddress: "0x9b5b9d31c7b4a826cd30c09136a2fdea9c69efcd",
-    marginEngineImpl: "0x78C67D7213F1f20a792eE207d7c445C87fd28440",
+    marginEngineImpl: "0xB5Ed2c212a577Fda7c546B153c0337a8Bb3f2dCa",
     network: "arbitrum",
     inputAmountsFile: "arb_aaveV3_usdc_amounts",
     protocolContribution: 0,
+    pcvToSettle: true,
   },
   {
     marginEngineAddress: "0x7dcd48966eb559dfa6db842ba312c96dce0cb0b2",
     marginEngineImpl: "0x6887711f4CAdEbA666CEFa62D8692101D3c5826F",
     network: "mainnet",
     inputAmountsFile: "eth_aaveV2_usdc_amounts",
-    protocolContribution: 9426,
+    protocolContribution: 11510,
+    pcvToSettle: true,
   },
   {
     marginEngineAddress: "0x19654a85a96da7b39aa605259ee1568e55ccb9ba",
     marginEngineImpl: "0x6887711f4CAdEbA666CEFa62D8692101D3c5826F",
     network: "mainnet",
     inputAmountsFile: "eth_aaveV3_usdc_amounts",
-    protocolContribution: 130460,
+    protocolContribution: 101920,
+    pcvToSettle: false,
   },
 ];
 
@@ -95,7 +98,7 @@ task(
     marginEngineImpl,
     network,
     inputAmountsFile,
-  } = insolvencyCases[2];
+  } = insolvencyCases[0];
 
   // only for the corresponding network
   if (!(hre.network.name === network)) {
@@ -125,14 +128,16 @@ task(
     takeHome: string;
   }[];
 
-  const positions = rawPositions.map((p) => ({
-    owner: p.owner,
-    tickLower: p.tickLower,
-    tickUpper: p.tickUpper,
-    amount: hre.ethers.utils
-      .parseUnits(Number(p.takeHome).toFixed(decimals), decimals)
-      .toString(),
-  }));
+  const positions = rawPositions
+    .map((p) => ({
+      owner: p.owner,
+      tickLower: p.tickLower,
+      tickUpper: p.tickUpper,
+      amount: hre.ethers.utils
+        .parseUnits(Number(p.takeHome).toFixed(decimals), decimals)
+        .toString(),
+    }))
+    .slice(0, 2000);
 
   // impersonate multisig wallet
   const deployConfig = getConfig(network);

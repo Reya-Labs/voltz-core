@@ -1,12 +1,6 @@
 import { task } from "hardhat/config";
 import { getConfig } from "../deployConfig/config";
-import {
-  Factory,
-  IERC20Minimal,
-  MarginEngine,
-  Periphery,
-  VAMM,
-} from "../typechain";
+import { Factory, IERC20Minimal, MarginEngine, Periphery } from "../typechain";
 import { getSigner } from "./utils/getSigner";
 
 import fs from "fs";
@@ -15,24 +9,24 @@ import csv from "csv-parser";
 const insolvencyCases = [
   {
     marginEngineAddress: "0x9b5b9d31c7b4a826cd30c09136a2fdea9c69efcd",
-    vammAddress: "0x3ecf01157e9b1a66197325771b63789d1fb18f1f",
     network: "arbitrum",
     inputAmountsFile: "arb_aaveV3_usdc_amounts",
     protocolContribution: 0,
+    pcvToSettle: true,
   },
   {
     marginEngineAddress: "0x7dcd48966eb559dfa6db842ba312c96dce0cb0b2",
-    vammAddress: "0x037c8d42972c3c058224a2e51b5cb9b504f75b77",
     network: "mainnet",
     inputAmountsFile: "eth_aaveV2_usdc_amounts",
-    protocolContribution: 9426,
+    protocolContribution: 11510,
+    pcvToSettle: true,
   },
   {
     marginEngineAddress: "0x19654a85a96da7b39aa605259ee1568e55ccb9ba",
-    vammAddress: "0xd9a3f015a4ffd645014ec0f43148685be8754737",
     network: "mainnet",
     inputAmountsFile: "eth_aaveV3_usdc_amounts",
-    protocolContribution: 130460,
+    protocolContribution: 101920,
+    pcvToSettle: false,
   },
 ];
 
@@ -58,13 +52,12 @@ task(
   }
 
   const randomUserAddress = "0x4dBE8aeB06aB0771D8AEb02B100Feb6bF32fD899";
-  const pauserAddress = "0x44A62Dd868534422C29Eb781Fd259FEEC17DF700";
   const {
     marginEngineAddress,
-    vammAddress,
     network,
     inputAmountsFile,
     protocolContribution,
+    pcvToSettle,
   } = insolvencyCases[2];
 
   const rawPositions = (await readCSVFile(
@@ -82,9 +75,6 @@ task(
 
   // impresonate random wallet
   const randomUser = await getSigner(hre, randomUserAddress);
-
-  // impersonate pauser
-  const pauser = await getSigner(hre, pauserAddress);
 
   // fetch factory (make sure all deployments are copied to localhost)
   const factory = (await hre.ethers.getContract("Factory")) as Factory;
@@ -111,10 +101,6 @@ task(
   )) as IERC20Minimal;
 
   const decimals = await erc20.decimals();
-
-  console.log("Fetching VAMM...");
-  // Fetch VAMM
-  const vamm = (await hre.ethers.getContractAt("VAMM", vammAddress)) as VAMM;
 
   console.log("Deploying implementation...");
   const marginEngineFactory = await hre.ethers.getContractFactory(
@@ -143,7 +129,6 @@ task(
       .parseUnits(Number(p.takeHome).toFixed(decimals), decimals)
       .toString(),
   }));
-
   try {
     await marginEngine
       .connect(randomUser)
@@ -196,9 +181,6 @@ task(
     );
   }
 
-  // Unpause contract
-  await vamm.connect(pauser).setPausability(false);
-
   // Users withdraw
   console.log("Settling positions...");
 
@@ -220,6 +202,13 @@ task(
     const walletA = await erc20.balanceOf(p.owner);
 
     try {
+      if (
+        p.owner.toLowerCase() === deployConfig.multisig.toLowerCase() &&
+        !pcvToSettle
+      ) {
+        throw new Error("Not to settle pcv");
+      }
+
       await periphery
         .connect(wallet)
         .settlePositionAndWithdrawMargin(
@@ -230,7 +219,7 @@ task(
         );
     } catch (error) {
       if (p.amount !== "0") {
-        console.log("No enough funds to settle");
+        console.log("No enough funds to settle or pcv doesn't need to settle");
       }
     }
 
