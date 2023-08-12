@@ -8,7 +8,7 @@ import csv from "csv-parser";
 
 const insolvencyCases = [
   {
-    marginEngineAddress: "0x9b5b9d31c7b4a826cd30c09136a2fdea9c69efcd",
+    marginEngineAddress: "0x52AB3585ab57569CD731E1C60B7c8562C09780a5",
     network: "arbitrum",
     inputAmountsFile: "arb_aaveV3_usdc_amounts",
     protocolContribution: 0,
@@ -58,7 +58,7 @@ task(
     inputAmountsFile,
     protocolContribution,
     pcvToSettle,
-  } = insolvencyCases[2];
+  } = insolvencyCases[0];
 
   const rawPositions = (await readCSVFile(
     `tasks/input-ds/${inputAmountsFile}.csv`

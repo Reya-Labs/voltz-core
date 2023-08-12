@@ -28,7 +28,7 @@ interface MultisigTemplateData {
 const insolvencyCases = [
   {
     marginEngineAddress: "0x9b5b9d31c7b4a826cd30c09136a2fdea9c69efcd",
-    marginEngineImpl: "0xB5Ed2c212a577Fda7c546B153c0337a8Bb3f2dCa",
+    marginEngineImpl: "0x52ab3585ab57569cd731e1c60b7c8562c09780a5",
     network: "arbitrum",
     inputAmountsFile: "arb_aaveV3_usdc_amounts",
     protocolContribution: 0,
@@ -36,7 +36,7 @@ const insolvencyCases = [
   },
   {
     marginEngineAddress: "0x7dcd48966eb559dfa6db842ba312c96dce0cb0b2",
-    marginEngineImpl: "0x6887711f4CAdEbA666CEFa62D8692101D3c5826F",
+    marginEngineImpl: "0x0b5cd43dc1d9EE00deeC4afE533d1750778d3a92",
     network: "mainnet",
     inputAmountsFile: "eth_aaveV2_usdc_amounts",
     protocolContribution: 11510,
@@ -44,7 +44,7 @@ const insolvencyCases = [
   },
   {
     marginEngineAddress: "0x19654a85a96da7b39aa605259ee1568e55ccb9ba",
-    marginEngineImpl: "0x6887711f4CAdEbA666CEFa62D8692101D3c5826F",
+    marginEngineImpl: "0x0b5cd43dc1d9EE00deeC4afE533d1750778d3a92",
     network: "mainnet",
     inputAmountsFile: "eth_aaveV3_usdc_amounts",
     protocolContribution: 101920,
@@ -128,17 +128,14 @@ task(
     takeHome: string;
   }[];
 
-  const positions = rawPositions
-    .map((p) => ({
-      owner: p.owner,
-      tickLower: p.tickLower,
-      tickUpper: p.tickUpper,
-      amount: hre.ethers.utils
-        .parseUnits(Number(p.takeHome).toFixed(decimals), decimals)
-        .toString(),
-    }))
-    .slice(0, 2000);
-
+  const positions = rawPositions.map((p) => ({
+    owner: p.owner,
+    tickLower: p.tickLower,
+    tickUpper: p.tickUpper,
+    amount: hre.ethers.utils
+      .parseUnits(Number(p.takeHome).toFixed(decimals), decimals)
+      .toString(),
+  }));
   // impersonate multisig wallet
   const deployConfig = getConfig(network);
 

@@ -31,6 +31,40 @@
       }
     },
 
+    {
+      "to": "{{erc20Address}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "transfer",
+        "outputs": [
+          {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      "contractInputsValues": {
+        "to": "{{marginEngineAddress}}",
+        "amount": "{{protocolContribution}}"
+      }
+    },
+
     {{#batches}}
     {
       "to": "{{marginEngineAddress}}",
@@ -76,39 +110,5 @@
       }
     },
     {{/batches}}
-
-    {
-      "to": "{{erc20Address}}",
-      "value": "0",
-      "data": null,
-      "contractMethod": {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "to",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          }
-        ],
-        "name": "transfer",
-        "outputs": [
-          {
-            "internalType": "bool",
-            "name": "",
-            "type": "bool"
-          }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      "contractInputsValues": {
-        "to": "{{marginEngineAddress}}",
-        "amount": "{{protocolContribution}}"
-      }
-    }
   ]
 }
