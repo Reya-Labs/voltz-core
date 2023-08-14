@@ -111,7 +111,7 @@ describe("MarginEngine", () => {
   });
 
   describe("#updatePositionMargin", () => {
-    it("reverts if margin delta is zero", async () => {
+      it("reverts if margin delta is zero", async () => {
       // address _owner, int24 tickLower, int24 tickUpper, int256 marginDelta
       // await expect( marginEngineTest.updatePositionMargin( wallet.address, -TICK_SPACING, TICK_SPACING, 0 ) ).to.be.revertedWith("InvalidMarginDelta");
       // at the time of writing, waffle won't decipher custom errors thrown via proxies
@@ -127,7 +127,7 @@ describe("MarginEngine", () => {
   });
 
   describe("#positions", () => {
-    it("returns empty position by default", async () => {
+      it("returns empty position by default", async () => {
       const positionInfo = await marginEngineTest.callStatic.getPosition(
         wallet.address,
         0,
@@ -148,7 +148,7 @@ describe("MarginEngine", () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
     });
 
-    it("check position margin above requirement reverted", async () => {
+      it("check position margin above requirement reverted", async () => {
       const owner = wallet.address;
       const tickLower = -1;
       const tickUpper = 1;
@@ -169,7 +169,7 @@ describe("MarginEngine", () => {
       ).to.be.reverted;
     });
 
-    it("check position margin can be updated reverted", async () => {
+      it("check position margin can be updated reverted", async () => {
       const owner = wallet.address;
       const tickLower = -1;
       const tickUpper = 1;
@@ -196,7 +196,7 @@ describe("MarginEngine", () => {
       await vammTest.initializeVAMM(MAX_SQRT_RATIO.sub(1));
     });
 
-    it("check position margin above requirement", async () => {
+      it("check position margin above requirement", async () => {
       const counterfactualMargin = toBn("0");
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
@@ -216,7 +216,7 @@ describe("MarginEngine", () => {
       ).to.be.reverted;
     });
 
-    it("check trader margin can be updated", async () => {
+      it("check trader margin can be updated", async () => {
       const counterfactualMargin = toBn("0");
       const fixedTokenBalance = toBn("1000");
       const variableTokenBalance = toBn("-2000");
@@ -238,7 +238,7 @@ describe("MarginEngine", () => {
   });
 
   describe("#updatePositionMargin", async () => {
-    it("check position margin correctly updated scenario 1", async () => {
+      it("check position margin correctly updated scenario 1", async () => {
       await marginEngineTest.updatePositionMargin(
         wallet.address,
         -TICK_SPACING,
@@ -254,7 +254,7 @@ describe("MarginEngine", () => {
       expect(positionMargin).to.eq(toBn("1"));
     });
 
-    it("check trader margin correctly updated scenario 2", async () => {
+      it("check trader margin correctly updated scenario 2", async () => {
       await marginEngineTest.updatePositionMargin(
         wallet.address,
         -TICK_SPACING,
@@ -284,7 +284,7 @@ describe("MarginEngine", () => {
       expect(positionMargin).to.eq(toBn("1"));
     });
 
-    it("check token balance correctly updated", async () => {
+      it("check token balance correctly updated", async () => {
       const oldPositionBalance = await token.balanceOf(wallet.address);
       const oldMarginEngineBalance = await token.balanceOf(
         marginEngineTest.address
@@ -340,7 +340,7 @@ describe("MarginEngine", () => {
       await vammTest.setVariableTokenGrowthGlobal(FourQ128Negative);
     });
 
-    it("correctly updates position margin (internal accounting)", async () => {
+      it("correctly updates position margin (internal accounting)", async () => {
       await marginEngineTest.setPosition(
         wallet.address,
         -1,
@@ -369,7 +369,7 @@ describe("MarginEngine", () => {
       expect(positionInfo.margin).to.be.near(toBn("1001"));
     });
 
-    it("check token balance correctly updated", async () => {
+      it("check token balance correctly updated", async () => {
       await marginEngineTest.setPosition(
         wallet.address,
         -1,
@@ -410,6 +410,136 @@ describe("MarginEngine", () => {
     });
   });
 
+  describe("#updatePositionMargin-CustomSettlement", async () => {
+    beforeEach("prepare the vamm", async () => {
+      const Q128 = BigNumber.from(2).pow(128);
+      const Q128Negative = Q128.mul(BigNumber.from(-1));
+
+      const FourQ128 = BigNumber.from(4).shl(128);
+      const FourQ128Negative = FourQ128.mul(BigNumber.from(-1));
+
+      await vammTest.setTickTest(-1, {
+        liquidityGross: 10,
+        liquidityNet: 20,
+        fixedTokenGrowthOutsideX128: Q128,
+        variableTokenGrowthOutsideX128: Q128Negative,
+        feeGrowthOutsideX128: 0,
+        initialized: true,
+      });
+
+      await vammTest.setTickTest(1, {
+        liquidityGross: 40,
+        liquidityNet: 30,
+        fixedTokenGrowthOutsideX128: Q128Negative,
+        variableTokenGrowthOutsideX128: Q128,
+        feeGrowthOutsideX128: 0,
+        initialized: true,
+      });
+
+      await vammTest.setFixedTokenGrowthGlobal(FourQ128);
+      await vammTest.setVariableTokenGrowthGlobal(FourQ128Negative);
+    });
+
+     it("check token balance correctly updated - custom settlement", async () => {
+      await token.connect(wallet).transfer(marginEngineTest.address, 300000);
+
+      await marginEngineTest.connect(wallet).setCustomSettlements([
+        {
+          owner: wallet.address,
+          tickLower: -69060,
+          tickUpper: 0,
+          amount: 100000
+        },
+        {
+          owner: wallet.address,
+          tickLower: -69000,
+          tickUpper: 0,
+          amount: 200000
+        },
+      ]);
+
+      const balanceBefore = await token.balanceOf(wallet.address);
+
+      // settlement
+      await marginEngineTest.connect(wallet).settlePosition(wallet.address, -69060, 0);
+
+      // partial withdraw
+      await marginEngineTest.connect(wallet).updatePositionMargin(wallet.address, -69060, 0, -10);
+
+      let balanceAfter = await token.balanceOf(wallet.address);
+      expect(balanceBefore).to.be.eq(balanceAfter.sub(10));
+
+      // revert when exceeds balance
+      await expect(
+        marginEngineTest.connect(wallet).updatePositionMargin(wallet.address, -69060, 0, -100000)
+      ).to.be.revertedWith("NotEnoughMargin");
+
+      // finish withdraw
+      await marginEngineTest.connect(wallet).updatePositionMargin(wallet.address, -69060, 0, -99990);
+      balanceAfter = await token.balanceOf(wallet.address);
+      expect(balanceBefore).to.be.eq(balanceAfter.sub(100000));
+
+    });
+
+     it("check invalid actions", async () => {
+      await token.connect(wallet).transfer(marginEngineTest.address, 300000)
+
+      // not owner
+      await expect(
+        marginEngineTest.connect(other).setCustomSettlements([
+        {
+          owner: wallet.address,
+          tickLower: -69060,
+          tickUpper: 0,
+          amount: 100000
+        },
+        {
+          owner: wallet.address,
+          tickLower: -69000,
+          tickUpper: 0,
+          amount: 200000
+        },
+      ])).to.be.reverted;
+
+      marginEngineTest.connect(wallet).setCustomSettlements([
+        {
+          owner: wallet.address,
+          tickLower: -69060,
+          tickUpper: 0,
+          amount: 100000
+        },
+        {
+          owner: other.address,
+          tickLower: -69000,
+          tickUpper: 0,
+          amount: 200000
+        },
+      ]);
+
+      // false position
+      await expect(
+        marginEngineTest.connect(wallet).settlePosition(wallet.address, -69061, 0)
+      ).to.be.reverted;
+
+      // already settled
+      await marginEngineTest.connect(wallet).settlePosition(wallet.address, -69060, 0);
+      await expect(
+        marginEngineTest.connect(wallet).settlePosition(wallet.address, -69060, 0)
+      ).to.be.reverted;
+
+      // withdraw too much
+      await expect(
+        marginEngineTest.connect(wallet).updatePositionMargin(wallet.address, -69060, 0, -1000000)
+      ).to.be.revertedWith("NotEnoughMargin");
+
+      // withdraw when not settled
+      await expect(
+        marginEngineTest.connect(other).updatePositionMargin(other.address, -69000, 0, -1000)
+      ).to.be.revertedWith("PositionNotSettled");
+
+    });
+  });
+
   describe("#unwindPosition", async () => {
     beforeEach("token approvals and updating position margin", async () => {
       await token.mint(wallet.address, BigNumber.from(100).pow(27));
@@ -424,7 +554,7 @@ describe("MarginEngine", () => {
       );
     });
 
-    it("liquidate and unwind LP", async () => {
+      it("liquidate and unwind LP", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
@@ -491,7 +621,7 @@ describe("MarginEngine", () => {
       expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
     });
 
-    it("liquidate and unwind LP", async () => {
+      it("liquidate and unwind LP", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
@@ -561,7 +691,7 @@ describe("MarginEngine", () => {
       expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
     });
 
-    it("liquidate and unwind LP", async () => {
+      it("liquidate and unwind LP", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
@@ -629,7 +759,7 @@ describe("MarginEngine", () => {
       expect(positionInfo.variableTokenBalance).to.be.equal(toBn("0"));
     });
 
-    it("not enough liquidity to unwind position", async () => {
+      it("not enough liquidity to unwind position", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
@@ -688,7 +818,7 @@ describe("MarginEngine", () => {
       }
     });
 
-    it("unwinds Trader", async () => {
+      it("unwinds Trader", async () => {
       await vammTest.initializeVAMM(MIN_SQRT_RATIO);
 
       await vammTest.mint(
@@ -733,7 +863,7 @@ describe("MarginEngine", () => {
   });
 
   describe("#collectProtocol", () => {
-    it("checkOwnerPrivilege", async () => {
+      it("checkOwnerPrivilege", async () => {
       await expect(
         marginEngineTest
           .connect(other)
@@ -741,7 +871,7 @@ describe("MarginEngine", () => {
       ).to.be.reverted;
     });
 
-    it("checkCollectProtocol", async () => {
+      it("checkCollectProtocol", async () => {
       await marginEngineTest.collectProtocol(other.address, toBn("0"));
     });
   });
@@ -776,7 +906,7 @@ describe("MarginEngine", () => {
       await vammTest.setVariableTokenGrowthGlobal(Q128Negative);
     });
 
-    it("correctly updates position token balances (growth inside last)", async () => {
+      it("correctly updates position token balances (growth inside last)", async () => {
       await marginEngineTest.setPosition(
         wallet.address,
         -1,
@@ -813,7 +943,7 @@ describe("MarginEngine", () => {
       );
     });
 
-    it("correctly updates position token balances (fixed and variable deltas)", async () => {
+      it("correctly updates position token balances (fixed and variable deltas)", async () => {
       await marginEngineTest.setPosition(
         wallet.address,
         -1,
@@ -847,7 +977,7 @@ describe("MarginEngine", () => {
   });
 
   describe("#settleTrader", () => {
-    it("reverts before maturity", async () => {
+      it("reverts before maturity", async () => {
       await expect(
         marginEngineTest.settlePosition(
           wallet.address,
@@ -857,7 +987,7 @@ describe("MarginEngine", () => {
       ).to.be.reverted;
     });
 
-    it("correctly updates position balances", async () => {
+      it("correctly updates position balances", async () => {
       await marginEngineTest.setPosition(
         wallet.address,
         -TICK_SPACING,
@@ -897,7 +1027,7 @@ describe("MarginEngine", () => {
       expect(positionInfo.fixedTokenBalance).to.eq(0);
     });
 
-    it("correctly updates position margin", async () => {
+      it("correctly updates position margin", async () => {
       await marginEngineTest.setPosition(
         wallet.address,
         -TICK_SPACING,
@@ -968,7 +1098,7 @@ describe("MarginEngine", () => {
       await vammTest.initializeVAMM(encodeSqrtRatioX96(1, 1).toString());
     });
 
-    it("scenario 1: position settlement", async () => {
+      it("scenario 1: position settlement", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
@@ -1048,7 +1178,7 @@ describe("MarginEngine", () => {
       );
     });
 
-    it("scenario1: simple trader liquidation", async () => {
+      it("scenario1: simple trader liquidation", async () => {
       const min_price = BigNumber.from(encodeSqrtRatioX96(1, 10).toString());
       await vammTest.initializeVAMM(min_price);
 
@@ -1120,7 +1250,7 @@ describe("MarginEngine", () => {
       expect(traderInfo.margin).to.eq(toBn("0.9"));
     });
 
-    it("scenario 2: simple position liquidation", async () => {
+      it("scenario 2: simple position liquidation", async () => {
       await token.mint(other.address, BigNumber.from(10).pow(27));
       await token.approve(other.address, BigNumber.from(10).pow(27));
 
@@ -1224,7 +1354,7 @@ describe("MarginEngine", () => {
       await rateOracleTest.writeOracleEntry();
     });
 
-    it("correctly computes historical apy without cache", async () => {
+      it("correctly computes historical apy without cache", async () => {
       const realizedHistoricalApy1 =
         await marginEngineTest.getHistoricalApyReadOnly();
       expect(realizedHistoricalApy1, "matches input APY").to.be.closeTo(
@@ -1239,7 +1369,7 @@ describe("MarginEngine", () => {
       ).to.eq(realizedHistoricalApy2);
     });
 
-    it("correctly caches historical apy", async () => {
+      it("correctly caches historical apy", async () => {
       // Fist write the cache. Note that the rate won't exactly match the APY because another block has elapsed but we have not updated reserveNormalizedIncome. This is OK because we are only testing caching.
       await marginEngineTest.getHistoricalApy();
       const realizedHistoricalApy1a =
@@ -1283,7 +1413,7 @@ describe("MarginEngine", () => {
   });
 
   describe("custom cashflow settlement", async () => {
-    it("scenario 1", async () => {
+      it("scenario 1", async () => {
       // Give funds to margin engine
       await token.mint(marginEngineTest.address, BigNumber.from(10).pow(27));
 
