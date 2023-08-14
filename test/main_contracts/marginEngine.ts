@@ -1281,4 +1281,173 @@ describe("MarginEngine", () => {
       ).to.eq(realizedHistoricalApy3b);
     });
   });
+
+  describe("custom cashflow settlement", async () => {
+    it("scenario 1", async () => {
+      // Give funds to margin engine
+      await token.mint(marginEngineTest.address, BigNumber.from(10).pow(27));
+
+      // Set Custom Settlements
+      await marginEngineTest.connect(wallet).setCustomSettlements([
+        {
+          owner: wallet.address,
+          tickLower: -69060,
+          tickUpper: 0,
+          amount: toBn("10"),
+        },
+        {
+          owner: other.address,
+          tickLower: -60000,
+          tickUpper: 60000,
+          amount: toBn("1"),
+        },
+      ]);
+
+      // Check User 1 (i.e., wallet)
+      {
+        const walletBalanceBefore = await token.balanceOf(wallet.address);
+        const marginEngineBalanceBefore = await token.balanceOf(
+          marginEngineTest.address
+        );
+
+        // Make sure user cannot withdraw before settlement
+        await expect(
+          marginEngineTest
+            .connect(wallet)
+            .updatePositionMargin(wallet.address, -69060, 0, toBn("-10"))
+        ).to.be.reverted; // PositionNotSettled, waffle limitation with custom errors :-)
+
+        // Settle position
+        await marginEngineTest
+          .connect(wallet)
+          .settlePosition(wallet.address, -69060, 0);
+
+        await expect(
+          marginEngineTest
+            .connect(wallet)
+            .updatePositionMargin(wallet.address, -69060, 0, toBn("0"))
+        ).to.be.reverted; // InvalidMarginDelta, waffle limitation with custom errors :-)
+
+        // Make sure user cannot withdraw more than current margin
+        await expect(
+          marginEngineTest
+            .connect(wallet)
+            .updatePositionMargin(wallet.address, -69060, 0, toBn("-10.000001"))
+        ).to.be.revertedWith("NotEnoughMargin");
+
+        // Make sure margin transfer is correct
+        await marginEngineTest
+          .connect(wallet)
+          .updatePositionMargin(wallet.address, -69060, 0, toBn("-10"));
+
+        const walletBalanceAfter = await token.balanceOf(wallet.address);
+        const marginEngineBalanceAfter = await token.balanceOf(
+          marginEngineTest.address
+        );
+
+        expect(walletBalanceAfter.sub(walletBalanceBefore)).to.be.eq(
+          toBn("10")
+        );
+        expect(
+          marginEngineBalanceAfter.sub(marginEngineBalanceBefore)
+        ).to.be.eq(toBn("-10"));
+
+        // Make sure user cannont settle/withdraw inexistent position
+        await expect(
+          marginEngineTest
+            .connect(wallet)
+            .settlePosition(wallet.address, -60000, 60000)
+        ).to.be.revertedWith("NoCS");
+
+        await expect(
+          marginEngineTest
+            .connect(wallet)
+            .updatePositionMargin(
+              wallet.address,
+              -60000,
+              60000,
+              toBn("-0.00001")
+            )
+        ).to.be.reverted; // PositionNotSettled, waffle limitation with custom errors :-)
+
+        await expect(
+          marginEngineTest
+            .connect(wallet)
+            .updatePositionMargin(wallet.address, -60000, 60000, toBn("0"))
+        ).to.be.reverted; // InvalidMarginDelta, waffle limitation with custom errors :-)
+      }
+
+      // Check User 2 (i.e., other)
+      {
+        const otherBalanceBefore = await token.balanceOf(other.address);
+        const marginEngineBalanceBefore = await token.balanceOf(
+          marginEngineTest.address
+        );
+
+        // Make sure user cannot withdraw before settlement
+        await expect(
+          marginEngineTest
+            .connect(other)
+            .updatePositionMargin(other.address, -60000, 60000, toBn("-1"))
+        ).to.be.reverted; // PositionNotSettled, waffle limitation with custom errors :-)
+
+        // Settle position
+        await marginEngineTest
+          .connect(other)
+          .settlePosition(other.address, -60000, 60000);
+
+        await expect(
+          marginEngineTest
+            .connect(other)
+            .updatePositionMargin(other.address, -60000, 60000, toBn("0"))
+        ).to.be.reverted; // InvalidMarginDelta, waffle limitation with custom errors :-)
+
+        // Make sure user cannot withdraw more than current margin
+        await expect(
+          marginEngineTest
+            .connect(other)
+            .updatePositionMargin(
+              other.address,
+              -60000,
+              60000,
+              toBn("-1.00001")
+            )
+        ).to.be.revertedWith("NotEnoughMargin");
+
+        // Make sure margin transfer is correct
+        await marginEngineTest
+          .connect(other)
+          .updatePositionMargin(other.address, -60000, 60000, toBn("-1"));
+
+        const otherBalanceAfter = await token.balanceOf(other.address);
+        const marginEngineBalanceAfter = await token.balanceOf(
+          marginEngineTest.address
+        );
+
+        expect(otherBalanceAfter.sub(otherBalanceBefore)).to.be.eq(toBn("1"));
+        expect(
+          marginEngineBalanceAfter.sub(marginEngineBalanceBefore)
+        ).to.be.eq(toBn("-1"));
+
+        // Make sure user cannont settle/withdraw inexistent position
+        await expect(
+          marginEngineTest
+            .connect(other)
+            .settlePosition(other.address, -69060, 0)
+        ).to.be.revertedWith("NoCS");
+
+        await expect(
+          marginEngineTest
+            .connect(other)
+            .updatePositionMargin(other.address, -69060, 0, toBn("-0.00001"))
+        ).to.be.reverted; // PositionNotSettled, waffle limitation with custom errors :-)
+
+        await expect(
+          marginEngineTest
+            .connect(other)
+            .updatePositionMargin(other.address, -69060, 0, toBn("0"))
+        ).to.be.reverted; // InvalidMarginDelta, waffle limitation with custom errors :-)
+      }
+    });
+  });
 });
