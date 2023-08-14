@@ -482,6 +482,7 @@ contract MarginEngine is
         int24 _tickUpper,
         int256 _marginDelta
     ) external override nonZeroDelta(_marginDelta) {
+        require(false);
         require(_owner != address(0), "O0");
 
         Tick.checkTicks(_tickLower, _tickUpper);
