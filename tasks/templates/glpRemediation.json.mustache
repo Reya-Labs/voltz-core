@@ -1,0 +1,114 @@
+{
+  "version": "1.0",
+  "chainId": "{{chainId}}",
+  "createdAt": 1654007302649,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.8.0",
+    "createdFromSafeAddress": "{{multisig}}",
+    "createdFromOwnerAddress": "",
+    "checksum": "0x0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "transactions": [
+    {
+      "to": "{{glpMarginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "newImplementation",
+              "type": "address"
+            }
+          ],
+        "name": "upgradeTo",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "newImplementation": "{{emergencyMarginEngineImpl}}"
+      }
+    },
+
+    {{#batches}}
+    {
+      "to": "{{glpMarginEngineAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickLower",
+                "type": "int24"
+              },
+              {
+                "internalType": "int24",
+                "name": "tickUpper",
+                "type": "int24"
+              },
+              {
+                "internalType": "int256",
+                "name": "amount",
+                "type": "int256"
+              }
+            ],
+          "internalType": "struct MarginEngine.CustomSettlement[]",
+          "name": "settlements",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "setCustomSettlements",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+      "contractInputsValues": {
+        "settlements": "[{{#batch}} [\"{{owner}}\",\"{{tickLower}}\",\"{{tickUpper}}\",\"{{amount}}\"]{{^last}},{{/last}} {{/batch}} ]"
+      }
+    },
+    {{/batches}}
+
+    {
+      "to": "{{wethAddress}}",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "transfer",
+        "outputs": [
+          {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      "contractInputsValues": {
+        "to": "{{glpMarginEngineAddress}}",
+        "amount": "{{protocolContribution}}"
+      }
+    }
+  ]
+}

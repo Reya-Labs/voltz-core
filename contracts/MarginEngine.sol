@@ -481,7 +481,7 @@ contract MarginEngine is
         int24 _tickLower,
         int24 _tickUpper,
         int256 _marginDelta
-    ) external override whenNotPaused nonZeroDelta(_marginDelta) {
+    ) external override nonZeroDelta(_marginDelta) {
         require(_owner != address(0), "O0");
 
         Tick.checkTicks(_tickLower, _tickUpper);
@@ -492,36 +492,22 @@ contract MarginEngine is
             _tickUpper
         );
 
-        /// @dev if in alpha --> revert (unless call via periphery)
-        if (_isAlpha) {
-            IPeriphery _periphery = _factory.periphery();
-            require(msg.sender == address(_periphery), "pphry only");
+        require(_marginDelta <= 0, "NoDeposit");
+
+        if (
+            _owner != msg.sender && !_factory.isApproved(_owner, msg.sender)
+        ) {
+            revert CustomErrors.OnlyOwnerCanUpdatePosition();
         }
 
-        _updatePositionTokenBalancesAndAccountForFees(
-            _position,
-            _tickLower,
-            _tickUpper,
-            false
-        ); // isMint=false
-
-        if (_marginDelta < 0) {
-            if (
-                _owner != msg.sender && !_factory.isApproved(_owner, msg.sender)
-            ) {
-                revert CustomErrors.OnlyOwnerCanUpdatePosition();
-            }
-
-            _position.updateMarginViaDelta(_marginDelta);
-
-            _checkPositionMarginCanBeUpdated(_position, _tickLower, _tickUpper);
-
-            _transferMargin(_owner, _marginDelta);
-        } else {
-            _position.updateMarginViaDelta(_marginDelta);
-
-            _transferMargin(msg.sender, _marginDelta);
+        if (!_position.isSettled) {
+            revert CustomErrors.PositionNotSettled();
         }
+
+        _position.updateMarginViaDelta(_marginDelta);
+        require(_position.margin >= 0, "NotEnoughMargin");
+
+        _transferMargin(_owner, _marginDelta);
 
         _position.rewardPerAmount = 0;
 
@@ -545,12 +531,27 @@ contract MarginEngine is
         );
     }
 
+    struct CustomSettlement {
+        address owner;
+        int24 tickLower;
+        int24 tickUpper;
+        int256 amount;
+    }
+
+    function setCustomSettlements(CustomSettlement[] memory settlements) external onlyOwner {
+        for (uint256 i = 0; i < settlements.length; ++i) {
+            bytes32 key = keccak256(abi.encodePacked(settlements[i].owner, settlements[i].tickLower, settlements[i].tickUpper));
+            customSettlements[key] = settlements[i].amount;
+            isCustomSettlementEnabled[key] = true;
+        }
+    }
+
     /// @inheritdoc IMarginEngine
     function settlePosition(
         address _owner,
         int24 _tickLower,
         int24 _tickUpper
-    ) external override whenNotPaused onlyAfterMaturity {
+    ) external override {
         Tick.checkTicks(_tickLower, _tickUpper);
 
         Position.Info storage _position = positions.get(
@@ -559,37 +560,20 @@ contract MarginEngine is
             _tickUpper
         );
 
-        _updatePositionTokenBalancesAndAccountForFees(
-            _position,
-            _tickLower,
-            _tickUpper,
-            false
-        );
+        bytes32 key = keccak256(abi.encodePacked(_owner, _tickLower, _tickUpper));
+        require(isCustomSettlementEnabled[key], "NoCS");
 
-        int256 _settlementCashflow = FixedAndVariableMath
-            .calculateSettlementCashflow(
-                _position.fixedTokenBalance,
-                _position.variableTokenBalance,
-                _termStartTimestampWad,
-                _termEndTimestampWad,
-                _rateOracle.variableFactor(
-                    _termStartTimestampWad,
-                    _termEndTimestampWad
-                )
-            );
-
-        _position.updateBalancesViaDeltas(
-            -_position.fixedTokenBalance,
-            -_position.variableTokenBalance
-        );
-        _position.updateMarginViaDelta(_settlementCashflow);
+        _position.margin = customSettlements[key];
+        _position.fixedTokenBalance = 0;
+        _position.variableTokenBalance = 0;
+        _position._liquidity = 0;
         _position.settlePosition();
 
         emit PositionSettlement(
             _owner,
             _tickLower,
             _tickUpper,
-            _settlementCashflow
+            0
         );
 
         emit PositionUpdate(
@@ -659,110 +643,7 @@ contract MarginEngine is
         checkCurrentTimestampTermEndTimestampDelta
         returns (uint256)
     {
-        /// @dev can only happen before maturity, this is checked when an unwind is triggered which in turn triggers a swap which checks for this condition
-
-        Tick.checkTicks(_tickLower, _tickUpper);
-
-        Position.Info storage _position = positions.get(
-            _owner,
-            _tickLower,
-            _tickUpper
-        );
-
-        _updatePositionTokenBalancesAndAccountForFees(
-            _position,
-            _tickLower,
-            _tickUpper,
-            false
-        ); // isMint=false
-
-        (bool _isLiquidatable, ) = _isLiquidatablePosition(
-            _position,
-            _tickLower,
-            _tickUpper
-        );
-
-        if (!_isLiquidatable) {
-            revert CannotLiquidate();
-        }
-
-        if (_position.rewardPerAmount == 0) {
-            uint256 _absVariableTokenBalance = _position.variableTokenBalance <
-                0
-                ? uint256(-_position.variableTokenBalance)
-                : uint256(_position.variableTokenBalance);
-            if (_position.margin > 0) {
-                _position.rewardPerAmount = PRBMathUD60x18.div(
-                    PRBMathUD60x18.mul(
-                        uint256(_position.margin),
-                        _liquidatorRewardWad
-                    ),
-                    _absVariableTokenBalance
-                );
-            } else {
-                _position.rewardPerAmount = 0;
-            }
-        }
-
-        uint256 _liquidatorRewardValue = 0;
-        if (_position._liquidity > 0) {
-            /// @dev pass position._liquidity to ensure all of the liqudity is burnt
-            _vamm.burn(_owner, _tickLower, _tickUpper, _position._liquidity);
-            _position.updateLiquidity(-int128(_position._liquidity));
-
-            /// @dev liquidator reward for burning liquidity
-            _liquidatorRewardValue += PRBMathUD60x18.mul(
-                uint256(_position.margin),
-                _liquidatorRewardWad
-            );
-        }
-
-        int256 _variableTokenDelta = _unwindPosition(
-            _position,
-            _owner,
-            _tickLower,
-            _tickUpper
-        );
-
-        /// @dev liquidator reward for unwinding position
-        if (_variableTokenDelta != 0) {
-            _liquidatorRewardValue += (_variableTokenDelta < 0)
-                ? PRBMathUD60x18.mul(
-                    uint256(-_variableTokenDelta),
-                    _position.rewardPerAmount
-                )
-                : PRBMathUD60x18.mul(
-                    uint256(_variableTokenDelta),
-                    _position.rewardPerAmount
-                );
-        }
-
-        if (_liquidatorRewardValue > 0) {
-            _position.updateMarginViaDelta(-_liquidatorRewardValue.toInt256());
-            _underlyingToken.safeTransfer(msg.sender, _liquidatorRewardValue);
-        }
-
-        emit PositionLiquidation(
-            _owner,
-            _tickLower,
-            _tickUpper,
-            msg.sender,
-            _variableTokenDelta,
-            _liquidatorRewardValue
-        );
-
-        emit PositionUpdate(
-            _owner,
-            _tickLower,
-            _tickUpper,
-            _position._liquidity,
-            _position.margin,
-            _position.fixedTokenBalance,
-            _position.variableTokenBalance,
-            _position.accumulatedFees
-        );
-
-        return _liquidatorRewardValue;
+        return 0;
     }
 
     /// @inheritdoc IMarginEngine

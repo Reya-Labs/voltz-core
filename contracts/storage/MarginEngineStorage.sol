@@ -27,10 +27,12 @@ contract MarginEngineStorageV1 {
         internal marginCalculatorParameters;
     bool internal _isAlpha;
     bool public paused;
+    mapping(bytes32 => int256) internal customSettlements;
+    mapping(bytes32 => bool) internal isCustomSettlementEnabled;
 }
 
 contract MarginEngineStorage is MarginEngineStorageV1 {
     // Reserve some storage for use in future versions, without creating conflicts
     // with other inheritted contracts
-    uint256[69] private __gap; // total storage = 100 slots, including structs
+    uint256[67] private __gap; // total storage = 100 slots, including structs
 }

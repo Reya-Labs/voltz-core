@@ -87,6 +87,12 @@ loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
 // Pool initial leverages
 loadModuleIfContractsAreBuilt("./tasks/getPoolLeverages");
 
+loadModuleIfContractsAreBuilt("./tasks/simulateGLPRemediation");
+loadModuleIfContractsAreBuilt("./tasks/generateGLPRemediationTxs");
+
+loadModuleIfContractsAreBuilt("./tasks/simulateInsolvencyRemediation");
+loadModuleIfContractsAreBuilt("./tasks/generateInsolvencyRemediationTxs");
+
 // Data extractions
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalData");
 loadModuleIfContractsAreBuilt("./tasks/getHistoricalApy");

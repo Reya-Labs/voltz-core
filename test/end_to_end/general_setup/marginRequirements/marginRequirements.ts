@@ -1412,7 +1412,7 @@ describe("Unwinds", () => {
     await scenario.run();
   };
 
-  it.only(
+  it(
     "Test that flipping under-collateralised position to the other direction is disallowed",
     test
   );
