@@ -6,8 +6,8 @@ import {
 } from "../deployConfig/parse-balance-map";
 import fs from "fs";
 
-const QUORUM_VOTES = 1825;
-const BLOCK_TIMESTAMP_VOTING_END = 1688212800; // Thu Jun 29 2023 12:00:00 GMT+0000
+const QUORUM_VOTES = 2949;
+const BLOCK_TIMESTAMP_VOTING_END = 1691755200; // Fri Aug 11 2023 12:00:00 GMT+0000
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   try {

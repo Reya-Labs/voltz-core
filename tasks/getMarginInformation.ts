@@ -1,13 +1,15 @@
 import { task } from "hardhat/config";
-import { MarginEngine, BaseRateOracle } from "../typechain";
-import { ethers, BigNumber } from "ethers";
+import { MarginEngine } from "../typechain";
+import { ethers } from "ethers";
 
 import { getPositions, Position } from "../scripts/getPositions";
 import { getPool } from "../poolConfigs/pool-addresses/pools";
-import { calculateSettlementCashflow } from "./utils/calculateSettlementCashflow";
+import { PositionHistory } from "../scripts/getPositionHistory";
 
-task("maturedPositionsPnL", "Checks the PnL of matured positions")
-  .addFlag("onlyInsolvent", "Prints information of insolvent positions only")
+task(
+  "getMarginInformation",
+  "Retrieves information about positions' margin account"
+)
   .addOptionalParam("owners", "Filter by list of owners")
   .addOptionalParam("tickLowers", "Filter by tick lowers")
   .addOptionalParam("tickUppers", "Filter by tick uppers")
@@ -36,10 +38,10 @@ task("maturedPositionsPnL", "Checks the PnL of matured positions")
       fs.mkdirSync(EXPORT_FOLDER, { recursive: true });
     }
 
-    const EXPORT_FILE = `${EXPORT_FOLDER}/matured-positions-pnl.csv`;
+    const EXPORT_FILE = `${EXPORT_FOLDER}/margin-information.csv`;
 
     const header =
-      "Pool,Margin Engine,Owner,Lower Tick,Upper Tick,Settled,Margin,Pending Settlement Cashflow,Insolvency";
+      "Pool,Margin Engine,Owner,Lower Tick,Upper Tick,Settled,Current Margin,Margin In,Margin Out,Net Margin In&Out,LP&Protocol Fees Paid,Accumulated LP Fees,Liquidator Rewards Paid";
     fs.writeFile(EXPORT_FILE, header + "\n", () => {});
 
     let positions: Position[] = await getPositions(networkName, undefined);
@@ -70,11 +72,6 @@ task("maturedPositionsPnL", "Checks the PnL of matured positions")
       );
     }
 
-    const currentBlock = await hre.ethers.provider.getBlock("latest");
-    const termCurrentTimestampWad = BigNumber.from(currentBlock.timestamp).mul(
-      BigNumber.from(10).pow(18)
-    );
-
     for (const pool of poolNames) {
       console.log(`Processing pool ${pool}`);
 
@@ -84,23 +81,6 @@ task("maturedPositionsPnL", "Checks the PnL of matured positions")
         "MarginEngine",
         poolDetails.marginEngine
       )) as MarginEngine;
-
-      const baseRateOracle = (await hre.ethers.getContractAt(
-        "BaseRateOracle",
-        await marginEngine.rateOracle()
-      )) as BaseRateOracle;
-
-      const termStartTimestampWad = await marginEngine.termStartTimestampWad();
-      const termEndTimestampWad = await marginEngine.termEndTimestampWad();
-
-      if (termCurrentTimestampWad.lt(termEndTimestampWad)) {
-        continue;
-      }
-
-      const variableFactor = await baseRateOracle.variableFactorNoCache(
-        termStartTimestampWad,
-        termEndTimestampWad
-      );
 
       const pool_positions = positions.filter(
         (p) => p.marginEngine === poolDetails.marginEngine.toLowerCase()
@@ -113,38 +93,52 @@ task("maturedPositionsPnL", "Checks the PnL of matured positions")
           position.tickUpper
         );
 
-        let pendingCashflow = BigNumber.from(0);
-        if (!positionInfo.isSettled) {
-          pendingCashflow = calculateSettlementCashflow(
-            positionInfo.fixedTokenBalance,
-            positionInfo.variableTokenBalance,
-            termStartTimestampWad,
-            termEndTimestampWad,
-            variableFactor
-          );
+        const positionHistory = new PositionHistory(
+          `${poolDetails.marginEngine.toLowerCase()}#${position.owner.toLowerCase()}#${
+            position.tickLower
+          }#${position.tickUpper}`,
+          position.tickLower,
+          position.tickUpper,
+          poolDetails.decimals
+        );
+        await positionHistory.getInfo(hre.network.name);
+
+        let marginIn = 0;
+        let marginOut = 0;
+        for (const item of positionHistory.marginUpdates) {
+          if (item.marginDelta > 0) {
+            marginIn += item.marginDelta;
+          } else {
+            marginOut -= item.marginDelta;
+          }
         }
 
-        let insolvency = positionInfo.margin.add(pendingCashflow);
-        if (insolvency.gt(BigNumber.from(0))) {
-          insolvency = BigNumber.from(0);
+        let lpAndProtocolFees = 0;
+        for (const item of positionHistory.swaps) {
+          lpAndProtocolFees += item.fees;
         }
 
-        if (!taskArgs.onlyInsolvent || insolvency.lt(0)) {
-          fs.appendFileSync(
-            EXPORT_FILE,
-            `${pool},${poolDetails.marginEngine},${position.owner},${
-              position.tickLower
-            },${position.tickUpper},${
-              positionInfo.isSettled
-            },${ethers.utils.formatUnits(
-              positionInfo.margin,
-              poolDetails.decimals
-            )},${ethers.utils.formatUnits(
-              pendingCashflow,
-              poolDetails.decimals
-            )},${ethers.utils.formatUnits(insolvency, poolDetails.decimals)}\n`
-          );
+        let liquidatorRewardsPaid = 0;
+        for (const item of positionHistory.liquidations) {
+          liquidatorRewardsPaid += item.reward;
         }
+
+        fs.appendFileSync(
+          EXPORT_FILE,
+          `${pool},${poolDetails.marginEngine},${position.owner},${
+            position.tickLower
+          },${position.tickUpper},${
+            positionInfo.isSettled
+          },${ethers.utils.formatUnits(
+            positionInfo.margin,
+            poolDetails.decimals
+          )},${marginIn},${marginOut},${
+            marginIn - marginOut
+          },${lpAndProtocolFees},${ethers.utils.formatUnits(
+            positionInfo.accumulatedFees,
+            poolDetails.decimals
+          )},${liquidatorRewardsPaid}\n`
+        );
       }
     }
   });

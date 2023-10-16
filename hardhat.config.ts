@@ -101,6 +101,7 @@ loadModuleIfContractsAreBuilt("./tasks/estimateCashflow");
 loadModuleIfContractsAreBuilt("./tasks/maturedPositionsPnL");
 loadModuleIfContractsAreBuilt("./tasks/calculatePositionSettlement");
 loadModuleIfContractsAreBuilt("./tasks/liquidatePositions");
+loadModuleIfContractsAreBuilt("./tasks/getMarginInformation");
 
 // Pool support
 loadModuleIfContractsAreBuilt("./tasks/irsInstances");
