@@ -233,21 +233,23 @@ task("getVotes", "Creates JSON with address and number of votes")
         });
 
         response.result.forEach((transfer) => {
-          userVotes.set(
-            transfer.fromAddress?.lowercase ?? "0",
-            (userVotes.get(transfer.fromAddress?.lowercase ?? "0") ?? 0) + 1
-          );
-          // this can become 0 as well since balance can become negative as well
-          if (userVotes.get(transfer.fromAddress?.lowercase ?? "0") === 0) {
-            userVotes.delete(transfer.fromAddress?.lowercase ?? "0");
-          }
-
-          userVotes.set(
-            transfer.toAddress?.lowercase ?? "0",
-            (userVotes.get(transfer.toAddress?.lowercase ?? "0") ?? 0) - 1
-          );
-          if (userVotes.get(transfer.toAddress?.lowercase ?? "0") === 0) {
-            userVotes.delete(transfer.toAddress?.lowercase ?? "0");
+          if (taskArgs.deadline < transfer.blockTimestamp.getTime() / 1000) {
+            userVotes.set(
+              transfer.fromAddress?.lowercase ?? "0",
+              (userVotes.get(transfer.fromAddress?.lowercase ?? "0") ?? 0) + 1
+            );
+            // this can become 0 as well since balance can become negative as well
+            if (userVotes.get(transfer.fromAddress?.lowercase ?? "0") === 0) {
+              userVotes.delete(transfer.fromAddress?.lowercase ?? "0");
+            }
+  
+            userVotes.set(
+              transfer.toAddress?.lowercase ?? "0",
+              (userVotes.get(transfer.toAddress?.lowercase ?? "0") ?? 0) - 1
+            );
+            if (userVotes.get(transfer.toAddress?.lowercase ?? "0") === 0) {
+              userVotes.delete(transfer.toAddress?.lowercase ?? "0");
+            }
           }
         });
 
