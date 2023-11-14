@@ -17,7 +17,7 @@ import { getBlockAtTimestamp } from "../../tasks/utils/helpers";
  * @param timestamp - The POSIX timestamp to process
  */
 export const timestampToEffectiveDate = (timestamp: number): string => {
-  return DateTime.fromSeconds(timestamp).toISODate();
+  return DateTime.fromSeconds(timestamp).toISODate() as string;
 };
 
 export const effectiveDateToTimestamp = (effectiveDate: string): number => {

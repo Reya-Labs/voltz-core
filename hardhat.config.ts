@@ -80,6 +80,7 @@ loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mints");
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-mint-adjustments");
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-settlePositions");
 loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-bridge-avalanche");
+loadModuleIfContractsAreBuilt("./tasks/pcv/pcv-analyse");
 
 // Localhost time manipulation support
 loadModuleIfContractsAreBuilt("./tasks/advanceTimeAndBlock");
