@@ -521,4 +521,22 @@ describe("VAMM", () => {
       });
     });
   });
+
+  describe("sunset ongoing pool", () => {
+    beforeEach("init vamm", async () => {
+      await vammTest.initializeVAMM(MIN_SQRT_RATIO);
+    });
+
+    it("block new mints", async () => {
+      await expect(
+        vammTest.mint(wallet.address, minTick, maxTick, 3161)
+      ).to.be.revertedWith("mint blocked");
+    });
+
+    it("block new burns", async () => {
+      await expect(
+        vammTest.burn(wallet.address, minTick, maxTick, 3161)
+      ).to.be.revertedWith("burn blocked");
+    });
+  });
 });
