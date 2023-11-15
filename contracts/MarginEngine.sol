@@ -518,9 +518,7 @@ contract MarginEngine is
 
             _transferMargin(_owner, _marginDelta);
         } else {
-            _position.updateMarginViaDelta(_marginDelta);
-
-            _transferMargin(msg.sender, _marginDelta);
+            require(false, "deposit blocked");
         }
 
         _position.rewardPerAmount = 0;
@@ -855,7 +853,9 @@ contract MarginEngine is
                 _variableTokenDelta > 0 &&
                 _position.variableTokenBalance + _variableTokenDelta <= 0
             );
- 
+
+        require(_isUnwind, "new swaps blocked");
+
         if (_cumulativeFeeIncurred > 0) {
             _position.updateMarginViaDelta(-_cumulativeFeeIncurred.toInt256());
         }
@@ -864,27 +864,6 @@ contract MarginEngine is
             _fixedTokenDelta,
             _variableTokenDelta
         );
-
-        _positionMarginRequirement = _getPositionMarginRequirement(
-            _position,
-            _tickLower,
-            _tickUpper,
-            false
-        ).toInt256();
-
-        /// @dev only check the margin requirement if it is not an unwind since an unwind could bring the position to a better state
-        /// @dev and still not make it through the initial margin requirement
-        if ((_positionMarginRequirement > _position.margin) && !_isUnwind) {
-            IVAMM.VAMMVars memory _v = _vamm.vammVars();
-            revert CustomErrors.MarginRequirementNotMet(
-                _positionMarginRequirement,
-                _v.tick,
-                _fixedTokenDelta,
-                _variableTokenDelta,
-                _cumulativeFeeIncurred,
-                _fixedTokenDeltaUnbalanced
-            );
-        }
 
         _position.rewardPerAmount = 0;
 
