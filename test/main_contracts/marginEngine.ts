@@ -1281,4 +1281,17 @@ describe("MarginEngine", () => {
       ).to.eq(realizedHistoricalApy3b);
     });
   });
+
+  describe("sunset ongoing pool", async () => {
+    it("block new deposits", async () => {
+      await expect(
+        marginEngineTest.updatePositionMargin(
+          wallet.address,
+          -TICK_SPACING,
+          TICK_SPACING,
+          toBn("1")
+        )
+      ).to.be.revertedWith("deposit blocked");
+    });
+  });
 });

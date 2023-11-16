@@ -276,7 +276,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
       revert CustomErrors.LiquidityDeltaMustBePositiveInBurn(amount);
     }
 
-    require((msg.sender==recipient) || (msg.sender == address(_marginEngine)) || _factory.isApproved(recipient, msg.sender) , "MS or ME");
+    require(msg.sender == address(_marginEngine) , "burn blocked");
 
     positionMarginRequirement = updatePosition(
       ModifyPositionParams({
@@ -389,6 +389,7 @@ contract VAMM is VAMMStorage, IVAMM, Initializable, OwnableUpgradeable, UUPSUpgr
     int24 tickUpper,
     uint128 amount
   ) external override checkIsAlpha whenNotPaused checkCurrentTimestampTermEndTimestampDelta lock returns(int256 positionMarginRequirement) {
+    require(false, "mint blocked");
     
     /// might be helpful to have a higher level peripheral function for minting a given amount given a certain amount of notional an LP wants to support
 

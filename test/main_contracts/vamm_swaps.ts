@@ -23,8 +23,11 @@ import { TestMarginEngine } from "../../typechain/TestMarginEngine";
 import { ERC20Mock, MockAaveLendingPool } from "../../typechain";
 import { add, sub } from "../shared/functions";
 import { TickMath } from "../shared/tickMath";
+import { getSigner } from "../../tasks/utils/getSigner";
 
 const createFixtureLoader = waffle.createFixtureLoader;
+
+const hre = require("hardhat");
 
 // more vamm tests!
 
@@ -372,6 +375,42 @@ describe("VAMM", () => {
       expect(feesAccruedToLP).to.be.near(expectedFees);
       expect(feesIncurredByTrader).to.be.near(expectedFees);
       expect(feesAccruedToLP).to.be.near(feesIncurredByTrader);
+    });
+  });
+
+  describe("sunset ongoing pool", () => {
+    beforeEach("init vamm", async () => {
+      await vammTest.initializeVAMM(MIN_SQRT_RATIO);
+    });
+
+    it("block new swaps", async () => {
+      await expect(
+        vammTest.connect(wallet).swap({
+          recipient: wallet.address,
+          amountSpecified: toBn("1"),
+          sqrtPriceLimitX96: BigNumber.from(
+            TickMath.getSqrtRatioAtTick(TICK_SPACING * 2).toString()
+          ),
+
+          tickLower: -TICK_SPACING,
+          tickUpper: TICK_SPACING,
+        })
+      ).to.be.revertedWith("new swaps blocked");
+    });
+
+    it("allow liquidation swaps", async () => {
+      // liquidation swaps should come from the margin engine
+      const marginEngineSigner = await getSigner(hre, marginEngineTest.address);
+      await vammTest.connect(marginEngineSigner).swap({
+        recipient: wallet.address,
+        amountSpecified: toBn("1"),
+        sqrtPriceLimitX96: BigNumber.from(
+          TickMath.getSqrtRatioAtTick(TICK_SPACING * 2).toString()
+        ),
+
+        tickLower: -TICK_SPACING,
+        tickUpper: TICK_SPACING,
+      });
     });
   });
 });
